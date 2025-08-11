@@ -430,9 +430,9 @@ const Header = () => {
 
                 {activeDropdown === 'pdf-tools' && (
                   <div
-                    ref={(el) => {
-                      dropdownRefs.current['pdf-tools'] = el;
-                    }}
+                    // ref={(el) => {
+                    //   dropdownRefs.current['pdf-tools'] = el;
+                    // }}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[1050px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
                   >
                     <div className="grid grid-cols-6 gap-6">
@@ -552,9 +552,9 @@ const Header = () => {
 
                 {activeDropdown === 'why-docusigner' && (
                   <div
-                    ref={(el) => {
-                      dropdownRefs.current['why-docusigner'] = el;
-                    }}
+                    // ref={(el) => {
+                    //   dropdownRefs.current['why-docusigner'] = el;
+                    // }}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
                   >
                     <div className="grid grid-cols-2 gap-6">
@@ -596,9 +596,9 @@ const Header = () => {
 
                 {activeDropdown === 'use-cases' && (
                   <div
-                                         ref={(el) => {
-                       dropdownRefs.current['use-cases'] = el;
-                     }}
+                    //                      ref={(el) => {
+                    //    dropdownRefs.current['use-cases'] = el;
+                    //  }}
                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[1050px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
                   >
                     <div className="grid grid-cols-3 gap-6">
@@ -658,9 +658,9 @@ const Header = () => {
 
                 {activeDropdown === 'resources' && (
                   <div
-                    ref={(el) => {
-                      dropdownRefs.current['resources'] = el;
-                    }}
+                    // ref={(el) => {
+                    //   dropdownRefs.current['resources'] = el;
+                    // }}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[700px] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
                   >
                     <div className="grid grid-cols-3 gap-6">
@@ -704,9 +704,9 @@ const Header = () => {
 
                 {activeDropdown === 'developer' && (
                   <div
-                    ref={(el) => {
-                      dropdownRefs.current['developer'] = el;
-                    }}
+                    // ref={(el) => {
+                    //   dropdownRefs.current['developer'] = el;
+                    // }}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
                   >
                     <div className="grid grid-cols-2 gap-6">
@@ -748,9 +748,9 @@ const Header = () => {
 
                 {activeDropdown === 'workspace' && (
                   <div
-                    ref={(el) => {
-                      dropdownRefs.current['workspace'] = el;
-                    }}
+                    // ref={(el) => {
+                    //   dropdownRefs.current['workspace'] = el;
+                    // }}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
                   >
                     <div className="grid grid-cols-2 gap-6">
@@ -891,7 +891,7 @@ const Header = () => {
                 <div className="px-3 py-2 space-y-2">
                   {isAuthenticated ? (
                     <>
-                      <div className="text-center py-2 text-primary-600 text-sm">Welcome, {user?.name}</div>
+                      <div className="text-center py-2 text-primary-600 text-sm">Welcome, {user?.fullname}</div>
                       <Link to="/dashboard" className="w-full text-center py-2 text-primary-600 font-medium block">Dashboard</Link>
                       <button
                         onClick={logout}

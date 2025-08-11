@@ -1,18 +1,14 @@
 import React from 'react';
-import { Bell, Search, User, Menu, LogOut } from 'lucide-react';
 import { useAuth } from '../AuthService/AuthContext';
+import { Bell, LogOut, Menu, Search, User } from 'lucide-react';
 
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
+const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const { user, logout } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -43,18 +39,18 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
           
           <div className="flex items-center space-x-3">
             <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+              <p className="text-sm font-medium text-gray-900">{user?.fullname || 'User'}</p>
               <p className="text-xs text-gray-500">Compliance Manager</p>
             </div>
             <div className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center">
               <User className="h-4 w-4 text-white" />
             </div>
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="p-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
               title="Logout"
             >
-              <LogOut className="h-4 w-4 text-gray-500" />
+              <span className="text-sm text-gray-600"><LogOut className='w-4 h-4'/></span>
             </button>
           </div>
         </div>
@@ -62,3 +58,5 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
     </header>
   );
 };
+
+export default Header;

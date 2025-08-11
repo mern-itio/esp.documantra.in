@@ -19,17 +19,17 @@ import {
 } from 'lucide-react';
 
 interface SidebarProps {
-  activeView: string;
-  setActiveView: (view: any) => void;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
+  activeView?: string;
+  setActiveView?: (view: any) => void;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  activeView, 
-  setActiveView, 
-  isOpen, 
-  setIsOpen 
+const Sidebar: React.FC<SidebarProps> = ({ 
+  activeView = 'dashboard', 
+  setActiveView = () => {}, 
+  isOpen = true, 
+  setIsOpen = () => {} 
 }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -103,3 +103,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </div>
   );
 };
+
+export default Sidebar;
