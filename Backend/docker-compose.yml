@@ -1,0 +1,45 @@
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    ports:
+      - "4000:4000"
+    volumes:
+    - ./services/auth-service:/app/services/auth-service:cached
+    - /app/services/auth-service/node_modules
+
+    command: npm run dev
+
+
+  pdf-service:
+    build:
+      context: .
+      dockerfile: services/pdf-service/Dockerfile
+    ports:
+      - "4001:4001"
+    volumes:
+    - ./services/pdf-service:/app/services/pdf-service:cached
+    - /app/services/pdf-service/node_modules
+    command: npm run dev
+  document-service:
+    build:
+      context: .
+      dockerfile: services/document-service/Dockerfile
+    ports:
+      - "4002:4002"
+    volumes:
+      - ./services/document-service:/app/services/document-service:cached
+      - /app/services/document-service/node_modules
+    command: npm run dev
+    
+  e-sign-service:
+    build:
+      context: .
+      dockerfile: services/e-sign-service/Dockerfile
+    ports:
+      - "4003:4003"
+    volumes:
+      - ./services/e-sign-service:/app/services/e-sign-service:cached
+      - /app/services/e-sign-service/node_modules
+    command: npm run dev
