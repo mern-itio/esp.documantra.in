@@ -3,8 +3,8 @@ import { API_CONFIG } from '../config/environment';
 // API Configuration
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: `${API_CONFIG.BASE_URL}/api/auth/login`,
-    REGISTER: `${API_CONFIG.BASE_URL}/api/auth/register`,
+    LOGIN: `${API_CONFIG.BASE_URL}/login`,
+    REGISTER: `${API_CONFIG.BASE_URL}/register`,
     STATUS: `${API_CONFIG.BASE_URL}/api/auth/status`,
   },
 };

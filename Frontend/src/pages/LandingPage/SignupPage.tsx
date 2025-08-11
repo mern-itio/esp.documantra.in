@@ -12,7 +12,7 @@ const SignupPage = () => {
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     firstName: '',
-    lastName: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -38,9 +38,9 @@ const SignupPage = () => {
     
     try {
       await signup({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        fullname: formData.firstName,
         email: formData.email,
+        phone: formData.phone,
         password: formData.password
       })
       navigate('/dashboard')
@@ -151,17 +151,17 @@ const SignupPage = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
                   </label>
                   <input
                     type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Last name"
+                    placeholder="Phone Number"
                     required
                   />
                 </div>
