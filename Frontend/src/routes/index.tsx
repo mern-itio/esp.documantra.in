@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthService/AuthContext';
 
@@ -148,11 +148,18 @@ import DashboardPage from '../pages/Dashboard/DashboardPage';
 import AuditTrailPage from '../pages/Dashboard/AuditTrailPage';
 import CompliancePage from '../pages/Dashboard/CompliancePage';
 import RiskManagementPage from '../pages/Dashboard/RiskManagementPage';
+import { useDocumentStore } from '../components/common/store/documentStore';
+import { EnhancedDocumentGrid } from '../components/DocumentService/documents/EnhancedDocumentGrid';
+import { DocumentList } from '../components/DocumentService/documents/DocumentList';
+import { EnhancedDocumentAnalytics } from '../components/DocumentService/analytics/EnhancedDocumentAnalytics';
+import { DocumentLayout } from '../components/DocumentService/layout/DocumentLayout';
+import { UploadModal } from '../components/DocumentService/modals/UploadModal';
+import { CollaborationHub } from '../components/DocumentService/collaboration/CollaborationHub';
 
 // Auth Route Wrapper
 const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
   const { isAuthenticated, loading } = useAuth();
-   
+
   if (loading) return null; // wait for auth state to load before redirecting
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
@@ -162,7 +169,50 @@ const GuestRoute = ({ children }: { children: React.ReactElement }) => {
   const { isAuthenticated } = useAuth();
   return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 };
+function DocumentView() {
+  const { viewMode } = useDocumentStore();
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
 
+  const handleDocumentAction = (action: string, document: any) => {
+    if (action === 'upload') {
+      setIsUploadModalOpen(true);
+    }
+  };
+
+  const handleDocumentSelect = (document: any) => {
+    setSelectedDocument(document);
+  };
+
+  return (
+    <>
+      {viewMode === 'grid' ? (
+        <EnhancedDocumentGrid 
+          onDocumentAction={handleDocumentAction}
+          onDocumentSelect={handleDocumentSelect}
+        />
+      ) : (
+        <DocumentList onDocumentSelect={handleDocumentSelect} />
+      )}
+      
+      {/* Upload Modal */}
+      {isUploadModalOpen && (
+        <UploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+        />
+      )}
+
+      {/* Collaboration Hub - Document Detail View */}
+      {selectedDocument && (
+        <CollaborationHub
+          document={selectedDocument}
+          onClose={() => setSelectedDocument(null)}
+        />
+      )}
+    </>
+  );
+}
 // Landing Page Layout Component
 const LandingPageLayout = () => (
   <div>
@@ -191,7 +241,7 @@ const guestRoutes = [
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
-   
+
   // PDF Tool Pages
   { path: '/pdf-to-word', element: <PDFToWordPage /> },
   { path: '/merge-pdf', element: <MergePDFPage /> },
@@ -314,6 +364,22 @@ const authRoutes = [
   { path: '/audit-trail', element: <AuditTrailPage /> },
   { path: '/compliance', element: <CompliancePage /> },
   { path: '/risk-management', element: <RiskManagementPage /> },
+  { 
+    path: '/all-documents', 
+    element: (
+      <DocumentLayout>
+        <DocumentView />
+      </DocumentLayout>
+    ) 
+  },
+  { 
+    path: '/analytics', 
+    element: (
+      <DocumentLayout>
+        <EnhancedDocumentAnalytics />
+      </DocumentLayout>
+    ) 
+  },
 ];
 
 const router = createBrowserRouter([
