@@ -28,5 +28,5 @@ app.get('/health', (req, res) => {
 
 
 // Start server
-const PORT = process.env.PORT || 4002;
-app.listen(PORT, () => console.log(`Document Service running on http://localhost:${PORT}/`));
+const PORT = process.env.PORT || 2102;
+app.listen(PORT, () => console.log(`Document Service running on ${PORT}/`));
