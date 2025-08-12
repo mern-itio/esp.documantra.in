@@ -40,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
           <div className="flex items-center space-x-3">
             <div className="text-right">
               <p className="text-sm font-medium text-gray-900">{user?.fullname || 'User'}</p>
-              <p className="text-xs text-gray-500">Compliance Manager</p>
+              {/* <p className="text-xs text-gray-500">Compliance Manager</p> */}
             </div>
             <div className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center">
               <User className="h-4 w-4 text-white" />
