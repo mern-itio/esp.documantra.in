@@ -1,8 +1,8 @@
-import React from 'react';
-import { useDocumentStore } from '../../store/documentStore';
+
 import { DocumentCard } from './DocumentCard';
 import { EmptyState } from '../common/EmptyState';
 import { FileText } from 'lucide-react';
+import { useDocumentStore } from '../../common/store/documentStore';
 
 export function DocumentGrid() {
   const { 
@@ -71,7 +71,7 @@ export function DocumentGrid() {
 
       {/* Document Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {documents.map((document) => (
+        {documents.map((document: any) => (
           <DocumentCard
             key={document.id}
             document={document}

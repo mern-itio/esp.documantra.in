@@ -1,11 +1,15 @@
-import React from 'react';
 import { User, Shield, Crown } from 'lucide-react';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { cn } from '../../common/lib/utils';
 import { Button } from '../ui/button';
 import type { UserRole } from '../../common/types';
 
-const roleConfig = {
+const roleConfig: Record<UserRole, {
+  label: string;
+  icon: typeof User;
+  color: string;
+  bgColor: string;
+}> = {
   regular: {
     label: 'Regular User',
     icon: User,
@@ -28,6 +32,11 @@ const roleConfig = {
 
 export function RoleSwitcher() {
   const { currentUser, setCurrentUser } = useDocumentStore();
+  
+  if (!currentUser) {
+    return null; // or return a loading state
+  }
+  
   const currentRole = roleConfig[currentUser.role];
   const CurrentIcon = currentRole.icon;
 
@@ -67,7 +76,7 @@ export function RoleSwitcher() {
                 isActive && "shadow-sm",
                 !isActive && "hover:bg-white"
               )}
-              onClick={() => setCurrentUser(role as UserRole)}
+              onClick={() => setCurrentUser({ ...currentUser, role: role as UserRole })}
               title={config.label}
             >
               <Icon className="w-4 h-4" />

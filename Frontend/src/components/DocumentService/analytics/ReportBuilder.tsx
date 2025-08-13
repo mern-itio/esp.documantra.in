@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   BarChart3, 
   Download, 
   Calendar, 
-  Filter, 
   Settings,
   Plus,
   Trash2,
@@ -181,7 +180,8 @@ export function ReportBuilder({
                     value={report.name}
                     onChange={(e) => setReport(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter report name..."
-                    size="sm"
+                    // size="sm"
+                      className="h-8 px-2 text-sm"
                   />
                 </div>
                 <div>

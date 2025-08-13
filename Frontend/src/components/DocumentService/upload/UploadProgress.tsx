@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircle, XCircle, FileText, X } from 'lucide-react';
 import type { UploadProgress as UploadProgressType } from '../../common/types';
 import { Button } from '../ui/button';

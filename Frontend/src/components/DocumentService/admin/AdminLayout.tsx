@@ -11,9 +11,10 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { useDocumentStore } from '../../store/documentStore';
+// import { useDocumentStore } from '../../store/documentStore';
 import { Button } from '../ui/button';
-import { cn } from '../../lib/utils';
+import { useDocumentStore } from '../../common/store/documentStore';
+import { cn } from '../../common/lib/utils';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -70,7 +71,7 @@ export function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutPro
   const { currentUser } = useDocumentStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'team_admin') {
+  if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'team_admin') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

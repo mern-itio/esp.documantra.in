@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Users, 
   MessageCircle, 
@@ -9,11 +9,11 @@ import {
   Eye,
   Edit3
 } from 'lucide-react';
-import { useCollaborationStore } from '../../store/collaborationStore';
-import { useDocumentStore } from '../../store/documentStore';
-import { formatDate } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
+import { useDocumentStore } from '../../common/store/documentStore';
+import { useCollaborationStore } from '../../common/store/collaborationStore';
+import { formatDate } from '../../common/lib/utils';
 
 export function CollaborationMonitor() {
   const { currentUser } = useDocumentStore();
@@ -22,14 +22,14 @@ export function CollaborationMonitor() {
     comments, 
     versions, 
     workflows,
-    getDocumentComments,
-    getDocumentVersions,
-    getActiveUsers
+    // getDocumentComments,
+    // getDocumentVersions,
+    // getActiveUsers
   } = useCollaborationStore();
   
   const [timeRange, setTimeRange] = useState('24h');
 
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'team_admin') {
+  if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'team_admin') {
     return (
       <div className="p-8 text-center">
         <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />

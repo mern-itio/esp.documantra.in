@@ -60,7 +60,9 @@ export function EnhancedDocumentAnalytics() {
       change: '+23%'
     }
   ];
-
+  if (!currentUser) {
+    return null; // or return a loading state
+  }
   if (!userPermissions.analytics) {
     return (
       <div className="p-8 text-center">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   HardDrive, 
   Users, 
@@ -9,15 +9,17 @@ import {
   Download,
   Trash2
 } from 'lucide-react';
-import { useDocumentStore } from '../../store/documentStore';
-import { formatFileSize } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
+import { useDocumentStore } from '../../common/store/documentStore';
+import { formatFileSize } from '../../common/lib/utils';
 
 export function StorageManager() {
   const { documents, currentUser } = useDocumentStore();
   const [selectedTimeRange, setSelectedTimeRange] = useState('30d');
-
+  if (!currentUser) {
+    return null; // or return a loading state
+  }
   if (currentUser.role !== 'super_admin' && currentUser.role !== 'team_admin') {
     return (
       <div className="p-8 text-center">
@@ -282,7 +284,7 @@ export function StorageManager() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {organizationData.map((org, index) => (
+              {organizationData.map((org) => (
                 <div key={org.name} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div>

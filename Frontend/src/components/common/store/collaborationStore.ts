@@ -33,7 +33,7 @@ interface CollaborationState {
   isCreatingWorkflow: boolean;
   
   // Actions
-  joinCollaboration: (documentId: string, user: CollaborativeUser) => void;
+  // joinCollaboration: (documentId: string, user: CollaborativeUser) => void;
   leaveCollaboration: (documentId: string, userId: string) => void;
   updateUserPresence: (userId: string, presence: Partial<CollaborativeUser>) => void;
   
@@ -70,13 +70,13 @@ export const useCollaborationStore = create<CollaborationState>((set, get) => ({
   isCreatingWorkflow: false,
 
   // Real-time collaboration actions
-  joinCollaboration: (documentId: string, user: CollaborativeUser) => {
-    set(state => ({
-      activeUsers: [...state.activeUsers.filter(u => u.id !== user.id), user]
-    }));
-  },
+  // joinCollaboration: (documentId: string, user: CollaborativeUser) => {
+  //   set(state => ({
+  //     activeUsers: [...state.activeUsers.filter(u => u.id !== user.id), user]
+  //   }));
+  // },
 
-  leaveCollaboration: (documentId: string, userId: string) => {
+  leaveCollaboration: ( userId: string) => {
     set(state => ({
       activeUsers: state.activeUsers.filter(u => u.id !== userId)
     }));
@@ -276,7 +276,7 @@ export const useCollaborationStore = create<CollaborationState>((set, get) => ({
     return get().workflows.filter(workflow => workflow.documentId === documentId);
   },
 
-  getActiveUsers: (documentId: string) => {
+  getActiveUsers: () => {
     return get().activeUsers;
   }
 }));

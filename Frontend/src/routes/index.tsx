@@ -183,7 +183,7 @@ function DocumentView() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
 
-  const handleDocumentAction = (action: string, document: any) => {
+  const handleDocumentAction = (action: string) => {
     if (action === 'upload') {
       setIsUploadModalOpen(true);
     }

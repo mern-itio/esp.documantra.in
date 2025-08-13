@@ -29,7 +29,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
     addComment,
     resolveComment,
     addCommentReply,
-    createVersion,
+    // createVersion,
     compareVersions,
     restoreVersion,
     createWorkflow,

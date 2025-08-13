@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Folder, Plus, Search, Star, Archive, Trash2, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useDocumentStore } from '../../common/store/documentStore';
