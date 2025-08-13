@@ -17,7 +17,8 @@ export interface CollaborativeUser {
 }
 
 export interface DocumentComment {
-  id: string;
+  id?: string; // Optional for frontend compatibility
+  _id?: string; // MongoDB _id field
   documentId: string;
   author: string;
   authorName: string;
@@ -36,7 +37,8 @@ export interface DocumentComment {
 }
 
 export interface CommentReply {
-  id: string;
+  id?: string; // Optional for frontend compatibility
+  _id?: string; // MongoDB _id field
   author: string;
   authorName: string;
   authorAvatar: string;
@@ -54,12 +56,16 @@ export interface CommentAttachment {
 }
 
 export interface DocumentVersion {
-  id: string;
+  id?: string; // Optional for frontend compatibility
+  _id?: string; // MongoDB _id field
   documentId: string;
   version: string;
+  content?: string;
   author: string;
   authorName: string;
-  timestamp: string;
+  timestamp?: string; // Make optional since it might be undefined
+  createdAt?: string; // MongoDB createdAt field
+  updatedAt?: string; // MongoDB updatedAt field
   changes: {
     additions: number;
     deletions: number;

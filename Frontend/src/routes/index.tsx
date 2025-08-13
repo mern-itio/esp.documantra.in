@@ -155,6 +155,9 @@ import { EnhancedDocumentAnalytics } from '../components/DocumentService/analyti
 import { DocumentLayout } from '../components/DocumentService/layout/DocumentLayout';
 import { UploadModal } from '../components/DocumentService/modals/UploadModal';
 import { CollaborationHub } from '../components/DocumentService/collaboration/CollaborationHub';
+
+import { SharedDocumentsPage } from '../pages/DocumentService/SharedDocumentsPage';
+
 // E-Signature Pages Started
 import EsignDashboard from '../pages/eSign/Dashboard';
 import EsignEnvelopeCreator from '../pages/eSign/EnvelopeCreator';
@@ -165,6 +168,7 @@ import EsignSettings from '../pages/eSign/Settings';
 import EsignEnterpriseSettings from '../pages/eSign/EnterpriseSettings';
 import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
 // E-Signature Pages Ended
+
 // Auth Route Wrapper
 const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -386,6 +390,14 @@ const authRoutes = [
     element: (
       <DocumentLayout>
         <DocumentView />
+      </DocumentLayout>
+    ) 
+  },
+  { 
+    path: '/documents/shared', 
+    element: (
+      <DocumentLayout>
+        <SharedDocumentsPage />
       </DocumentLayout>
     ) 
   },

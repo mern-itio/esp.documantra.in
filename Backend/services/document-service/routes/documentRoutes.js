@@ -117,6 +117,7 @@ router.get('/:id', documentController.getDocument);
 router.put('/:id', documentController.updateDocument);
 router.delete('/:id', documentController.deleteDocument);
 router.post('/:id/download', documentController.downloadDocument);
+router.post('/:id/share', documentController.shareDocument);
 router.post('/bulk-delete', documentController.bulkDeleteDocuments);
 
 module.exports = router;

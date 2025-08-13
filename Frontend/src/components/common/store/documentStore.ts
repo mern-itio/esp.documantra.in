@@ -37,7 +37,7 @@ interface DocumentState {
   createFolder: (name: string, parentId?: string) => Promise<void>;
   deleteDocuments: (documentIds: string[]) => Promise<void>;
   moveDocuments: (documentIds: string[], folderId: string) => Promise<void>;
-  shareDocument: (documentId: string, email: string, permission: string) => Promise<void>;
+  shareDocument: (documentId: string, email: string, permission: 'view' | 'edit' | 'comment', message?: string) => Promise<void>;
   toggleFavorite: (documentId: string) => Promise<void>;
   setSelectedDocuments: (documentIds: string[]) => void;
   setCurrentFolder: (folderId: string | null) => Promise<void>;
@@ -404,29 +404,16 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
   },
 
-  shareDocument: async (documentId: string, email: string, permission: string) => {
+  shareDocument: async (documentId: string, email: string, permission: 'view' | 'edit' | 'comment', message?: string) => {
     try {
-      // For now, just update local state
-      // TODO: Implement sharing API endpoint
-      set((state: any) => ({
-        documents: state.documents.map((doc: any) =>
-          doc.id === documentId
-            ? {
-              ...doc,
-              shared: true,
-              sharedWith: [
-                ...doc.sharedWith,
-                {
-                  userId: generateId(),
-                  email,
-                  permission: permission as any,
-                  createdAt: new Date().toISOString()
-                }
-              ]
-            }
-            : doc
-        )
-      }));
+      const response = await documentAPI.shareDocument(documentId, email, permission, message);
+      
+      if (response.success) {
+        // Refresh data to get updated document state
+        await get().refreshData();
+      } else {
+        throw new Error(response.message || 'Failed to share document');
+      }
     } catch (error: any) {
       console.error('Failed to share document:', error);
       throw error;
@@ -457,7 +444,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   setSelectedDocuments: (documentIds: string[]) => {
+    console.log('🔍 Store - setSelectedDocuments called with:', documentIds);
+    console.log('🔍 Store - Previous state:', get().selectedDocuments);
     set({ selectedDocuments: documentIds });
+    console.log('🔍 Store - New state:', get().selectedDocuments);
   },
 
   setCurrentFolder: async (folderId: string | null) => {

@@ -3,6 +3,7 @@ import { X, Plus, Trash2, ArrowDown, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import type { DocumentWorkflow, WorkflowStep } from '../../common/types/collaboration';
+import { useAuth } from '../../AuthService/AuthContext';
 
 interface WorkflowDesignerProps {
   documentId: string;
@@ -11,6 +12,7 @@ interface WorkflowDesignerProps {
 }
 
 export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesignerProps) {
+  const { user } = useAuth();
   const [workflowName, setWorkflowName] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [deadline, setDeadline] = useState('');
@@ -25,6 +27,8 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
       currentApprovals: 0
     }
   ]);
+
+
 
   const addStep = () => {
     setSteps([
@@ -48,9 +52,11 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
   };
 
   const updateStep = (index: number, field: string, value: any) => {
-    const updatedSteps = [...steps];
-    updatedSteps[index] = { ...updatedSteps[index], [field]: value };
-    setSteps(updatedSteps);
+    setSteps(prevSteps => {
+      const updatedSteps = [...prevSteps];
+      updatedSteps[index] = { ...updatedSteps[index], [field]: value };
+      return updatedSteps;
+    });
   };
 
   const handleSave = () => {
@@ -67,7 +73,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
         ...step,
         id: `step-${index + 1}`
       })),
-      createdBy: 'current-user@example.com',
+      createdBy: user?.email || 'unknown@example.com',
       priority,
       deadline: deadline || undefined
     };
@@ -149,7 +155,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
 
             <div className="space-y-4">
               {steps.map((step, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div key={`step-${index}`} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-sm font-medium">
@@ -200,13 +206,26 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                       <Input
                         value={step.assignee}
                         onChange={(e) => {
-                          updateStep(index, 'assignee', e.target.value);
-                          updateStep(index, 'assigneeName', e.target.value.split('@')[0]);
+                          const email = e.target.value;
+                          const name = email.includes('@') ? email.split('@')[0] : email;
+                          updateStep(index, 'assignee', email);
+                          updateStep(index, 'assigneeName', name);
                         }}
                         placeholder="assignee@example.com"
                         type="email"
                       />
                     </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Assignee Display Name
+                    </label>
+                    <Input
+                      value={step.assigneeName}
+                      onChange={(e) => updateStep(index, 'assigneeName', e.target.value)}
+                      placeholder="Enter display name (optional)"
+                    />
                   </div>
 
                   <div className="mt-3">

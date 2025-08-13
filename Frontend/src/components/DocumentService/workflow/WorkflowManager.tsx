@@ -15,6 +15,8 @@ import { Button } from '../ui/button';
 import { WorkflowDesigner } from './WorkflowDesigner';
 import type { DocumentWorkflow } from '../../common/types/collaboration';
 import { formatDate } from '../../common/lib/utils';
+import { workflowAPI } from '../../../services/api';
+import { useAuth } from '../../AuthService/AuthContext';
 
 interface WorkflowManagerProps {
   documentId: string;
@@ -33,6 +35,8 @@ export function WorkflowManager({
 }: WorkflowManagerProps) {
   const [showDesigner, setShowDesigner] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -72,6 +76,58 @@ export function WorkflowManager({
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Handle workflow creation with real API
+  const handleWorkflowCreate = async (workflow: Omit<DocumentWorkflow, 'id' | 'createdAt'>) => {
+    try {
+      setIsLoading(true);
+      const response = await workflowAPI.createWorkflow(documentId, workflow);
+      
+      if (response.success) {
+        console.log('✅ Workflow created successfully:', response.data);
+        // Call the parent callback to refresh workflows
+        if (onWorkflowCreate) {
+          await onWorkflowCreate(workflow);
+        }
+        setShowDesigner(false);
+      } else {
+        console.error('❌ Failed to create workflow:', response.message);
+        alert(`Failed to create workflow: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error creating workflow:', error);
+      alert('An error occurred while creating the workflow');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle workflow step completion with real API
+  const handleStepComplete = async (workflowId: string, stepId: string, status: string, comments?: string) => {
+    try {
+      setIsLoading(true);
+      const response = await workflowAPI.completeWorkflowStep(workflowId, stepId, {
+        status: status as 'pending' | 'in_progress' | 'completed' | 'rejected',
+        comments
+      });
+      
+      if (response.success) {
+        console.log('✅ Workflow step completed successfully:', response.data);
+        // Call the parent callback to refresh workflows
+        if (onStepComplete) {
+          await onStepComplete(workflowId, stepId);
+        }
+      } else {
+        console.error('❌ Failed to complete workflow step:', response.message);
+        alert(`Failed to complete step: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error completing workflow step:', error);
+      alert('An error occurred while completing the step');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -232,14 +288,56 @@ export function WorkflowManager({
                         </div>
                       </div>
 
-                      {step.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          onClick={() => onStepComplete(workflow.id, step.id)}
-                        >
-                          Complete
-                        </Button>
-                      )}
+                      {/* Step Actions */}
+                      <div className="flex items-center space-x-2">
+                        {step.status === 'pending' && step.assignee === user?.email && (
+                          <div className="flex space-x-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStepComplete(workflow.id, step.id, 'in_progress')}
+                              disabled={isLoading}
+                            >
+                              Start
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleStepComplete(workflow.id, step.id, 'completed')}
+                              disabled={isLoading}
+                            >
+                              Complete
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {step.status === 'in_progress' && step.assignee === user?.email && (
+                          <div className="flex space-x-1">
+                            <Button
+                              size="sm"
+                              onClick={() => handleStepComplete(workflow.id, step.id, 'completed')}
+                              disabled={isLoading}
+                            >
+                              Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStepComplete(workflow.id, step.id, 'rejected')}
+                              disabled={isLoading}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {step.status === 'completed' && (
+                          <span className="text-green-600 text-sm font-medium">✓ Completed</span>
+                        )}
+                        
+                        {step.status === 'rejected' && (
+                          <span className="text-red-600 text-sm font-medium">✗ Rejected</span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -254,7 +352,7 @@ export function WorkflowManager({
         <WorkflowDesigner
           documentId={documentId}
           onClose={() => setShowDesigner(false)}
-          onSave={onWorkflowCreate}
+          onSave={handleWorkflowCreate}
         />
       )}
     </div>

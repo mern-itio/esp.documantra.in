@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  MoreVertical, 
-  Download, 
-  Share2, 
-  Star, 
+import {
+  MoreVertical,
+  Download,
+  Share2,
+  Star,
   StarOff,
   Eye,
   Move,
@@ -27,7 +27,7 @@ interface DocumentCardProps {
 
 const getFileTypeIcon = (type: string) => {
   const lowerType = type.toLowerCase();
-  
+
   if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType)) {
     return Image;
   }
@@ -42,20 +42,20 @@ const getFileTypeIcon = (type: string) => {
 
 const getFileTypeColor = (type: string) => {
   const lowerType = type.toLowerCase();
-  
+
   if (['pdf'].includes(lowerType)) return 'text-red-600 bg-red-50';
   if (['doc', 'docx'].includes(lowerType)) return 'text-blue-600 bg-blue-50';
   if (['xls', 'xlsx', 'csv'].includes(lowerType)) return 'text-green-600 bg-green-50';
   if (['ppt', 'pptx'].includes(lowerType)) return 'text-orange-600 bg-orange-50';
   if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType)) return 'text-purple-600 bg-purple-50';
-  
+
   return 'text-gray-600 bg-gray-50';
 };
 
 export function DocumentCard({ document, isSelected, onSelect, onClick }: DocumentCardProps) {
   const { toggleFavorite, userPermissions } = useDocumentStore();
   const [showActions, setShowActions] = useState(false);
-  
+
   const FileIcon = getFileTypeIcon(document.type);
   const fileTypeColor = getFileTypeColor(document.type);
 
@@ -68,8 +68,9 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
     if (onClick) {
       onClick(document);
     } else {
-      // Fallback: Preview document
-      console.log('Preview document:', document.id);
+      // This will be handled by the parent component (DocumentView)
+      // The onClick prop should be passed from DocumentView to open CollaborationHub
+      console.log('Document clicked, should open in CollaborationHub:', document.id);
     }
   };
 
@@ -86,9 +87,13 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
         <input
           type="checkbox"
           checked={isSelected}
+          onClick={(e) => e.stopPropagation()} // 👈 stops modal trigger
           onChange={(e) => {
-            e.stopPropagation();
+            console.log('🔍 Checkbox changed:', document.id, e.target.checked);
+            console.log('🔍 onSelect function:', typeof onSelect);
+            console.log('🔍 Calling onSelect with:', e.target.checked);
             onSelect(e.target.checked);
+            console.log('🔍 onSelect called successfully');
           }}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
@@ -108,7 +113,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
           >
             <MoreVertical className="w-3 h-3" />
           </Button>
-          
+
           {showActions && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
               <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
@@ -153,12 +158,12 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
           <h3 className="text-sm font-medium text-gray-900 truncate" title={document.name}>
             {document.name}
           </h3>
-          
+
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{formatFileSize(document.size)}</span>
             <span>{document.type.toUpperCase()}</span>
           </div>
-          
+
           <p className="text-xs text-gray-500">
             {formatDate(document.modifiedAt)}
           </p>
@@ -196,7 +201,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
               </div>
             )}
           </div>
-          
+
           <button
             onClick={handleFavoriteToggle}
             className="p-1 hover:bg-gray-100 rounded transition-colors"

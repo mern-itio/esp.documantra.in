@@ -41,7 +41,7 @@ interface CollaborationState {
   resolveComment: (commentId: string) => void;
   addCommentReply: (commentId: string, reply: any) => Promise<void>;
   
-  createVersion: (version: Omit<DocumentVersion, 'id' | 'timestamp'>) => Promise<void>;
+  createVersion: (documentId: string, version: Omit<DocumentVersion, 'id' | 'timestamp'>) => Promise<void>;
   compareVersions: (fromVersionId: string, toVersionId: string) => any;
   restoreVersion: (versionId: string) => Promise<void>;
   
@@ -134,9 +134,9 @@ export const useCollaborationStore = create<CollaborationState>((set, get) => ({
   },
 
   // Version control actions
-  createVersion: async (version: Omit<DocumentVersion, 'id' | 'timestamp'>) => {
+  createVersion: async (documentId: string, version: Omit<DocumentVersion, 'id' | 'timestamp'>) => {
     await sleep(1000);
-    
+    console.log("Creating version for document:", documentId);
     const newVersion: DocumentVersion = {
       ...version,
       id: generateId(),
