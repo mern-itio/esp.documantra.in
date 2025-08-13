@@ -42,7 +42,7 @@ export function PresenceIndicator({ users, maxVisible = 5 }: PresenceIndicatorPr
           )}
 
           {/* Tooltip */}
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+          <div className="absolute bottom-top left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
             {user.name}
             {user.isTyping && (
               <span className="block text-green-300">typing...</span>

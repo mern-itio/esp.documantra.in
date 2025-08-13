@@ -15,10 +15,17 @@ export function DocumentGrid() {
   const documents = getFilteredDocuments();
 
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {
+    console.log('🔍 Document selection changed:', documentId, isSelected);
+    console.log('🔍 Current selected documents:', selectedDocuments);
+    
     if (isSelected) {
-      setSelectedDocuments([...selectedDocuments, documentId]);
+      const newSelection = [...selectedDocuments, documentId];
+      console.log('🔍 Adding to selection:', newSelection);
+      setSelectedDocuments(newSelection);
     } else {
-      setSelectedDocuments(selectedDocuments.filter(id => id !== documentId));
+      const newSelection = selectedDocuments.filter(id => id !== documentId);
+      console.log('🔍 Removing from selection:', newSelection);
+      setSelectedDocuments(newSelection);
     }
   };
 

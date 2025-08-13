@@ -1,7 +1,7 @@
 import { API_CONFIG } from '../config/environment';
 
 // Base API configuration for document service
-const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:4002';
+const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:2102';
 
 // API Configuration
 export const API_ENDPOINTS = {
@@ -40,12 +40,12 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
 
 // Helper function to get auth token for document service
 const getDocumentAuthToken = (): string | null => {
-  // Check multiple possible token locations
   const token = 
     localStorage.getItem('accessToken') || // Check accessToken first (as used in auth API)
-    localStorage.getItem('token') || // Check for generic token
-    localStorage.getItem('userToken') || // Check for userToken
+    // localStorage.getItem('token') || // Check for generic token
+    localStorage.getItem('userData') || // Check for userToken
     (() => {
+      
       // Check if token is stored in userData
       const userData = localStorage.getItem('userData');
       if (userData) {
@@ -170,6 +170,7 @@ export const documentAPI = {
     tags?: string;
     isFavorite?: boolean;
     isArchived?: boolean;
+    content?: string;
   }) => {
     return makeDocumentRequest(`/api/documents/${id}`, {
       method: 'PUT',
@@ -209,6 +210,205 @@ export const documentAPI = {
     return makeDocumentRequest('/api/documents/bulk-delete', {
       method: 'POST',
       body: JSON.stringify({ documentIds }),
+    });
+  },
+
+  // Share document with collaborator
+  shareDocument: async (documentId: string, email: string, permission: 'view' | 'edit' | 'comment', message?: string) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/share`, {
+      method: 'POST',
+      body: JSON.stringify({ email, permission, message }),
+    });
+  },
+};
+
+// Comment Management API
+export const commentAPI = {
+  // Get document comments
+  getDocumentComments: async (documentId: string) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/comments`);
+  },
+
+  // Create comment
+  createComment: async (documentId: string, comment: {
+    content: string;
+    position?: { page: number; x: number; y: number };
+    mentions?: string[];
+    attachments?: any[];
+  }) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(comment),
+    });
+  },
+
+  // Update comment
+  updateComment: async (commentId: string, updates: {
+    content?: string;
+    position?: { page: number; x: number; y: number };
+    mentions?: string[];
+    attachments?: any[];
+  }) => {
+    return makeDocumentRequest(`/api/comments/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete comment
+  deleteComment: async (commentId: string) => {
+    return makeDocumentRequest(`/api/comments/${commentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Toggle comment resolution
+  toggleCommentResolution: async (commentId: string, resolved: boolean) => {
+    return makeDocumentRequest(`/api/comments/${commentId}/resolve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ resolved }),
+    });
+  },
+
+  // Add reply to comment
+  addCommentReply: async (commentId: string, reply: {
+    content: string;
+    mentions?: string[];
+  }) => {
+    return makeDocumentRequest(`/api/comments/${commentId}/replies`, {
+      method: 'POST',
+      body: JSON.stringify(reply),
+    });
+  },
+
+  // Update reply
+  updateCommentReply: async (commentId: string, replyId: string, updates: {
+    content?: string;
+    mentions?: string[];
+  }) => {
+    return makeDocumentRequest(`/api/comments/${commentId}/replies/${replyId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete reply
+  deleteCommentReply: async (commentId: string, replyId: string) => {
+    return makeDocumentRequest(`/api/comments/${commentId}/replies/${replyId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Version Management API
+export const versionAPI = {
+  // Get document versions
+  getDocumentVersions: async (documentId: string) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/versions`);
+  },
+
+  // Create new version
+  createVersion: async (documentId: string, version: {
+    content?: string;
+    description?: string;
+    changes?: {
+      additions: number;
+      deletions: number;
+      modifications: number;
+    };
+  }) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/versions`, {
+      method: 'POST',
+      body: JSON.stringify(version),
+    });
+  },
+
+  // Get specific version
+  getVersion: async (versionId: string) => {
+    return makeDocumentRequest(`/api/versions/${versionId}`);
+  },
+
+  // Update version metadata
+  updateVersion: async (versionId: string, updates: {
+    tags?: string[];
+    approved?: boolean;
+    description?: string;
+  }) => {
+    return makeDocumentRequest(`/api/versions/${versionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete version
+  deleteVersion: async (versionId: string) => {
+    return makeDocumentRequest(`/api/versions/${versionId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Compare two versions
+  compareVersions: async (fromVersionId: string, toVersionId: string) => {
+    return makeDocumentRequest(`/api/versions/${fromVersionId}/compare/${toVersionId}`);
+  },
+};
+
+// Workflow Management API
+export const workflowAPI = {
+  // Get document workflows
+  getDocumentWorkflows: async (documentId: string) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/workflows`);
+  },
+
+  // Create new workflow
+  createWorkflow: async (documentId: string, workflow: {
+    name: string;
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    deadline?: string;
+    steps: Array<{
+      name: string;
+      description: string;
+      assignee: string;
+      assigneeName: string;
+      dueDate?: string;
+      requiredApprovals: number;
+    }>;
+    metadata?: any;
+  }) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/workflows`, {
+      method: 'POST',
+      body: JSON.stringify(workflow),
+    });
+  },
+
+  // Get specific workflow
+  getWorkflow: async (workflowId: string) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}`);
+  },
+
+  // Update workflow
+  updateWorkflow: async (workflowId: string, updates: any) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Complete workflow step
+  completeWorkflowStep: async (workflowId: string, stepId: string, data: {
+    status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+    comments?: string;
+  }) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/complete`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete workflow
+  deleteWorkflow: async (workflowId: string) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}`, {
+      method: 'DELETE',
     });
   },
 };

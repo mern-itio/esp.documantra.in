@@ -32,6 +32,7 @@ export interface Document {
   createdAt: string;
   modifiedAt: string;
   uploadedBy: string;
+  ownerId?: string; // Document owner ID (can be same as uploadedBy)
   folderId: string | null;
   tags: string[];
   shared: boolean;
