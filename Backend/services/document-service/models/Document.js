@@ -65,6 +65,12 @@ const documentSchema = new mongoose.Schema({
     trim: true
   }],
   
+  // Document Content (for text-based documents)
+  content: {
+    type: String,
+    default: ''
+  },
+  
   // Status & Flags
   isArchived: {
     type: Boolean,

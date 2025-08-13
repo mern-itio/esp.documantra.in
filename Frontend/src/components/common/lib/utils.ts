@@ -15,14 +15,31 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+export function formatDate(date: string | Date | undefined | null): string {
+  try {
+    // Handle undefined, null, or empty values
+    if (!date) {
+      return 'No date available';
+    }
+    
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return 'Invalid Date';
+    }
+    
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error, 'Date value:', date);
+    return 'Invalid Date';
+  }
 }
 
 export function getFileIcon(type: string): string {

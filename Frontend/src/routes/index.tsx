@@ -155,6 +155,7 @@ import { EnhancedDocumentAnalytics } from '../components/DocumentService/analyti
 import { DocumentLayout } from '../components/DocumentService/layout/DocumentLayout';
 import { UploadModal } from '../components/DocumentService/modals/UploadModal';
 import { CollaborationHub } from '../components/DocumentService/collaboration/CollaborationHub';
+import { SharedDocumentsPage } from '../pages/DocumentService/SharedDocumentsPage';
 
 // Auth Route Wrapper
 const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
@@ -369,6 +370,14 @@ const authRoutes = [
     element: (
       <DocumentLayout>
         <DocumentView />
+      </DocumentLayout>
+    ) 
+  },
+  { 
+    path: '/documents/shared', 
+    element: (
+      <DocumentLayout>
+        <SharedDocumentsPage />
       </DocumentLayout>
     ) 
   },

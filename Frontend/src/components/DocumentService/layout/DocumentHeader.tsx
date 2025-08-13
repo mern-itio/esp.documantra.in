@@ -21,6 +21,7 @@ import { BreadcrumbNavigation } from '../common/BreadcrumbNavigation';
 import { UploadModal } from '../modals/UploadModal';
 import { SearchModal } from '../modals/SearchModal';
 import { CreateFolderModal } from '../modals/CreateFolderModal';
+import { ShareModal } from '../modals/ShareModal';
 import { useDocumentStore } from '../../common/store/documentStore';
 
 export function DocumentHeader() {
@@ -37,13 +38,22 @@ export function DocumentHeader() {
     isLoading
   } = useDocumentStore();
 
+  // Debug logging for selection
+  // console.log('🔍 DocumentHeader - selectedDocuments:', selectedDocuments);
+  // console.log('🔍 DocumentHeader - hasSelection:', selectedDocuments.length > 0);
+  // console.log('🔍 DocumentHeader - store state:', useDocumentStore.getState());
+
   const [showUpload, setShowUpload] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const hasSelection = selectedDocuments.length > 0;
+  
+  // Debug logging for hasSelection
+  console.log('🔍 DocumentHeader - hasSelection calculated:', hasSelection);
 
   const handleSortToggle = () => {
     setSorting(sortBy, sortOrder === 'asc' ? 'desc' : 'asc');
@@ -107,6 +117,8 @@ export function DocumentHeader() {
 
         {/* Right side - Actions */}
         <div className="flex items-center space-x-2">
+              
+          
           {/* Bulk Actions (when documents are selected) */}
           {hasSelection && (
             <div className="flex items-center space-x-2 mr-4 px-3 py-1 bg-blue-50 rounded-lg">
@@ -114,7 +126,12 @@ export function DocumentHeader() {
                 {selectedDocuments.length} selected
               </span>
               <div className="flex items-center space-x-1">
-                <Button size="sm" variant="ghost" className="h-7 px-2">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-7 px-2 hover:bg-blue-50 hover:text-blue-700"
+                  onClick={() => setShowShareModal(true)}
+                >
                   <Share2 className="w-3 h-3" />
                 </Button>
                 <Button size="sm" variant="ghost" className="h-7 px-2">
@@ -224,6 +241,12 @@ export function DocumentHeader() {
       <CreateFolderModal
         isOpen={showCreateFolder}
         onClose={() => setShowCreateFolder(false)}
+      />
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        selectedDocuments={selectedDocuments}
       />
     </div>
   );

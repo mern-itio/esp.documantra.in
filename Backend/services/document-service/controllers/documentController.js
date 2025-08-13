@@ -5,6 +5,51 @@ const path = require('path');
 const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
 
+// Helper function to extract text content from different file types
+const extractFileContent = async (filePath, mimeType) => {
+  try {
+    const fileExtension = path.extname(filePath).toLowerCase();
+    
+    // For text files, read directly
+    if (['.txt', '.md', '.html', '.json', '.xml', '.csv', '.js', '.ts', '.py', '.java', '.cpp', '.c'].includes(fileExtension)) {
+      const content = await fs.promises.readFile(filePath, 'utf8');
+      return content;
+    }
+    
+    // For PDF files - extract actual text content
+    if (fileExtension === '.pdf') {
+      try {
+        const pdfParse = require('pdf-parse');
+        const dataBuffer = await fs.promises.readFile(filePath);
+        const data = await pdfParse(dataBuffer);
+        return `\n\n${data.text}\n\n---\nPages: ${data.numpages}\nFile: ${path.basename(filePath)}`;
+      } catch (pdfError) {
+        console.error('PDF parsing error:', pdfError);
+        return `[PDF Document Content]\n\nUnable to extract text from PDF. This might be a scanned document or image-based PDF.\n\nFile: ${path.basename(filePath)}\nError: ${pdfError.message}`;
+      }
+    }
+    
+    // For DOC/DOCX files - extract actual text content
+    if (['.doc', '.docx'].includes(fileExtension)) {
+      try {
+        const mammoth = require('mammoth');
+        const result = await mammoth.extractRawText({ path: filePath });
+        return `[Word Document Content]\n\n${result.value}\n\n---\nFile: ${path.basename(filePath)}`;
+      } catch (wordError) {
+        console.error('Word document parsing error:', wordError);
+        return `[Word Document Content]\n\nUnable to extract text from Word document.\n\nFile: ${path.basename(filePath)}\nError: ${wordError.message}`;
+      }
+    }
+    
+    // For other file types, return file information
+    const stats = await fs.promises.stat(filePath);
+    return `[${mimeType.toUpperCase()} File]\n\nFile: ${path.basename(filePath)}\nSize: ${(stats.size / 1024 / 1024).toFixed(2)} MB\nType: ${mimeType}\n\nThis file type doesn't support direct text extraction, but you can add notes and comments here.`;
+  } catch (error) {
+    console.error('Error extracting file content:', error);
+    return `[File Content]\n\nUnable to extract content from this file.\nFile: ${path.basename(filePath)}\nError: ${error.message}`;
+  }
+};
+
 class DocumentController {
   // Upload document
   async uploadDocument(req, res) {
@@ -49,21 +94,25 @@ class DocumentController {
         }
       }
 
-      // Create document record
-      const document = new Document({
-        name: req.file.originalname,
-        originalName: req.file.originalname,
-        type: path.extname(req.file.originalname).substring(1).toLowerCase(),
-        size: req.file.size,
-        mimeType: req.file.mimetype,
-        filePath: req.file.path,
-        fileName: req.file.filename,
-        uploadedBy: userId,
-        ownerId: userId,
-        folderId: folderId || null,
-        description: description || '',
-        tags: tags ? tags.split(',').map(tag => tag.trim()) : []
-      });
+             // Extract content from the uploaded file
+       const extractedContent = await extractFileContent(req.file.path, req.file.mimetype);
+       
+       // Create document record
+       const document = new Document({
+         name: req.file.originalname,
+         originalName: req.file.originalname,
+         type: path.extname(req.file.originalname).substring(1).toLowerCase(),
+         size: req.file.size,
+         mimeType: req.file.mimetype,
+         filePath: req.file.path,
+         fileName: req.file.filename,
+         uploadedBy: userId,
+         ownerId: userId,
+         folderId: folderId || null,
+         description: description || '',
+         tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+         content: extractedContent
+       });
 
       await document.save();
 
@@ -288,7 +337,7 @@ class DocumentController {
     try {
       const { id } = req.params;
       const userId = req.user.data.id;
-      const { name, description, tags, isFavorite, isArchived } = req.body;
+      const { name, description, tags, isFavorite, isArchived, content } = req.body;
 
       const document = await Document.findOne({
         _id: id,
@@ -311,6 +360,7 @@ class DocumentController {
       if (tags !== undefined) document.tags = tags.split(',').map(tag => tag.trim());
       if (isFavorite !== undefined) document.isFavorite = isFavorite;
       if (isArchived !== undefined) document.isArchived = isArchived;
+      if (content !== undefined) document.content = content;
 
       document.modifiedAt = new Date();
       await document.save();
@@ -451,6 +501,114 @@ class DocumentController {
       res.status(500).json({
         success: false,
         message: 'Failed to delete documents',
+        error: error.message
+      });
+    }
+  }
+
+  // Share document with collaborator
+  async shareDocument(req, res) {
+    try {
+      const { id } = req.params;
+      const { email, permission, message } = req.body;
+      const userId = req.user.data.id;
+
+      // Validate input
+      if (!email || !permission) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email and permission are required'
+        });
+      }
+
+      if (!['view', 'edit', 'comment'].includes(permission)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid permission. Must be view, edit, or comment'
+        });
+      }
+
+      // Check if document exists and user owns it
+      const document = await Document.findById(id);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found'
+        });
+      }
+
+      if (document.ownerId.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Only document owner can share'
+        });
+      }
+
+      // Check if already shared with this user
+      const existingShare = document.sharedWith?.find(share => 
+        share.userId === email || share.email === email
+      );
+
+      if (existingShare) {
+        // Update existing permission
+        existingShare.permission = permission;
+        existingShare.updatedAt = new Date();
+        if (message) {
+          existingShare.message = message;
+        }
+      } else {
+        // Add new share
+        if (!document.sharedWith) {
+          document.sharedWith = [];
+        }
+        
+        document.sharedWith.push({
+          userId: email,
+          email: email,
+          permission: permission,
+          message: message || '',
+          sharedAt: new Date(),
+          updatedAt: new Date(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+        });
+      }
+
+      // Save document
+      await document.save();
+
+      // Send email notification
+      try {
+        const emailService = require('../services/emailService');
+        if (emailService.isConfigured()) {
+          await emailService.sendDocumentShareNotification(
+            email,
+            document.name,
+            id,
+            req.user.data.name || req.user.data.email,
+            permission,
+            message
+          );
+        }
+      } catch (emailError) {
+        console.log('⚠️ Email notification failed:', emailError.message);
+        // Continue even if email fails
+      }
+
+      res.json({
+        success: true,
+        message: 'Document shared successfully',
+        data: {
+          documentId: id,
+          sharedWith: email,
+          permission: permission
+        }
+      });
+
+    } catch (error) {
+      console.error('Share document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to share document',
         error: error.message
       });
     }
