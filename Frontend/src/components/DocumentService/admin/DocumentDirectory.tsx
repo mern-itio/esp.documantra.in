@@ -1,24 +1,19 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Search, 
-  Filter, 
   Download, 
   Share2, 
-  Trash2, 
   Eye,
   MoreVertical,
   FileText,
   Image,
   FileSpreadsheet,
   Presentation,
-  Users,
-  Calendar,
-  HardDrive
 } from 'lucide-react';
-import { useDocumentStore } from '../../store/documentStore';
-import { formatFileSize, formatDate } from '../../lib/utils';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useDocumentStore } from '../../common/store/documentStore';
+import { formatDate, formatFileSize } from '../../common/lib/utils';
 
 const getFileTypeIcon = (type: string) => {
   const lowerType = type.toLowerCase();
@@ -43,7 +38,7 @@ export function DocumentDirectory() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
 
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'team_admin') {
+  if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'team_admin') {
     return (
       <div className="p-8 text-center">
         <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Lightbulb, 
   TrendingUp, 
   Users, 
   FileText, 
-  Clock, 
+  // Clock, 
   Star,
   ArrowRight,
   Search,
@@ -137,8 +137,8 @@ const mockExperts: ExpertRecommendation[] = [
 ];
 
 export function DiscoveryEngine({
-  currentDocumentId,
-  userInterests,
+  // currentDocumentId,
+  // userInterests,
   onDocumentSelect,
   onExpertContact
 }: DiscoveryEngineProps) {

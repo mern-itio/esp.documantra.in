@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Search, Filter, Calendar, HardDrive, Tag } from 'lucide-react';
+import { useState } from 'react';
+import { X, Search, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useDocumentStore } from '../../common/store/documentStore';

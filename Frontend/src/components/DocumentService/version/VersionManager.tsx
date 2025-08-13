@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   GitBranch, 
   Clock, 
@@ -28,12 +28,11 @@ interface VersionManagerProps {
 }
 
 export function VersionManager({
-  documentId,
+
   versions,
   currentVersion,
   onVersionSelect,
   onVersionCompare,
-  onVersionRestore,
   onVersionTag
 }: VersionManagerProps) {
   const [selectedVersions, setSelectedVersions] = useState<string[]>([]);
@@ -113,7 +112,7 @@ export function VersionManager({
 
       {/* Version List */}
       <div className="max-h-96 overflow-y-auto">
-        {sortedVersions.map((version, index) => (
+        {sortedVersions.map((version) => (
           <div
             key={version.id}
             className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${

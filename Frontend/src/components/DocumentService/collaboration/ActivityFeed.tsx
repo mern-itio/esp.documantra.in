@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   MessageCircle, 
   GitBranch, 
@@ -97,7 +96,7 @@ const mockActivities: ActivityItem[] = [
 ];
 
 export function ActivityFeed({ 
-  documentId, 
+  // documentId, 
   activities = mockActivities, 
   showUserAvatars = true, 
   maxItems = 10 

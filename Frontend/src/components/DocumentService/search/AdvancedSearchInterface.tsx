@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Search, 
   Filter, 
   Calendar, 
   FileText, 
   Tag, 
-  Users, 
+  // Users, 
   Clock,
   Sliders,
   X,

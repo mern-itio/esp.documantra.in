@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   BarChart3, 
   HardDrive, 
@@ -13,11 +13,11 @@ import {
   Database,
   Zap
 } from 'lucide-react';
-import { useDocumentStore } from '../../store/documentStore';
-import { useCollaborationStore } from '../../store/collaborationStore';
-import { formatFileSize, formatDate } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
+import { useDocumentStore } from '../../common/store/documentStore';
+import { useCollaborationStore } from '../../common/store/collaborationStore';
+import { formatDate, formatFileSize } from '../../common/lib/utils';
 
 export function DocumentAdminDashboard() {
   const { documents, folders, currentUser } = useDocumentStore();
@@ -179,7 +179,7 @@ export function DocumentAdminDashboard() {
     }
   };
 
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'team_admin') {
+  if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'team_admin') {
     return (
       <div className="p-8 text-center">
         <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />

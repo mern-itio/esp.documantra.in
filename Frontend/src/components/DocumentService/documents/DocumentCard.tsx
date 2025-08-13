@@ -187,7 +187,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
           <div className="flex items-center space-x-2">
             {document.shared && (
-              <Share2 className="w-3 h-3 text-blue-500" title="Shared" />
+              <Share2 className="w-3 h-3 text-blue-500" >Shared</Share2>
             )}
             {document.views > 0 && (
               <div className="flex items-center space-x-1">

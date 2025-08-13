@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -9,10 +8,10 @@ import {
   Download,
   Clock
 } from 'lucide-react';
-import { useDocumentStore } from '../../store/documentStore';
-import { formatFileSize } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { MOCK_STATS } from '../../lib/mockData';
+import { MOCK_STATS } from '../../common/lib/mockData';
+import { useDocumentStore } from '../../common/store/documentStore';
+import { formatFileSize } from '../../common/lib/utils';
 
 export function DocumentAnalytics() {
   const { documents, currentUser, userPermissions } = useDocumentStore();
@@ -21,10 +20,12 @@ export function DocumentAnalytics() {
   // Calculate stats
   const totalDocuments = documents.length;
   const sharedDocuments = documents.filter(doc => doc.shared).length;
-  const favoriteDocuments = documents.filter(doc => doc.isFavorite).length;
+  // const favoriteDocuments = documents.filter(doc => doc.isFavorite).length;
   const totalViews = documents.reduce((sum, doc) => sum + doc.views, 0);
-  const totalDownloads = documents.reduce((sum, doc) => sum + doc.downloads, 0);
-
+  // const totalDownloads = documents.reduce((sum, doc) => sum + doc.downloads, 0);
+  if (!currentUser) {
+    return null; // or return a loading state
+  }
   const stats = [
     {
       title: 'Total Documents',

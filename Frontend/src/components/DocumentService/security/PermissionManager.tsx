@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
-  Shield, 
-  Users, 
+  Shield,
   Lock, 
   Eye, 
   Edit, 
   Trash2,
   Plus,
   Search,
-  Filter,
   Clock,
   AlertTriangle
 } from 'lucide-react';
@@ -96,9 +94,9 @@ const mockPermissions: Permission[] = [
 
 export function PermissionManager({
   permissions = mockPermissions,
-  onGrantPermission,
+  // onGrantPermission,
   onRevokePermission,
-  onUpdatePermission
+  // onUpdatePermission
 }: PermissionManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');

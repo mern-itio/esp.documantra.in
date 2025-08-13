@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  MoreVertical, 
-  Download, 
-  Share2, 
-  Star, 
+import {
+  MoreVertical,
+  Download,
+  Share2,
+  Star,
   StarOff,
   Eye,
   Move,
@@ -16,7 +16,7 @@ import {
   GitBranch,
   Workflow,
   Brain,
-  Users
+  // Users
 } from 'lucide-react';
 import type { Document } from '../../common/types';
 import { Button } from '../ui/button';
@@ -33,7 +33,7 @@ interface EnhancedDocumentCardProps {
 
 const getFileTypeIcon = (type: string) => {
   const lowerType = type.toLowerCase();
-  
+
   if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType)) {
     return Image;
   }
@@ -48,43 +48,43 @@ const getFileTypeIcon = (type: string) => {
 
 const getFileTypeColor = (type: string) => {
   const lowerType = type.toLowerCase();
-  
+
   if (['pdf'].includes(lowerType)) return 'text-red-600 bg-red-50';
   if (['doc', 'docx'].includes(lowerType)) return 'text-blue-600 bg-blue-50';
   if (['xls', 'xlsx', 'csv'].includes(lowerType)) return 'text-green-600 bg-green-50';
   if (['ppt', 'pptx'].includes(lowerType)) return 'text-orange-600 bg-orange-50';
   if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType)) return 'text-purple-600 bg-purple-50';
-  
+
   return 'text-gray-600 bg-gray-50';
 };
 
-export function EnhancedDocumentCard({ 
-  document, 
-  isSelected, 
-  onSelect, 
-  onOpenCollaboration 
+export function EnhancedDocumentCard({
+  document,
+  isSelected,
+  onSelect,
+  onOpenCollaboration
 }: EnhancedDocumentCardProps) {
   const { toggleFavorite, userPermissions } = useDocumentStore();
-  const { 
-    getDocumentComments, 
-    getDocumentVersions, 
+  const {
+    getDocumentComments,
+    getDocumentVersions,
     getDocumentWorkflows,
     getActiveUsers,
     getDocumentAnalysis
   } = useCollaborationStore();
-  
+
   const [showActions, setShowActions] = useState(false);
-  
+
   const FileIcon = getFileTypeIcon(document.type);
   const fileTypeColor = getFileTypeColor(document.type);
-  
+
   // Get collaboration data
   const comments = getDocumentComments(document.id);
   const versions = getDocumentVersions(document.id);
   const workflows = getDocumentWorkflows(document.id);
   const activeUsers = getActiveUsers(document.id);
   const analysis = getDocumentAnalysis(document.id);
-  
+
   const unresolvedComments = comments.filter(c => !c.resolved).length;
   const activeWorkflows = workflows.filter(w => w.status === 'active').length;
 
@@ -122,7 +122,7 @@ export function EnhancedDocumentCard({
       {activeUsers.length > 0 && (
         <div className="absolute top-2 right-2 z-10">
           <div className="flex -space-x-1">
-            {activeUsers.slice(0, 3).map((user, index) => (
+            {activeUsers.slice(0, 3).map((user) => (
               <div
                 key={user.id}
                 className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
@@ -165,7 +165,7 @@ export function EnhancedDocumentCard({
           >
             <MoreVertical className="w-3 h-3" />
           </Button>
-          
+
           {showActions && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
               <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
@@ -203,11 +203,13 @@ export function EnhancedDocumentCard({
           fileTypeColor
         )}>
           <FileIcon className="w-8 h-8" />
-          
+
           {/* Processing Status */}
           {analysis && (
             <div className="absolute top-1 right-1">
-              <Brain className="w-4 h-4 text-blue-600" title="AI Processed" />
+              <Brain className="w-3 h-3 text-blue-600">
+                <title>Shared</title>
+              </Brain>
             </div>
           )}
         </div>
@@ -217,12 +219,12 @@ export function EnhancedDocumentCard({
           <h3 className="text-sm font-medium text-gray-900 truncate" title={document.name}>
             {document.name}
           </h3>
-          
+
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{formatFileSize(document.size)}</span>
             <span>{document.type.toUpperCase()}</span>
           </div>
-          
+
           <p className="text-xs text-gray-500">
             {formatDate(document.modifiedAt)}
           </p>
@@ -257,7 +259,7 @@ export function EnhancedDocumentCard({
                 <span className="text-xs text-orange-600">{unresolvedComments}</span>
               </div>
             )}
-            
+
             {/* Versions */}
             {versions.length > 1 && (
               <div className="flex items-center space-x-1" title={`${versions.length} versions`}>
@@ -265,7 +267,7 @@ export function EnhancedDocumentCard({
                 <span className="text-xs text-blue-600">{versions.length}</span>
               </div>
             )}
-            
+
             {/* Active Workflows */}
             {activeWorkflows > 0 && (
               <div className="flex items-center space-x-1" title={`${activeWorkflows} active workflows`}>
@@ -273,12 +275,14 @@ export function EnhancedDocumentCard({
                 <span className="text-xs text-green-600">{activeWorkflows}</span>
               </div>
             )}
-            
+
             {/* Shared indicator */}
             {document.shared && (
-              <Share2 className="w-3 h-3 text-blue-500" title="Shared" />
+              <Share2 className="w-3 h-3 text-blue-500">
+                <title>Shared</title>
+              </Share2>
             )}
-            
+
             {/* Views */}
             {document.views > 0 && (
               <div className="flex items-center space-x-1">
@@ -287,7 +291,7 @@ export function EnhancedDocumentCard({
               </div>
             )}
           </div>
-          
+
           <button
             onClick={handleFavoriteToggle}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
