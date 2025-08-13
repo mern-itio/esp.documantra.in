@@ -1,4 +1,4 @@
-import { Envelope, User, SigningSession, Template, AuditEntry, BulkOperation, AdvancedAnalytics, EnterpriseSettings, AuthenticationData, RiskAssessment } from '../types';
+import type{ Envelope, User, SigningSession, Template, BulkOperation, AdvancedAnalytics, EnterpriseSettings, AuthenticationData, RiskAssessment } from '../types';
 
 export const mockUsers: User[] = [
   {

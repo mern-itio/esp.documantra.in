@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { mockEnvelopes, mockSigningSessions, mockUsers } from '../data/mockData';
-import { Envelope, SigningSession, User, AuditEntry } from '../types';
+import type{ Envelope, SigningSession, User, AuditEntry } from '../types';
 
 interface AppContextType {
   user: User | null;

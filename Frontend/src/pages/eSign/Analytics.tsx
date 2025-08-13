@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { 
-  BarChart3,
   TrendingUp,
   TrendingDown,
   Users,
   FileText,
   Clock,
   CheckCircle,
-  Calendar,
   Download,
   Filter,
   RefreshCw,
@@ -16,9 +14,9 @@ import {
   Globe,
   Target
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
-import AdvancedAnalyticsDashboard from '../components/advanced/AdvancedAnalyticsDashboard';
+import { useApp } from '../../context/AppContext';
+import { format, subDays, startOfMonth } from 'date-fns';
+import AdvancedAnalyticsDashboard from '../../components/ESign/advanced/AdvancedAnalyticsDashboard';
 
 const Analytics: React.FC = () => {
   const { envelopes } = useApp();

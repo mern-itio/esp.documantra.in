@@ -3,21 +3,17 @@ import {
   BarChart3, 
   TrendingUp, 
   TrendingDown, 
-  Users, 
-  FileText, 
   Clock, 
   CheckCircle, 
   Shield,
   AlertTriangle,
   Download,
-  Filter,
-  Calendar,
   Target,
   Zap,
   Globe
 } from 'lucide-react';
-import { AdvancedAnalytics } from '../../types';
-import { mockAdvancedAnalytics } from '../../data/mockData';
+import type{ AdvancedAnalytics } from '../../../types';
+import { mockAdvancedAnalytics } from '../../../data/mockData';
 
 interface AdvancedAnalyticsDashboardProps {
   analytics?: AdvancedAnalytics;
