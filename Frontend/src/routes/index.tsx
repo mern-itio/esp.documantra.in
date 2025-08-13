@@ -155,7 +155,16 @@ import { EnhancedDocumentAnalytics } from '../components/DocumentService/analyti
 import { DocumentLayout } from '../components/DocumentService/layout/DocumentLayout';
 import { UploadModal } from '../components/DocumentService/modals/UploadModal';
 import { CollaborationHub } from '../components/DocumentService/collaboration/CollaborationHub';
-
+// E-Signature Pages Started
+import EsignDashboard from '../pages/eSign/Dashboard';
+import EsignEnvelopeCreator from '../pages/eSign/EnvelopeCreator';
+import EsignEnvelopeDetails from '../pages/eSign/EnvelopeDetails';
+import EsignSigningPage from '../pages/eSign/SigningPage';
+import EsignAnalytics from '../pages/eSign/Analytics';
+import EsignSettings from '../pages/eSign/Settings';
+import EsignEnterpriseSettings from '../pages/eSign/EnterpriseSettings';
+import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
+// E-Signature Pages Ended
 // Auth Route Wrapper
 const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -352,6 +361,14 @@ const guestRoutes = [
   { path: '/docusigner-vs-hellosign', element: <DocuSignerVsHelloSignPage /> },
   { path: '/docusigner-vs-pandadoc', element: <DocuSignerVsPandaDocPage /> },
   { path: '/esignature-features', element: <ESignatureFeaturesPage /> },
+            //   <Route path="/" element={<Dashboard />} />
+            // <Route path="/create" element={<EnvelopeCreator />} />
+            // <Route path="/envelope/:id" element={<EnvelopeDetails />} />
+            // <Route path="/sign/:token" element={<SigningPage />} />
+            // <Route path="/analytics" element={<Analytics />} />
+            // <Route path="/settings" element={<Settings />} />
+            // <Route path="/enterprise" element={<EnterpriseSettings />} />
+            // <Route path="/admin" element={<ESignatureAdmin />} />
   // { path: '/how-it-works', element: <HowItWorksPage /> },
   // { path: '/security-overview', element: <SecurityOverviewPage /> },
   { path: '/why-docusigner', element: <WhyDocuSignerPage /> },
@@ -380,6 +397,15 @@ const authRoutes = [
       </DocumentLayout>
     ) 
   },
+  // E-Signature Routes
+  { path: 'e-sign/dashboard', element:<EsignDashboard/>},
+  { path: 'e-sign/create', element:<EsignEnvelopeCreator/>},
+  { path: 'e-sign/envelope/:id', element:<EsignEnvelopeDetails/>},
+  { path: 'e-sign/sign/:token', element:<EsignSigningPage/>},
+  { path: 'e-sign/analytics', element:<EsignAnalytics/>},
+  { path: 'e-sign/settings', element:<EsignSettings/>},
+  { path: 'e-sign/enterprise', element:<EsignEnterpriseSettings/>},
+  { path: 'e-sign/admin', element:<EsignESignatureAdmin/>},
 ];
 
 const router = createBrowserRouter([
