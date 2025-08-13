@@ -18,5 +18,5 @@ connectDB();
 app.use(express.json());
 app.use('/', authRoutes);
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Auth running on http://localhost:${PORT}/`));
+const PORT = process.env.PORT || 2101;
+app.listen(PORT, () => console.log(`Auth running on ${PORT}/`));
