@@ -1,35 +1,35 @@
 import { create } from 'zustand';
 import { documentAPI, folderAPI } from '../../../services/api';
-import { generateId, sleep } from '../lib/utils';
+import { generateId } from '../lib/utils';
 import type { Document, Folder, SearchFilters, SortBy, SortOrder, UploadProgress, User, UserRole, ViewMode } from '../types';
 
 interface DocumentState {
   // User & Auth
   currentUser: User | null;
   userPermissions: any;
-  
+
   // Documents & Folders
   documents: Document[];
   folders: Folder[];
   selectedDocuments: string[];
   currentFolderId: string | null;
-  
+
   // Upload
   uploadProgress: UploadProgress[];
-  
+
   // Search & Filters
   searchQuery: string;
   searchFilters: SearchFilters;
-  
+
   // View Settings
   viewMode: ViewMode;
   sortBy: SortBy;
   sortOrder: SortOrder;
-  
+
   // Loading States
   isLoading: boolean;
   isUploading: boolean;
-  
+
   // Actions
   setCurrentUser: (user: User) => void;
   loadUserFromStorage: () => void;
@@ -49,7 +49,7 @@ interface DocumentState {
   getFolderDocuments: (folderId: string | null) => Document[];
   getBreadcrumbs: () => Folder[];
   getStorageStats: () => { used: number; total: number; percentage: number };
-  
+
   // New API-based actions
   fetchDocuments: (params?: any) => Promise<void>;
   fetchFolders: (params?: any) => Promise<void>;
@@ -152,7 +152,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await documentAPI.getUserDocuments(params);
-      
+
       if (response.success) {
         // Transform API response to match our Document interface
         const transformedDocuments: Document[] = response.data.documents.map((doc: any) => ({
@@ -175,12 +175,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           thumbnail: doc.thumbnail,
           content: doc.content
         }));
-        
+
         set({ documents: transformedDocuments });
       }
     } catch (error: any) {
       console.error('Failed to fetch documents:', error);
-      
+
       // If it's an authentication error, show a more helpful message
       if (error.message === 'Authentication token not found') {
         console.warn('🔐 Authentication required. Please ensure you have a valid JWT token.');
@@ -196,7 +196,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await folderAPI.getUserFolders(params);
-      
+
       if (response.success) {
         // Transform API response to match our Folder interface
         const transformedFolders: Folder[] = response.data.map((folder: any) => ({
@@ -217,12 +217,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           totalSize: folder.totalSize || 0,
           modifiedAt: folder.modifiedAt
         }));
-        
+
         set({ folders: transformedFolders });
       }
     } catch (error: any) {
       console.error('Failed to fetch folders:', error);
-      
+
       // If it's an authentication error, show a more helpful message
       if (error.message === 'Authentication token not found') {
         console.warn('🔐 Authentication required. Please ensure you have a valid JWT token.');
@@ -263,13 +263,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       try {
         // Check file size limits
         if (userPermissions.uploadLimit !== -1 && progress.file.size > userPermissions.uploadLimit) {
-                  set((state: any) => ({
-          uploadProgress: state.uploadProgress.map((p: any) =>
-            p.id === progress.id
-              ? { ...p, status: 'error', error: 'File size exceeds limit' }
-              : p
-          )
-        }));
+          set((state: any) => ({
+            uploadProgress: state.uploadProgress.map((p: any) =>
+              p.id === progress.id
+                ? { ...p, status: 'error', error: 'File size exceeds limit' }
+                : p
+            )
+          }));
           continue;
         }
 
@@ -327,7 +327,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   createFolder: async (name: string, parentId?: string) => {
     try {
       set({ isLoading: true });
-      
+
       const response = await folderAPI.createFolder({
         name,
         parentId: parentId || get().currentFolderId || undefined,
@@ -350,13 +350,15 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   deleteDocuments: async (documentIds: string[]) => {
     try {
       set({ isLoading: true });
-      
+
       if (documentIds.length === 1) {
         // Single document delete
         const response = await documentAPI.deleteDocument(documentIds[0]);
         if (response.success) {
           set((state: any) => ({
-            documents: state.documents.filter(doc => !documentIds.includes(doc.id)),
+            documents: state.documents.filter((doc: { id: string }) =>
+              !documentIds.includes(doc.id)
+            ),
             selectedDocuments: []
           }));
         }
@@ -381,7 +383,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   moveDocuments: async (documentIds: string[], folderId: string) => {
     try {
       set({ isLoading: true });
-      
+
       // Update documents in local state
       set((state: any) => ({
         documents: state.documents.map((doc: any) =>
@@ -391,7 +393,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         ),
         selectedDocuments: []
       }));
-      
+
       // Refresh data to sync with server
       await get().refreshData();
     } catch (error: any) {
@@ -410,18 +412,18 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         documents: state.documents.map((doc: any) =>
           doc.id === documentId
             ? {
-                ...doc,
-                shared: true,
-                sharedWith: [
-                  ...doc.sharedWith,
-                  {
-                    userId: generateId(),
-                    email,
-                    permission: permission as any,
-                    createdAt: new Date().toISOString()
-                  }
-                ]
-              }
+              ...doc,
+              shared: true,
+              sharedWith: [
+                ...doc.sharedWith,
+                {
+                  userId: generateId(),
+                  email,
+                  permission: permission as any,
+                  createdAt: new Date().toISOString()
+                }
+              ]
+            }
             : doc
         )
       }));
@@ -438,7 +440,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         const response = await documentAPI.updateDocument(documentId, {
           isFavorite: !document.isFavorite
         });
-        
+
         if (response.success) {
           set((state: any) => ({
             documents: state.documents.map((doc: any) =>
@@ -482,40 +484,40 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   getFilteredDocuments: () => {
     const { documents, currentFolderId, searchQuery, searchFilters, sortBy, sortOrder } = get();
-    
+
     let filtered = documents.filter(doc => {
       // Folder filter
       if (currentFolderId && doc.folderId !== currentFolderId) return false;
-      
+
       // Search query
       if (searchQuery && !doc.name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
-      
+
       // File type filter
       if (searchFilters.type?.length && !searchFilters.type.includes(doc.type)) {
         return false;
       }
-      
+
       // Tag filter
       if (searchFilters.tags?.length) {
         const hasTag = searchFilters.tags.some(tag => doc.tags.includes(tag));
         if (!hasTag) return false;
       }
-      
+
       // Shared only filter
       if (searchFilters.sharedOnly && !doc.shared) return false;
-      
+
       // Favorite only filter
       if (searchFilters.favoriteOnly && !doc.isFavorite) return false;
-      
+
       return true;
     });
-    
+
     // Sort documents
     filtered.sort((a, b) => {
       let aValue: any, bValue: any;
-      
+
       switch (sortBy) {
         case 'name':
           aValue = a.name.toLowerCase();
@@ -536,12 +538,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         default:
           return 0;
       }
-      
+
       if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
-    
+
     return filtered;
   },
 
@@ -553,7 +555,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   getBreadcrumbs: () => {
     const { folders, currentFolderId } = get();
     const breadcrumbs: Folder[] = [];
-    
+
     let currentId = currentFolderId;
     while (currentId) {
       const folder = folders.find(f => f.id === currentId);
@@ -564,7 +566,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         break;
       }
     }
-    
+
     return breadcrumbs;
   },
 
@@ -573,7 +575,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const used = documents.reduce((total, doc) => total + doc.size, 0);
     const total = userPermissions.storageLimit;
     const percentage = total === -1 ? 0 : Math.round((used / total) * 100);
-    
+
     return { used, total, percentage };
   }
 }));

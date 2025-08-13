@@ -15,6 +15,7 @@ import { Button } from '../ui/button';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { cn, formatDate, formatFileSize } from '../../common/lib/utils';
 
+
 const getFileTypeIcon = (type: string) => {
   const lowerType = type.toLowerCase();
   
@@ -111,7 +112,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                   "px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer",
                   isSelected && "bg-blue-50"
                 )}
-                onClick={() => onDocumentSelect?.(document)}
+                onClick={() => onDocumentSelect?.(document as any)}
               >
                 <div className="flex items-center space-x-4">
                   <input

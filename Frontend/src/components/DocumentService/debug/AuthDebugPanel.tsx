@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { debugAuthStorage, setTestToken, clearAllTokens } from '../../../utils/authDebug';
 
 export function AuthDebugPanel() {

@@ -20,7 +20,7 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
 
     setIsCreating(true);
     try {
-      await createFolder(folderName.trim(), currentFolderId);
+     await createFolder(folderName.trim(), currentFolderId ?? undefined);
       setFolderName('');
       onClose();
     } finally {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, X, MessageCircle, AtSign, Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { formatDate } from '../../common/lib/utils';

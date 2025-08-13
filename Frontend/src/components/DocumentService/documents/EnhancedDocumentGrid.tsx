@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DocumentCard } from './DocumentCard';
 import { useDocumentStore } from '../../common/store/documentStore';
 import type { Document, ViewMode } from '../../common/types';
@@ -23,8 +23,8 @@ export function EnhancedDocumentGrid({
     fetchFolders,
     currentFolderId,
     isLoading,
-    documents,
-    folders
+    // documents,
+    // folders
   } = useDocumentStore();
   
   const [isInitialized, setIsInitialized] = useState(false);

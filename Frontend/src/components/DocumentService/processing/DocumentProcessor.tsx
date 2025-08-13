@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Brain, 
   FileText, 
   Eye, 
-  Languages, 
+  // Languages, 
   Search,
   Tag,
-  BarChart3,
+  // BarChart3,
   Shield,
   Zap,
   CheckCircle

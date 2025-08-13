@@ -41,7 +41,7 @@ const DashboardContent = () => {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.fullname}!</h1>
             <p className="text-gray-600 mt-1">Here's your compliance dashboard overview.</p>
           </div>
           <div className="flex items-center space-x-2">
