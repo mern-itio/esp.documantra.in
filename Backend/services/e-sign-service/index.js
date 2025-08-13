@@ -28,5 +28,5 @@ app.get('/health', (req, res) => {
 
 
 // Start server
-const PORT = process.env.PORT || 4002;
-app.listen(PORT, () => console.log(`E-Sign Service running on http://localhost:${PORT}/`));
+const PORT = process.env.PORT || 2103;
+app.listen(PORT, () => console.log(`E-Sign Service running on ${PORT}/`));

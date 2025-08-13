@@ -35,5 +35,5 @@ app.get('/health', (req, res) => {
 app.use('/pdf', pdfRoutes);
 
 // Start server
-const PORT = process.env.PORT || 4001;
-app.listen(PORT, () => console.log(`PDF Service running on http://localhost:${PORT}/`));
+const PORT = process.env.PORT || 2104;
+app.listen(PORT, () => console.log(`PDF Service running on ${PORT}/`));
