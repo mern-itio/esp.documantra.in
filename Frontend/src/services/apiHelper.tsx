@@ -10,7 +10,7 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
 
   // Request Interceptor
   instance.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accesstoken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -54,4 +54,8 @@ export const authApi = createApiInstance(
 export const documentApi = createApiInstance(
   import.meta.env.VITE_DOCUMENT_BASE_URL || 'http://165.22.215.73:2102',
   'Document'
+);
+export const eSignApi = createApiInstance(
+  import.meta.env.VITE_ESIGN_SERVICE_URL || 'http://165.22.215.73:2103',
+  'E-Sign'
 );

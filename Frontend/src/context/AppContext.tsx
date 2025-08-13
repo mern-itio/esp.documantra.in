@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { mockEnvelopes, mockSigningSessions, mockUsers } from '../data/mockData';
 import type{ Envelope, SigningSession, User, AuditEntry } from '../types';
 
@@ -34,8 +34,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentEnvelope, setCurrentEnvelope] = useState<Envelope | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+useEffect(() => {
   setLoading(false);
   setError(null);
+}, []);
   const updateEnvelope = (updatedEnvelope: Envelope) => {
     setEnvelopes(prev => 
       prev.map(env => env.id === updatedEnvelope.id ? updatedEnvelope : env)

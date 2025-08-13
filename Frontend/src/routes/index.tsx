@@ -398,14 +398,14 @@ const authRoutes = [
     ) 
   },
   // E-Signature Routes
-  { path: 'e-sign/dashboard', element:<EsignDashboard/>},
-  { path: 'e-sign/create', element:<EsignEnvelopeCreator/>},
-  { path: 'e-sign/envelope/:id', element:<EsignEnvelopeDetails/>},
-  { path: 'e-sign/sign/:token', element:<EsignSigningPage/>},
-  { path: 'e-sign/analytics', element:<EsignAnalytics/>},
-  { path: 'e-sign/settings', element:<EsignSettings/>},
-  { path: 'e-sign/enterprise', element:<EsignEnterpriseSettings/>},
-  { path: 'e-sign/admin', element:<EsignESignatureAdmin/>},
+  { path: '/e-sign/dashboard', element:<EsignDashboard/>},
+  { path: '/e-sign/create', element:<EsignEnvelopeCreator/>},
+  { path: '/e-sign/envelope/:id', element:<EsignEnvelopeDetails/>},
+  { path: '/e-sign/sign/:token', element:<EsignSigningPage/>},
+  { path: '/e-sign/analytics', element:<EsignAnalytics/>},
+  { path: '/e-sign/settings', element:<EsignSettings/>},
+  { path: '/e-sign/enterprise', element:<EsignEnterpriseSettings/>},
+  { path: '/e-sign/admin', element:<EsignESignatureAdmin/>},
 ];
 
 const router = createBrowserRouter([

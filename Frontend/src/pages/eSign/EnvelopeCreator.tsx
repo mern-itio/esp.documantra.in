@@ -18,6 +18,8 @@ import { useApp } from '../../context/AppContext';
 import type{ Document, Recipient, SignatureField } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
+import {eSignApi} from '../../services/apiHelper';
+import axios from 'axios';
 
 const EnvelopeCreator: React.FC = () => {
   const navigate = useNavigate();
@@ -40,8 +42,10 @@ const EnvelopeCreator: React.FC = () => {
   });
   
   const [documents, setDocuments] = useState<Document[]>([]);
+
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [fields, setFields] = useState<SignatureField[]>([]);
+  const [files, setFiles] = useState<FileList | null>(null);
   
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -54,6 +58,7 @@ const EnvelopeCreator: React.FC = () => {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
+    setFiles(event.target.files);
     if (!files) return;
 
     Array.from(files).forEach((file) => {
@@ -68,6 +73,35 @@ const EnvelopeCreator: React.FC = () => {
       setDocuments(prev => [...prev, newDocument]);
     });
   };
+  // Add this function inside your component:
+const uploadDocuments = async () => {
+  if (!files || files.length === 0) return;
+  const formData = new FormData();
+  Array.from(files).forEach((file) => {
+    formData.append('files', file, file.name);
+  });
+  // Actually see what's inside
+  // for (const [key, value] of formData.entries()) {
+  //   console.log(key, value);
+  // }
+
+  // Replace with your actual API endpoint
+      const token = localStorage.getItem("accessToken");
+      const response = await axios.post('http://localhost:2103/api/e-sign/upload', formData, { 
+                        headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`, // Token header
+                      }
+                    });
+
+};
+// Update your "Next" button handler:
+const handleNext = async () => {
+  if (currentStep === 1) {
+    await uploadDocuments();
+  }
+  setCurrentStep(prev => Math.min(6, prev + 1));
+};
 
   const removeDocument = (docId: string) => {
     setDocuments(prev => prev.filter(doc => doc.id !== docId));
@@ -742,7 +776,7 @@ const EnvelopeCreator: React.FC = () => {
 
               {currentStep < 6 ? (
                 <button
-                  onClick={() => setCurrentStep(prev => Math.min(6, prev + 1))}
+                  onClick={handleNext}
                   disabled={!canProceedToNext()}
                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
