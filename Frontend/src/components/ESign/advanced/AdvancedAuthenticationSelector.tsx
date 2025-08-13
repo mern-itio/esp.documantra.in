@@ -5,7 +5,6 @@ import {
   CreditCard, 
   Video, 
   Fingerprint, 
-  Eye, 
   Phone,
   Lock,
   AlertTriangle,

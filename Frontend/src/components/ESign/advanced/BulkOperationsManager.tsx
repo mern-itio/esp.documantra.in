@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { 
   Upload, 
   Download, 
-  Play, 
-  Pause, 
   Square, 
   RefreshCw,
   FileText,
@@ -15,22 +13,16 @@ import {
   Eye,
   MoreHorizontal,
   Filter,
-  Search
 } from 'lucide-react';
-import { BulkOperation } from '../../types';
-import { mockBulkOperations } from '../../data/mockData';
+import type{ BulkOperation } from '../../../types';
+import { mockBulkOperations } from '../../../data/mockData';
 
-interface BulkOperationsManagerProps {
-  onCreateBulkOperation: (operation: Omit<BulkOperation, 'id' | 'createdAt'>) => void;
-}
-
-const BulkOperationsManager: React.FC<BulkOperationsManagerProps> = ({
-  onCreateBulkOperation
-}) => {
+const BulkOperationsManager: React.FC = () =>{
   const [activeTab, setActiveTab] = useState('operations');
   const [operations] = useState<BulkOperation[]>(mockBulkOperations);
   const [selectedOperation, setSelectedOperation] = useState<BulkOperation | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  console.log(showCreateModal);
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const statusColors = {

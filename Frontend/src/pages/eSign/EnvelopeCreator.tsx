@@ -5,18 +5,12 @@ import {
   X,
   Plus,
   FileText,
-  Users,
-  Settings as SettingsIcon,
   ArrowLeft,
   Save,
   Send,
   Eye,
   AlertCircle,
   Check,
-  Mail,
-  Phone,
-  Lock,
-  Calendar,
   Shield,
   Award
 } from 'lucide-react';
@@ -27,7 +21,7 @@ import SignatureTypeSelector from '../../components/ESign/advanced/SignatureType
 
 const EnvelopeCreator: React.FC = () => {
   const navigate = useNavigate();
-  const { createEnvelope, sendEnvelope, user } = useApp();
+  const { createEnvelope, user } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [currentStep, setCurrentStep] = useState(1);

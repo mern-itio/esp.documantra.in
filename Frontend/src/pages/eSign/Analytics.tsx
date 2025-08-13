@@ -156,7 +156,7 @@ const Analytics: React.FC = () => {
             <button
               onClick={() => setViewMode('advanced')}
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'advanced'
+                viewMode === ('advanced' as 'basic' | 'advanced')
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
@@ -265,7 +265,7 @@ const Analytics: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            {chartData.map((day, index) => (
+            {chartData.map((day) => (
               <div key={day.name} className="flex items-center gap-4">
                 <div className="w-12 text-sm text-gray-600">{day.name}</div>
                 <div className="flex-1 flex items-center gap-2">

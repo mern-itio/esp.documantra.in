@@ -14,7 +14,7 @@ import {
   Zap,
   UserCog
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../../context/AppContext';
 
 interface LayoutProps {
   children: React.ReactNode;

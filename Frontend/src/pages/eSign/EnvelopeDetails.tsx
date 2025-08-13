@@ -26,7 +26,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 const EnvelopeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { envelopes, updateEnvelope, addAuditEntry } = useApp();
+  const { envelopes, addAuditEntry } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
 
   const envelope = envelopes.find(env => env.id === id);

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, CheckCircle, Clock, User, Shield, ArrowRight, ArrowLeft, Download, Eye, FileSignature as Signature, Calendar, Type, Check, X, AlertCircle, Lock } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { FileText, CheckCircle, Clock, User, ArrowRight, ArrowLeft, Eye, FileSignature as Signature, Type, Check, AlertCircle, Lock } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import SignatureCanvas from 'react-signature-canvas';
 
@@ -370,7 +370,7 @@ const SigningPage: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Completed Fields</h3>
         <div className="space-y-4">
-          {recipientFields.map((field, index) => (
+          {recipientFields.map((field) => (
             <div key={field.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <CheckCircle className="w-5 h-5 text-green-600" />
