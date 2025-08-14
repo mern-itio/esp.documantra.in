@@ -18,7 +18,6 @@ import { useApp } from '../../context/AppContext';
 import type{ Document, Recipient, SignatureField } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
-import {eSignApi} from '../../services/apiHelper';
 import axios from 'axios';
 
 const EnvelopeCreator: React.FC = () => {
@@ -93,7 +92,7 @@ const uploadDocuments = async () => {
                         Authorization: `Bearer ${token}`, // Token header
                       }
                     });
-
+                    console.log('Upload response:', response);
 };
 // Update your "Next" button handler:
 const handleNext = async () => {
