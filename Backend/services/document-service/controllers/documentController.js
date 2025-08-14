@@ -9,13 +9,13 @@ const unlinkAsync = promisify(fs.unlink);
 const extractFileContent = async (filePath, mimeType) => {
   try {
     const fileExtension = path.extname(filePath).toLowerCase();
-    
+
     // For text files, read directly
     if (['.txt', '.md', '.html', '.json', '.xml', '.csv', '.js', '.ts', '.py', '.java', '.cpp', '.c'].includes(fileExtension)) {
       const content = await fs.promises.readFile(filePath, 'utf8');
       return content;
     }
-    
+
     // For PDF files - extract actual text content
     if (fileExtension === '.pdf') {
       try {
@@ -28,7 +28,7 @@ const extractFileContent = async (filePath, mimeType) => {
         return `[PDF Document Content]\n\nUnable to extract text from PDF. This might be a scanned document or image-based PDF.\n\nFile: ${path.basename(filePath)}\nError: ${pdfError.message}`;
       }
     }
-    
+
     // For DOC/DOCX files - extract actual text content
     if (['.doc', '.docx'].includes(fileExtension)) {
       try {
@@ -40,7 +40,7 @@ const extractFileContent = async (filePath, mimeType) => {
         return `[Word Document Content]\n\nUnable to extract text from Word document.\n\nFile: ${path.basename(filePath)}\nError: ${wordError.message}`;
       }
     }
-    
+
     // For other file types, return file information
     const stats = await fs.promises.stat(filePath);
     return `[${mimeType.toUpperCase()} File]\n\nFile: ${path.basename(filePath)}\nSize: ${(stats.size / 1024 / 1024).toFixed(2)} MB\nType: ${mimeType}\n\nThis file type doesn't support direct text extraction, but you can add notes and comments here.`;
@@ -55,9 +55,9 @@ class DocumentController {
   async uploadDocument(req, res) {
     try {
       if (!req.file) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'No file uploaded' 
+        return res.status(400).json({
+          success: false,
+          message: 'No file uploaded'
         });
       }
 
@@ -77,14 +77,14 @@ class DocumentController {
 
       // Check if folder exists and user has access
       if (folderId) {
-        const folder = await Folder.findOne({ 
-          _id: folderId, 
+        const folder = await Folder.findOne({
+          _id: folderId,
           $or: [
             { ownerId: userId },
             { 'permissions.userId': userId }
           ]
         });
-        
+
         if (!folder) {
           await unlinkAsync(req.file.path);
           return res.status(404).json({
@@ -94,25 +94,25 @@ class DocumentController {
         }
       }
 
-             // Extract content from the uploaded file
-       const extractedContent = await extractFileContent(req.file.path, req.file.mimetype);
-       
-       // Create document record
-       const document = new Document({
-         name: req.file.originalname,
-         originalName: req.file.originalname,
-         type: path.extname(req.file.originalname).substring(1).toLowerCase(),
-         size: req.file.size,
-         mimeType: req.file.mimetype,
-         filePath: req.file.path,
-         fileName: req.file.filename,
-         uploadedBy: userId,
-         ownerId: userId,
-         folderId: folderId || null,
-         description: description || '',
-         tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-         content: extractedContent
-       });
+      // Extract content from the uploaded file
+      const extractedContent = await extractFileContent(req.file.path, req.file.mimetype);
+
+      // Create document record
+      const document = new Document({
+        name: req.file.originalname,
+        originalName: req.file.originalname,
+        type: path.extname(req.file.originalname).substring(1).toLowerCase(),
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+        filePath: req.file.path,
+        fileName: req.file.filename,
+        uploadedBy: userId,
+        ownerId: userId,
+        folderId: folderId || null,
+        description: description || '',
+        tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+        content: extractedContent
+      });
 
       await document.save();
 
@@ -137,7 +137,7 @@ class DocumentController {
 
     } catch (error) {
       console.error('Upload error:', error);
-      
+
       // Clean up file if document creation fails
       if (req.file) {
         try {
@@ -159,24 +159,26 @@ class DocumentController {
   async getUserDocuments(req, res) {
     try {
       const userId = req.user.data.id;
-      const { 
-        page = 1, 
-        limit = 20, 
-        folderId, 
-        search, 
-        sortBy = 'createdAt', 
+      const {
+        page = 1,
+        limit = 20,
+        folderId,
+        search,
+        sortBy = 'createdAt',
         sortOrder = 'desc',
         type,
         tags
       } = req.query;
 
       const skip = (page - 1) * limit;
-      
+
       // Build query
-      let query = { 
+      let query = {
         $or: [
           { ownerId: userId },
           { 'sharedWith.userId': userId },
+          { 'sharedWith.userId': req.user.data.email }, // match email stored in userId
+          { 'sharedWith.email': req.user.data.email },  // match email field
           { isPublic: true }
         ]
       };
@@ -481,9 +483,9 @@ class DocumentController {
       // Apply folder updates
       for (const [folderId, update] of Object.entries(folderUpdates)) {
         await Folder.findByIdAndUpdate(folderId, {
-          $inc: { 
-            documentCount: -update.count, 
-            totalSize: -update.size 
+          $inc: {
+            documentCount: -update.count,
+            totalSize: -update.size
           }
         });
       }
@@ -545,7 +547,7 @@ class DocumentController {
       }
 
       // Check if already shared with this user
-      const existingShare = document.sharedWith?.find(share => 
+      const existingShare = document.sharedWith?.find(share =>
         share.userId === email || share.email === email
       );
 
@@ -561,7 +563,7 @@ class DocumentController {
         if (!document.sharedWith) {
           document.sharedWith = [];
         }
-        
+
         document.sharedWith.push({
           userId: email,
           email: email,

@@ -89,11 +89,11 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
           checked={isSelected}
           onClick={(e) => e.stopPropagation()} // 👈 stops modal trigger
           onChange={(e) => {
-            console.log('🔍 Checkbox changed:', document.id, e.target.checked);
-            console.log('🔍 onSelect function:', typeof onSelect);
-            console.log('🔍 Calling onSelect with:', e.target.checked);
+            // console.log('🔍 Checkbox changed:', document.id, e.target.checked);
+            // console.log('🔍 onSelect function:', typeof onSelect);
+            // console.log('🔍 Calling onSelect with:', e.target.checked);
             onSelect(e.target.checked);
-            console.log('🔍 onSelect called successfully');
+            // console.log('🔍 onSelect called successfully');
           }}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />

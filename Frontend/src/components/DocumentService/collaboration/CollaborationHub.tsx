@@ -40,6 +40,43 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
     processDocument
   } = useCollaborationStore();
 
+  // Check user permissions for this document
+  const getUserPermissions = () => {
+    console.log('🔍 Checking user permissions:', { user, documentSharedWith: document.sharedWith });
+    
+    if (!user || !document.sharedWith) {
+      console.log('❌ No user or sharedWith data:', { user, sharedWith: document.sharedWith });
+      return { canEdit: false, canComment: false, canView: true, permission: 'view' as const };
+    }
+
+    // Find the user's share entry
+    const userShare = document.sharedWith.find((share: any) => 
+      share.userId === user.email || share.email === user.email
+    );
+
+    console.log('🔍 User share entry found:', userShare);
+
+    if (!userShare) {
+      console.log('❌ No matching share entry for user:', user.email);
+      return { canEdit: false, canComment: false, canView: true, permission: 'view' as const };
+    }
+
+    const permission = userShare.permission || 'view';
+    console.log('✅ User permission:', permission);
+    
+    const permissions = {
+      canEdit: permission === 'edit',
+      canComment: permission === 'edit' || permission === 'comment',
+      canView: true,
+      permission: permission
+    };
+    
+    console.log('🔍 Final permissions:', permissions);
+    return permissions;
+  };
+
+  const userPermissions = getUserPermissions();
+
   // Get real collaborators from document data (only shared users, not owner)
   const getRealCollaborators = (): CollaborativeUser[] => {
     const collaborators: CollaborativeUser[] = [];
@@ -412,20 +449,30 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={onClose}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+                      <div className="flex items-center space-x-2">
+              {/* Permission Badge */}
+              <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                userPermissions.permission === 'edit' 
+                  ? 'text-green-600 bg-green-50 border-green-200'
+                  : userPermissions.permission === 'comment'
+                  ? 'text-purple-600 bg-purple-50 border-purple-200'
+                  : 'text-blue-600 bg-blue-50 border-blue-200'
+              }`}>
+                {userPermissions.permission?.toUpperCase() || 'VIEW'} Access
+              </div>
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={onClose}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
         </div>
 
         {/* Tabs */}
@@ -476,20 +523,61 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           {activeTab === 'editor' && (
-            <CollaborativeEditor
-              documentId={document.id}
-              content={isLoadingContent ? 'Loading document content...' : documentContent}
-              activeUsers={activeUsers}
-              comments={comments}
-              isEditable={true} // Make all documents editable
-              document={document}
-              onContentChange={handleContentChange}
-              onCommentAdd={handleAddComment}
-            />
+            <>
+              {/* Permission Info Banner */}
+              {!userPermissions.canEdit && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-700">
+                        <strong>Read-only mode:</strong> You have {userPermissions.permission} access to this document. 
+                        {userPermissions.permission === 'view' && ' You can view and add comments.'}
+                        {userPermissions.permission === 'comment' && ' You can view and add comments, but cannot edit the document.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <CollaborativeEditor
+                documentId={document.id}
+                content={isLoadingContent ? 'Loading document content...' : documentContent}
+                activeUsers={activeUsers}
+                comments={comments}
+                isEditable={userPermissions.canEdit} // Respect user permissions
+                document={document}
+                onContentChange={handleContentChange}
+                onCommentAdd={handleAddComment}
+              />
+            </>
           )}
 
           {activeTab === 'comments' && (
             <div className="h-full">
+              {/* Permission Info Banner for Comments */}
+              {!userPermissions.canComment && (
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-blue-700">
+                        <strong>View-only mode:</strong> You have {userPermissions.permission} access to this document. 
+                        You can view comments but cannot add new ones or reply to existing comments.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <CommentSystem
                 documentId={document.id}
                 comments={comments}
@@ -497,6 +585,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                 onCommentResolve={handleResolveComment}
                 onReplyAdd={handleAddCommentReply}
                 isLoading={isLoadingComments}
+                canAddComments={userPermissions.canComment}
               />
             </div>
           )}
