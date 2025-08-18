@@ -39,6 +39,7 @@ interface DocumentState {
   moveDocuments: (documentIds: string[], folderId: string) => Promise<void>;
   shareDocument: (documentId: string, email: string, permission: 'view' | 'edit' | 'comment', message?: string) => Promise<void>;
   toggleFavorite: (documentId: string) => Promise<void>;
+  toggleArchive: (documentId: string) => Promise<void>;
   setSelectedDocuments: (documentIds: string[]) => void;
   setCurrentFolder: (folderId: string | null) => Promise<void>;
   setSearchQuery: (query: string) => void;
@@ -54,6 +55,11 @@ interface DocumentState {
   fetchDocuments: (params?: any) => Promise<void>;
   fetchFolders: (params?: any) => Promise<void>;
   refreshData: () => Promise<void>;
+
+  // Trash functionality
+  moveToTrash: (documentId: string) => Promise<void>;
+  restoreFromTrash: (documentId: string) => Promise<void>;
+  permanentlyDelete: (documentId: string) => Promise<void>;
 }
 
 // Helper function to get user data from localStorage
@@ -154,28 +160,38 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       const response = await documentAPI.getUserDocuments(params);
 
       if (response.success) {
+        console.log('🔍 fetchDocuments: API response:', response.data);
+        console.log('🔍 fetchDocuments: Documents array:', response.data.documents);
+        
         // Transform API response to match our Document interface
-        const transformedDocuments: Document[] = response.data.documents.map((doc: any) => ({
-          id: doc._id,
-          name: doc.name,
-          type: doc.type,
-          size: doc.size,
-          createdAt: doc.createdAt,
-          modifiedAt: doc.modifiedAt,
-          uploadedBy: doc.uploadedBy,
-          folderId: doc.folderId?._id || doc.folderId,
-          tags: doc.tags || [],
-          shared: doc.shared || false,
-          views: doc.views || 0,
-          downloads: doc.downloads || 0,
-          sharedWith: doc.sharedWith || [],
-          isArchived: doc.isArchived || false,
-          isFavorite: doc.isFavorite || false,
-          description: doc.description || '',
-          thumbnail: doc.thumbnail,
-          content: doc.content
-        }));
+        const transformedDocuments: Document[] = response.data.documents.map((doc: any) => {
+          console.log('🔍 fetchDocuments: Processing document:', doc);
+          console.log('🔍 fetchDocuments: Document _id:', doc._id);
+          console.log('🔍 fetchDocuments: Document keys:', Object.keys(doc));
+          
+          return {
+            id: doc._id,
+            name: doc.name,
+            type: doc.type,
+            size: doc.size,
+            createdAt: doc.createdAt,
+            modifiedAt: doc.modifiedAt,
+            uploadedBy: doc.uploadedBy,
+            folderId: doc.folderId?._id || doc.folderId,
+            tags: doc.tags || [],
+            shared: doc.shared || false,
+            views: doc.views || 0,
+            downloads: doc.downloads || 0,
+            sharedWith: doc.sharedWith || [],
+            isArchived: doc.isArchived || false,
+            isFavorite: doc.isFavorite || false,
+            description: doc.description || '',
+            thumbnail: doc.thumbnail,
+            content: doc.content
+          };
+        });
 
+        console.log('🔍 fetchDocuments: Transformed documents:', transformedDocuments);
         set({ documents: transformedDocuments });
       }
     } catch (error: any) {
@@ -443,6 +459,29 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
   },
 
+  toggleArchive: async (documentId: string) => {
+    try {
+      const document = get().documents.find(doc => doc.id === documentId);
+      if (document) {
+        const response = await documentAPI.updateDocument(documentId, {
+          isArchived: !document.isArchived
+        });
+
+        if (response.success) {
+          set((state: any) => ({
+            documents: state.documents.map((doc: any) =>
+              doc.id === documentId
+                ? { ...doc, isArchived: !doc.isArchived }
+                : doc
+            )
+          }));
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to toggle archive:', error);
+    }
+  },
+
   setSelectedDocuments: (documentIds: string[]) => {
     console.log('🔍 Store - setSelectedDocuments called with:', documentIds);
     console.log('🔍 Store - Previous state:', get().selectedDocuments);
@@ -476,6 +515,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const { documents, currentFolderId, searchQuery, searchFilters, sortBy, sortOrder } = get();
 
     let filtered = documents.filter(doc => {
+      // Exclude deleted documents
+      if (doc.isDeleted) return false;
+
       // Folder filter
       if (currentFolderId && doc.folderId !== currentFolderId) return false;
 
@@ -539,7 +581,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   getFolderDocuments: (folderId: string | null) => {
     const { documents } = get();
-    return documents.filter(doc => doc.folderId === folderId);
+    return documents.filter(doc => !doc.isDeleted && doc.folderId === folderId);
   },
 
   getBreadcrumbs: () => {
@@ -562,10 +604,64 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   getStorageStats: () => {
     const { documents, userPermissions } = get();
-    const used = documents.reduce((total, doc) => total + doc.size, 0);
+    const used = documents.filter(doc => !doc.isDeleted).reduce((total, doc) => total + doc.size, 0);
     const total = userPermissions.storageLimit;
     const percentage = total === -1 ? 0 : Math.round((used / total) * 100);
 
     return { used, total, percentage };
+  },
+
+  // Trash functionality
+  moveToTrash: async (documentId: string) => {
+    try {
+      const document = get().documents.find(doc => doc.id === documentId);
+      if (document) {
+        const response = await documentAPI.deleteDocument(documentId);
+
+        if (response.success) {
+          set((state: any) => ({
+            documents: state.documents.map((doc: any) =>
+              doc.id === documentId
+                ? { ...doc, isDeleted: true, deletedAt: new Date().toISOString() }
+                : doc
+            )
+          }));
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to move document to trash:', error);
+    }
+  },
+
+  restoreFromTrash: async (documentId: string) => {
+    try {
+      const response = await documentAPI.restoreDocument(documentId);
+
+      if (response.success) {
+        set((state: any) => ({
+          documents: state.documents.map((doc: any) =>
+            doc.id === documentId
+              ? { ...doc, isDeleted: false, deletedAt: null }
+              : doc
+          )
+        }));
+      }
+    } catch (error: any) {
+      console.error('Failed to restore document from trash:', error);
+    }
+  },
+
+  permanentlyDelete: async (documentId: string) => {
+    try {
+      const response = await documentAPI.permanentlyDeleteDocument(documentId);
+
+      if (response.success) {
+        set((state: any) => ({
+          documents: state.documents.filter((doc: any) => doc.id !== documentId)
+        }));
+      }
+    } catch (error: any) {
+      console.error('Failed to permanently delete document:', error);
+    }
   }
 }));

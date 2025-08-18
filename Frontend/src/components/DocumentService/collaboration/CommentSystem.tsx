@@ -4,7 +4,7 @@ import {
   Reply, 
   Check, 
   MoreVertical,
-  Paperclip,
+  // Paperclip,
   Send,
   AtSign,
   Edit3,
@@ -240,14 +240,14 @@ export function CommentSystem({
               />
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Button 
+                  {/* <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={() => setShowAttachmentPicker(true)}
                     type="button"
                   >
                     <Paperclip className="w-4 h-4" />
-                  </Button>
+                  </Button> */}
                   <Button 
                     variant="ghost" 
                     size="sm"

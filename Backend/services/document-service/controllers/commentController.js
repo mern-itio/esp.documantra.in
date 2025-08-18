@@ -11,10 +11,15 @@ class CommentController {
       // Check if user has access to the document
       const document = await Document.findOne({
         _id: documentId,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId },
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -54,10 +59,15 @@ class CommentController {
       // Check if user has access to the document
       const document = await Document.findOne({
         _id: documentId,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -120,11 +130,14 @@ class CommentController {
       }
 
       // Check if user can edit this comment (author or document owner)
-      const document = await Document.findById(comment.documentId);
+      const document = await Document.findOne({
+        _id: comment.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found or access denied'
         });
       }
 
@@ -176,11 +189,14 @@ class CommentController {
       }
 
       // Check if user can delete this comment (author or document owner)
-      const document = await Document.findById(comment.documentId);
+      const document = await Document.findOne({
+        _id: comment.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found or access denied'
         });
       }
 
@@ -227,10 +243,15 @@ class CommentController {
       // Check if user has access to the document
       const document = await Document.findOne({
         _id: comment.documentId,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'full'] } },
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'full'] } },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -288,10 +309,15 @@ class CommentController {
       // Check if user has access to the document
       const document = await Document.findOne({
         _id: comment.documentId,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -358,11 +384,14 @@ class CommentController {
       }
 
       // Check if user can edit this reply (author or document owner)
-      const document = await Document.findById(comment.documentId);
+      const document = await Document.findOne({
+        _id: comment.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found or access denied'
         });
       }
 
@@ -420,11 +449,14 @@ class CommentController {
       }
 
       // Check if user can delete this reply (author or document owner)
-      const document = await Document.findById(comment.documentId);
+      const document = await Document.findOne({
+        _id: comment.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found or access denied'
         });
       }
 

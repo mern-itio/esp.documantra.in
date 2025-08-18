@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Trash2, ArrowDown, Settings } from 'lucide-react';
+import { X, Plus, Trash2, ArrowDown } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import type { DocumentWorkflow, WorkflowStep } from '../../common/types/collaboration';
@@ -16,6 +16,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
   const [workflowName, setWorkflowName] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [deadline, setDeadline] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [steps, setSteps] = useState<Omit<WorkflowStep, 'id'>[]>([
     {
       name: '',
@@ -59,11 +60,19 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Prevent multiple submissions
+    if (isSaving) {
+      console.log('⚠️ WorkflowDesigner: Save already in progress, skipping...');
+      return;
+    }
+    
     if (!workflowName.trim() || steps.some(step => !step.name.trim())) {
       alert('Please fill in all required fields');
       return;
     }
+
+    setIsSaving(true);
 
     const workflow: Omit<DocumentWorkflow, 'id' | 'createdAt'> = {
       name: workflowName,
@@ -78,8 +87,14 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
       deadline: deadline || undefined
     };
 
-    onSave(workflow);
-    onClose();
+    try {
+      // Call onSave and wait for it to complete
+      await onSave(workflow);
+      onClose();
+    } catch (error) {
+      console.error('❌ WorkflowDesigner: Error during save:', error);
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -167,13 +182,13 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0"
                       >
                         <Settings className="w-3 h-3" />
-                      </Button>
+                      </Button> */}
                       {steps.length > 1 && (
                         <Button
                           variant="ghost"
@@ -277,9 +292,10 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
             </Button>
             <Button 
               onClick={handleSave}
-              className="bg-blue-600 hover:bg-blue-700"
+              disabled={isSaving}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
             >
-              Create Workflow
+              {isSaving ? 'Creating...' : 'Create Workflow'}
             </Button>
           </div>
         </div>

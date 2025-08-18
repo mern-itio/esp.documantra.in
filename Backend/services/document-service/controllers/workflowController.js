@@ -10,9 +10,12 @@ class WorkflowController {
       const userId = req.user.data.id;
 
       // Check if user has access to the document
-      const document = await Document.findById(documentId);
+      const document = await Document.findOne({
+        _id: documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
-        return res.status(404).json({ success: false, message: 'Document not found' });
+        return res.status(404).json({ success: false, message: 'Document not found or access denied' });
       }
 
       const isOwner = document.ownerId === userId || document.uploadedBy === userId;
@@ -41,9 +44,12 @@ class WorkflowController {
       const { name, priority, deadline, steps, metadata } = req.body;
 
       // Check if user has access to the document
-      const document = await Document.findById(documentId);
+      const document = await Document.findOne({
+        _id: documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
-        return res.status(404).json({ success: false, message: 'Document not found' });
+        return res.status(404).json({ success: false, message: 'Document not found or access denied' });
       }
 
       const isOwner = document.ownerId === userId || document.uploadedBy === userId;
@@ -116,9 +122,12 @@ class WorkflowController {
       }
 
       // Check if user has access to the document
-      const document = await Document.findById(workflow.documentId);
+      const document = await Document.findOne({
+        _id: workflow.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
-        return res.status(404).json({ success: false, message: 'Document not found' });
+        return res.status(404).json({ success: false, message: 'Document not found or access denied' });
       }
 
       const isOwner = document.ownerId === userId || document.uploadedBy === userId;
@@ -183,7 +192,10 @@ class WorkflowController {
         workflow.completedAt = new Date();
         
         // Send completion notification
-        const document = await Document.findById(workflow.documentId);
+        const document = await Document.findOne({
+          _id: workflow.documentId,
+          isDeleted: { $ne: true } // Exclude deleted documents
+        });
         if (document) {
           await emailService.sendWorkflowCompletion(
             workflow.name,
@@ -219,9 +231,12 @@ class WorkflowController {
       }
 
       // Check if user has access to the document
-      const document = await Document.findById(workflow.documentId);
+      const document = await Document.findOne({
+        _id: workflow.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
-        return res.status(404).json({ success: false, message: 'Document not found' });
+        return res.status(404).json({ success: false, message: 'Document not found or access denied' });
       }
 
       const isOwner = document.ownerId === userId || document.uploadedBy === userId;
@@ -253,9 +268,12 @@ class WorkflowController {
       }
 
       // Check if user has access to the document
-      const document = await Document.findById(workflow.documentId);
+      const document = await Document.findOne({
+        _id: workflow.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
-        return res.status(404).json({ success: false, message: 'Document not found' });
+        return res.status(404).json({ success: false, message: 'Document not found or access denied' });
       }
 
       const isOwner = document.ownerId === userId || document.uploadedBy === userId;
@@ -278,9 +296,12 @@ class WorkflowController {
       console.log(`🔍 Adding workflow collaborators for document ${documentId}`);
       console.log(`🔍 Assignee emails:`, assigneeEmails);
       
-      const document = await Document.findById(documentId);
+      const document = await Document.findOne({
+        _id: documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
-        console.log(`❌ Document not found: ${documentId}`);
+        console.log(`❌ Document not found or access denied: ${documentId}`);
         return;
       }
 
@@ -292,11 +313,17 @@ class WorkflowController {
         console.log(`🔍 Initialized empty sharedWith array`);
       }
 
-      const existingCollaborators = document.sharedWith.map(share => share.userId || share.email);
+      // Check for existing collaborators by both userId and email
+      const existingCollaborators = document.sharedWith.map(share => share.userId || share.email).filter(Boolean);
       console.log(`🔍 Existing collaborators:`, existingCollaborators);
       
       const newCollaborators = assigneeEmails.filter(email => !existingCollaborators.includes(email));
       console.log(`🔍 New collaborators to add:`, newCollaborators);
+
+      if (newCollaborators.length === 0) {
+        console.log(`ℹ️ All assignees are already collaborators for this document`);
+        return;
+      }
 
       for (const email of newCollaborators) {
         // Add to document's sharedWith array

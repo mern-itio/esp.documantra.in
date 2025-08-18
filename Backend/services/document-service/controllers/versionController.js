@@ -9,11 +9,14 @@ class VersionController {
       const userId = req.user.data.id;
 
       // Check if user has access to this document
-      const document = await Document.findById(documentId);
+      const document = await Document.findOne({
+        _id: documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Document not found' 
+          message: 'Document not found or access denied' 
         });
       }
 
@@ -54,11 +57,14 @@ class VersionController {
       const { content, description, changes } = req.body;
 
       // Check if user has access to this document
-      const document = await Document.findById(documentId);
+      const document = await Document.findOne({
+        _id: documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Document not found' 
+          message: 'Document not found or access denied' 
         });
       }
 
@@ -135,11 +141,14 @@ class VersionController {
       }
 
       // Check if user has access to the document
-      const document = await Document.findById(version.documentId);
+      const document = await Document.findOne({
+        _id: version.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Document not found' 
+          message: 'Document not found or access denied' 
         });
       }
 
@@ -183,11 +192,14 @@ class VersionController {
       }
 
       // Check if user has access to the document
-      const document = await Document.findById(version.documentId);
+      const document = await Document.findOne({
+        _id: version.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Document not found' 
+          message: 'Document not found or access denied' 
         });
       }
 
@@ -247,11 +259,14 @@ class VersionController {
       }
 
       // Check if user owns the document
-      const document = await Document.findById(version.documentId);
+      const document = await Document.findOne({
+        _id: version.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Document not found' 
+          message: 'Document not found or access denied' 
         });
       }
 
@@ -297,11 +312,14 @@ class VersionController {
       }
 
       // Check if user has access to the document
-      const document = await Document.findById(fromVersion.documentId);
+      const document = await Document.findOne({
+        _id: fromVersion.documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Document not found' 
+          message: 'Document not found or access denied' 
         });
       }
 

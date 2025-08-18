@@ -4,8 +4,8 @@ import {
   Clock, 
   User, 
   FileText, 
-  Eye, 
-  Download,
+  // Eye, 
+  // Download,
   GitCompare,
   Tag,
   Plus
@@ -35,7 +35,7 @@ export function VersionManager({
   versions,
   currentVersion,
   documentOwnerId,
-  onVersionSelect,
+  // onVersionSelect,
   // onVersionCompare,
   onVersionTag,
   onVersionReload,
@@ -366,7 +366,7 @@ export function VersionManager({
 
               {/* Actions */}
               <div className="flex items-center space-x-1 ml-4">
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="sm"
                   onClick={(e) => {
@@ -376,17 +376,17 @@ export function VersionManager({
                   className="h-8 w-8 p-0"
                 >
                   <Eye className="w-4 h-4" />
-                </Button>
+                </Button> */}
                 
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0"
                 >
                   <Download className="w-4 h-4" />
-                </Button>
+                </Button> */}
 
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="sm"
                   onClick={(e) => {
@@ -396,7 +396,7 @@ export function VersionManager({
                   className="h-8 w-8 p-0"
                 >
                   <Tag className="w-4 h-4" />
-                </Button>
+                </Button> */}
 
                 {/* Approval Button - Only visible to document owner */}
                 {isDocumentOwner() && (

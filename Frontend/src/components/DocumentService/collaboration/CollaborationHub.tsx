@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Users, MessageCircle, GitBranch, Workflow, Brain, Settings } from 'lucide-react';
+import { X, Users, MessageCircle, GitBranch, Workflow, Brain } from 'lucide-react';
 import type { Document } from '../../common/types';
 import { documentAPI, commentAPI, versionAPI, workflowAPI, documentAnalysisAPI } from '../../../services/api';
 import type { DocumentComment, CollaborativeUser } from '../../common/types/collaboration';
@@ -21,6 +21,11 @@ interface CollaborationHubProps {
 type TabType = 'editor' | 'comments' | 'versions' | 'workflows' | 'analysis';
 
 export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
+  console.log('🔍 CollaborationHub: Received document prop:', document);
+  console.log('🔍 CollaborationHub: Document ID:', document?.id);
+  console.log('🔍 CollaborationHub: Document _id:', (document as any)?._id);
+  console.log('🔍 CollaborationHub: Document keys:', Object.keys(document || {}));
+  
   const [activeTab, setActiveTab] = useState<TabType>('editor');
   const [documentContent, setDocumentContent] = useState<string>('');
   const [isLoadingContent, setIsLoadingContent] = useState(true);
@@ -42,6 +47,11 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
 
   // Check user permissions for this document
   const getUserPermissions = () => {
+    if (!document) {
+      console.log('❌ getUserPermissions: Document is null or undefined');
+      return { canEdit: false, canComment: false, canView: false, permission: 'none' as const };
+    }
+    
     console.log('🔍 Checking user permissions:', { user, documentOwner: document.ownerId || document.uploadedBy, documentSharedWith: document.sharedWith });
     
     if (!user) {
@@ -127,42 +137,36 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   // console.log('🔍 Document owner:', document.ownerId || document.uploadedBy);
   
   const [analysis, setAnalysis] = useState<any>(null);
-  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(true);
+  const [isLoadingAnalysis] = useState(true);
 
-  // Load document analysis only when analysis tab is active
+  // Load document analysis when analysis tab is active
   useEffect(() => {
-    if (document.id && activeTab === 'analysis') {
+    if (document?.id && activeTab === 'analysis') {
+      console.log('🔍 CollaborationHub: Loading document analysis for document:', document.id);
       loadDocumentAnalysis();
+    } else if (!document?.id) {
+      console.log('🔍 CollaborationHub: Document not ready yet, skipping analysis load');
     }
-  }, [document.id, activeTab]);
+  }, [document?.id, activeTab]);
 
   const loadDocumentAnalysis = async () => {
+    if (!document?.id) {
+      console.error('❌ loadDocumentAnalysis: Document ID is undefined!');
+      return;
+    }
+    
     try {
-      setIsLoadingAnalysis(true);
-      // First check the analysis status
+      // Check analysis status first
       const statusResponse = await documentAnalysisAPI.getAnalysisStatus(document.id);
-      if (statusResponse.success) {
-        const status = statusResponse.data.processingStatus;
-        
-        if (status === 'completed') {
-          // If completed, get the full analysis
-          const analysisResponse = await documentAnalysisAPI.getDocumentAnalysis(document.id);
-          if (analysisResponse.success && analysisResponse.data) {
-            setAnalysis(analysisResponse.data);
-          }
-        } else if (status === 'processing' || status === 'pending') {
-          // If still processing, set loading state
-          setAnalysis(undefined);
-        } else {
-          // If not started or failed, no analysis exists
-          setAnalysis(undefined);
+      if (statusResponse.success && statusResponse.data.status === 'completed') {
+        // Analysis is complete, get the results
+        const analysisResponse = await documentAnalysisAPI.getDocumentAnalysis(document.id);
+        if (analysisResponse.success) {
+          setAnalysis(analysisResponse.data);
         }
       }
     } catch (error) {
       console.error('Failed to load document analysis:', error);
-      setAnalysis(undefined);
-    } finally {
-      setIsLoadingAnalysis(false);
     }
   };
 
@@ -173,60 +177,78 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   //   }
   // };
 
-  // Load document content and comments when component mounts
+  // Load document content when component mounts
   useEffect(() => {
-    loadDocumentContent();
-    loadComments();
-    loadVersions();
-    loadWorkflows();
-  }, [document.id]);
+    if (document?.id) {
+      console.log('🔍 CollaborationHub: Loading initial data for document:', document.id);
+      loadDocumentContent();
+      loadComments();
+      loadVersions();
+      loadWorkflows();
+    } else {
+      console.log('🔍 CollaborationHub: Document not ready yet, skipping initial data load');
+    }
+  }, [document?.id]);
 
   const loadDocumentContent = async () => {
+    if (!document?.id) {
+      console.error('❌ loadDocumentContent: Document ID is undefined!');
+      return;
+    }
+    
     try {
-      setIsLoadingContent(true);
       const response = await documentAPI.getDocument(document.id);
-      if (response.success && response.data.content) {
-        setDocumentContent(response.data.content);
+      if (response.success) {
+        setDocumentContent(response.data.content || '');
+        setIsLoadingContent(false);
       } else {
-        // Generate placeholder content based on document type
+        console.error('Failed to load document content:', response.message);
+        // Generate placeholder content as fallback
         setDocumentContent(generatePlaceholderContent(document));
+        setIsLoadingContent(false);
       }
     } catch (error) {
-      console.error('Failed to load document content:', error);
+      console.error('Error loading document content:', error);
+      // Generate placeholder content as fallback
       setDocumentContent(generatePlaceholderContent(document));
-    } finally {
       setIsLoadingContent(false);
     }
   };
 
   const loadComments = async () => {
+    if (!document?.id) {
+      console.error('❌ loadComments: Document ID is undefined!');
+      return;
+    }
+    
     try {
-      setIsLoadingComments(true);
       console.log('🔍 Loading comments for document:', document.id);
       const response = await commentAPI.getDocumentComments(document.id);
       if (response.success) {
-        console.log('🔍 Comments loaded successfully:', response.data);
         setComments(response.data);
+        setIsLoadingComments(false);
       } else {
-        console.log('❌ Failed to load comments:', response);
-        setComments([]);
+        console.error('Failed to load comments:', response.message);
+        setIsLoadingComments(false);
       }
     } catch (error) {
       console.error('Failed to load comments:', error);
-      setComments([]);
-    } finally {
       setIsLoadingComments(false);
     }
   };
 
   const loadVersions = async () => {
+    if (!document?.id) {
+      console.error('❌ loadVersions: Document ID is undefined!');
+      return;
+    }
+    
     try {
-      // setIsLoadingVersions(true);
       console.log('🔍 Loading versions for document:', document.id);
       const response = await versionAPI.getDocumentVersions(document.id);
       if (response.success) {
-        console.log('🔍 Versions loaded successfully:', response.data);
         setVersions(response.data);
+        // setIsLoadingVersions(false);
       } else {
         console.log('❌ Failed to load versions:', response);
         setVersions([]);
@@ -238,6 +260,11 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   const loadWorkflows = async () => {
+    if (!document?.id) {
+      console.error('❌ loadWorkflows: Document ID is undefined!');
+      return;
+    }
+    
     try {
       // setIsLoadingWorkflows(true);
       console.log('🔍 Loading workflows for document:', document.id);
@@ -256,25 +283,10 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   // Workflow management functions
-  const handleCreateWorkflow = async (workflow: any) => {
-    try {
-      const response = await workflowAPI.createWorkflow(document.id, workflow);
-      if (response.success) {
-        // console.log('✅ Workflow created successfully');
-        await loadWorkflows(); // Reload workflows
-      } else {
-        console.error('❌ Failed to create workflow:', response.message);
-      }
-    } catch (error) {
-      console.error('Error creating workflow:', error);
-    }
-  };
-
   const handleUpdateWorkflow = async (workflowId: string, updates: any) => {
     try {
       const response = await workflowAPI.updateWorkflow(workflowId, updates);
       if (response.success) {
-        // console.log('✅ Workflow updated successfully');
         await loadWorkflows(); // Reload workflows
       } else {
         console.error('❌ Failed to update workflow:', response.message);
@@ -294,6 +306,11 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   const handleAddComment = async (comment: Omit<DocumentComment, 'id' | 'timestamp'>) => {
+    if (!document?.id) {
+      console.error('❌ handleAddComment: Document ID is undefined!');
+      return;
+    }
+    
     try {
       const response = await commentAPI.createComment(document.id, {
         content: comment.content,
@@ -349,6 +366,10 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   const generatePlaceholderContent = (doc: Document) => {
+    if (!doc) {
+      return 'Document content not available';
+    }
+    
     // If document already has content, use it
     if (doc.content) {
       return doc.content;
@@ -392,6 +413,15 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   ];
 
   const handleContentChange = async (content: string) => {
+    console.log('🔍 handleContentChange: Document ID:', document?.id);
+    console.log('🔍 handleContentChange: Document object:', document);
+    
+    if (!document?.id) {
+      console.error('❌ handleContentChange: Document ID is undefined!');
+      alert('Error: Document ID is missing. Please refresh the page and try again.');
+      return;
+    }
+    
     try {
       // Save content to database
       const response = await documentAPI.updateDocument(document.id, { content });
@@ -410,6 +440,11 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   const createNewVersion = async (newContent: string) => {
+    if (!document?.id) {
+      console.error('❌ createNewVersion: Document ID is undefined!');
+      return;
+    }
+    
     try {
       // Get the previous version for comparison
       const previousVersion = versions[0]; // Most recent version
@@ -438,24 +473,28 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   const calculateChanges = (oldContent: string, newContent: string) => {
-    if (!oldContent && newContent) {
+    // Ensure content is strings
+    const old = oldContent || '';
+    const new_ = newContent || '';
+    
+    if (!old && new_) {
       // First version - all content is additions
-      return { additions: newContent.length, deletions: 0, modifications: 0 };
+      return { additions: new_.length, deletions: 0, modifications: 0 };
     }
     
-    if (oldContent && !newContent) {
+    if (old && !new_) {
       // Content was completely removed
-      return { additions: 0, deletions: oldContent.length, modifications: 0 };
+      return { additions: 0, deletions: old.length, modifications: 0 };
     }
     
-    if (oldContent === newContent) {
+    if (old === new_) {
       // No changes
       return { additions: 0, deletions: 0, modifications: 0 };
     }
     
     // Split into lines for better comparison
-    const oldLines = oldContent.split('\n');
-    const newLines = newContent.split('\n');
+    const oldLines = old.split('\n');
+    const newLines = new_.split('\n');
     
     let additions = 0;
     let deletions = 0;
@@ -529,10 +568,10 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
               }`}>
                 {userPermissions.permission === 'full' ? 'OWNER' : userPermissions.permission?.toUpperCase() || 'NO ACCESS'}
               </div>
-              <Button variant="outline" size="sm">
+              {/* <Button variant="outline" size="sm">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
-              </Button>
+              </Button> */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -682,9 +721,9 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
               <WorkflowManager
                 documentId={document.id}
                 workflows={workflows}
-                onWorkflowCreate={handleCreateWorkflow}
                 onWorkflowUpdate={handleUpdateWorkflow}
                 onStepComplete={handleCompleteWorkflowStep}
+                onWorkflowsRefresh={loadWorkflows}
               />
             </div>
           )}

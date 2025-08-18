@@ -16,6 +16,7 @@ import {
 import type { Document } from '../../common/types';
 import { Button } from '../ui/button';
 import { useDocumentStore } from '../../common/store/documentStore';
+import { Archive, ArchiveRestore } from 'lucide-react';
 import { cn, formatDate, formatFileSize } from '../../common/lib/utils';
 
 interface DocumentCardProps {
@@ -53,7 +54,7 @@ const getFileTypeColor = (type: string) => {
 };
 
 export function DocumentCard({ document, isSelected, onSelect, onClick }: DocumentCardProps) {
-  const { toggleFavorite, userPermissions } = useDocumentStore();
+  const { toggleFavorite, toggleArchive, moveToTrash, userPermissions } = useDocumentStore();
   const [showActions, setShowActions] = useState(false);
 
   const FileIcon = getFileTypeIcon(document.type);
@@ -132,11 +133,38 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
                 <Move className="w-4 h-4" />
                 <span>Move</span>
               </button>
+              <button 
+                className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleArchive(document.id);
+                  setShowActions(false);
+                }}
+              >
+                {document.isArchived ? (
+                  <>
+                    <ArchiveRestore className="w-4 h-4" />
+                    <span>Unarchive</span>
+                  </>
+                ) : (
+                  <>
+                    <Archive className="w-4 h-4" />
+                    <span>Archive</span>
+                  </>
+                )}
+              </button>
               <div className="border-t border-gray-100 my-1" />
               {userPermissions.delete_own && (
-                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                <button 
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveToTrash(document.id);
+                    setShowActions(false);
+                  }}
+                >
                   <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
+                  <span>Move to Trash</span>
                 </button>
               )}
             </div>
@@ -193,6 +221,9 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
           <div className="flex items-center space-x-2">
             {document.shared && (
               <Share2 className="w-3 h-3 text-blue-500" >Shared</Share2>
+            )}
+            {document.isArchived && (
+              <Archive className="w-3 h-3 text-gray-500" />
             )}
             {document.views > 0 && (
               <div className="flex items-center space-x-1">

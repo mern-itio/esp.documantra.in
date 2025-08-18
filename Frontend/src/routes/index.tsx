@@ -158,6 +158,10 @@ import { CollaborationHub } from '../components/DocumentService/collaboration/Co
 
 import { SharedDocumentsPage } from '../pages/DocumentService/SharedDocumentsPage';
 import FoldersPage from '../pages/DocumentService/FoldersPage';
+import RecentPage from '../pages/DocumentService/RecentPage';
+import FavoritesPage from '../pages/DocumentService/FavoritesPage';
+import ArchivedPage from '../pages/DocumentService/ArchivedPage';
+import TrashPage from '../pages/DocumentService/TrashPage';
 
 // E-Signature Pages Started
 import EsignDashboard from '../pages/eSign/Dashboard';
@@ -195,6 +199,10 @@ function DocumentView() {
   };
 
   const handleDocumentSelect = (document: any) => {
+    console.log('🔍 handleDocumentSelect: Received document:', document);
+    console.log('🔍 handleDocumentSelect: Document ID:', document?.id);
+    console.log('🔍 handleDocumentSelect: Document _id:', document?._id);
+    console.log('🔍 handleDocumentSelect: Document keys:', Object.keys(document || {}));
     setSelectedDocument(document);
   };
 
@@ -395,6 +403,14 @@ const authRoutes = [
     ) 
   },
   { 
+    path: '/recent', 
+    element: (
+      <DocumentLayout>
+        <RecentPage />
+      </DocumentLayout>
+    ) 
+  },
+  { 
     path: '/documents/shared', 
     element: (
       <DocumentLayout>
@@ -407,6 +423,30 @@ const authRoutes = [
     element: (
       <DocumentLayout>
         <FoldersPage />
+      </DocumentLayout>
+    ) 
+  },
+  { 
+    path: '/documents/favorites', 
+    element: (
+      <DocumentLayout>
+        <FavoritesPage />
+      </DocumentLayout>
+    ) 
+  },
+  { 
+    path: '/documents/archived', 
+    element: (
+      <DocumentLayout>
+        <ArchivedPage />
+      </DocumentLayout>
+    ) 
+  },
+  { 
+    path: '/documents/trash', 
+    element: (
+      <DocumentLayout>
+        <TrashPage />
       </DocumentLayout>
     ) 
   },
