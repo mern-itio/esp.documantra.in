@@ -6,7 +6,8 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronRight,
-  Building2
+  Building2,
+  FileSignature
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -40,7 +41,20 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'folders', label: 'Folders', path: '/documents/folder' },
         { id: 'trash', label: 'Trash', path: '/documents/trash' }
       ]
-    }
+    },
+    {
+      id: 'e-sign',
+      label: 'E-Sign',
+      icon: FileSignature,
+      children: [
+        { id: 'dashboard', label: 'Dashboard', path: '/e-sign/dashboard' },
+        { id: 'create', label: 'Create', path: '/e-sign/create' },
+        { id: 'analytics', label: 'Analytics', path: '/e-sign/analytics' },
+        { id: 'settings', label: 'Settings', path: '/e-sign/settings' },
+        { id: 'enterprise', label: 'Enterprise', path: '/e-sign/enterprise' },
+        { id: 'admin', label: 'Admin', path: '/e-sign/admin' }
+      ]
+    },
   ];
 
   const toggleSubmenu = (id: string) => {

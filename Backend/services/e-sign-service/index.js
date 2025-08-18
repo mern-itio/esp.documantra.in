@@ -3,10 +3,11 @@ const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const eSignRoutes = require('./routes/eSignRoutes');
 
 dotenv.config();
 
-const app = express();
+const app = express(); 
 
 // Middleware
 app.use(cors({
@@ -25,6 +26,8 @@ app.use(verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 app.get('/health', (req, res) => {
   res.send(`E-Sign service is running ${req.user?.data?.fullname || ''}`);
 });
+// API Routes
+app.use('/api/e-sign', eSignRoutes);
 
 
 // Start server
