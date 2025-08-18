@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useDocumentStore } from '../../components/common/store/documentStore';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { useAuthInitialization } from '../../hooks/useAuthInitialization';
 import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
-import { DocumentHeader } from '../../components/DocumentService/layout/DocumentHeader';
 import { EmptyState } from '../../components/DocumentService/common/EmptyState';
 import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
 import { Users, Eye, Edit, MessageSquare } from 'lucide-react';

@@ -18,7 +18,7 @@ export const useAuthInitialization = () => {
         id: authUser.id,
         email: authUser.email,
         name: authUser.fullname,
-        role: authUser.type || 'regular'
+        role: (authUser.type as 'regular' | 'team_admin' | 'super_admin') || 'regular'
       };
       setCurrentUser(userForStore);
     }
