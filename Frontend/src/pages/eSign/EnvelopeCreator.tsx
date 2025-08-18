@@ -18,7 +18,7 @@ import { useApp } from '../../context/AppContext';
 import type{ Document, Recipient, SignatureField } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
-import axios from 'axios';
+import {eSignApi} from '../../services/apiHelper';
 
 const EnvelopeCreator: React.FC = () => {
   const navigate = useNavigate();
@@ -45,6 +45,7 @@ const EnvelopeCreator: React.FC = () => {
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [fields, setFields] = useState<SignatureField[]>([]);
   const [files, setFiles] = useState<FileList | null>(null);
+  const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -79,25 +80,82 @@ const uploadDocuments = async () => {
   Array.from(files).forEach((file) => {
     formData.append('files', file, file.name);
   });
-  // Actually see what's inside
-  // for (const [key, value] of formData.entries()) {
-  //   console.log(key, value);
-  // }
+  if (envelopeId) {
+    formData.append('envelopeId', envelopeId);
+  }
+  try {
+      const response = await eSignApi.post('/api/e-sign/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (response.status == 200) {
+        console.log('Documents uploaded successfully:', response.data);
+        setEnvelopeId(response.data.data.envelopeId);
+        console.log('Envelope ID:', response.data.data.envelopeId);
+      }
+  }catch (error) {
+    console.error('Error uploading documents:', error);
+  }
 
-  // Replace with your actual API endpoint
-      const token = localStorage.getItem("accessToken");
-      const response = await axios.post('http://localhost:2103/api/e-sign/upload', formData, { 
-                        headers: {
-                        'Content-Type': 'multipart/form-data',
-                        Authorization: `Bearer ${token}`, // Token header
-                      }
-                    });
-                    console.log('Upload response:', response);
+};
+const insertRecipient = async () => {
+  if (recipients.length === 0) return;
+
+  const recipientData = recipients.map(recipient => ({
+    name: recipient.name,
+    email: recipient.email,
+    role: recipient.role,
+    order: recipient.order,
+    status: recipient.status,
+    authentication: recipient.authentication
+  }));
+  try {
+    const response = await eSignApi.post('/api/e-sign/add-recipients',
+      {
+        envelopeId,
+        recipients: recipientData
+      }
+     );
+    if (response.status === 200) {
+        console.log('Recipients inserted successfully:', response.data);
+      }
+  } catch (error) {
+    console.error('Error inserting recipients:', error);
+  }
+}
+const updateEnvelope = async () => {
+  if (!envelopeId) return;
+  
+  console.log('Updating envelope data:', envelopeData);
+  try {
+    const response = await eSignApi.post('/api/e-sign/update-envelope', {
+      envelopeId,
+      envelopeData: envelopeData,
+    });
+    if (response.status === 200) {
+      console.log('Signature type updated successfully:', response.data);
+    }
+  } catch (error) {
+    console.error('Error updating signature type:', error);
+  }
 };
 // Update your "Next" button handler:
 const handleNext = async () => {
   if (currentStep === 1) {
     await uploadDocuments();
+  }
+  if (currentStep === 2 && recipients.length !=0) {
+    await insertRecipient();
+  }
+  if (currentStep === 4) {
+    await updateEnvelope();
+  }
+  if (currentStep === 5) {
+    await updateEnvelope();
+  }
+  if (currentStep === 6) {
+    alert('Envelope created successfully, Ready to send!');
   }
   setCurrentStep(prev => Math.min(6, prev + 1));
 };
