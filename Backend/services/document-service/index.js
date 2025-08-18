@@ -26,75 +26,79 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // DB Connection
 connectDB();
 
+// Initialize email service
+const emailService = require('./services/emailService');
+emailService.initializeTransporter();
+
 // Health check route (no auth required)
 app.get('/health', (req, res) => {
   res.send(`Document Service is running`);
 });
 
 // Email service health check
-// app.get('/health/email', (req, res) => {
-//   const emailService = require('./services/emailService');
+app.get('/health/email', (req, res) => {
+  const emailService = require('./services/emailService');
   
-//   // Try to initialize if not already configured
-//   if (!emailService.isConfigured()) {
-//     emailService.initializeTransporter();
-//   }
+  // Try to initialize if not already configured
+  if (!emailService.isConfigured()) {
+    emailService.initializeTransporter();
+  }
   
-//   const configStatus = {
-//     configured: emailService.isConfigured(),
-//     hasUser: !!process.env.EMAIL_USER,
-//     hasPassword: !!process.env.EMAIL_PASSWORD,
-//     hasService: !!process.env.EMAIL_SERVICE,
-//     service: process.env.EMAIL_SERVICE || 'gmail',
-//     user: process.env.EMAIL_USER || 'NOT SET',
-//     from: process.env.EMAIL_FROM || 'NOT SET'
-//   };
+  const configStatus = {
+    configured: emailService.isConfigured(),
+    hasUser: !!process.env.EMAIL_USER,
+    hasPassword: !!process.env.EMAIL_PASSWORD,
+    hasService: !!process.env.EMAIL_SERVICE,
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    user: process.env.EMAIL_USER || 'NOT SET',
+    from: process.env.EMAIL_FROM || 'NOT SET'
+  };
   
-//   res.json({
-//     service: 'Document Service',
-//     status: 'running',
-//     email: configStatus,
-//     timestamp: new Date().toISOString()
-//   });
-// });
+  res.json({
+    service: 'Document Service',
+    status: 'running',
+    email: configStatus,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Test email endpoint
-// app.get('/test-email', async (req, res) => {
-//   const emailService = require('./services/emailService');
+app.get('/test-email', async (req, res) => {
+  const emailService = require('./services/emailService');
   
-//   // Try to initialize if not already configured
-//   if (!emailService.isConfigured()) {
-//     emailService.initializeTransporter();
-//   }
+  // Try to initialize if not already configured
+  if (!emailService.isConfigured()) {
+    emailService.initializeTransporter();
+  }
   
-//   if (!emailService.isConfigured()) {
-//     return res.status(400).json({
-//       success: false,
-//       message: 'Email service not configured',
-//       config: {
-//         hasUser: !!process.env.EMAIL_USER,
-//         hasPassword: !!process.env.EMAIL_PASSWORD,
-//         hasService: !!process.env.EMAIL_SERVICE
-//       }
-//     });
-//   }
+  if (!emailService.isConfigured()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email service not configured',
+      config: {
+        hasUser: !!process.env.EMAIL_USER,
+        hasPassword: !!process.env.EMAIL_PASSWORD,
+        hasService: !!process.env.EMAIL_SERVICE
+      }
+    });
+  }
   
-//   try {
-//     // Send a test email to the configured user
-//     const testResult = await emailService.sendTestEmail();
-//     res.json({
-//       success: true,
-//       message: 'Test email sent successfully',
-//       result: testResult
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: 'Failed to send test email',
-//       error: error.message
-//     });
-//   }
-// });
+  try {
+    // Send a test email to the configured user
+    const testResult = await emailService.sendTestEmail();
+    res.json({
+      success: true,
+      message: 'Test email sent successfully',
+      result: testResult
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send test email',
+      error: error.message
+    });
+  }
+});
 
 // JWT Middleware (applied to API routes only)
 app.use('/api', verifyJWT(process.env.ACCESS_TOKEN_SECRET));

@@ -9,7 +9,7 @@ import {
   User,
   Calendar,
   Plus,
-  Settings
+  // Settings
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { WorkflowDesigner } from './WorkflowDesigner';
@@ -21,17 +21,16 @@ import { useAuth } from '../../AuthService/AuthContext';
 interface WorkflowManagerProps {
   documentId: string;
   workflows: DocumentWorkflow[];
-  onWorkflowCreate: (workflow: Omit<DocumentWorkflow, 'id' | 'createdAt'>) => void;
   onWorkflowUpdate: (workflowId: string, updates: Partial<DocumentWorkflow>) => void;
   onStepComplete: (workflowId: string, stepId: string) => void;
+  onWorkflowsRefresh: () => void;
 }
 
 export function WorkflowManager({
   documentId,
   workflows,
-  onWorkflowCreate,
-  // onWorkflowUpdate,
-  onStepComplete
+  onStepComplete,
+  onWorkflowsRefresh
 }: WorkflowManagerProps) {
   const [showDesigner, setShowDesigner] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
@@ -80,25 +79,36 @@ export function WorkflowManager({
   };
 
   // Handle workflow creation with real API
-  const handleWorkflowCreate = async (workflow: Omit<DocumentWorkflow, 'id' | 'createdAt'>) => {
+  const handleWorkflowCreate = async (workflow: Omit<DocumentWorkflow, 'id' | 'createdAt'>): Promise<void> => {
     try {
+      // Prevent multiple submissions while loading
+      if (isLoading) {
+        console.log('⚠️ Workflow creation already in progress, skipping...');
+        return;
+      }
+      
       setIsLoading(true);
       const response = await workflowAPI.createWorkflow(documentId, workflow);
       
       if (response.success) {
         console.log('✅ Workflow created successfully:', response.data);
-        // Call the parent callback to refresh workflows
-        if (onWorkflowCreate) {
-          await onWorkflowCreate(workflow);
+        // Refresh workflows to show the new one
+        if (onWorkflowsRefresh) {
+          onWorkflowsRefresh();
         }
         setShowDesigner(false);
+        
+        // Show success message
+        alert('Workflow created successfully!');
       } else {
         console.error('❌ Failed to create workflow:', response.message);
         alert(`Failed to create workflow: ${response.message}`);
+        throw new Error(response.message);
       }
     } catch (error) {
       console.error('❌ Error creating workflow:', error);
       alert('An error occurred while creating the workflow');
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -145,14 +155,14 @@ export function WorkflowManager({
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               onClick={() => setShowDesigner(true)}
             >
               <Settings className="w-4 h-4 mr-2" />
               Designer
-            </Button>
+            </Button> */}
             <Button
               onClick={() => setShowDesigner(true)}
               size="sm"

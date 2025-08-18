@@ -167,10 +167,15 @@ class FolderController {
       // Get documents in folder
       const documents = await Document.find({
         folderId: id,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId },
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       }).select('-filePath -fileName')
         .sort({ createdAt: -1 });

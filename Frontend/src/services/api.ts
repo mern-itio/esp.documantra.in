@@ -146,6 +146,8 @@ export const documentAPI = {
     sortOrder?: string;
     type?: string;
     tags?: string;
+    favoritesOnly?: boolean;
+    archivedOnly?: boolean;
   } = {}) => {
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -234,6 +236,33 @@ export const documentAPI = {
     return makeDocumentRequest('/api/documents/bulk-move', {
       method: 'POST',
       body: JSON.stringify({ documentIds, folderId }),
+    });
+  },
+
+  // Trash functionality
+  getDeletedDocuments: async (params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  } = {}) => {
+    const queryParams = new URLSearchParams();
+    for (const key in params) {
+      if (params[key as keyof typeof params] !== undefined) {
+        queryParams.append(key, String(params[key as keyof typeof params]));
+      }
+    }
+    return makeDocumentRequest(`/api/documents/trash?${queryParams.toString()}`);
+  },
+
+  restoreDocument: async (documentId: string) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/restore`, {
+      method: 'POST',
+    });
+  },
+
+  permanentlyDeleteDocument: async (documentId: string) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/permanent`, {
+      method: 'DELETE',
     });
   },
 };

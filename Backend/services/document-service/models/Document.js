@@ -84,6 +84,14 @@ const documentSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
   
   // Sharing
   shared: {
@@ -140,6 +148,7 @@ documentSchema.index({ folderId: 1 });
 documentSchema.index({ tags: 1 });
 documentSchema.index({ name: 'text', description: 'text' });
 documentSchema.index({ shared: 1, isPublic: 1 });
+documentSchema.index({ isDeleted: 1, deletedAt: 1 });
 
 // Update modifiedAt on save
 documentSchema.pre('save', function(next) {

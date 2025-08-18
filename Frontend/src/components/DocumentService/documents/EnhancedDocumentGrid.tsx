@@ -121,7 +121,7 @@ export function EnhancedDocumentGrid({
       {filteredDocuments.map((document) => {
         const isSelected = selectedDocuments.includes(document.id);
         console.log(`🔍 EnhancedDocumentGrid - Document ${document.id} isSelected: ${isSelected}`);
-        
+      
         return (
           <DocumentCard
             key={document.id}

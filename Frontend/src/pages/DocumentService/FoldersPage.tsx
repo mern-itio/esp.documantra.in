@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   Folder, 
   FolderOpen, 
-  Edit, 
-  Move, 
-  FileText,
   FolderPlus,
-  Upload,
   Star,
   Archive
 } from 'lucide-react';
@@ -16,6 +11,9 @@ import { Button } from '../../components/DocumentService/ui/button';
 import { Card, CardContent } from '../../components/DocumentService/ui/card';
 import { CreateFolderModal } from '../../components/DocumentService/modals/CreateFolderModal';
 import { MoveDocumentsModal } from '../../components/DocumentService/modals/MoveDocumentsModal';
+import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
+import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
+import type { Document } from '../../components/common/types';
 
 interface FolderData {
   _id: string;
@@ -57,7 +55,6 @@ interface FolderDetails {
 }
 
 const FoldersPage: React.FC = () => {
-  const navigate = useNavigate();
   // const { user } = useAuth();
   const [folders, setFolders] = useState<FolderData[]>([]);
   const [currentFolder, setCurrentFolder] = useState<FolderDetails | null>(null);
@@ -67,6 +64,7 @@ const FoldersPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [viewMode] = useState<'list' | 'grid'>('grid');
 
   // Load user folders
@@ -175,12 +173,22 @@ const FoldersPage: React.FC = () => {
     }
   };
 
-  const handleDocumentSelect = (documentId: string) => {
-    setSelectedDocuments(prev => 
-      prev.includes(documentId) 
-        ? prev.filter(id => id !== documentId)
-        : [...prev, documentId]
-    );
+  const handleDocumentSelect = (documentId: string, isSelected?: boolean) => {
+    if (isSelected !== undefined) {
+      // Called from DocumentCard with boolean
+      setSelectedDocuments(prev => 
+        isSelected 
+          ? [...prev, documentId]
+          : prev.filter(id => id !== documentId)
+      );
+    } else {
+      // Called from checkbox onChange
+      setSelectedDocuments(prev => 
+        prev.includes(documentId) 
+          ? prev.filter(id => id !== documentId)
+          : [...prev, documentId]
+      );
+    }
   };
 
   const handleSelectAll = () => {
@@ -192,6 +200,29 @@ const FoldersPage: React.FC = () => {
       }
     }
   };
+
+  const handleDocumentClick = (document: Document) => {
+    setSelectedDocument(document);
+  };
+
+  const transformDocumentData = (doc: DocumentData): Document => ({
+    id: doc._id,
+    name: doc.name,
+    type: doc.type,
+    size: doc.size,
+    createdAt: doc.createdAt,
+    modifiedAt: doc.modifiedAt,
+    uploadedBy: doc.uploadedBy,
+    ownerId: doc.ownerId,
+    folderId: doc.folderId || null,
+    tags: [], // Add tags if available in your data
+    shared: false, // Add shared status if available
+    views: 0, // Add views if available
+    downloads: 0, // Add downloads if available
+    sharedWith: [], // Add sharedWith if available
+    isArchived: doc.isArchived,
+    isFavorite: doc.isFavorite
+  });
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -270,37 +301,36 @@ const FoldersPage: React.FC = () => {
                       >
                         {selectedDocuments.length === currentFolder.documents.length ? 'Deselect All' : 'Select All'}
                       </Button>
+                      
+                      {selectedDocuments.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowMoveModal(true)}
+                          className="flex items-center space-x-2"
+                        >
+                          <span>Move {selectedDocuments.length} Document{selectedDocuments.length !== 1 ? 's' : ''}</span>
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
                 
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {currentFolder.documents.map((document) => (
-                      <Card
-                        key={document._id}
-                        className={`cursor-pointer hover:shadow-md transition-shadow ${
-                          selectedDocuments.includes(document._id) ? 'ring-2 ring-primary-500' : ''
-                        }`}
-                        onClick={() => handleDocumentSelect(document._id)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <FileText className="h-5 w-5 text-gray-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {document.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatFileSize(document.size)} • {formatDate(document.createdAt)}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {currentFolder.documents.map((document) => {
+                      const transformedDoc = transformDocumentData(document);
+                      return (
+                        <div key={document._id} className="relative">
+                          <DocumentCard
+                            document={transformedDoc}
+                            isSelected={selectedDocuments.includes(document._id)}
+                            onSelect={(isSelected) => handleDocumentSelect(document._id, isSelected)}
+                            onClick={handleDocumentClick}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="bg-white rounded-lg border">
@@ -342,10 +372,18 @@ const FoldersPage: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                <FileText className="h-5 w-5 text-gray-400 mr-3" />
-                                <span className="text-sm font-medium text-gray-900">
+                                <div className="w-5 h-5 bg-gray-100 rounded mr-3 flex items-center justify-center">
+                                  <span className="text-xs text-gray-600">{document.type.toUpperCase()}</span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    const transformedDoc = transformDocumentData(document);
+                                    handleDocumentClick(transformedDoc);
+                                  }}
+                                  className="text-sm font-medium text-gray-900 hover:text-primary-600 hover:underline cursor-pointer"
+                                >
                                   {document.name}
-                                </span>
+                                </button>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -359,16 +397,22 @@ const FoldersPage: React.FC = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => navigate(`/documents/${document._id}`)}
+                                  onClick={() => {
+                                    const transformedDoc = transformDocumentData(document);
+                                    handleDocumentClick(transformedDoc);
+                                  }}
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  Open
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => setShowMoveModal(true)}
+                                  onClick={() => {
+                                    setSelectedDocuments([document._id]);
+                                    setShowMoveModal(true);
+                                  }}
                                 >
-                                  <Move className="h-4 w-4" />
+                                  Move
                                 </Button>
                               </div>
                             </td>
@@ -387,9 +431,9 @@ const FoldersPage: React.FC = () => {
                 <Folder className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No items in this folder</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Get started by creating a subfolder or uploading documents.
+                  Get started by moving documents here.
                 </p>
-                <div className="mt-6 flex justify-center space-x-3">
+                {/* <div className="mt-6 flex justify-center space-x-3">
                   <Button onClick={() => setShowCreateModal(true)}>
                     <FolderPlus className="h-4 w-4 mr-2" />
                     New Subfolder
@@ -398,7 +442,7 @@ const FoldersPage: React.FC = () => {
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Documents
                   </Button>
-                </div>
+                </div> */}
               </div>
             )}
           </div>
@@ -445,10 +489,12 @@ const FoldersPage: React.FC = () => {
                             </p>
                           )}
                           <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
-                            <span className="flex items-center space-x-1">
-                              <FileText className="h-3 w-3" />
-                              <span>{folder.documentCount}</span>
-                            </span>
+                                                         <span className="flex items-center space-x-1">
+                               <div className="w-3 h-3 bg-gray-200 rounded flex items-center justify-center">
+                                 <span className="text-xs text-gray-600">D</span>
+                               </div>
+                               <span>{folder.documentCount}</span>
+                             </span>
                             <span className="flex items-center space-x-1">
                               <Folder className="h-3 w-3" />
                               <span>{folder.folderCount}</span>
@@ -495,6 +541,14 @@ const FoldersPage: React.FC = () => {
         selectedCount={selectedDocuments.length}
         availableFolders={folders}
       />
+
+      {/* Collaboration Hub - Document Detail View */}
+      {selectedDocument && (
+        <CollaborationHub
+          document={selectedDocument}
+          onClose={() => setSelectedDocument(null)}
+        />
+      )}
     </div>
   );
 };
