@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Folder, Plus, Search, Star, Archive, Trash2, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useDocumentStore } from '../../common/store/documentStore';
-import { CreateFolderModal } from '../modals/CreateFolderModal';
+// import { CreateFolderModal } from '../modals/CreateFolderModal';
 import Loader from '../../common/loader';
 
 interface DocumentSidebarProps {
@@ -18,7 +18,7 @@ export function DocumentSidebar({ onFolderSelect, currentFolderId }: DocumentSid
     currentUser 
   } = useDocumentStore();
   
-  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  // const [, setIsCreateFolderOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -65,7 +65,7 @@ export function DocumentSidebar({ onFolderSelect, currentFolderId }: DocumentSid
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0"
-            onClick={() => setIsCreateFolderOpen(true)}
+            // onClick={() => setIsCreateFolderOpen(true)}
             title="Create new folder"
           >
             <Plus className="w-4 h-4" />
@@ -209,10 +209,10 @@ export function DocumentSidebar({ onFolderSelect, currentFolderId }: DocumentSid
       </div>
 
       {/* Create Folder Modal */}
-              <CreateFolderModal
+              {/* <CreateFolderModal
           isOpen={isCreateFolderOpen}
           onClose={() => setIsCreateFolderOpen(false)}
-        />
+        /> */}
     </div>
   );
 }
