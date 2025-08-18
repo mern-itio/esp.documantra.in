@@ -615,6 +615,205 @@ class DocumentController {
       });
     }
   }
+
+  // Move document to folder
+  async moveDocument(req, res) {
+    try {
+      const { id } = req.params;
+      const { folderId } = req.body;
+      const userId = req.user.data.id;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Document ID is required'
+        });
+      }
+
+      // Check if document exists and user has access
+      const document = await Document.findOne({
+        _id: id,
+        $or: [
+          { ownerId: userId },
+          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+        ]
+      });
+
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found or access denied'
+        });
+      }
+
+      // If moving to a folder, validate folder access
+      if (folderId) {
+        const folder = await Folder.findOne({
+          _id: folderId,
+          $or: [
+            { ownerId: userId },
+            { 'permissions.userId': userId }
+          ]
+        });
+
+        if (!folder) {
+          return res.status(404).json({
+            success: false,
+            message: 'Target folder not found or access denied'
+          });
+        }
+      }
+
+      // Update old folder document count and size
+      if (document.folderId) {
+        await Folder.findByIdAndUpdate(document.folderId, {
+          $inc: { 
+            documentCount: -1,
+            totalSize: -(document.size || 0)
+          }
+        });
+      }
+
+      // Update new folder document count and size
+      if (folderId) {
+        await Folder.findByIdAndUpdate(folderId, {
+          $inc: { 
+            documentCount: 1,
+            totalSize: (document.size || 0)
+          }
+        });
+      }
+
+      // Update document
+      document.folderId = folderId || null;
+      document.modifiedAt = new Date();
+      await document.save();
+
+      res.json({
+        success: true,
+        message: 'Document moved successfully',
+        data: {
+          documentId: id,
+          folderId: folderId,
+          newLocation: folderId ? 'folder' : 'root'
+        }
+      });
+
+    } catch (error) {
+      console.error('Move document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to move document',
+        error: error.message
+      });
+    }
+  }
+
+  // Move multiple documents to folder
+  async moveMultipleDocuments(req, res) {
+    try {
+      const { documentIds, folderId } = req.body;
+      const userId = req.user.data.id;
+
+      if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Document IDs array is required'
+        });
+      }
+
+      // Check if all documents exist and user has access
+      const documents = await Document.find({
+        _id: { $in: documentIds },
+        $or: [
+          { ownerId: userId },
+          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+        ]
+      });
+
+      if (documents.length !== documentIds.length) {
+        return res.status(404).json({
+          success: false,
+          message: 'Some documents not found or access denied'
+        });
+      }
+
+      // If moving to a folder, validate folder access
+      if (folderId) {
+        const folder = await Folder.findOne({
+          _id: folderId,
+          $or: [
+            { ownerId: userId },
+            { 'permissions.userId': userId }
+          ]
+        });
+
+        if (!folder) {
+          return res.status(404).json({
+            success: false,
+            message: 'Target folder not found or access denied'
+          });
+        }
+      }
+
+      // Track folder updates
+      const folderUpdates = {};
+
+      // Update documents and track folder changes
+      for (const document of documents) {
+        // Update old folder
+        if (document.folderId) {
+          if (!folderUpdates[document.folderId]) {
+            folderUpdates[document.folderId] = { count: 0, size: 0 };
+          }
+          folderUpdates[document.folderId].count--;
+          folderUpdates[document.folderId].size -= (document.size || 0);
+        }
+
+        // Update new folder
+        if (folderId) {
+          if (!folderUpdates[folderId]) {
+            folderUpdates[folderId] = { count: 0, size: 0 };
+          }
+          folderUpdates[folderId].count++;
+          folderUpdates[folderId].size += (document.size || 0);
+        }
+
+        // Update document
+        document.folderId = folderId || null;
+        document.modifiedAt = new Date();
+        await document.save();
+      }
+
+      // Update folder statistics
+      for (const [folderId, update] of Object.entries(folderUpdates)) {
+        await Folder.findByIdAndUpdate(folderId, {
+          $inc: { 
+            documentCount: update.count,
+            totalSize: update.size
+          }
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `${documents.length} documents moved successfully`,
+        data: {
+          movedCount: documents.length,
+          folderId: folderId,
+          newLocation: folderId ? 'folder' : 'root'
+        }
+      });
+
+    } catch (error) {
+      console.error('Move multiple documents error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to move documents',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new DocumentController();

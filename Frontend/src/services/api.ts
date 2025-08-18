@@ -220,6 +220,22 @@ export const documentAPI = {
       body: JSON.stringify({ email, permission, message }),
     });
   },
+
+  // Move document to folder
+  moveDocument: async (documentId: string, folderId: string | null) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ folderId }),
+    });
+  },
+
+  // Move multiple documents to folder
+  moveMultipleDocuments: async (documentIds: string[], folderId: string | null) => {
+    return makeDocumentRequest('/api/documents/bulk-move', {
+      method: 'POST',
+      body: JSON.stringify({ documentIds, folderId }),
+    });
+  },
 };
 
 // Comment Management API
@@ -350,6 +366,22 @@ export const versionAPI = {
   // Compare two versions
   compareVersions: async (fromVersionId: string, toVersionId: string) => {
     return makeDocumentRequest(`/api/versions/${fromVersionId}/compare/${toVersionId}`);
+  },
+
+  // Move document to folder
+  moveDocument: async (documentId: string, folderId: string | null) => {
+    return makeDocumentRequest(`/api/documents/${documentId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ folderId }),
+    });
+  },
+
+  // Move multiple documents to folder
+  moveMultipleDocuments: async (documentIds: string[], folderId: string | null) => {
+    return makeDocumentRequest('/api/documents/bulk-move', {
+      method: 'POST',
+      body: JSON.stringify({ documentIds, folderId }),
+    });
   },
 };
 
@@ -487,6 +519,57 @@ export const folderAPI = {
   },
 };
 
+// Document Analysis API
+export const documentAnalysisAPI = {
+  // Process document for analysis
+  processDocument: async (documentId: string) => {
+    return makeDocumentRequest(`/api/document-analysis/${documentId}/process`, {
+      method: 'POST',
+    });
+  },
+
+  // Get document analysis results
+  getDocumentAnalysis: async (documentId: string) => {
+    return makeDocumentRequest(`/api/document-analysis/${documentId}`);
+  },
+
+  // Get analysis processing status
+  getAnalysisStatus: async (documentId: string) => {
+    return makeDocumentRequest(`/api/document-analysis/${documentId}/status`);
+  },
+
+  // Reprocess document analysis
+  reprocessDocument: async (documentId: string) => {
+    return makeDocumentRequest(`/api/document-analysis/${documentId}/reprocess`, {
+      method: 'POST',
+    });
+  },
+
+  // Get user analyses
+  getUserAnalyses: async (userId: string, params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  } = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    const endpoint = `/api/document-analysis/user/${userId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return makeDocumentRequest(endpoint);
+  },
+
+  // Delete analysis
+  deleteAnalysis: async (analysisId: string) => {
+    return makeDocumentRequest(`/api/document-analysis/${analysisId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // Health check for document service
 export const documentHealthCheck = async () => {
   try {
@@ -502,5 +585,6 @@ export default {
   apiRequest,
   documentAPI,
   folderAPI,
+  documentAnalysisAPI,
   documentHealthCheck,
 };

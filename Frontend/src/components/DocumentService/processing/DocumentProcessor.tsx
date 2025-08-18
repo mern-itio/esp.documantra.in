@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Brain, 
   FileText, 
@@ -9,12 +9,16 @@ import {
   // BarChart3,
   Shield,
   Zap,
-  CheckCircle
+  CheckCircle,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import type { DocumentAnalysis } from '../../common/types/collaboration';
 import { formatDate } from '../../common/lib/utils';
+import { documentAnalysisAPI } from '../../../services/api';
+// import { useAuth } from '../../AuthService/AuthContext';
 
 interface DocumentProcessorProps {
   documentId: string;
@@ -25,31 +29,201 @@ interface DocumentProcessorProps {
 
 export function DocumentProcessor({
   documentId,
-  analysis,
-  onProcessDocument,
-  onReprocessDocument
+  analysis: initialAnalysis,
+  // onProcessDocument,
+  // onReprocessDocument
 }: DocumentProcessorProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [analysis, setAnalysis] = useState<DocumentAnalysis | undefined>(initialAnalysis);
+  const [processingStatus, setProcessingStatus] = useState<'not_started' | 'pending' | 'processing' | 'completed' | 'failed'>('not_started');
+  const [error, setError] = useState<string | null>(null);
+  // const { user } = useAuth();
+
+  // Load analysis data when component mounts
+  useEffect(() => {
+    if (documentId) {
+      loadAnalysis();
+    }
+  }, [documentId]);
+
+  // Poll for status updates while processing
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (processingStatus === 'processing' || processingStatus === 'pending') {
+      interval = setInterval(() => {
+        checkProcessingStatus();
+      }, 2000); // Check every 2 seconds
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [processingStatus]);
+
+  const loadAnalysis = async () => {
+    try {
+      setError(null);
+      // First check the analysis status
+      const statusResponse = await documentAnalysisAPI.getAnalysisStatus(documentId);
+      if (statusResponse.success) {
+        const status = statusResponse.data.processingStatus;
+        setProcessingStatus(status);
+        
+        if (status === 'completed') {
+          // If completed, get the full analysis
+          const analysisResponse = await documentAnalysisAPI.getDocumentAnalysis(documentId);
+          if (analysisResponse.success && analysisResponse.data) {
+            setAnalysis(analysisResponse.data);
+          }
+        } else if (status === 'processing' || status === 'pending') {
+          // If still processing, no analysis data yet
+          setAnalysis(undefined);
+        } else {
+          // If not started or failed, no analysis exists
+          setAnalysis(undefined);
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to load analysis:', error);
+      setProcessingStatus('not_started');
+    }
+  };
+
+  const checkProcessingStatus = async () => {
+    try {
+      const response = await documentAnalysisAPI.getAnalysisStatus(documentId);
+      if (response.success) {
+        const status = response.data.processingStatus;
+        setProcessingStatus(status);
+        
+        // If processing is complete, reload the analysis
+        if (status === 'completed') {
+          await loadAnalysis();
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to check processing status:', error);
+    }
+  };
 
   const handleProcess = async () => {
-    setIsProcessing(true);
     try {
-      await onProcessDocument(documentId);
+      setIsProcessing(true);
+      setError(null);
+      setProcessingStatus('pending');
+      
+      const response = await documentAnalysisAPI.processDocument(documentId);
+      if (response.success) {
+        setProcessingStatus('processing');
+        // The status will be updated by the polling effect
+      } else {
+        throw new Error(response.message || 'Failed to start processing');
+      }
+    } catch (error: any) {
+      console.error('Failed to process document:', error);
+      setError(error.message);
+      setProcessingStatus('failed');
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleReprocess = async () => {
-    setIsProcessing(true);
     try {
-      await onReprocessDocument(documentId);
+      setIsProcessing(true);
+      setError(null);
+      setProcessingStatus('pending');
+      
+      const response = await documentAnalysisAPI.reprocessDocument(documentId);
+      if (response.success) {
+        setProcessingStatus('processing');
+        // The status will be updated by the polling effect
+      } else {
+        throw new Error(response.message || 'Failed to start reprocessing');
+      }
+    } catch (error: any) {
+      console.error('Failed to reprocess document:', error);
+      setError(error.message);
+      setProcessingStatus('failed');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (!analysis) {
+  // Show loading state while processing
+  if (processingStatus === 'processing' || processingStatus === 'pending') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Brain className="w-5 h-5" />
+            <span>Document Intelligence</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Processing Document
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Analyzing document content, extracting insights, and performing AI-powered analysis...
+            </p>
+            <div className="text-sm text-blue-600">
+              This may take a few minutes for large documents
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <span>Processing Error</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+            <h3 className="text-sm font-medium text-red-900 mb-2">
+              Processing Failed
+            </h3>
+            <p className="text-red-500 mb-6">
+              {error}
+            </p>
+            <div className="flex space-x-3 justify-center">
+              <Button
+                onClick={handleReprocess}
+                disabled={isProcessing}
+                variant="outline"
+                className="border-red-200 text-red-700 hover:bg-red-50"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+              <Button
+                onClick={() => setError(null)}
+                variant="ghost"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!analysis || processingStatus === 'not_started') {
     return (
       <Card>
         <CardHeader>
@@ -90,6 +264,19 @@ export function DocumentProcessor({
     );
   }
 
+  // Add null check to prevent rendering before analysis data is loaded
+  if (!analysis || !analysis.analysis) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="text-center py-8">
+            <div className="text-gray-500">Loading analysis data...</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Processing Status */}
@@ -111,14 +298,26 @@ export function DocumentProcessor({
             <div className="text-sm text-gray-600">
               Last processed: {formatDate(analysis.processedAt)}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReprocess}
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Processing...' : 'Reprocess'}
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReprocess}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reprocess
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -176,28 +375,36 @@ export function DocumentProcessor({
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-3">Topics</h4>
               <div className="flex flex-wrap gap-2">
-                {analysis.analysis.topics.map((topic, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                  >
-                    {topic}
-                  </span>
-                ))}
+                {analysis.analysis.topics && analysis.analysis.topics.length > 0 ? (
+                  analysis.analysis.topics.map((topic, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                    >
+                      {topic}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-500 text-sm">No topics identified</span>
+                )}
               </div>
             </div>
             
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-3">Key Phrases</h4>
               <div className="flex flex-wrap gap-2">
-                {analysis.analysis.keyPhrases.map((phrase, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"
-                  >
-                    {phrase}
-                  </span>
-                ))}
+                {analysis.analysis.keyPhrases && analysis.analysis.keyPhrases.length > 0 ? (
+                  analysis.analysis.keyPhrases.map((phrase, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"
+                    >
+                      {phrase}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-500 text-sm">No key phrases identified</span>
+                )}
               </div>
             </div>
           </div>
@@ -214,26 +421,32 @@ export function DocumentProcessor({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {analysis.analysis.entities.map((entity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    entity.type === 'person' ? 'bg-purple-100 text-purple-800' :
-                    entity.type === 'organization' ? 'bg-blue-100 text-blue-800' :
-                    entity.type === 'location' ? 'bg-green-100 text-green-800' :
-                    entity.type === 'date' ? 'bg-orange-100 text-orange-800' :
-                    entity.type === 'money' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {entity.type}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900">{entity.text}</span>
+            {analysis.analysis.entities && analysis.analysis.entities.length > 0 ? (
+              analysis.analysis.entities.map((entity, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      entity.type === 'person' ? 'bg-purple-100 text-purple-800' :
+                      entity.type === 'organization' ? 'bg-blue-100 text-blue-800' :
+                      entity.type === 'location' ? 'bg-green-100 text-green-800' :
+                      entity.type === 'date' ? 'bg-orange-100 text-orange-800' :
+                      entity.type === 'money' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {entity.type}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">{entity.text}</span>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {Math.round(entity.confidence * 100)}% confidence
+                  </div>
                 </div>
-                <div className="text-sm text-gray-500">
-                  {Math.round(entity.confidence * 100)}% confidence
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No entities extracted from document
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
@@ -264,14 +477,18 @@ export function DocumentProcessor({
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Suggested Tags</h4>
                 <div className="flex flex-wrap gap-2">
-                  {analysis.classification.suggestedTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {analysis.classification.suggestedTags && analysis.classification.suggestedTags.length > 0 ? (
+                    analysis.classification.suggestedTags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-gray-500 text-sm">No tags suggested</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -310,7 +527,7 @@ export function DocumentProcessor({
                 </div>
               </div>
 
-              {analysis.compliance.issues.length > 0 && (
+              {analysis.compliance.issues && analysis.compliance.issues.length > 0 ? (
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-2">Issues Found</h4>
                   <div className="space-y-2">
@@ -332,6 +549,10 @@ export function DocumentProcessor({
                     ))}
                   </div>
                 </div>
+              ) : (
+                <div className="text-center py-2 text-green-600 text-sm">
+                  No compliance issues found
+                </div>
               )}
             </div>
           </CardContent>
@@ -339,7 +560,7 @@ export function DocumentProcessor({
       </div>
 
       {/* OCR Results */}
-      {analysis.ocrResults && (
+      {analysis.ocrResults && analysis.ocrResults.extractedText && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -360,8 +581,10 @@ export function DocumentProcessor({
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Extracted Text Preview</h4>
                 <div className="p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
                   <pre className="text-xs text-gray-700 whitespace-pre-wrap">
-                    {analysis.ocrResults.extractedText.substring(0, 500)}
-                    {analysis.ocrResults.extractedText.length > 500 && '...'}
+                    {analysis.ocrResults.extractedText ? 
+                      `${analysis.ocrResults.extractedText.substring(0, 500)}${analysis.ocrResults.extractedText.length > 500 ? '...' : ''}`
+                      : 'No OCR text available'
+                    }
                   </pre>
                 </div>
               </div>

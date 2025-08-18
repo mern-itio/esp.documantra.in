@@ -22,7 +22,9 @@ import { UploadModal } from '../modals/UploadModal';
 import { SearchModal } from '../modals/SearchModal';
 import { CreateFolderModal } from '../modals/CreateFolderModal';
 import { ShareModal } from '../modals/ShareModal';
+import { MoveDocumentsModal } from '../modals/MoveDocumentsModal';
 import { useDocumentStore } from '../../common/store/documentStore';
+import { folderAPI, documentAPI } from '../../../services/api';
 
 export function DocumentHeader() {
   const {
@@ -47,7 +49,9 @@ export function DocumentHeader() {
   const [showSearch, setShowSearch] = useState(false);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [folders, setFolders] = useState<any[]>([]);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const hasSelection = selectedDocuments.length > 0;
@@ -67,6 +71,51 @@ export function DocumentHeader() {
     setShowCreateFolder(true);
     setShowMoreMenu(false);
   };
+
+  const handleCreateFolderSubmit = async (folderData: { name: string; description: string; color: string; icon: string }) => {
+    try {
+      const response = await folderAPI.createFolder(folderData);
+      if (response.success) {
+        setShowCreateFolder(false);
+        // Refresh folders list
+        loadFolders();
+      }
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+    }
+  };
+
+  const handleMoveDocuments = async (targetFolderId: string | null) => {
+    try {
+      if (selectedDocuments.length === 0) return;
+
+      const response = await documentAPI.moveMultipleDocuments(selectedDocuments, targetFolderId);
+      if (response.success) {
+        setShowMoveModal(false);
+        // Clear selection after successful move
+        useDocumentStore.getState().setSelectedDocuments([]);
+        // You might want to refresh the document list here
+      }
+    } catch (error) {
+      console.error('Failed to move documents:', error);
+    }
+  };
+
+  const loadFolders = async () => {
+    try {
+      const response = await folderAPI.getUserFolders();
+      if (response.success) {
+        setFolders(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load folders:', error);
+    }
+  };
+
+  // Load folders on component mount
+  useEffect(() => {
+    loadFolders();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -137,7 +186,12 @@ export function DocumentHeader() {
                 <Button size="sm" variant="ghost" className="h-7 px-2">
                   <Download className="w-3 h-3" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 px-2">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-7 px-2"
+                  onClick={() => setShowMoveModal(true)}
+                >
                   <Move className="w-3 h-3" />
                 </Button>
                 <Button size="sm" variant="ghost" className="h-7 px-2">
@@ -241,6 +295,16 @@ export function DocumentHeader() {
       <CreateFolderModal
         isOpen={showCreateFolder}
         onClose={() => setShowCreateFolder(false)}
+        onSubmit={handleCreateFolderSubmit}
+        parentFolderName={undefined}
+      />
+
+      <MoveDocumentsModal
+        isOpen={showMoveModal}
+        onClose={() => setShowMoveModal(false)}
+        onSubmit={handleMoveDocuments}
+        selectedCount={selectedDocuments.length}
+        availableFolders={folders}
       />
 
       <ShareModal

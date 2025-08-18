@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { X, Folder } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { useDocumentStore } from '../../common/store/documentStore';
+
 
 interface CreateFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (folderData: { name: string; description: string; color: string; icon: string }) => Promise<void>;
+  parentFolderName?: string;
 }
 
-export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
-  const { createFolder, currentFolderId } = useDocumentStore();
+export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName }: CreateFolderModalProps) {
   const [folderName, setFolderName] = useState('');
+  const [folderDescription, setFolderDescription] = useState('');
+  const [folderColor, setFolderColor] = useState('#3b82f6');
+  const [folderIcon, setFolderIcon] = useState('Folder');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,8 +24,16 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
 
     setIsCreating(true);
     try {
-     await createFolder(folderName.trim(), currentFolderId ?? undefined);
+      await onSubmit({
+        name: folderName.trim(),
+        description: folderDescription.trim(),
+        color: folderColor,
+        icon: folderIcon
+      });
       setFolderName('');
+      setFolderDescription('');
+      setFolderColor('#3b82f6');
+      setFolderIcon('Folder');
       onClose();
     } finally {
       setIsCreating(false);
@@ -30,6 +42,9 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
 
   const handleClose = () => {
     setFolderName('');
+    setFolderDescription('');
+    setFolderColor('#3b82f6');
+    setFolderIcon('Folder');
     onClose();
   };
 
@@ -57,6 +72,14 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
+            {parentFolderName && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  Creating folder in: <span className="font-medium">{parentFolderName}</span>
+                </p>
+              </div>
+            )}
+            
             <div>
               <label htmlFor="folder-name" className="block text-sm font-medium text-gray-700 mb-2">
                 Folder Name
@@ -70,6 +93,50 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
                 autoFocus
                 required
               />
+            </div>
+
+            <div>
+              <label htmlFor="folder-description" className="block text-sm font-medium text-gray-700 mb-2">
+                Description (Optional)
+              </label>
+              <Input
+                id="folder-description"
+                type="text"
+                placeholder="Enter folder description..."
+                value={folderDescription}
+                onChange={(e) => setFolderDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="folder-color" className="block text-sm font-medium text-gray-700 mb-2">
+                  Color
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    id="folder-color"
+                    type="color"
+                    value={folderColor}
+                    onChange={(e) => setFolderColor(e.target.value)}
+                    className="w-10 h-10 rounded border border-gray-300"
+                  />
+                  <span className="text-sm text-gray-500">{folderColor}</span>
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="folder-icon" className="block text-sm font-medium text-gray-700 mb-2">
+                  Icon
+                </label>
+                <Input
+                  id="folder-icon"
+                  type="text"
+                  placeholder="Folder"
+                  value={folderIcon}
+                  onChange={(e) => setFolderIcon(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 

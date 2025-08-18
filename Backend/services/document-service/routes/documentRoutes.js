@@ -118,6 +118,8 @@ router.put('/:id', documentController.updateDocument);
 router.delete('/:id', documentController.deleteDocument);
 router.post('/:id/download', documentController.downloadDocument);
 router.post('/:id/share', documentController.shareDocument);
+router.post('/:id/move', documentController.moveDocument);
 router.post('/bulk-delete', documentController.bulkDeleteDocuments);
+router.post('/bulk-move', documentController.moveMultipleDocuments);
 
 module.exports = router;
