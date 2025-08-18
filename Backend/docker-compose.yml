@@ -42,4 +42,5 @@ services:
     volumes:
       - ./services/e-sign-service:/app/services/e-sign-service:cached
       - /app/services/e-sign-service/node_modules
+      - ./services/e-sign-service/uploads:/app/services/e-sign-service/uploads  # <-- added
     command: npm run dev

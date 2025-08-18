@@ -4,8 +4,9 @@ const mongoose = require('mongoose');
 const EnvelopeSchema = new mongoose.Schema({
   subject: { type: String },
   message: { type: String },
-  priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
-  signingOrder: { type: String, enum: ["In-Order", "Parallel"], default: "In-Order" },
+  sender: { type: mongoose.Schema.Types.ObjectId, required: true },
+  priority: { type: String, enum: ["low", "normal", "high", "urgent"], default: "normal" },
+  signingOrder: { type: String, enum: ["In-Order", "Parallel","sequential"], default: "In-Order" },
   expirationDate: { type: Date },
   isReminder: { type: Boolean, default: false },
   reminderInterval: { type: Number }, // in days
