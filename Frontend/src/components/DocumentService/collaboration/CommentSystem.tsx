@@ -23,6 +23,7 @@ interface CommentSystemProps {
   onCommentResolve?: (commentId: string) => void;
   onReplyAdd?: (commentId: string, reply: Omit<CommentReply, 'id' | 'timestamp'>) => void;
   isLoading?: boolean;
+  canAddComments?: boolean;
 }
 
 export function CommentSystem({
@@ -31,7 +32,8 @@ export function CommentSystem({
   onCommentAdd,
   onCommentResolve,
   onReplyAdd,
-  isLoading = false
+  isLoading = false,
+  canAddComments = true
 }: CommentSystemProps) {
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -214,54 +216,63 @@ export function CommentSystem({
 
         {/* New Comment Input */}
         <div className="space-y-2">
-          <textarea
-            value={newComment}
-            onChange={(e) => {
-              const value = e.target.value;
-              setNewComment(value);
-              
-              // Auto-show mention picker when @ is typed
-              if (value.includes('@') && !value.includes('@ ')) {
-                const lastAtSymbol = value.lastIndexOf('@');
-                const afterAt = value.substring(lastAtSymbol + 1);
-                if (afterAt && !afterAt.includes(' ')) {
-                  setMentionSearch(afterAt);
-                  setShowMentionPicker(true);
-                }
-              }
-            }}
-            placeholder="Add a comment... Use @email to mention someone"
-            className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={3}
-          />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowAttachmentPicker(true)}
-                type="button"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowMentionPicker(true)}
-                type="button"
-              >
-                <AtSign className="w-4 h-4" />
-              </Button>
+          {canAddComments && (
+            <>
+              <textarea
+                value={newComment}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewComment(value);
+                  
+                  // Auto-show mention picker when @ is typed
+                  if (value.includes('@') && !value.includes('@ ')) {
+                    const lastAtSymbol = value.lastIndexOf('@');
+                    const afterAt = value.substring(lastAtSymbol + 1);
+                    if (afterAt && !afterAt.includes(' ')) {
+                      setMentionSearch(afterAt);
+                      setShowMentionPicker(true);
+                    }
+                  }
+                }}
+                placeholder="Add a comment... Use @email to mention someone"
+                className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setShowAttachmentPicker(true)}
+                    type="button"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setShowMentionPicker(true)}
+                    type="button"
+                  >
+                    <AtSign className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Button 
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  size="sm"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Comment
+                </Button>
+              </div>
+            </>
+          )}
+          {!canAddComments && (
+            <div className="text-center py-4 text-gray-500">
+              You do not have permission to add comments.
             </div>
-            <Button 
-              onClick={handleAddComment}
-              disabled={!newComment.trim()}
-              size="sm"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              Comment
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -303,16 +314,16 @@ export function CommentSystem({
                   </span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  {onCommentResolve && !comment.resolved && (
+                  {onCommentResolve && !comment.resolved && canAddComments && (
                     <Button
                       variant="ghost"
                       size="sm"
-                                              onClick={() => {
-                          const commentId = comment._id || comment.id;
-                          if (commentId) {
-                            onCommentResolve(commentId);
-                          }
-                        }}
+                      onClick={() => {
+                        const commentId = comment._id || comment.id;
+                        if (commentId) {
+                          onCommentResolve(commentId);
+                        }
+                      }}
                       className="h-6 w-6 p-0"
                     >
                       <Check className="w-3 h-3" />
@@ -336,32 +347,36 @@ export function CommentSystem({
                     {/* Dropdown Menu */}
                     {showCommentMenu === (comment._id || comment.id || '') && (
                       <div className="absolute right-0 top-8 bg-white border rounded-lg shadow-lg z-10 min-w-32">
-                        <button
-                          onClick={() => {
-                            const commentId = comment._id || comment.id;
-                            if (commentId) {
-                              handleEditComment(commentId, comment.content);
-                              setShowCommentMenu(null);
-                            }
-                          }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                          <span>Edit</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            const commentId = comment._id || comment.id;
-                            if (commentId) {
-                              handleDeleteComment(commentId);
-                              setShowCommentMenu(null);
-                            }
-                          }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 flex items-center space-x-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span>Delete</span>
-                        </button>
+                        {canAddComments && (
+                          <button
+                            onClick={() => {
+                              const commentId = comment._id || comment.id;
+                              if (commentId) {
+                                handleEditComment(commentId, comment.content);
+                                setShowCommentMenu(null);
+                              }
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span>Edit</span>
+                          </button>
+                        )}
+                        {canAddComments && (
+                          <button
+                            onClick={() => {
+                              const commentId = comment._id || comment.id;
+                              if (commentId) {
+                                handleDeleteComment(commentId);
+                                setShowCommentMenu(null);
+                              }
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 flex items-center space-x-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -446,51 +461,55 @@ export function CommentSystem({
               )}
 
               {/* Reply Input */}
-              {replyingTo === (comment._id || comment.id) ? (
-                <div className="mt-3 space-y-2">
-                  <Input
-                    value={replyText}
-                    onChange={(e) => handleReplyTextChange(e.target.value)}
-                    placeholder="Write a reply... Use @email to mention someone"
-                    className="text-sm"
-                  />
-                  <div className="flex items-center space-x-2">
+              {canAddComments && (
+                <>
+                  {replyingTo === (comment._id || comment.id) ? (
+                    <div className="mt-3 space-y-2">
+                      <Input
+                        value={replyText}
+                        onChange={(e) => handleReplyTextChange(e.target.value)}
+                        placeholder="Write a reply... Use @email to mention someone"
+                        className="text-sm"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const commentId = comment._id || comment.id;
+                            if (commentId) {
+                              handleAddReply(commentId);
+                            }
+                          }}
+                          disabled={!replyText.trim()}
+                        >
+                          Reply
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setReplyingTo(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
                     <Button
+                      variant="ghost"
                       size="sm"
                       onClick={() => {
                         const commentId = comment._id || comment.id;
                         if (commentId) {
-                          handleAddReply(commentId);
+                          setReplyingTo(commentId);
                         }
                       }}
-                      disabled={!replyText.trim()}
+                      className="mt-2 h-6 px-2"
                     >
+                      <Reply className="w-3 h-3 mr-1" />
                       Reply
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setReplyingTo(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    const commentId = comment._id || comment.id;
-                    if (commentId) {
-                      setReplyingTo(commentId);
-                    }
-                  }}
-                  className="mt-2 h-6 px-2"
-                >
-                  <Reply className="w-3 h-3 mr-1" />
-                  Reply
-                </Button>
+                  )}
+                </>
               )}
 
               {/* Resolved Badge */}

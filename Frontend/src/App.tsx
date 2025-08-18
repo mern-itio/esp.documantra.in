@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router-dom';
 import router from './routes/index';
 import ThemeConfig from './theme/index';
 import { AuthProvider } from './components/AuthService/AuthContext';
+// import { useAuthInitialization } from './hooks/useAuthInitialization';
 import Loader from './components/common/loader';
 import { AppProvider } from './context/AppContext'; // <-- Import AppProvider (adjust path if needed)
 
@@ -26,5 +27,13 @@ const App: React.FC = () => {
     </AuthProvider>
   );
 };
+
+// Separate component to use hooks
+// const AppContent: React.FC = () => {
+//   // Initialize document store with user data
+//   useAuthInitialization();
+  
+//   return <RouterProvider router={router} />;
+// };
 
 export default App;
