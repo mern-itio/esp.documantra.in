@@ -10,6 +10,7 @@ const folderRoutes = require('./routes/folderRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const versionRoutes = require('./routes/versionRoutes');
 const workflowRoutes = require('./routes/workflowRoutes');
+const documentAnalysisRoutes = require('./routes/documentAnalysisRoutes');
 
 dotenv.config();
 
@@ -104,6 +105,7 @@ app.use('/api/folders', folderRoutes);
 app.use('/api', commentRoutes);
 app.use('/api', versionRoutes);
 app.use('/api', workflowRoutes);
+app.use('/api/document-analysis', documentAnalysisRoutes);
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -142,6 +144,7 @@ app.use('*', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 2102;
+
 app.listen(PORT, () => {
   console.log(`Document Service running on ${PORT}/`);
   

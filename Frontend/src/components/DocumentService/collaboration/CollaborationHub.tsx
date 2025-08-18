@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Users, MessageCircle, GitBranch, Workflow, Brain, Settings } from 'lucide-react';
 import type { Document } from '../../common/types';
-import { documentAPI, commentAPI, versionAPI, workflowAPI } from '../../../services/api';
+import { documentAPI, commentAPI, versionAPI, workflowAPI, documentAnalysisAPI } from '../../../services/api';
 import type { DocumentComment, CollaborativeUser } from '../../common/types/collaboration';
 import { useAuth } from '../../AuthService/AuthContext';
 
@@ -34,19 +34,39 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   const { user } = useAuth();
   
   const {
-    getDocumentAnalysis,
+    // getDocumentAnalysis,
     compareVersions,
     restoreVersion,
-    processDocument
+    // processDocument
   } = useCollaborationStore();
 
   // Check user permissions for this document
   const getUserPermissions = () => {
-    console.log('🔍 Checking user permissions:', { user, documentSharedWith: document.sharedWith });
+    console.log('🔍 Checking user permissions:', { user, documentOwner: document.ownerId || document.uploadedBy, documentSharedWith: document.sharedWith });
     
-    if (!user || !document.sharedWith) {
-      console.log('❌ No user or sharedWith data:', { user, sharedWith: document.sharedWith });
+    if (!user) {
+      console.log('❌ No user data:', { user });
       return { canEdit: false, canComment: false, canView: true, permission: 'view' as const };
+    }
+
+    // Check if user is the owner of the document
+    const isOwner = user.id === (document.ownerId || document.uploadedBy) || 
+                    user.email === (document.ownerId || document.uploadedBy);
+    
+    if (isOwner) {
+      console.log('✅ User is document owner - full permissions granted');
+      return { 
+        canEdit: true, 
+        canComment: true, 
+        canView: true, 
+        permission: 'full' as const 
+      };
+    }
+
+    // If not owner, check shared permissions
+    if (!document.sharedWith || document.sharedWith.length === 0) {
+      console.log('❌ User is not owner and document is not shared');
+      return { canEdit: false, canComment: false, canView: false, permission: 'none' as const };
     }
 
     // Find the user's share entry
@@ -58,7 +78,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
 
     if (!userShare) {
       console.log('❌ No matching share entry for user:', user.email);
-      return { canEdit: false, canComment: false, canView: true, permission: 'view' as const };
+      return { canEdit: false, canComment: false, canView: false, permission: 'none' as const };
     }
 
     const permission = userShare.permission || 'view';
@@ -106,7 +126,52 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   // console.log('🔍 Active users (shared collaborators):', activeUsers);
   // console.log('🔍 Document owner:', document.ownerId || document.uploadedBy);
   
-  const analysis = getDocumentAnalysis(document.id);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(true);
+
+  // Load document analysis only when analysis tab is active
+  useEffect(() => {
+    if (document.id && activeTab === 'analysis') {
+      loadDocumentAnalysis();
+    }
+  }, [document.id, activeTab]);
+
+  const loadDocumentAnalysis = async () => {
+    try {
+      setIsLoadingAnalysis(true);
+      // First check the analysis status
+      const statusResponse = await documentAnalysisAPI.getAnalysisStatus(document.id);
+      if (statusResponse.success) {
+        const status = statusResponse.data.processingStatus;
+        
+        if (status === 'completed') {
+          // If completed, get the full analysis
+          const analysisResponse = await documentAnalysisAPI.getDocumentAnalysis(document.id);
+          if (analysisResponse.success && analysisResponse.data) {
+            setAnalysis(analysisResponse.data);
+          }
+        } else if (status === 'processing' || status === 'pending') {
+          // If still processing, set loading state
+          setAnalysis(undefined);
+        } else {
+          // If not started or failed, no analysis exists
+          setAnalysis(undefined);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load document analysis:', error);
+      setAnalysis(undefined);
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
+
+  // Function to manually refresh analysis status
+  // const refreshAnalysisStatus = () => {
+  //   if (document.id) {
+  //     loadDocumentAnalysis();
+  //   }
+  // };
 
   // Load document content and comments when component mounts
   useEffect(() => {
@@ -322,7 +387,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
       id: 'analysis' as TabType,
       label: 'Analysis',
       icon: Brain,
-      count: analysis ? 1 : 0
+      count: isLoadingAnalysis ? 0 : (analysis ? 1 : 0)
     }
   ];
 
@@ -452,13 +517,17 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                       <div className="flex items-center space-x-2">
               {/* Permission Badge */}
               <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                userPermissions.permission === 'edit' 
+                userPermissions.permission === 'full'
+                  ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                  : userPermissions.permission === 'edit' 
                   ? 'text-green-600 bg-green-50 border-green-200'
                   : userPermissions.permission === 'comment'
                   ? 'text-purple-600 bg-purple-50 border-purple-200'
-                  : 'text-blue-600 bg-blue-50 border-blue-200'
+                  : userPermissions.permission === 'view'
+                  ? 'text-blue-600 bg-blue-50 border-blue-200'
+                  : 'text-gray-600 bg-gray-50 border-gray-200'
               }`}>
-                {userPermissions.permission?.toUpperCase() || 'VIEW'} Access
+                {userPermissions.permission === 'full' ? 'OWNER' : userPermissions.permission?.toUpperCase() || 'NO ACCESS'}
               </div>
               <Button variant="outline" size="sm">
                 <Settings className="w-4 h-4 mr-2" />
@@ -538,6 +607,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                         <strong>Read-only mode:</strong> You have {userPermissions.permission} access to this document. 
                         {userPermissions.permission === 'view' && ' You can view and add comments.'}
                         {userPermissions.permission === 'comment' && ' You can view and add comments, but cannot edit the document.'}
+                        {userPermissions.permission === 'none' && ' You have no access to this document.'}
                       </p>
                     </div>
                   </div>
@@ -565,13 +635,14 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                   <div className="flex">
                     <div className="flex-shrink-0">
                       <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M18 10a8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <div className="ml-3">
                       <p className="text-sm text-blue-700">
                         <strong>View-only mode:</strong> You have {userPermissions.permission} access to this document. 
-                        You can view comments but cannot add new ones or reply to existing comments.
+                        {userPermissions.permission === 'view' && ' You can view comments but cannot add new ones or reply to existing comments.'}
+                        {userPermissions.permission === 'none' && ' You have no access to this document.'}
                       </p>
                     </div>
                   </div>
@@ -623,8 +694,8 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
               <DocumentProcessor
                 documentId={document.id}
                 analysis={analysis}
-                onProcessDocument={processDocument}
-                onReprocessDocument={processDocument}
+                onProcessDocument={loadDocumentAnalysis}
+                onReprocessDocument={loadDocumentAnalysis}
               />
             </div>
           )}

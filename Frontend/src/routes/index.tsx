@@ -157,6 +157,7 @@ import { UploadModal } from '../components/DocumentService/modals/UploadModal';
 import { CollaborationHub } from '../components/DocumentService/collaboration/CollaborationHub';
 
 import { SharedDocumentsPage } from '../pages/DocumentService/SharedDocumentsPage';
+import FoldersPage from '../pages/DocumentService/FoldersPage';
 
 // E-Signature Pages Started
 import EsignDashboard from '../pages/eSign/Dashboard';
@@ -398,6 +399,14 @@ const authRoutes = [
     element: (
       <DocumentLayout>
         <SharedDocumentsPage />
+      </DocumentLayout>
+    ) 
+  },
+  { 
+    path: '/documents/folder', 
+    element: (
+      <DocumentLayout>
+        <FoldersPage />
       </DocumentLayout>
     ) 
   },
