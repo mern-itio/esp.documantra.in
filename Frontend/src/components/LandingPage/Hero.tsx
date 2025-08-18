@@ -30,7 +30,7 @@ const Hero = () => {
                 <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">D</span>
                 </div>
-                <span className="font-semibold text-gray-900">DocuSigner Dashboard</span>
+                <span className="font-semibold text-gray-900">ITIO DocuSigner Dashboard</span>
               </div>
               <div className="flex gap-2">
                 <div className="w-3 h-3 bg-red-400 rounded-full"></div>
