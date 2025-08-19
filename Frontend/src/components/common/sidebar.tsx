@@ -7,7 +7,26 @@ import {
   ChevronDown,
   ChevronRight,
   Building2,
-  FileSignature
+  FileSignature,
+  Scissors,
+  Repeat,
+  Edit3,
+  Copy,
+  Settings,
+  Search,
+  FileSpreadsheet,
+  Wrench,
+  Lock,
+  Clock,
+  Star,
+  Share2,
+  Archive,
+  Folder,
+  Trash2,
+  UserCog,
+  LayoutDashboardIcon,
+  FileSignatureIcon,
+  BarChart3Icon, 
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -17,29 +36,44 @@ interface SidebarProps {
   setIsOpen?: (open: boolean) => void;
 }
 
+interface MenuItem {
+  id: string;
+  label: string;
+  path?: string;
+  icon?: React.ComponentType<any>;
+  children?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+  id: string;
+  label: string;
+  path: string;
+  icon?: React.ComponentType<any>;
+}
+
 const Sidebar: React.FC<SidebarProps> = ({
   activeView = 'dashboard',
-  setActiveView = () => {},
+  setActiveView = () => { },
   isOpen = true,
-  setIsOpen = () => {}
+  setIsOpen = () => { }
 }) => {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     {
       id: 'document-management',
       label: 'Documents',
       icon: FileText,
       children: [
-        { id: 'all-documents', label: 'All Documents', path: '/all-documents' },
-        { id: 'recent', label: 'Recent', path: '/recent' },
-        { id: 'Favorites', label: 'Favorites', path: '/documents/favorites' },
-        { id: 'shared', label: 'Shared with me', path: '/documents/shared' },
-        { id: 'archived', label: 'Archived', path: '/documents/archived' },
-        { id: 'folders', label: 'Folders', path: '/documents/folder' },
-        { id: 'trash', label: 'Trash', path: '/documents/trash' }
+        { id: 'all-documents', label: 'All Documents', path: '/all-documents', icon: FileText },
+        { id: 'recent', label: 'Recent', path: '/recent', icon: Clock },
+        { id: 'favorites', label: 'Favorites', path: '/documents/favorites', icon: Star },
+        { id: 'shared', label: 'Shared with me', path: '/documents/shared', icon: Share2 },
+        { id: 'archived', label: 'Archived', path: '/documents/archived', icon: Archive },
+        { id: 'folders', label: 'Folders', path: '/documents/folder', icon: Folder },
+        { id: 'trash', label: 'Trash', path: '/documents/trash', icon: Trash2 }
       ]
     },
     {
@@ -47,12 +81,28 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: 'E-Sign',
       icon: FileSignature,
       children: [
-        { id: 'dashboard', label: 'Dashboard', path: '/e-sign/dashboard' },
-        { id: 'create', label: 'Create', path: '/e-sign/create' },
-        { id: 'analytics', label: 'Analytics', path: '/e-sign/analytics' },
-        { id: 'settings', label: 'Settings', path: '/e-sign/settings' },
-        { id: 'enterprise', label: 'Enterprise', path: '/e-sign/enterprise' },
-        { id: 'admin', label: 'Admin', path: '/e-sign/admin' }
+        { id: 'dashboard', label: 'Dashboard', path: '/e-sign/dashboard', icon: LayoutDashboardIcon },
+        { id: 'create', label: 'Create', path: '/e-sign/create', icon: FileSignatureIcon },
+        { id: 'analytics', label: 'Analytics', path: '/e-sign/analytics', icon: BarChart3Icon },
+        { id: 'settings', label: 'Settings', path: '/e-sign/settings', icon: Settings },
+        { id: 'enterprise', label: 'Enterprise', path: '/e-sign/enterprise', icon: Building2 },
+        { id: 'admin', label: 'Admin', path: '/e-sign/admin', icon: UserCog }
+      ]
+    },
+    {
+      id: 'pdf-tools',
+      label: 'PDF Tools',
+      icon: Scissors,
+      children: [
+        { id: 'all', label: 'All Tools', path: '/pdf-tools', icon: FileText },
+        { id: 'conversion', label: 'Conversion', path: '/pdf-tools?category=conversion', icon: Repeat },
+        { id: 'editing', label: 'Editing', path: '/pdf-tools?category=editing', icon: Edit3 },
+        { id: 'pages', label: 'Page Management', path: '/pdf-tools?category=pages', icon: Copy },
+        { id: 'security', label: 'Security', path: '/pdf-tools?category=security', icon: Lock },
+        { id: 'optimization', label: 'Optimization', path: '/pdf-tools?category=optimization', icon: Settings },
+        { id: 'ocr', label: 'OCR & Text', path: '/pdf-tools?category=ocr', icon: Search },
+        { id: 'forms', label: 'Forms', path: '/pdf-tools?category=forms', icon: FileSpreadsheet },
+        { id: 'utilities', label: 'Utilities', path: '/pdf-tools?category=utilities', icon: Wrench }
       ]
     },
   ];
@@ -66,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     navigate(path);
   };
 
-  const handleMainMenuClick = (item: any) => {
+  const handleMainMenuClick = (item: MenuItem) => {
     if (item.children) {
       toggleSubmenu(item.id);
     } else if (item.path) {
@@ -92,9 +142,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             className="p-1 rounded-md hover:bg-gray-100 transition-colors duration-200"
           >
             <ChevronLeft
-              className={`h-5 w-5 text-gray-500 transition-transform duration-300 ${
-                !isOpen ? 'rotate-180' : ''
-              }`}
+              className={`h-5 w-5 text-gray-500 transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''
+                }`}
             />
           </button>
         </div>
@@ -105,18 +154,19 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div key={item.id}>
               <button
                 onClick={() => handleMainMenuClick(item)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
-                  activeView === item.id
-                    ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${activeView === item.id
+                  ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                    style={{cursor: 'pointer'}}
               >
                 <div className="flex items-center space-x-3">
-                  <item.icon
-                    className={`h-5 w-5 ${
-                      activeView === item.id ? 'text-primary-600' : 'text-gray-400'
-                    }`}
-                  />
+                  {item.icon && (
+                    <item.icon
+                      className={`h-5 w-5 ${activeView === item.id ? 'text-primary-600' : 'text-gray-400'
+                        }`}
+                    />
+                  )}
                   {isOpen && <span className="font-medium">{item.label}</span>}
                 </div>
                 {item.children && isOpen && (
@@ -135,13 +185,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       key={sub.id}
                       onClick={() => handleNavigation(sub.path, sub.id)}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        activeView === sub.id
-                          ? 'bg-primary-50 text-primary-700'
-                          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm transition-all duration-200 ${activeView === sub.id
+                        ? 'bg-primary-50 text-primary-700'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                        style={{cursor: 'pointer'}}
                     >
-                      {sub.label}
+                      <div className="flex items-center space-x-2">
+                        {sub.icon && (
+                          <sub.icon
+                            className={`h-4 w-4 ${activeView === sub.id ? 'text-primary-600' : 'text-gray-400'
+                              }`}
+                          />
+                        )}
+                        <span>{sub.label}</span>
+                      </div>
                     </button>
                   ))}
                 </div>

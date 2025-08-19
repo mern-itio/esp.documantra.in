@@ -522,7 +522,7 @@ class DocumentController {
     }
   }
 
-  // Permanently delete document (after 30 days in trash)
+  // Permanently delete document
   async permanentlyDeleteDocument(req, res) {
     try {
       const { id } = req.params;
@@ -539,17 +539,6 @@ class DocumentController {
         return res.status(404).json({
           success: false,
           message: 'Deleted document not found or access denied'
-        });
-      }
-
-      // Check if 30 days have passed
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      if (document.deletedAt > thirtyDaysAgo) {
-        return res.status(400).json({
-          success: false,
-          message: 'Document must be in trash for at least 30 days before permanent deletion'
         });
       }
 
