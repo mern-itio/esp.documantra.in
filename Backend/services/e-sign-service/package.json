@@ -9,6 +9,7 @@
   "dependencies": {
     "@draftnsign/auth-lib": "file:../../packages/auth-lib",
     "@draftnsign/validators": "file:../../packages/validators",
+    "axios": "^1.11.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

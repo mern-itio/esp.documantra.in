@@ -6,7 +6,7 @@ const connectDB = require('./config/db');
 const eSignRoutes = require('./routes/eSignRoutes');
 
 dotenv.config();
-
+console.log("Loaded AUTH_URL:", process.env.AUTH_URL);
 const app = express(); 
 
 // Middleware
