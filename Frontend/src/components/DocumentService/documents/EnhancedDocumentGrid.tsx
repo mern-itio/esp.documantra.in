@@ -97,32 +97,21 @@ export function EnhancedDocumentGrid({
     ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'
     : 'space-y-2';
 
-  // Handle document selection
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {
-    console.log('🔍 EnhancedDocumentGrid - Document selection changed:', documentId, isSelected);
-    console.log('🔍 EnhancedDocumentGrid - Current selected documents:', selectedDocuments);
-    console.log('🔍 EnhancedDocumentGrid - setSelectedDocuments function:', typeof setSelectedDocuments);
-    
     if (isSelected) {
       const newSelection = [...selectedDocuments, documentId];
-      console.log('🔍 EnhancedDocumentGrid - Adding to selection:', newSelection);
       setSelectedDocuments(newSelection);
-      console.log('🔍 EnhancedDocumentGrid - setSelectedDocuments called');
     } else {
       const newSelection = selectedDocuments.filter(id => id !== documentId);
-      console.log('🔍 EnhancedDocumentGrid - Removing from selection:', newSelection);
-      setSelectedDocuments(newSelection);
-      console.log('🔍 EnhancedDocumentGrid - setSelectedDocuments called');
-    }
+     setSelectedDocuments(newSelection);
+   }
   };
 
   return (
     <div className={gridClasses}>
       {filteredDocuments.map((document) => {
         const isSelected = selectedDocuments.includes(document.id);
-        console.log(`🔍 EnhancedDocumentGrid - Document ${document.id} isSelected: ${isSelected}`);
-      
-        return (
+       return (
           <DocumentCard
             key={document.id}
             document={document}

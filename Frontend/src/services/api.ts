@@ -189,22 +189,58 @@ export const documentAPI = {
 
   // Download document
   downloadDocument: async (id: string) => {
-    const response = await makeDocumentRequest(`/api/documents/${id}/download`, {
-      method: 'POST',
-    });
-    
-    // Handle file download
-    if (response && response.success) {
-      // Create a temporary link to download the file
+    try {
+      // Get the authentication token
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Make a POST request to the download endpoint
+      const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/documents/${id}/download`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Get the filename from the Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'document';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create a blob from the response
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = response.data.url || `${DOCUMENT_API_BASE_URL}/api/documents/${id}/download`;
-      link.download = response.data.filename || 'document';
+      link.href = url;
+      link.download = filename;
+      
+      // Trigger download
       document.body.appendChild(link);
       link.click();
+      
+      // Cleanup
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Download error:', error);
+      return { success: false, message: 'Failed to download document' };
     }
-    
-    return response;
   },
 
   // Bulk delete documents
