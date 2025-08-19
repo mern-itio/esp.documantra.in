@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs-extra');
-const { convertDocToPdf, convertPdfToDoc, convertDocToPdfAlternative, convertPdfToExcel, convertExcelToPdf, convertPdfToPpt, convertPptToPdf, convertPptImagesToPdf, convertPdfToTxt, convertTxtToPdf, convertPdfToHtml, convertHtmlToPdf } = require('../controllers/pdfController.js');
+const { convertDocToPdf, convertPdfToDoc, convertDocToPdfAlternative, convertPdfToExcel, convertExcelToPdf, convertPdfToPpt, convertPptToPdf, convertPptToPdfAdvanced, convertPptImagesToPdf, convertPdfToTxt, convertTxtToPdf, convertPdfToHtml, convertHtmlToPdf } = require('../controllers/pdfController.js');
 
 const router = express.Router();
 
@@ -88,11 +88,18 @@ router.post('/pdf-to-doc', upload.single('document'), async (req, res) => {
       path.basename(req.file.filename, path.extname(req.file.filename)) + '.docx');
 
     console.log(`Converting ${req.file.originalname} to DOC...`);
+    console.log(`Input path: ${inputPath}`);
+    console.log(`Output path: ${outputPath}`);
     
     const result = await convertPdfToDoc(inputPath, outputPath);
     
     // Clean up uploaded file
     await fs.remove(inputPath);
+    
+    // Verify the output file exists
+    const fileExists = await fs.pathExists(outputPath);
+    console.log(`Output file exists: ${fileExists}`);
+    console.log(`Output file size: ${result.fileSize}`);
     
     res.json({
       success: true,
@@ -246,7 +253,7 @@ router.post('/pdf-to-ppt', upload.single('document'), async (req, res) => {
 });
 
 
-// PPT to PDF conversion
+// PPT to PDF conversion (Advanced)
 router.post('/ppt-to-pdf', upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
@@ -257,7 +264,51 @@ router.post('/ppt-to-pdf', upload.single('document'), async (req, res) => {
     const outputPath = path.join(__dirname, '../outputs', 
       path.basename(req.file.filename, path.extname(req.file.filename)) + '.pdf');
 
-    console.log(`Converting ${req.file.originalname} to PDF...`);
+    console.log(`Converting ${req.file.originalname} to PDF using advanced method...`);
+    
+    const result = await convertPptToPdfAdvanced(inputPath, outputPath);
+    
+    // Clean up uploaded file
+    await fs.remove(inputPath);
+    
+    res.json({
+      success: true,
+      message: 'Document converted successfully using advanced method',
+      originalFile: req.file.originalname,
+      outputFile: path.basename(outputPath),
+      downloadUrl: `/outputs/${path.basename(outputPath)}`,
+      fileSize: result.fileSize,
+      slidesProcessed: result.slidesProcessed,
+      format: result.format
+    });
+
+  } catch (error) {
+    console.error('Conversion error:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      await fs.remove(req.file.path).catch(console.error);
+    }
+    
+    res.status(500).json({
+      error: 'Conversion failed',
+      message: error.message
+    });
+  }
+});
+
+// PPT to PDF conversion (Basic)
+router.post('/ppt-to-pdf-basic', upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const inputPath = req.file.path;
+    const outputPath = path.join(__dirname, '../outputs', 
+      path.basename(req.file.filename, path.extname(req.file.filename)) + '-basic.pdf');
+
+    console.log(`Converting ${req.file.originalname} to PDF using basic method...`);
     
     const result = await convertPptToPdf(inputPath, outputPath);
     
@@ -266,7 +317,7 @@ router.post('/ppt-to-pdf', upload.single('document'), async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Document converted successfully',
+      message: 'Document converted successfully using basic method',
       originalFile: req.file.originalname,
       outputFile: path.basename(outputPath),
       downloadUrl: `/outputs/${path.basename(outputPath)}`,
@@ -454,6 +505,233 @@ router.post('/html-to-pdf', upload.single('document'), async (req, res) => {
     
     res.status(500).json({
       error: 'Conversion failed',
+      message: error.message
+    });
+  }
+});
+
+
+// Test endpoint for debugging PowerPoint conversion
+router.post('/test-pptx-extraction', upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const inputPath = req.file.path;
+    const fileExtension = path.extname(inputPath).toLowerCase();
+    
+    console.log(`Testing PPTX extraction for: ${req.file.originalname}`);
+    console.log(`File extension: ${fileExtension}`);
+    console.log(`File size: ${req.file.size} bytes`);
+    
+    let extractionResults = {
+      fileInfo: {
+        name: req.file.originalname,
+        size: req.file.size,
+        extension: fileExtension
+      },
+      methods: []
+    };
+    
+    // Test Method 1: pptxgenjs
+    try {
+      console.log('Testing pptxgenjs method...');
+      const PptxGenJS = require('pptxgenjs');
+      const pptx = new PptxGenJS();
+      
+      const pptBuffer = await fs.readFile(inputPath);
+      await pptx.load(pptBuffer);
+      const slides = pptx.getSlides();
+      
+      extractionResults.methods.push({
+        name: 'pptxgenjs',
+        success: true,
+        slidesFound: slides.length,
+        details: `Found ${slides.length} slides`
+      });
+      
+      console.log(`pptxgenjs: Found ${slides.length} slides`);
+    } catch (error) {
+      extractionResults.methods.push({
+        name: 'pptxgenjs',
+        success: false,
+        error: error.message
+      });
+      console.log(`pptxgenjs failed: ${error.message}`);
+    }
+    
+    // Test Method 2: office-to-pdf
+    try {
+      console.log('Testing office-to-pdf method...');
+      const officeToPdf = require('office-to-pdf');
+      const pptBuffer = await fs.readFile(inputPath);
+      const pdfBuffer = await officeToPdf(pptBuffer);
+      
+      extractionResults.methods.push({
+        name: 'office-to-pdf',
+        success: true,
+        pdfSize: pdfBuffer.length,
+        details: `Generated PDF of ${pdfBuffer.length} bytes`
+      });
+      
+      console.log(`office-to-pdf: Generated PDF of ${pdfBuffer.length} bytes`);
+    } catch (error) {
+      extractionResults.methods.push({
+        name: 'office-to-pdf',
+        success: false,
+        error: error.message
+      });
+      console.log(`office-to-pdf failed: ${error.message}`);
+    }
+    
+    // Test Method 3: Manual extraction
+    try {
+      console.log('Testing manual extraction method...');
+      const pptBuffer = await fs.readFile(inputPath);
+      const extractedText = await extractTextFromPptx(pptBuffer);
+      
+      extractionResults.methods.push({
+        name: 'manual-extraction',
+        success: true,
+        textLength: extractedText.length,
+        textPreview: extractedText.substring(0, 200) + (extractedText.length > 200 ? '...' : ''),
+        details: `Extracted ${extractedText.length} characters`
+      });
+      
+      console.log(`Manual extraction: Extracted ${extractedText.length} characters`);
+    } catch (error) {
+      extractionResults.methods.push({
+        name: 'manual-extraction',
+        success: false,
+        error: error.message
+      });
+      console.log(`Manual extraction failed: ${error.message}`);
+    }
+    
+    // Clean up uploaded file
+    await fs.remove(inputPath);
+    
+    res.json({
+      success: true,
+      message: 'PPTX extraction test completed',
+      results: extractionResults
+    });
+
+  } catch (error) {
+    console.error('Test extraction error:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      await fs.remove(req.file.path).catch(console.error);
+    }
+    
+    res.status(500).json({
+      error: 'Test extraction failed',
+      message: error.message
+    });
+  }
+});
+
+// Test endpoint for debugging HTML to PDF conversion
+router.post('/test-html-to-pdf', upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const inputPath = req.file.path;
+    const fileExtension = path.extname(inputPath).toLowerCase();
+    
+    console.log(`Testing HTML to PDF conversion for: ${req.file.originalname}`);
+    console.log(`File extension: ${fileExtension}`);
+    console.log(`File size: ${req.file.size} bytes`);
+    
+    if (fileExtension !== '.html') {
+      return res.status(400).json({ error: 'Only HTML files are supported for this test' });
+    }
+    
+    let testResults = {
+      fileInfo: {
+        name: req.file.originalname,
+        size: req.file.size,
+        extension: fileExtension
+      },
+      htmlAnalysis: {},
+      conversionTest: {}
+    };
+    
+    // Analyze HTML content
+    try {
+      const htmlContent = await fs.readFile(inputPath, 'utf8');
+      testResults.htmlAnalysis = {
+        contentLength: htmlContent.length,
+        hasHtmlTag: htmlContent.includes('<html'),
+        hasBodyTag: htmlContent.includes('<body'),
+        hasHeadTag: htmlContent.includes('<head'),
+        hasTitleTag: htmlContent.includes('<title'),
+        hasScriptTags: (htmlContent.match(/<script/g) || []).length,
+        hasStyleTags: (htmlContent.match(/<style/g) || []).length,
+        hasDivTags: (htmlContent.match(/<div/g) || []).length,
+        hasParagraphTags: (htmlContent.match(/<p/g) || []).length,
+        textContentLength: htmlContent.replace(/<[^>]+>/g, '').trim().length,
+        preview: htmlContent.substring(0, 500) + (htmlContent.length > 500 ? '...' : '')
+      };
+      
+      console.log('HTML analysis completed');
+    } catch (error) {
+      testResults.htmlAnalysis.error = error.message;
+      console.log('HTML analysis failed:', error.message);
+    }
+    
+    // Test basic conversion
+    try {
+      console.log('Testing basic HTML to PDF conversion...');
+      const outputPath = path.join(__dirname, '../outputs', 
+        path.basename(req.file.filename, path.extname(req.file.filename)) + '-test.pdf');
+      
+      const result = await convertHtmlToPdf(inputPath, outputPath);
+      
+      testResults.conversionTest = {
+        success: true,
+        outputFile: path.basename(outputPath),
+        fileSize: result.fileSize,
+        message: result.message,
+        contentAnalysis: result.contentAnalysis || 'No content analysis available'
+      };
+      
+      // Clean up test output file
+      await fs.remove(outputPath).catch(console.error);
+      
+      console.log('HTML to PDF conversion test completed successfully');
+    } catch (error) {
+      testResults.conversionTest = {
+        success: false,
+        error: error.message,
+        stack: error.stack
+      };
+      console.log('HTML to PDF conversion test failed:', error.message);
+    }
+    
+    // Clean up uploaded file
+    await fs.remove(inputPath);
+    
+    res.json({
+      success: true,
+      message: 'HTML to PDF conversion test completed',
+      results: testResults
+    });
+
+  } catch (error) {
+    console.error('Test HTML to PDF conversion error:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      await fs.remove(req.file.path).catch(console.error);
+    }
+    
+    res.status(500).json({
+      error: 'Test HTML to PDF conversion failed',
       message: error.message
     });
   }

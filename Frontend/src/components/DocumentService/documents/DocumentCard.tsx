@@ -140,7 +140,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
 
             {showActions && (
               <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
-                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
+                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50"   style={{cursor: 'pointer'}}>
                   <Eye className="w-4 h-4" />
                   <span>Preview</span>
                 </button>
@@ -148,6 +148,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                   className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
                   onClick={handleDownload}
                   disabled={isDownloading}
+                    style={{cursor: 'pointer'}}
                 >
                   {isDownloading ? (
                     <>
@@ -168,6 +169,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                     toggleArchive(document.id);
                     setShowActions(false);
                   }}
+                    style={{cursor: 'pointer'}}
                 >
                   {document.isArchived ? (
                     <>
@@ -190,6 +192,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                       moveToTrash(document.id);
                       setShowActions(false);
                     }}
+                      style={{cursor: 'pointer'}}
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>Move to Trash</span>

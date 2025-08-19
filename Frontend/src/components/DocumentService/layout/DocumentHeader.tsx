@@ -9,10 +9,9 @@ import {
   SortDesc,
   MoreHorizontal,
   Share2,
-  Download,
   Trash2,
   Move,
-  Star,
+  // Star,
   Folder
 } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -180,23 +179,25 @@ export function DocumentHeader() {
                   variant="ghost" 
                   className="h-7 px-2 hover:bg-blue-50 hover:text-blue-700"
                   onClick={() => setShowShareModal(true)}
+                    style={{cursor: 'pointer'}}
                 >
                   <Share2 className="w-3 h-3" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 px-2">
+                {/* <Button size="sm" variant="ghost" className="h-7 px-2">
                   <Download className="w-3 h-3" />
-                </Button>
+                </Button> */}
                 <Button 
                   size="sm" 
                   variant="ghost" 
                   className="h-7 px-2"
                   onClick={() => setShowMoveModal(true)}
+                    style={{cursor: 'pointer'}}
                 >
                   <Move className="w-3 h-3" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 px-2">
+                {/* <Button size="sm" variant="ghost" className="h-7 px-2">
                   <Star className="w-3 h-3" />
-                </Button>
+                </Button> */}
                 {userPermissions.delete_any && (
                   <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600 hover:text-red-700">
                     <Trash2 className="w-3 h-3" />

@@ -211,8 +211,21 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
           <nav className="flex items-center space-x-2 text-sm text-gray-600">
             <Link to="/" className="hover:text-primary-600">Home</Link>
             <span>/</span>
+            <Link to="/pdf-tools" className="hover:text-primary-600">PDF Tools</Link>
+            <span>/</span>
             <span className="text-gray-900">{toolName}</span>
           </nav>
+          
+          {/* Back Button */}
+          <div className="mt-4">
+            <Link 
+              to="/pdf-tools" 
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+            >
+              <ChevronDown className="h-4 w-4 rotate-90" />
+              Back to PDF Tools
+            </Link>
+          </div>
         </div>
 
         {/* Compact Header */}

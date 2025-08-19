@@ -55,7 +55,13 @@ export const documentApi = createApiInstance(
   import.meta.env.VITE_DOCUMENT_BASE_URL || 'http://165.22.215.73:2102',
   'Document'
 );
+
 export const eSignApi = createApiInstance(
   import.meta.env.VITE_ESIGN_SERVICE_URL || 'http://165.22.215.73:2103',
   'E-Sign'
+);
+
+export const pdfApi = createApiInstance(
+  import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104',
+  'PDF'
 );
