@@ -311,6 +311,7 @@ export function DocumentHeader() {
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         selectedDocuments={selectedDocuments}
+
       />
     </div>
   );

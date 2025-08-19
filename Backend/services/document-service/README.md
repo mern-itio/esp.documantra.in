@@ -219,3 +219,121 @@ docker run -p 4002:4002 document-service
 ## License
 
 This project is licensed under the MIT License.
+
+# Document Service - Trash Functionality
+
+This service includes a comprehensive trash system for managing deleted documents with automatic cleanup after 30 days.
+
+## Features
+
+- **Soft Delete**: Documents are marked as deleted instead of being permanently removed
+- **30-Day Retention**: Deleted documents are kept for 30 days before automatic permanent deletion
+- **Restore Functionality**: Users can restore documents from trash at any time within the 30-day period
+- **Manual Cleanup**: Option to permanently delete documents before the 30-day period
+- **Automatic Cleanup**: Scheduled cleanup of expired documents
+
+## API Endpoints
+
+### Get Deleted Documents (Trash)
+```
+GET /api/documents/trash
+Query Parameters:
+- page: Page number (default: 1)
+- limit: Documents per page (default: 20)
+- search: Search term for document names, descriptions, or tags
+```
+
+### Restore Document
+```
+POST /api/documents/:id/restore
+Restores a deleted document from trash
+```
+
+### Permanently Delete Document
+```
+DELETE /api/documents/:id/permanent
+Permanently deletes a document (only works after 30 days in trash)
+```
+
+### Move Document to Trash
+```
+DELETE /api/documents/:id
+Moves a document to trash (soft delete)
+```
+
+## Database Schema
+
+The Document model includes these new fields:
+- `isDeleted`: Boolean flag indicating if document is in trash
+- `deletedAt`: Date when document was moved to trash
+
+## Cleanup Process
+
+### Automatic Cleanup
+Documents are automatically cleaned up after 30 days in trash. The cleanup process:
+1. Finds documents that have been in trash for more than 30 days
+2. Deletes the physical files from storage
+3. Removes the document records from the database
+
+### Manual Cleanup
+You can run the cleanup script manually:
+```bash
+npm run cleanup
+```
+
+### Scheduled Cleanup
+For production environments, set up a cron job or scheduled task to run the cleanup script daily:
+```bash
+# Example cron job (runs daily at 2 AM)
+0 2 * * * cd /path/to/document-service && npm run cleanup
+```
+
+## Frontend Integration
+
+The frontend includes:
+- **TrashPage**: Displays all deleted documents with restore and permanent delete options
+- **DocumentCard**: Updated to show "Move to Trash" instead of "Delete"
+- **Store Functions**: New functions for trash operations (`moveToTrash`, `restoreFromTrash`, `permanentlyDelete`)
+
+## Usage Examples
+
+### Moving a Document to Trash
+```typescript
+const { moveToTrash } = useDocumentStore();
+await moveToTrash(documentId);
+```
+
+### Restoring a Document
+```typescript
+const { restoreFromTrash } = useDocumentStore();
+await restoreFromTrash(documentId);
+```
+
+### Permanently Deleting a Document
+```typescript
+const { permanentlyDelete } = useDocumentStore();
+await permanentlyDelete(documentId);
+```
+
+## Security Considerations
+
+- Only document owners can move documents to trash
+- Only document owners can restore documents from trash
+- Only document owners can permanently delete documents
+- Documents must be in trash for at least 30 days before permanent deletion
+- Physical files are properly cleaned up to prevent storage bloat
+
+## Monitoring
+
+The cleanup script provides detailed logging:
+- Number of documents found for cleanup
+- Success/failure counts for each operation
+- Cutoff date used for cleanup
+- Individual document cleanup results
+
+## Error Handling
+
+- Failed cleanup operations are logged but don't stop the overall process
+- Physical file deletion errors are handled gracefully
+- Database operation errors are logged with details
+- The cleanup script continues processing other documents even if some fail

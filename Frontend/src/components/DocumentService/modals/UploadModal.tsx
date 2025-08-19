@@ -133,7 +133,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
                     : formatFileSize(userPermissions.uploadLimit)} per file
                 </p>
                 <p className="text-xs mt-1">
-                  Supported: PDF, Word, Excel, PowerPoint, Images, Text files
+                  Supported: PDF, Word, Text files
                 </p>
               </div>
             </div>

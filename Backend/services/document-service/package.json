@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node test-endpoints.js"
+    "test": "node test-endpoints.js",
+    "cleanup": "node scripts/cleanupExpiredDocuments.js"
   },
   "dependencies": {
     "@draftnsign/auth-lib": "file:../../packages/auth-lib",

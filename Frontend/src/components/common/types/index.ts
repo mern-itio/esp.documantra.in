@@ -43,6 +43,8 @@ export interface Document {
   sharedWith: SharePermission[];
   isArchived: boolean;
   isFavorite: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface Folder {

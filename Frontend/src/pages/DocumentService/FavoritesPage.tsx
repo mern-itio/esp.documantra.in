@@ -1,24 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../../components/AuthService/AuthContext';
-import { useAuthInitialization } from '../../hooks/useAuthInitialization';
+import React, { useState, useEffect } from 'react';
+import { Star } from 'lucide-react';
 import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
-import { EmptyState } from '../../components/DocumentService/common/EmptyState';
 import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
-import { Users } from 'lucide-react';
 import { useDocumentStore } from '../../components/common/store/documentStore';
+import { EmptyState } from '../../components/DocumentService/common/EmptyState';
 import Loader from '../../components/common/loader';
 import type { Document } from '../../components/common/types';
 
-export function SharedDocumentsPage() {
+const FavoritesPage: React.FC = () => {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  // Use AuthContext for user data
-  const { user: currentUser } = useAuth();
   
-  // Initialize document store with user data
-  useAuthInitialization();
-
   const { 
     fetchDocuments, 
     fetchFolders,
@@ -30,41 +21,31 @@ export function SharedDocumentsPage() {
     viewMode
   } = useDocumentStore();
 
-  // Fetch documents when component mounts
+  // Fetch favorite documents when component mounts
   useEffect(() => {
-    if (currentUser) {
-      const loadDocuments = async () => {
-        try {
-          await Promise.all([
-            fetchDocuments({ 
-              folderId: currentFolderId,
-              limit: 100
-            }),
-            fetchFolders({ parentId: currentFolderId })
-          ]);
-        } catch (error) {
-          console.error('Failed to load documents:', error);
-          setError('Failed to load documents');
-        }
-      };
+    const loadFavoriteDocuments = async () => {
+      try {
+        await Promise.all([
+          fetchDocuments({ 
+            folderId: currentFolderId,
+            favoritesOnly: true,
+            sortBy: 'modifiedAt',
+            sortOrder: 'desc',
+            limit: 100
+          }),
+          fetchFolders({ parentId: currentFolderId })
+        ]);
+      } catch (error) {
+        console.error('Failed to load favorite documents:', error);
+      }
+    };
 
-      loadDocuments();
-    }
-  }, [currentUser, currentFolderId, fetchDocuments, fetchFolders]);
+    loadFavoriteDocuments();
+  }, [currentFolderId, fetchDocuments, fetchFolders]);
 
-  // Get filtered documents from store and filter for shared ones
+  // Get filtered documents from store and filter for favorite ones
   const allFilteredDocuments = getFilteredDocuments();
-  const filteredDocuments = allFilteredDocuments.filter((doc: any) => {
-    if (!doc.sharedWith || !Array.isArray(doc.sharedWith)) {
-      return false;
-    }
-    
-    return doc.sharedWith.some((share: any) => {
-      const emailMatch = share.email === currentUser?.email;
-      const userIdMatch = share.userId === currentUser?.email || share.userId === currentUser?.id;
-      return emailMatch || userIdMatch;
-    });
-  });
+  const filteredDocuments = allFilteredDocuments.filter((doc: any) => doc.isFavorite);
 
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {
     if (isSelected) {
@@ -97,23 +78,12 @@ export function SharedDocumentsPage() {
     );
   }
 
-  if (error) {
-    return (
-      <EmptyState
-        icon={Users}
-        title="Error loading documents"
-        description={error}
-        action={null}
-      />
-    );
-  }
-
   if (filteredDocuments.length === 0) {
     return (
       <EmptyState
-        icon={Users}
-        title="No shared documents"
-        description="Documents shared with you will appear here. Ask someone to share a document with you to get started."
+        icon={Star}
+        title="No favorite documents"
+        description="Documents you mark as favorite will appear here. Use the star icon in the document menu to add documents to favorites."
         action={null}
       />
     );
@@ -143,4 +113,6 @@ export function SharedDocumentsPage() {
       </div>
     </div>
   );
-}
+};
+
+export default FavoritesPage;

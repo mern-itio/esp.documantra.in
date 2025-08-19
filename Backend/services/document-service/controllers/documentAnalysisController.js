@@ -32,11 +32,14 @@ class DocumentAnalysisController {
       console.log(`🔍 Processing document analysis for: ${documentId}`);
 
       // Check if document exists
-      const document = await Document.findById(documentId);
+      const document = await Document.findOne({
+        _id: documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found or access denied'
         });
       }
 
@@ -312,11 +315,14 @@ class DocumentAnalysisController {
       console.log(`🔄 Reprocessing document analysis for: ${documentId}`);
 
       // Check if document exists
-      const document = await Document.findById(documentId);
+      const document = await Document.findOne({
+        _id: documentId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found or access denied'
         });
       }
 
@@ -414,9 +420,14 @@ class DocumentAnalysisController {
 
       // Find documents by user and get their analyses
       const userDocuments = await Document.find({ 
-        $or: [
-          { uploadedBy: userId },
-          { ownerId: userId }
+        $and: [
+          {
+            $or: [
+              { uploadedBy: userId },
+              { ownerId: userId }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       }).select('_id');
 

@@ -167,19 +167,26 @@ class DocumentController {
         sortBy = 'createdAt',
         sortOrder = 'desc',
         type,
-        tags
+        tags,
+        favoritesOnly,
+        archivedOnly
       } = req.query;
 
       const skip = (page - 1) * limit;
 
       // Build query
       let query = {
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId },
-          { 'sharedWith.userId': req.user.data.email }, // match email stored in userId
-          { 'sharedWith.email': req.user.data.email },  // match email field
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId },
+              { 'sharedWith.userId': req.user.data.email }, // match email stored in userId
+              { 'sharedWith.email': req.user.data.email },  // match email field
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       };
 
@@ -201,6 +208,14 @@ class DocumentController {
 
       if (tags) {
         query.tags = { $in: tags.split(',') };
+      }
+
+      if (favoritesOnly === 'true') {
+        query.isFavorite = true;
+      }
+
+      if (archivedOnly === 'true') {
+        query.isArchived = true;
       }
 
       // Build sort object
@@ -248,10 +263,15 @@ class DocumentController {
 
       const document = await Document.findOne({
         _id: id,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId },
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       }).populate('folderId', 'name color');
 
@@ -290,10 +310,15 @@ class DocumentController {
 
       const document = await Document.findOne({
         _id: id,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId },
-          { isPublic: true }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -343,9 +368,14 @@ class DocumentController {
 
       const document = await Document.findOne({
         _id: id,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'full'] } }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'full'] } }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -389,9 +419,10 @@ class DocumentController {
       const { id } = req.params;
       const userId = req.user.data.id;
 
+      // Find document and check ownership
       const document = await Document.findOne({
         _id: id,
-        ownerId: userId // Only owner can delete
+        ownerId: userId
       });
 
       if (!document) {
@@ -401,24 +432,29 @@ class DocumentController {
         });
       }
 
-      // Delete file from storage
-      if (fs.existsSync(document.filePath)) {
-        await unlinkAsync(document.filePath);
-      }
+      // Soft delete - mark as deleted and set deletion date
+      document.isDeleted = true;
+      document.deletedAt = new Date();
+      document.modifiedAt = new Date();
+      await document.save();
 
-      // Update folder stats if document was in a folder
+      // Update folder statistics if document was in a folder
       if (document.folderId) {
         await Folder.findByIdAndUpdate(document.folderId, {
-          $inc: { documentCount: -1, totalSize: -document.size }
+          $inc: { 
+            documentCount: -1,
+            totalSize: -(document.size || 0)
+          }
         });
       }
 
-      // Delete document record
-      await Document.findByIdAndDelete(id);
-
       res.json({
         success: true,
-        message: 'Document deleted successfully'
+        message: 'Document moved to trash successfully',
+        data: {
+          documentId: id,
+          deletedAt: document.deletedAt
+        }
       });
 
     } catch (error) {
@@ -426,6 +462,174 @@ class DocumentController {
       res.status(500).json({
         success: false,
         message: 'Failed to delete document',
+        error: error.message
+      });
+    }
+  }
+
+  // Restore document from trash
+  async restoreDocument(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.data.id;
+
+      // Find deleted document and check ownership
+      const document = await Document.findOne({
+        _id: id,
+        ownerId: userId,
+        isDeleted: true
+      });
+
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Deleted document not found or access denied'
+        });
+      }
+
+      // Restore document
+      document.isDeleted = false;
+      document.deletedAt = null;
+      document.modifiedAt = new Date();
+      await document.save();
+
+      // Update folder statistics if document was in a folder
+      if (document.folderId) {
+        await Folder.findByIdAndUpdate(document.folderId, {
+          $inc: { 
+            documentCount: 1,
+            totalSize: (document.size || 0)
+          }
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Document restored successfully',
+        data: {
+          documentId: id,
+          restoredAt: document.modifiedAt
+        }
+      });
+
+    } catch (error) {
+      console.error('Restore document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to restore document',
+        error: error.message
+      });
+    }
+  }
+
+  // Permanently delete document (after 30 days in trash)
+  async permanentlyDeleteDocument(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.data.id;
+
+      // Find deleted document and check ownership
+      const document = await Document.findOne({
+        _id: id,
+        ownerId: userId,
+        isDeleted: true
+      });
+
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Deleted document not found or access denied'
+        });
+      }
+
+      // Check if 30 days have passed
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      if (document.deletedAt > thirtyDaysAgo) {
+        return res.status(400).json({
+          success: false,
+          message: 'Document must be in trash for at least 30 days before permanent deletion'
+        });
+      }
+
+      // Delete the physical file
+      if (document.filePath && fs.existsSync(document.filePath)) {
+        await unlinkAsync(document.filePath);
+      }
+
+      // Delete the document record
+      await Document.findByIdAndDelete(id);
+
+      res.json({
+        success: true,
+        message: 'Document permanently deleted successfully',
+        data: {
+          documentId: id
+        }
+      });
+
+    } catch (error) {
+      console.error('Permanently delete document error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to permanently delete document',
+        error: error.message
+      });
+    }
+  }
+
+  // Get deleted documents (trash)
+  async getDeletedDocuments(req, res) {
+    try {
+      const userId = req.user.data.id;
+      const { page = 1, limit = 20, search } = req.query;
+
+      const query = {
+        ownerId: userId,
+        isDeleted: true
+      };
+
+      // Add search functionality
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { tags: { $in: [new RegExp(search, 'i')] } }
+        ];
+      }
+
+      const skip = (page - 1) * limit;
+
+      const [documents, total] = await Promise.all([
+        Document.find(query)
+          .sort({ deletedAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit))
+          .populate('folderId', 'name color'),
+        Document.countDocuments(query)
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      res.json({
+        success: true,
+        data: {
+          documents,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            pages: totalPages
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Get deleted documents error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get deleted documents',
         error: error.message
       });
     }
@@ -447,7 +651,8 @@ class DocumentController {
       // Get documents that user owns
       const documents = await Document.find({
         _id: { $in: documentIds },
-        ownerId: userId
+        ownerId: userId,
+        isDeleted: { $ne: true } // Exclude deleted documents
       });
 
       if (documents.length === 0) {
@@ -531,20 +736,19 @@ class DocumentController {
       }
 
       // Check if document exists and user owns it
-      const document = await Document.findById(id);
+      const document = await Document.findOne({
+        _id: id,
+        ownerId: userId,
+        isDeleted: { $ne: true } // Exclude deleted documents
+      });
       if (!document) {
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found or access denied'
         });
       }
 
-      if (document.ownerId.toString() !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. Only document owner can share'
-        });
-      }
+
 
       // Check if already shared with this user
       const existingShare = document.sharedWith?.find(share =>
@@ -633,9 +837,14 @@ class DocumentController {
       // Check if document exists and user has access
       const document = await Document.findOne({
         _id: id,
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -725,9 +934,14 @@ class DocumentController {
       // Check if all documents exist and user has access
       const documents = await Document.find({
         _id: { $in: documentIds },
-        $or: [
-          { ownerId: userId },
-          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
         ]
       });
 
@@ -812,6 +1026,45 @@ class DocumentController {
         message: 'Failed to move documents',
         error: error.message
       });
+    }
+  }
+
+  // Clean up expired documents (run this as a scheduled task)
+  async cleanupExpiredDocuments() {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // Find documents that have been in trash for more than 30 days
+      const expiredDocuments = await Document.find({
+        isDeleted: true,
+        deletedAt: { $lt: thirtyDaysAgo }
+      });
+
+      let deletedCount = 0;
+      for (const document of expiredDocuments) {
+        try {
+          // Delete the physical file
+          if (document.filePath && fs.existsSync(document.filePath)) {
+            await unlinkAsync(document.filePath);
+          }
+
+          // Delete the document record
+          await Document.findByIdAndDelete(document._id);
+          deletedCount++;
+
+          console.log(`Permanently deleted expired document: ${document.name} (ID: ${document._id})`);
+        } catch (error) {
+          console.error(`Failed to delete expired document ${document._id}:`, error);
+        }
+      }
+
+      console.log(`Cleanup completed: ${deletedCount} expired documents permanently deleted`);
+      return deletedCount;
+
+    } catch (error) {
+      console.error('Cleanup expired documents error:', error);
+      throw error;
     }
   }
 }

@@ -113,13 +113,21 @@ const handleMulterError = (error, req, res, next) => {
 // Document routes
 router.post('/upload', upload.single('file'), handleMulterError, documentController.uploadDocument);
 router.get('/', documentController.getUserDocuments);
+
+// Place specific/static routes BEFORE parameterized routes to avoid conflicts
+// Trash routes
+router.get('/trash', documentController.getDeletedDocuments);
+router.post('/bulk-delete', documentController.bulkDeleteDocuments);
+router.post('/bulk-move', documentController.moveMultipleDocuments);
+
+// Parameterized routes
 router.get('/:id', documentController.getDocument);
 router.put('/:id', documentController.updateDocument);
 router.delete('/:id', documentController.deleteDocument);
 router.post('/:id/download', documentController.downloadDocument);
 router.post('/:id/share', documentController.shareDocument);
 router.post('/:id/move', documentController.moveDocument);
-router.post('/bulk-delete', documentController.bulkDeleteDocuments);
-router.post('/bulk-move', documentController.moveMultipleDocuments);
+router.post('/:id/restore', documentController.restoreDocument);
+router.delete('/:id/permanent', documentController.permanentlyDeleteDocument);
 
 module.exports = router;

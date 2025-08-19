@@ -6,7 +6,6 @@ import {
   Star,
   StarOff,
   Eye,
-  Move,
   Trash2,
   FileText,
   Image,
@@ -16,13 +15,16 @@ import {
 import type { Document } from '../../common/types';
 import { Button } from '../ui/button';
 import { useDocumentStore } from '../../common/store/documentStore';
+import { Archive, ArchiveRestore } from 'lucide-react';
 import { cn, formatDate, formatFileSize } from '../../common/lib/utils';
+import { documentAPI } from '../../../services/api';
 
 interface DocumentCardProps {
   document: Document;
   isSelected: boolean;
   onSelect: (selected: boolean) => void;
   onClick?: (document: Document) => void;
+  showActionsMenu?: boolean; // New prop to control actions menu visibility
 }
 
 const getFileTypeIcon = (type: string) => {
@@ -52,16 +54,37 @@ const getFileTypeColor = (type: string) => {
   return 'text-gray-600 bg-gray-50';
 };
 
-export function DocumentCard({ document, isSelected, onSelect, onClick }: DocumentCardProps) {
-  const { toggleFavorite, userPermissions } = useDocumentStore();
+export function DocumentCard({ document, isSelected, onSelect, onClick, showActionsMenu = true }: DocumentCardProps) {
+  const { toggleFavorite, toggleArchive, moveToTrash, userPermissions } = useDocumentStore();
   const [showActions, setShowActions] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const FileIcon = getFileTypeIcon(document.type);
-  const fileTypeColor = getFileTypeColor(document.type);
-
+  const fileTypeColor = getFileTypeColor(document.type); 
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleFavorite(document.id);
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // console.log('Download button clicked for document:', document.id, document.name);
+    setIsDownloading(true);
+    setShowActions(false); // Close the menu after clicking download
+    try {
+      const result = await documentAPI.downloadDocument(document.id);
+      console.log('Download result:', result);
+      if (result.success) {
+        console.log('Download started successfully');
+      } else {
+        console.error('Download failed:', result.message);
+      }
+    } catch (error) {
+      console.error('Failed to download document:', error);
+      // You could add a toast notification here if you have one
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleCardClick = () => {
@@ -100,49 +123,83 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
       </div>
 
       {/* Actions Menu */}
-      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="relative">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 w-6 p-0 bg-white shadow-sm border"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowActions(!showActions);
-            }}
-          >
-            <MoreVertical className="w-3 h-3" />
-          </Button>
+      {showActionsMenu && (
+        <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="relative">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 bg-white shadow-sm border"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowActions(!showActions);
+              }}
+            >
+              <MoreVertical className="w-3 h-3" />
+            </Button>
 
-          {showActions && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
-                <Eye className="w-4 h-4" />
-                <span>Preview</span>
-              </button>
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
-                <Download className="w-4 h-4" />
-                <span>Download</span>
-              </button>
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
-                <Share2 className="w-4 h-4" />
-                <span>Share</span>
-              </button>
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
-                <Move className="w-4 h-4" />
-                <span>Move</span>
-              </button>
-              <div className="border-t border-gray-100 my-1" />
-              {userPermissions.delete_own && (
-                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
+            {showActions && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
+                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
+                  <Eye className="w-4 h-4" />
+                  <span>Preview</span>
                 </button>
-              )}
-            </div>
-          )}
+                <button 
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                      <span>Downloading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Download</span>
+                    </>
+                  )}
+                </button>
+                <button 
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleArchive(document.id);
+                    setShowActions(false);
+                  }}
+                >
+                  {document.isArchived ? (
+                    <>
+                      <ArchiveRestore className="w-4 h-4" />
+                      <span>Unarchive</span>
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="w-4 h-4" />
+                      <span>Archive</span>
+                    </>
+                  )}
+                </button>
+                <div className="border-t border-gray-100 my-1" />
+                {userPermissions.delete_own && (
+                  <button 
+                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveToTrash(document.id);
+                      setShowActions(false);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Move to Trash</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Document Preview/Icon */}
       <div className="p-4 pb-2">
@@ -194,6 +251,9 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
             {document.shared && (
               <Share2 className="w-3 h-3 text-blue-500" >Shared</Share2>
             )}
+            {document.isArchived && (
+              <Archive className="w-3 h-3 text-gray-500" />
+            )}
             {document.views > 0 && (
               <div className="flex items-center space-x-1">
                 <Eye className="w-3 h-3 text-gray-400" />
@@ -214,6 +274,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick }: Docume
           </button>
         </div>
       </div>
+     
     </div>
   );
 }
