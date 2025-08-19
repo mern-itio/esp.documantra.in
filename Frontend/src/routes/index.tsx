@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthService/AuthContext';
 
 // Layouts
@@ -174,6 +174,189 @@ import EsignEnterpriseSettings from '../pages/eSign/EnterpriseSettings';
 import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
 // E-Signature Pages Ended
 
+//PDF Tools Started
+import type { PDFTool, ProcessingStats } from '../types';
+import { mockPDFTools, mockProcessingStats } from '../data/pdfMockData';
+import { ToolsGrid } from '../components/PDFService/ToolsGrid';
+import { HelpSystem } from '../components/PDFService/HelpSystem';
+import { CloudConnector } from '../components/PDFService/CloudConnector';
+import { QualityAnalyzer } from '../components/PDFService/QualityAnalyzer';
+import { WorkflowDesigner } from '../components/PDFService/WorkflowDesigner';
+import { Analytics } from '../components/PDFService/Analytics';
+import { BatchProcessor } from '../components/PDFService/BatchProcessor';
+import { PDFEditor } from '../components/PDFService/PDFEditor';
+import { PDFViewer } from '../components/PDFService/PDFViewer';
+import { Header } from '../components/PDFService/Header';
+import { PdftoDoc } from '../pages/PDFTools/PDFtoDoc';
+import { DoctoPdf } from '../pages/PDFTools/DoctoPdf';
+import { PdfToExcel } from '../pages/PDFTools/PdftoExcel';
+import { ExcelToPdf } from '../pages/PDFTools/ExceltoPdf';
+import { PdftoPpt } from '../pages/PDFTools/PdftoPpt';
+import { PptToPdf } from '../pages/PDFTools/PpttoPDF';
+import { PdftoText } from '../pages/PDFTools/PdftoText';
+import { TextToPdf } from '../pages/PDFTools/TextToPDF';
+import { PdfToHtml } from '../pages/PDFTools/PdfToHtml';
+import { HtmlToPdf } from '../pages/PDFTools/HtmltoPdf';
+
+// PDF Tools Layout Component
+const PDFToolsLayout = () => {
+  const location = useLocation();
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedTool, setSelectedTool] = useState<PDFTool | null>(null);
+  const [currentView, setCurrentView] = useState<'tools' | 'viewer' | 'editor' | 'batch' | 'analytics' | 'workflows' | 'quality' | 'cloud' | 'help' | 'admin'>('tools');
+  const [processingStats, setProcessingStats] = useState<ProcessingStats>(mockProcessingStats);
+  const [favoriteTools, setFavoriteTools] = useState<Set<string>>(new Set());
+  const [recentTools, setRecentTools] = useState<PDFTool[]>([]);
+  const navigate = useNavigate();
+
+  // Handle URL parameters for category filtering
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const category = urlParams.get('category');
+    // console.log('URL changed, location.search:', location.search);
+    // console.log('Category from URL:', category);
+    
+    if (category) {
+      setSelectedCategory(category);
+      // console.log('Category changed to:', category);
+    } else {
+      setSelectedCategory('all');
+      // console.log('Category set to: all');
+    }
+  }, [location.search]); // Watch for location search changes
+
+  // Monitor selectedCategory changes
+  // useEffect(() => {
+  //   console.log('selectedCategory state changed to:', selectedCategory);
+  // }, [selectedCategory]);
+
+  const getFilteredTools = () => {
+    let allTools: PDFTool[] = [];
+    
+    if (selectedCategory === 'all') {
+      allTools = Object.values(mockPDFTools).flatMap(category => category.tools);
+      // console.log('Getting all tools from all categories, total:', allTools.length);
+    } else {
+      const categoryData = mockPDFTools[selectedCategory as keyof typeof mockPDFTools];
+      if (categoryData) {
+        allTools = categoryData.tools;
+        // console.log(`Getting tools from category '${selectedCategory}', found:`, allTools.length);
+      } else {
+        console.warn(`Category '${selectedCategory}' not found in mockPDFTools`);
+        // console.log('Available categories:', Object.keys(mockPDFTools));
+        allTools = [];
+      }
+    }
+
+    if (searchQuery.trim()) {
+      const searchFiltered = allTools.filter(tool => 
+        tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tool.features.some(feature => feature.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      // console.log(`Search query '${searchQuery}' filtered tools from ${allTools.length} to ${searchFiltered.length}`);
+      return searchFiltered;
+    }
+
+    // console.log(`Final filtered tools: Category=${selectedCategory}, Total tools=${allTools.length}`);
+    return allTools;
+  };
+
+  const handleToolSelect = (tool: PDFTool) => {
+    console.log('Tool selected:', tool);
+    console.log('Navigating to:', `/pdf-tools/${tool.id}`);
+    setSelectedTool(tool);
+    navigate(`/pdf-tools/${tool.id}`);
+    
+    // Add to recent tools
+    setRecentTools(prev => {
+      const filtered = prev.filter(t => t.id !== tool.id);
+      return [tool, ...filtered].slice(0, 5);
+    });
+  };
+
+  const toggleFavorite = (toolId: string) => {
+    setFavoriteTools(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(toolId)) {
+        newFavorites.delete(toolId);
+      } else {
+        newFavorites.add(toolId);
+      }
+      return newFavorites;
+    });
+  };
+
+  useEffect(() => {
+    // Simulate real-time stats updates
+    const interval = setInterval(() => {
+      setProcessingStats(prev => ({
+        ...prev,
+        dailyUsage: {
+          ...prev.dailyUsage,
+          totalOperations: prev.dailyUsage.totalOperations + Math.floor(Math.random() * 5)
+        }
+      }));
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'viewer':
+        return <PDFViewer selectedTool={selectedTool} onBack={() => setCurrentView('tools')} />;
+      case 'editor':
+        return <PDFEditor onBack={() => setCurrentView('tools')} />;
+      case 'batch':
+        return <BatchProcessor onBack={() => setCurrentView('tools')} />;
+      case 'analytics':
+        return <Analytics stats={processingStats} onBack={() => setCurrentView('tools')} />;
+      case 'workflows':
+        return <WorkflowDesigner onBack={() => setCurrentView('tools')} />;
+      case 'quality':
+        return <QualityAnalyzer onBack={() => setCurrentView('tools')} />;
+      case 'cloud':
+        return <CloudConnector onBack={() => setCurrentView('tools')} />;
+      case 'help':
+        return <HelpSystem onBack={() => setCurrentView('tools')} />;
+   
+      default:
+        const filteredTools = getFilteredTools();
+        
+        return (
+          <div>
+            <ToolsGrid
+              key={`${selectedCategory}-${searchQuery}`}
+              tools={filteredTools}
+              onToolSelect={handleToolSelect}
+              favoriteTools={favoriteTools}
+              onToggleFavorite={toggleFavorite}
+              recentTools={recentTools}
+              searchQuery={searchQuery}
+            />
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className='bg-white p-2'>
+     <Header 
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        stats={processingStats}
+      />
+      {renderCurrentView()}
+    </div>
+  );
+};
+
+//PDF Tools Ended
+
 // Auth Route Wrapper
 const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -199,13 +382,10 @@ function DocumentView() {
   };
 
   const handleDocumentSelect = (document: any) => {
-    console.log('🔍 handleDocumentSelect: Received document:', document);
-    console.log('🔍 handleDocumentSelect: Document ID:', document?.id);
-    console.log('🔍 handleDocumentSelect: Document _id:', document?._id);
-    console.log('🔍 handleDocumentSelect: Document keys:', Object.keys(document || {}));
     setSelectedDocument(document);
   };
 
+  
   return (
     <>
       {viewMode === 'grid' ? (
@@ -394,6 +574,8 @@ const authRoutes = [
   { path: '/audit-trail', element: <AuditTrailPage /> },
   { path: '/compliance', element: <CompliancePage /> },
   { path: '/risk-management', element: <RiskManagementPage /> },
+
+//Document Management Module
   { 
     path: '/all-documents', 
     element: (
@@ -467,6 +649,128 @@ const authRoutes = [
   { path: '/e-sign/settings', element:<EsignSettings/>},
   { path: '/e-sign/enterprise', element:<EsignEnterpriseSettings/>},
   { path: '/e-sign/admin', element:<EsignESignatureAdmin/>},
+
+  //PDF Tools Routes
+  { 
+    path: '/pdf-tools', 
+    element: (     
+        <PDFToolsLayout />
+    ) 
+  },
+
+  // Individual PDF Tool Pages
+  { path: '/pdf-tools/pdf-to-word', element: <PdftoDoc />},
+  { path: '/pdf-tools/word-to-pdf', element: <DoctoPdf />},
+  { path: '/pdf-tools/pdf-to-excel', element: <PdfToExcel />},
+  { path: '/pdf-tools/excel-to-pdf', element: <ExcelToPdf />},
+  { path: '/pdf-tools/pdf-to-powerpoint', element: <PdftoPpt />},
+  { path: '/pdf-tools/powerpoint-to-pdf', element: <PptToPdf />},
+  { path: '/pdf-tools/pdf-to-text', element: <PdftoText />},
+  { path: '/pdf-tools/text-to-pdf', element: <TextToPdf />},
+  { path: '/pdf-tools/pdf-to-html', element: <PdfToHtml />},
+  { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf />},
+  { path: '/pdf-tools/merge-pdf', element: <MergePDFPage />},
+  { path: '/pdf-tools/compress-pdf', element: <CompressPDFPage />},
+  { path: '/pdf-tools/split-pdf', element: <SplitPDFPage />},
+  { path: '/pdf-tools/protect-pdf', element: <ProtectPDFPage />},
+  { path: '/pdf-tools/edit-pdf', element: <EditPDFPage />},
+  { path: '/pdf-tools/pdf-to-jpg', element: <PDFToJPGPage />},
+  { path: '/pdf-tools/rotate-pdf', element: <RotatePDFPage />},
+  { path: '/pdf-tools/ocr-pdf', element: <OCRPDFPage />},
+  { path: '/pdf-tools/jpg-to-pdf', element: <JPGToPDFPage />},
+  { path: '/pdf-tools/unlock-pdf', element: <UnlockPDFPage />},
+  { path: '/pdf-tools/watermark-pdf', element: <WatermarkPDFPage />},
+  { path: '/pdf-tools/extract-pages', element: <ExtractPagesPage />},
+  { path: '/pdf-tools/delete-pages', element: <DeletePagesPage />},
+  { path: '/pdf-tools/crop-pdf', element: <CropPDFPage />},
+  { path: '/pdf-tools/page-numbers', element: <PageNumbersPage />},
+  { path: '/pdf-tools/flatten-pdf', element: <FlattenPDFPage />},
+  { path: '/pdf-tools/deskew-pdf', element: <DeskewPDFPage />},
+  { path: '/pdf-tools/extract-images', element: <ExtractImagesPage />},
+  { path: '/pdf-tools/grayscale-pdf', element: <GrayscalePDFPage />},
+  { path: '/pdf-tools/header-footer', element: <HeaderFooterPage />},
+  { path: '/pdf-tools/n-up', element: <NUpPage />},
+  { path: '/pdf-tools/bates-numbering', element: <BatesNumberingPage />},
+  { path: '/pdf-tools/create-bookmarks', element: <CreateBookmarksPage />},
+  { path: '/pdf-tools/edit-metadata', element: <EditMetadataPage />},
+  { path: '/pdf-tools/png-to-pdf', element: <PNGToPDFPage />},
+  { path: '/pdf-tools/organize-pdf', element: <OrganizePDFPage />},
+  { path: '/pdf-tools/fill-pdf-forms', element: <FillPDFFormsPage />},
+  { path: '/pdf-tools/remove-annotations', element: <RemoveAnnotationsPage />},
+  { path: '/pdf-tools/optimize-pdf', element: <OptimizePDFPage />},
+  { path: '/pdf-tools/repair-pdf', element: <RepairPDFPage />},
+  { path: '/pdf-tools/resize-pdf', element: <ResizePDFPage />},
+  { path: '/pdf-tools/digital-signature', element: <DigitalSignaturePage />},
+  { path: '/pdf-tools/enhance-pdf', element: <EnhancePDFPage />},
+  { path: '/pdf-tools/compress-images', element: <CompressImagesPage />},
+  { path: '/pdf-tools/validate-pdf', element: <ValidatePDFPage />},
+  { path: '/pdf-tools/pdf-to-png', element: <PDFToPNGPage />},
+  { path: '/pdf-tools/remove-metadata', element: <RemoveMetadataPage />},
+  { path: '/pdf-tools/redact-pdf', element: <RedactPDFPage />},
+  { path: '/pdf-tools/pdf-to-pdfa', element: <PDFToPDFAPage />},
+  { path: '/pdf-tools/compare-documents', element: <CompareDocumentsPage />},
+  { path: '/pdf-tools/create-forms', element: <CreateFormsPage />},
+  { path: '/pdf-tools/booklet-creator', element: <BookletCreatorPage />},
+  { path: '/pdf-tools/print-optimizer', element: <PrintOptimizerPage />},
+  { path: '/pdf-tools/table-of-contents', element: <TableOfContentsPage />},
+  { path: '/pdf-tools/alternate-and-mix', element: <AlternateAndMixPage />},
+  { path: '/pdf-tools/split-by-bookmarks', element: <SplitByBookmarksPage />},
+  { path: '/pdf-tools/split-in-half', element: <SplitInHalfPage />},
+  { path: '/pdf-tools/split-by-size', element: <SplitBySizePage />},
+  { path: '/pdf-tools/split-by-text', element: <SplitByTextPage />},
+  { path: '/pdf-tools/annotate-pdf', element: <AnnotatePDFPage />},
+  { path: '/pdf-tools/add-password', element: <AddPasswordPage />},
+  { path: '/pdf-tools/convert-to-pdf', element: <ConvertToPDFPage />},
+  { path: '/pdf-tools/extract-text', element: <ExtractTextPage />},
+  { path: '/pdf-tools/merge-pdf-files', element: <MergePDFFilesPage />},
+  { path: '/pdf-tools/reorder-pages', element: <ReorderPagesPage />},
+  { path: '/pdf-tools/compress-images-pdf', element: <CompressImagesPDFPage />},
+  { path: '/pdf-tools/add-comments', element: <AddCommentsPage />},
+  { path: '/pdf-tools/convert-from-pdf', element: <ConvertFromPDFPage />},
+  { path: '/pdf-tools/highlight-text', element: <HighlightTextPage />},
+  { path: '/pdf-tools/add-background', element: <AddBackgroundPage />},
+  { path: '/pdf-tools/number-pages', element: <NumberPagesPage />},
+  { path: '/pdf-tools/remove-background', element: <RemoveBackgroundPage />},
+  { path: '/pdf-tools/add-signature', element: <AddSignaturePage />},
+  { path: '/pdf-tools/remove-pages', element: <RemovePagesPage />},
+  { path: '/pdf-tools/scan-to-pdf', element: <ScanToPDFPage />},
+  { path: '/pdf-tools/add-page-numbers', element: <AddPageNumbersPage />},
+  { path: '/pdf-tools/add-watermark', element: <AddWatermarkPage />},
+  { path: '/pdf-tools/add-text', element: <AddTextPage />},
+  { path: '/pdf-tools/encrypt-pdf', element: <EncryptPDFPage />},
+  { path: '/pdf-tools/extract-images-advanced', element: <ExtractImagesAdvancedPage />},
+  { path: '/pdf-tools/fill-forms', element: <FillFormsPage />},
+  { path: '/pdf-tools/recognize-text', element: <RecognizeTextPage />},
+  { path: '/pdf-tools/add-header-footer', element: <AddHeaderFooterPage />},
+  { path: '/pdf-tools/batch-process-pdf', element: <BatchProcessPDFPage />},
+  { path: '/pdf-tools/compress-pdf-advanced', element: <CompressPDFAdvancedPage />},
+  { path: '/pdf-tools/compress-pdf-pro', element: <CompressPDFProPage />},
+  { path: '/pdf-tools/convert-to-word', element: <ConvertToWordPage />},
+  { path: '/pdf-tools/pdf-to-excel-advanced', element: <PDFToExcelAdvancedPage />},
+  { path: '/pdf-tools/pdf-to-image-advanced', element: <PDFToImageAdvancedPage />},
+  { path: '/pdf-tools/pdf-to-word-advanced', element: <PDFToWordAdvancedPage />},
+  { path: '/pdf-tools/pdf-watermark-remover', element: <PDFWatermarkRemoverPage />},
+  { path: '/pdf-tools/pdf-accessibility-checker', element: <PDFAccessibilityCheckerPage />},
+  { path: '/pdf-tools/pdf-annotation-remover', element: <PDFAnnotationRemoverPage />},
+  { path: '/pdf-tools/pdf-document-scanner', element: <PDFDocumentScannerPage />},
+  { path: '/pdf-tools/pdf-form-creator', element: <PDFFormCreatorPage />},
+  { path: '/pdf-tools/pdf-metadata-editor', element: <PDFMetadataEditorPage />},
+  { path: '/pdf-tools/pdf-page-extractor', element: <PDFPageExtractorPage />},
+  { path: '/pdf-tools/pdf-password-remover', element: <PDFPasswordRemoverPage />},
+  { path: '/pdf-tools/pdf-security-audit', element: <PDFSecurityAuditPage />},
+  { path: '/pdf-tools/pdf-signature-verifier', element: <PDFSignatureVerifierPage />},
+  { path: '/pdf-tools/all-in-one-platform', element: <AllInOnePlatformPage />},
+  { path: '/pdf-tools/api-documentation', element: <APIDocumentationPage />},
+  { path: '/pdf-tools/bug-bounty', element: <BugBountyPage />},
+  { path: '/pdf-tools/data-residency', element: <DataResidencyPage />},
+  { path: '/pdf-tools/docusigner-vs-adobe-sign', element: <DocuSignerVsAdobeSignPage />},
+  { path: '/pdf-tools/docusigner-vs-docusign', element: <DocuSignerVsDocuSignPage />},
+  { path: '/pdf-tools/docusigner-vs-hellosign', element: <DocuSignerVsHelloSignPage />},
+  { path: '/pdf-tools/docusigner-vs-pandadoc', element: <DocuSignerVsPandaDocPage />},
+  { path: '/pdf-tools/esignature-features', element: <ESignatureFeaturesPage />},
+  // { path: '/why-docusigner', element: <WhyDocuSignerPage />},
+  // { path: '/accessibility', element: <AccessibilityPage />},
+
 ];
 
 const router = createBrowserRouter([

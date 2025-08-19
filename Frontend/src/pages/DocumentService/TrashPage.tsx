@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, RotateCcw, Clock } from 'lucide-react';
+import { Trash2, RotateCcw } from 'lucide-react';
 import { Button } from '../../components/DocumentService/ui/button';
 import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
 import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
@@ -100,8 +100,9 @@ const TrashPage: React.FC = () => {
       setDeletedDocuments(prev => prev.filter(doc => doc.id !== documentId));
       // Clear selection after deletion
       setSelectedDocuments([]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to permanently delete document:', error);
+      alert('Failed to permanently delete document. Please try again.');
     }
   };
 
@@ -133,16 +134,6 @@ const TrashPage: React.FC = () => {
     );
   }
 
-  const getDaysUntilPermanentDeletion = (deletedAt: string) => {
-    const deletedDate = new Date(deletedAt);
-    const now = new Date();
-    const retentionPeriod = 30; // 30 days retention
-    const diffTime = now.getTime() - deletedDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const remainingDays = Math.max(0, retentionPeriod - diffDays);
-    return remainingDays;
-  };
-
   return (
     <div className="space-y-6">
       {/* Header Actions */}
@@ -165,7 +156,9 @@ const TrashPage: React.FC = () => {
             size="sm"
             variant="destructive"
             onClick={() => {
-              selectedDocuments.forEach(id => handlePermanentlyDelete(id));
+              if (window.confirm(`Are you sure you want to permanently delete ${selectedDocuments.length} document(s)? This action cannot be undone.`)) {
+                selectedDocuments.forEach(id => handlePermanentlyDelete(id));
+              }
             }}
           >
             <Trash2 className="w-4 h-4 mr-2" />
@@ -218,17 +211,7 @@ const TrashPage: React.FC = () => {
                 </Button>
               </div>
               
-              {/* Days remaining indicator */}
-              {document.deletedAt && (
-                <div className="absolute bottom-2 left-2">
-                  <div className="flex items-center space-x-1 bg-white px-2 py-1 rounded-full shadow-sm border">
-                    <Clock className="w-3 h-3 text-gray-500" />
-                    <span className="text-xs text-gray-600">
-                      {getDaysUntilPermanentDeletion(document.deletedAt)} days left
-                    </span>
-                  </div>
-                </div>
-              )}
+              {/* Days remaining indicator - Removed since documents can be deleted immediately */}
             </div>
           );
         })}
