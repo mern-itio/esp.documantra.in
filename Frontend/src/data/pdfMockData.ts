@@ -83,7 +83,7 @@ export const mockPDFTools = {
         icon: "FileSliders"
       },
       {
-        id: "pdf-to-jpg",
+        id: "pdf-to-img",
         name: "PDF to Images",
         description: "Convert PDF pages to high-quality images",
         category: "conversion",
@@ -95,7 +95,7 @@ export const mockPDFTools = {
         icon: "Image"
       },
       {
-        id: "jpg-to-pdf",
+        id: "img-to-pdf",
         name: "Images to PDF",
         description: "Combine multiple images into a single PDF",
         category: "conversion",
