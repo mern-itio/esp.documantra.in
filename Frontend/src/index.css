@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* index.css or global.css */
+@import "react-pdf/dist/Page/AnnotationLayer.css";
+@import "react-pdf/dist/Page/TextLayer.css";
+
 
 @theme {
   --color-primary-50: #eff6ff;

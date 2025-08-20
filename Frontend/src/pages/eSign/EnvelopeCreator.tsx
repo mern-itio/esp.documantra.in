@@ -19,6 +19,7 @@ import type{ Document, Recipient, SignatureField } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
 import {eSignApi} from '../../services/apiHelper';
+import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 
 const EnvelopeCreator: React.FC = () => {
   const navigate = useNavigate();
@@ -68,7 +69,8 @@ const EnvelopeCreator: React.FC = () => {
         size: file.size,
         pages: Math.ceil(file.size / 100000), // Mock page calculation
         type: file.type,
-        url: URL.createObjectURL(file)
+        url: URL.createObjectURL(file),
+        file:file
       };
       setDocuments(prev => [...prev, newDocument]);
     });
@@ -404,44 +406,7 @@ const handleNext = async () => {
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Signature Fields</h3>
-              <p className="text-gray-600 mb-6">Place signature fields, initials, and other form fields on your documents. This step is optional - you can add fields later.</p>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-blue-900">Field Editor Coming Soon</h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    The drag-and-drop field editor will be available in the next step. For now, you can create the envelope and add fields later.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {documents.length > 0 && (
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-900">Document Preview</h4>
-                {documents.map((doc) => (
-                  <div key={doc.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <FileText className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">{doc.name}</p>
-                        <p className="text-sm text-gray-500">{doc.pages} pages</p>
-                      </div>
-                    </div>
-                    <div className="bg-gray-100 rounded-lg h-32 flex items-center justify-center">
-                      <p className="text-gray-500">Document preview placeholder</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <SigningEditorStep documents={documents} recipients={recipients} />
         );
 
       case 4:

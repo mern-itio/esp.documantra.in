@@ -15,6 +15,7 @@ export interface Document {
   type: string;
   url?: string;
   content?: string;
+  file?: File; // Optional: keep original file reference
 }
 
 export interface SignatureField {

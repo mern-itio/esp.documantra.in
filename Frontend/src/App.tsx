@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { RouterProvider } from 'react-router-dom';
-import router from './routes/index';
-import ThemeConfig from './theme/index';
-import { AuthProvider } from './components/AuthService/AuthContext';
-// import { useAuthInitialization } from './hooks/useAuthInitialization';
-import Loader from './components/common/loader';
-import { AppProvider } from './context/AppContext'; // <-- Import AppProvider (adjust path if needed)
+import React, { useEffect, useState } from "react";
+import { RouterProvider } from "react-router-dom";
+import router from "./routes/index";
+import ThemeConfig from "./theme/index";
+import { AuthProvider } from "./components/AuthService/AuthContext";
+import Loader from "./components/common/loader";
+import { AppProvider } from "./context/AppContext";
+
+// ✅ PDF.js worker setup (Vite friendly)
+import { pdfjs } from "react-pdf";
+import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -19,7 +23,7 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <AppProvider> {/* <-- Wrap with AppProvider */}
+      <AppProvider>
         <ThemeConfig>
           <RouterProvider router={router} />
         </ThemeConfig>
@@ -27,13 +31,5 @@ const App: React.FC = () => {
     </AuthProvider>
   );
 };
-
-// Separate component to use hooks
-// const AppContent: React.FC = () => {
-//   // Initialize document store with user data
-//   useAuthInitialization();
-  
-//   return <RouterProvider router={router} />;
-// };
 
 export default App;
