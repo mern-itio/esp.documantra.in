@@ -37,7 +37,8 @@ async function convertDocToPdf(inputPath, outputPath) {
     return {
       success: true,
       fileSize: stats.size,
-      message: 'Document converted successfully using office-to-pdf npm package'
+      message: 'Document converted successfully using office-to-pdf npm package',
+      outputFile: path.basename(outputPath)
     };
     
   } catch (error) {
@@ -113,7 +114,8 @@ async function convertDocToPdfFallback(inputPath, outputPath) {
     return {
       success: true,
       fileSize: stats.size,
-      message: 'Document converted successfully using mammoth + puppeteer npm packages'
+      message: 'Document converted successfully using mammoth + puppeteer npm packages',
+      outputFile: path.basename(outputPath)
     };
     
   } catch (error) {
@@ -1474,8 +1476,10 @@ async function cleanupOldFiles(directory, maxAge = 24) {
   }
 }
 
+
 module.exports = {
   convertDocToPdf,
+  convertDocToPdfFallback,
   convertPdfToDoc,
   convertDocToPdfAlternative,
   convertPdfToExcel,
@@ -1488,5 +1492,6 @@ module.exports = {
   convertTxtToPdf,
   convertPdfToHtml,
   convertHtmlToPdf,
+  convertHtmlToPdfFallback,
   cleanupOldFiles
 }; 

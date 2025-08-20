@@ -240,7 +240,87 @@ export const pdfService = {
       throw error;
     }
   },
+  convertPdftoImage: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
 
+      const response = await pdfApi.post('/convert/pdf-to-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('PDF to Image conversion failed:', error);
+      throw error;
+    }
+  },
+
+convertImgToPdf: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('images', file);
+
+      const response = await pdfApi.post('/convert/images-to-pdf', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Images to PDF conversion failed:', error);
+      throw error;
+    }
+  },
+
+  convertPdfToEpub: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      const response = await pdfApi.post('/convert/pdf-to-epub', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 300000, // 5 minutes timeout for complex EPUB conversion
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('PDF to EPUB conversion failed:', error);
+      throw error;
+    }
+  },
+
+  // Batch conversion for multiple files
+  batchConvert: async (files: File[], outputFormats: string[]) => {
+    try {
+      const formData = new FormData();
+      
+      // Add files
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+      
+      // Add output formats
+      formData.append('outputFormats', JSON.stringify(outputFormats));
+
+      const response = await pdfApi.post('/convert/batch-convert', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 600000, // 10 minutes timeout for batch conversion
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Batch conversion failed:', error);
+      throw error;
+    }
+  },
   // Download converted file
   downloadFile: async (downloadUrl: string, filename: string) => {
     try {
