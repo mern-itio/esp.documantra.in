@@ -15,6 +15,7 @@ import {
   Maximize2,
   X,
   Trash2,
+  Move,
 } from 'lucide-react';
 
 // Set up PDF.js worker using local file to avoid CORS issues
@@ -74,6 +75,10 @@ const AddImageToPdf: React.FC = () => {
   const [imageOpacity, setImageOpacity] = useState<number>(100);
   const [imageRotation, setImageRotation] = useState<number>(0);
   const [imageSize, setImageSize] = useState<{ width: number; height: number }>({ width: 200, height: 150 });
+  
+  // Drag state
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
 
   // Refs
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -232,6 +237,86 @@ const AddImageToPdf: React.FC = () => {
     event.stopPropagation();
     setSelectedElement(elementId);
   };
+
+  // Handle drag start
+  const handleDragStart = (elementId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setSelectedElement(elementId);
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      const element = imageElements.find(el => el.id === elementId);
+      if (element) {
+        const startX = event.clientX - rect.left;
+        const startY = event.clientY - rect.top;
+        
+        setDragStart({ x: startX, y: startY });
+        setDragOffset({
+          x: startX - (element.x * scale),
+          y: startY - (element.y * scale)
+        });
+        
+        // Update element to show it's being dragged
+        const newImageElements = imageElements.map(el => 
+          el.id === elementId 
+            ? { ...el, isDragging: true }
+            : el
+        );
+        setImageElements(newImageElements);
+      }
+    }
+  };
+
+  // Handle drag move
+  const handleDragMove = useCallback((event: MouseEvent) => {
+    if (!dragStart || !dragOffset || !selectedElement) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      const currentX = event.clientX - rect.left;
+      const currentY = event.clientY - rect.top;
+      
+      const newX = (currentX - dragOffset.x) / scale;
+      const newY = (currentY - dragOffset.y) / scale;
+      
+      const newImageElements = imageElements.map(el => 
+        el.id === selectedElement 
+          ? { ...el, x: newX, y: newY }
+          : el
+      );
+      setImageElements(newImageElements);
+    }
+  }, [dragStart, dragOffset, selectedElement, scale, imageElements]);
+
+  // Handle drag end
+  const handleDragEnd = useCallback(() => {
+    if (selectedElement) {
+      // Update element to show it's no longer being dragged
+      const newImageElements = imageElements.map(el => 
+        el.id === selectedElement 
+          ? { ...el, isDragging: false }
+          : el
+      );
+      setImageElements(newImageElements);
+      saveToHistory(newImageElements);
+    }
+    
+    setDragStart(null);
+    setDragOffset(null);
+  }, [selectedElement, imageElements, saveToHistory]);
+
+  // Set up global mouse event listeners for dragging
+  useEffect(() => {
+    if (dragStart) {
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleDragMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+      };
+    }
+  }, [dragStart, handleDragMove, handleDragEnd]);
 
   // Handle element deletion
   const deleteElement = (elementId: string) => {
@@ -529,11 +614,11 @@ const AddImageToPdf: React.FC = () => {
                     .map((element) => (
                       <div
                         key={element.id}
-                        className={`absolute cursor-pointer transition-all z-10 ${
+                        className={`absolute cursor-move transition-all z-10 ${
                           selectedElement === element.id 
                             ? 'ring-2 ring-blue-500' 
                             : ''
-                        }`}
+                        } ${element.isDragging ? 'z-20' : ''}`}
                         style={{
                           left: element.x * scale,
                           top: element.y * scale,
@@ -541,16 +626,22 @@ const AddImageToPdf: React.FC = () => {
                           height: element.height * scale,
                           transform: `rotate(${element.rotation}deg)`,
                           opacity: element.opacity,
-                          border: selectedElement === element.id ? '2px solid #3b82f6' : '1px solid transparent'
+                          border: selectedElement === element.id ? '2px solid #3b82f6' : '1px solid transparent',
+                          cursor: element.isDragging ? 'grabbing' : 'grab'
                         }}
+                        onMouseDown={(e) => handleDragStart(element.id, e)}
                         onClick={(e) => handleElementClick(element.id, e)}
                       >
                         <img
                           src={element.imageUrl}
                           alt="Added Image"
-                          className="w-full h-full object-cover rounded"
+                          className="w-full h-full object-cover rounded pointer-events-none"
                           draggable={false}
                         />
+                        {/* Drag handle indicator */}
+                        <div className="absolute top-1 right-1 bg-blue-500 text-white p-1 rounded-full opacity-70 hover:opacity-100 transition-opacity">
+                          <Move size={12} />
+                        </div>
                       </div>
                     ))}
                   
@@ -560,6 +651,16 @@ const AddImageToPdf: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <ImageIcon size={16} />
                         <span>Click anywhere to add image</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Drag Mode Indicator */}
+                  {dragStart && (
+                    <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-2 rounded-lg shadow-lg">
+                      <div className="flex items-center space-x-2">
+                        <Move size={16} />
+                        <span>Dragging image...</span>
                       </div>
                     </div>
                   )}
@@ -762,6 +863,19 @@ const AddImageToPdf: React.FC = () => {
                 </div>
               </div>
             )}
+            
+            {/* Instructions */}
+            <div className="border-t pt-6">
+              <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                How to Use
+              </h3>
+              <div className={`text-sm space-y-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p>• <strong>Add Image:</strong> Select image file, configure properties, click "Start Adding Image", then click on PDF</p>
+                <p>• <strong>Move Image:</strong> Click and drag any image to reposition it</p>
+                <p>• <strong>Edit Image:</strong> Click on image to edit properties in sidebar</p>
+                <p>• <strong>Delete Image:</strong> Select image and click delete button</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -800,23 +914,6 @@ const AddImageToPdf: React.FC = () => {
           </button>
         </div>
       )}
-
-      {/* Instructions */}
-      {/* {pdfFile && imageElements.length === 0 && (
-        <div className={`fixed top-20 right-6 max-w-sm p-4 rounded-lg shadow-lg ${
-          darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
-        }`}>
-          <h4 className="font-medium mb-2">How to Add Images:</h4>
-          <ul className="text-sm space-y-1">
-            <li>• Select an image file in the sidebar</li>
-            <li>• Configure image properties (size, opacity, rotation)</li>
-            <li>• Click "Start Adding Image" button</li>
-            <li>• Click anywhere on the PDF to place the image</li>
-            <li>• Click on images to edit their properties</li>
-            <li>• Save changes before downloading</li>
-          </ul>
-        </div>
-      )} */}
     </div>
   );
 };
