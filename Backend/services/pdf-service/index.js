@@ -3,10 +3,12 @@ const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const pdfRoutes = require('./routes/pdfRoutes');
+const conversionRoutes = require('./routes/pdftoImage');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
 const helmet = require('helmet');
+
 
 dotenv.config();
 
@@ -27,6 +29,11 @@ connectDB();
 const outputsDir = path.join(__dirname, 'outputs');
 fs.ensureDirSync(outputsDir);
 console.log(`PDF Service: Outputs directory ensured at: ${outputsDir}`);
+
+// Ensure epubs directory exists
+const epubsDir = path.join(__dirname, 'epubs');
+fs.ensureDirSync(epubsDir);
+console.log(`PDF Service: EPUBs directory ensured at: ${epubsDir}`);
 
 // Cleanup old files every hour (files older than 24 hours)
 setInterval(async () => {
@@ -54,37 +61,6 @@ app.get('/health', (req, res) => {
   res.send(`PDF service is running ${req.user?.data?.fullname || ''}`);
 });
 
-// Debug endpoint to list files in outputs directory (no auth required)
-app.get('/debug/outputs', async (req, res) => {
-  try {
-    const files = await fs.readdir(outputsDir);
-    const fileStats = await Promise.all(
-      files.map(async (file) => {
-        const filePath = path.join(outputsDir, file);
-        const stats = await fs.stat(filePath);
-        return {
-          name: file,
-          size: stats.size,
-          created: stats.birthtime,
-          modified: stats.mtime
-        };
-      })
-    );
-    
-    res.json({
-      outputsDir,
-      fileCount: files.length,
-      files: fileStats
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: 'Failed to list outputs directory',
-      message: error.message,
-      outputsDir
-    });
-  }
-});
-
 // Add debugging middleware for /outputs requests
 app.use('/outputs', (req, res, next) => {
   console.log(`PDF Service: Static file request for: ${req.url}`);
@@ -94,12 +70,46 @@ app.use('/outputs', (req, res, next) => {
 
 // Serve converted files (outputs directory) - no auth required
 app.use('/outputs', express.static(path.join(__dirname, 'outputs')));
+app.use("/uploads", express.static("uploads"));
+app.use("/images", express.static("images"));
+app.use("/epubs", express.static("epubs")); // Serve EPUB files
 
+// Serve PDF files from root directory - no auth required
+app.get('/converted_*.pdf', (req, res, next) => {
+  console.log(`PDF Service: Converted PDF file request for: ${req.url}`);
+  const pdfPath = path.join(__dirname, req.url);
+  console.log(`PDF Service: Full PDF path: ${pdfPath}`);
+  
+  if (fs.existsSync(pdfPath)) {
+    console.log(`PDF Service: PDF file found, serving: ${pdfPath}`);
+    res.sendFile(pdfPath);
+  } else {
+    console.log(`PDF Service: PDF file not found: ${pdfPath}`);
+    res.status(404).send('PDF file not found');
+  }
+});
+
+// Serve any other PDF files from root directory - no auth required
+app.get('/*.pdf', (req, res, next) => {
+  console.log(`PDF Service: General PDF file request for: ${req.url}`);
+  const pdfPath = path.join(__dirname, req.url);
+  console.log(`PDF Service: Full PDF path: ${pdfPath}`);
+  
+  if (fs.existsSync(pdfPath)) {
+    console.log(`PDF Service: PDF file found, serving: ${pdfPath}`);
+    res.sendFile(pdfPath);
+  } else {
+    console.log(`PDF Service: PDF file not found: ${pdfPath}`);
+    next(); // Continue to next middleware if file not found
+  }
+});
+app.use('/pdf', pdfRoutes);
+app.use('/convert', conversionRoutes);
 // JWT Middleware (for conversion routes only)
 app.use(verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 
 // Conversion routes
-app.use('/pdf', pdfRoutes);
+
 
 // Start server
 const PORT = process.env.PORT || 2104;

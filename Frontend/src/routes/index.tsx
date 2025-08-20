@@ -197,6 +197,14 @@ import { PdftoText } from '../pages/PDFTools/PdftoText';
 import { TextToPdf } from '../pages/PDFTools/TextToPDF';
 import { PdfToHtml } from '../pages/PDFTools/PdfToHtml';
 import { HtmlToPdf } from '../pages/PDFTools/HtmltoPdf';
+import { PdfToImage } from '../pages/PDFTools/PdftoImage';
+import { ImageToPDF } from '../pages/PDFTools/ImageToPdf';
+import { PdfToEpub } from '../pages/PDFTools/PdfToEpub';
+import { BatchConversion } from '../pages/PDFTools/BatchConversion';
+import PDFEditorAdvanced from '../pages/PDFTools/PDFEditorAdvanced';
+import EditPdfText from '../pages/PDFTools/EditPdfText';
+import AddImageToPdf from '../pages/PDFTools/AddImageToPdf';
+import AddTextToPdf from '../pages/PDFTools/AddTextToPdf';
 
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
@@ -665,19 +673,24 @@ const authRoutes = [
   { path: '/pdf-tools/excel-to-pdf', element: <ExcelToPdf />},
   { path: '/pdf-tools/pdf-to-powerpoint', element: <PdftoPpt />},
   { path: '/pdf-tools/powerpoint-to-pdf', element: <PptToPdf />},
+  { path: '/pdf-tools/pdf-to-img', element: <PdfToImage />},
+  { path: '/pdf-tools/img-to-pdf', element: <ImageToPDF />},
   { path: '/pdf-tools/pdf-to-text', element: <PdftoText />},
   { path: '/pdf-tools/text-to-pdf', element: <TextToPdf />},
   { path: '/pdf-tools/pdf-to-html', element: <PdfToHtml />},
   { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf />},
+  { path: '/pdf-tools/pdf-to-epub', element: <PdfToEpub />},
+  { path: '/pdf-tools/batch-conversion', element: <BatchConversion />},
+  { path: '/pdf-tools/pdf-editor', element: <PDFEditorAdvanced />},
+  { path: '/pdf-tools/edit-pdf', element: <EditPdfText />},
+  { path: '/pdf-tools/add-images', element: <AddImageToPdf />},
+  { path: '/pdf-tools/add-text', element: <AddTextToPdf />},
   { path: '/pdf-tools/merge-pdf', element: <MergePDFPage />},
   { path: '/pdf-tools/compress-pdf', element: <CompressPDFPage />},
   { path: '/pdf-tools/split-pdf', element: <SplitPDFPage />},
   { path: '/pdf-tools/protect-pdf', element: <ProtectPDFPage />},
-  { path: '/pdf-tools/edit-pdf', element: <EditPDFPage />},
-  { path: '/pdf-tools/pdf-to-jpg', element: <PDFToJPGPage />},
   { path: '/pdf-tools/rotate-pdf', element: <RotatePDFPage />},
   { path: '/pdf-tools/ocr-pdf', element: <OCRPDFPage />},
-  { path: '/pdf-tools/jpg-to-pdf', element: <JPGToPDFPage />},
   { path: '/pdf-tools/unlock-pdf', element: <UnlockPDFPage />},
   { path: '/pdf-tools/watermark-pdf', element: <WatermarkPDFPage />},
   { path: '/pdf-tools/extract-pages', element: <ExtractPagesPage />},
@@ -736,7 +749,6 @@ const authRoutes = [
   { path: '/pdf-tools/scan-to-pdf', element: <ScanToPDFPage />},
   { path: '/pdf-tools/add-page-numbers', element: <AddPageNumbersPage />},
   { path: '/pdf-tools/add-watermark', element: <AddWatermarkPage />},
-  { path: '/pdf-tools/add-text', element: <AddTextPage />},
   { path: '/pdf-tools/encrypt-pdf', element: <EncryptPDFPage />},
   { path: '/pdf-tools/extract-images-advanced', element: <ExtractImagesAdvancedPage />},
   { path: '/pdf-tools/fill-forms', element: <FillFormsPage />},
