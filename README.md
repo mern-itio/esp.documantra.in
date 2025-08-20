@@ -43,7 +43,7 @@ A comprehensive electronic signature platform that allows users to create, edit,
 
 ---
 
-## 📦 Monorepo Layout (Microservices)
+## 📦 Project Layout (Microservices)
 
 ```
 Root/
