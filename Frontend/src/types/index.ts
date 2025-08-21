@@ -106,7 +106,6 @@ export interface Envelope {
   sender: User;
   documents: Document[];
   recipients: Recipient[];
-  fields: SignatureField[];
   auditTrail?: AuditEntry[];
   tags?: string[];
   reminderEnabled: boolean;

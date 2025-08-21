@@ -97,41 +97,6 @@ export const mockEnvelopes: Envelope[] = [
         authentication: 'none'
       }
     ],
-    fields: [
-      {
-        id: 'field_001',
-        type: 'signature',
-        recipientId: 'recipient_001',
-        documentId: 'doc_001',
-        page: 1,
-        position: { x: 245, y: 567 },
-        size: { width: 150, height: 50 },
-        required: true,
-        completed: false
-      },
-      {
-        id: 'field_002',
-        type: 'date',
-        recipientId: 'recipient_001',
-        documentId: 'doc_001',
-        page: 1,
-        position: { x: 400, y: 567 },
-        size: { width: 100, height: 30 },
-        required: true,
-        completed: false
-      },
-      {
-        id: 'field_003',
-        type: 'initial',
-        recipientId: 'recipient_001',
-        documentId: 'doc_001',
-        page: 2,
-        position: { x: 500, y: 200 },
-        size: { width: 80, height: 40 },
-        required: true,
-        completed: false
-      }
-    ],
     auditTrail: [
       {
         id: 'audit_001',
@@ -208,20 +173,6 @@ export const mockEnvelopes: Envelope[] = [
         viewedAt: '2024-01-11T09:20:00Z'
       }
     ],
-    fields: [
-      {
-        id: 'field_004',
-        type: 'signature',
-        recipientId: 'recipient_003',
-        documentId: 'doc_002',
-        page: 1,
-        position: { x: 200, y: 650 },
-        size: { width: 150, height: 50 },
-        required: true,
-        completed: true,
-        value: 'Jessica Wong'
-      }
-    ],
     reminderEnabled: false,
     reminderInterval: 0,
     requireAllSignatures: true,
@@ -268,7 +219,6 @@ export const mockEnvelopes: Envelope[] = [
         authentication: 'government_id'
       }
     ],
-    fields: [],
     reminderEnabled: true,
     reminderInterval: 2,
     requireAllSignatures: true,

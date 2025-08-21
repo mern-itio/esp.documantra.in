@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Upload,
   X,
@@ -9,19 +9,30 @@ import {
   Save,
   Send,
   Eye,
-  AlertCircle,
   Check,
   Shield,
   Award
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import type{ Document, Recipient, SignatureField } from '../../types';
+import type{ Document, Recipient } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
 import {eSignApi} from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 
+type SignatureField = {
+  id: string;
+  docId: string;
+  recipientId: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 const EnvelopeCreator: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { createEnvelope, user } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,9 +55,9 @@ const EnvelopeCreator: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
 
   const [recipients, setRecipients] = useState<Recipient[]>([]);
-  const [fields, setFields] = useState<SignatureField[]>([]);
   const [files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
+  const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
   
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -75,9 +86,10 @@ const EnvelopeCreator: React.FC = () => {
       setDocuments(prev => [...prev, newDocument]);
     });
   };
-  // Add this function inside your component:
-const uploadDocuments = async () => {
-  if (!files || files.length === 0) return;
+// Setp 1: Save Document In DB with Empty Envelope
+
+const uploadDocuments = async (currentStep:any) => {
+  if (!files || files?.length === 0) return;
   const formData = new FormData();
   Array.from(files).forEach((file) => {
     formData.append('files', file, file.name);
@@ -92,17 +104,17 @@ const uploadDocuments = async () => {
         }
       });
       if (response.status == 200) {
-        console.log('Documents uploaded successfully:', response.data);
         setEnvelopeId(response.data.data.envelopeId);
-        console.log('Envelope ID:', response.data.data.envelopeId);
+        navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${response.data.data.envelopeId}`);
       }
   }catch (error) {
     console.error('Error uploading documents:', error);
   }
 
 };
+// Step 2: Insert Recipients Map them with Envelope
 const insertRecipient = async () => {
-  if (recipients.length === 0) return;
+  if (recipients?.length === 0) return;
 
   const recipientData = recipients.map(recipient => ({
     name: recipient.name,
@@ -120,12 +132,57 @@ const insertRecipient = async () => {
       }
      );
     if (response.status === 200) {
-        console.log('Recipients inserted successfully:', response.data);
+        console.log('Recipients inserted successfully:', response.data.envelopeId);
+        await getEnvelopeDetail(response.data.envelopeId);
+        console.log('Current Step:', currentStep+1);
+        await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${response.data.envelopeId}`);
       }
   } catch (error) {
     console.error('Error inserting recipients:', error);
   }
 }
+//Step 3: Save Signature fields 
+const saveSignatureFields = async () => {
+  if (!envelopeId || signatureFields.length === 0) return;
+
+  const fieldsData = signatureFields.map(field => ({
+    envelopeId: envelopeId,
+    documentId: field.docId,
+    recipientId: field.recipientId,
+    page: field.page,
+    x: field.x,
+    y: field.y,
+    width: field.width,
+    height: field.height,
+    type: "signature", // Assuming all fields are signature fields
+    status: 'pending'
+  }));
+
+  try {
+    const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+      envelopeId,
+      fields: fieldsData
+    });
+    if (response.status === 200) {
+      console.log('Signature fields saved successfully:', response.data);
+      await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
+    }
+  } catch (error) {
+    console.error('Error saving signature fields:', error);
+  }
+};
+const getEnvelopeDetail = async (envelopeId: string) => {
+  try {
+    const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
+    if (response.status === 200) {
+      setDocuments(response.data.data.documents);
+      setRecipients(response.data.data.recipients);
+      setEnvelopeId(envelopeId);
+    }
+  } catch (error) {
+    console.error('Error fetching envelope details:', error);
+  }
+};
 const updateEnvelope = async () => {
   if (!envelopeId) return;
   
@@ -145,10 +202,18 @@ const updateEnvelope = async () => {
 // Update your "Next" button handler:
 const handleNext = async () => {
   if (currentStep === 1) {
-    await uploadDocuments();
+    await uploadDocuments(currentStep);
   }
-  if (currentStep === 2 && recipients.length !=0) {
+  if (currentStep === 2 && recipients?.length !=0) {
     await insertRecipient();
+  }
+  if (currentStep === 3) {
+    if (signatureFields.length === 0) {
+      alert('Please add at least one signature field.');
+      return;
+    }
+    // Here you can save the signature fields to the server or state
+    await saveSignatureFields();
   }
   if (currentStep === 4) {
     await updateEnvelope();
@@ -164,7 +229,6 @@ const handleNext = async () => {
 
   const removeDocument = (docId: string) => {
     setDocuments(prev => prev.filter(doc => doc.id !== docId));
-    setFields(prev => prev.filter(field => field.documentId !== docId));
   };
 
   const addRecipient = () => {
@@ -173,7 +237,7 @@ const handleNext = async () => {
       name: '',
       email: '',
       role: 'signer',
-      order: recipients.length + 1,
+      order: recipients?.length + 1,
       status: 'waiting',
       authentication: 'email'
     };
@@ -188,15 +252,14 @@ const handleNext = async () => {
 
   const removeRecipient = (id: string) => {
     setRecipients(prev => prev.filter(recipient => recipient.id !== id));
-    setFields(prev => prev.filter(field => field.recipientId !== id));
   };
 
   const canProceedToNext = () => {
     switch (currentStep) {
       case 1:
-        return documents.length > 0;
+        return documents?.length > 0;
       case 2:
-        return recipients.length > 0 && recipients.every(r => r.name && r.email);
+        return recipients?.length > 0 && recipients.every(r => r.name && r.email);
       case 3:
         return true; // Fields are optional
       case 4:
@@ -220,7 +283,6 @@ const handleNext = async () => {
       sender: user,
       documents,
       recipients,
-      fields,
       reminderEnabled: envelopeData.reminderEnabled,
       reminderInterval: envelopeData.reminderInterval,
       requireAllSignatures: envelopeData.requireAllSignatures,
@@ -246,7 +308,6 @@ const handleNext = async () => {
       sender: user,
       documents,
       recipients,
-      fields,
       reminderEnabled: envelopeData.reminderEnabled,
       reminderInterval: envelopeData.reminderInterval,
       requireAllSignatures: envelopeData.requireAllSignatures,
@@ -260,7 +321,46 @@ const handleNext = async () => {
     // In a real app, this would trigger email sending
     navigate('/');
   };
-
+  useEffect(() => {
+    getSteps();
+}, []);
+const getSteps = async () => {
+    const params = new URLSearchParams(location.search);
+    const step = params.get('step');
+    const envelopeId = params.get('envelopeId');
+    if(step && envelopeId ) {
+       const response = await eSignApi.get('/api/e-sign/get-envelopes');
+        if(response)
+          {
+            switch (Number(step)) 
+            {
+              case 1:
+                setCurrentStep(1);
+                setEnvelopeId(envelopeId)
+                break;
+              case 2:
+                setCurrentStep(2);
+                setEnvelopeId(envelopeId)
+                break;
+              case 3:
+                setCurrentStep(3);
+                await getEnvelopeDetail(envelopeId);
+                break;
+              case 4:
+                setCurrentStep(4);
+                break;
+              case 5:
+                setCurrentStep(5);
+                break;
+              case 6:
+                setCurrentStep(6);
+                break;
+              default:
+                setCurrentStep(1);
+            }
+          }
+    }
+}
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -288,10 +388,10 @@ const handleNext = async () => {
               />
             </div>
 
-            {documents.length > 0 && (
+            {documents?.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-gray-900">Uploaded Documents</h4>
-                {documents.map((doc) => (
+                {documents?.map((doc) => (
                   <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <FileText className="w-8 h-8 text-blue-600" />
@@ -331,7 +431,7 @@ const handleNext = async () => {
               Add Recipient
             </button>
 
-            {recipients.length > 0 && (
+            {recipients?.length > 0 && (
               <div className="space-y-4">
                 {recipients.map((recipient, index) => (
                   <div key={recipient.id} className="bg-gray-50 rounded-lg p-6">
@@ -406,7 +506,7 @@ const handleNext = async () => {
 
       case 3:
         return (
-          <SigningEditorStep documents={documents} recipients={recipients} />
+          <SigningEditorStep documents={documents} recipients={recipients} signatureFields = {signatureFields} setSignatureFields={setSignatureFields} />
         );
 
       case 4:
@@ -605,7 +705,7 @@ const handleNext = async () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">Documents</p>
-                    <p className="text-gray-900">{documents.length} document{documents.length !== 1 ? 's' : ''}</p>
+                    <p className="text-gray-900">{documents?.length} document{documents?.length !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 {envelopeData.message && (
@@ -620,7 +720,7 @@ const handleNext = async () => {
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Documents</h4>
                 <div className="space-y-3">
-                  {documents.map((doc) => (
+                  {documents?.map((doc) => (
                     <div key={doc.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                       <FileText className="w-6 h-6 text-blue-600" />
                       <div>
@@ -678,7 +778,7 @@ const handleNext = async () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Create Envelope</h1>
-              <p className="text-gray-600">Step {currentStep} of {steps.length}: {steps[currentStep - 1].description}</p>
+              <p className="text-gray-600">Step {currentStep} of {steps?.length}: {steps[currentStep - 1].description}</p>
             </div>
           </div>
           
@@ -751,19 +851,19 @@ const handleNext = async () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Documents</span>
-                <span className="font-medium text-gray-900">{documents.length}</span>
+                <span className="font-medium text-gray-900">{documents?.length}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Recipients</span>
-                <span className="font-medium text-gray-900">{recipients.length}</span>
+                <span className="font-medium text-gray-900">{recipients?.length}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Fields</span>
-                <span className="font-medium text-gray-900">{fields.length}</span>
+
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Signature Type</span>
-                <span className="font-medium text-gray-900 capitalize">{envelopeData.signatureType}</span>
+                <span className="font-medium text-gray-900 capitalize">{envelopeData?.signatureType}</span>
               </div>
             </div>
           </div>

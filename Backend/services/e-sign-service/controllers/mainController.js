@@ -207,11 +207,21 @@ const getEnvelopeStats = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+const envelopExists = async (envelopeId) => {
+  try {
+    const envelope = await Envelope.findById(envelopeId);
+    return !!envelope; // Returns true if envelope exists, false otherwise
+  } catch (error) {
+    console.error("Error checking envelope existence:", error);
+    return false; // In case of error, assume envelope does not exist
+  }
+};
 
 
 // Export functions
 module.exports = {
   envelopesData,
   envelopesDetail,
-  getEnvelopeStats
+  getEnvelopeStats,
+  envelopExists
 };
