@@ -9,7 +9,6 @@ import {
   Save,
   Send,
   Eye,
-  AlertCircle,
   Check,
   Shield,
   Award

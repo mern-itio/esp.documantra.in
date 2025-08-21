@@ -29,7 +29,7 @@ const StatusCodesChart = () => (
             startAngle={90}
             endAngle={450}
           >
-            {statusData.map((entry, idx) => (
+            {statusData.map((entry) => (
               <Cell key={entry.code} fill={entry.color} />
             ))}
           </Pie>
