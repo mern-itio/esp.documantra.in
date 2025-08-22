@@ -210,6 +210,15 @@ import AddTextToPdf from '../pages/PDFTools/AddTextToPdf';
 import ApiServiceDashboard from '../pages/ApiService/Dashboard/main';
 import ApiServiceAnalytics from '../pages/ApiService/Analytics/Main';
 import ApiServiceProjects from '../pages/ApiService/Projects/Main';
+import ApiServiceKey from '../pages/ApiService/Key/Main';
+import ApiServiceExplorer from '../pages/ApiService/Explorer/Main';
+import ApiServiceDocumentation from '../pages/ApiService/Documentation/Main';
+import ApiServiceWebhooks from '../pages/ApiService/Webhooks/Main';
+import ApiServiceSDK from '../pages/ApiService/Sdk/main';
+import ApiServiceTesting from '../pages/ApiService/Testing/Main';
+import ApiServiceMarketPlace from '../pages/ApiService/MarketPlace/Main';
+import ApiServiceCommunity from '../pages/ApiService/Community/Main';
+import ApiServiceSupport from '../pages/ApiService/Support/Main';
 
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
@@ -667,6 +676,15 @@ const authRoutes = [
   { path: '/api-service/dashboard', element:<ApiServiceDashboard/>},
   { path: '/api-service/analytics', element:<ApiServiceAnalytics/>},
   { path: '/api-service/projects', element:<ApiServiceProjects/>},
+  { path: '/api-service/keys', element:<ApiServiceKey/>},
+  { path: '/api-service/explorer', element:<ApiServiceExplorer/>},
+  { path: '/api-service/documentation', element:<ApiServiceDocumentation/>},
+  { path: '/api-service/Webhooks', element:<ApiServiceWebhooks/>},
+  { path: '/api-service/sdk', element:<ApiServiceSDK/>},
+  { path: '/api-service/testing', element:<ApiServiceTesting/>},
+  { path: '/api-service/marketplace', element:<ApiServiceMarketPlace/>},
+  { path: '/api-service/community', element:<ApiServiceCommunity/>},
+  { path: '/api-service/support', element:<ApiServiceSupport/>},
   //PDF Tools Routes
   { 
     path: '/pdf-tools', 
