@@ -1,187 +1,227 @@
-# Draft and Sign - Electronic Signature Platform
+# Draft and Sign — Electronic Signature Platform
 
 A comprehensive electronic signature platform that allows users to create, edit, sign, and manage documents with legal compliance across 40+ countries.
 
-## 🚀 Live Demo
-
 **Live URL:** http://165.22.215.73:8081/
+
+---
 
 ## ✨ Features
 
-- **Electronic Signatures** - Legally binding signatures with compliance across 40+ countries
-- **PDF Tools** - 30+ free PDF manipulation tools (convert, edit, merge, compress, secure)
-- **Legal Templates** - 45+ professionally drafted legal document templates
-- **AI-Powered Features** - Smart document generation and editing assistance
-- **Global Compliance** - Meets legal requirements for e-signatures worldwide
-- **API Integration** - Developer-friendly REST APIs for automation
-- **Mobile Responsive** - Works seamlessly across all devices
-- **Real-time Collaboration** - Multi-user document editing and review
+- **Electronic Signatures** — Legally binding signatures with compliance across 40+ countries
+- **PDF Tools** — 30+ free PDF manipulation tools (convert, edit, merge, compress, secure)
+- **Legal Templates** — 45+ professionally drafted legal document templates
+- **AI-Powered Features** — Smart document generation and editing assistance
+- **Global Compliance** — Meets legal requirements for e-signatures worldwide
+- **API Integration** — Developer-friendly REST APIs for automation
+- **Mobile Responsive** — Works seamlessly across all devices
+- **Real-time Collaboration** — Multi-user document editing and review
+
+---
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18** - Modern React with hooks and functional components
-- **TypeScript** - Type-safe JavaScript development
-- **Tailwind CSS** - Utility-first CSS framework
-- **Vite** - Fast build tool and development server
-- **Lucide React** - Beautiful and consistent icon library
+- **React 18** — Modern React with hooks and functional components
+- **TypeScript** — Type-safe JavaScript development
+- **Tailwind CSS** — Utility-first CSS framework
+- **Vite** — Fast build tool and development server
+- **Lucide React** — Beautiful and consistent icon library
 
-### Development Tools
-- **ESLint** - Code linting and quality enforcement
-- **PostCSS** - CSS processing and optimization
-- **React Router** - Client-side routing
+### Backend (Microservices)
+- **Node.js (v16+)** — Runtime for all services
+- **Express.js** — REST API for each service
+- **MongoDB** — Primary datastore
+- **JWT** — Authentication across services
+- **Docker + Docker Compose** — Containerization & orchestration
+- **Nginx (Gateway)** — Reverse proxy & routing to services
 
-### Deployment
-- **Vercel** - Frontend hosting and deployment
-- **Git** - Version control
+### Dev Tooling
+- **ESLint** — Code quality
+- **Postman/Insomnia** — API testing (optional)
+- **Git** — Version control
 
-## 📋 Prerequisites
+---
 
-Before running this project, make sure you have the following installed:
+## 📦 Project Layout (Microservices)
 
-- **Node.js** (v16 or higher)
-- **npm** (v8 or higher) or **yarn**
-- **Git**
-
-## 🚀 Getting Started
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/ITIO-Innovex/Draft-and-Sign.git
-cd draft-and-sign
+```
+Root/
+├── Frontend/                        # Frontend app (React + TS)
+├── src/                             # Old frontend structure (legacy or shared code)
+│   ├── components/
+│   │   ├── LandingPage/             # Landing page components
+│   │   ├── AuthService/             # Authentication components
+│   │   ├── DocumentService/         # Document management
+│   │   ├── ESignService/            # E-signature functionality
+│   │   ├── PDFService/              # PDF tools and services
+│   │   └── TemplateService/         # Legal templates
+│   ├── pages/                       # Route pages
+│   ├── layouts/                     # Layout components
+│   └── assets/                      # Static assets
+├── public/                          # Public assets
+├── package.json                     # Frontend dependencies and scripts
+├── tailwind.config.js               # Tailwind configuration
+├── Backend/                         # Backend root (optional for orchestration)
+├── package.json                     # Root package.json (workspace/monorepo)
+├── .env                             # Root-level env consumed by docker-compose
+├── docker-compose.yml               # Orchestrates all services + gateway + db
+├── services/                        # All backend microservices
+│   ├── auth-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── index.ts
+│   │       ├── routes/
+│   │       ├── controllers/
+│   │       ├── models/
+│   │       └── middlewares/
+│   ├── document-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/ ...
+│   ├── esign-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/ ...
+│   ├── pdf-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/ ...
+│   └── template-service/
+│       ├── Dockerfile
+│       ├── package.json
+│       └── src/ ...
 ```
 
-### 2. Navigate to Frontend Directory
+> **Note:** Each microservice has its own `Dockerfile`, `package.json`, and `src/` implementation. The root `docker-compose.yml` orchestrates all services, MongoDB, and the gateway.
 
+---
+
+## 🔧 Environment Variables
+
+Create a root `.env` (used by `docker-compose.yml`) and per-service `.env` files if needed.
+
+**Root .env:**
+```env
+JWT_SECRET=change_me
+CORS_ORIGIN=*
+PORT_GATEWAY=8081
+PORT_FRONTEND=5173
+PORT_AUTH=2101
+PORT_DOCUMENT=2102
+PORT_ESIGN=2103
+PORT_PDF=2104
+PORT_TEMPLATE=2105
+MONGO_URI=mongodb://mongo:27017/draftsign
+```
+
+**Frontend (`Frontend/.env`):**
+```env
+VITE_APP_NAME=Draft and Sign
+VITE_API_URL=http://localhost:8081
+```
+
+**Service example (`services/auth-service/.env`):**
+```env
+PORT=2101
+MONGO_URI=mongodb://mongo:27017/draftsign
+JWT_SECRET=${JWT_SECRET}
+CORS_ORIGIN=${CORS_ORIGIN}
+SERVICE_NAME=auth-service
+```
+
+---
+
+## 🐳 Docker — Build & Run (All Services)
+
+**Build everything:**
+```bash
+docker compose build --no-cache
+```
+
+**Start everything:**
+```bash
+docker compose up -d
+```
+
+**Stop & clean:**
+```bash
+docker compose down
+```
+
+---
+
+## ▶️ Running Individually (Dev Mode)
+
+**Frontend:**
 ```bash
 cd Frontend
-```
-
-### 3. Install Dependencies
-
-```bash
 npm install
-# or
-yarn install
+npm run dev # opens http://localhost:5173
 ```
 
-### 4. Start Development Server
-
+**Auth Service:**
 ```bash
-npm run dev
-# or
-yarn dev
+cd services/auth-service
+npm install
+npm run dev # runs on port from .env (e.g., 2101)
 ```
 
-### 5. Open in Browser
+Repeat for `document-service`, `esign-service`, `pdf-service`, `template-service`.
 
-The application will open automatically at [http://localhost:5173](http://localhost:5173)
+---
 
-## 📁 Project Structure
+## 🌍 API Gateway
 
-```
-Frontend/
-├── src/
-│   ├── components/
-│   │   ├── LandingPage/          # Landing page components
-│   │   ├── AuthService/          # Authentication components
-│   │   ├── DocumentService/      # Document management
-│   │   ├── ESignService/         # E-signature functionality
-│   │   ├── PDFService/           # PDF tools and services
-│   │   └── TemplateService/      # Legal templates
-│   ├── pages/                    # Route pages
-│   ├── layouts/                  # Layout components
-│   └── assets/                   # Static assets
-├── public/                       # Public assets
-├── package.json                  # Dependencies and scripts
-└── tailwind.config.js           # Tailwind configuration
-```
+All traffic goes through **gateway** (Nginx or Express).
 
-## 🎯 Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript type checking
-
-## 🌍 Key Components
-
-### Landing Page
-- **Hero Section** - Main value proposition
-- **PDF Tools** - Interactive tool showcase
-- **Legal Templates** - Template library with live preview
-- **Compliance** - Global legal compliance information
-- **API Section** - Developer integration details
-
-### Core Features
-- **Document Management** - Upload, edit, and organize documents
-- **E-Signature Workflow** - Complete signing process
-- **Template System** - Customizable legal document templates
-- **Compliance Engine** - Legal requirement validation
-- **API Integration** - RESTful API for developers
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file in the Frontend directory:
-
+**Frontend config:**
 ```env
-VITE_API_URL=your_api_url_here
-VITE_APP_NAME=Draft and Sign
+VITE_API_URL=http://localhost:8081
 ```
 
-### Tailwind CSS
+---
 
-The project uses Tailwind CSS with custom configuration. Customize colors and components in `tailwind.config.js`.
+## 📱 Responsive Frontend
 
-## 📱 Responsive Design
-
-The application is fully responsive and optimized for:
 - Desktop (1024px+)
-- Tablet (768px - 1023px)
-- Mobile (320px - 767px)
+- Tablet (768px–1023px)
+- Mobile (320px–767px)
+
+---
+
+## ⚙️ Scripts
+
+### Frontend
+- `npm run dev` — Start dev server
+- `npm run build` — Build production bundle
+- `npm run preview` — Preview production build
+
+### Backend (per service)
+- `npm run dev` — Run dev mode
+- `npm run start` — Run production
+
+### Docker
+- `docker compose build --no-cache` — Build all services
+- `docker compose up -d` — Start everything
+- `docker compose down` — Stop & clean
+
+---
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+- Use **DigitalOcean**, AWS, or similar cloud
+- Expose only the **gateway**
+- Use persistent DB (Managed MongoDB or mounted volume)
 
-1. Connect your GitHub repository to Vercel
-2. Configure build settings:
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Install Command: `npm install`
-3. Deploy automatically on push to main branch
-
-### Other Platforms
-
-The project can be deployed to any static hosting platform:
-- Netlify
-- GitHub Pages
-- AWS S3 + CloudFront
-- Firebase Hosting
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-
-## 🙏 Acknowledgments
-
-- Icons provided by [Lucide](https://lucide.dev/)
-- UI components built with [Tailwind CSS](https://tailwindcss.com/)
-- Legal compliance data sourced from official government sources
+MIT — see [LICENSE](LICENSE)
 
 ---
 
 **Made with ❤️ by the Draft and Sign Team**
+

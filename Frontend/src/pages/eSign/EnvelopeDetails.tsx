@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft,
@@ -22,14 +22,28 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { formatDistanceToNow, format } from 'date-fns';
+import { eSignApi } from '../../services/apiHelper';
 
-const EnvelopeDetails: React.FC = () => {
+const EnvelopeDetails: React.FC = () => { 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { envelopes, addAuditEntry } = useApp();
+  const {addAuditEntry } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
+  useEffect(() => {
+    fetchEnvelopeDetails();
+  }, []);
+  const [envelope, setEnvelope] = useState<any>(null);
 
-  const envelope = envelopes.find(env => env.id === id);
+  const fetchEnvelopeDetails = async () => {
+      try {
+         const response = await eSignApi.get('/api/e-sign/envelope/' + id);
+         if (response.status == 200) {
+          setEnvelope(response.data.data);
+         }
+      } catch (error) {
+        console.error('Error fetching envelopes:', error);
+      }
+    };
 
   if (!envelope) {
     return (
@@ -70,8 +84,8 @@ const EnvelopeDetails: React.FC = () => {
     declined: AlertCircle
   };
 
-  const completedRecipients = envelope.recipients.filter(r => r.status === 'completed' || r.status === 'signed').length;
-  const StatusIcon = statusIcons[envelope.status];
+  const completedRecipients = envelope.recipients.filter((r: any) => r.status === 'completed' || r.status === 'signed').length;
+  const StatusIcon = statusIcons[envelope.status as keyof typeof statusIcons] || FileText;
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: Eye },
@@ -100,7 +114,7 @@ const EnvelopeDetails: React.FC = () => {
             <p className="text-sm font-medium text-gray-700 mb-1">Status</p>
             <div className="flex items-center gap-2">
               <StatusIcon className="w-5 h-5 text-gray-600" />
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${statusColors[envelope.status]}`}>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${statusColors[envelope.status as keyof typeof statusColors]}`}>
                 {envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1)}
               </span>
             </div>
@@ -179,7 +193,7 @@ const EnvelopeDetails: React.FC = () => {
 
   const renderRecipients = () => (
     <div className="space-y-4">
-      {envelope.recipients.map((recipient, index) => (
+      {envelope.recipients.map((recipient:any, index:any) => (
         <div key={recipient.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-4">
@@ -249,7 +263,7 @@ const EnvelopeDetails: React.FC = () => {
 
   const renderDocuments = () => (
     <div className="space-y-4">
-      {envelope.documents.map((document) => (
+      {envelope.documents.map((document:any) => (
         <div key={document.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -283,7 +297,7 @@ const EnvelopeDetails: React.FC = () => {
 
   const renderActivity = () => (
     <div className="space-y-4">
-      {envelope.auditTrail?.map((entry) => (
+      {envelope.auditTrail?.map((entry:any) => (
         <div key={entry.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start space-x-4">
             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">

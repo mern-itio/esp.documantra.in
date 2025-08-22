@@ -20,7 +20,8 @@ const SigningPage: React.FC = () => {
   const session = signingSessions.find(s => s.token === token);
   const envelope = session ? envelopes.find(e => e.id === session.envelopeId) : null;
   const recipient = envelope?.recipients.find(r => r.id === session?.recipientId);
-  const recipientFields = envelope?.fields.filter(f => f.recipientId === session?.recipientId) || [];
+  const recipientFields: any[] = [];
+
 
   useEffect(() => {
     if (session && envelope) {
@@ -84,13 +85,7 @@ const SigningPage: React.FC = () => {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Update envelope with completed fields
-    const updatedFields = envelope.fields.map(field => {
-      if (completedFields[field.id]) {
-        return { ...field, completed: true, value: completedFields[field.id] };
-      }
-      return field;
-    });
+
 
     const updatedRecipients = envelope.recipients.map(r => {
       if (r.id === recipient.id) {
@@ -103,7 +98,6 @@ const SigningPage: React.FC = () => {
     
     updateEnvelope({
       ...envelope,
-      fields: updatedFields,
       recipients: updatedRecipients,
       status: allCompleted ? 'completed' : 'pending',
       completedAt: allCompleted ? new Date().toISOString() : undefined

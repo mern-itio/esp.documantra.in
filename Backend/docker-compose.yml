@@ -44,3 +44,15 @@ services:
       - /app/services/e-sign-service/node_modules
       - ./services/e-sign-service/uploads:/app/services/e-sign-service/uploads  # <-- added
     command: npm run dev
+
+  api-service:
+    build:
+      context: .
+      dockerfile: services/api-service/Dockerfile
+    ports:
+      - "2105:2105"
+    volumes:
+      - ./services/api-service:/app/services/api-service:cached
+      - /app/services/api-service/node_modules
+      - ./services/api-service/uploads:/app/services/api-service/uploads  # <-- added
+    command: npm run dev

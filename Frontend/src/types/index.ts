@@ -15,6 +15,7 @@ export interface Document {
   type: string;
   url?: string;
   content?: string;
+  file?: File; // Optional: keep original file reference
 }
 
 export interface SignatureField {
@@ -105,7 +106,6 @@ export interface Envelope {
   sender: User;
   documents: Document[];
   recipients: Recipient[];
-  fields: SignatureField[];
   auditTrail?: AuditEntry[];
   tags?: string[];
   reminderEnabled: boolean;

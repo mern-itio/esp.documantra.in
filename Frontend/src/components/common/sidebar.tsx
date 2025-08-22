@@ -1,33 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  FileText,
-  ChevronLeft,
-  ChevronDown,
-  ChevronRight,
-  Building2,
-  FileSignature,
-  Scissors,
-  Repeat,
-  Edit3,
-  Copy,
-  Settings,
-  Search,
-  FileSpreadsheet,
-  Wrench,
-  Lock,
-  Clock,
-  Star,
-  Share2,
-  Archive,
-  Folder,
-  Trash2,
-  UserCog,
-  LayoutDashboardIcon,
-  FileSignatureIcon,
-  BarChart3Icon, 
-} from 'lucide-react';
+import {LayoutDashboard, FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, UserCog, LayoutDashboardIcon, FileSignatureIcon, BarChart3Icon, Key,  BarChart3, FolderOpen} from 'lucide-react';
 
 interface SidebarProps {
   activeView?: string;
@@ -103,6 +76,25 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'ocr', label: 'OCR & Text', path: '/pdf-tools?category=ocr', icon: Search },
         { id: 'forms', label: 'Forms', path: '/pdf-tools?category=forms', icon: FileSpreadsheet },
         { id: 'utilities', label: 'Utilities', path: '/pdf-tools?category=utilities', icon: Wrench }
+      ]
+    },
+     {
+      id: 'API-Keys',
+      label: 'API Keys',
+      icon: Key,
+      children: [
+        { id: 'dashboard', label: 'Dashboard', path: '/api-service/dashboard', icon: LayoutDashboardIcon },
+        // { name: 'API Explorer', href: '/explorer', icon: Play },
+        // { name: 'Documentation', href: '/docs', icon: Book },
+        { id: 'Projects', label: 'Projects', path: '/api-service/projects',icon: FolderOpen },
+        // { name: 'API Keys', href: '/api-keys', icon: Key },
+        // { name: 'Webhooks', href: '/webhooks', icon: Webhook },
+        // { name: 'SDKs', href: '/sdks', icon: Package },
+        // { name: 'Testing', href: '/testing', icon: TestTube },
+        { id: 'analytics', label: 'Analytics', path: '/api-service/analytics', icon: BarChart3 },
+        // { name: 'Marketplace', href: '/marketplace', icon: Store },
+        // { name: 'Community', href: '/community', icon: Users },
+        // { name: 'Support', href: '/support', icon: HelpCircle },
       ]
     },
   ];

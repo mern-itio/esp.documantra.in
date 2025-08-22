@@ -206,6 +206,11 @@ import EditPdfText from '../pages/PDFTools/EditPdfText';
 import AddImageToPdf from '../pages/PDFTools/AddImageToPdf';
 import AddTextToPdf from '../pages/PDFTools/AddTextToPdf';
 
+// Api-service imports started 
+import ApiServiceDashboard from '../pages/ApiService/Dashboard/main';
+import ApiServiceAnalytics from '../pages/ApiService/Analytics/Main';
+import ApiServiceProjects from '../pages/ApiService/Projects/Main';
+
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -658,6 +663,10 @@ const authRoutes = [
   { path: '/e-sign/enterprise', element:<EsignEnterpriseSettings/>},
   { path: '/e-sign/admin', element:<EsignESignatureAdmin/>},
 
+  // API-service routes
+  { path: '/api-service/dashboard', element:<ApiServiceDashboard/>},
+  { path: '/api-service/analytics', element:<ApiServiceAnalytics/>},
+  { path: '/api-service/projects', element:<ApiServiceProjects/>},
   //PDF Tools Routes
   { 
     path: '/pdf-tools', 
@@ -784,6 +793,7 @@ const authRoutes = [
   // { path: '/accessibility', element: <AccessibilityPage />},
 
 ];
+
 
 const router = createBrowserRouter([
   {

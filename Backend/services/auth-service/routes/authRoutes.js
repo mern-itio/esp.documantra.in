@@ -1,10 +1,10 @@
 const express = require('express');
 const { login, register } = require('../controllers/authController');
-
+const { userDetails } = require('../controllers/mainController');
+const verifyJWT  = require('@draftnsign/auth-lib');
 const router = express.Router();
-
 router.get('/status', (_, res) => res.send('Auth Service is running and changing'));
 router.post('/login', login);
 router.post('/register', register);
-
+router.get('/api/user-details/:id', verifyJWT(process.env.ACCESS_TOKEN_SECRET), userDetails);
 module.exports = router;

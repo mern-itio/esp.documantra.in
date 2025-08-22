@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   TrendingUp,
   TrendingDown,
@@ -14,16 +14,28 @@ import {
   Globe,
   Target
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
 import { format, subDays, startOfMonth } from 'date-fns';
 import AdvancedAnalyticsDashboard from '../../components/ESign/advanced/AdvancedAnalyticsDashboard';
+import { eSignApi } from '../../services/apiHelper';
 
 const Analytics: React.FC = () => {
-  const { envelopes } = useApp();
   const [dateRange, setDateRange] = useState('30');
   const [selectedMetric, setSelectedMetric] = useState('completion_rate');
   const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
-
+  const [envelopes, setEnvelopes] = useState<any[]>([]);
+  useEffect(() => {
+    fetchEnvelopes();
+  }, []);
+    const fetchEnvelopes = async () => {
+      try {
+         const response = await eSignApi.get('/api/e-sign/get-envelopes');
+         if (response.status == 200) {
+          setEnvelopes(response.data.data);
+         }
+      } catch (error) {
+        console.error('Error fetching envelopes:', error);
+      }
+    };
   // Calculate analytics data
   const now = new Date();
   const startDate = dateRange === '30' ? subDays(now, 30) : 
@@ -40,7 +52,7 @@ const Analytics: React.FC = () => {
   const expiredEnvelopes = filteredEnvelopes.filter(env => env.status === 'expired').length;
 
   const completionRate = totalEnvelopes > 0 ? (completedEnvelopes / totalEnvelopes) * 100 : 0;
-  const avgCompletionTime = 2.3; // Mock data
+  const avgCompletionTime = 0.0; // Mock data
   const totalRecipients = filteredEnvelopes.reduce((acc, env) => acc + env.recipients.length, 0);
 
   // Enhanced metrics for enterprise view
@@ -56,7 +68,7 @@ const Analytics: React.FC = () => {
     {
       name: 'Completion Rate',
       value: `${completionRate.toFixed(1)}%`,
-      change: '+5.2%',
+      change: '+0.0%',
       trend: 'up',
       icon: CheckCircle,
       color: 'bg-green-500'
@@ -64,7 +76,7 @@ const Analytics: React.FC = () => {
     {
       name: 'Avg. Completion Time',
       value: `${avgCompletionTime} days`,
-      change: '-0.5 days',
+      change: '-0.0 days',
       trend: 'down',
       icon: Clock,
       color: 'bg-yellow-500'

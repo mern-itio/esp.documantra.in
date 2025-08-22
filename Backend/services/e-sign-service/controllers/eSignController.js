@@ -3,6 +3,7 @@ const { isEmailValid } = require('@draftnsign/validators');//
 const Envelope = require('../models/Envelope');
 const Document = require('../models/Document');
 const Recipient = require('../models/Recipient');
+const SignatureField = require('../models/SignatureFields');
 // Documents Upload 
 const Upload = async (req, res) => {
     const { files } = req;
@@ -48,21 +49,42 @@ const Upload = async (req, res) => {
     });
 };
 const insertRecipient = async (req, res) => {
-  const { recipients,envelopeId } = req.body;
+  const { recipients, envelopeId } = req.body;
+
   if (!envelopeId) {
     return res.status(400).json({ message: 'Envelope ID is required' });
   }
   if (!recipients || recipients.length === 0) {
     return res.status(400).json({ message: 'No recipients provided' });
   }
-  //Step 1: Find envelope by ID
-  let envelope = await Envelope.findById(req.body.envelopeId);
+
+  // Step 1: Find envelope by ID
+  let envelope = await Envelope.findById(envelopeId);
   if (!envelope) {
     return res.status(404).json({ message: 'Envelope not found' });
   }
-  // Step 2: Create recipient records
+
   const recps = await Promise.all(
-      recipients.map(async (recipient) => {
+    recipients.map(async (recipient) => {
+      // Step 2: Check if recipient already exists in this envelope
+      let existingRecp = await Recipient.findOne({
+        envelopeId: envelope._id,
+        email: recipient.email
+      });
+
+      if (existingRecp) {
+        // Update recipient
+        existingRecp.name = recipient.name || existingRecp.name;
+        existingRecp.role = recipient.role || existingRecp.role;
+        existingRecp.order = recipient.order ?? existingRecp.order;
+        existingRecp.status = recipient.status || existingRecp.status;
+        existingRecp.authLevel =
+          recipient.authentication || existingRecp.authLevel;
+
+        await existingRecp.save();
+        return existingRecp._id;
+      } else {
+        // Create new recipient
         const recp = new Recipient({
           envelopeId: envelope._id,
           name: recipient.name,
@@ -73,18 +95,63 @@ const insertRecipient = async (req, res) => {
           authLevel: recipient.authentication
         });
         await recp.save();
+
+        // Attach recipient to envelope if not already present
+        if (!envelope.recipientIds.includes(recp._id)) {
+          envelope.recipientIds.push(recp._id);
+        }
+
         return recp._id;
-      })
-    );
-  // Step 3: Update envelope with recipient IDs
-  envelope.recipientIds.push(...recps);
+      }
+    })
+  );
+
+  // Step 3: Save updated envelope
   await envelope.save();
+
   return res.status(200).json({
     status: 'success',
-    message: 'Recipient added successfully',
-    envelopeId: envelope._id
+    message: 'Recipients processed successfully',
+    envelopeId: envelope._id,
+    recipientIds: recps
   });
 };
+const saveSignatureFields = async (req, res) => {
+  const { signatureFields, envelopeId } = req.body;
+  if (!envelopeId) {
+    return res.status(400).json({ message: 'Envelope ID is required' });
+  }
+  if (!signatureFields || signatureFields.length === 0) {
+    return res.status(400).json({ message: 'No signature fields provided' });
+  }
+  const fields = await Promise.all(
+      signatureFields.map(async (sf) => {
+        const field = new SignatureField({
+          envelopeId: envelopeId,
+          documentId: sf.documentId,
+          recipientId: sf.recipientId,
+          page: sf.page,
+          x: sf.x,
+          y:sf.y,
+          width:sf.width,
+          height:sf.height,
+          type:sf.type,
+          status:sf.status || 'pending',
+        });
+        await field.save();
+        return field._id;
+      })
+    );
+    return res.status(200).json({
+        status: 'success',
+        message: 'Signature fields added successfully',
+        data: {
+          envelopeId: envelopeId,
+
+        }
+    });
+};
+
 const updateEnvelope = async (req, res) => {
    const { envelopeData,envelopeId } = req.body;
     if (!envelopeId) {
@@ -121,5 +188,6 @@ const updateEnvelope = async (req, res) => {
 module.exports = {
   Upload,
   insertRecipient,
-  updateEnvelope
+  updateEnvelope,
+  saveSignatureFields
 };

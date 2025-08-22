@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
@@ -13,14 +13,28 @@ import {
   Users,
   Calendar
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
 import { formatDistanceToNow } from 'date-fns';
+import { eSignApi } from '../../services/apiHelper';
 
 const Dashboard: React.FC = () => {
-  const { envelopes, user } = useApp();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
+  const [envelopes, setEnvelopes] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchEnvelopes();
+  }, []);
   
+  const fetchEnvelopes = async () => {
+    try {
+       const response = await eSignApi.get('/api/e-sign/get-envelopes');
+       if (response.status == 200) {
+        setEnvelopes(response.data.data);
+       }
+    } catch (error) {
+      console.error('Error fetching envelopes:', error);
+    }
+  };
   const statusColors = {
     draft: 'bg-gray-100 text-gray-800',
     sent: 'bg-blue-100 text-blue-800',
@@ -95,11 +109,10 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back, {user?.name}. Manage your envelopes and track signatures.</p>
+          <h1 className="text-3xl font-bold text-gray-900">E-Sign Dashboard</h1>
         </div>
         <Link
-          to="/create"
+          to="/e-sign/create"
           className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -186,7 +199,7 @@ const Dashboard: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No envelopes found</h3>
             <p className="text-gray-500 mb-6">Get started by creating your first envelope.</p>
             <Link
-              to="/create"
+              to="/e-sign/create"
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -196,15 +209,15 @@ const Dashboard: React.FC = () => {
         ) : (
           <div className="divide-y divide-gray-200">
             {sortedEnvelopes.map((envelope) => {
-              const StatusIcon = statusIcons[envelope.status];
-              const completedRecipients = envelope.recipients.filter(r => r.status === 'completed' || r.status === 'signed').length;
+              const StatusIcon = statusIcons[envelope.status as keyof typeof statusIcons];
+              const completedRecipients = envelope.recipients.filter((r: any) => r.status === 'completed' || r.status === 'signed').length;
               
               return (
                 <div key={envelope.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-start space-x-4 flex-1">
                       <div className="flex-shrink-0">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${statusColors[envelope.status]}`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${statusColors[envelope.status as keyof typeof statusIcons]}`}>
                           <StatusIcon className="w-5 h-5" />
                         </div>
                       </div>
@@ -217,7 +230,7 @@ const Dashboard: React.FC = () => {
                           >
                             {envelope.subject}
                           </Link>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[envelope.status]}`}>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[envelope.status as keyof typeof statusIcons]}`}>
                             {envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1)}
                           </span>
                           {envelope.priority === 'high' || envelope.priority === 'urgent' ? (
@@ -250,7 +263,7 @@ const Dashboard: React.FC = () => {
 
                     <div className="flex items-center gap-2 ml-4">
                       <Link
-                        to={`/envelope/${envelope.id}`}
+                        to={`/e-sign/envelope/${envelope.id}`}
                         className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <Eye className="w-4 h-4" />
