@@ -16,7 +16,7 @@ const upload = multer({ storage });
 
 const router = express.Router();
 
-router.get('/status', (_, res) => res.send('Auth Service is running and changing'));
+router.get('/health', (_, res) => res.send('E-Sign Private Service is running...'));
 router.post('/upload', upload.array('files'), Upload);
 router.post('/add-recipients',insertRecipient);
 router.post('/save-signature-fields', saveSignatureFields);

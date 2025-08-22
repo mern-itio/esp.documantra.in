@@ -4,10 +4,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const eSignRoutes = require('./routes/eSignRoutes');
-
+const publicRoutes = require('./routes/publicRoutes');
 dotenv.config();
 const app = express(); 
-
 // Middleware
 app.use(cors({
   origin: "*"
@@ -18,16 +17,13 @@ app.use('/uploads', express.static('uploads'));
 
 // DB Connection
 connectDB();
-
-// JWT Middleware
-app.use(verifyJWT(process.env.ACCESS_TOKEN_SECRET));
-
 // Health check route
 app.get('/health', (req, res) => {
   res.send(`E-Sign service is running ${req.user?.data?.fullname || ''}`);
 });
 // API Routes
-app.use('/api/e-sign', eSignRoutes);
+app.use('/api/e-sign/public', publicRoutes);
+app.use('/api/e-sign', verifyJWT(process.env.ACCESS_TOKEN_SECRET), eSignRoutes);
 
 
 // Start server

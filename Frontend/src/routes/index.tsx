@@ -5,6 +5,7 @@ import { useAuth } from '../components/AuthService/AuthContext';
 // Layouts
 import DashboardLayout from '../layouts/DashboardLayout';
 import GuestLayout from '../layouts/GuestLayout';
+import PublicSignerLayout from '../layouts/PublicSignerLayout';
 // import AdminLayout from '../layouts/AdminLayout';
 
 // Landing Page Components
@@ -219,7 +220,7 @@ import ApiServiceTesting from '../pages/ApiService/Testing/Main';
 import ApiServiceMarketPlace from '../pages/ApiService/MarketPlace/Main';
 import ApiServiceCommunity from '../pages/ApiService/Community/Main';
 import ApiServiceSupport from '../pages/ApiService/Support/Main';
-
+import PublicSignerPage from '../pages/eSign/PublicSignerPage';
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -825,6 +826,13 @@ const router = createBrowserRouter([
       </PrivateRoute>
     ),
     children: authRoutes,
+  },
+   {
+    // Public Signer Routes
+    element: <PublicSignerLayout />,
+    children: [
+      { path: 'e-sign/signer/:id/:recipientId', element: <PublicSignerPage /> },
+    ],
   },
 ]);
 
