@@ -6,5 +6,5 @@ const router = express.Router();
 router.get('/status', (_, res) => res.send('Auth Service is running and changing'));
 router.post('/login', login);
 router.post('/register', register);
-router.get('/api/user-details/:id', verifyJWT(process.env.ACCESS_TOKEN_SECRET), userDetails);
+router.get('/api/user-details/:id', userDetails);
 module.exports = router;
