@@ -250,7 +250,7 @@ export default function SigningEditorStep({
           >
             {activeDoc?.name && activeDoc.type === "application/pdf" ? (
               <Document
-                file={activeDoc.file || `http://localhost:2103/uploads/${activeDoc.name}`}
+                file={activeDoc.file || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${activeDoc.name}`}
                 onLoadSuccess={onDocLoadSuccess}
                 loading={<div className="p-8 text-gray-500 text-center">Loading PDF…</div>}
                 onLoadError={(err) => {

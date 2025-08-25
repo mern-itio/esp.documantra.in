@@ -1,5 +1,9 @@
 const Envelope = require('../models/Envelope');
+const SignatureField = require('../models/SignatureFields');
 const axios = require('axios');
+const mongoose = require('mongoose');
+const ObjectId = mongoose.Types.ObjectId;
+
 const envelopesData = async (req, res) => {
     const userId = req.user.data.id;
     try {
@@ -73,7 +77,6 @@ const envelopesData = async (req, res) => {
     }
 }
 const envelopesDetail = async (req, res) => {
-    const userId = req.user.data.id;
     const envelopeId = req.params.id;
 
     try {
@@ -85,15 +88,11 @@ const envelopesDetail = async (req, res) => {
         if (!envelope) {
             return res.status(404).json({ message: 'Envelope not found' });
         }
+        const senderId = envelope.sender;
 
         // Step 2: Fetch sender details from User service
         const senderResponse = await axios.get(
-            `${process.env.AUTH_URL}/api/user-details/${userId}`,
-            {
-                headers: {
-                    Authorization: req.headers.authorization, // forward token
-                },
-            }
+            `${process.env.AUTH_URL}/api/user-details/${senderId}`,
         );
 
         const senderDetails = senderResponse.data;
@@ -146,6 +145,23 @@ const envelopesDetail = async (req, res) => {
         console.error('Error fetching envelope:', error);
         return res.status(500).json({ message: 'Internal server error' });
     }
+};
+const getSignatureFields = async (req, res) => {
+  const documentId = req.params.id; 
+  console.log("Fetching signature fields for document ID:", documentId);
+  try {
+    const signatureFields = await SignatureField.find({ documentId:documentId });
+    if (!signatureFields) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    return res.status(200).json({
+      status: 'success',
+      signatureFields: signatureFields
+    });
+  } catch (error) {
+    console.error('Error fetching signature fields:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 };
 const getEnvelopeStats = async (req, res) => {
   try {
@@ -223,5 +239,6 @@ module.exports = {
   envelopesData,
   envelopesDetail,
   getEnvelopeStats,
-  envelopExists
+  envelopExists,
+  getSignatureFields
 };

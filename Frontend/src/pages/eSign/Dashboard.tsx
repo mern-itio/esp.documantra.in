@@ -225,7 +225,7 @@ const Dashboard: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
                           <Link
-                            to={`/envelope/${envelope.id}`}
+                            to={`/e-sign/envelope/${envelope.id}`}
                             className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate"
                           >
                             {envelope.subject}

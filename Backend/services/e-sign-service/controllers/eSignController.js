@@ -118,6 +118,7 @@ const insertRecipient = async (req, res) => {
 };
 const saveSignatureFields = async (req, res) => {
   const { signatureFields, envelopeId } = req.body;
+  console.log('Signature Fields:', signatureFields);
   if (!envelopeId) {
     return res.status(400).json({ message: 'Envelope ID is required' });
   }

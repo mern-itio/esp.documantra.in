@@ -157,11 +157,11 @@ const saveSignatureFields = async () => {
     type: "signature", // Assuming all fields are signature fields
     status: 'pending'
   }));
-
+  console.log('Saving signature fields:', fieldsData);
   try {
     const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
       envelopeId,
-      fields: fieldsData
+      signatureFields: fieldsData
     });
     if (response.status === 200) {
       console.log('Signature fields saved successfully:', response.data);
