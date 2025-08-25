@@ -5,6 +5,14 @@ const dotenv = require('dotenv');
 const pdfRoutes = require('./routes/pdfRoutes');
 const conversionRoutes = require('./routes/pdftoImage');
 const pdfTextEditRoutes = require('./routes/pdfTextEditRoutes');
+const mergePdfRoutes = require('./routes/mergePdfRoutes');
+const splitPdfRoutes = require('./routes/pdfSplitRoutes');
+const extractPdfRoutes = require('./routes/pdfExtractRoutes');
+const deletePdfPagesRoutes = require('./routes/deletePdfPagesRoute');
+const reorderPdfPagesRoutes = require('./routes/reorderPdfPagesRoute');
+const rotatePdfPagesRoutes = require('./routes/rotatePdfPagesRoute');
+const cropPdfPagesRoutes = require('./routes/cropPdfPagesRoute');
+const insertPdfPagesRoutes = require('./routes/insertPdfPagesRoute');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -107,6 +115,14 @@ app.get('/*.pdf', (req, res, next) => {
 app.use('/pdf', pdfRoutes);
 app.use('/convert', conversionRoutes);
 app.use('/pdf-text-edit', pdfTextEditRoutes);
+app.use('/pdf-service', mergePdfRoutes);
+app.use('/pdf-split', splitPdfRoutes);
+app.use('/pdf-extract', extractPdfRoutes);
+app.use('/pdf-delete', deletePdfPagesRoutes);
+app.use('/pdf-reorder', reorderPdfPagesRoutes);
+app.use('/pdf-rotate', rotatePdfPagesRoutes);
+app.use('/pdf-crop', cropPdfPagesRoutes);
+app.use('/pdf-insert', insertPdfPagesRoutes);
 // JWT Middleware (for conversion routes only)
 app.use(verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 

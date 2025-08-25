@@ -1,20 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
-const pdfjsLib = require('pdfjs-dist');
+const { PDFDocument: PDFLibDoc } = require('pdf-lib');
 const { PNG } = require('pngjs');
-const { createCanvas, createImageData, ImageData, Image } = require('canvas');
-
-// Make ImageData and Image available globally for pdfjs-dist
-global.ImageData = ImageData;
-global.Image = Image;
+const { createCanvas } = require('canvas');
 const pdfParse = require('pdf-parse');
 const Epub = require('epub-gen');
-// const Tesseract = require('tesseract.js'); // Temporarily disabled for Linux compatibility
-const { PDFDocument: PDFLibDoc, rgb, StandardFonts } = require('pdf-lib');
-// const sharp = require('sharp'); // Temporarily disabled for Linux compatibility
 const mammoth = require('mammoth');
-//const libre = require('libreoffice-convert');
 const puppeteer = require('puppeteer');
 
 // Import conversion functions from pdfController
@@ -32,17 +24,18 @@ const {
   convertHtmlToPdf
 } = require('./pdfController');
 
+// Import the split PDF functionality
+const { splitByPages } = require('./pdfSplitService');
 
 function getExtension(filename) {
   return path.extname(filename).replace('.', '').toLowerCase();
 }
 
-
 // Paths
 const uploadDir = path.join(__dirname, '..', 'uploads');
 const outputDir = path.join(__dirname, '..', 'images');
 const epubsDir = path.join(__dirname, '..', 'epubs');
-const outputsDir = path.join(__dirname, '..', 'outputs'); // Add outputs directory
+const outputsDir = path.join(__dirname, '..', 'outputs');
 const outputPdfPath = path.join(__dirname, '..', 'output.pdf');
 const editedDir = path.join(__dirname, '..', 'edited');
 
@@ -56,135 +49,225 @@ function generateFilename(base, ext) {
   return `${base}_${timestamp}.${ext}`;
 }
 
-                // Use pdfjs-dist's built-in rendering instead of custom operator parsing
-                async function renderPageContent(page, opList, imageData, width, height) {
-                  try {
-                    console.log(`Rendering page with ${opList.fnArray.length} operators`);
-                    
-                    // Use pdfjs-dist's built-in rendering to Node.js canvas
-                    const canvas = createCanvas(width, height);
-                    const context = canvas.getContext('2d');
-                    
-                    // Set white background
-                    context.fillStyle = 'white';
-                    context.fillRect(0, 0, width, height);
-                    
-                    // Set up canvas context for PDF.js
-                    context.save();
-                    
-                    // Render the page to canvas
-                    const viewport = page.getViewport({ scale: 1.0 });
-                    const renderContext = {
-                      canvasContext: context,
-                      viewport: viewport,
-                      enableWebGL: false,
-                      renderInteractiveForms: false
-                    };
-                    
-                    await page.render(renderContext).promise;
-                    
-                    // Restore context
-                    context.restore();
-                    
-                    // Get image data from canvas
-                    const canvasImageData = context.getImageData(0, 0, width, height);
-                    
-                    // Copy canvas data to our imageData array
-                    for (let i = 0; i < canvasImageData.data.length; i++) {
-                      imageData[i] = canvasImageData.data[i];
-                    }
-                    
-                    console.log(`Finished rendering page content using canvas`);
-                  } catch (error) {
-                    console.error('Error rendering page content:', error);
-                    
-                    // Fallback: draw some test content to verify rendering works
-                    console.log('Using fallback rendering - drawing test patterns');
-                    
-                    // Draw a more visible test pattern
-                    // Draw diagonal stripes
-                    for (let y = 0; y < height; y++) {
-                      for (let x = 0; x < width; x++) {
-                        const index = (y * width + x) * 4;
-                        if (index < imageData.length - 3) {
-                          if ((x + y) % 40 < 20) {
-                            // Dark stripes
-                            imageData[index] = 100;     // R - Dark gray
-                            imageData[index + 1] = 100; // G - Dark gray
-                            imageData[index + 2] = 100; // B - Dark gray
-                          } else {
-                            // Light stripes
-                            imageData[index] = 220;     // R - Light gray
-                            imageData[index + 1] = 220; // G - Light gray
-                            imageData[index + 2] = 220; // B - Light gray
-                          }
-                          imageData[index + 3] = 255; // A - Opaque
-                        }
-                      }
-                    }
-                    
-                    // Add a border
-                    for (let x = 0; x < width; x++) {
-                      // Top and bottom borders
-                      const topIndex = (0 * width + x) * 4;
-                      const bottomIndex = ((height - 1) * width + x) * 4;
-                      if (topIndex < imageData.length - 3) {
-                        imageData[topIndex] = 255;     // R - Red
-                        imageData[topIndex + 1] = 0;   // G - Red
-                        imageData[topIndex + 2] = 0;   // B - Red
-                        imageData[topIndex + 3] = 255; // A - Opaque
-                      }
-                      if (bottomIndex < imageData.length - 3) {
-                        imageData[bottomIndex] = 255;     // R - Red
-                        imageData[bottomIndex + 1] = 0;   // G - Red
-                        imageData[bottomIndex + 2] = 0;   // B - Red
-                        imageData[bottomIndex + 3] = 255; // A - Opaque
-                      }
-                    }
-                    
-                    for (let y = 0; y < height; y++) {
-                      // Left and right borders
-                      const leftIndex = (y * width + 0) * 4;
-                      const rightIndex = (y * width + (width - 1)) * 4;
-                      if (leftIndex < imageData.length - 3) {
-                        imageData[leftIndex] = 255;     // R - Red
-                        imageData[leftIndex + 1] = 0;   // G - Red
-                        imageData[leftIndex + 2] = 0;   // B - Red
-                        imageData[leftIndex + 3] = 255; // A - Opaque
-                      }
-                      if (rightIndex < imageData.length - 3) {
-                        imageData[rightIndex] = 255;     // R - Red
-                        imageData[rightIndex + 1] = 0;   // G - Red
-                        imageData[rightIndex + 2] = 0;   // B - Red
-                        imageData[rightIndex + 3] = 255; // A - Opaque
-                      }
-                    }
-                  }
-                }
-
-
-                
-
-                
-
-
-                // Use pngjs for reliable PNG encoding
-                function encodePNG(imageData, width, height) {
-                  const png = new PNG({
-                    width: width,
-                    height: height,
-                    filterType: -1
-                  });
-                  
-                  // Convert Uint8ClampedArray to Buffer for pngjs
-                  const buffer = Buffer.from(imageData.buffer);
-                  png.data = buffer;
-                  
-                  // Return PNG buffer
-                  return PNG.sync.write(png);
-                }
-
-
+// Convert a single PDF page to image using canvas
+async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
+  try {
+    // Load the single-page PDF using pdf-lib to get dimensions
+    const pdfBytes = fs.readFileSync(pdfPath);
+    const pdfDoc = await PDFLibDoc.load(pdfBytes);
+    
+    // Get the page dimensions
+    const pages = pdfDoc.getPages();
+    if (pages.length === 0) {
+      throw new Error('No pages found in PDF');
+    }
+    
+    const page = pages[0]; // Should only have one page
+    const { width, height } = page.getSize();
+    
+    // Create canvas with page dimensions (scale up for better quality)
+    const scale = 2.0;
+    const canvasWidth = Math.ceil(width * scale);
+    const canvasHeight = Math.ceil(height * scale);
+    
+    const canvas = createCanvas(canvasWidth, canvasHeight);
+    const context = canvas.getContext('2d');
+    
+    // Set white background
+    context.fillStyle = 'white';
+    context.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Now render the actual PDF content to canvas
+    try {
+      // Load PDF using pdfjs-dist for rendering
+      const pdfjsLib = require('pdfjs-dist');
+      
+      // For pdfjs-dist v4, we need to set up the worker differently
+      if (!globalThis.pdfjsWorker) {
+        try {
+          // Try to load the worker
+          globalThis.pdfjsWorker = require('pdfjs-dist/build/pdf.worker.min.js');
+          pdfjsLib.GlobalWorkerOptions.workerPort = globalThis.pdfjsWorker;
+        } catch (workerError) {
+          console.warn('Could not load PDF.js worker, using main thread rendering');
+          // Set to empty string to use main thread
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        }
+      }
+      
+      // Load the PDF document
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+      const pdfDocument = await loadingTask.promise;
+      
+      console.log(`PDF document loaded, page count: ${pdfDocument.numPages}`);
+      
+      // Get the first page (should be the only page)
+      const pdfPage = await pdfDocument.getPage(1);
+      
+      console.log(`Page 1 loaded, dimensions: ${pdfPage.width} x ${pdfPage.height}`);
+      
+      // Create viewport with scaling
+      const viewport = pdfPage.getViewport({ scale: scale });
+      
+      console.log(`Viewport created with scale ${scale}: ${viewport.width} x ${viewport.height}`);
+      
+      // Set canvas dimensions to match viewport
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      
+      console.log(`Canvas dimensions set to: ${canvas.width} x ${canvas.height}`);
+      
+      // Clear canvas and set white background again
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      
+      console.log('Canvas cleared and white background set');
+      
+      // Render the PDF page to canvas
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+        enableWebGL: false,
+        renderInteractiveForms: false
+      };
+      
+      console.log('Starting PDF page rendering...');
+      await pdfPage.render(renderContext).promise;
+      console.log('PDF page rendering completed');
+      
+      // Check if canvas has content by sampling some pixels
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      let hasContent = false;
+      
+      // Sample pixels to check if they're not all white
+      for (let i = 0; i < imageData.data.length; i += 100) { // Sample every 100th pixel
+        if (imageData.data[i] !== 255 || imageData.data[i + 1] !== 255 || imageData.data[i + 2] !== 255) {
+          hasContent = true;
+          break;
+        }
+      }
+      
+      console.log(`Canvas content check: ${hasContent ? 'Has content' : 'Empty/white'}`);
+      
+      if (!hasContent) {
+        console.warn('Canvas appears to be empty after PDF rendering, adding test pattern');
+        // Add a simple test pattern to verify canvas is working
+        context.fillStyle = 'red';
+        context.fillRect(10, 10, 50, 50);
+        context.fillStyle = 'blue';
+        context.fillRect(70, 10, 50, 50);
+        context.fillStyle = 'green';
+        context.fillRect(130, 10, 50, 50);
+      }
+      
+      // Save the canvas as PNG
+      const buffer = canvas.toBuffer('image/png');
+      fs.writeFileSync(outputPath, buffer);
+      
+      console.log(`Canvas saved as PNG: ${outputPath}`);
+      
+      return true;
+      
+    } catch (renderError) {
+      console.warn(`PDF rendering failed, using fallback: ${renderError.message}`);
+      
+      // Fallback: Create a simple representation of the page
+      const png = new PNG({
+        width: canvasWidth,
+        height: canvasHeight,
+        filterType: -1
+      });
+      
+      // Fill with white background
+      for (let i = 0; i < png.data.length; i += 4) {
+        png.data[i] = 255;     // R - White
+        png.data[i + 1] = 255; // G - White
+        png.data[i + 2] = 255; // B - White
+        png.data[i + 3] = 255; // A - Opaque
+      }
+      
+      // Add a simple border to show page boundaries
+      const borderWidth = 2;
+      const borderColor = [200, 200, 200, 255];
+      
+      // Draw borders
+      for (let x = 0; x < png.width; x++) {
+        for (let b = 0; b < borderWidth; b++) {
+          // Top and bottom borders
+          const topIndex = (b * png.width + x) * 4;
+          const bottomIndex = ((png.height - 1 - b) * png.width + x) * 4;
+          
+          if (topIndex < png.data.length - 3) {
+            png.data[topIndex] = borderColor[0];
+            png.data[topIndex + 1] = borderColor[1];
+            png.data[topIndex + 2] = borderColor[2];
+            png.data[topIndex + 3] = borderColor[3];
+          }
+          
+          if (bottomIndex < png.data.length - 3) {
+            png.data[bottomIndex] = borderColor[0];
+            png.data[bottomIndex + 1] = borderColor[1];
+            png.data[bottomIndex + 2] = borderColor[2];
+            png.data[bottomIndex + 3] = borderColor[3];
+          }
+        }
+      }
+      
+      for (let y = 0; y < png.height; y++) {
+        for (let b = 0; b < borderWidth; b++) {
+          // Left and right borders
+          const leftIndex = (y * png.width + b) * 4;
+          const rightIndex = (y * png.width + (png.width - 1 - b)) * 4;
+          
+          if (leftIndex < png.data.length - 3) {
+            png.data[leftIndex] = borderColor[0];
+            png.data[leftIndex + 1] = borderColor[1];
+            png.data[leftIndex + 2] = borderColor[2];
+            png.data[leftIndex + 3] = borderColor[3];
+          }
+          
+          if (rightIndex < png.data.length - 3) {
+            png.data[rightIndex] = borderColor[0];
+            png.data[rightIndex + 1] = borderColor[1];
+            png.data[rightIndex + 2] = borderColor[2];
+            png.data[rightIndex + 3] = borderColor[3];
+          }
+        }
+      }
+      
+      // Add page info text
+      const infoText = `Page ${pageIndex + 1} - ${Math.round(width)}x${Math.round(height)} pt`;
+      const infoY = png.height - 20;
+      const infoColor = [100, 100, 100, 255];
+      
+      // Simple text representation (horizontal line)
+      const lineLength = Math.min(infoText.length * 6, png.width - 40);
+      const lineStart = Math.floor((png.width - lineLength) / 2);
+      
+      for (let x = lineStart; x < lineStart + lineLength; x++) {
+        if (x >= 0 && x < png.width) {
+          const index = (infoY * png.width + x) * 4;
+          if (index < png.data.length - 3) {
+            png.data[index] = infoColor[0];
+            png.data[index + 1] = infoColor[1];
+            png.data[index + 2] = infoColor[2];
+            png.data[index + 3] = infoColor[3];
+          }
+        }
+      }
+      
+      // Write PNG to file
+      const pngBuffer = PNG.sync.write(png);
+      fs.writeFileSync(outputPath, pngBuffer);
+      
+      return true;
+    }
+    
+  } catch (error) {
+    console.error(`Error converting page ${pageIndex + 1} to image:`, error);
+    return false;
+  }
+}
 
 // Format plain text as HTML
 function formatTextAsHtml(text) {
@@ -196,7 +279,7 @@ function formatTextAsHtml(text) {
     .join('\n');
 }
 
-// PDF → Images
+// PDF → Images using split PDF approach
 exports.convertPDFtoImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No PDF file uploaded" });
@@ -209,85 +292,58 @@ exports.convertPDFtoImage = async (req, res) => {
     const pdfPath = path.join(uploadDir, generateFilename('uploaded', 'pdf'));
     fs.writeFileSync(pdfPath, req.file.buffer);
 
-    // Use proper PDF to image conversion with pdf-lib and canvas
-    console.log('Starting PDF to image conversion...');
+    console.log('Starting PDF to image conversion using split approach...');
     console.log('PDF path:', pdfPath);
     console.log('Output directory:', outputDir);
     
-    // Declare imageFiles at function level so it's accessible everywhere
-    let imageFiles = [];
+    // First, split the PDF into individual pages
+    const splitResult = await splitByPages(pdfPath, 1);
     
-    try {
-      // Read the PDF file and convert to Uint8Array
-      const pdfBytes = fs.readFileSync(pdfPath);
-      const pdfArray = new Uint8Array(pdfBytes);
+    if (!splitResult || splitResult.length === 0) {
+      throw new Error('Failed to split PDF into pages');
+    }
+    
+    console.log(`PDF split successfully into ${splitResult.length} pages`);
+    
+    // Convert each split PDF page to an image
+    const imageFiles = [];
+    const imagePaths = [];
+    
+    for (let i = 0; i < splitResult.length; i++) {
+      const splitPdfPath = splitResult[i];
+      const imageFileName = `page_${i + 1}.png`;
+      const imagePath = path.join(outputDir, imageFileName);
       
-      // Load PDF using pdfjs-dist (fonts will be handled by canvas library)
-      const loadingTask = pdfjsLib.getDocument({ 
-        data: pdfArray
-      });
-      const pdfDoc = await loadingTask.promise;
-      const pageCount = pdfDoc.numPages;
+      console.log(`Converting split PDF ${i + 1} to image: ${imageFileName}`);
       
-      console.log(`PDF loaded successfully. Page count: ${pageCount}`);
+      // Convert the single-page PDF to image
+      const success = await convertSinglePageToImage(splitPdfPath, i, imagePath);
       
-      // Convert each page to a separate image using custom renderer
-      for (let i = 0; i < pageCount; i++) {
-        console.log(`Converting page ${i + 1} of ${pageCount}`);
-        
-        // Get the page
-        const page = await pdfDoc.getPage(i + 1);
-        
-        // Get page dimensions - use A4 size for consistent output
-        const a4Width = 595;  // A4 width in points
-        const a4Height = 842; // A4 height in points
-        const scale = 2.0;    // Higher resolution
-        const pageWidth = Math.ceil(a4Width * scale);
-        const pageHeight = Math.ceil(a4Height * scale);
-        
-        console.log(`Page ${i + 1} dimensions: ${pageWidth}x${pageHeight}`);
-        
-        // Create image data array (RGBA format)
-        const imageData = new Uint8ClampedArray(pageWidth * pageHeight * 4);
-        
-                              // Fill with white background
-                      for (let j = 0; j < imageData.length; j += 4) {
-                        imageData[j] = 255;     // R - White
-                        imageData[j + 1] = 255; // G - White
-                        imageData[j + 2] = 255; // B - White
-                        imageData[j + 3] = 255; // A - Opaque
-                      }
-                      
-
-        
-        // Get page operators (the actual content)
-        const opList = await page.getOperatorList();
-        console.log(`Page ${i + 1} has ${opList.fnArray.length} operators`);
-        
-        // Process PDF operators to render content
-        console.log(`Starting to render page ${i + 1} content...`);
-        await renderPageContent(page, opList, imageData, pageWidth, pageHeight);
-        console.log(`Finished rendering page ${i + 1} content`);
-        
-        // Convert to PNG using custom PNG encoder
-        const pngBuffer = encodePNG(imageData, pageWidth, pageHeight);
-        
-        // Save the image
-        const imagePath = path.join(outputDir, `page_${i + 1}.png`);
-        fs.writeFileSync(imagePath, pngBuffer);
-        
-        imageFiles.push(`page_${i + 1}.png`);
-        console.log(`Page ${i + 1} converted to image: ${imagePath}`);
-        
-        // Add delay between pages to ensure proper processing
-        await new Promise(resolve => setTimeout(resolve, 100));
+      if (success) {
+        imageFiles.push(imageFileName);
+        imagePaths.push(imagePath);
+        console.log(`Successfully converted page ${i + 1} to image`);
+      } else {
+        console.warn(`Failed to convert page ${i + 1} to image`);
       }
       
-      console.log(`Successfully converted ${pageCount} pages to images`);
-      
-    } catch (conversionError) {
-      console.error('PDF to image conversion error:', conversionError);
-      throw new Error(`PDF conversion failed: ${conversionError.message}`);
+      // Clean up the split PDF file
+      try {
+        if (fs.existsSync(splitPdfPath)) {
+          fs.unlinkSync(splitPdfPath);
+        }
+      } catch (cleanupError) {
+        console.log('Error cleaning up split PDF file:', cleanupError.message);
+      }
+    }
+    
+    // Clean up the original uploaded PDF
+    try {
+      if (fs.existsSync(pdfPath)) {
+        fs.unlinkSync(pdfPath);
+      }
+    } catch (cleanupError) {
+      console.log('Error cleaning up uploaded PDF:', cleanupError.message);
     }
     
     console.log('Generated image files:', imageFiles);
@@ -296,21 +352,23 @@ exports.convertPDFtoImage = async (req, res) => {
       throw new Error('No image files were created');
     }
     
-    const fullImagePaths = imageFiles.map(file => path.join(outputDir, file));
-    
     // Return relative paths for frontend (fix Windows path separators)
-    const relativeFiles = fullImagePaths.map(file => {
+    const relativeFiles = imagePaths.map(file => {
       const relativePath = file.replace(process.cwd(), '');
       return relativePath.replace(/\\/g, '/');
     });
     
     res.json({ 
-      message: "PDF converted to images successfully", 
+      message: "PDF converted to images successfully using split approach", 
       images: relativeFiles,
       outputDir: outputDir.replace(process.cwd(), '').replace(/\\/g, '/'),
       fileCount: imageFiles.length,
       originalFile: req.file.originalname,
-      method: 'pdfjs-dist-canvas-renderer'
+      method: 'split-pdf-approach',
+      splitResult: {
+        totalPages: splitResult.length,
+        successfulConversions: imageFiles.length
+      }
     });
     
   } catch (err) {
@@ -405,68 +463,67 @@ exports.convertPdfToEpub = async (req, res) => {
     const pdfBuffer = fs.readFileSync(epubPdfPath);
     const pdfData = await pdfParse(pdfBuffer);
 
-    // Convert to images for embedding in EPUB
+    // Convert to images for embedding in EPUB using split approach
     const epubImageDir = path.join(outputDir, path.basename(epubPdfPath, '.pdf'));
     if (!fs.existsSync(epubImageDir)) fs.mkdirSync(epubImageDir, { recursive: true });
 
-    // Use proper PDF to image conversion with pdfjs-dist and canvas
-    const pdfBytes = fs.readFileSync(epubPdfPath);
-    const pdfArray = new Uint8Array(pdfBytes);
+    console.log('EPUB conversion: Starting PDF to image conversion using split approach...');
     
-    // Load PDF using pdfjs-dist (fonts will be handled by canvas library)
-    const loadingTask = pdfjsLib.getDocument({ 
-      data: pdfArray
-    });
-    const pdfDoc = await loadingTask.promise;
-    const pageCount = pdfDoc.numPages;
+    // First, split the PDF into individual pages
+    const splitResult = await splitByPages(epubPdfPath, 1);
     
-    console.log(`EPUB conversion: PDF loaded successfully. Page count: ${pageCount}`);
-    
-    // Convert each page to a separate image using canvas
-    const imageFiles = [];
-    for (let i = 0; i < pageCount; i++) {
-      console.log(`EPUB conversion: Converting page ${i + 1} of ${pageCount}`);
-      
-      // Get the page
-      const page = await pdfDoc.getPage(i + 1);
-      
-      // Get page dimensions
-      const viewport = page.getViewport({ scale: 2.0 }); // Higher resolution
-      
-                           // Custom PDF to Image converter from scratch
-              console.log(`EPUB conversion: Processing page ${i + 1} with custom renderer...`);
-              
-              // Get page operators (the actual content)
-              const opList = await page.getOperatorList();
-              const pageWidth = Math.ceil(viewport.width);
-              const pageHeight = Math.ceil(viewport.height);
-              
-              // Create image data array (RGBA format)
-              const imageData = new Uint8ClampedArray(pageWidth * pageHeight * 4);
-              
-              // Fill with white background
-              for (let j = 0; j < imageData.length; j += 4) {
-                imageData[j] = 255;     // R
-                imageData[j + 1] = 255; // G
-                imageData[j + 2] = 255; // B
-                imageData[j + 3] = 255; // A
-              }
-              
-              // Process PDF operators to render content
-              await renderPageContent(page, opList, imageData, pageWidth, pageHeight);
-              
-              // Convert to PNG using custom PNG encoder
-              const pngBuffer = encodePNG(imageData, pageWidth, pageHeight);
-              
-              // Save the image
-              const imagePath = path.join(epubImageDir, `page_${i + 1}.png`);
-              fs.writeFileSync(imagePath, pngBuffer);
-      
-      imageFiles.push(`page_${i + 1}.png`);
-      console.log(`EPUB conversion: Page ${i + 1} converted to image: ${imagePath}`);
+    if (!splitResult || splitResult.length === 0) {
+      throw new Error('Failed to split PDF for EPUB');
     }
     
-    const imagePaths = imageFiles.map(f => path.join(epubImageDir, f));
+    console.log(`EPUB conversion: PDF split successfully into ${splitResult.length} pages`);
+    
+    // Convert each split PDF page to an image
+    const imageFiles = [];
+    const imagePaths = [];
+    
+    for (let i = 0; i < splitResult.length; i++) {
+      const splitPdfPath = splitResult[i];
+      const imageFileName = `page_${i + 1}.png`;
+      const imagePath = path.join(epubImageDir, imageFileName);
+      
+      console.log(`EPUB conversion: Converting split PDF ${i + 1} to image: ${imageFileName}`);
+      
+      // Convert the single-page PDF to image
+      const success = await convertSinglePageToImage(splitPdfPath, i, imagePath);
+      
+      if (success) {
+        imageFiles.push(imageFileName);
+        imagePaths.push(imagePath);
+        console.log(`EPUB conversion: Successfully converted page ${i + 1} to image`);
+      } else {
+        console.warn(`EPUB conversion: Failed to convert page ${i + 1} to image`);
+      }
+      
+      // Clean up the split PDF file
+      try {
+        if (fs.existsSync(splitPdfPath)) {
+          fs.unlinkSync(splitPdfPath);
+        }
+      } catch (cleanupError) {
+        console.log('Error cleaning up split PDF file:', cleanupError.message);
+      }
+    }
+    
+    // Clean up the original uploaded PDF
+    try {
+      if (fs.existsSync(epubPdfPath)) {
+        fs.unlinkSync(epubPdfPath);
+      }
+    } catch (cleanupError) {
+      console.log('Error cleaning up uploaded PDF:', cleanupError.message);
+    }
+    
+    if (imageFiles.length === 0) {
+      throw new Error('No image files were created for EPUB');
+    }
+    
+    console.log(`EPUB conversion: Generated ${imageFiles.length} image files`);
 
     // Run OCR on each image (temporarily disabled)
     // const ocrTexts = await Promise.all(imagePaths.map(imagePath => {

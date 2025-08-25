@@ -27,6 +27,14 @@ import CTASection from '../components/LandingPage/CTASection';
 // Landing Page Pages
 import PDFToWordPage from '../pages/LandingPage/PDFToWordPage';
 import MergePDFPage from '../pages/LandingPage/MergePDFPage';
+import PDFToolsMergePDFPage from '../pages/PDFTools/MergePDFPage';
+import PDFToolsSplitPDFPage from '../pages/PDFTools/SplitPDFPage';
+import PDFToolsExtractPDFPage from '../pages/PDFTools/ExtractPDFPage';
+import PDFToolsDeletePDFPage from '../pages/PDFTools/DeletePDFPage';
+import PDFToolsReorderPDFPage from '../pages/PDFTools/ReorderPDFPage';
+import PDFToolsRotatePDFPage from '../pages/PDFTools/RotatePDFPage';
+import PDFToolsCropPDFPage from '../pages/PDFTools/CropPDFPage';
+import PDFToolsInsertPDFPage from '../pages/PDFTools/InsertPDFPage';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
 import SplitPDFPage from '../pages/LandingPage/SplitPDFPage';
 import PDFToExcelPage from '../pages/LandingPage/PDFToExcelPage';
@@ -705,17 +713,19 @@ const authRoutes = [
   { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf />},
   { path: '/pdf-tools/pdf-to-epub', element: <PdfToEpub />},
   { path: '/pdf-tools/batch-conversion', element: <BatchConversion />},
-  { path: '/pdf-tools/merge-pdf', element: <MergePDFPage />},
+  { path: '/pdf-tools/merge-pdf', element: <PDFToolsMergePDFPage />},
+  { path: '/pdf-tools/split-pdf', element: <PDFToolsSplitPDFPage />},
+  { path: '/pdf-tools/extract-pdf', element: <PDFToolsExtractPDFPage />},
+  { path: '/pdf-tools/delete-pdf', element: <PDFToolsDeletePDFPage />},
+  { path: '/pdf-tools/reorder-pdf', element: <PDFToolsReorderPDFPage />},
+  { path: '/pdf-tools/rotate-pdf', element: <PDFToolsRotatePDFPage />},
+  { path: '/pdf-tools/crop-pdf', element: <PDFToolsCropPDFPage />},
+  { path: '/pdf-tools/insert-pdf', element: <PDFToolsInsertPDFPage />},
   { path: '/pdf-tools/compress-pdf', element: <CompressPDFPage />},
-  { path: '/pdf-tools/split-pdf', element: <SplitPDFPage />},
   { path: '/pdf-tools/protect-pdf', element: <ProtectPDFPage />},
-  { path: '/pdf-tools/rotate-pdf', element: <RotatePDFPage />},
   { path: '/pdf-tools/ocr-pdf', element: <OCRPDFPage />},
   { path: '/pdf-tools/unlock-pdf', element: <UnlockPDFPage />},
   { path: '/pdf-tools/watermark-pdf', element: <WatermarkPDFPage />},
-  { path: '/pdf-tools/extract-pages', element: <ExtractPagesPage />},
-  { path: '/pdf-tools/delete-pages', element: <DeletePagesPage />},
-  { path: '/pdf-tools/crop-pdf', element: <CropPDFPage />},
   { path: '/pdf-tools/page-numbers', element: <PageNumbersPage />},
   { path: '/pdf-tools/flatten-pdf', element: <FlattenPDFPage />},
   { path: '/pdf-tools/deskew-pdf', element: <DeskewPDFPage />},

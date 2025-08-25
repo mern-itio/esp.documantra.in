@@ -1,31 +1,50 @@
-const fs = require("fs");
-const path = require("path");
-const { PDFDocument } = require("pdf-lib");
+const fs = require('fs-extra');
+const path = require('path');
+const { PDFDocument } = require('pdf-lib');
 
 const reorderPdfPages = async (filePath, newOrder = []) => {
-  const fileBytes = fs.readFileSync(filePath);
-  const originalPdf = await PDFDocument.load(fileBytes);
-  const totalPages = originalPdf.getPageCount();
+  try {
+    const fileBytes = fs.readFileSync(filePath);
+    const originalPdf = await PDFDocument.load(fileBytes);
+    const totalPages = originalPdf.getPageCount();
 
-  const newPdf = await PDFDocument.create();
-
-  // Ensure all values are valid page indices (1-based input)
-  const pageIndices = newOrder.map(p => parseInt(p) - 1);
-
-  for (const index of pageIndices) {
-    if (index < 0 || index >= totalPages) {
-      throw new Error(`Invalid page number: ${index + 1}`);
+    if (totalPages === 0) {
+      throw new Error('PDF has no pages');
     }
 
-    const [copiedPage] = await newPdf.copyPages(originalPdf, [index]);
-    newPdf.addPage(copiedPage);
+    // Validate page numbers
+    for (const pageNum of newOrder) {
+      if (pageNum < 1 || pageNum > totalPages) {
+        throw new Error(`Page number ${pageNum} is out of range (1-${totalPages})`);
+      }
+    }
+
+    const newPdf = await PDFDocument.create();
+
+    // Convert to 0-based index
+    const pageIndices = newOrder.map(p => parseInt(p) - 1);
+
+    for (const index of pageIndices) {
+      const [copiedPage] = await newPdf.copyPages(originalPdf, [index]);
+      newPdf.addPage(copiedPage);
+    }
+
+    // Ensure outputs directory exists
+    const outputsDir = path.join(__dirname, '../outputs');
+    await fs.ensureDir(outputsDir);
+
+    // Generate output filename
+    const timestamp = Date.now();
+    const randomSuffix = Math.round(Math.random() * 1E9);
+    const outputPath = path.join(outputsDir, `reordered-pages-${timestamp}-${randomSuffix}.pdf`);
+
+    const pdfBytes = await newPdf.save();
+    await fs.writeFile(outputPath, pdfBytes);
+
+    return outputPath;
+  } catch (error) {
+    throw new Error(`Failed to reorder pages: ${error.message}`);
   }
-
-  const outputPath = path.join("split", `reordered-${Date.now()}.pdf`);
-  const pdfBytes = await newPdf.save();
-  fs.writeFileSync(outputPath, pdfBytes);
-
-  return outputPath;
 };
 
 module.exports = { reorderPdfPages };
