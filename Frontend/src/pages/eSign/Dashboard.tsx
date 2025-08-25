@@ -42,7 +42,8 @@ const Dashboard: React.FC = () => {
     completed: 'bg-green-100 text-green-800',
     expired: 'bg-red-100 text-red-800',
     voided: 'bg-gray-100 text-gray-600',
-    declined: 'bg-red-100 text-red-800'
+    declined: 'bg-red-100 text-red-800',
+    "in-progress": 'bg-yellow-100 text-yellow-800', // added
   };
 
   const statusIcons = {
@@ -52,7 +53,8 @@ const Dashboard: React.FC = () => {
     completed: CheckCircle,
     expired: AlertCircle,
     voided: AlertCircle,
-    declined: AlertCircle
+    declined: AlertCircle,
+    "in-progress": Clock, // added
   };
 
   const filteredEnvelopes = envelopes.filter(envelope => {

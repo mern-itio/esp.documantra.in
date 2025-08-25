@@ -184,6 +184,7 @@ const getEnvelopeDetail = async (envelopeId: string) => {
   }
 };
 const updateEnvelope = async () => {
+  console.log('Updating envelope with data:', envelopeId);
   if (!envelopeId) return;
   
   console.log('Updating envelope data:', envelopeData);
@@ -194,6 +195,7 @@ const updateEnvelope = async () => {
     });
     if (response.status === 200) {
       console.log('Signature type updated successfully:', response.data);
+      await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${response.data.envelopeId}`);
     }
   } catch (error) {
     console.error('Error updating signature type:', error);
@@ -216,6 +218,7 @@ const handleNext = async () => {
     await saveSignatureFields();
   }
   if (currentStep === 4) {
+    console.log('Step 4');
     await updateEnvelope();
   }
   if (currentStep === 5) {
@@ -223,6 +226,7 @@ const handleNext = async () => {
   }
   if (currentStep === 6) {
     alert('Envelope created successfully, Ready to send!');
+    await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
   }
   setCurrentStep(prev => Math.min(6, prev + 1));
 };
@@ -296,30 +300,18 @@ const handleNext = async () => {
     navigate('/');
   };
 
-  const handleSendEnvelope = () => {
-    if (!user) return;
-
-    const envelope = {
-      subject: envelopeData.subject,
-      message: envelopeData.message,
-      status: 'sent' as const,
-      priority: envelopeData.priority,
-      expiresAt: envelopeData.expiresAt,
-      sender: user,
-      documents,
-      recipients,
-      reminderEnabled: envelopeData.reminderEnabled,
-      reminderInterval: envelopeData.reminderInterval,
-      requireAllSignatures: envelopeData.requireAllSignatures,
-      allowDecline: envelopeData.allowDecline,
-      signingOrder: envelopeData.signingOrder,
-      signatureType: envelopeData.signatureType,
-      complianceLevel: envelopeData.complianceLevel
-    };
-
-    createEnvelope(envelope);
+  const handleSendEnvelope = async () => {
+    if (!envelopeId) return;
+      try {
+        await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
+        alert('Envelope sent successfully!');
+        navigate('/e-sign/dashboard');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to send envelope. Try again.');
+      }
     // In a real app, this would trigger email sending
-    navigate('/');
+    navigate('/e-sign/dashboard');
   };
   useEffect(() => {
     getSteps();
@@ -348,12 +340,16 @@ const getSteps = async () => {
                 break;
               case 4:
                 setCurrentStep(4);
+                setEnvelopeId(envelopeId)
                 break;
               case 5:
                 setCurrentStep(5);
+                setEnvelopeId(envelopeId)
                 break;
               case 6:
                 setCurrentStep(6);
+                setEnvelopeId(envelopeId);
+                await getEnvelopeDetail(envelopeId);
                 break;
               default:
                 setCurrentStep(1);
