@@ -6,10 +6,7 @@ import { AuthProvider } from "./components/AuthService/AuthContext";
 import Loader from "./components/common/loader";
 import { AppProvider } from "./context/AppContext";
 
-// ✅ PDF.js worker setup (Vite friendly)
-import { pdfjs } from "react-pdf";
-import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);

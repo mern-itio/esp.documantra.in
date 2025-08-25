@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const pdfRoutes = require('./routes/pdfRoutes');
 const conversionRoutes = require('./routes/pdftoImage');
+const pdfTextEditRoutes = require('./routes/pdfTextEditRoutes');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -105,6 +106,7 @@ app.get('/*.pdf', (req, res, next) => {
 });
 app.use('/pdf', pdfRoutes);
 app.use('/convert', conversionRoutes);
+app.use('/pdf-text-edit', pdfTextEditRoutes);
 // JWT Middleware (for conversion routes only)
 app.use(verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 
