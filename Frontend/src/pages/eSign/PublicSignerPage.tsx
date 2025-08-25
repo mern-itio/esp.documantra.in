@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft,
   FileText,
@@ -8,40 +8,48 @@ import {
   CheckCircle,
   AlertCircle,
   Download,
-  Send,
-  MoreHorizontal,
   Eye,
   Mail,
   Shield,
   Activity,
-  User,
-  Edit,
-  Trash2,
-  Copy,
-  Archive
+  User
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { eSignApi } from '../../services/apiHelper';
+import DocumentViewer from '../../components/ESign/DocumentViewer';
 
 const EnvelopeDetails: React.FC = () => { 
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const {addAuditEntry } = useApp();
+  const { recipientId } = useParams<{ recipientId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
   useEffect(() => {
     fetchEnvelopeDetails();
   }, []);
   const [envelope, setEnvelope] = useState<any>(null);
+  // Active document and signature fields state
+  const [activeDocument, setActiveDocument] = useState<any>(null);
+  const [signatureFields, setSignatureFields] = useState<any[]>([]);
 
   const fetchEnvelopeDetails = async () => {
       try {
-         const response = await eSignApi.get('/api/e-sign/envelope/' + id);
+         const response = await eSignApi.get('/api/e-sign/public/envelope/' + id);
          if (response.status == 200) {
           setEnvelope(response.data.data);
          }
       } catch (error) {
         console.error('Error fetching envelopes:', error);
+      }
+    };
+    const fetchSignatureFields = async (documentId: string) => {
+      try {
+        const response = await eSignApi.get(
+          `api/e-sign/public/document/signature-fields/${documentId}`
+        );
+        if (response.status === 200) {
+          setSignatureFields(response.data.signatureFields); // store all fields for this document
+        }
+      } catch (err) {
+        console.error("Error fetching signature fields", err);
       }
     };
 
@@ -94,15 +102,6 @@ const EnvelopeDetails: React.FC = () => {
     { id: 'activity', name: 'Activity', icon: Activity },
   ];
 
-  const handleSendReminder = (recipientId: string) => {
-    addAuditEntry(envelope.id, {
-      envelopeId: envelope.id,
-      action: 'reminder_sent',
-      actor: 'system',
-      details: `Reminder sent to recipient ${recipientId}`,
-      ipAddress: '192.168.1.1'
-    });
-  };
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -167,27 +166,7 @@ const EnvelopeDetails: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="flex flex-wrap gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Download className="w-4 h-4" />
-            Download PDF
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <Send className="w-4 h-4" />
-            Send Reminder
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <Copy className="w-4 h-4" />
-            Duplicate
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <Edit className="w-4 h-4" />
-            Edit
-          </button>
-        </div>
-      </div>
+
     </div>
   );
 
@@ -241,20 +220,7 @@ const EnvelopeDetails: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {recipient.status !== 'completed' && recipient.status !== 'signed' && (
-                <button
-                  onClick={() => handleSendReminder(recipient.id)}
-                  className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                  Remind
-                </button>
-              )}
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-            </div>
+
           </div>
         </div>
       ))}
@@ -280,11 +246,15 @@ const EnvelopeDetails: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-               onClick={() => window.open(`/e-sign/signer/${envelope.id}/${document.id}`, "_blank")}
-              >
-                <Eye className="w-4 h-4" 
-                />
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={async () => {
+                    setActiveDocument(document); // set the clicked document
+                    await fetchSignatureFields(document.id); // fetch all fields for this document
+                  }}
+                >
+                  
+                <Eye className="w-4 h-4" />
                 Preview
               </button>
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -340,12 +310,6 @@ const EnvelopeDetails: React.FC = () => {
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{envelope.subject}</h1>
               <p className="text-gray-600">
@@ -354,19 +318,6 @@ const EnvelopeDetails: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-              <Archive className="w-4 h-4" />
-              Archive
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors">
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -398,7 +349,19 @@ const EnvelopeDetails: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'recipients' && renderRecipients()}
-          {activeTab === 'documents' && renderDocuments()}
+            {activeTab === 'documents' && (
+              activeDocument ? (
+                <DocumentViewer
+                  document={activeDocument}
+                  signatureFields={signatureFields}
+                  currentUserId={recipientId || ''} // assuming you have currentUser from context
+                  onClose={() => setActiveDocument(null)} // close viewer
+                />
+              ) : (
+                renderDocuments()
+              )
+            )}
+
           {activeTab === 'activity' && renderActivity()}
         </div>
       </div>

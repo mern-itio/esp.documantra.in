@@ -7,7 +7,9 @@ export const mockUsers: User[] = [
     email: 'sarah.johnson@acme.com',
     role: 'admin',
     organization: 'Acme Corporation',
-    avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop'
+    avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
+    createdAt: '2024-08-22T12:00:00Z',   
+  lastActive: '2024-08-22T13:00:00Z' 
   },
   {
     id: 'user_002',
@@ -15,7 +17,9 @@ export const mockUsers: User[] = [
     email: 'michael.chen@techstart.com',
     role: 'user',
     organization: 'TechStart Inc',
-    avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop'
+    avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
+    createdAt: '2024-08-22T12:00:00Z',   
+  lastActive: '2024-08-22T13:00:00Z' 
   }
 ];
 
