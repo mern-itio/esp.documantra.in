@@ -561,29 +561,13 @@ router.post('/test-pptx-extraction', upload.single('document'), async (req, res)
       console.log(`pptxgenjs failed: ${error.message}`);
     }
     
-    // Test Method 2: office-to-pdf
-    try {
-      console.log('Testing office-to-pdf method...');
-      const officeToPdf = require('office-to-pdf');
-      const pptBuffer = await fs.readFile(inputPath);
-      const pdfBuffer = await officeToPdf(pptBuffer);
-      
-      extractionResults.methods.push({
-        name: 'office-to-pdf',
-        success: true,
-        pdfSize: pdfBuffer.length,
-        details: `Generated PDF of ${pdfBuffer.length} bytes`
-      });
-      
-      console.log(`office-to-pdf: Generated PDF of ${pdfBuffer.length} bytes`);
-    } catch (error) {
-      extractionResults.methods.push({
-        name: 'office-to-pdf',
-        success: false,
-        error: error.message
-      });
-      console.log(`office-to-pdf failed: ${error.message}`);
-    }
+    // Test Method 2: office-to-pdf (Removed - requires LibreOffice)
+    extractionResults.methods.push({
+      name: 'office-to-pdf',
+      success: false,
+      error: 'Method disabled - requires LibreOffice which is not available in this container'
+    });
+    console.log('office-to-pdf: Skipped - requires LibreOffice');
     
     // Test Method 3: Manual extraction
     try {
