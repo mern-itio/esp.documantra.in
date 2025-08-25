@@ -1,5 +1,7 @@
 FROM node:20
 
+# No system dependencies needed for pdf-image
+
 WORKDIR /app
 
 # Copy package.json and package-lock.json for local packages first
@@ -23,8 +25,8 @@ RUN npm install
 
 # Install service dependencies (links local packages)
 WORKDIR /app/services/pdf-service
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps && npm install -g nodemon
 
-EXPOSE 4001
+EXPOSE 2104
 
 CMD ["npm", "run", "dev"]

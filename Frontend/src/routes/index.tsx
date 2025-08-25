@@ -202,10 +202,6 @@ import { PdfToImage } from '../pages/PDFTools/PdftoImage';
 import { ImageToPDF } from '../pages/PDFTools/ImageToPdf';
 import { PdfToEpub } from '../pages/PDFTools/PdfToEpub';
 import { BatchConversion } from '../pages/PDFTools/BatchConversion';
-import PDFEditorAdvanced from '../pages/PDFTools/PDFEditorAdvanced';
-import EditPdfText from '../pages/PDFTools/EditPdfText';
-import AddImageToPdf from '../pages/PDFTools/AddImageToPdf';
-import AddTextToPdf from '../pages/PDFTools/AddTextToPdf';
 
 // Api-service imports started 
 import ApiServiceDashboard from '../pages/ApiService/Dashboard/main';
@@ -709,10 +705,6 @@ const authRoutes = [
   { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf />},
   { path: '/pdf-tools/pdf-to-epub', element: <PdfToEpub />},
   { path: '/pdf-tools/batch-conversion', element: <BatchConversion />},
-  { path: '/pdf-tools/pdf-editor', element: <PDFEditorAdvanced />},
-  { path: '/pdf-tools/edit-pdf', element: <EditPdfText />},
-  { path: '/pdf-tools/add-images', element: <AddImageToPdf />},
-  { path: '/pdf-tools/add-text', element: <AddTextToPdf />},
   { path: '/pdf-tools/merge-pdf', element: <MergePDFPage />},
   { path: '/pdf-tools/compress-pdf', element: <CompressPDFPage />},
   { path: '/pdf-tools/split-pdf', element: <SplitPDFPage />},
