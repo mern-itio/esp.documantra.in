@@ -7,7 +7,7 @@ export const deletePDFService = {
   async deletePDF(request: DeletePDFRequest): Promise<DeletePDFResponse> {
     const formData = new FormData();
     formData.append('file', request.file);
-    formData.append('pagesToDelete', JSON.stringify(request.pagesToDelete));
+    formData.append('pages', JSON.stringify(request.pagesToDelete));
 
     const response = await pdfApi.post('/pdf-delete/delete-pages', formData, {
       headers: {

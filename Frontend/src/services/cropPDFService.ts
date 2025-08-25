@@ -7,7 +7,17 @@ export const cropPDFService = {
   async cropPDF(request: CropPDFRequest): Promise<CropPDFResponse> {
     const formData = new FormData();
     formData.append('file', request.file);
-    formData.append('crops', JSON.stringify(request.crops));
+    
+    // Transform the crop data to match backend expectations
+    const flattenedCrops = request.crops.map(crop => ({
+      page: crop.page,
+      x: crop.cropArea.x,
+      y: crop.cropArea.y,
+      width: crop.cropArea.width,
+      height: crop.cropArea.height
+    }));
+    
+    formData.append('crops', JSON.stringify(flattenedCrops));
 
     const response = await pdfApi.post('/pdf-crop/crop-pages', formData, {
       headers: {
