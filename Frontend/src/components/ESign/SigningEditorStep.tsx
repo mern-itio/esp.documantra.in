@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { FileText, UserCircle, X } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
 
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+// import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+// pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 
 export type Doc = {
@@ -59,6 +59,20 @@ export default function SigningEditorStep({
   signatureFields: SignatureField[]; // current signature fields from parent
   setSignatureFields: React.Dispatch<React.SetStateAction<SignatureField[]>>; // setter
 }) {
+
+    // --- PDF.js worker setup ---
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
+    }
+  }, []);
+  
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
   const [numPages, setNumPages] = useState<number | null>(null);
