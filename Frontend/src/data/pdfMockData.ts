@@ -410,7 +410,7 @@ export const mockPDFTools = {
         icon: "FilePlus"
       },
       {
-        id: "add_page_numbers",
+        id: "add-page-numbers",
         name: "Add Page Numbers",
         description: "Add page numbers with custom formatting",
         category: "pages",
@@ -420,7 +420,7 @@ export const mockPDFTools = {
         icon: "Hash"
       },
       {
-        id: "add_headers_footers",
+        id: "add-header-footer",
         name: "Headers & Footers",
         description: "Insert headers and footers with variables",
         category: "pages",
@@ -436,39 +436,30 @@ export const mockPDFTools = {
     description: "Protect and secure PDF documents with encryption",
     tools: [
       {
-        id: "add_password",
+        id: "add-password",
         name: "Add Password",
         description: "Protect PDFs with owner and user passwords",
         category: "security",
-        features: ["dual_password_system", "permission_control", "encryption_levels"],
+        features: ["dual_password_system", "permission_control", "encryption_levels", "aes_256_encryption"],
         complexity: "easy" as const,
         popularity: 79,
         icon: "Lock",
-        badge: "Security"
+        badge: "Security",
+        route: "/pdf-tools/add-password"
       },
       {
-        id: "remove_password",
+        id: "remove-password",
         name: "Remove Password",
-        description: "Unlock protected PDFs",
+        description: "Unlock protected PDFs with password verification",
         category: "security",
-        features: ["password_recovery", "batch_unlocking", "security_validation"],
+        features: ["password_recovery", "security_validation", "encryption_removal", "batch_unlocking"],
         complexity: "easy" as const,
         popularity: 71,
-        icon: "Unlock"
-      },
+        icon: "Unlock",
+        route: "/pdf-tools/remove-password"
+      },     
       {
-        id: "encrypt_pdf",
-        name: "Encrypt PDF",
-        description: "Apply 128-bit and 256-bit AES encryption",
-        category: "security",
-        features: ["aes_encryption", "certificate_based", "key_management"],
-        complexity: "advanced" as const,
-        popularity: 42,
-        icon: "Shield",
-        premium: true
-      },
-      {
-        id: "digital_signature",
+        id: "digital-signature",
         name: "Digital Signature",
         description: "Add digital signatures with certificate validation",
         category: "security",
@@ -476,7 +467,8 @@ export const mockPDFTools = {
         complexity: "advanced" as const,
         popularity: 56,
         icon: "PenTool",
-        badge: "Legal"
+        badge: "Legal",
+        route: "/pdf-tools/digital-signature"
       },
       {
         id: "set_permissions",

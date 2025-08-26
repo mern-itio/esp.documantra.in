@@ -35,6 +35,11 @@ import PDFToolsReorderPDFPage from '../pages/PDFTools/ReorderPDFPage';
 import PDFToolsRotatePDFPage from '../pages/PDFTools/RotatePDFPage';
 import PDFToolsCropPDFPage from '../pages/PDFTools/CropPDFPage';
 import PDFToolsInsertPDFPage from '../pages/PDFTools/InsertPDFPage';
+import PDFToolsAddPageNumbersPage from '../pages/PDFTools/AddPageNumbersPage';
+import PDFToolsAddHeaderFooterPage from '../pages/PDFTools/AddHeaderFooterPage';
+import PDFToolsAddPasswordPage from '../pages/PDFTools/AddPasswordPage';
+import PDFToolsRemovePasswordPage from '../pages/PDFTools/RemovePasswordPage';
+import PDFToolsDigitalSignaturePage from '../pages/PDFTools/DigitalSignaturePage';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
 import SplitPDFPage from '../pages/LandingPage/SplitPDFPage';
 import PDFToExcelPage from '../pages/LandingPage/PDFToExcelPage';
@@ -243,7 +248,7 @@ const PDFToolsLayout = () => {
     const category = urlParams.get('category');
     // console.log('URL changed, location.search:', location.search);
     // console.log('Category from URL:', category);
-    
+
     if (category) {
       setSelectedCategory(category);
       // console.log('Category changed to:', category);
@@ -260,7 +265,7 @@ const PDFToolsLayout = () => {
 
   const getFilteredTools = () => {
     let allTools: PDFTool[] = [];
-    
+
     if (selectedCategory === 'all') {
       allTools = Object.values(mockPDFTools).flatMap(category => category.tools);
       // console.log('Getting all tools from all categories, total:', allTools.length);
@@ -277,7 +282,7 @@ const PDFToolsLayout = () => {
     }
 
     if (searchQuery.trim()) {
-      const searchFiltered = allTools.filter(tool => 
+      const searchFiltered = allTools.filter(tool =>
         tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tool.features.some(feature => feature.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -295,7 +300,7 @@ const PDFToolsLayout = () => {
     console.log('Navigating to:', `/pdf-tools/${tool.id}`);
     setSelectedTool(tool);
     navigate(`/pdf-tools/${tool.id}`);
-    
+
     // Add to recent tools
     setRecentTools(prev => {
       const filtered = prev.filter(t => t.id !== tool.id);
@@ -348,10 +353,10 @@ const PDFToolsLayout = () => {
         return <CloudConnector onBack={() => setCurrentView('tools')} />;
       case 'help':
         return <HelpSystem onBack={() => setCurrentView('tools')} />;
-   
+
       default:
         const filteredTools = getFilteredTools();
-        
+
         return (
           <div>
             <ToolsGrid
@@ -370,7 +375,7 @@ const PDFToolsLayout = () => {
 
   return (
     <div className='bg-white p-2'>
-     <Header 
+      <Header
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         currentView={currentView}
@@ -412,18 +417,18 @@ function DocumentView() {
     setSelectedDocument(document);
   };
 
-  
+
   return (
     <>
       {viewMode === 'grid' ? (
-        <EnhancedDocumentGrid 
+        <EnhancedDocumentGrid
           onDocumentAction={handleDocumentAction}
           onDocumentSelect={handleDocumentSelect}
         />
       ) : (
         <DocumentList onDocumentSelect={handleDocumentSelect} />
       )}
-      
+
       {/* Upload Modal */}
       {isUploadModalOpen && (
         <UploadModal
@@ -581,14 +586,14 @@ const guestRoutes = [
   { path: '/docusigner-vs-hellosign', element: <DocuSignerVsHelloSignPage /> },
   { path: '/docusigner-vs-pandadoc', element: <DocuSignerVsPandaDocPage /> },
   { path: '/esignature-features', element: <ESignatureFeaturesPage /> },
-            //   <Route path="/" element={<Dashboard />} />
-            // <Route path="/create" element={<EnvelopeCreator />} />
-            // <Route path="/envelope/:id" element={<EnvelopeDetails />} />
-            // <Route path="/sign/:token" element={<SigningPage />} />
-            // <Route path="/analytics" element={<Analytics />} />
-            // <Route path="/settings" element={<Settings />} />
-            // <Route path="/enterprise" element={<EnterpriseSettings />} />
-            // <Route path="/admin" element={<ESignatureAdmin />} />
+  //   <Route path="/" element={<Dashboard />} />
+  // <Route path="/create" element={<EnvelopeCreator />} />
+  // <Route path="/envelope/:id" element={<EnvelopeDetails />} />
+  // <Route path="/sign/:token" element={<SigningPage />} />
+  // <Route path="/analytics" element={<Analytics />} />
+  // <Route path="/settings" element={<Settings />} />
+  // <Route path="/enterprise" element={<EnterpriseSettings />} />
+  // <Route path="/admin" element={<ESignatureAdmin />} />
   // { path: '/how-it-works', element: <HowItWorksPage /> },
   // { path: '/security-overview', element: <SecurityOverviewPage /> },
   { path: '/why-docusigner', element: <WhyDocuSignerPage /> },
@@ -602,214 +607,219 @@ const authRoutes = [
   { path: '/compliance', element: <CompliancePage /> },
   { path: '/risk-management', element: <RiskManagementPage /> },
 
-//Document Management Module
-  { 
-    path: '/all-documents', 
+  //Document Management Module
+  {
+    path: '/all-documents',
     element: (
       <DocumentLayout>
         <DocumentView />
       </DocumentLayout>
-    ) 
+    )
   },
-  { 
-    path: '/recent', 
+  {
+    path: '/recent',
     element: (
       <DocumentLayout>
         <RecentPage />
       </DocumentLayout>
-    ) 
+    )
   },
-  { 
-    path: '/documents/shared', 
+  {
+    path: '/documents/shared',
     element: (
       <DocumentLayout>
         <SharedDocumentsPage />
       </DocumentLayout>
-    ) 
+    )
   },
-  { 
-    path: '/documents/folder', 
+  {
+    path: '/documents/folder',
     element: (
       <DocumentLayout>
         <FoldersPage />
       </DocumentLayout>
-    ) 
+    )
   },
-  { 
-    path: '/documents/favorites', 
+  {
+    path: '/documents/favorites',
     element: (
       <DocumentLayout>
         <FavoritesPage />
       </DocumentLayout>
-    ) 
+    )
   },
-  { 
-    path: '/documents/archived', 
+  {
+    path: '/documents/archived',
     element: (
       <DocumentLayout>
         <ArchivedPage />
       </DocumentLayout>
-    ) 
+    )
   },
-  { 
-    path: '/documents/trash', 
+  {
+    path: '/documents/trash',
     element: (
       <DocumentLayout>
         <TrashPage />
       </DocumentLayout>
-    ) 
+    )
   },
-  { 
-    path: '/analytics', 
+  {
+    path: '/analytics',
     element: (
       <DocumentLayout>
         <EnhancedDocumentAnalytics />
       </DocumentLayout>
-    ) 
+    )
   },
   // E-Signature Routes
-  { path: '/e-sign/dashboard', element:<EsignDashboard/>},
-  { path: '/e-sign/create', element:<EsignEnvelopeCreator/>},
-  { path: '/e-sign/envelope/:id', element:<EsignEnvelopeDetails/>},
-  { path: '/e-sign/sign/:token', element:<EsignSigningPage/>},
-  { path: '/e-sign/analytics', element:<EsignAnalytics/>},
-  { path: '/e-sign/settings', element:<EsignSettings/>},
-  { path: '/e-sign/enterprise', element:<EsignEnterpriseSettings/>},
-  { path: '/e-sign/admin', element:<EsignESignatureAdmin/>},
+  { path: '/e-sign/dashboard', element: <EsignDashboard /> },
+  { path: '/e-sign/create', element: <EsignEnvelopeCreator /> },
+  { path: '/e-sign/envelope/:id', element: <EsignEnvelopeDetails /> },
+  { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
+  { path: '/e-sign/analytics', element: <EsignAnalytics /> },
+  { path: '/e-sign/settings', element: <EsignSettings /> },
+  { path: '/e-sign/enterprise', element: <EsignEnterpriseSettings /> },
+  { path: '/e-sign/admin', element: <EsignESignatureAdmin /> },
 
   // API-service routes
-  { path: '/api-service/dashboard', element:<ApiServiceDashboard/>},
-  { path: '/api-service/analytics', element:<ApiServiceAnalytics/>},
-  { path: '/api-service/projects', element:<ApiServiceProjects/>},
-  { path: '/api-service/keys', element:<ApiServiceKey/>},
-  { path: '/api-service/explorer', element:<ApiServiceExplorer/>},
-  { path: '/api-service/documentation', element:<ApiServiceDocumentation/>},
-  { path: '/api-service/Webhooks', element:<ApiServiceWebhooks/>},
-  { path: '/api-service/sdk', element:<ApiServiceSDK/>},
-  { path: '/api-service/testing', element:<ApiServiceTesting/>},
-  { path: '/api-service/marketplace', element:<ApiServiceMarketPlace/>},
-  { path: '/api-service/community', element:<ApiServiceCommunity/>},
-  { path: '/api-service/support', element:<ApiServiceSupport/>},
+  { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
+  { path: '/api-service/analytics', element: <ApiServiceAnalytics /> },
+  { path: '/api-service/projects', element: <ApiServiceProjects /> },
+  { path: '/api-service/keys', element: <ApiServiceKey /> },
+  { path: '/api-service/explorer', element: <ApiServiceExplorer /> },
+  { path: '/api-service/documentation', element: <ApiServiceDocumentation /> },
+  { path: '/api-service/Webhooks', element: <ApiServiceWebhooks /> },
+  { path: '/api-service/sdk', element: <ApiServiceSDK /> },
+  { path: '/api-service/testing', element: <ApiServiceTesting /> },
+  { path: '/api-service/marketplace', element: <ApiServiceMarketPlace /> },
+  { path: '/api-service/community', element: <ApiServiceCommunity /> },
+  { path: '/api-service/support', element: <ApiServiceSupport /> },
   //PDF Tools Routes
-  { 
-    path: '/pdf-tools', 
-    element: (     
-        <PDFToolsLayout />
-    ) 
+  {
+    path: '/pdf-tools',
+    element: (
+      <PDFToolsLayout />
+    )
   },
 
   // Individual PDF Tool Pages
-  { path: '/pdf-tools/pdf-to-word', element: <PdftoDoc />},
-  { path: '/pdf-tools/word-to-pdf', element: <DoctoPdf />},
-  { path: '/pdf-tools/pdf-to-excel', element: <PdfToExcel />},
-  { path: '/pdf-tools/excel-to-pdf', element: <ExcelToPdf />},
-  { path: '/pdf-tools/pdf-to-powerpoint', element: <PdftoPpt />},
-  { path: '/pdf-tools/powerpoint-to-pdf', element: <PptToPdf />},
-  { path: '/pdf-tools/pdf-to-img', element: <PdfToImage />},
-  { path: '/pdf-tools/img-to-pdf', element: <ImageToPDF />},
-  { path: '/pdf-tools/pdf-to-text', element: <PdftoText />},
-  { path: '/pdf-tools/text-to-pdf', element: <TextToPdf />},
-  { path: '/pdf-tools/pdf-to-html', element: <PdfToHtml />},
-  { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf />},
-  { path: '/pdf-tools/pdf-to-epub', element: <PdfToEpub />},
-  { path: '/pdf-tools/batch-conversion', element: <BatchConversion />},
-  { path: '/pdf-tools/merge-pdf', element: <PDFToolsMergePDFPage />},
-  { path: '/pdf-tools/split-pdf', element: <PDFToolsSplitPDFPage />},
-  { path: '/pdf-tools/extract-pdf', element: <PDFToolsExtractPDFPage />},
-  { path: '/pdf-tools/delete-pdf', element: <PDFToolsDeletePDFPage />},
-  { path: '/pdf-tools/reorder-pdf', element: <PDFToolsReorderPDFPage />},
-  { path: '/pdf-tools/rotate-pdf', element: <PDFToolsRotatePDFPage />},
-  { path: '/pdf-tools/crop-pdf', element: <PDFToolsCropPDFPage />},
-  { path: '/pdf-tools/insert-pdf', element: <PDFToolsInsertPDFPage />},
-  { path: '/pdf-tools/compress-pdf', element: <CompressPDFPage />},
-  { path: '/pdf-tools/protect-pdf', element: <ProtectPDFPage />},
-  { path: '/pdf-tools/ocr-pdf', element: <OCRPDFPage />},
-  { path: '/pdf-tools/unlock-pdf', element: <UnlockPDFPage />},
-  { path: '/pdf-tools/watermark-pdf', element: <WatermarkPDFPage />},
-  { path: '/pdf-tools/page-numbers', element: <PageNumbersPage />},
-  { path: '/pdf-tools/flatten-pdf', element: <FlattenPDFPage />},
-  { path: '/pdf-tools/deskew-pdf', element: <DeskewPDFPage />},
-  { path: '/pdf-tools/extract-images', element: <ExtractImagesPage />},
-  { path: '/pdf-tools/grayscale-pdf', element: <GrayscalePDFPage />},
-  { path: '/pdf-tools/header-footer', element: <HeaderFooterPage />},
-  { path: '/pdf-tools/n-up', element: <NUpPage />},
-  { path: '/pdf-tools/bates-numbering', element: <BatesNumberingPage />},
-  { path: '/pdf-tools/create-bookmarks', element: <CreateBookmarksPage />},
-  { path: '/pdf-tools/edit-metadata', element: <EditMetadataPage />},
-  { path: '/pdf-tools/png-to-pdf', element: <PNGToPDFPage />},
-  { path: '/pdf-tools/organize-pdf', element: <OrganizePDFPage />},
-  { path: '/pdf-tools/fill-pdf-forms', element: <FillPDFFormsPage />},
-  { path: '/pdf-tools/remove-annotations', element: <RemoveAnnotationsPage />},
-  { path: '/pdf-tools/optimize-pdf', element: <OptimizePDFPage />},
-  { path: '/pdf-tools/repair-pdf', element: <RepairPDFPage />},
-  { path: '/pdf-tools/resize-pdf', element: <ResizePDFPage />},
-  { path: '/pdf-tools/digital-signature', element: <DigitalSignaturePage />},
-  { path: '/pdf-tools/enhance-pdf', element: <EnhancePDFPage />},
-  { path: '/pdf-tools/compress-images', element: <CompressImagesPage />},
-  { path: '/pdf-tools/validate-pdf', element: <ValidatePDFPage />},
-  { path: '/pdf-tools/pdf-to-png', element: <PDFToPNGPage />},
-  { path: '/pdf-tools/remove-metadata', element: <RemoveMetadataPage />},
-  { path: '/pdf-tools/redact-pdf', element: <RedactPDFPage />},
-  { path: '/pdf-tools/pdf-to-pdfa', element: <PDFToPDFAPage />},
-  { path: '/pdf-tools/compare-documents', element: <CompareDocumentsPage />},
-  { path: '/pdf-tools/create-forms', element: <CreateFormsPage />},
-  { path: '/pdf-tools/booklet-creator', element: <BookletCreatorPage />},
-  { path: '/pdf-tools/print-optimizer', element: <PrintOptimizerPage />},
-  { path: '/pdf-tools/table-of-contents', element: <TableOfContentsPage />},
-  { path: '/pdf-tools/alternate-and-mix', element: <AlternateAndMixPage />},
-  { path: '/pdf-tools/split-by-bookmarks', element: <SplitByBookmarksPage />},
-  { path: '/pdf-tools/split-in-half', element: <SplitInHalfPage />},
-  { path: '/pdf-tools/split-by-size', element: <SplitBySizePage />},
-  { path: '/pdf-tools/split-by-text', element: <SplitByTextPage />},
-  { path: '/pdf-tools/annotate-pdf', element: <AnnotatePDFPage />},
-  { path: '/pdf-tools/add-password', element: <AddPasswordPage />},
-  { path: '/pdf-tools/convert-to-pdf', element: <ConvertToPDFPage />},
-  { path: '/pdf-tools/extract-text', element: <ExtractTextPage />},
-  { path: '/pdf-tools/merge-pdf-files', element: <MergePDFFilesPage />},
-  { path: '/pdf-tools/reorder-pages', element: <ReorderPagesPage />},
-  { path: '/pdf-tools/compress-images-pdf', element: <CompressImagesPDFPage />},
-  { path: '/pdf-tools/add-comments', element: <AddCommentsPage />},
-  { path: '/pdf-tools/convert-from-pdf', element: <ConvertFromPDFPage />},
-  { path: '/pdf-tools/highlight-text', element: <HighlightTextPage />},
-  { path: '/pdf-tools/add-background', element: <AddBackgroundPage />},
-  { path: '/pdf-tools/number-pages', element: <NumberPagesPage />},
-  { path: '/pdf-tools/remove-background', element: <RemoveBackgroundPage />},
-  { path: '/pdf-tools/add-signature', element: <AddSignaturePage />},
-  { path: '/pdf-tools/remove-pages', element: <RemovePagesPage />},
-  { path: '/pdf-tools/scan-to-pdf', element: <ScanToPDFPage />},
-  { path: '/pdf-tools/add-page-numbers', element: <AddPageNumbersPage />},
-  { path: '/pdf-tools/add-watermark', element: <AddWatermarkPage />},
-  { path: '/pdf-tools/encrypt-pdf', element: <EncryptPDFPage />},
-  { path: '/pdf-tools/extract-images-advanced', element: <ExtractImagesAdvancedPage />},
-  { path: '/pdf-tools/fill-forms', element: <FillFormsPage />},
-  { path: '/pdf-tools/recognize-text', element: <RecognizeTextPage />},
-  { path: '/pdf-tools/add-header-footer', element: <AddHeaderFooterPage />},
-  { path: '/pdf-tools/batch-process-pdf', element: <BatchProcessPDFPage />},
-  { path: '/pdf-tools/compress-pdf-advanced', element: <CompressPDFAdvancedPage />},
-  { path: '/pdf-tools/compress-pdf-pro', element: <CompressPDFProPage />},
-  { path: '/pdf-tools/convert-to-word', element: <ConvertToWordPage />},
-  { path: '/pdf-tools/pdf-to-excel-advanced', element: <PDFToExcelAdvancedPage />},
-  { path: '/pdf-tools/pdf-to-image-advanced', element: <PDFToImageAdvancedPage />},
-  { path: '/pdf-tools/pdf-to-word-advanced', element: <PDFToWordAdvancedPage />},
-  { path: '/pdf-tools/pdf-watermark-remover', element: <PDFWatermarkRemoverPage />},
-  { path: '/pdf-tools/pdf-accessibility-checker', element: <PDFAccessibilityCheckerPage />},
-  { path: '/pdf-tools/pdf-annotation-remover', element: <PDFAnnotationRemoverPage />},
-  { path: '/pdf-tools/pdf-document-scanner', element: <PDFDocumentScannerPage />},
-  { path: '/pdf-tools/pdf-form-creator', element: <PDFFormCreatorPage />},
-  { path: '/pdf-tools/pdf-metadata-editor', element: <PDFMetadataEditorPage />},
-  { path: '/pdf-tools/pdf-page-extractor', element: <PDFPageExtractorPage />},
-  { path: '/pdf-tools/pdf-password-remover', element: <PDFPasswordRemoverPage />},
-  { path: '/pdf-tools/pdf-security-audit', element: <PDFSecurityAuditPage />},
-  { path: '/pdf-tools/pdf-signature-verifier', element: <PDFSignatureVerifierPage />},
-  { path: '/pdf-tools/all-in-one-platform', element: <AllInOnePlatformPage />},
-  { path: '/pdf-tools/api-documentation', element: <APIDocumentationPage />},
-  { path: '/pdf-tools/bug-bounty', element: <BugBountyPage />},
-  { path: '/pdf-tools/data-residency', element: <DataResidencyPage />},
-  { path: '/pdf-tools/docusigner-vs-adobe-sign', element: <DocuSignerVsAdobeSignPage />},
-  { path: '/pdf-tools/docusigner-vs-docusign', element: <DocuSignerVsDocuSignPage />},
-  { path: '/pdf-tools/docusigner-vs-hellosign', element: <DocuSignerVsHelloSignPage />},
-  { path: '/pdf-tools/docusigner-vs-pandadoc', element: <DocuSignerVsPandaDocPage />},
-  { path: '/pdf-tools/esignature-features', element: <ESignatureFeaturesPage />},
+  { path: '/pdf-tools/pdf-to-word', element: <PdftoDoc /> },
+  { path: '/pdf-tools/word-to-pdf', element: <DoctoPdf /> },
+  { path: '/pdf-tools/pdf-to-excel', element: <PdfToExcel /> },
+  { path: '/pdf-tools/excel-to-pdf', element: <ExcelToPdf /> },
+  { path: '/pdf-tools/pdf-to-powerpoint', element: <PdftoPpt /> },
+  { path: '/pdf-tools/powerpoint-to-pdf', element: <PptToPdf /> },
+  { path: '/pdf-tools/pdf-to-img', element: <PdfToImage /> },
+  { path: '/pdf-tools/img-to-pdf', element: <ImageToPDF /> },
+  { path: '/pdf-tools/pdf-to-text', element: <PdftoText /> },
+  { path: '/pdf-tools/text-to-pdf', element: <TextToPdf /> },
+  { path: '/pdf-tools/pdf-to-html', element: <PdfToHtml /> },
+  { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf /> },
+  { path: '/pdf-tools/pdf-to-epub', element: <PdfToEpub /> },
+  { path: '/pdf-tools/batch-conversion', element: <BatchConversion /> },
+  { path: '/pdf-tools/merge-pdf', element: <PDFToolsMergePDFPage /> },
+  { path: '/pdf-tools/split-pdf', element: <PDFToolsSplitPDFPage /> },
+  { path: '/pdf-tools/extract-pdf', element: <PDFToolsExtractPDFPage /> },
+  { path: '/pdf-tools/delete-pdf', element: <PDFToolsDeletePDFPage /> },
+  { path: '/pdf-tools/reorder-pdf', element: <PDFToolsReorderPDFPage /> },
+  { path: '/pdf-tools/rotate-pdf', element: <PDFToolsRotatePDFPage /> },
+  { path: '/pdf-tools/crop-pdf', element: <PDFToolsCropPDFPage /> },
+  { path: '/pdf-tools/insert-pdf', element: <PDFToolsInsertPDFPage /> },
+  { path: '/pdf-tools/add-page-numbers', element: <PDFToolsAddPageNumbersPage /> },
+  { path: '/pdf-tools/add-header-footer', element: <PDFToolsAddHeaderFooterPage /> },
+  { path: '/pdf-tools/add-password', element: <PDFToolsAddPasswordPage /> },
+  { path: '/pdf-tools/remove-password', element: <PDFToolsRemovePasswordPage /> },
+  { path: '/pdf-tools/digital-signature', element: <PDFToolsDigitalSignaturePage /> },
+  { path: '/pdf-tools/compress-pdf', element: <CompressPDFPage /> },
+  { path: '/pdf-tools/protect-pdf', element: <ProtectPDFPage /> },
+  { path: '/pdf-tools/ocr-pdf', element: <OCRPDFPage /> },
+  { path: '/pdf-tools/unlock-pdf', element: <UnlockPDFPage /> },
+  { path: '/pdf-tools/watermark-pdf', element: <WatermarkPDFPage /> },
+  { path: '/pdf-tools/page-numbers', element: <PageNumbersPage /> },
+  { path: '/pdf-tools/flatten-pdf', element: <FlattenPDFPage /> },
+  { path: '/pdf-tools/deskew-pdf', element: <DeskewPDFPage /> },
+  { path: '/pdf-tools/extract-images', element: <ExtractImagesPage /> },
+  { path: '/pdf-tools/grayscale-pdf', element: <GrayscalePDFPage /> },
+  { path: '/pdf-tools/header-footer', element: <HeaderFooterPage /> },
+  { path: '/pdf-tools/n-up', element: <NUpPage /> },
+  { path: '/pdf-tools/bates-numbering', element: <BatesNumberingPage /> },
+  { path: '/pdf-tools/create-bookmarks', element: <CreateBookmarksPage /> },
+  { path: '/pdf-tools/edit-metadata', element: <EditMetadataPage /> },
+  { path: '/pdf-tools/png-to-pdf', element: <PNGToPDFPage /> },
+  { path: '/pdf-tools/organize-pdf', element: <OrganizePDFPage /> },
+  { path: '/pdf-tools/fill-pdf-forms', element: <FillPDFFormsPage /> },
+  { path: '/pdf-tools/remove-annotations', element: <RemoveAnnotationsPage /> },
+  { path: '/pdf-tools/optimize-pdf', element: <OptimizePDFPage /> },
+  { path: '/pdf-tools/repair-pdf', element: <RepairPDFPage /> },
+  { path: '/pdf-tools/resize-pdf', element: <ResizePDFPage /> },
+  { path: '/pdf-tools/digital-signature', element: <DigitalSignaturePage /> },
+  { path: '/pdf-tools/enhance-pdf', element: <EnhancePDFPage /> },
+  { path: '/pdf-tools/compress-images', element: <CompressImagesPage /> },
+  { path: '/pdf-tools/validate-pdf', element: <ValidatePDFPage /> },
+  { path: '/pdf-tools/pdf-to-png', element: <PDFToPNGPage /> },
+  { path: '/pdf-tools/remove-metadata', element: <RemoveMetadataPage /> },
+  { path: '/pdf-tools/redact-pdf', element: <RedactPDFPage /> },
+  { path: '/pdf-tools/pdf-to-pdfa', element: <PDFToPDFAPage /> },
+  { path: '/pdf-tools/compare-documents', element: <CompareDocumentsPage /> },
+  { path: '/pdf-tools/create-forms', element: <CreateFormsPage /> },
+  { path: '/pdf-tools/booklet-creator', element: <BookletCreatorPage /> },
+  { path: '/pdf-tools/print-optimizer', element: <PrintOptimizerPage /> },
+  { path: '/pdf-tools/table-of-contents', element: <TableOfContentsPage /> },
+  { path: '/pdf-tools/alternate-and-mix', element: <AlternateAndMixPage /> },
+  { path: '/pdf-tools/split-by-bookmarks', element: <SplitByBookmarksPage /> },
+  { path: '/pdf-tools/split-in-half', element: <SplitInHalfPage /> },
+  { path: '/pdf-tools/split-by-size', element: <SplitBySizePage /> },
+  { path: '/pdf-tools/split-by-text', element: <SplitByTextPage /> },
+  { path: '/pdf-tools/annotate-pdf', element: <AnnotatePDFPage /> },
+
+  { path: '/pdf-tools/convert-to-pdf', element: <ConvertToPDFPage /> },
+  { path: '/pdf-tools/extract-text', element: <ExtractTextPage /> },
+  { path: '/pdf-tools/merge-pdf-files', element: <MergePDFFilesPage /> },
+  { path: '/pdf-tools/reorder-pages', element: <ReorderPagesPage /> },
+  { path: '/pdf-tools/compress-images-pdf', element: <CompressImagesPDFPage /> },
+  { path: '/pdf-tools/add-comments', element: <AddCommentsPage /> },
+  { path: '/pdf-tools/convert-from-pdf', element: <ConvertFromPDFPage /> },
+  { path: '/pdf-tools/highlight-text', element: <HighlightTextPage /> },
+  { path: '/pdf-tools/add-background', element: <AddBackgroundPage /> },
+  { path: '/pdf-tools/number-pages', element: <NumberPagesPage /> },
+  { path: '/pdf-tools/remove-background', element: <RemoveBackgroundPage /> },
+  { path: '/pdf-tools/add-signature', element: <AddSignaturePage /> },
+  { path: '/pdf-tools/remove-pages', element: <RemovePagesPage /> },
+  { path: '/pdf-tools/scan-to-pdf', element: <ScanToPDFPage /> },
+
+  { path: '/pdf-tools/add-watermark', element: <AddWatermarkPage /> },
+  { path: '/pdf-tools/encrypt-pdf', element: <EncryptPDFPage /> },
+  { path: '/pdf-tools/extract-images-advanced', element: <ExtractImagesAdvancedPage /> },
+  { path: '/pdf-tools/fill-forms', element: <FillFormsPage /> },
+  { path: '/pdf-tools/recognize-text', element: <RecognizeTextPage /> },
+  { path: '/pdf-tools/add-header-footer', element: <AddHeaderFooterPage /> },
+  { path: '/pdf-tools/batch-process-pdf', element: <BatchProcessPDFPage /> },
+  { path: '/pdf-tools/compress-pdf-advanced', element: <CompressPDFAdvancedPage /> },
+  { path: '/pdf-tools/compress-pdf-pro', element: <CompressPDFProPage /> },
+  { path: '/pdf-tools/convert-to-word', element: <ConvertToWordPage /> },
+  { path: '/pdf-tools/pdf-to-excel-advanced', element: <PDFToExcelAdvancedPage /> },
+  { path: '/pdf-tools/pdf-to-image-advanced', element: <PDFToImageAdvancedPage /> },
+  { path: '/pdf-tools/pdf-to-word-advanced', element: <PDFToWordAdvancedPage /> },
+  { path: '/pdf-tools/pdf-watermark-remover', element: <PDFWatermarkRemoverPage /> },
+  { path: '/pdf-tools/pdf-accessibility-checker', element: <PDFAccessibilityCheckerPage /> },
+  { path: '/pdf-tools/pdf-annotation-remover', element: <PDFAnnotationRemoverPage /> },
+  { path: '/pdf-tools/pdf-document-scanner', element: <PDFDocumentScannerPage /> },
+  { path: '/pdf-tools/pdf-form-creator', element: <PDFFormCreatorPage /> },
+  { path: '/pdf-tools/pdf-metadata-editor', element: <PDFMetadataEditorPage /> },
+  { path: '/pdf-tools/pdf-page-extractor', element: <PDFPageExtractorPage /> },
+  { path: '/pdf-tools/pdf-password-remover', element: <PDFPasswordRemoverPage /> },
+  { path: '/pdf-tools/pdf-security-audit', element: <PDFSecurityAuditPage /> },
+  { path: '/pdf-tools/pdf-signature-verifier', element: <PDFSignatureVerifierPage /> },
+  { path: '/pdf-tools/all-in-one-platform', element: <AllInOnePlatformPage /> },
+  { path: '/pdf-tools/api-documentation', element: <APIDocumentationPage /> },
+  { path: '/pdf-tools/bug-bounty', element: <BugBountyPage /> },
+  { path: '/pdf-tools/data-residency', element: <DataResidencyPage /> },
+  { path: '/pdf-tools/docusigner-vs-adobe-sign', element: <DocuSignerVsAdobeSignPage /> },
+  { path: '/pdf-tools/docusigner-vs-docusign', element: <DocuSignerVsDocuSignPage /> },
+  { path: '/pdf-tools/docusigner-vs-hellosign', element: <DocuSignerVsHelloSignPage /> },
+  { path: '/pdf-tools/docusigner-vs-pandadoc', element: <DocuSignerVsPandaDocPage /> },
+  { path: '/pdf-tools/esignature-features', element: <ESignatureFeaturesPage /> },
   // { path: '/why-docusigner', element: <WhyDocuSignerPage />},
   // { path: '/accessibility', element: <AccessibilityPage />},
 
@@ -829,7 +839,7 @@ const router = createBrowserRouter([
     ),
     children: authRoutes,
   },
-   {
+  {
     // Public Signer Routes
     element: <PublicSignerLayout />,
     children: [

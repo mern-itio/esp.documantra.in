@@ -33,28 +33,16 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Override any existing PDF.js worker settings
-      if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-        if (window.pdfjsLib.GlobalWorkerOptions.workerSrc &&
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        }
-      }
-
-      // Set up a mutation observer to catch any future PDF.js worker changes
-      const observer = new MutationObserver(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-          if (window.pdfjsLib.GlobalWorkerOptions.workerSrc &&
-              window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-          }
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         }
-      });
-
-      observer.observe(document, { childList: true, subtree: true });
-
-      return () => observer.disconnect();
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
     }
   }, []);
 
@@ -64,37 +52,17 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
       if (typeof window !== 'undefined' && !window.pdfjsLib) {
         const pdfjsLib = await import('pdfjs-dist');
         
-        // Set worker path BEFORE assigning to window to prevent CDN loading
+        // Set worker path to local file
         try {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         } catch (error) {
-          console.warn('Failed to set local worker path:', error);
-          try {
-            const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url);
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl.href;
-          } catch (workerError) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-          }
+          console.warn("Failed to set PDF.js worker:", error);
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
         }
         
-        // Now assign to window
+        // Assign to window
         window.pdfjsLib = pdfjsLib;
-        
-        // Double-check and override any CDN paths that might have been set
-        if (window.pdfjsLib.GlobalWorkerOptions.workerSrc &&
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-          // console.log('loadPDFJS: Overriding CDN worker path...');
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        }
-      }
-      
-      // Final check and override
-      if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-        if (window.pdfjsLib.GlobalWorkerOptions.workerSrc &&
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-          // console.log('loadPDFJS: Final override of CDN worker path...');
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        }
       }
       
       return window.pdfjsLib;
@@ -273,15 +241,52 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
         documentIndices: pdfPages.map(p => p.documentIndex),
         allFromSameDocument: pdfPages.every(page => page.documentIndex === pdfPages[0].documentIndex),
         hasBlankPages: pdfPages.some(page => page.documentIndex === -1),
-        documents: documents.map(d => d.name)
+        documents: documents.map(d => d.name),
+        pageDetails: pdfPages.map(p => ({
+          id: p.id,
+          pageNumber: p.pageNumber,
+          originalPageNumber: p.originalPageNumber,
+          documentIndex: p.documentIndex,
+          documentName: p.documentName
+        }))
       });
       
       const hasBlankPages = pdfPages.some(page => page.documentIndex === -1);
       if (documents.length === 1 && !hasBlankPages) {
         console.log('Single document detected with no blank pages, using reorder endpoint');
-        const pageOrder = pdfPages.map(page => page.originalPageNumber - 1); 
+        // Ensure we have valid page numbers and filter out any invalid ones
+        const pageOrder = pdfPages
+          .filter(page => page.originalPageNumber > 0 && page.originalPageNumber <= pdfPages.length)
+          .map(page => page.originalPageNumber - 1);
+        
         console.log('Page order for reorder:', pageOrder);
-        result = await insertPDFService.reorderPDF(documents[0], pageOrder);
+        
+        // Validate page order array
+        if (pageOrder.length === 0 || pageOrder.some(pageNum => pageNum < 0)) {
+          console.warn('Invalid page order generated, falling back to insert approach');
+          // Fallback: treat as a single document with no changes
+          const insertions = pdfPages.map((page, index) => {
+            if (page.documentIndex === 0) {
+              return null;
+            }
+            return {
+              type: 'import' as const,
+              position: index + 1,
+              sourceDocumentIndex: 0,
+              sourcePageIndex: page.originalPageNumber - 1
+            };
+          }).filter((item): item is NonNullable<typeof item> => item !== null);
+          
+          const request = {
+            mainDocument: documents[0],
+            sourceDocuments: [],
+            insertions: insertions
+          };
+          
+          result = await insertPDFService.insertPDF(request);
+        } else {
+          result = await insertPDFService.reorderPDF(documents[0], pageOrder);
+        }
       } else {
         const insertions = pdfPages.map((page, index) => {
           if (page.documentIndex === 0) {
