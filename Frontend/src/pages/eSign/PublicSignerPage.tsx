@@ -24,6 +24,7 @@ const EnvelopeDetails: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   useEffect(() => {
     fetchEnvelopeDetails();
+    console.log(`Envelope ID from URL: ${id}`);
   }, []);
   const [envelope, setEnvelope] = useState<any>(null);
   // Active document and signature fields state
@@ -52,6 +53,17 @@ const EnvelopeDetails: React.FC = () => {
         console.error("Error fetching signature fields", err);
       }
     };
+    // After: const [signatureFields, setSignatureFields] = useState<any[]>([]);
+    const handleSignatureSave = (fieldId: string, signatureUrl: string) => {
+      setSignatureFields(prev =>
+        prev.map(field =>
+          field._id === fieldId || field._id?.$oid === fieldId
+            ? { ...field, signature: signatureUrl }
+            : field
+        )
+      );
+    };
+
 
   if (!envelope) {
     return (
@@ -355,7 +367,9 @@ const EnvelopeDetails: React.FC = () => {
                   document={activeDocument}
                   signatureFields={signatureFields}
                   currentUserId={recipientId || ''} // assuming you have currentUser from context
+                  envelopeID={id || ''}
                   onClose={() => setActiveDocument(null)} // close viewer
+                  onSignatureSave={handleSignatureSave} 
                 />
               ) : (
                 renderDocuments()

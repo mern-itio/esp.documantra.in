@@ -716,3 +716,19 @@ export interface AssertionResult {
   actual?: any
   message?: string
 }
+
+// Export Split PDF types
+export * from './splitPDF';
+
+// Export Extract PDF types
+export * from './extractPDF';
+
+// Export Delete PDF types
+export * from './deletePDF';
+export * from './reorderPDF';
+export * from './rotatePDF';
+export * from './cropPDF';
+export * from './insertPDF';
+
+// Export common types
+export * from './common';

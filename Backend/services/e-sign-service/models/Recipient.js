@@ -7,7 +7,7 @@ const RecipientSchema = new mongoose.Schema({
   email: { type: String, required: true, lowercase: true, trim: true },
   role: { type: String, enum: ["signer", "approver", "carbon_copy","in_person_signer"], default: "Signer" },
   order: { type: Number, default: 0 },
-  status: { type: String, enum: ["waiting", "completed", "declined"], default: "waiting" },
+  status: { type: String, enum: ["waiting","sent", "completed", "declined"], default: "waiting" },
   authLevel: { type: String, enum: ["email", "sms", "access_code","phone"], default: "email" }
 }, { timestamps: true });
 

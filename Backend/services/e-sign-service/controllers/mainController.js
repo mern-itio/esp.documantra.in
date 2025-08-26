@@ -1,6 +1,9 @@
 const Envelope = require('../models/Envelope');
 const SignatureField = require('../models/SignatureFields');
+const Recipient = require('../models/Recipient');
 const axios = require('axios');
+const sendEmail = require('../emails/sendEmail');
+const {signRequestTemplate } = require('../emails/emailTemplates');
 const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -172,20 +175,16 @@ const getEnvelopeStats = async (req, res) => {
         $addFields: {
           derivedStatus: {
             $switch: {
-              branches: [
+             branches: [
                 {
-                  case: {
-                    $and: [
-                      { $eq: ["$status", "in-progress"] },
-                      { $lt: ["$expirationDate", now] }
-                    ]
-                  },
+                  case: { $and: [{ $eq: ["$status", "in-progress"] }, { $lt: ["$expirationDate", now] }] },
                   then: "expired"
                 },
-                { case: { $eq: ["$status", "draft"] }, then: "draft" },
                 { case: { $eq: ["$status", "in-progress"] }, then: "pending" },
+                { case: { $eq: ["$status", "draft"] }, then: "draft" },
                 { case: { $eq: ["$status", "completed"] }, then: "completed" }
               ],
+
               default: "unknown"
             }
           }
@@ -232,7 +231,93 @@ const envelopExists = async (envelopeId) => {
     return false; // In case of error, assume envelope does not exist
   }
 };
+const sendEnvelope = async (req, res) => {
+try {
+    const { envelopeId } = req.params;
+    const envelope = await Envelope.findById(envelopeId);
+    if (!envelope) return res.status(404).send("Envelope not found");
 
+    // Update envelope status if draft
+    if (envelope.status === 'draft') {
+      envelope.status = 'in-progress';
+      await envelope.save();
+      await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+      return res.status(200).send("Envelope sent to recipients");
+    }
+}catch(error){
+    console.error("Error sending envelope:", error);
+    return res.status(500).send("Server error");
+}
+
+}
+const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage) => {
+
+  try{
+        const waitingRecipient = await Recipient.findOne({
+        envelopeId,
+        status: 'waiting'
+      }).sort({ createdAt: 1 });
+
+      if (!waitingRecipient) return { error: "No waiting recipients" };
+
+      // Update recipient status to sent
+      waitingRecipient.status = 'sent';
+      await waitingRecipient.save();
+
+      // Send email
+      const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${waitingRecipient._id}`;
+      const html = signRequestTemplate(waitingRecipient.name, envelopeSubject, envelopeMessage, signLink);
+      await sendEmail(waitingRecipient.email, `Action Required: Sign "${envelopeSubject}"`, html);
+
+      return { success: true, recipientId: waitingRecipient._id };
+  } catch(error){
+    console.error("Error sending to recipients:", error);
+  }
+};
+const addSignature = async (req, res) => {
+  const { fieldId, signature } = req.body;
+
+  if (!fieldId || !signature) {
+    return res.status(400).json({ message: 'Field ID and signature are required' });
+  }
+
+  // Step 1: Find the signature field by ID
+  let field = await SignatureField.findById(fieldId);
+  if (!field) {
+    return res.status(404).json({ message: 'Signature field not found' });
+  }
+
+  // Step 2: Update the signature field with the provided signature
+  field.signature = signature; // Assuming signature is a base64 string or similar
+  field.status = 'completed'; // Mark the field as completed
+  await field.save();
+
+  // if no more pending fields for the same envelope, mark envelope as completed
+  const pendingFields = await SignatureField.find({
+    envelopeId: field.envelopeId,
+    status: 'pending'
+  });
+    if (pendingFields.length === 0) {
+      const envelope = await Envelope.findById(field.envelopeId);
+        if (envelope) {
+          envelope.status = 'completed';
+          await envelope.save();
+        }
+    }else{
+      const envelope = await Envelope.findById(field.envelopeId);
+        if (envelope) {
+          await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+        }
+    }
+  return res.status(200).json({
+    status: 'success',
+    message: 'Signature added successfully',
+    data: {
+      fieldId: field._id,
+      signature: field.signature
+    }
+  });
+};
 
 // Export functions
 module.exports = {
@@ -240,5 +325,7 @@ module.exports = {
   envelopesDetail,
   getEnvelopeStats,
   envelopExists,
-  getSignatureFields
+  getSignatureFields,
+  sendEnvelope,
+  addSignature
 };

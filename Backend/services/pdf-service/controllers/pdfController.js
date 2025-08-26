@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const pdfParse = require('pdf-parse');
-const officeToPdf = require('office-to-pdf');
+// const officeToPdf = require('office-to-pdf'); // Removed - requires LibreOffice
 const mammoth = require('mammoth');
 const puppeteer = require('puppeteer');
 const { Document, Packer, Paragraph } = require('docx');
@@ -19,38 +19,14 @@ const fsSync = require('fs');
  */
 async function convertDocToPdf(inputPath, outputPath) {
   try {
-    console.log('Starting DOC to PDF conversion using office-to-pdf.1..');
+    console.log('Starting DOC to PDF conversion using mammoth + puppeteer fallback method...');
     
-    // Read the input file
-    const inputBuffer = await fs.readFile(inputPath);
-    
-    // Use office-to-pdf npm package to convert
-    const pdfBuffer = await officeToPdf(inputBuffer);
-    
-    // Save the PDF
-    await fs.writeFile(outputPath, pdfBuffer);
-    
-    const stats = await fs.stat(outputPath);
-    
-    console.log('DOC to PDF conversion completed successfully');
-    
-    return {
-      success: true,
-      fileSize: stats.size,
-      message: 'Document converted successfully using office-to-pdf npm package',
-      outputFile: path.basename(outputPath)
-    };
+    // Use the fallback method directly (mammoth + puppeteer)
+    return await convertDocToPdfFallback(inputPath, outputPath);
     
   } catch (error) {
     console.error('Error in DOC to PDF conversion:', error);
-    
-    // Fallback to mammoth + puppeteer if office-to-pdf fails
-    try {
-      console.log('Falling back to mammoth + puppeteer conversion...');
-      return await convertDocToPdfFallback(inputPath, outputPath);
-    } catch (fallbackError) {
       throw new Error(`Failed to convert document to PDF: ${error.message}`);
-    }
   }
 }
 
@@ -516,7 +492,6 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
     let slideCount = 0;
     let contentExtracted = false;
     
-    try {
       // Method 1: Try using pptxgenjs for .pptx files
       if (fileExtension === '.pptx') {
         console.log('Attempting to extract content using pptxgenjs...');
@@ -597,59 +572,9 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
             console.log(`Successfully processed ${slideCount} slides with content`);
           }
         } catch (pptxError) {
-          console.log('pptxgenjs failed, trying alternative method...', pptxError.message);
-          
-          // Method 2: Try using office-to-pdf to convert directly
-          try {
-            console.log('Attempting direct conversion using office-to-pdf...');
-            const officeToPdf = require('office-to-pdf');
-            const pdfBuffer = await officeToPdf(pptBuffer);
-            
-            // Save the converted PDF temporarily
-            const tempPdfPath = path.join(__dirname, '../temp-converted.pdf');
-            await fs.writeFile(tempPdfPath, pdfBuffer);
-            
-            // Extract text from the converted PDF
-            const pdfData = await pdfParse(pdfBuffer);
-            const textContent = pdfData.text;
-            const pages = textContent.split(/\f/).filter(page => page.trim().length > 0);
-            
-            slideCount = pages.length;
-            console.log(`Extracted ${slideCount} pages using office-to-pdf`);
-            
-            // Add slide count info
-            doc.fontSize(14).font('Helvetica-Bold').text(`Total Pages: ${slideCount}`, { align: 'center' });
-            doc.moveDown(2);
-            
-            // Process each page
-            pages.forEach((page, index) => {
-              if (page.trim().length > 0) {
-                // Add page header
-                doc.addPage();
-                doc.fontSize(16).font('Helvetica-Bold').text(`Page ${index + 1}`, { align: 'center' });
-                doc.moveDown(0.5);
-                
-                // Split page into lines and add content
-                const lines = page.split('\n').filter(line => line.trim().length > 0);
-                lines.forEach(line => {
-                  doc.fontSize(12).font('Helvetica').text(line.trim());
-                  doc.moveDown(0.2);
-                });
-                
-                doc.moveDown(1);
-              }
-            });
-            
-            // Clean up temp file
-            await fs.remove(tempPdfPath).catch(console.error);
-            
-            contentExtracted = true;
-            console.log(`Successfully processed ${slideCount} pages with content`);
-            
-          } catch (officeError) {
-            console.log('office-to-pdf failed, trying manual extraction...', officeError.message);
-            
-            // Method 3: Manual text extraction from PPTX file
+        console.log('pptxgenjs failed, trying manual extraction...', pptxError.message);
+        
+        // Method 2: Manual text extraction from PPTX file
             try {
               console.log('Attempting manual PPTX content extraction...');
               
@@ -675,7 +600,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
                     doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${index + 1}`, { align: 'center' });
                     doc.moveDown(0.5);
                     
-                    // Add slide content
+                // Split slide into lines and add content
                     const lines = slide.split('\n').filter(line => line.trim().length > 0);
                     lines.forEach(line => {
                       doc.fontSize(12).font('Helvetica').text(line.trim());
@@ -695,8 +620,8 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
           }
         }
         
-      } else if (fileExtension === '.ppt') {
-        // Method 2: For .ppt files, try to extract basic info
+    // Method 3: For .ppt files, try to extract basic info
+    if (fileExtension === '.ppt') {
         doc.fontSize(14).font('Helvetica-Bold').text('Legacy PowerPoint Format (.ppt)', { align: 'center' });
         doc.moveDown(1);
         doc.fontSize(12).font('Helvetica').text('This is a legacy PowerPoint format. Content extraction is limited.');
@@ -711,10 +636,6 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
         doc.fontSize(10).text(`File modified: ${stats.mtime.toLocaleString()}`);
         
         contentExtracted = true;
-      }
-      
-    } catch (extractionError) {
-      console.log('Content extraction failed, creating basic PDF...', extractionError.message);
     }
     
     // If no content was extracted, create a basic PDF
@@ -1261,13 +1182,7 @@ async function convertHtmlToPdf(inputPath, outputPath) {
         '--no-sandbox', 
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding'
+        '--disable-gpu'
       ]
     });
     

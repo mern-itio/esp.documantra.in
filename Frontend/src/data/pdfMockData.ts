@@ -328,7 +328,7 @@ export const mockPDFTools = {
     description: "Organize, manipulate, and manage PDF pages",
     tools: [
       {
-        id: "merge_pdfs",
+        id: "merge-pdf",
         name: "Merge PDFs",
         description: "Combine multiple PDFs with custom ordering",
         category: "pages",
@@ -340,7 +340,7 @@ export const mockPDFTools = {
         badge: "Popular"
       },
       {
-        id: "split_pdf",
+        id: "split-pdf",
         name: "Split PDF",
         description: "Split PDF by pages, bookmarks, or file size",
         category: "pages",
@@ -350,7 +350,7 @@ export const mockPDFTools = {
         icon: "Split"
       },
       {
-        id: "extract_pages",
+        id: "extract-pdf",
         name: "Extract Pages",
         description: "Extract specific pages to new documents",
         category: "pages",
@@ -360,7 +360,7 @@ export const mockPDFTools = {
         icon: "FileOutput"
       },
       {
-        id: "delete_pages",
+        id: "delete-pdf",
         name: "Delete Pages",
         description: "Remove unwanted pages with batch selection",
         category: "pages",
@@ -370,7 +370,7 @@ export const mockPDFTools = {
         icon: "Trash2"
       },
       {
-        id: "reorder_pages",
+        id: "reorder-pdf",
         name: "Reorder Pages",
         description: "Rearrange pages with drag-and-drop interface",
         category: "pages",
@@ -380,7 +380,7 @@ export const mockPDFTools = {
         icon: "Move"
       },
       {
-        id: "rotate_pages",
+        id: "rotate-pdf",
         name: "Rotate Pages",
         description: "Rotate pages individually or in batches",
         category: "pages",
@@ -390,7 +390,7 @@ export const mockPDFTools = {
         icon: "RotateCw"
       },
       {
-        id: "crop_pages",
+        id: "crop-pdf",
         name: "Crop Pages",
         description: "Crop pages with custom dimensions",
         category: "pages",
@@ -400,7 +400,7 @@ export const mockPDFTools = {
         icon: "Crop"
       },
       {
-        id: "insert_pages",
+        id: "insert-pdf",
         name: "Insert Pages",
         description: "Insert blank pages or pages from other documents",
         category: "pages",
