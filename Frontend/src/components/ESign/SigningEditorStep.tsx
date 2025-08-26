@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { FileText, UserCircle, X } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
 
-// configure pdf.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+
 
 export type Doc = {
   id: string;
