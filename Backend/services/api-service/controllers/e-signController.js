@@ -37,35 +37,54 @@ const createEnvelope = async (req, res) => {
 };  
 const forwardRecipientsRequest = async (req, res) => {
   try {
-    // Prepare form-data from request
-    const formData = new FormData();
-    if (req.body.envelopeId) formData.append('envelopeId', req.body.envelopeId);
-    if (req.body.recipients) formData.append('recipients', JSON.stringify(req.body.recipients));
-    // Attach any files if required
-    if (req.files && Array.isArray(req.files)) {
-      req.files.forEach(file => {
-        formData.append('files', fs.createReadStream(file.path), file.originalname);
-      });
-    }
+    const payload = {
+      envelopeId: req.body.envelopeId,
+      recipients: req.body.recipients
+    };
 
-    // Forward request to e-sign microservice
     const response = await axios.post(
       `${ESIGN_API_BASE}/api/e-sign/add-recipients`,
-      formData, {
+      payload,
+      {
         headers: {
-          ...formData.getHeaders(),
-          'Authorization': req.headers.authorization,  // Pass auth headers if needed
-        },
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
+          'Authorization': req.headers.authorization,
+         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
+          'Content-Type': 'application/json'
+        }
       }
     );
 
-    // Send back the microservice response
     return res.status(response.status).json(response.data);
   } catch (err) {
     return res.status(err.response ? err.response.status : 500).json(
       err.response ? err.response.data : { error: 'Proxy request failed', details: err.message }
+    );
+  }
+};
+const getEnvelopeDetail = async (req, res) => {
+  try {
+    const envelopeId = req.params.id;
+
+    // Make GET request to microservice
+    const response = await axios.get(
+      `${ESIGN_API_BASE}/api/e-sign/envelope/${envelopeId}`,
+      {
+        headers: {
+          'Authorization': req.headers.authorization,
+         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Forward response
+    return res.status(response.status).json(response.data);
+  } catch (err) {
+    console.error('Proxy error:', err);
+    return res.status(
+      err.response ? err.response.status : 500
+    ).json(
+      err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
     );
   }
 };
@@ -82,7 +101,8 @@ const saveSignatureFields = async (req, res) => {
       payload,
       {
         headers: {
-          'Authorization': req.headers.authorization, // Forward auth headers if needed
+          'Authorization': req.headers.authorization,
+         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
           'Content-Type': 'application/json'
         }
       }
@@ -100,18 +120,20 @@ const saveSignatureFields = async (req, res) => {
 };
 const updateEnvelope = async (req, res) => {
   try {
-    const url = `${ESIGN_API_BASE}/api/e-sign/save-signature-fields/update-envelope`; // ESIGN_API_BASE is your microservice base URL
 
     const payload = {
       envelopeId: req.body.envelopeId,
       envelopeData: req.body.envelopeData
     };
 
-    const response = await axios.put(url, payload, {
-      headers: {
-        Authorization: req.headers.authorization,
-        'Content-Type': 'application/json'
-      }
+    const response = await axios.put(
+      `${ESIGN_API_BASE}/api/e-sign/update-envelope`, payload,
+      {
+        headers: {
+          'Authorization': req.headers.authorization,
+         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
+          'Content-Type': 'application/json'
+        }
     });
 
     return res.status(response.status).json(response.data);
@@ -124,4 +146,4 @@ const updateEnvelope = async (req, res) => {
   }
 };
 
-module.exports = { createEnvelope, forwardRecipientsRequest, saveSignatureFields, updateEnvelope };
+module.exports = { createEnvelope, forwardRecipientsRequest, saveSignatureFields, updateEnvelope, getEnvelopeDetail };
