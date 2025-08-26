@@ -25,6 +25,7 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
   const handleFieldClick = (field: any) => {
     setActiveField(field);
   };
+  console.log(`Document: ${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`)
 
   return (
     <div className="relative flex flex-col items-center mt-4">
