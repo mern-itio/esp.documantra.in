@@ -1,4 +1,4 @@
-# Draft and Sign — Electronic Signature Platform
+# Draft and Sign — All in One Document Management Platform
 
 A comprehensive electronic signature platform that allows users to create, edit, sign, and manage documents with legal compliance across 40+ countries.
 
