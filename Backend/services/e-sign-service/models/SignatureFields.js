@@ -12,6 +12,7 @@ const SignatureFields = new mongoose.Schema({
   height: { type: Number, required: true },
   type: { type: String, enum: ["signature", "initials", "date", "text", "checkbox"], required: true },
   status: { type: String, enum: ["pending", "completed", "declined"], default: "pending" },
+  signature: { type: String },
 }, { timestamps: true });
 
 module.exports = mongoose.model('SignatureFields', SignatureFields);
