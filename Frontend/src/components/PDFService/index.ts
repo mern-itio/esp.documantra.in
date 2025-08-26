@@ -7,6 +7,7 @@ export { default as ReorderPDF } from './ReorderPDF';
 export { default as RotatePDF } from './RotatePDF';
 export { default as CropPDF } from './CropPDF';
 export { default as InsertPDF } from './InsertPDF';
+export { default as DigitalSignature } from './DigitalSignature';
 
 // Components with named exports
 export { ToolsGrid } from './ToolsGrid';

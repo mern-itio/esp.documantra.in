@@ -48,7 +48,7 @@ const InsertPDFPage: React.FC = () => {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Crop PDF Pages</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Insert PDF Pages</h1>
               <p className="mt-2 text-sm text-gray-600">
                 Upload multiple PDF files, preview all pages, and drag & drop to reorder them.
                 Create your perfect document by combining pages from different sources.

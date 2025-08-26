@@ -732,3 +732,6 @@ export * from './insertPDF';
 
 // Export common types
 export * from './common';
+
+// Export Digital Signature types
+export * from './digitalSignature';

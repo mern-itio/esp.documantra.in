@@ -32,32 +32,18 @@ interface PDFPage {
 }
 
 const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
-  // Global override to prevent CDN worker loading
+  // Simplified PDF.js worker setup
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Override any existing PDF.js worker settings
-      if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-        if (window.pdfjsLib.GlobalWorkerOptions.workerSrc && 
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-          console.log('Global override: Fixing CDN worker path...');
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        }
-      }
-      
-      // Set up a mutation observer to catch any future PDF.js worker changes
-      const observer = new MutationObserver(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-          if (window.pdfjsLib.GlobalWorkerOptions.workerSrc && 
-              window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-            console.log('Mutation observer: Fixing CDN worker path...');
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-          }
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         }
-      });
-      
-      observer.observe(document, { childList: true, subtree: true });
-      
-      return () => observer.disconnect();
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
     }
   }, []);
 
@@ -79,58 +65,21 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
   const loadPDFJS = useCallback(async () => {
     try {
       if (typeof window !== 'undefined' && !window.pdfjsLib) {
-        // console.log('Loading PDF.js...');
-        
-        // Import the main package
         const pdfjsLib = await import('pdfjs-dist');
-        // console.log('PDF.js imported successfully');
         
-        // Set worker path BEFORE setting it to window
+        // Set worker path to local file
         try {
-          // First try the local worker file
-          pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-          // console.log('PDF.js worker set to local file: /pdf.worker.min.mjs');
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         } catch (error) {
-          console.warn('Failed to set local worker path:', error);
-          
-          try {
-            // Try to use the worker that comes with pdfjs-dist
-            const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url);
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl.href;
-            // console.log('PDF.js worker set to bundled worker:', workerUrl.href);
-          } catch (workerError) {
-            console.warn('Failed to set bundled worker path:', workerError);
-            
-            // Last resort: disable worker (will run in main thread)
-            pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-            // console.log('PDF.js worker disabled, running in main thread');
-          }
+          console.warn('Failed to set PDF.js worker:', error);
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
         }
         
-        // Now set to window
+        // Assign to window
         window.pdfjsLib = pdfjsLib;
-        // console.log('PDF.js set to window.pdfjsLib');
-      } else if (window.pdfjsLib) {
-        // If PDF.js is already loaded, ensure worker path is set correctly
-        // console.log('PDF.js already loaded, checking worker path...');
-        
-        // Immediately fix any CDN worker paths
-        if (window.pdfjsLib.GlobalWorkerOptions.workerSrc && 
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-          // console.log('Immediately fixing CDN worker path...');
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-          // console.log('Worker path immediately fixed to local file');
-        } else if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc || 
-                   window.pdfjsLib.GlobalWorkerOptions.workerSrc.includes('cdnjs.cloudflare.com')) {
-          // console.log('Fixing worker path for existing PDF.js instance...');
-          try {
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-            // console.log('Worker path fixed to local file');
-          } catch (error) {
-            console.warn('Failed to fix worker path:', error);
-          }
-        }
       }
+      
       return window.pdfjsLib;
     } catch (error) {
       console.error('Error loading PDF.js:', error);
