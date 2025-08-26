@@ -216,7 +216,7 @@ import ApiServiceDashboard from '../pages/ApiService/Dashboard/main';
 import ApiServiceAnalytics from '../pages/ApiService/Analytics/Main';
 import ApiServiceProjects from '../pages/ApiService/Projects/Main';
 import ApiServiceKey from '../pages/ApiService/Key/Main';
-import ApiServiceExplorer from '../pages/ApiService/Explorer/Main';
+import ApiServiceExplorer from '../pages/ApiService/Explorer/ApiExplorer';
 import ApiServiceDocumentation from '../pages/ApiService/Documentation/Main';
 import ApiServiceWebhooks from '../pages/ApiService/Webhooks/Main';
 import ApiServiceSDK from '../pages/ApiService/Sdk/main';
