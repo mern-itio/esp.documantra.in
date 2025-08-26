@@ -1,5 +1,5 @@
-import { Document, Page } from 'react-pdf';
-import React, { useState } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import React, { useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import SignPad from './SignPad';
 
@@ -17,7 +17,18 @@ Modal.setAppElement('#root');
 const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUserId, onClose,envelopeID,onSignatureSave}) => {
   const [activeField, setActiveField] = useState<any>(null);
   console.log(`Envelope ID in DocumentViewer: ${envelopeID}`);
-
+    // --- PDF.js worker setup ---
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
+    }
+  }, []);
   // Multi-page states
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
