@@ -1,15 +1,45 @@
+import { useRef, useState } from "react";
+
 type APIResponseViewerProps = {
   response: unknown;
 };
 
 export default function APIResponseViewer({ response }: APIResponseViewerProps) {
+  const preRef = useRef<HTMLPreElement>(null);
+  const [showToast, setShowToast] = useState(false);
+  // Copy response text to clipboard
+  const handleCopy = () => {
+    const text =
+      typeof response === "object"
+        ? JSON.stringify(response, null, 2)
+        : String(response);
+    navigator.clipboard.writeText(text);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 1800);
+  };
+
   if (!response) return <div>No response</div>;
-  // If response is object, stringify
+
   return (
-    <div className="bg-white p-4 rounded mt-4 shadow flex flex-col gap-3 max-w-xl w-full">
-      {typeof response === "object"
-        ? <pre>{JSON.stringify(response, null, 2)}</pre>
-        : String(response)}
+    <div className="bg-[#1a1a1a] p-4 rounded mt-4 shadow max-w-xl w-full relative">
+      {/* COPY Button Top Right */}
+      <button onClick={handleCopy} className="absolute top-4 right-10 bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600 text-xs cursor-pointer">
+        Copy
+      </button>
+       {showToast && (
+          <div className="absolute top-2 right-24 bg-green-700 text-white rounded px-2 py-1 shadow text-xs z-30 animate-fade">
+            Copied!
+          </div>
+        )}
+      <pre
+        ref={preRef}
+        className="text-green-200 text-sm font-mono overflow-auto"
+        style={{ maxHeight: "350px" }}
+      >
+        {typeof response === "object"
+          ? JSON.stringify(response, null, 2)
+          : String(response)}
+      </pre>
     </div>
   );
 }

@@ -5,6 +5,9 @@ export type ApiType = {
   endpoint: string;
   method: string;
   showFile: boolean;
+  showBody: boolean;
+  showEnvelopeId: boolean;
+  bodyTemplate:string;
   description: string;
 };
 
@@ -21,15 +24,69 @@ export const apiList: ApiType[] = [
     method: "POST",
     showFile: true,
     description: "This endpoint is used to upload an envelope for signing.",
+    showBody: false,
+    showEnvelopeId: false,
+    bodyTemplate: ""
   },
   {
-    name: "Users List",
-    endpoint: "/api/v1/users",
+    name: "Add Recipient",
+    endpoint: "/api/api-service/sign/add-recipients",
+    method: "POST",
+    showFile: false,
+    description: "This endpoint is used to add recipient.",
+    showBody: true,
+    showEnvelopeId: false,
+    bodyTemplate: `{
+  "envelopeId": "",
+  "recipients": [
+    {
+      "name": "",
+      "email": "",
+      "role": "",
+      "order": 1,
+      "status": "waiting",
+      "authentication": ""
+    }
+  ]
+}`
+  },
+  {
+    name: "Fetch Envelope Details",
+    endpoint: "/api/api-service/sign/envelope/:id",
     method: "GET",
     showFile: false,
-    description: "This endpoint is used to Retrieve a list of users from the system.",
+    description: "This endpoint is used to fetch envelope details by its id.",
+    showBody: false,
+    showEnvelopeId: true,
+    bodyTemplate: ""
+  },
+  {
+    name: "Save signature Fields",
+    endpoint: "/api/api-service/sign/save-signature-fields",
+    method: "POST",
+    showFile: false,
+    description: "This endpoint is used to save signature fields on document.",
+    showBody: true,
+    showEnvelopeId: false,
+    bodyTemplate: `{
+  "envelopeId": "",
+  "signatureFields": [
+    {
+      "documentId": "",
+      "recipientId": "",
+      "page": 1,
+      "x": 100,
+      "y": 200,
+      "width": 120,
+      "height": 50,
+      "type": "signature",
+      "status": "pending"
+    }
+  ]
+}`
   },
 ];
+
 
 function Sidebar({ onApiSelect, activeEndpoint }: SidebarProps): React.ReactElement {
     return (
