@@ -18,6 +18,12 @@ const addHeaderFooterRoutes = require('./routes/addHeaderFooterRoute');
 const addPasswordRoutes = require('./routes/addPasswordRoute');
 const removePasswordRoutes = require('./routes/removePasswordRoute');
 const digitalSignatureRoutes = require('./routes/digitalSignatureRoute');
+const setPermissionsRoutes = require('./routes/setPermissionsRoute');
+const addWatermarkRoutes = require('./routes/addWatermarkRoute');
+const removeMetadataRoutes = require('./routes/removeMetadataRoute');
+const compressPDFRoutes = require('./routes/compressPDFRoute');
+const optimizeImageRoutes = require('./routes/optimizeImageRoute');
+const documentTrackingRoutes = require('./routes/documentTrackingRoute');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -39,7 +45,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
       frameSrc: ["'self'", "http://localhost:2104", "http://165.22.215.73:2104"],
       frameAncestors: ["'self'", "http://localhost:3000", "http://localhost:5173", "http://165.22.215.73:3000"],
@@ -54,6 +60,14 @@ app.use(helmet({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Serve PDF.js library files with proper MIME types for ES modules
+app.use('/pdfjs', (req, res, next) => {
+  if (req.url.endsWith('.mjs')) {
+    res.setHeader('Content-Type', 'application/javascript');
+  }
+  next();
+}, express.static(path.join(__dirname, 'public')));
 
 // DB Connection
 connectDB();
@@ -112,22 +126,104 @@ app.use('/outputs', (req, res, next) => {
 app.use('/outputs', express.static(path.join(__dirname, 'outputs')));
 
 // Special handler for PDF files to allow iframe embedding
-app.get('/outputs/*.pdf', (req, res) => {
-  const filePath = path.join(__dirname, 'outputs', req.params[0] + '.pdf');
-  
+app.get('/outputs/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'outputs', req.params.filename);
+
   if (fs.existsSync(filePath)) {
-    // Set headers to allow iframe embedding
+    // Allow iframe embedding
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:3000");
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:3000"
+    );
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
+
     res.sendFile(filePath);
   } else {
     res.status(404).send('PDF file not found');
   }
 });
+
+// Direct download route for remove metadata files - no auth required
+app.get('/pdf-remove-metadata/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+// Direct download route for compressed PDF files - no auth required
+app.get('/pdf-compress/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+// Direct download route for optimized image PDF files - no auth required
+app.get('/pdf-optimize-image/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
 
 app.use("/uploads", express.static("uploads"));
 app.use("/images", express.static("images"));
@@ -166,14 +262,20 @@ app.use('/pdf-header-footer', addHeaderFooterRoutes);
 app.use('/pdf-password', addPasswordRoutes);
 app.use('/pdf-remove-password', removePasswordRoutes);
 app.use('/pdf-digital-signature', digitalSignatureRoutes);
+app.use('/pdf-permissions', setPermissionsRoutes);
+app.use('/pdf-watermark', addWatermarkRoutes);
+app.use('/pdf-remove-metadata', removeMetadataRoutes);
+app.use('/pdf-compress', compressPDFRoutes);
+app.use('/pdf-optimize-image', optimizeImageRoutes);
+
+// Protected routes that require authentication
+app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);
 
 // Add debugging for route matching
 app.use((req, res, next) => {
   console.log(`PDF Service: Route not matched: ${req.method} ${req.url}`);
   next();
 });
-// JWT Middleware (for conversion routes only)
-app.use(verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 
 // Conversion routes
 
