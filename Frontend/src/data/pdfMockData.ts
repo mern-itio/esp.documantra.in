@@ -457,7 +457,7 @@ export const mockPDFTools = {
         popularity: 71,
         icon: "Unlock",
         route: "/pdf-tools/remove-password"
-      },     
+      },
       {
         id: "digital-signature",
         name: "Digital Signature",
@@ -471,37 +471,42 @@ export const mockPDFTools = {
         route: "/pdf-tools/digital-signature"
       },
       {
-        id: "set_permissions",
+        id: "set-permissions",
         name: "Set Permissions",
         description: "Control document permissions and access",
         category: "security",
         features: ["granular_permissions", "print_restrictions", "copy_protection"],
         complexity: "medium" as const,
         popularity: 38,
-        icon: "Settings"
+        icon: "Settings",
+        route: "/pdf-tools/set-permissions"
+
       },
       {
-        id: "watermark_pdf",
+        id: "add-watermark",
         name: "Add Watermark",
         description: "Add text or image watermarks",
         category: "security",
         features: ["text_watermarks", "image_watermarks", "transparency_control"],
         complexity: "easy" as const,
         popularity: 61,
-        icon: "Droplets"
+        icon: "Droplets",
+        route: "/pdf-tools/add-watermark"
+
       },
       {
-        id: "remove_metadata",
+        id: "remove-metadata",
         name: "Remove Metadata",
         description: "Clean metadata and hidden information",
         category: "security",
         features: ["metadata_cleaning", "hidden_content_removal", "privacy_audit"],
         complexity: "medium" as const,
         popularity: 47,
-        icon: "EyeOff"
+        icon: "EyeOff",
+        route: "/pdf-tools/remove-metadata"
       },
       {
-        id: "document_tracking",
+        id: "document-tracking",
         name: "Document Tracking",
         description: "Track document access and usage",
         category: "security",
@@ -509,7 +514,8 @@ export const mockPDFTools = {
         complexity: "advanced" as const,
         popularity: 29,
         icon: "Activity",
-        premium: true
+        premium: true,
+          route: "/pdf-tools/document-tracking"
       }
     ]
   },
@@ -518,7 +524,7 @@ export const mockPDFTools = {
     description: "Optimize and compress PDFs for better performance",
     tools: [
       {
-        id: "compress_pdf",
+        id: "compress-pdf",
         name: "Compress PDF",
         description: "Reduce file size while maintaining quality",
         category: "optimization",
@@ -527,18 +533,21 @@ export const mockPDFTools = {
         popularity: 87,
         avgProcessingTime: "25 seconds",
         icon: "Archive",
-        badge: "Popular"
+        badge: "Popular",
+        route: "/pdf-tools/compress-pdf"
       },
       {
-        id: "optimize_images",
+        id: "optimize-image",
         name: "Optimize Images",
         description: "Compress images within PDFs",
         category: "optimization",
         features: ["image_compression", "resolution_adjustment", "format_conversion"],
         complexity: "medium" as const,
         popularity: 64,
-        icon: "Image"
+        icon: "Image",
+        route: "/pdf-tools/optimize-image"
       },
+    
       {
         id: "optimize_fonts",
         name: "Optimize Fonts",

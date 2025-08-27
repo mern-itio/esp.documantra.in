@@ -1,8 +1,11 @@
 FROM node:20
 
-# Install qpdf for password protection functionality
+# Install qpdf, exiftool, ghostscript, and imagemagick for PDF processing functionality
 RUN apt-get update && apt-get install -y \
     qpdf \
+    exiftool \
+    ghostscript \
+    imagemagick \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

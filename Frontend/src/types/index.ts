@@ -735,3 +735,12 @@ export * from './common';
 
 // Export Digital Signature types
 export * from './digitalSignature';
+
+// Export Add Watermark types
+export * from './addWatermark';
+
+// Export Remove Metadata types
+export * from './removeMetadata';
+export * from './compressPDF';
+export * from './optimizeImage';
+export * from './documentTracking';
