@@ -27,7 +27,18 @@ export default function APIExplorer() {
         </div>
          {/* CurlPreview just below description */}
         <CurlPreview api={selectedApi} sandboxKey={sandboxKey} authToken={localStorage.getItem("accessToken") || ""} body={body} />
-        <APIRequestForm selectedApi={selectedApi} onResponse={setResponse} setSandboxKey={setSandboxKey}  setBody={setBody} />
+         <APIRequestForm
+          selectedApi={{
+            ...selectedApi,
+            showEnvelopeId: selectedApi.showEnvelopeId ?? false,
+            showDocumentId: selectedApi.showDocumentId ?? false,
+          }}
+          onResponse={setResponse}
+          setSandboxKey={setSandboxKey}
+          setBody={setBody}
+          sandboxKey={sandboxKey}
+        />
+
         <APIResponseViewer response={response} />
       </div>
       {/* RIGHT PANE: Use Cases */}

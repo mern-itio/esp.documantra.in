@@ -18,6 +18,7 @@ type APIRequestFormProps = {
   selectedApi: ApiType;
   onResponse: (response: unknown) => void;
   setBody: (body: string) => void;
+  sandboxKey: string;
   setSandboxKey: (key: string) => void;
 };
 
@@ -25,7 +26,10 @@ export default function APIRequestForm({
   selectedApi,
   onResponse,
   setBody,
+  sandboxKey,
+  setSandboxKey,
 }: APIRequestFormProps) {
+
   const [body, setBodyLocal] = useState(selectedApi.bodyTemplate || "{}");
   const isFileUpload = selectedApi.showFile;
   const [headers, setHeaders] = useState("");
@@ -33,7 +37,7 @@ export default function APIRequestForm({
   const [envelopeId, setEnvelopeId] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [files, setFiles] = useState<File | null>(null);
-  const [sandboxKey, setSandboxKey] = useState<string>("");
+  // Use sandboxKey from props
   const [fileError, setFileError] = useState<string | null>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
