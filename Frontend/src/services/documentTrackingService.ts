@@ -13,7 +13,7 @@ import type {
   UserActivityResponse
 } from '../types/documentTracking';
 
-const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:2104';
+const API_BASE_URL = import.meta.env?.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
 
 // Create axios instance with interceptors
 const api = axios.create({
