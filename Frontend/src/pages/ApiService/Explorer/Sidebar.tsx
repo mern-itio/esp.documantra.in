@@ -7,6 +7,7 @@ export type ApiType = {
   showFile: boolean;
   showBody: boolean;
   showEnvelopeId: boolean;
+  showDocumentId?: boolean;
   bodyTemplate:string;
   description: string;
 };
@@ -42,10 +43,10 @@ export const apiList: ApiType[] = [
     {
       "name": "",
       "email": "",
-      "role": "",
+      "role": "signer",
       "order": 1,
       "status": "waiting",
-      "authentication": ""
+      "authentication": "email"
     }
   ]
 }`
@@ -85,12 +86,71 @@ export const apiList: ApiType[] = [
   ]
 }`
   },
+  {
+    name: "Update Envelope",
+    endpoint: "/api/api-service/sign/update",
+    method: "POST",
+    showFile: false,
+    description: "This endpoint is used to update envelope.",
+    showBody: true,
+    showEnvelopeId: false,
+    bodyTemplate: `{
+  "envelopeId": "",
+  "envelopeData": {
+    "subject": "",
+    "message": "",
+    "priority": "normal",
+    "signingOrder": "In-Order",
+    "expiresAt": "2025-08-30T10:00:00Z",
+    "reminderEnabled": true,
+    "reminderInterval": 2,
+    "requireAllSignatures": true,
+    "allowDecline": false,
+    "signatureType": "standard",
+    "status": "draft"
+  }
+}`
+  },
+  {
+    name: "Send Envelope",
+    endpoint: "/api/api-service/sign/send/:id",
+    method: "PUT",
+    showFile: false,
+    description: "This endpoint is used to send envelope to recipients.",
+    showBody: false,
+    showEnvelopeId: true,
+    bodyTemplate: ""
+  },
+  {
+    name: "Get Signature Fields",
+    endpoint: "/api/api-service/sign/signature/:id",
+    method: "GET",
+    showFile: false,
+    description: "This endpoint is used to get all signature fields.",
+    showBody: false,
+    showEnvelopeId: false,
+    showDocumentId: true,
+    bodyTemplate: ""
+  },
+   {
+    name: "Add Signature",
+    endpoint: "/api/api-service/sign/add-signature",
+    method: "POST",
+    showFile: false,
+    description: "This endpoint is used to add signature.",
+    showBody: true,
+    showEnvelopeId: false,
+    bodyTemplate: `{
+  "fieldId": "",
+  "signature": ""
+}`
+  },
 ];
 
 
 function Sidebar({ onApiSelect, activeEndpoint }: SidebarProps): React.ReactElement {
     return (
-    <div className="flex flex-col gap-3 w-full max-w-xs mx-auto">
+    <div className="flex flex-col gap-3 w-full max-w-xs mx-auto ">
       {apiList.map((api, idx) => (
         <button
           key={idx}

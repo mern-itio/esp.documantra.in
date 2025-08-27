@@ -9,7 +9,8 @@ export type ApiType = {
   showFile: boolean;
   showBody: boolean;
   showEnvelopeId: boolean;
-  bodyTemplate: string; // <-- Template/example JSON for body input
+  showDocumentId: boolean;
+  bodyTemplate: string; 
   description: string;
 };
 
@@ -30,6 +31,7 @@ export default function APIRequestForm({
   const [headers, setHeaders] = useState("");
   const [loading, setLoading] = useState(false);
   const [envelopeId, setEnvelopeId] = useState("");
+  const [documentId, setDocumentId] = useState("");
   const [files, setFiles] = useState<File | null>(null);
   const [sandboxKey, setSandboxKey] = useState<string>("");
   const [fileError, setFileError] = useState<string | null>(null);
@@ -66,6 +68,9 @@ export default function APIRequestForm({
       let endpoint = selectedApi.endpoint;
       if (selectedApi.showEnvelopeId && envelopeId) {
         endpoint = endpoint.replace(":id", envelopeId);
+      }
+      if (selectedApi.showDocumentId && documentId) {
+        endpoint = endpoint.replace(":id", documentId);
       }
 
       const customHeaders: { [key: string]: string } = {
@@ -108,6 +113,7 @@ export default function APIRequestForm({
     setFiles(null);
     setFileError(null);
     setEnvelopeId("");
+    setDocumentId("");
     setSandboxKey("");
   }, [selectedApi, setBody, setSandboxKey]);
 
@@ -158,6 +164,19 @@ export default function APIRequestForm({
           </div>
           {fileError && <div className="text-xs text-red-600 mt-1">{fileError}</div>}
         </div>
+      )}
+      {selectedApi.showDocumentId && (
+        <>
+          <label htmlFor="documentId">Document ID:</label>
+          <input
+            id="documentId"
+            type="text"
+            className="border rounded p-2 w-full"
+            value={documentId}
+            onChange={e => setDocumentId(e.target.value)}
+            placeholder="Enter Document ID"
+          />
+        </>
       )}
       {/* Dynamic body input (JSON) */}
       {selectedApi.showBody && (

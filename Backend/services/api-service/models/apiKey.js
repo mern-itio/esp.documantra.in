@@ -5,6 +5,7 @@ const ESignApiKeySchema = new mongoose.Schema({
   apiKey: { type: String, required: true, unique: true },
   mode: { type: String, enum: ['sandbox', 'production'], required: true }, // allow both modes
   createdAt: { type: Date, default: Date.now },
+  fieldIds: [{ type: String }],
   lastUsedAt: { type: Date, default: null },
   usageCount: { type: Number, default: 0 },
   usageLogs: [{
