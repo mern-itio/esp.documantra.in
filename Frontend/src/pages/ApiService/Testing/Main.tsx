@@ -1,34 +1,43 @@
 import React, { useState } from 'react'
-import { 
-  Play, 
-  Plus, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Edit, 
-  Trash2,
-  BarChart3,
-} from 'lucide-react'
+import { Play, Plus, CheckCircle, XCircle, Clock, Edit, Trash2, BarChart3 } from 'lucide-react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { mockTestCases } from '../../../data/mockAPIData'
 import toast from 'react-hot-toast'
+import type { ApiType } from "../Explorer/Sidebar"
+import { apiList } from "../Explorer/Sidebar";
 
- const Main: React.FC = () => {
+type TestCase = {
+  id: string
+  name: string
+  description: string
+  endpoint: string
+  method: string
+  headers?: Record<string, string>
+  body?: any
+  expectedStatus: number
+  assertions: any[]
+  status?: "passed" | "failed" | "pending"
+  lastRun?: string | null
+}
+
+// Mock test data (replace with API later)
+const mockTestCases: Array<TestCase> = []
+
+const Main: React.FC = () => {
   const [testCases, setTestCases] = useState(mockTestCases)
   const [selectedTest, setSelectedTest] = useState<any>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [runningTests, setRunningTests] = useState<Set<string>>(new Set())
   const [testResults, setTestResults] = useState<Record<string, any>>({})
-    
+
   const runTest = async (testCase: any) => {
     setRunningTests(prev => new Set([...prev, testCase.id]))
-    
-    // Simulate test execution
+
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Mock test result
-    const success = Math.random() > 0.3 // 70% success rate
+
+    // Mock result
+    const success = Math.random() > 0.3
     const result = {
       id: `result_${Date.now()}`,
       testCaseId: testCase.id,
@@ -50,40 +59,35 @@ import toast from 'react-hot-toast'
       })),
       runAt: new Date().toISOString()
     }
-    
+
     setTestResults(prev => ({ ...prev, [testCase.id]: result }))
     setRunningTests(prev => {
       const newSet = new Set(prev)
       newSet.delete(testCase.id)
       return newSet
     })
-    
-    // Update test case status
-   const allowedStatus = ["passed", "failed", "pending"];
-const incomingStatus = testCase.status;
 
-const safeStatus = allowedStatus.includes(incomingStatus) ? incomingStatus : "pending";
-
-setTestCases(prev =>
+    // Update status
+   setTestCases(prev =>
   prev.map(tc =>
-    tc.id === testCase.Id
-      ? { ...tc, status: safeStatus as "passed" | "failed" | "pending" }
+    tc.id === testCase.id
+      ? { ...tc, status: result.status as "passed" | "failed" | "pending", lastRun: result.runAt }
       : tc
   )
 )
-    
+
     toast.success(`Test ${success ? 'passed' : 'failed'}: ${testCase.name}`)
   }
 
   const runAllTests = async () => {
     for (const testCase of testCases) {
       await runTest(testCase)
-      await new Promise(resolve => setTimeout(resolve, 500)) // Small delay between tests
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
   }
 
   const deleteTest = (testId: string) => {
-    if (confirm('Are you sure you want to delete this test case?')) {
+    if (window.confirm('Are you sure you want to delete this test case?')) {
       setTestCases(prev => prev.filter(tc => tc.id !== testId))
       toast.success('Test case deleted')
     }
@@ -100,17 +104,11 @@ setTestCases(prev =>
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <button
-            onClick={runAllTests}
-            className="btn btn-outline flex items-center space-x-2"
-          >
+          <button onClick={runAllTests} className="btn btn-outline flex items-center space-x-2">
             <Play className="h-4 w-4" />
             <span>Run All Tests</span>
           </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary flex items-center space-x-2"
-          >
+          <button onClick={() => setShowCreateModal(true)} className="btn btn-primary flex items-center space-x-2">
             <Plus className="h-5 w-5" />
             <span>New Test</span>
           </button>
@@ -221,7 +219,7 @@ setTestCases(prev =>
                 </div>
               </div>
 
-              {/* Test Configuration */}
+              {/* Request Configuration */}
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Request Configuration</h3>
@@ -247,8 +245,8 @@ setTestCases(prev =>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Endpoint</label>
                     <code className="block p-2 bg-gray-100 rounded text-sm">{selectedTest.endpoint}</code>
                   </div>
-                  
-                  {Object.keys(selectedTest.headers).length > 0 && (
+
+                  {selectedTest.headers && Object.keys(selectedTest.headers).length > 0 && (
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Headers</label>
                       <SyntaxHighlighter
@@ -327,7 +325,6 @@ setTestCases(prev =>
                           {testResults[selectedTest.id].duration}ms
                         </div>
                       </div>
-                      
                       <div className="space-y-4">
                         <div>
                           <h4 className="font-medium text-gray-900 mb-2">Response</h4>
@@ -342,7 +339,6 @@ setTestCases(prev =>
                             {JSON.stringify(testResults[selectedTest.id].response.body, null, 2)}
                           </SyntaxHighlighter>
                         </div>
-
                         <div>
                           <h4 className="font-medium text-gray-900 mb-2">Assertion Results</h4>
                           <div className="space-y-2">
@@ -390,12 +386,15 @@ setTestCases(prev =>
       {/* Create Test Modal */}
       {showCreateModal && (
         <CreateTestModal
+          apiList={apiList}
           onClose={() => setShowCreateModal(false)}
           onSave={(testData) => {
             const newTest = {
               ...testData,
               id: `test_${Date.now()}`,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              status: "pending",
+              lastRun: null
             }
             setTestCases(prev => [...prev, newTest])
             setShowCreateModal(false)
@@ -408,10 +407,12 @@ setTestCases(prev =>
 }
 
 const CreateTestModal: React.FC<{
-  onClose: () => void
-  onSave: (data: any) => void
-}> = ({ onClose, onSave }) => {
+  apiList: ApiType[];
+  onClose: () => void;
+  onSave: (data: any) => void;
+}> = ({ apiList, onClose, onSave }) => {
   const [formData, setFormData] = useState({
+    selectedApi: "",
     name: '',
     description: '',
     endpoint: '',
@@ -428,12 +429,25 @@ const CreateTestModal: React.FC<{
     ]
   })
 
+  const handleApiSelect = (apiName: string) => {
+    const api = apiList.find(a => a.name === apiName)
+    if (api) {
+      setFormData(prev => ({
+        ...prev,
+        selectedApi: api.name,
+        endpoint: api.endpoint,
+        method: api.method,
+        body: api.bodyTemplate,
+        description: api.description
+      }))
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     try {
       const parsedHeaders = JSON.parse(formData.headers)
       const parsedBody = formData.body ? JSON.parse(formData.body) : undefined
-      
       onSave({
         ...formData,
         headers: parsedHeaders,
@@ -448,8 +462,26 @@ const CreateTestModal: React.FC<{
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Test Case</h2>
-        
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              API Endpoint
+            </label>
+            <select
+              value={formData.selectedApi}
+              onChange={e => handleApiSelect(e.target.value)}
+              className="input w-full mb-4"
+              required
+            >
+              <option value="">Select API</option>
+              {apiList.map(api => (
+                <option key={api.endpoint} value={api.name}>
+                  {api.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Test Name
@@ -457,7 +489,7 @@ const CreateTestModal: React.FC<{
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
               className="input w-full"
               placeholder="Create User Test"
               required
@@ -470,7 +502,7 @@ const CreateTestModal: React.FC<{
             </label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
               className="input w-full h-20"
               placeholder="Test creating a new user with valid data"
               required
@@ -484,7 +516,7 @@ const CreateTestModal: React.FC<{
               </label>
               <select
                 value={formData.method}
-                onChange={(e) => setFormData(prev => ({ ...prev, method: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, method: e.target.value }))}
                 className="input w-full"
               >
                 <option value="GET">GET</option>
@@ -502,7 +534,7 @@ const CreateTestModal: React.FC<{
               <input
                 type="number"
                 value={formData.expectedStatus}
-                onChange={(e) => setFormData(prev => ({ ...prev, expectedStatus: parseInt(e.target.value) }))}
+                onChange={e => setFormData(prev => ({ ...prev, expectedStatus: parseInt(e.target.value) }))}
                 className="input w-full"
                 min="100"
                 max="599"
@@ -517,7 +549,7 @@ const CreateTestModal: React.FC<{
             <input
               type="text"
               value={formData.endpoint}
-              onChange={(e) => setFormData(prev => ({ ...prev, endpoint: e.target.value }))}
+              onChange={e => setFormData(prev => ({ ...prev, endpoint: e.target.value }))}
               className="input w-full"
               placeholder="/api/v1/users"
               required
@@ -530,7 +562,7 @@ const CreateTestModal: React.FC<{
             </label>
             <textarea
               value={formData.headers}
-              onChange={(e) => setFormData(prev => ({ ...prev, headers: e.target.value }))}
+              onChange={e => setFormData(prev => ({ ...prev, headers: e.target.value }))}
               className="input w-full h-24 font-mono text-sm"
             />
           </div>
@@ -542,7 +574,7 @@ const CreateTestModal: React.FC<{
               </label>
               <textarea
                 value={formData.body}
-                onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, body: e.target.value }))}
                 className="input w-full h-32 font-mono text-sm"
                 placeholder='{\n  "name": "John Doe",\n  "email": "john@example.com"\n}'
               />
@@ -570,4 +602,4 @@ const CreateTestModal: React.FC<{
   )
 }
 
-export default Main;
+export default Main
