@@ -173,11 +173,7 @@ export default function APIRequestForm({
           />
         </>
       )}
-      <button
-        onClick={handleRequest}
-        className="bg-blue-600 text-white px-4 py-2 rounded mt-2 hover:bg-blue-700 transition cursor-pointer"
-        disabled={loading || (isFileUpload && !files)}
-      >
+      <button onClick={handleRequest} className="bg-blue-600 text-white px-4 py-2 rounded mt-2 hover:bg-blue-700 transition cursor-pointer" disabled={loading || (isFileUpload && !files)}>
         {loading ? "Loading..." : "Execute Request"}
       </button>
     </div>
