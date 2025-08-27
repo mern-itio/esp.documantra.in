@@ -13,6 +13,11 @@ const reorderPdfPagesRoutes = require('./routes/reorderPdfPagesRoute');
 const rotatePdfPagesRoutes = require('./routes/rotatePdfPagesRoute');
 const cropPdfPagesRoutes = require('./routes/cropPdfPagesRoute');
 const insertPdfPagesRoutes = require('./routes/insertPdfPagesRoute');
+const addPageNumbersRoutes = require('./routes/addPageNumbersRoute');
+const addHeaderFooterRoutes = require('./routes/addHeaderFooterRoute');
+const addPasswordRoutes = require('./routes/addPasswordRoute');
+const removePasswordRoutes = require('./routes/removePasswordRoute');
+const digitalSignatureRoutes = require('./routes/digitalSignatureRoute');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -27,7 +32,26 @@ const app = express();
 app.use(cors({
   origin: "*"
 }));
-app.use(helmet());
+
+// Configure helmet with CSP that allows iframe embedding for outputs
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      frameSrc: ["'self'", "http://localhost:2104", "http://165.22.215.73:2104"],
+      frameAncestors: ["'self'", "http://localhost:3000", "http://localhost:5173", "http://165.22.215.73:3000"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      formAction: ["'self'"]
+    }
+  }
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -74,11 +98,37 @@ app.get('/health', (req, res) => {
 app.use('/outputs', (req, res, next) => {
   console.log(`PDF Service: Static file request for: ${req.url}`);
   console.log(`PDF Service: Full path: ${path.join(__dirname, 'outputs', req.url)}`);
+  
+  // Set headers to allow iframe embedding for PDF files
+  if (req.url.endsWith('.pdf')) {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:3000");
+  }
+  
   next();
 });
 
 // Serve converted files (outputs directory) - no auth required
 app.use('/outputs', express.static(path.join(__dirname, 'outputs')));
+
+// Special handler for PDF files to allow iframe embedding
+app.get('/outputs/*.pdf', (req, res) => {
+  const filePath = path.join(__dirname, 'outputs', req.params[0] + '.pdf');
+  
+  if (fs.existsSync(filePath)) {
+    // Set headers to allow iframe embedding
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:3000");
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('PDF file not found');
+  }
+});
+
 app.use("/uploads", express.static("uploads"));
 app.use("/images", express.static("images"));
 app.use("/epubs", express.static("epubs")); // Serve EPUB files
@@ -98,20 +148,8 @@ app.get('/converted_*.pdf', (req, res, next) => {
   }
 });
 
-// Serve any other PDF files from root directory - no auth required
-app.get('/*.pdf', (req, res, next) => {
-  console.log(`PDF Service: General PDF file request for: ${req.url}`);
-  const pdfPath = path.join(__dirname, req.url);
-  console.log(`PDF Service: Full PDF path: ${pdfPath}`);
-  
-  if (fs.existsSync(pdfPath)) {
-    console.log(`PDF Service: PDF file found, serving: ${pdfPath}`);
-    res.sendFile(pdfPath);
-  } else {
-    console.log(`PDF Service: PDF file not found: ${pdfPath}`);
-    next(); // Continue to next middleware if file not found
-  }
-});
+// Note: Removed conflicting PDF route that was intercepting requests
+// PDF files are now handled by specific routes in addPageNumbersRoutes
 app.use('/pdf', pdfRoutes);
 app.use('/convert', conversionRoutes);
 app.use('/pdf-text-edit', pdfTextEditRoutes);
@@ -123,6 +161,17 @@ app.use('/pdf-reorder', reorderPdfPagesRoutes);
 app.use('/pdf-rotate', rotatePdfPagesRoutes);
 app.use('/pdf-crop', cropPdfPagesRoutes);
 app.use('/pdf-insert', insertPdfPagesRoutes);
+app.use('/pdf-page-numbers', addPageNumbersRoutes);
+app.use('/pdf-header-footer', addHeaderFooterRoutes);
+app.use('/pdf-password', addPasswordRoutes);
+app.use('/pdf-remove-password', removePasswordRoutes);
+app.use('/pdf-digital-signature', digitalSignatureRoutes);
+
+// Add debugging for route matching
+app.use((req, res, next) => {
+  console.log(`PDF Service: Route not matched: ${req.method} ${req.url}`);
+  next();
+});
 // JWT Middleware (for conversion routes only)
 app.use(verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 
