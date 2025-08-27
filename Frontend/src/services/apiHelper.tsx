@@ -65,3 +65,8 @@ export const pdfApi = createApiInstance(
   import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104',
   'PDF'
 );
+
+export const apiServiceApi = createApiInstance(
+  import.meta.env.VITE_API_SERVICE_URL || 'http://localhost:2105',
+  'Api-Serivce'
+);
