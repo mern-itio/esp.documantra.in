@@ -9,6 +9,7 @@ const verifyJWT = (secretOrPublicKey) => {
 
     try {
       const decoded = jwt.verify(token, secretOrPublicKey);
+      console.log("Token Decoded",decoded);
       req.user = decoded;
 
       if (!decoded) {

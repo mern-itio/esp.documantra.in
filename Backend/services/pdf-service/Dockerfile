@@ -1,6 +1,12 @@
 FROM node:20
 
-# No system dependencies needed for pdf-image
+# Install qpdf, exiftool, ghostscript, and imagemagick for PDF processing functionality
+RUN apt-get update && apt-get install -y \
+    qpdf \
+    exiftool \
+    ghostscript \
+    imagemagick \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

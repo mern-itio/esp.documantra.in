@@ -55,7 +55,7 @@ const PDFTools = () => {
       icon: Lock,
       tools: [
         'Encrypt PDF', 'Password Protect', 'Remove Password', 'Redact Text',
-        'Digital Signature', 'Remove Metadata', 'Secure Sharing', 'Access Control'
+        'Digital Signature', 'Set Permissions', 'Remove Metadata', 'Secure Sharing', 'Access Control'
       ]
     },
     ocr: {

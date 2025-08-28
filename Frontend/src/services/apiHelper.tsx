@@ -15,12 +15,12 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    console.log(`${serviceName} API Request:`, {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      fullUrl: `${config.baseURL}${config.url}`,
-      headers: config.headers
-    });
+    // console.log(`${serviceName} API Request:`, {
+    //   method: config.method?.toUpperCase(),
+    //   url: config.url,
+    //   fullUrl: `${config.baseURL}${config.url}`,
+    //   headers: config.headers
+    // });
 
     return config;
   });
@@ -64,4 +64,9 @@ export const eSignApi = createApiInstance(
 export const pdfApi = createApiInstance(
   import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104',
   'PDF'
+);
+
+export const apiServiceApi = createApiInstance(
+  import.meta.env.VITE_API_SERVICE_URL || 'http://localhost:2105',
+  'Api-Serivce'
 );
