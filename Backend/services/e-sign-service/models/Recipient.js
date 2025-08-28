@@ -1,5 +1,5 @@
 // models/Recipient.js
-const mongoose = require('mongoose');
+const mongoose = require('mongoose'); 
 
 const RecipientSchema = new mongoose.Schema({
   envelopeId: { type: mongoose.Schema.Types.ObjectId, ref: "Envelope", index: true },

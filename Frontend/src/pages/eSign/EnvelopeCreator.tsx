@@ -34,7 +34,7 @@ type SignatureField = {
 const EnvelopeCreator: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { createEnvelope, user } = useApp();
+  const { user } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -58,6 +58,7 @@ const EnvelopeCreator: React.FC = () => {
   const [files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
+  const [sending, setSending] = useState(false);
   
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -277,31 +278,12 @@ const handleNext = async () => {
 
   const handleCreateEnvelope = () => {
     if (!user) return;
-
-    const envelope = {
-      subject: envelopeData.subject,
-      message: envelopeData.message,
-      status: 'draft' as const,
-      priority: envelopeData.priority,
-      expiresAt: envelopeData.expiresAt,
-      sender: user,
-      documents,
-      recipients,
-      reminderEnabled: envelopeData.reminderEnabled,
-      reminderInterval: envelopeData.reminderInterval,
-      requireAllSignatures: envelopeData.requireAllSignatures,
-      allowDecline: envelopeData.allowDecline,
-      signingOrder: envelopeData.signingOrder,
-      signatureType: envelopeData.signatureType,
-      complianceLevel: envelopeData.complianceLevel
-    };
-
-    createEnvelope(envelope);
-    navigate('/');
+    navigate('/e-sign/dashboard');
   };
 
   const handleSendEnvelope = async () => {
     if (!envelopeId) return;
+    setSending(true);
       try {
         await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
         alert('Envelope sent successfully!');
@@ -309,6 +291,8 @@ const handleNext = async () => {
       } catch (err) {
         console.error(err);
         alert('Failed to send envelope. Try again.');
+      } finally {
+        setSending(false);
       }
     // In a real app, this would trigger email sending
     navigate('/e-sign/dashboard');
@@ -606,10 +590,11 @@ const getSteps = async () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
                 <input
                   type="date"
-                  value={envelopeData.expiresAt}
-                  onChange={(e) => setEnvelopeData(prev => ({ ...prev, expiresAt: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // 7 days from today
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                 />
+
               </div>
 
               <div className="space-y-4">
@@ -790,10 +775,20 @@ const getSteps = async () => {
                 </button>
                 <button
                   onClick={handleSendEnvelope}
-                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  disabled={sending}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${
+                    sending ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
                 >
-                  <Send className="w-4 h-4" />
-                  Send Envelope
+                  {sending ? (
+                    <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                  ) : (
+                    <Send className="w-4 h-4 text-white" />
+                  )}
+                  {sending ? 'Sending...' : 'Send Envelope'}
                 </button>
               </>
             )}
@@ -903,7 +898,7 @@ const getSteps = async () => {
                 </button>
               ) : (
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate(`/e-sign/envelope/${envelopeId}`)}
                   className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
                 >
                   <Eye className="w-4 h-4" />

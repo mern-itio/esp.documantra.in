@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import 'react-pdf/dist/Page/TextLayer.css';
+@import 'react-pdf/dist/Page/AnnotationLayer.css';
+
 /* index.css or global.css */
 
 
@@ -190,4 +193,7 @@
 
 .prose a:hover {
   color: #1d4ed8;
+}
+button {
+  cursor: pointer;
 }

@@ -246,7 +246,7 @@ try {
     }
 }catch(error){
     console.error("Error sending envelope:", error);
-    return res.status(500).send("Server error");
+    return res.status(500).send("Server error"); 
 }
 
 }

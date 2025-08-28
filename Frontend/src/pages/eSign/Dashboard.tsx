@@ -20,12 +20,14 @@ const Dashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
   const [envelopes, setEnvelopes] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     fetchEnvelopes();
   }, []);
   
   const fetchEnvelopes = async () => {
+    setLoading(true);
     try {
        const response = await eSignApi.get('/api/e-sign/get-envelopes');
        if (response.status == 200) {
@@ -33,6 +35,8 @@ const Dashboard: React.FC = () => {
        }
     } catch (error) {
       console.error('Error fetching envelopes:', error);
+    } finally {
+      setLoading(false);
     }
   };
   const statusColors = {
@@ -191,11 +195,34 @@ const Dashboard: React.FC = () => {
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Recent Envelopes</h2>
-            <span className="text-sm text-gray-500">{sortedEnvelopes.length} envelopes</span>
+            {!loading && (
+              <span className="text-sm text-gray-500">{sortedEnvelopes.length} envelopes</span>
+            )}
           </div>
         </div>
 
-        {sortedEnvelopes.length === 0 ? (
+        {loading ? (
+            //Loader UI (Skeleton or Spinner)
+            <div className="p-12 text-center">
+              <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
+              </svg>
+              <p className="text-gray-500">Loading envelopes...</p>
+            </div>
+          ) :
+        sortedEnvelopes.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No envelopes found</h3>

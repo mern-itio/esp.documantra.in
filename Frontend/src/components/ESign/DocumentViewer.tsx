@@ -40,15 +40,14 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
 
   return (
     <div className="relative flex flex-col items-center mt-4">
+      {/* PDF Container */}
+      <div className="relative border border-gray-300 rounded-lg shadow-sm bg-white overflow-auto max-w-4xl max-h-[80vh] p-2">
       <button
         onClick={onClose}
-        className="mb-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        className="mb-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 z-20"
       >
         Close
       </button>
-
-      {/* PDF Container */}
-      <div className="relative border border-gray-300 rounded-lg shadow-sm bg-white overflow-auto max-w-4xl max-h-[80vh] p-2">
         <Document
           file={document.filePath || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`}
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
@@ -57,7 +56,7 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
         </Document>
 
         {/* Signature Fields */}
-        <div className="absolute top-0 left-0 w-full h-full">
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
           {signatureFields
             .filter(field => (field.page.$numberInt || field.page) === currentPage) // page filter
             .map(field => {
