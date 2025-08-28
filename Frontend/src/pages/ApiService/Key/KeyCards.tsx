@@ -42,7 +42,7 @@ export default function ApiKeyCards({ refresh = 0, onModesFound }: ApiKeyCardsPr
 
   const handleCopy = (fullKey: string) => {
     navigator.clipboard.writeText(fullKey);
-    alert("API Key copied!");
+    toast("API Key copied!");
   };
 
   // Get current year/month
@@ -80,10 +80,10 @@ export default function ApiKeyCards({ refresh = 0, onModesFound }: ApiKeyCardsPr
               </div>
               {/* Key */}
               <div className="flex flex-wrap items-center gap-3 font-mono text-base text-gray-900 bg-gray-100 rounded px-4 py-2 mb-2 break-all">
-                <span>
+               <span>
                   {visible[idx]
                     ? data.apiKey
-                    : `${data.apiKey?.slice(0, 8) ?? ""}***********${data.apiKey?.slice(-4) ?? ""}`}
+                    : `${data.apiKey?.slice(0, 8) ?? ""}${"*".repeat((data.apiKey?.length ?? 12) - 12)}${data.apiKey?.slice(-4) ?? ""}`}
                 </span>
                 <button title={visible[idx] ? "Hide Key" : "Show Key"} onClick={() => handleToggle(idx)} className="hover:bg-gray-200 p-1 rounded">
                   {visible[idx] ? "🙈" : "👁️"}

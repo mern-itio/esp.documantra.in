@@ -3,7 +3,7 @@ import { Play, Plus, CheckCircle, XCircle, Clock, Edit, Trash2, BarChart3 } from
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import toast from 'react-hot-toast'
-import type { ApiType } from "../Explorer/Sidebar"
+import type { ApiType } from "../Explorer/types"
 import { apiList } from "../Explorer/Sidebar";
 
 type TestCase = {

@@ -1,4 +1,4 @@
-import type { ApiType } from "./Sidebar";
+import type { ApiType } from "./types";
 
 function getCurlCommand(api: ApiType, sandboxKey: string, authToken: string, body?: string): string {
   let cmd = `curl -X ${api.method} "${api.endpoint}"`;

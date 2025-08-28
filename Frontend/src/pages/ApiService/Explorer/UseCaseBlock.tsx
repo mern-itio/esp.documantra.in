@@ -1,4 +1,4 @@
-import type { ApiType } from './Sidebar';
+import type { ApiType } from './types';
 
 function renderFields(api: ApiType) {
       if (api.name === "Envelope Upload") {

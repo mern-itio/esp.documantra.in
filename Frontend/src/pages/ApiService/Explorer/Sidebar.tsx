@@ -1,16 +1,5 @@
 import React from "react";
-
-export type ApiType = {
-  name: string;
-  endpoint: string;
-  method: string;
-  showFile: boolean;
-  showBody: boolean;
-  showEnvelopeId: boolean;
-  showDocumentId?: boolean;
-  bodyTemplate:string;
-  description: string;
-};
+import type { ApiType } from "./types";
 
 type SidebarProps = {
   onApiSelect: (api: ApiType) => void;

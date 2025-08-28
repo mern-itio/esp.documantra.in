@@ -1,24 +1,11 @@
 import { useEffect, useState } from "react";
 import { apiServiceApi } from "../../../services/apiHelper";
-
-// Extended ApiType
-export type ApiType = {
-  name: string;
-  endpoint: string;
-  method: string;
-  showFile: boolean;
-  showBody: boolean;
-  showEnvelopeId: boolean;
-  showDocumentId: boolean;
-  bodyTemplate: string; 
-  description: string;
-};
+import type { ApiType } from "./types";
 
 type APIRequestFormProps = {
   selectedApi: ApiType;
   onResponse: (response: unknown) => void;
   setBody: (body: string) => void;
-  sandboxKey: string;
   setSandboxKey: (key: string) => void;
 };
 
@@ -26,8 +13,6 @@ export default function APIRequestForm({
   selectedApi,
   onResponse,
   setBody,
-  sandboxKey,
-  setSandboxKey,
 }: APIRequestFormProps) {
 
   const [body, setBodyLocal] = useState(selectedApi.bodyTemplate || "{}");
@@ -37,6 +22,7 @@ export default function APIRequestForm({
   const [envelopeId, setEnvelopeId] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [files, setFiles] = useState<File | null>(null);
+  const [sandboxKey , setSandboxKey] = useState("");
   // Use sandboxKey from props
   const [fileError, setFileError] = useState<string | null>(null);
 
