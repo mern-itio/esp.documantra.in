@@ -549,37 +549,40 @@ export const mockPDFTools = {
       },
     
       {
-        id: "optimize_fonts",
+        id: "optimize-font",
         name: "Optimize Fonts",
         description: "Optimize font usage and embedding",
         category: "optimization",
         features: ["font_subsetting", "font_optimization", "embedding_control"],
         complexity: "advanced" as const,
         popularity: 31,
-        icon: "Type"
+        icon: "Type",
+        route: "/pdf-tools/optimize-font"
       },
       {
-        id: "remove_unused_objects",
+        id: "remove-unused-objects",
         name: "Remove Unused Objects",
         description: "Clean up unused PDF objects and resources",
         category: "optimization",
         features: ["object_analysis", "resource_cleanup", "structure_optimization"],
         complexity: "advanced" as const,
         popularity: 28,
-        icon: "Trash2"
+        icon: "Trash2",
+        route: "/pdf-tools/remove-unused-objects"
       },
       {
-        id: "linearize_pdf",
+        id: "linearize-pdf",
         name: "Linearize PDF",
         description: "Optimize PDFs for fast web viewing",
         category: "optimization",
         features: ["web_optimization", "fast_loading", "streaming_support"],
         complexity: "medium" as const,
         popularity: 35,
-        icon: "Zap"
+        icon: "Zap",
+        route: "/pdf-tools/linearize-pdf"
       },
       {
-        id: "color_optimization",
+        id: "color-optimization",
         name: "Color Optimization",
         description: "Optimize color spaces and profiles",
         category: "optimization",
@@ -587,17 +590,19 @@ export const mockPDFTools = {
         complexity: "advanced" as const,
         popularity: 22,
         icon: "Palette",
-        premium: true
+        premium: true,
+        route: "/pdf-tools/color-optimization"
       },
       {
-        id: "quality_analysis",
+        id: "quality-analysis",
         name: "Quality Analysis",
         description: "Analyze and score document quality",
         category: "optimization",
         features: ["quality_scoring", "optimization_suggestions", "performance_metrics"],
         complexity: "medium" as const,
         popularity: 41,
-        icon: "BarChart3"
+        icon: "BarChart3",
+        route: "/pdf-tools/quality-analysis"
       },
       {
         id: "batch_optimization",

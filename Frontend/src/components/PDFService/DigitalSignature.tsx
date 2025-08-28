@@ -513,7 +513,9 @@ const DigitalSignature: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select PDF File to Verify
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 
+                flex flex-col items-center justify-center text-center 
+                hover:border-blue-400 transition-colors h-44">
                 <input
                   ref={fileInputRef}
                   type="file"
