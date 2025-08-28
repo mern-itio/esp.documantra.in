@@ -1,6 +1,7 @@
 const Envelope = require('../models/Envelope');
 const SignatureField = require('../models/SignatureFields');
 const Recipient = require('../models/Recipient');
+const RecipientPermission = require('../models/RecipientPermission');
 const axios = require('axios');
 const sendEmail = require('../emails/sendEmail');
 const {signRequestTemplate } = require('../emails/emailTemplates');
@@ -13,7 +14,18 @@ const envelopesData = async (req, res) => {
         // Step 1: Fetch envelopes for the user
         const envelopes = await Envelope.find({ sender: userId })
                         .populate("documentIds")       // fetch docs
-                        .populate("recipientIds");     // fetch recipients
+                        .populate({
+                                  path: 'recipientIds',           // populate recipients
+                                  select: 'name email UserId',    // only global info
+                                  populate: {
+                                    path: 'permissions',          // populate envelope-specific permissions
+                                    model: 'RecipientPermission',
+                                    match: function() {
+                                      return { envelopeId: this._id };
+                                    },
+                                    select: 'role order status authLevel'
+                                  }
+                                })
         if (!envelopes || envelopes.length === 0) {
             return res.status(404).json({ message: 'No envelopes found' });
         }
@@ -86,8 +98,16 @@ const envelopesDetail = async (req, res) => {
         // Step 1: Fetch single envelope by ID
         const envelope = await Envelope.findById(envelopeId)
             .populate("documentIds")   // fetch docs
-            .populate("recipientIds"); // fetch recipients
-
+            .populate({
+                        path: 'recipientIds',           // populate recipients
+                        select: 'name email UserId',    // only global info
+                        populate: {
+                          path: 'permissions',          // populate envelope-specific permissions
+                          model: 'RecipientPermission',
+                          match: { envelopeId: envelopeId }, // only permissions for this envelope
+                          select: 'role order status authLevel'
+                        }
+                      });
         if (!envelope) {
             return res.status(404).json({ message: 'Envelope not found' });
         }
@@ -127,15 +147,18 @@ const envelopesDetail = async (req, res) => {
                 size: doc.fileSize,
                 type: doc.mimeType
             })),
-            recipients: envelope.recipientIds.map(recipient => ({
+           recipients: envelope.recipientIds.map(recipient => {
+              const perm = recipient.permissions?.[0] || {};
+              return {
                 id: recipient._id,
                 name: recipient.name,
                 email: recipient.email,
-                role: recipient.role,
-                order: recipient.order,
-                status: recipient.status,
-                authentication: recipient.authLevel
-            }))
+                role: perm.role,
+                order: perm.order,
+                status: perm.status,
+                authentication: perm.authLevel
+              };
+            })
         };
 
         // Step 4: Return single envelope
@@ -251,29 +274,49 @@ try {
 
 }
 const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage) => {
+  try {
+    // Step 1: Find the first waiting recipientPermission for this envelope
+    const waitingPermission = await RecipientPermission.findOne({
+      envelopeId,
+      status: 'waiting'
+    })
+      .sort({ order: 1, createdAt: 1 }) // respect signing order
+      .populate('recipientId'); // fetch the recipient details (name, email, etc.)
 
-  try{
-        const waitingRecipient = await Recipient.findOne({
-        envelopeId,
-        status: 'waiting'
-      }).sort({ createdAt: 1 });
+    if (!waitingPermission) {
+      return { error: "No waiting recipients" };
+    }
 
-      if (!waitingRecipient) return { error: "No waiting recipients" };
+    // Step 2: Update permission status
+    waitingPermission.status = 'sent';
+    await waitingPermission.save();
 
-      // Update recipient status to sent
-      waitingRecipient.status = 'sent';
-      await waitingRecipient.save();
+    // Step 3: Send email
+    const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
+    const html = signRequestTemplate(
+      waitingPermission.recipientId.name,
+      envelopeSubject,
+      envelopeMessage,
+      signLink
+    );
 
-      // Send email
-      const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${waitingRecipient._id}`;
-      const html = signRequestTemplate(waitingRecipient.name, envelopeSubject, envelopeMessage, signLink);
-      await sendEmail(waitingRecipient.email, `Action Required: Sign "${envelopeSubject}"`, html);
+    await sendEmail(
+      waitingPermission.recipientId.email,
+      `Action Required: Sign "${envelopeSubject}"`,
+      html
+    );
 
-      return { success: true, recipientId: waitingRecipient._id };
-  } catch(error){
+    return {
+      success: true,
+      recipientId: waitingPermission.recipientId._id,
+      permissionId: waitingPermission._id
+    };
+  } catch (error) {
     console.error("Error sending to recipients:", error);
+    return { error: "Internal error while sending recipient email" };
   }
 };
+
 const addSignature = async (req, res) => {
   const { fieldId, signature } = req.body;
 
@@ -319,6 +362,27 @@ const addSignature = async (req, res) => {
   });
 };
 
+const getRecipientByEmail  = async (req, res)=>{
+ const {email} = req.params;
+ try{
+    // Check if recipient exists in the system
+     const existingRecipient = await Recipient.findOne({ email });
+     if(existingRecipient){
+       return res.status(200).json({
+        recipient: existingRecipient
+       });
+     }else{
+      return res.status(404).json({
+        message:"Recipient not found..."
+      })
+     }
+
+ }catch(err){
+  console.log(`Error in fetching recipient by Email: ${err}`)
+ }
+
+}
+
 // Export functions
 module.exports = {
   envelopesData,
@@ -327,5 +391,6 @@ module.exports = {
   envelopExists,
   getSignatureFields,
   sendEnvelope,
-  addSignature
+  addSignature,
+  getRecipientByEmail
 };

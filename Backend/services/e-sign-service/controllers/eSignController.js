@@ -3,6 +3,7 @@ const { isEmailValid } = require('@draftnsign/validators');//
 const Envelope = require('../models/Envelope');
 const Document = require('../models/Document');
 const Recipient = require('../models/Recipient');
+const RecipientPermission = require('../models/RecipientPermission');
 const SignatureField = require('../models/SignatureFields');
 // Documents Upload 
 const Upload = async (req, res) => {
@@ -48,6 +49,7 @@ const Upload = async (req, res) => {
         }
     });
 };
+
 const insertRecipient = async (req, res) => {
   const { recipients, envelopeId } = req.body;
 
@@ -60,51 +62,54 @@ const insertRecipient = async (req, res) => {
 
   // Step 1: Find envelope by ID
   let envelope = await Envelope.findById(envelopeId);
-  if (!envelope) {
-    return res.status(404).json({ message: 'Envelope not found' });
-  }
+    if (!envelope) {
+      return res.status(404).json({ message: 'Envelope not found' });
+    }
 
   const recps = await Promise.all(
-    recipients.map(async (recipient) => {
-      // Step 2: Check if recipient already exists in this envelope
-      let existingRecp = await Recipient.findOne({
-        envelopeId: envelope._id,
-        email: recipient.email
+    recipients.map(async (r) => {
+      let recipient = await Recipient.findOne({ email: r.email });
+
+      if (!recipient) {
+        recipient = await Recipient.create({
+          name: r.name,
+          email: r.email
+        });
+      }
+      // Step 2: Check if this recipient already has permission for this envelope
+      let existingPermission = await RecipientPermission.findOne({
+        recipientId: recipient._id,
+        envelopeId: envelope._id
       });
 
-      if (existingRecp) {
-        // Update recipient
-        existingRecp.name = recipient.name || existingRecp.name;
-        existingRecp.role = recipient.role || existingRecp.role;
-        existingRecp.order = recipient.order ?? existingRecp.order;
-        existingRecp.status = recipient.status || existingRecp.status;
-        existingRecp.authLevel =
-          recipient.authentication || existingRecp.authLevel;
-
-        await existingRecp.save();
-        return existingRecp._id;
-      } else {
-        // Create new recipient
-        const recp = new Recipient({
-          envelopeId: envelope._id,
-          name: recipient.name,
-          email: recipient.email,
-          role: recipient.role,
-          order: recipient.order,
-          status: recipient.status,
-          authLevel: recipient.authentication
-        });
-        await recp.save();
-
+      if (existingPermission) {
+        // optionally update role/order/authLevel
+        existingPermission.role = r.role;
+        existingPermission.order = r.order ?? existingPermission.order;
+        existingPermission.authLevel = r.authentication;
+        await existingPermission.save();
         // Attach recipient to envelope if not already present
-        if (!envelope.recipientIds.includes(recp._id)) {
-          envelope.recipientIds.push(recp._id);
+        if (!envelope.recipientIds.includes(recipient._id)) {
+          envelope.recipientIds.push(recipient._id);
         }
-
-        return recp._id;
+      } else {
+        await RecipientPermission.create({
+          recipientId: recipient._id,
+          envelopeId: envelope._id,
+          role: r.role,
+          order: r.order,
+          status: 'waiting',
+          authLevel: r.authentication
+        });
       }
+      // Attach recipient to envelope if not already present
+      if (!envelope.recipientIds.includes(recipient._id)) {
+        envelope.recipientIds.push(recipient._id);
+      }
+      return recipient._id;
     })
   );
+
 
   // Step 3: Save updated envelope
   await envelope.save();
@@ -116,9 +121,9 @@ const insertRecipient = async (req, res) => {
     recipientIds: recps
   });
 };
+
 const saveSignatureFields = async (req, res) => {
   const { signatureFields, envelopeId } = req.body;
-  console.log('Signature Fields:', signatureFields);
   if (!envelopeId) {
     return res.status(400).json({ message: 'Envelope ID is required' });
   }
