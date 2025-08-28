@@ -9,8 +9,8 @@ import { apiServiceApi } from "../../../services/apiHelper";
 const Main = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [mode, setMode] = useState("sandbox"); // default value for dropdown
-  const [refresh, setRefresh] = useState(0);  // trigger to refresh keys after creation
+  const [mode, setMode] = useState(""); 
+  const [refresh, setRefresh] = useState(0);  
   const [hasSandbox, setHasSandbox] = useState(false);
   const [hasProduction, setHasProduction] = useState(false);
 
