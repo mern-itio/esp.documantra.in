@@ -254,6 +254,22 @@ const handleNext = async () => {
       recipient.id === id ? { ...recipient, ...updates } : recipient
     ));
   };
+  const handleEmailOnBlur = async(id: string, email: string)=>{
+    if (!email || !envelopeId) return;
+    try{
+      const response = await eSignApi.get(`/api/e-sign/get-recipient/${email}`);
+      if (response.status == 200) {
+        const {recipient} = response.data;
+        updateRecipient(id, {
+          name: recipient.name,
+          email: recipient.email
+        })
+        console.log('Fetched and updated');
+      }
+    }catch (err){
+      console.log(`Handle email on Blur`);
+    }
+  }
 
   const removeRecipient = (id: string) => {
     setRecipients(prev => prev.filter(recipient => recipient.id !== id));
@@ -443,6 +459,7 @@ const getSteps = async () => {
                           type="email"
                           value={recipient.email}
                           onChange={(e) => updateRecipient(recipient.id, { email: e.target.value })}
+                          onBlur={(e) => handleEmailOnBlur(recipient.id, e.target.value )}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="email@example.com"
                         />
