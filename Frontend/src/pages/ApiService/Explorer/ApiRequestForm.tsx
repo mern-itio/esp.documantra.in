@@ -85,13 +85,18 @@ export default function APIRequestForm({
           data: selectedApi.showBody ? JSON.parse(body) : undefined,
         });
       }
-      onResponse(res.data);
+      onResponse({
+        status: res.status,
+        statusText: res.statusText,
+        data: res.data,
+    });
     } catch (err: any) {
-      let message = "Unknown error occurred";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      onResponse({ error: message });
+    const isAxiosError = !!err.response;
+    onResponse({
+      status: isAxiosError ? err.response.status : null,
+      statusText: isAxiosError ? err.response.statusText : null,
+      data: isAxiosError ? err.response.data : null,
+    });
     }
     setLoading(false);
   }

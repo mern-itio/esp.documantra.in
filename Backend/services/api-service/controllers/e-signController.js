@@ -5,8 +5,7 @@ const ESIGN_API_BASE = process.env.ESIGN_URL ;
 const ESignApiKey = require('../models/apiKey');
 
 const createEnvelope = async (req, res) => {
-  try {
-    
+  try { 
     // Prepare form-data for proxy (using formidable, multer, etc.)
     const formData = new FormData();
     if (req.body.envelopeId) formData.append('envelopeId', req.body.envelopeId);
@@ -64,6 +63,7 @@ const forwardRecipientsRequest = async (req, res) => {
 };
 const getEnvelopeDetail = async (req, res) => {
   try {
+    console.log("endpoint Hiiited");
     const envelopeId = req.params.id;
 
     // Make GET request to microservice
@@ -78,16 +78,31 @@ const getEnvelopeDetail = async (req, res) => {
       }
     );
 
-    // Forward response
+    console.log('Response',response.data.data);
+    
+    res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message:response.data.status,
+      data: response.data
+    };
+    // console.log('Controller set analyticsResponse:', res.locals.analyticsResponse);
     return res.status(response.status).json(response.data);
+    // Forward response with correct status
   } catch (err) {
-    console.error('Proxy error:', err);
-    return res.status(
-      err.response ? err.response.status : 500
-    ).json(
-      err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
-    );
-  }
+  console.error('Error:', err);
+  res.locals.analyticsResponse = {
+    status: err.response ? err.response.status : 500,
+    statusText: err.response ? err.response.statusText : "Error",
+    message:err.response.data.message,
+    data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
+}
 };
 const saveSignatureFields = async (req, res) => {
   try {
