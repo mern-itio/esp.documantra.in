@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {LayoutDashboard, FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, UserCog, LayoutDashboardIcon, FileSignatureIcon, BarChart3Icon, Key,  BarChart3, FolderOpen, Play, Book, Webhook, Package, TestTube, Store, Users, HelpCircle} from 'lucide-react';
+import {LayoutDashboard, FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, UserCog, LayoutDashboardIcon, FileSignatureIcon, BarChart3Icon, Key,  BarChart3, FolderOpen, Play, Book, Webhook, Package, TestTube, Store, Users, HelpCircle, Layers, Layout, Cpu, ClipboardList, ShoppingCart, Code, Zap} from 'lucide-react';
 
 interface SidebarProps {
   activeView?: string;
@@ -54,12 +54,30 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: 'E-Sign',
       icon: FileSignature,
       children: [
-        { id: 'dashboard', label: 'Dashboard', path: '/e-sign/dashboard', icon: LayoutDashboardIcon },
+        { id: 'esignDashboard', label: 'Dashboard', path: '/e-sign/dashboard', icon: LayoutDashboardIcon },
         { id: 'create', label: 'Create', path: '/e-sign/create', icon: FileSignatureIcon },
         { id: 'analytics', label: 'Analytics', path: '/e-sign/analytics', icon: BarChart3Icon },
         { id: 'settings', label: 'Settings', path: '/e-sign/settings', icon: Settings },
         { id: 'enterprise', label: 'Enterprise', path: '/e-sign/enterprise', icon: Building2 },
         { id: 'admin', label: 'Admin', path: '/e-sign/admin', icon: UserCog }
+      ]
+    },
+    {
+      id: 'template',
+      label: 'Template',
+      icon: Layers,
+      children: [
+        { id: 'templateDashboard', label: 'Dashboard', path: '/template/dashboard', icon: LayoutDashboardIcon },
+        { id: 'templateDesign', label: 'Design', path: '/template/designer', icon: Edit3 },
+        { id: 'advanceTemplateDesign', label: 'Advance Design', path: '/template/advance-designer', icon: Layout },
+        { id: 'aiTemplateDesign', label: 'AI Design', path: '/template/ai-studio', icon: Cpu },
+        { id: 'templateLibrary', label: 'Library', path: '/template/library', icon: Archive },
+        { id: 'formBuilder', label: 'Form Builder', path: '/template/form-builder', icon: ClipboardList },
+        { id: 'templateMarketPlace', label: 'Marketplace', path: '/template/marketplace', icon: ShoppingCart },
+        { id: 'templateAnlytics', label: 'Anlytics', path: '/template/anylytics', icon: BarChart3 },
+        { id: 'apiManagement', label: 'API Management', path: '/template/api-management', icon: Code },
+        { id: 'workflowAutomation', label: 'Workflow', path: '/template/automation', icon: Zap },
+        { id: 'templateAdminDashboard', label: 'Admin Dashboard', path: '/template/admin-dashboard', icon: Settings },
       ]
     },
     {

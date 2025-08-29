@@ -194,6 +194,21 @@ import EsignEnterpriseSettings from '../pages/eSign/EnterpriseSettings';
 import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
 // E-Signature Pages Ended
 
+// Template Pages Started
+// import { Navigation } from './components/Navigation';
+import {Dashboard as TemplateDashboard}  from '../pages/Template/Dashboard';
+import { TemplateDesigner } from '../pages/Template/TemplateDesigner';
+import { AdvancedTemplateDesigner } from '../pages/Template/AdvancedTemplateDesigner';
+import { AITemplateStudio } from '../pages/Template/AITemplateStudio';
+import { TemplateLibrary } from '../pages/Template/TemplateLibrary';
+import { FormBuilder } from '../pages/Template/FormBuilder';
+import { TemplateMarketplace } from '../pages/Template/TemplateMarketplace';
+import { Analytics as TemplateAnylytics } from '../pages/Template/Analytics';
+import { APIManagement } from '../pages/Template/APIManagement';
+import { WorkflowAutomation } from '../pages/Template/WorkflowAutomation';
+import { TemplateAdminDashboard } from '../pages/Template/TemplateAdminDashboard';
+// Template Pages Ended
+
 //PDF Tools Started
 import type { PDFTool, ProcessingStats } from '../types';
 import { mockPDFTools, mockProcessingStats } from '../data/pdfMockData';
@@ -688,6 +703,19 @@ const authRoutes = [
   { path: '/e-sign/settings', element: <EsignSettings /> },
   { path: '/e-sign/enterprise', element: <EsignEnterpriseSettings /> },
   { path: '/e-sign/admin', element: <EsignESignatureAdmin /> },
+
+  // Template Routes
+  { path: '/template/dashboard', element: <TemplateDashboard/>},
+  { path: '/template/designer', element: <TemplateDesigner/>},
+  { path: '/template/advance-designer', element: <AdvancedTemplateDesigner/>},
+  { path: '/template/ai-studio', element: <AITemplateStudio/>},
+  { path: '/template/library', element: <TemplateLibrary/>},
+  { path: '/template/form-builder', element: <FormBuilder/>},
+  { path: '/template/marketplace', element: <TemplateMarketplace/>},
+  { path: '/template/anylytics', element: <TemplateAnylytics/>},
+  { path: '/template/api-management', element: <APIManagement/>},
+  { path: '/template/automation', element: <WorkflowAutomation/>},
+  { path: '/template/admin-dashboard', element: <TemplateAdminDashboard/>},
 
   // API-service routes
   { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
