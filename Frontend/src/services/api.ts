@@ -104,6 +104,15 @@ const makeDocumentRequest = async (
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Handle duplicate filename error specifically
+      if (response.status === 409 && errorData.code === 'DUPLICATE_FILENAME') {
+        const error = new Error(errorData.message || 'Duplicate filename detected');
+        (error as any).code = 'DUPLICATE_FILENAME';
+        (error as any).data = errorData.data;
+        throw error;
+      }
+      
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
@@ -122,6 +131,14 @@ const makeDocumentRequest = async (
 
 // Document Management API
 export const documentAPI = {
+  // Check for duplicate filename
+  checkDuplicateFilename: async (filename: string, folderId?: string) => {
+    return makeDocumentRequest('/api/documents/check-duplicate', {
+      method: 'POST',
+      body: JSON.stringify({ filename, folderId }),
+    });
+  },
+
   // Upload document
   uploadDocument: async (file: File, folderId?: string, description?: string, tags?: string) => {
     const formData = new FormData();
@@ -306,8 +323,11 @@ export const documentAPI = {
 // Comment Management API
 export const commentAPI = {
   // Get document comments
-  getDocumentComments: async (documentId: string) => {
-    return makeDocumentRequest(`/api/documents/${documentId}/comments`);
+  getDocumentComments: async (documentId: string, versionId?: string) => {
+    const url = versionId 
+      ? `/api/documents/${documentId}/versions/${versionId}/comments`
+      : `/api/documents/${documentId}/comments`;
+    return makeDocumentRequest(url);
   },
 
   // Create comment

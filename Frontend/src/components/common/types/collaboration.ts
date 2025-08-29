@@ -34,6 +34,15 @@ export interface DocumentComment {
   resolved: boolean;
   mentions: string[];
   attachments?: CommentAttachment[];
+  // Version tracking
+  versionId?: {
+    _id: string;
+    version: string;
+    description: string;
+    createdAt: string;
+  };
+  versionNumber?: string;
+  versionDescription?: string;
 }
 
 export interface CommentReply {

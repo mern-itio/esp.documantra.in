@@ -24,6 +24,10 @@ interface CommentSystemProps {
   onReplyAdd?: (commentId: string, reply: Omit<CommentReply, 'id' | 'timestamp'>) => void;
   isLoading?: boolean;
   canAddComments?: boolean;
+  // Version tracking
+  currentVersion?: string;
+  versions?: Array<{ id: string; version: string; description: string }>;
+  onVersionChange?: (versionId: string) => void;
 }
 
 export function CommentSystem({
@@ -33,7 +37,10 @@ export function CommentSystem({
   onCommentResolve,
   onReplyAdd,
   isLoading = false,
-  canAddComments = true
+  canAddComments = true,
+  currentVersion,
+  versions,
+  onVersionChange
 }: CommentSystemProps) {
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -45,6 +52,7 @@ export function CommentSystem({
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState('');
   const [showCommentMenu, setShowCommentMenu] = useState<string | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<string>(currentVersion || 'all');
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleAddComment = () => {
@@ -59,7 +67,16 @@ export function CommentSystem({
       position: { page: 1, x: 100, y: 100 },
       replies: [],
       resolved: false,
-      mentions: extractMentions(newComment)
+      mentions: extractMentions(newComment),
+      // Include version information if available
+      versionId: selectedVersion !== 'all' ? {
+        _id: selectedVersion,
+        version: versions?.find(v => v.id === selectedVersion)?.version || 'Unknown',
+        description: versions?.find(v => v.id === selectedVersion)?.description || '',
+        createdAt: new Date().toISOString()
+      } : undefined,
+      versionNumber: selectedVersion !== 'all' ? versions?.find(v => v.id === selectedVersion)?.version : undefined,
+      versionDescription: selectedVersion !== 'all' ? versions?.find(v => v.id === selectedVersion)?.description : undefined
     };
 
     onCommentAdd(comment);
@@ -193,17 +210,77 @@ export function CommentSystem({
     return mentions;
   };
 
-  const filteredComments = showResolved 
-    ? comments 
-    : comments.filter(comment => !comment.resolved);
+  // Filter comments by version if a specific version is selected
+  const getFilteredComments = () => {
+    let filtered = comments;
+    
+    // Filter by version if not showing all
+    if (selectedVersion !== 'all') {
+      filtered = filtered.filter(comment => 
+        comment.versionId?._id === selectedVersion || 
+        comment.versionNumber === selectedVersion
+      );
+    }
+    
+    // Filter by resolved status
+    if (!showResolved) {
+      filtered = filtered.filter(comment => !comment.resolved);
+    }
+    
+    return filtered;
+  };
+
+  const filteredComments = getFilteredComments();
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Comments</h3>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Comments</h3>
+            {/* Version Summary */}
+            {versions && versions.length > 0 && (
+              <div className="flex items-center space-x-2 mt-1">
+                <span className="text-xs text-gray-500">Comments by version:</span>
+                {versions.map((version) => {
+                  const versionCommentCount = comments.filter(c => 
+                    c.versionId?._id === version.id || c.versionNumber === version.version
+                  ).length;
+                  return (
+                    <span key={version.id} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                      {version.version}: {versionCommentCount}
+                    </span>
+                  );
+                })}
+                <span className="text-xs text-gray-600 bg-blue-100 px-2 py-1 rounded">
+                  Total: {comments.length}
+                </span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center space-x-2">
+            {/* Version Selector */}
+            {versions && versions.length > 0 && (
+              <select
+                value={selectedVersion}
+                onChange={(e) => {
+                  const version = e.target.value;
+                  setSelectedVersion(version);
+                  if (onVersionChange && version !== 'all') {
+                    onVersionChange(version);
+                  }
+                }}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Versions</option>
+                {versions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.version} - {version.description}
+                  </option>
+                ))}
+              </select>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -306,12 +383,27 @@ export function CommentSystem({
                     alt={comment.authorName}
                     className="w-6 h-6 rounded-full"
                   />
-                  <span className="text-sm font-medium text-gray-900">
-                    {comment.authorName}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatDate(comment.timestamp)}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">
+                      {comment.authorName}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(comment.timestamp)}
+                    </span>
+                    {/* Version Information */}
+                    {comment.versionId && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                          Version: {comment.versionId.version || comment.versionNumber || 'Unknown'}
+                        </span>
+                        {comment.versionId.description && (
+                          <span className="text-xs text-gray-500">
+                            - {comment.versionId.description}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center space-x-1">
                   {onCommentResolve && !comment.resolved && canAddComments && (

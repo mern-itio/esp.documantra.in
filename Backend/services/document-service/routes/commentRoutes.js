@@ -5,6 +5,9 @@ const commentController = require('../controllers/commentController');
 // Get all comments for a document
 router.get('/documents/:documentId/comments', commentController.getDocumentComments);
 
+// Get comments by version
+router.get('/documents/:documentId/versions/:versionId/comments', commentController.getCommentsByVersion);
+
 // Create a new comment
 router.post('/documents/:documentId/comments', commentController.createComment);
 

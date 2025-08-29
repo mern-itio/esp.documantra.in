@@ -399,11 +399,11 @@ exports.convertImagesToPDF = async (req, res) => {
   try {
     // Create a unique filename for the output PDF
     const outputPdfName = `output_${Date.now()}.pdf`;
-    const outputPdfPath = path.join(__dirname, '..', outputPdfName); // Save to pdf-service root
+    const outputPdfPath = path.join(__dirname, '..', 'outputs', outputPdfName); // Save to outputs directory
     
     console.log('Creating PDF at:', outputPdfPath);
     console.log('Current directory:', __dirname);
-    console.log('Root directory:', process.cwd());
+    console.log('Outputs directory:', path.join(__dirname, '..', 'outputs'));
     
     const doc = new PDFDocument({ autoFirstPage: false });
     const stream = fs.createWriteStream(outputPdfPath);
@@ -420,12 +420,13 @@ exports.convertImagesToPDF = async (req, res) => {
     stream.on('finish', () => {
       console.log('PDF created at:', outputPdfPath);
       
-      // Return relative path for frontend (just the filename, not full path)
-      const relativePath = `/${path.basename(outputPdfPath)}`;
+      // Return relative path for frontend (path to outputs directory)
+      const relativePath = `/outputs/${path.basename(outputPdfPath)}`;
       
       console.log('Sending response to frontend:', {
         message: "Images converted to PDF successfully",
         pdf: relativePath,
+        originalPath: outputPdfPath,
         originalFiles: req.files.map(f => f.originalname),
         fileCount: req.files.length
       });
@@ -433,6 +434,7 @@ exports.convertImagesToPDF = async (req, res) => {
       res.json({ 
         message: "Images converted to PDF successfully", 
         pdf: relativePath,
+        originalPath: outputPdfPath,
         originalFiles: req.files.map(f => f.originalname),
         fileCount: req.files.length
       });
