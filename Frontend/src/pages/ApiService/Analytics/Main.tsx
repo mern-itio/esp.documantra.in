@@ -1,6 +1,8 @@
 import { Download } from "lucide-react";
 import FirstSection from "./FirstSection";
 import SecondSection from "./SecondSection";
+import { useEffect, useState } from "react";
+import { apiServiceApi } from "../../../services/apiHelper";
 
 const dateRanges = [
   "Last 24 Hours",
@@ -10,6 +12,28 @@ const dateRanges = [
 ];
 
 const Main = () => {
+   const [stats, setStats] = useState({ totalRequests: 0, errorRate: 0, avgLatency: 0, apiUptime: 0 });
+
+   // Fetch on mount
+useEffect(() => {
+  const fetchStats = async () => {
+    try {
+      const response = await apiServiceApi.get('/api/api-service/total-requests');
+      if (response.status === 200 && response.data) {
+        setStats({
+          totalRequests: response.data.totalRequests,
+          errorRate: response.data.errorRate,
+          avgLatency: response.data.avgLatency,
+          apiUptime: response.data.apiUptime
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching analytics stats:", err);
+    }
+  };
+  fetchStats();
+}, []);
+
   return (
     <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -36,7 +60,7 @@ const Main = () => {
     </button>
   </div>
 </div>
-      <FirstSection/>
+      <FirstSection {...stats}/>
       <SecondSection/>
     </div>
   );
