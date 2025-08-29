@@ -70,3 +70,8 @@ export const apiServiceApi = createApiInstance(
   import.meta.env.VITE_API_SERVICE_URL || 'http://localhost:2105',
   'Api-Serivce'
 );
+
+export const templateServiceApi = createApiInstance(
+  import.meta.env.VITE_TEMPLATE_SERVICE_URL || 'http://165.22.215.73:2106',
+  'Template-Serivce'
+);

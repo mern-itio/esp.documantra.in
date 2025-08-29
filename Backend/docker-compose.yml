@@ -56,3 +56,15 @@ services:
       - /app/services/api-service/node_modules
       - ./services/api-service/uploads:/app/services/api-service/uploads  # <-- added
     command: npm run dev
+
+  template-service:
+    build:
+      context: .
+      dockerfile: services/template-service/Dockerfile
+    ports:
+      - "2106:2106"
+    volumes:
+      - ./services/template-service:/app/services/template-service:cached
+      - /app/services/template-service/node_modules
+      - ./services/template-service/uploads:/app/services/template-service/uploads  # <-- added
+    command: npm run dev

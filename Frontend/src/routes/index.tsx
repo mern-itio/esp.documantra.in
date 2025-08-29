@@ -212,6 +212,8 @@ import { Analytics as TemplateAnylytics } from '../pages/Template/Analytics';
 import { APIManagement } from '../pages/Template/APIManagement';
 import { WorkflowAutomation } from '../pages/Template/WorkflowAutomation';
 import { TemplateAdminDashboard } from '../pages/Template/TemplateAdminDashboard';
+import { FormsList } from '../pages/Template/FormList';
+import { FormView } from '../pages/Template/FormView';
 // Template Pages Ended
 
 //PDF Tools Started
@@ -715,12 +717,13 @@ const authRoutes = [
   { path: '/template/advance-designer', element: <AdvancedTemplateDesigner/>},
   { path: '/template/ai-studio', element: <AITemplateStudio/>},
   { path: '/template/library', element: <TemplateLibrary/>},
-  { path: '/template/form-builder', element: <FormBuilder/>},
+  { path: '/template/form-builder/:id', element: <FormBuilder/>},
   { path: '/template/marketplace', element: <TemplateMarketplace/>},
   { path: '/template/anylytics', element: <TemplateAnylytics/>},
   { path: '/template/api-management', element: <APIManagement/>},
   { path: '/template/automation', element: <WorkflowAutomation/>},
   { path: '/template/admin-dashboard', element: <TemplateAdminDashboard/>},
+  { path: '/template/form-list', element: <FormsList/>},
 
   // API-service routes
   { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
@@ -805,6 +808,7 @@ const router = createBrowserRouter([
     element: <PublicSignerLayout />,
     children: [
       { path: 'e-sign/signer/:id/:recipientId', element: <PublicSignerPage /> },
+      { path: '/template/form-view/:id', element:<FormView/>}
     ],
   },
 ]);

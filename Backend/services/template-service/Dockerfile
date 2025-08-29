@@ -8,7 +8,7 @@ COPY packages/auth-lib/package*.json ./packages/auth-lib/
 COPY packages/validators/package*.json ./packages/validators/
 
 # Copy package.json and package-lock.json for service
-COPY services/auth-service/package*.json ./services/auth-service/
+COPY services/template-service/package*.json ./services/template-service/
 
 # Install dependencies inside local packages
 # WORKDIR /app/packages/auth-lib
@@ -18,7 +18,7 @@ COPY services/auth-service/package*.json ./services/auth-service/
 # COPY packages/auth-lib ./packages/auth-lib
 COPY packages/auth-lib ./packages/auth-lib
 COPY packages/validators ./packages/validators
-COPY services/auth-service ./services/auth-service
+COPY services/template-service ./services/template-service
 
 # Install dependencies inside local packages
 WORKDIR /app/packages/auth-lib
@@ -28,9 +28,9 @@ WORKDIR /app/packages/validators
 RUN npm install
  
 # Install service dependencies (links local packages)
-WORKDIR /app/services/auth-service
+WORKDIR /app/services/template-service
 RUN npm install --legacy-peer-deps
 
-EXPOSE 2101
+EXPOSE 2106
 
 CMD ["npm", "run", "dev"]

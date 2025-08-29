@@ -1,5 +1,5 @@
 
-const { isEmailValid } = require('@draftnsign/validators');//
+const { isEmailValid } = require('@draftnsign/validators');
 const Envelope = require('../models/Envelope');
 const Document = require('../models/Document');
 const Recipient = require('../models/Recipient');

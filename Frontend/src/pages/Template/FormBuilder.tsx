@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Plus, 
   Type, 
@@ -16,6 +16,8 @@ import {
   GripVertical
 } from 'lucide-react';
 import { FormPreview } from '../../components/Template/FormPreview';
+import { useParams } from 'react-router-dom';
+import { templateServiceApi } from '../../services/apiHelper';
 
 interface FormField {
   id: string;
@@ -28,9 +30,11 @@ interface FormField {
 }
 
 export const FormBuilder: React.FC = () => {
+  const { id: formId } = useParams<{ id: string }>();
   const [formFields, setFormFields] = useState<FormField[]>([]);
   const [selectedField, setSelectedField] = useState<FormField | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [formTitle, setFormTitle] = useState('Untitled Form');
 
   const fieldTypes = [
     { type: 'text', label: 'Text Input', icon: Type },
@@ -43,6 +47,36 @@ export const FormBuilder: React.FC = () => {
     { type: 'textarea', label: 'Text Area', icon: FileText }
   ];
 
+  useEffect(() => {
+  if (!formId) return;
+  getFormDetail(formId);
+
+}, [formId]);
+
+const getFormDetail = async(formId:any)=>{
+  try{
+    const response = await templateServiceApi.get(`/api/template/get-form-details/${formId}`);
+    if(response){
+      console.log(response);
+       setFormFields(response.data.fields || []);
+       setFormTitle(response.data.title || 'Untitled Form');
+    }
+  }catch (err){
+    console.log(err);
+  }
+}
+const saveFormFields = async () => {
+  try {
+    await templateServiceApi.post('/api/template/add-fields', {
+      formId,
+      fields: formFields,
+    });
+    alert('Fields saved successfully');
+  } catch (err) {
+    console.error(err);
+    alert('Failed to save fields');
+  }
+}; 
   const addField = (type: string) => {
     const newField: FormField = {
       id: `field_${Date.now()}`,
@@ -124,7 +158,7 @@ export const FormBuilder: React.FC = () => {
         {/* Top Toolbar */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-gray-900">Untitled Form</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{formTitle}</h1>
             <span className="text-sm text-gray-500">{formFields.length} fields</span>
           </div>
           <div className="flex items-center space-x-3">
@@ -139,7 +173,9 @@ export const FormBuilder: React.FC = () => {
               <Eye className="w-4 h-4 mr-2" />
               {showPreview ? 'Edit' : 'Preview'}
             </button>
-            <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium">
+            <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+            onClick={saveFormFields}
+            >
               <Save className="w-4 h-4 mr-2" />
               Save Form
             </button>
