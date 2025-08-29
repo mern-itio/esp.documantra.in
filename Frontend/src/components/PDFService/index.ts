@@ -9,6 +9,11 @@ export { default as CropPDF } from './CropPDF';
 export { default as InsertPDF } from './InsertPDF';
 export { default as DigitalSignature } from './DigitalSignature';
 export { default as AddWatermark } from './AddWatermark';
+export { default as RemoveUnusedObjects } from './RemoveUnusedObjects';
+export { default as LinearizePDF } from './LinearizePDF';
+export { default as ColorOptimization } from './ColorOptimization';
+export { default as QualityAnalysis } from './QualityAnalysis';
+
 
 // Components with named exports
 export { ToolsGrid } from './ToolsGrid';

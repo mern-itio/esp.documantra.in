@@ -44,6 +44,11 @@ import PDFToolsSetPermissionsPage from '../pages/PDFTools/SetPermissions';
 import PDFToolsRemoveMetadataPage from '../pages/PDFTools/RemoveMetadataPage';
 import PDFToolsCompressPDFPage from '../pages/PDFTools/CompressPDFPage';
 import PDFToolsOptimizeImagePage from '../pages/PDFTools/OptimizeImagePage';
+import PDFToolsOptimizeFontPage from '../pages/PDFTools/OptimizeFontPage';
+import PDFToolsRemoveUnusedObjectsPage from '../pages/PDFTools/RemoveUnusedObjectsPage';
+import PDFToolsLinearizePDFPage from '../pages/PDFTools/LinearizePDFPage';
+import PDFToolsColorOptimizationPage from '../pages/PDFTools/ColorOptimizationPage';
+import PDFToolsQualityAnalysisPage from '../pages/PDFTools/QualityAnalysisPage';
 import PDFToolsDocumentTrackingPage from '../pages/PDFTools/DocumentTrackingPage';
 import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
@@ -770,6 +775,11 @@ const authRoutes = [
   { path: '/pdf-tools/remove-metadata', element: <PDFToolsRemoveMetadataPage /> },
   { path: '/pdf-tools/compress-pdf', element: <PDFToolsCompressPDFPage /> },
   { path: '/pdf-tools/optimize-image', element: <PDFToolsOptimizeImagePage /> },
+  { path: '/pdf-tools/optimize-font', element: <PDFToolsOptimizeFontPage /> },
+  { path: '/pdf-tools/remove-unused-objects', element: <PDFToolsRemoveUnusedObjectsPage /> },
+  { path: '/pdf-tools/linearize-pdf', element: <PDFToolsLinearizePDFPage /> },
+  { path: '/pdf-tools/color-optimization', element: <PDFToolsColorOptimizationPage /> },
+  { path: '/pdf-tools/quality-analysis', element: <PDFToolsQualityAnalysisPage /> },
   { path: '/pdf-tools/document-tracking', element: <PDFToolsDocumentTrackingPage /> },
   { path: '/pdf-tools/add-watermark', element: <AddWatermark /> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },

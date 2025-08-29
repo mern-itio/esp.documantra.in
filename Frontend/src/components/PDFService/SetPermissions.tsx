@@ -16,7 +16,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
   const [dragActive, setDragActive] = useState(false);
   const [result, setResult] = useState<SetPermissionsResponse | null>(null);
   const [currentPermissions, setCurrentPermissions] = useState<CurrentPermissionsResponse | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  // const [showAdvanced, setShowAdvanced] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -342,12 +342,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-gray-900">Granular Permissions</h4>
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
-              </button>
+             
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -441,39 +436,6 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                 </label>
               </div>
             </div>
-
-            {/* Advanced Options */}
-            {showAdvanced && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h5 className="font-medium text-gray-700 mb-4">Password Protection</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      User Password (Optional)
-                    </label>
-                    <input
-                      type="password"
-                      value={permissions.password}
-                      onChange={(e) => updatePermission('password', e.target.value)}
-                      placeholder="Leave empty for no user password"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Owner Password (Optional)
-                    </label>
-                    <input
-                      type="password"
-                      value={permissions.ownerPassword}
-                      onChange={(e) => updatePermission('ownerPassword', e.target.value)}
-                      placeholder="Leave empty for no owner password"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Action Buttons */}
