@@ -94,6 +94,30 @@ class DocumentController {
         }
       }
 
+      // Check for duplicate filename in the same folder
+      const existingDocument = await Document.findOne({
+        name: req.file.originalname,
+        folderId: folderId || null,
+        ownerId: userId,
+        isDeleted: { $ne: true }
+      });
+
+      if (existingDocument) {
+        await unlinkAsync(req.file.path);
+        return res.status(409).json({
+          success: false,
+          message: 'A document with this name already exists in this folder',
+          code: 'DUPLICATE_FILENAME',
+          data: {
+            existingDocument: {
+              id: existingDocument._id,
+              name: existingDocument.name,
+              uploadedAt: existingDocument.createdAt
+            }
+          }
+        });
+      }
+
       // Extract content from the uploaded file
       const extractedContent = await extractFileContent(req.file.path, req.file.mimetype);
 
@@ -1013,6 +1037,79 @@ class DocumentController {
       res.status(500).json({
         success: false,
         message: 'Failed to move documents',
+        error: error.message
+      });
+    }
+  }
+
+  // Check for duplicate filenames before upload
+  async checkDuplicateFilename(req, res) {
+    try {
+      const { filename, folderId } = req.body;
+      const userId = req.user.data.id;
+
+      if (!filename) {
+        return res.status(400).json({
+          success: false,
+          message: 'Filename is required'
+        });
+      }
+
+      // Check if folder exists and user has access
+      if (folderId) {
+        const folder = await Folder.findOne({
+          _id: folderId,
+          $or: [
+            { ownerId: userId },
+            { 'permissions.userId': userId }
+          ]
+        });
+
+        if (!folder) {
+          return res.status(404).json({
+            success: false,
+            message: 'Folder not found or access denied'
+          });
+        }
+      }
+
+      // Check for duplicate filename in the same folder
+      const existingDocument = await Document.findOne({
+        name: filename,
+        folderId: folderId || null,
+        ownerId: userId,
+        isDeleted: { $ne: true }
+      });
+
+      if (existingDocument) {
+        return res.json({
+          success: true,
+          isDuplicate: true,
+          message: 'A document with this name already exists in this folder',
+          data: {
+            existingDocument: {
+              id: existingDocument._id,
+              name: existingDocument.name,
+              uploadedAt: existingDocument.createdAt
+            }
+          }
+        });
+      }
+
+      return res.json({
+        success: true,
+        isDuplicate: false,
+        message: 'Filename is available',
+        data: {
+          filename: filename
+        }
+      });
+
+    } catch (error) {
+      console.error('Duplicate filename check error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check duplicate filename',
         error: error.message
       });
     }

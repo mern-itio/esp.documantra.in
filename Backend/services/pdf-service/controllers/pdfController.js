@@ -3,7 +3,7 @@ const path = require('path');
 const pdfParse = require('pdf-parse');
 // const officeToPdf = require('office-to-pdf'); // Removed - requires LibreOffice
 const mammoth = require('mammoth');
-const puppeteer = require('puppeteer');
+// const puppeteer = require('puppeteer'); // No longer needed for DOC to PDF
 const { Document, Packer, Paragraph } = require('docx');
 const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit');
@@ -12,90 +12,104 @@ const fsSync = require('fs');
 // Remove the problematic pdf2html import
 // const pdf2html = require('pdf2html');
 /**
- * Convert DOC/DOCX to PDF using office-to-pdf npm package
+ * Convert DOC/DOCX to PDF using simple text extraction method
  * @param {string} inputPath - Path to input DOC/DOCX file
  * @param {string} outputPath - Path where PDF will be saved
  * @returns {Promise<Object>} - Result object with file size
  */
 async function convertDocToPdf(inputPath, outputPath) {
   try {
-    console.log('Starting DOC to PDF conversion using mammoth + puppeteer fallback method...');
+    console.log('Starting DOC to PDF conversion using simple text extraction method...');
     
-    // Use the fallback method directly (mammoth + puppeteer)
-    return await convertDocToPdfFallback(inputPath, outputPath);
+    // Use the simple text extraction method that doesn't require Puppeteer
+    return await convertDocToPdfSimple(inputPath, outputPath);
     
   } catch (error) {
     console.error('Error in DOC to PDF conversion:', error);
-      throw new Error(`Failed to convert document to PDF: ${error.message}`);
+    throw new Error(`Failed to convert document to PDF: ${error.message}`);
   }
 }
 
 /**
- * Fallback DOC to PDF conversion using mammoth + puppeteer npm packages
+ * Simple DOC to PDF conversion using text extraction and PDFKit (no Puppeteer required)
  * @param {string} inputPath - Path to input DOC/DOCX file
  * @param {string} outputPath - Path where PDF will be saved
  * @returns {Promise<Object>} - Result object with file size
  */
-async function convertDocToPdfFallback(inputPath, outputPath) {
+async function convertDocToPdfSimple(inputPath, outputPath) {
   try {
-    console.log('Starting fallback DOC to PDF conversion using mammoth + puppeteer...');
+    console.log('Starting simple DOC to PDF conversion using text extraction...');
     
     // Read the document
     const buffer = await fs.readFile(inputPath);
     
-    // Convert DOC/DOCX to HTML using mammoth npm package
-    const result = await mammoth.convertToHtml({ 
-      buffer,
-      styleMap: [
-        "p[style-name='Heading 1'] => h1:fresh",
-        "p[style-name='Heading 2'] => h2:fresh",
-        "p[style-name='Heading 3'] => h3:fresh",
-        "p[style-name='Title'] => h1:fresh",
-        "p[style-name='Subtitle'] => h2:fresh"
-      ]
+    // Extract text content using mammoth (without HTML conversion)
+    const result = await mammoth.extractRawText({ buffer });
+    const textContent = result.value;
+    
+    console.log(`Extracted ${textContent.length} characters of text`);
+    
+    // Create PDF using PDFKit (no Puppeteer required)
+    const doc = new PDFDocument({ 
+      margin: 30,
+      size: 'A4',
+      font: 'Helvetica'
     });
     
-    const html = result.value;
+    const stream = fsSync.createWriteStream(outputPath);
+    doc.pipe(stream);
     
-   const browser = await puppeteer.launch({ 
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    // Add title
+    doc.fontSize(20).font('Helvetica-Bold').text('Document to PDF Conversion', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
+    doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.moveDown(2);
+    
+    // Add extracted text content
+    if (textContent && textContent.length > 0) {
+      doc.fontSize(12).font('Helvetica').text('Document Content:', { underline: true });
+      doc.moveDown(0.5);
+      
+      // Split text into paragraphs and add to PDF
+      const paragraphs = textContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+      
+      paragraphs.forEach(paragraph => {
+        if (paragraph.trim().length > 0) {
+          doc.fontSize(11).font('Helvetica').text(paragraph.trim(), {
+            width: 500,
+            align: 'left'
+          });
+          doc.moveDown(0.5);
+        }
+      });
+    } else {
+      doc.fontSize(14).font('Helvetica').text('No text content could be extracted from the document.', { align: 'center' });
+      doc.moveDown(1);
+      doc.fontSize(12).text('The document may be empty, corrupted, or contain only non-text elements.', { align: 'center' });
+    }
+    
+    doc.end();
+    
+    await new Promise((resolve, reject) => {
+      stream.on('finish', resolve);
+      stream.on('error', reject);
     });
-    
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    
-    // Generate PDF with proper settings
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '20mm',
-        bottom: '20mm',
-        left: '20mm'
-      },
-      printBackground: true,
-      displayHeaderFooter: false
-    });
-    
-    await browser.close();
-    
-    // Save the PDF
-    await fs.writeFile(outputPath, pdfBuffer);
     
     const stats = await fs.stat(outputPath);
     
-    console.log('Fallback DOC to PDF conversion completed successfully');
+    console.log('Simple DOC to PDF conversion completed successfully');
     
     return {
       success: true,
       fileSize: stats.size,
-      message: 'Document converted successfully using mammoth + puppeteer npm packages',
-      outputFile: path.basename(outputPath)
+      message: 'Document converted successfully using text extraction (no Puppeteer required)',
+      outputFile: path.basename(outputPath),
+      textExtracted: textContent.length
     };
     
   } catch (error) {
-    console.error('Error in fallback DOC to PDF conversion:', error);
+    console.error('Error in simple DOC to PDF conversion:', error);
     throw new Error(`Failed to convert document to PDF: ${error.message}`);
   }
 }
@@ -1127,14 +1141,14 @@ async function convertPdfToHtml(inputPath, outputPath) {
 }
 
 /**
- * Convert HTML to PDF using puppeteer with improved configuration
+ * Convert HTML to PDF using simple text extraction method (no Puppeteer required)
  * @param {string} inputPath - Path to input HTML file
  * @param {string} outputPath - Path where PDF will be saved
  * @returns {Promise<Object>} - Result object with file size
  */
 async function convertHtmlToPdf(inputPath, outputPath) {
   try {
-    console.log('Starting HTML to PDF conversion...');
+    console.log('Starting HTML to PDF conversion using simple text extraction...');
 
     // Read the HTML file
     let htmlContent = await fs.readFile(inputPath, 'utf8');
@@ -1144,153 +1158,6 @@ async function convertHtmlToPdf(inputPath, outputPath) {
     if (!htmlContent || htmlContent.trim().length === 0) {
       throw new Error('HTML file is empty or contains no content');
     }
-    
-    // Validate HTML structure
-    if (!htmlContent.includes('<html') && !htmlContent.includes('<body')) {
-      console.log('HTML file appears to be incomplete, adding basic structure...');
-      // Wrap content in basic HTML structure if missing
-      const wrappedHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML to PDF Conversion</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            line-height: 1.6; 
-            margin: 20px; 
-            color: #333;
-        }
-        img { max-width: 100%; height: auto; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
-</head>
-<body>
-    ${htmlContent}
-</body>
-</html>`;
-      htmlContent = wrappedHtml;
-    }
-    
-    // Launch browser with improved settings
-    const browser = await puppeteer.launch({ 
-      headless: true,
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-    });
-    
-    const page = await browser.newPage();
-    
-    // Set viewport and user agent
-    await page.setViewport({ width: 1200, height: 800 });
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    
-    // Enable JavaScript and wait for content to load
-    await page.setJavaScriptEnabled(true);
-    
-    // Set content and wait for it to load with longer timeout
-    console.log('Setting HTML content in Puppeteer...');
-    await page.setContent(htmlContent, { 
-      waitUntil: ['networkidle0', 'domcontentloaded', 'load'],
-      timeout: 30000 
-    });
-    
-    // Wait a bit more for any dynamic content
-    await page.waitForTimeout(2000);
-    
-    // Check if page has content
-    const pageContent = await page.evaluate(() => {
-      const body = document.body;
-      if (!body) return 'No body element found';
-      
-      const textContent = body.textContent || '';
-      const hasImages = body.querySelectorAll('img').length > 0;
-      const hasTables = body.querySelectorAll('table').length > 0;
-      const hasDivs = body.querySelectorAll('div').length > 0;
-      
-      return {
-        textLength: textContent.length,
-        hasImages,
-        hasTables,
-        hasDivs,
-        bodyHTML: body.innerHTML.substring(0, 500) + '...'
-      };
-    });
-    
-    console.log('Page content analysis:', pageContent);
-    
-    if (pageContent.textLength < 10) {
-      console.log('Warning: Page appears to have very little content');
-    }
-    
-    // Generate PDF with improved settings
-    console.log('Generating PDF...');
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '20mm',
-        bottom: '20mm',
-        left: '20mm'
-      },
-      printBackground: true,
-      displayHeaderFooter: false,
-      preferCSSPageSize: true,
-      timeout: 30000
-    });
-    
-    console.log(`PDF generated successfully, size: ${pdfBuffer.length} bytes`);
-    
-    await browser.close();
-    
-    // Save the PDF
-    await fs.writeFile(outputPath, pdfBuffer);
-    
-    const stats = await fs.stat(outputPath);
-    
-    console.log('HTML to PDF conversion completed successfully.');
-    
-    return {
-      success: true,
-      fileSize: stats.size,
-      message: 'HTML converted to PDF using puppeteer with improved settings',
-      outputFile: path.basename(outputPath),
-      contentAnalysis: pageContent
-    };
-    
-  } catch (error) {
-    console.error('Error in HTML to PDF conversion:', error);
-    
-    // Try fallback method if puppeteer fails
-    try {
-      console.log('Attempting fallback HTML to PDF conversion...');
-      return await convertHtmlToPdfFallback(inputPath, outputPath);
-    } catch (fallbackError) {
-      console.error('Fallback conversion also failed:', fallbackError);
-      throw new Error(`Failed to convert HTML to PDF: ${error.message}`);
-    }
-  }
-}
-
-/**
- * Fallback HTML to PDF conversion using basic text extraction
- * @param {string} inputPath - Path to input HTML file
- * @param {string} outputPath - Path where PDF will be saved
- * @returns {Promise<Object>} - Result object with file size
- */
-async function convertHtmlToPdfFallback(inputPath, outputPath) {
-  try {
-    console.log('Starting fallback HTML to PDF conversion...');
-    
-    // Read the HTML file
-    const htmlContent = await fs.readFile(inputPath, 'utf8');
     
     // Extract text content from HTML (basic approach)
     const textContent = htmlContent
@@ -1302,13 +1169,14 @@ async function convertHtmlToPdfFallback(inputPath, outputPath) {
     
     console.log(`Extracted ${textContent.length} characters of text`);
     
-    // Create PDF using pdfkit
+    // Create PDF using PDFKit (no Puppeteer required)
     const doc = new PDFDocument({ 
       margin: 30,
-      size: 'A4'
+      size: 'A4',
+      font: 'Helvetica'
     });
-    const stream = fsSync.createWriteStream(outputPath);
     
+    const stream = fsSync.createWriteStream(outputPath);
     doc.pipe(stream);
     
     // Add title
@@ -1316,6 +1184,7 @@ async function convertHtmlToPdfFallback(inputPath, outputPath) {
     doc.moveDown(0.5);
     doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
     doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.fontSize(10).text('Method: Text extraction (no Puppeteer required)', { align: 'center' });
     doc.moveDown(2);
     
     // Add extracted text content
@@ -1350,21 +1219,23 @@ async function convertHtmlToPdfFallback(inputPath, outputPath) {
     
     const stats = await fs.stat(outputPath);
     
-    console.log('Fallback HTML to PDF conversion completed successfully.');
+    console.log('HTML to PDF conversion completed successfully using text extraction.');
     
     return {
       success: true,
       fileSize: stats.size,
-      message: 'HTML converted to PDF using fallback method (text extraction)',
+      message: 'HTML converted to PDF using text extraction (no Puppeteer required)',
       outputFile: path.basename(outputPath),
       textExtracted: textContent.length
     };
     
   } catch (error) {
-    console.error('Error in fallback HTML to PDF conversion:', error);
-    throw new Error(`Fallback HTML to PDF conversion failed: ${error.message}`);
+    console.error('Error in HTML to PDF conversion:', error);
+    throw new Error(`Failed to convert HTML to PDF: ${error.message}`);
   }
 }
+
+
 
 /**
  * Clean up old files (utility function)
@@ -1394,7 +1265,7 @@ async function cleanupOldFiles(directory, maxAge = 24) {
 
 module.exports = {
   convertDocToPdf,
-  convertDocToPdfFallback,
+  convertDocToPdfSimple,
   convertPdfToDoc,
   convertDocToPdfAlternative,
   convertPdfToExcel,
@@ -1407,6 +1278,5 @@ module.exports = {
   convertTxtToPdf,
   convertPdfToHtml,
   convertHtmlToPdf,
-  convertHtmlToPdfFallback,
   cleanupOldFiles
 }; 

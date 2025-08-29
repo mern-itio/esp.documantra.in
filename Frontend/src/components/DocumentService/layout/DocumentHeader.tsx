@@ -52,9 +52,10 @@ export function DocumentHeader() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [folders, setFolders] = useState<any[]>([]);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const hasSelection = selectedDocuments.length > 0;
-  
+
   // Debug logging for hasSelection
   console.log('🔍 DocumentHeader - hasSelection calculated:', hasSelection);
 
@@ -132,7 +133,6 @@ export function DocumentHeader() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMoreMenu]);
-
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4">
       {/* Breadcrumb */}
@@ -165,8 +165,8 @@ export function DocumentHeader() {
 
         {/* Right side - Actions */}
         <div className="flex items-center space-x-2">
-              
-          
+
+
           {/* Bulk Actions (when documents are selected) */}
           {hasSelection && (
             <div className="flex items-center space-x-2 mr-4 px-3 py-1 bg-blue-50 rounded-lg">
@@ -174,24 +174,24 @@ export function DocumentHeader() {
                 {selectedDocuments.length} selected
               </span>
               <div className="flex items-center space-x-1">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   className="h-7 px-2 hover:bg-blue-50 hover:text-blue-700"
                   onClick={() => setShowShareModal(true)}
-                    style={{cursor: 'pointer'}}
+                  style={{ cursor: 'pointer' }}
                 >
                   <Share2 className="w-3 h-3" />
                 </Button>
                 {/* <Button size="sm" variant="ghost" className="h-7 px-2">
                   <Download className="w-3 h-3" />
                 </Button> */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   className="h-7 px-2"
                   onClick={() => setShowMoveModal(true)}
-                    style={{cursor: 'pointer'}}
+                  style={{ cursor: 'pointer' }}
                 >
                   <Move className="w-3 h-3" />
                 </Button>
@@ -209,16 +209,28 @@ export function DocumentHeader() {
 
           {/* Sort */}
           <Button
-            variant="outline"
-            size="sm"
+            variant="outline" size="sm"
             onClick={handleSortToggle}
-            className="hidden sm:flex"
+            className="hidden sm:flex "
           >
-            {sortOrder === 'asc' ? (
-              <SortAsc className="w-4 h-4 mr-2" />
-            ) : (
-              <SortDesc className="w-4 h-4 mr-2" />
-            )}
+            <div
+              className="relative flex items-center"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              {sortOrder === "asc" ? (
+                <SortAsc className="w-4 h-4 mr-2" />
+              ) : (
+                <SortDesc className="w-4 h-4 mr-2" />
+              )}
+
+              {/* Tooltip */}
+              {showTooltip && (
+                <span className="absolute top-6 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-md whitespace-nowrap">
+                  {sortOrder === "asc" ? "Sorted Ascending" : "Sorted Descending"}
+                </span>
+              )}
+            </div>
             Sort
           </Button>
 
@@ -256,15 +268,15 @@ export function DocumentHeader() {
 
           {/* More Actions */}
           <div className="relative" ref={moreMenuRef}>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleMoreMenuToggle}
-              style={{cursor: 'pointer'}}
+              style={{ cursor: 'pointer' }}
             >
               <MoreHorizontal className="w-4 h-4" />
             </Button>
-            
+
             {/* Dropdown Menu */}
             {showMoreMenu && (
               <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">

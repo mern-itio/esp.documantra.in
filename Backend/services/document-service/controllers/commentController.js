@@ -6,6 +6,7 @@ class CommentController {
   async getDocumentComments(req, res) {
     try {
       const { documentId } = req.params;
+      const { versionId } = req.query; // Add version filtering
       const userId = req.user.data.id;
 
       // Check if user has access to the document
@@ -30,9 +31,16 @@ class CommentController {
         });
       }
 
-      const comments = await Comment.find({ documentId })
+      // Build query with optional version filtering
+      const query = { documentId };
+      if (versionId) {
+        query.versionId = versionId;
+      }
+
+      const comments = await Comment.find(query)
         .sort({ timestamp: -1 })
-        .populate('replies', null, null, { sort: { timestamp: 1 } });
+        .populate('replies', null, null, { sort: { timestamp: 1 } })
+        .populate('versionId', 'version description createdAt');
 
       res.json({
         success: true,
@@ -54,7 +62,7 @@ class CommentController {
     try {
       const { documentId } = req.params;
       const userId = req.user.data.id;
-      const { content, position, mentions, attachments } = req.body;
+      const { content, position, mentions, attachments, versionId } = req.body;
 
       // Check if user has access to the document
       const document = await Document.findOne({
@@ -82,6 +90,35 @@ class CommentController {
       const userEmail = req.user.data.email;
       const userName = req.user.data.name || userEmail;
 
+      // Get current version information if not provided
+      let versionInfo = {};
+      if (versionId) {
+        // Use provided version ID
+        const Version = require('../models/Version');
+        const version = await Version.findById(versionId);
+        if (version) {
+          versionInfo = {
+            versionId: version._id,
+            versionNumber: version.version || 'Unknown',
+            versionDescription: version.description || ''
+          };
+        }
+      } else {
+        // Get the most recent version
+        const Version = require('../models/Version');
+        const latestVersion = await Version.findOne({ documentId })
+          .sort({ createdAt: -1 })
+          .limit(1);
+        
+        if (latestVersion) {
+          versionInfo = {
+            versionId: latestVersion._id,
+            versionNumber: latestVersion.version || 'Latest',
+            versionDescription: latestVersion.description || 'Most recent version'
+          };
+        }
+      }
+
       const comment = new Comment({
         documentId,
         author: userEmail,
@@ -90,7 +127,8 @@ class CommentController {
         content,
         position: position || { page: 1, x: 0, y: 0 },
         mentions: mentions || [],
-        attachments: attachments || []
+        attachments: attachments || [],
+        ...versionInfo
       });
 
       await comment.save();
@@ -109,6 +147,58 @@ class CommentController {
       res.status(500).json({
         success: false,
         message: 'Failed to create comment',
+        error: error.message
+      });
+    }
+  }
+
+  // Get comments by version
+  async getCommentsByVersion(req, res) {
+    try {
+      const { documentId, versionId } = req.params;
+      const userId = req.user.data.id;
+
+      // Check if user has access to the document
+      const document = await Document.findOne({
+        _id: documentId,
+        $and: [
+          {
+            $or: [
+              { ownerId: userId },
+              { 'sharedWith.userId': userId },
+              { isPublic: true }
+            ]
+          },
+          { isDeleted: { $ne: true } } // Exclude deleted documents
+        ]
+      });
+
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found or access denied'
+        });
+      }
+
+      // Get comments for specific version
+      const comments = await Comment.find({ 
+        documentId, 
+        versionId 
+      })
+        .sort({ timestamp: -1 })
+        .populate('replies', null, null, { sort: { timestamp: 1 } })
+        .populate('versionId', 'version description createdAt');
+
+      res.json({
+        success: true,
+        data: comments
+      });
+
+    } catch (error) {
+      console.error('Get comments by version error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch comments by version',
         error: error.message
       });
     }

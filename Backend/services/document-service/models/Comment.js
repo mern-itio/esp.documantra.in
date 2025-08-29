@@ -109,6 +109,20 @@ const commentSchema = new mongoose.Schema({
   resolvedAt: {
     type: Date,
     default: null
+  },
+  // Version tracking
+  versionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Version',
+    required: false
+  },
+  versionNumber: {
+    type: String,
+    required: false
+  },
+  versionDescription: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true

@@ -112,6 +112,7 @@ const handleMulterError = (error, req, res, next) => {
 
 // Document routes
 router.post('/upload', upload.single('file'), handleMulterError, documentController.uploadDocument);
+router.post('/check-duplicate', documentController.checkDuplicateFilename);
 router.get('/', documentController.getUserDocuments);
 
 // Place specific/static routes BEFORE parameterized routes to avoid conflicts

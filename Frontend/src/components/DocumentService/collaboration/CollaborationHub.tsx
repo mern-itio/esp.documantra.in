@@ -696,6 +696,23 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                 onReplyAdd={handleAddCommentReply}
                 isLoading={isLoadingComments}
                 canAddComments={userPermissions.canComment}
+                currentVersion={versions[0]?._id || versions[0]?.id}
+                versions={versions.map(v => ({
+                  id: v._id || v.id,
+                  version: v.version || 'Unknown',
+                  description: v.description || ''
+                }))}
+                onVersionChange={async (versionId) => {
+                  try {
+                    // Load comments for specific version
+                    const response = await commentAPI.getDocumentComments(document.id, versionId);
+                    if (response.success) {
+                      setComments(response.data);
+                    }
+                  } catch (error) {
+                    console.error('Failed to load comments for version:', error);
+                  }
+                }}
               />
             </div>
           )}
