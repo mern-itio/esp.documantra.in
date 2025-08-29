@@ -29,6 +29,10 @@ const linearizePDFRoutes = require('./routes/linearizePDFRoute');
 const colorOptimizationRoutes = require('./routes/colorOptimizationRoute');
 const qualityAnalysisRoutes = require('./routes/qualityAnalysisRoute');
 const documentTrackingRoutes = require('./routes/documentTrackingRoute');
+const batchOptimizationRoutes = require('./routes/batchOptimizationRoute');
+const ocrRoutes = require('./routes/ocrRoute');
+const makeSearchableRoutes = require('./routes/makeSearchableRoute');
+const extractTablesRoutes = require('./routes/extractTablesRoute');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -333,6 +337,153 @@ app.get('/pdf-color-optimization/download/:filename', async (req, res) => {
   }
 });
 
+// Direct download route for batch optimization files - no auth required
+app.get('/pdf-batch-optimization/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    let contentDisposition = `attachment; filename="${filename}"`;
+
+    if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (ext === '.zip') {
+      contentType = 'application/zip';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving batch optimization download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+app.get('/pdf-ocr/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    let contentDisposition = `attachment; filename="${filename}"`;
+
+    if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (ext === '.txt') {
+      contentType = 'text/plain';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving OCR download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+app.get('/pdf-make-searchable/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    let contentDisposition = `attachment; filename="${filename}"`;
+
+    if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (ext === '.txt') {
+      contentType = 'text/plain';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving Make Searchable download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+app.get('/pdf-extract-tables/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    let contentDisposition = `attachment; filename="${filename}"`;
+
+    if (ext === '.xlsx') {
+      contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    } else if (ext === '.csv') {
+      contentType = 'text/csv';
+    } else if (ext === '.xls') {
+      contentType = 'application/vnd.ms-excel';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving Extract Tables download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
 
 app.use("/uploads", express.static("uploads"));
 app.use("/images", express.static("images"));
@@ -381,6 +532,10 @@ app.use('/pdf-remove-unused-objects', removeUnusedObjectsRoutes);
 app.use('/pdf-linearize', linearizePDFRoutes);
 app.use('/pdf-color-optimization', colorOptimizationRoutes);
 app.use('/pdf-quality-analysis', qualityAnalysisRoutes);
+app.use('/pdf-batch-optimization', batchOptimizationRoutes);
+app.use('/pdf-ocr', ocrRoutes);
+app.use('/pdf-make-searchable', makeSearchableRoutes);
+app.use('/pdf-extract-tables', extractTablesRoutes);
    
    // Protected routes that require authentication
    app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);

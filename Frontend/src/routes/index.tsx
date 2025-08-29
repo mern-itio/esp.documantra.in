@@ -50,6 +50,10 @@ import PDFToolsLinearizePDFPage from '../pages/PDFTools/LinearizePDFPage';
 import PDFToolsColorOptimizationPage from '../pages/PDFTools/ColorOptimizationPage';
 import PDFToolsQualityAnalysisPage from '../pages/PDFTools/QualityAnalysisPage';
 import PDFToolsDocumentTrackingPage from '../pages/PDFTools/DocumentTrackingPage';
+import PDFToolsBatchOptimizationPage from '../pages/PDFTools/BatchOptimizationPage';
+import PDFToolsOCRPage from '../pages/PDFTools/OCRPage';
+import PDFToolsMakeSearchablePage from '../pages/PDFTools/MakeSearchablePage';
+import PDFToolsExtractTablesPage from '../pages/PDFTools/ExtractTablesPage';
 import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
 import SplitPDFPage from '../pages/LandingPage/SplitPDFPage';
@@ -201,7 +205,7 @@ import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
 
 // Template Pages Started
 // import { Navigation } from './components/Navigation';
-import {Dashboard as TemplateDashboard}  from '../pages/Template/Dashboard';
+import { Dashboard as TemplateDashboard } from '../pages/Template/Dashboard';
 import { TemplateDesigner } from '../pages/Template/TemplateDesigner';
 import { AdvancedTemplateDesigner } from '../pages/Template/AdvancedTemplateDesigner';
 import { AITemplateStudio } from '../pages/Template/AITemplateStudio';
@@ -712,17 +716,17 @@ const authRoutes = [
   { path: '/e-sign/admin', element: <EsignESignatureAdmin /> },
 
   // Template Routes
-  { path: '/template/dashboard', element: <TemplateDashboard/>},
-  { path: '/template/designer', element: <TemplateDesigner/>},
-  { path: '/template/advance-designer', element: <AdvancedTemplateDesigner/>},
-  { path: '/template/ai-studio', element: <AITemplateStudio/>},
-  { path: '/template/library', element: <TemplateLibrary/>},
-  { path: '/template/form-builder/:id', element: <FormBuilder/>},
-  { path: '/template/marketplace', element: <TemplateMarketplace/>},
-  { path: '/template/anylytics', element: <TemplateAnylytics/>},
-  { path: '/template/api-management', element: <APIManagement/>},
-  { path: '/template/automation', element: <WorkflowAutomation/>},
-  { path: '/template/admin-dashboard', element: <TemplateAdminDashboard/>},
+  { path: '/template/dashboard', element: <TemplateDashboard /> },
+  { path: '/template/designer', element: <TemplateDesigner /> },
+  { path: '/template/advance-designer', element: <AdvancedTemplateDesigner /> },
+  { path: '/template/ai-studio', element: <AITemplateStudio /> },
+  { path: '/template/library', element: <TemplateLibrary /> },
+  { path: '/template/form-builder/:id', element: <FormBuilder /> },
+  { path: '/template/marketplace', element: <TemplateMarketplace /> },
+  { path: '/template/anylytics', element: <TemplateAnylytics /> },
+  { path: '/template/api-management', element: <APIManagement /> },
+  { path: '/template/automation', element: <WorkflowAutomation /> },
+  { path: '/template/admin-dashboard', element: <TemplateAdminDashboard /> },
   { path: '/template/form-list', element: <FormsList/>},
 
   // API-service routes
@@ -784,6 +788,10 @@ const authRoutes = [
   { path: '/pdf-tools/color-optimization', element: <PDFToolsColorOptimizationPage /> },
   { path: '/pdf-tools/quality-analysis', element: <PDFToolsQualityAnalysisPage /> },
   { path: '/pdf-tools/document-tracking', element: <PDFToolsDocumentTrackingPage /> },
+  { path: '/pdf-tools/batch-optimization', element: <PDFToolsBatchOptimizationPage /> },
+  { path: '/pdf-tools/ocr', element: <PDFToolsOCRPage /> },
+  { path: '/pdf-tools/make-searchable', element: <PDFToolsMakeSearchablePage /> },
+  { path: '/pdf-tools/extract-tables', element: <PDFToolsExtractTablesPage /> },
   { path: '/pdf-tools/add-watermark', element: <AddWatermark /> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 

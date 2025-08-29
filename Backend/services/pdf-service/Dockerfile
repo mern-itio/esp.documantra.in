@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     qpdf \
     exiftool \
     ghostscript \
+    tesseract-ocr \
     imagemagick \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*

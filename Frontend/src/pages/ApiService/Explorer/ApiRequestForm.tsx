@@ -4,7 +4,7 @@ import type { ApiType } from "./types";
 
 type APIRequestFormProps = {
   selectedApi: ApiType;
-  onResponse: (response: unknown) => void;
+  onResponse: (endpoint: string, response: unknown) => void;
   setBody: (body: string) => void;
   setSandboxKey: (key: string) => void;
 };
@@ -85,14 +85,14 @@ export default function APIRequestForm({
           data: selectedApi.showBody ? JSON.parse(body) : undefined,
         });
       }
-      onResponse({
+      onResponse(selectedApi.endpoint, {
         status: res.status,
         statusText: res.statusText,
         data: res.data,
-    });
+      });
     } catch (err: any) {
     const isAxiosError = !!err.response;
-    onResponse({
+    onResponse(selectedApi.endpoint, {
       status: isAxiosError ? err.response.status : null,
       statusText: isAxiosError ? err.response.statusText : null,
       data: isAxiosError ? err.response.data : null,

@@ -8,10 +8,10 @@ const validateSandboxApiKey = require('../middleware/apiKeyValidate');
 
 // Multer config - temp storage for uploaded files
 const upload = multer({ dest: 'uploads/' });
-
-router.post( '/upload', validateSandboxApiKey, upload.array('files', 10),  // Accept up to 10 files, "files" should match frontend field
+router.post( '/upload-envelope', validateSandboxApiKey, upload.array('files', 10),
   async (req, res) => {
-    // Don't forget to clean up temp files after the proxy call completes
+    console.log('Hit: /upload-envelope');
+    // ...rest of the code
     try {
       await createEnvelope(req, res);
     } finally {
@@ -23,6 +23,8 @@ router.post( '/upload', validateSandboxApiKey, upload.array('files', 10),  // Ac
     }
   }
 );
+
+
 
 router.post('/add-recipients', validateSandboxApiKey, forwardRecipientsRequest);
 router.get('/envelope/:id',validateSandboxApiKey , getEnvelopeDetail);

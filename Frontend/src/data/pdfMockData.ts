@@ -604,17 +604,19 @@ export const mockPDFTools = {
         icon: "BarChart3",
         route: "/pdf-tools/quality-analysis"
       },
-      {
-        id: "batch_optimization",
-        name: "Batch Optimization",
-        description: "Optimize multiple PDFs simultaneously",
-        category: "optimization",
-        features: ["bulk_processing", "custom_profiles", "progress_tracking"],
-        complexity: "medium" as const,
-        popularity: 53,
-        icon: "RefreshCw",
-        badge: "Batch"
-      }
+          {
+      id: "batch-optimization",
+      name: "Batch Optimization",
+      description: "Optimize multiple PDFs simultaneously",
+      category: "optimization",
+      features: ["bulk_processing", "custom_profiles", "progress_tracking"],
+      complexity: "medium" as const,
+      popularity: 53,
+      icon: "RefreshCw",
+      badge: "Batch",
+      route: "/pdf-tools/batch-optimization"
+    }
+  
     ]
   },
   ocr: {
@@ -622,7 +624,7 @@ export const mockPDFTools = {
     description: "Extract and recognize text from scanned documents",
     tools: [
       {
-        id: "ocr_text_recognition",
+        id: "ocr",
         name: "OCR Text Recognition",
         description: "High-accuracy OCR for scanned documents",
         category: "ocr",
@@ -631,20 +633,24 @@ export const mockPDFTools = {
         popularity: 74,
         avgProcessingTime: "60 seconds",
         icon: "ScanLine",
-        badge: "AI"
+        badge: "AI",
+      route: "/pdf-tools/ocr"
+
       },
       {
-        id: "make_searchable",
+        id: "make-searchable",
         name: "Make Searchable",
         description: "Convert scanned PDFs to searchable documents",
         category: "ocr",
         features: ["searchable_text", "layout_preservation", "invisible_text_layer"],
         complexity: "medium" as const,
         popularity: 68,
-        icon: "Search"
+        icon: "Search",
+      route: "/pdf-tools/make-searchable"
+
       },
       {
-        id: "extract_tables",
+        id: "extract-tables",
         name: "Extract Tables",
         description: "Recognize and extract table data",
         category: "ocr",
@@ -652,7 +658,8 @@ export const mockPDFTools = {
         complexity: "advanced" as const,
         popularity: 45,
         icon: "Table",
-        badge: "AI"
+        badge: "AI",
+        route: "/pdf-tools/extract-tables"
       },
       {
         id: "handwriting_recognition",
