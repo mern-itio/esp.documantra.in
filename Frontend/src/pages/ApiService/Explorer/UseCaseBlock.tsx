@@ -185,7 +185,7 @@ function renderSuccess(api: ApiType) {
       <>
         <div className="mb-2 flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
-          <span className="font-mono text-xs text-green-700">HTTP 200 – Success</span>
+          <span className="font-mono text-xs text-green-700">HTTPS 200 – Success</span>
         </div>
         <pre className="bg-gray-100 p-2 rounded-md text-xs font-mono text-gray-900 overflow-x-auto">{`{
   "status": "success",

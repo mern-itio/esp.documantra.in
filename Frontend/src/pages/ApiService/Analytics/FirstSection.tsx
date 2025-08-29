@@ -1,42 +1,54 @@
+type AnalyticsStats = {
+  totalRequests: number;
+  errorRate: number;
+  avgLatency: number;
+  apiUptime: number;
+};
 
 import { Activity, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 
-const stats = [
-  {
-    name: "Total Requests",
-    value: "45,678",
-    change: "+12.5%",
-    changeType: "increase",
-    changeText: "from last period",
-    icon: <Activity className="w-8 h-8 text-blue-500" />,
-  },
-  {
-    name: "Error Rate",
-    value: "0.51%",
-    change: "-0.3%",
-    changeType: "decrease",
-    changeText: "from last period",
-    icon: <AlertTriangle className="w-8 h-8 text-blue-500" />,
-  },
-  {
-    name: "Avg Latency",
-    value: "156ms",
-    change: "-5.2%",
-    changeType: "decrease",
-    changeText: "from last period",
-    icon: <Clock className="w-8 h-8 text-blue-500" />,
-  },
-  {
-    name: "API Uptime",
-    value: "99.97%",
-    change: "+0.1%",
-    changeType: "increase",
-    changeText: "from last period",
-    icon: <CheckCircle className="w-8 h-8 text-blue-500" />,
-  },
-];
+const FirstSection = ({
+  totalRequests,
+  errorRate,
+  avgLatency,
+  apiUptime,
+}: AnalyticsStats) => {
+  // Format values for display
+  const stats = [
+    {
+      name: "Total Requests",
+      value: totalRequests.toLocaleString(),
+      change: "+12.5%",           // Dynamic change value, update as needed
+      changeType: "increase",      // "increase" or "decrease"
+      changeText: "from last period",
+      icon: <Activity className="w-8 h-8 text-blue-500" />,
+    },
+    {
+      name: "Error Rate",
+      value: `${errorRate}%`,
+      change: "-0.3%",
+      changeType: "decrease",
+      changeText: "from last period",
+      icon: <AlertTriangle className="w-8 h-8 text-blue-500" />,
+    },
+    {
+      name: "Avg Latency",
+      value: `${avgLatency}ms`,
+      change: "-5.2%",
+      changeType: "decrease",
+      changeText: "from last period",
+      icon: <Clock className="w-8 h-8 text-blue-500" />,
+    },
+    {
+      name: "API Uptime",
+      value: `${apiUptime}%`,
+      change: "+0.1%",
+      changeType: "increase",
+      changeText: "from last period",
+      icon: <CheckCircle className="w-8 h-8 text-blue-500" />,
+    },
+  ];
 
-const FirstSection = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats.map((stat) => (
