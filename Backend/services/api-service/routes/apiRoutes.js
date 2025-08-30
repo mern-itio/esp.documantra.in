@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {createApiKey, getAllApiKeys, getAnalyticsStats, getRequestVolume, getStatusCodes, getHourlyLatencyPercentiles, getErrorTypesDistribution, getRecentErrors, getTopApiEndpoints} = require('../controllers/apiKeyController');
+const {createApiKey, getAllApiKeys, getAnalyticsStats, getRequestVolume, getStatusCodes, getHourlyLatencyPercentiles, getErrorTypesDistribution, getRecentErrors, getTopApiEndpoints, getAnalyticsByDate} = require('../controllers/apiKeyController');
 
 // Route to generate keys
 router.post('/generate', createApiKey);
@@ -20,5 +20,6 @@ router.get('/error-types', getErrorTypesDistribution);
 router.get('/recent-errors', getRecentErrors);
 // Route for top API endpoints
 router.get('/top-endpoints', getTopApiEndpoints);
-
+// Route for getting the analysisdata by date
+router.get('/analytics/day', getAnalyticsByDate);
 module.exports = router;

@@ -37,10 +37,10 @@ const TopApiEndpointsChart = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Top API Endpoints</h2>
-      <ResponsiveContainer width="100%" height={320}>
+      <ResponsiveContainer width="100%" height={340}>
         <BarChart data={endpointsData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#f3f4f6" />
-          <XAxis dataKey="endpoint" angle={-30} textAnchor="end" interval={0} height={110} tick={{ fontSize: 10 }} />
+          <XAxis dataKey="endpoint" angle={-45} textAnchor="end" interval={0} height={120} tick={{ fontSize: 8 }} />
           <YAxis />
           <Tooltip />
           <Bar dataKey="requests" fill="#2563eb" barSize={36} />

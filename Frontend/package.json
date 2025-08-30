@@ -30,6 +30,8 @@
     "fabric": "^6.7.1",
     "fabricjs-react": "^2.1.0",
     "framer-motion": "^10.16.4",
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.290.0",
     "pdfjs-dist": "^5.3.93",
     "postcss": "^8.5.6",

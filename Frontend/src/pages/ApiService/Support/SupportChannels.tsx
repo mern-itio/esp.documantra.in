@@ -10,11 +10,18 @@ import {
   Search,
   ChevronRight,
 } from 'lucide-react'
+import { toast } from "react-hot-toast";
+import { apiServiceApi } from '../../../services/apiHelper';
 
 export const SupportPage: React.FC = () => {
 //   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [showNewTicketModal, setShowNewTicketModal] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // const handleEnterpriseMail = () => {
+  //   alert('button clicked');
+  // window.location.href = "mailto:shristyv301@gmail.com";
+  // };
 
   const supportChannels = [
     {
@@ -22,7 +29,7 @@ export const SupportPage: React.FC = () => {
       title: 'Community Forum',
       description: 'Get help from the developer community',
       action: 'Browse Forum',
-      href: '/community',
+      href: '/api-service/community',
       color: 'bg-blue-500'
     },
     {
@@ -30,7 +37,7 @@ export const SupportPage: React.FC = () => {
       title: 'Documentation',
       description: 'Comprehensive guides and API reference',
       action: 'View Docs',
-      href: '/docs',
+      href: '/api-service/documentation',
       color: 'bg-green-500'
     },
     {
@@ -46,7 +53,7 @@ export const SupportPage: React.FC = () => {
       title: 'Enterprise Support',
       description: 'Priority support for enterprise customers',
       action: 'Contact Sales',
-      href: 'mailto:enterprise@draftn.com',
+      href: 'mailto:shristyv301@gmail.com', 
       color: 'bg-orange-500'
     }
   ]
@@ -120,23 +127,32 @@ export const SupportPage: React.FC = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{channel.title}</h3>
               <p className="text-gray-600 mb-4">{channel.description}</p>
-              {channel.href ? (
-                <a
-                  href={channel.href}
-                  className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  {channel.action}
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </a>
-              ) : (
-                <button
-                  onClick={channel.onClick}
-                  className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  {channel.action}
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </button>
-              )}
+             {channel.action === "Contact Sales" ? (
+  <a
+    href="mailto:shristyv301@gmail.com"
+    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+  >
+    {channel.action}
+    <ChevronRight className="ml-1 h-4 w-4" />
+  </a>
+) : channel.onClick ? (
+  <button
+    onClick={channel.onClick}
+    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+  >
+    {channel.action}
+    <ChevronRight className="ml-1 h-4 w-4" />
+  </button>
+) : (
+  <a
+    href={channel.href}
+    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+  >
+    {channel.action}
+    <ChevronRight className="ml-1 h-4 w-4" />
+  </a>
+)}
+
             </div>
           )
         })}
@@ -289,17 +305,28 @@ const NewTicketModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     description: ''
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Creating support ticket:', formData)
-    onClose()
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Submitting ticket:', formData);
+    try {
+      const response = await apiServiceApi.post('/api/api-service/tickets/create', formData);
+      if (response.data && response.data.message) {
+        toast.success("Ticket has been created!");
+        onClose();
+      } else {
+        toast.error("Failed to create ticket!");
+      }
+    } catch (error) {
+      toast.error("Failed to create ticket!");
+      // Do not close modal on error
+    }
+  };
+
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-sm">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Support Ticket</h2>
-        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -309,7 +336,7 @@ const NewTicketModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="input w-full"
+              className="input w-full border border-gray-300 h-10 rounded"
               placeholder="Brief description of your issue"
               required
             />
@@ -323,7 +350,7 @@ const NewTicketModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <select
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="input w-full"
+                 className="input w-full border border-gray-300 h-10 rounded"
               >
                 <option value="technical">Technical Issue</option>
                 <option value="billing">Billing</option>
@@ -340,7 +367,7 @@ const NewTicketModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
-                className="input w-full"
+                 className="input w-full border border-gray-300 h-10 rounded"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -357,7 +384,7 @@ const NewTicketModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="input w-full h-32"
+               className="input w-full border border-gray-300 h-30 rounded"
               placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..."
               required
             />

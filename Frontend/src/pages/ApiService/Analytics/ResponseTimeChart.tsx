@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { apiServiceApi } from "../../../services/apiHelper";
+import LoadingSpinner from "../../../components/ApiServices/Spinner";
 
 const ResponseTimePercentilesChart = () => {
   const [chartData, setChartData] = useState([]);
-
+  const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
+    setLoading(true);
     const fetchData = async () => {
       try {
         const response = await apiServiceApi.get("/api/api-service/response-percentiles");
@@ -14,6 +17,9 @@ const ResponseTimePercentilesChart = () => {
         }
       } catch (err) {
         console.error("Percentiles API error:", err);
+      }
+       finally {
+        setLoading(false); // Loading false jab fetch ho jaye
       }
     };
     fetchData();
@@ -31,6 +37,9 @@ const ResponseTimePercentilesChart = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Response Time Percentiles</h2>
+       {loading ? (
+      <LoadingSpinner />
+    ) : (
       <ResponsiveContainer width="100%" height={270}>
         <LineChart data={chartData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#f3f4f6" />
@@ -42,6 +51,7 @@ const ResponseTimePercentilesChart = () => {
           <Line type="monotone" dataKey="p99" stroke="#ef4444" dot />
         </LineChart>
       </ResponsiveContainer>
+    )}
     </div>
   );
 };

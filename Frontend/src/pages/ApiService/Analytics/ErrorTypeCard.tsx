@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiServiceApi } from "../../../services/apiHelper";
+import LoadingSpinner from "../../../components/ApiServices/Spinner";
 
 type ErrorTypeDatum = {
   label: string;
@@ -8,9 +9,11 @@ type ErrorTypeDatum = {
 
 const ErrorTypesCard = () => {
   const [errorTypes, setErrorTypes] = useState<ErrorTypeDatum[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchErrorTypes = async () => {
+      setLoading(true);
       try {
         const response = await apiServiceApi.get('/api/api-service/error-types');
         // Response: { chartData: [{ type, count }, ...] }
@@ -26,6 +29,9 @@ const ErrorTypesCard = () => {
       } catch (err) {
         console.error("Error Types API error:", err);
       }
+       finally {
+      setLoading(false); // Done loading
+    }
     };
     fetchErrorTypes();
   }, []);
@@ -36,6 +42,9 @@ const ErrorTypesCard = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Error Types</h2>
+      {loading ? (
+      <LoadingSpinner />
+    ) : (
       <div className="flex flex-col gap-3">
         {errorTypes.map((err) => (
           <div key={err.label}>
@@ -52,6 +61,7 @@ const ErrorTypesCard = () => {
           </div>
         ))}
       </div>
+    )}
     </div>
   );
 };

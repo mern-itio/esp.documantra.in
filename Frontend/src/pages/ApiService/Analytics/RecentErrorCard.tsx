@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiServiceApi } from "../../../services/apiHelper";
+import LoadingSpinner from "../../../components/ApiServices/Spinner";
 
 type RecentError = {
   endpoint: string;
@@ -10,6 +11,7 @@ type RecentError = {
 
 const RecentErrorsCard = () => {
   const [recentErrors, setRecentErrors] = useState<RecentError[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const formatTime = (isoString: any) => {
     if (!isoString) return "";
@@ -18,7 +20,9 @@ const RecentErrorsCard = () => {
   };
 
   useEffect(() => {
+     const timer = setTimeout(() => {
     const fetchRecentErrors = async () => {
+      setLoading(true);
       try {
         const res = await apiServiceApi.get('/api/api-service/recent-errors');
         if (res.status === 200 && res.data.recentErrors) {
@@ -33,15 +37,23 @@ const RecentErrorsCard = () => {
         }
       } catch (e) {
         console.error("Recent Errors API error", e);
+      }finally {
+        setLoading(false);
       }
     };
     fetchRecentErrors();
-  }, []);
+  },  2500); // 2500 ms = 2.5 second delay before API call
+
+  return () => clearTimeout(timer);
+}, []);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Errors</h2>
       {/* Overflow container with max height and scroll */}
+       {loading ? (
+      <LoadingSpinner />
+    ) : (
       <div className="flex flex-col gap-4 max-h-80 overflow-y-auto">
         {recentErrors.map((err, idx) => (
           <div
@@ -66,6 +78,7 @@ const RecentErrorsCard = () => {
           </div>
         ))}
       </div>
+       )}
     </div>
   );
 };
