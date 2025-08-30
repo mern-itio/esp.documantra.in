@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 const formBuilderRoutes = require('./routes/formBuilderRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 
 dotenv.config();
 // Import routes
@@ -23,6 +24,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // JWT Middleware (applied to API routes only)
 app.use('/api', verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 app.use('/api/template',formBuilderRoutes);
+app.use('/public/template',publicRoutes);
 app.get('/health', (req, res) => {
   res.send(`Template service is running ${req.user?.data?.fullname || ''}`);
 });

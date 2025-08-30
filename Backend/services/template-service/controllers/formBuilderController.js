@@ -1,6 +1,7 @@
 // controllers/formBuilderController.js
 const Form = require('../models/formBuilder');
 const FormFields = require('../models/formFields');
+const FormSubmission = require('../models/FormSubmission'); 
 
 const Test = async (req, res) => {
  return res.send(`Template service is running ${req.user?.data?.fullname || ''}`);
@@ -13,12 +14,6 @@ const createForm = async (req, res) => {
       console.error("Title field is required...");
       return res.status(400).json({
         message:"Title field is required."
-      });
-    }
-    if(!description){
-      console.error("Description is required.");
-      return res.status(400).json({
-        message:"Description field is required."
       });
     }
     const form = new Form({title, description});
@@ -64,46 +59,147 @@ const getFormDetail = async(req, res) => {
 }
 
 const addField = async (req, res) => {
-try {
-    const { formId, fields } = req.body; // expecting an array of fields
-    console.log("Here")
+  try {
+    const { formId, fields } = req.body;
 
     if (!Array.isArray(fields) || fields.length === 0) {
-      return res.status(404).json({ error: "Fields array is required" });
+      return res.status(400).json({ error: "Fields array is required" });
     }
 
-    // Find current max order to append new fields
-    const lastField = await FormFields.findOne({ formId }).sort('-order');
-    let baseOrder = lastField ? lastField.order + 1 : 0;
+    // Build bulk operations
+    const bulkOps = fields.map((field, index) => {
+      if (field._id && !field._id.startsWith("field_")) {
+        // Existing field in DB → update
+        return {
+          updateOne: {
+            filter: { _id: field._id, formId },
+            update: {
+              $set: {
+                type: field.type,
+                label: field.label,
+                placeholder: field.placeholder || '',
+                required: field.required || false,
+                options: field.options || [],
+                validation: field.validation || {},
+                updatedAt: new Date()
+              }
+            }
+          }
+        };
+      } else {
+        // New field → insert
+        return {
+          insertOne: {
+            document: {
+              formId,
+              type: field.type,
+              label: field.label,
+              placeholder: field.placeholder || '',
+              required: field.required || false,
+              options: field.options || [],
+              validation: field.validation || {},
+              order: index, // you can adjust based on last order if needed
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          }
+        };
+      }
+    });
 
-    // Prepare fields with order
-    const fieldsToInsert = fields.map((field, index) => ({
-      formId,
-      type: field.type,
-      label: field.label,
-      placeholder: field.placeholder || '',
-      required: field.required || false,
-      options: field.options || [],
-      validation: field.validation || {},
-      order: baseOrder + index
-    }));
+    // Execute bulk operation
+    const result = await FormFields.bulkWrite(bulkOps);
 
-    // Insert many at once
-    const savedFields = await FormFields.insertMany(fieldsToInsert);
     return res.status(200).json({
-      formfields:savedFields,
-      status:"success",
+      status: "success",
+      result
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Failed to add fields', details: err.message });
+    return res.status(500).json({ error: 'Failed to add/update fields', details: err.message });
+  }
+};
+
+
+const insertFormData = async (req, res) =>{
+  try {
+    const { formId, data } = req.body;
+
+    // Validate input
+    if (!formId || !data) {
+      return res.status(400).json({ error: 'formId and data are required' });
+    }
+
+    // Check if form exists
+    const formExists = await Form.findById(formId);
+    if (!formExists) {
+      return res.status(404).json({ error: 'Form not found' });
+    }
+
+    // Save submission
+    const submission = new FormSubmission({
+      formId: formId,
+      data, // data is an object like { fieldId1: 'value1', fieldId2: 'value2' }
+    });
+
+    await submission.save();
+    // Return success
+    res.status(201).json({ message: 'Form submitted successfully', submissionId: submission._id });
+
+  } catch (error) {
+    console.error('Error saving form submission:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 }
+// Get all submissions for a form
+const getFormSubmissions = async (req, res) => {
+  try {
+    const { id } = req.params; // formId
+
+    if (!id) {
+      return res.status(400).json({ error: "Invalid formId" });
+    }
+
+    // 1. Fetch submissions for the form
+    const submissions = await FormSubmission.find({ formId: id }).sort({
+      createdAt: -1,
+    });
+
+    // 2. Fetch all fields for the form
+    const fields = await FormFields.find({ formId: id });
+    const fieldMap = {};
+    fields.forEach((f) => {
+      fieldMap[f._id.toString()] = f.label;
+    });
+
+    // 3. Map fieldIds to labels
+    const formattedSubmissions = submissions.map((sub) => {
+      const formatted = {};
+      for (let [fieldId, value] of sub.data.entries()) {
+        const label = fieldMap[fieldId] || fieldId; // fallback if missing
+        formatted[label] = value;
+      }
+      return {
+        _id: sub._id,
+        formId: sub.formId,
+        data: formatted,
+        createdAt: sub.createdAt,
+      };
+    });
+
+    res.status(200).json({ submissions: formattedSubmissions });
+  } catch (err) {
+    console.error("Error fetching submissions:", err);
+    res.status(500).json({ error: "Failed to fetch submissions" });
+  }
+};
 
 module.exports = {
     Test,
     createForm,
     getAllForm,
     addField,
-    getFormDetail
+    getFormDetail,
+    insertFormData,
+    getFormSubmissions
 }
