@@ -33,6 +33,8 @@ const batchOptimizationRoutes = require('./routes/batchOptimizationRoute');
 const ocrRoutes = require('./routes/ocrRoute');
 const makeSearchableRoutes = require('./routes/makeSearchableRoute');
 const extractTablesRoutes = require('./routes/extractTablesRoute');
+const handwritingRecognitionRoutes = require('./routes/handwritingRecognitionRoute');
+const createPdfFormRoutes = require('./routes/createPdfFormRoute');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -484,6 +486,84 @@ app.get('/pdf-extract-tables/download/:filename', async (req, res) => {
   }
 });
 
+// Direct download route for handwriting recognition files - no auth required
+app.get('/pdf-handwriting-recognition/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    let contentDisposition = `attachment; filename="${filename}"`;
+
+    if (ext === '.txt') {
+      contentType = 'text/plain';
+    } else if (ext === '.png') {
+      contentType = 'image/png';
+    } else if (ext === '.jpg' || ext === '.jpeg') {
+      contentType = 'image/jpeg';
+    } else if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving Handwriting Recognition download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+// Direct download route for create PDF form files - no auth required
+app.get('/pdf-create-form/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    let contentDisposition = `attachment; filename="${filename}"`;
+
+    if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (ext === '.json') {
+      contentType = 'application/json';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving Create PDF Form download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
 
 app.use("/uploads", express.static("uploads"));
 app.use("/images", express.static("images"));
@@ -536,9 +616,11 @@ app.use('/pdf-batch-optimization', batchOptimizationRoutes);
 app.use('/pdf-ocr', ocrRoutes);
 app.use('/pdf-make-searchable', makeSearchableRoutes);
 app.use('/pdf-extract-tables', extractTablesRoutes);
-   
-   // Protected routes that require authentication
-   app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);
+app.use('/pdf-handwriting-recognition', handwritingRecognitionRoutes);
+app.use('/pdf-create-form', createPdfFormRoutes);
+    
+    // Protected routes that require authentication
+    app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);
 
 // Add debugging for route matching
 app.use((req, res, next) => {

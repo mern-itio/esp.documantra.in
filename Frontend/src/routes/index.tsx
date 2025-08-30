@@ -54,6 +54,7 @@ import PDFToolsBatchOptimizationPage from '../pages/PDFTools/BatchOptimizationPa
 import PDFToolsOCRPage from '../pages/PDFTools/OCRPage';
 import PDFToolsMakeSearchablePage from '../pages/PDFTools/MakeSearchablePage';
 import PDFToolsExtractTablesPage from '../pages/PDFTools/ExtractTablesPage';
+import HandwritingRecognition from '../pages/PDFTools/HandwritingRecognitionPage';
 import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
 import SplitPDFPage from '../pages/LandingPage/SplitPDFPage';
@@ -261,6 +262,7 @@ import ApiServiceMarketPlace from '../pages/ApiService/MarketPlace/Main';
 import ApiServiceCommunity from '../pages/ApiService/Community/Main';
 import ApiServiceSupport from '../pages/ApiService/Support/Main';
 import PublicSignerPage from '../pages/eSign/PublicSignerPage';
+import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -790,6 +792,8 @@ const authRoutes = [
   { path: '/pdf-tools/make-searchable', element: <PDFToolsMakeSearchablePage /> },
   { path: '/pdf-tools/extract-tables', element: <PDFToolsExtractTablesPage /> },
   { path: '/pdf-tools/add-watermark', element: <AddWatermark /> },
+  { path: '/pdf-tools/handwriting-recognition', element: <HandwritingRecognition /> },
+  { path: '/pdf-tools/create-form', element: <CreatePdfFormPage /> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 
 ];

@@ -20,6 +20,7 @@
     "fs-extra": "^11.3.1",
     "helmet": "^8.1.0",
     "html-docx-js": "^0.3.1",
+    "jimp": "^0.22.12",
     "mammoth": "^1.10.0",
     "mongoose": "^8.17.1",
     "multer": "^2.0.2",
@@ -34,6 +35,7 @@
     "pptxgenjs": "^4.0.1",
     "puppeteer": "^24.16.2",
     "sharp": "^0.34.3",
+    "tesseract.js": "^5.1.1",
     "unzipper": "^0.12.3",
     "xlsx": "^0.18.5",
     "xml2js": "^0.6.2"

@@ -662,7 +662,7 @@ export const mockPDFTools = {
         route: "/pdf-tools/extract-tables"
       },
       {
-        id: "handwriting_recognition",
+        id: "handwriting-recognition",
         name: "Handwriting Recognition",
         description: "Convert handwritten text to digital text",
         category: "ocr",
@@ -670,18 +670,10 @@ export const mockPDFTools = {
         complexity: "advanced" as const,
         popularity: 39,
         icon: "PenTool",
-        premium: true
-      },
-      {
-        id: "multilingual_ocr",
-        name: "Multilingual OCR",
-        description: "OCR support for 100+ languages",
-        category: "ocr",
-        features: ["multilingual_support", "language_detection", "unicode_output"],
-        complexity: "advanced" as const,
-        popularity: 33,
-        icon: "Globe"
+        premium: true,
+        route: "/pdf-tools/handwriting-recognition"
       }
+     
     ]
   },
   forms: {
@@ -689,14 +681,15 @@ export const mockPDFTools = {
     description: "Create, fill, and manage interactive PDF forms",
     tools: [
       {
-        id: "create_form",
+        id: "create-form",
         name: "Create PDF Form",
         description: "Design interactive fillable forms",
         category: "forms",
         features: ["form_designer", "field_validation", "interactive_elements"],
         complexity: "medium" as const,
         popularity: 58,
-        icon: "FileInput"
+        icon: "FileInput",
+        route: "/pdf-tools/create-form"
       },
       {
         id: "fill_form",
