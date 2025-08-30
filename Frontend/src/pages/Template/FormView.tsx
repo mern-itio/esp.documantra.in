@@ -4,7 +4,8 @@ import { FormPreview } from '../../components/Template/FormPreview';
 import { templateServiceApi } from '../../services/apiHelper';
 
 interface FormField {
-  id: string;
+  formId?:string;
+  _id:string;
   type: string;
   label: string;
   placeholder?: string;
@@ -25,8 +26,9 @@ export const FormView: React.FC = () => {
 
   const getFormDetail = async (formId: string) => {
     try {
-      const response = await templateServiceApi.get(`/api/template/get-form-details/${formId}`);
+      const response = await templateServiceApi.get(`/public/template/get-form-details/${formId}`);
       if (response) {
+        console.log(response);
         setFormFields(response.data.fields || []);
         setFormTitle(response.data.title || 'Untitled Form');
       }

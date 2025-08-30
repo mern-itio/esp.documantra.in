@@ -218,6 +218,8 @@ import { WorkflowAutomation } from '../pages/Template/WorkflowAutomation';
 import { TemplateAdminDashboard } from '../pages/Template/TemplateAdminDashboard';
 import { FormsList } from '../pages/Template/FormList';
 import { FormView } from '../pages/Template/FormView';
+import { FormEmbed } from '../pages/Template/FormEmbed';
+import { FormSubmissions } from '../pages/Template/FormSubmissions';
 // Template Pages Ended
 
 //PDF Tools Started
@@ -728,6 +730,8 @@ const authRoutes = [
   { path: '/template/automation', element: <WorkflowAutomation /> },
   { path: '/template/admin-dashboard', element: <TemplateAdminDashboard /> },
   { path: '/template/form-list', element: <FormsList/>},
+  { path: '/template/form-embed/:id', element: <FormEmbed/>},
+  { path: '/template/form-submissions/:id', element: <FormSubmissions/>},
 
   // API-service routes
   { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },

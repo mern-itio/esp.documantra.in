@@ -12,7 +12,7 @@ export const TemplateLibrary: React.FC = () => {
     { id: 'hr', name: 'HR Documents', count: 42 },
     { id: 'business', name: 'Business Contracts', count: 89 },
     { id: 'forms', name: 'Forms', count: 34 },
-    { id: 'invoices', name: 'Invoices', count: 26 }
+    { id: 'invoices', name: 'Invoices', count: 26 } 
   ];
 
   const templates = [

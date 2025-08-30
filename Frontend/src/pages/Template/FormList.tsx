@@ -86,30 +86,39 @@ export const FormsList: React.FC = () => {
                 {form.description && (
                     <p className="text-gray-500 mt-2 text-sm">{form.description}</p>
                 )}
-                    <div className="mt-5 flex space-x-2">
+                  <div className="mt-5 flex space-x-2">
                     <button
-                        onClick={() => navigate(`/template/form-builder/${form._id}`)}
-                        className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-sm font-medium shadow hover:bg-indigo-700 hover:shadow-md transition"
+                      onClick={() => navigate(`/template/form-builder/${form._id}`)}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-sm font-medium shadow hover:bg-indigo-700 hover:shadow-md transition"
                     >
-                        Add / Edit
+                      Add / Edit
                     </button>
 
-                        <a
-                        href={`/template/form-view/${form._id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-gray-200 text-gray-800 text-sm font-medium shadow hover:bg-gray-300 hover:shadow-md transition"
-                        >
-                        View
+                    <a
+                      href={`/template/form-view/${form._id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-xl bg-gray-200 text-gray-800 text-sm font-medium shadow hover:bg-gray-300 hover:shadow-md transition"
+                    >
+                      View
                     </a>
 
                     <button
-                        onClick={() => navigate(`/template/form-embed/${form._id}`)}
-                        className="px-3 py-1.5 rounded-xl bg-purple-600 text-white text-sm font-medium shadow hover:bg-purple-700 hover:shadow-md transition"
+                      onClick={() => navigate(`/template/form-embed/${form._id}`)}
+                      className="px-3 py-1.5 rounded-xl bg-purple-600 text-white text-sm font-medium shadow hover:bg-purple-700 hover:shadow-md transition"
                     >
-                        Embed
+                      Embed
                     </button>
-                    </div>
+
+                    {/* Smaller Submissions button */}
+                    <button
+                      onClick={() => navigate(`/template/form-submissions/${form._id}`)}
+                      className="px-2 py-1 rounded-lg bg-green-600 text-white text-xs font-medium shadow hover:bg-green-700 hover:shadow-md transition"
+                    >
+                      Submissions
+                    </button>
+                  </div>
+
                 </div>
             ))}
             </div>

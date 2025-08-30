@@ -480,7 +480,7 @@ const getSteps = async () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Basic Authentication</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Authentication</label>
                         <select
                           value={recipient.authentication}
                           onChange={(e) => updateRecipient(recipient.id, { authentication: e.target.value as any })}
