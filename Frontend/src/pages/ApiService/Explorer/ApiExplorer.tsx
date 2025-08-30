@@ -13,7 +13,7 @@ export default function APIExplorer() {
   const [responseMap, setResponseMap] = useState<{[key: string]: unknown}>({});
 
   return (
-     <div className="flex flex-col md:flex-row gap-8 w-full">
+     <div className="flex flex-col md:flex-row gap-8 w-full  bg-gray-50">
       {/* Sidebar */}
       <div className="w-full md:w-65 max-w-xs mx-auto min-w-0 bg-white border-r shadow-sm">
         <Sidebar onApiSelect={setSelectedApi} activeEndpoint={selectedApi.endpoint} selectedApi={selectedApi} />

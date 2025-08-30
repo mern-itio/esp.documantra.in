@@ -1,4 +1,4 @@
-import { Code2, AlertTriangle, Download  } from "lucide-react";
+import { Code2, AlertTriangle } from "lucide-react";
 
 const quickActions = [
   { 
@@ -8,10 +8,6 @@ const quickActions = [
   { 
     label: "Set Up Alerts", 
     icon: <AlertTriangle className="w-5 h-5 text-gray-500 mr-3" /> 
-  },
-  { 
-    label: "Export Data", 
-    icon: <Download className="w-5 h-5 text-gray-500 mr-3" /> 
   },
 ];
 const QuickActions = () => {

@@ -181,20 +181,23 @@ if (api.name === "Update Envelope") {
 
 function renderSuccess(api: ApiType) {
    if (api.name === "Envelope Upload") {
-    return (
-      <>
-        <div className="mb-2 flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
-          <span className="font-mono text-xs text-green-700">HTTPS 200 – Success</span>
-        </div>
-        <pre className="bg-gray-100 p-2 rounded-md text-xs font-mono text-gray-900 overflow-x-auto">{`{
+      return (
+    <>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+        <span className="font-mono text-xs text-green-700">HTTP 200 – Success</span>
+      </div>
+      <pre className="bg-gray-100 p-2 rounded-md text-xs font-mono text-gray-900 overflow-x-auto max-w-full break-words break-all">
+        {`{
   "status": "success",
-  "message": "Files uploaded successfully",
+  "message": "Signature added successfully",
   "data": {
-    "envelopeId": "12345"
+      "fieldId": "123456",
+      "signature": "signature"
   }
-}`}</pre>
-      </>
+}`}
+      </pre>
+    </>
     )
 };
   if(api.name === "Add Recipient") {
@@ -359,11 +362,11 @@ function renderSuccess(api: ApiType) {
 }
 function UseCaseBlock({ selectedApi }: { selectedApi: ApiType }): React.ReactElement {
   return (
-     <div className="w-full min-w-0 p-3 md:p-4 rounded-lg bg-gray-50 border shadow-sm">
+    <div className="w-full min-w-0 p-3 md:p-4 rounded-lg bg-gray-50 border shadow-sm">
       <div className="font-bold text-sm mb-2">Request Fields</div>
-      {renderFields(selectedApi)}
+      <div className="break-words">{renderFields(selectedApi)}</div>
       <div className="font-bold text-sm mb-2 mt-2">Success Response</div>
-      {renderSuccess(selectedApi)}
+      <div className="overflow-x-auto max-w-full">{renderSuccess(selectedApi)}</div>
     </div>
   );
 }

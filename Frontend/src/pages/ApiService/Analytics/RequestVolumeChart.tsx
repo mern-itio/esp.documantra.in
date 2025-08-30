@@ -1,28 +1,45 @@
 import { useEffect, useState } from "react";
 import { Line, Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { apiServiceApi } from "../../../services/apiHelper";
+import LoadingSpinner from "../../../components/ApiServices/Spinner";
 
 const RequestVolumeChart = () => {
   const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        const response = await apiServiceApi.get('/api/api-service/request-volume');
-        // API must return { chartData: [...] }
-        if (response.status === 200 && response.data.chartData) {
-          setChartData(response.data.chartData);
-        }
-      } catch (err) {
-        console.error("Chart API error:", err);
+   const timer = setTimeout(() => {
+  const fetchChartData = async () => {
+    setLoading(true);
+    try {
+      const response = await apiServiceApi.get('/api/api-service/request-volume');
+      if (response.status === 200 && response.data.chartData) {
+        // Map keys: requests, errors for recharts!
+        const mappedData = response.data.chartData.map((obj:any) => ({
+          ...obj,
+          requests: obj.totalRequests ?? 0,
+          errors: obj.errorRate ?? 0,
+        }));
+        setChartData(mappedData);
       }
-    };
-    fetchChartData();
-  }, []);
+    } catch (err) {
+      console.error("Chart API error:", err);
+    }finally {
+        setLoading(false);
+      }
+  };
+  fetchChartData();
+  },  2500); // 2500 ms = 2.5 second delay before API call
+
+  return () => clearTimeout(timer);
+}, []);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Request Volume</h2>
+       {loading ? (
+      <LoadingSpinner />
+    ) : (
       <ResponsiveContainer width="100%" height={270}>
         <AreaChart data={chartData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
           <defs>
@@ -51,6 +68,7 @@ const RequestVolumeChart = () => {
           />
         </AreaChart>
       </ResponsiveContainer>
+    )}
     </div>
   );
 };
