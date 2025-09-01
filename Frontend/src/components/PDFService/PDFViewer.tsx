@@ -40,7 +40,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ selectedTool, onBack }) =>
     );
   }
 
-  const Icon = (Icons as any)[selectedTool.icon] || Icons.FileText;
+  const Icon = (Icons as any)[selectedTool.icon || 'FileText'] || Icons.FileText;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -358,7 +358,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ selectedTool, onBack }) =>
               <div>
                 <label className="text-sm font-medium text-gray-700">Features</label>
                 <div className="mt-1 space-y-1">
-                  {selectedTool.features.map(feature => (
+                  {(selectedTool.features || []).map(feature => (
                     <div key={feature} className="text-sm text-gray-600">
                       • {feature.replace(/_/g, ' ')}
                     </div>

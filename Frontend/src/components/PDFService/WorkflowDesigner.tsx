@@ -72,7 +72,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  const allTools = Object.values(mockPDFTools).flatMap(category => category.tools);
+  // @ts-ignore - TypeScript can't infer the complex union type correctly
+  const allTools = Object.values(mockPDFTools).flatMap(category => category.tools) as any[];
 
   const createNewWorkflow = () => {
     const newWorkflow: Workflow = {
