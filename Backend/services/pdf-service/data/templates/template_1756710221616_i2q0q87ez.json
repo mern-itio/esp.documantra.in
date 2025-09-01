@@ -1,0 +1,16 @@
+{
+  "id": "template_1756710221616_i2q0q87ez",
+  "name": "Test Employee Template",
+  "description": "Test template for employee forms",
+  "category": "test",
+  "formData": {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "address": "123 Main Street, City, State 12345",
+    "company": "ACME Corporation",
+    "title": "Software Engineer"
+  },
+  "created": "2025-09-01T07:03:41.616Z",
+  "updated": "2025-09-01T07:03:41.616Z"
+}

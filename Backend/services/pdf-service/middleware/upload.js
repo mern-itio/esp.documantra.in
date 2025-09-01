@@ -49,11 +49,14 @@ const storageAllFiles = multer.diskStorage({
 
 const uploadAllFiles = multer({ storage: storageAllFiles });
 
+// Default upload for single files
+const upload = multer({ storage: pdfDiskStorage });
 
 module.exports = {
   uploadPdfInMemory,    // for PDF-to-Image / EPUB
   uploadImageToDisk,    // for Image-to-PDF
   uploadPdfToDisk,      // for general editing
   uploadPdfAndImage,
-  uploadAllFiles    //for Add Image to PDF
+  uploadAllFiles,    //for Add Image to PDF
+  upload              // default upload for single files
 };

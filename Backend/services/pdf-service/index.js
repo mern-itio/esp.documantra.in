@@ -35,6 +35,10 @@ const makeSearchableRoutes = require('./routes/makeSearchableRoute');
 const extractTablesRoutes = require('./routes/extractTablesRoute');
 const handwritingRecognitionRoutes = require('./routes/handwritingRecognitionRoute');
 const createPdfFormRoutes = require('./routes/createPdfFormRoute');
+const fillPdfFormRoutes = require('./routes/fillPdfFormRoute');
+const formRecognitionRoutes = require('./routes/formRecognitionRoute');
+const calculateFieldsRoutes = require('./routes/calculateFieldsRoute');
+const pdfInfoRoutes = require('./routes/pdfInfoRoute');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -565,6 +569,44 @@ app.get('/pdf-create-form/download/:filename', async (req, res) => {
 });
 
 
+// Serve download files from outputs directory
+app.get('/downloads/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      console.warn(`PDF Service: Download file not found: ${filePath}`);
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    let contentDisposition = `attachment; filename="${filename}"`;
+
+    if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (ext === '.json') {
+      contentType = 'application/json';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
 app.use("/uploads", express.static("uploads"));
 app.use("/images", express.static("images"));
 app.use("/epubs", express.static("epubs")); // Serve EPUB files
@@ -618,6 +660,10 @@ app.use('/pdf-make-searchable', makeSearchableRoutes);
 app.use('/pdf-extract-tables', extractTablesRoutes);
 app.use('/pdf-handwriting-recognition', handwritingRecognitionRoutes);
 app.use('/pdf-create-form', createPdfFormRoutes);
+app.use('/pdf-fill-form', fillPdfFormRoutes);
+app.use('/pdf-form-recognition', formRecognitionRoutes);
+app.use('/pdf-calculate-fields', calculateFieldsRoutes);
+app.use('/pdf-info', pdfInfoRoutes);
     
     // Protected routes that require authentication
     app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);

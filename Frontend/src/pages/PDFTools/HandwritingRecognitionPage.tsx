@@ -100,7 +100,7 @@ const HandwritingRecognitionPage: React.FC = () => {
               .map((item: any) => ({
                 text: item.text,
                 confidence: item.confidence,
-                downloadUrl: `${pdfApi}${result.downloadUrl}`,
+                downloadUrl: `${pdfApi.defaults.baseURL}${result.downloadUrl}`,
                 textFile: result.textFile
               }));
           } else {
@@ -109,7 +109,7 @@ const HandwritingRecognitionPage: React.FC = () => {
             return textLines.map((line: string) => ({
               text: line,
               confidence: result.confidence || 0,
-              downloadUrl: `${pdfApi}${result.downloadUrl}`,
+              downloadUrl: `${pdfApi.defaults.baseURL}${result.downloadUrl}`,
               textFile: result.textFile
             }));
           }

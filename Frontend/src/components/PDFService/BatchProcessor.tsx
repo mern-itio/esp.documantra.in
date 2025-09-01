@@ -25,7 +25,8 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({ onBack }) => {
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const allTools = Object.values(mockPDFTools).flatMap(category => category.tools);
+  // @ts-ignore - TypeScript can't infer the complex union type correctly
+  const allTools = Object.values(mockPDFTools).flatMap(category => category.tools) as any[];
 
   const createNewJob = () => {
     if (!selectedTool) return;
@@ -113,7 +114,7 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({ onBack }) => {
     if (!tool) return Icons.FileText;
     
     // Safely access the icon from Icons object
-    const iconName = tool.icon as keyof typeof Icons;
+    const iconName = (tool.icon || 'FileText') as keyof typeof Icons;
     const IconComponent = Icons[iconName];
     
     // Ensure we return a valid React component
