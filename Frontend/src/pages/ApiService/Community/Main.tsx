@@ -1,38 +1,85 @@
-import React, { useState } from 'react'
-import { 
-  MessageSquare, 
-  Users, 
-  Eye, 
-  ThumbsUp, 
-  Clock, 
-  Search,
-  Plus,
-  CheckCircle,
-  Pin,
-  Tag
-} from 'lucide-react'
-import { mockForumPosts } from '../../../data/mockAPIData'
+import React, { useCallback, useEffect, useState } from 'react'
+import { toast } from "react-hot-toast";
+import { MessageSquare, Users, Eye, ThumbsUp, Clock, Search,Plus,CheckCircle,Pin,Tag} from 'lucide-react';
+import { apiServiceApi } from '../../../services/apiHelper';
+import LoadingSpinner from '../../../components/ApiServices/Spinner';
 
 const Main: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showNewPostModal, setShowNewPostModal] = useState(false)
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(3); 
+  const [categories, setCategories] = useState<
+  { id: string; name: string; count: number }[]
+>([]);
+  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [showNewPostModal, setShowNewPostModal] = useState(false);
+  const [stats, setStats] = useState<{ totalUsers?: number; totalPosts?: number; postsThisWeek?: number }>({});
 
-  const categories = [
-    { id: 'all', name: 'All Posts', count: 156 },
-    { id: 'api', name: 'API', count: 45 },
-    { id: 'webhooks', name: 'Webhooks', count: 23 },
-    { id: 'sdks', name: 'SDKs', count: 34 },
-    { id: 'announcements', name: 'Announcements', count: 12 },
-    { id: 'general', name: 'General', count: 42 }
-  ]
+  const fetchPosts = useCallback(async () => {
+    try {
+      const res = await apiServiceApi.get('/api/api-service/community/all-posts');
+      const data = res.data;
+      setFilteredPosts(data);
+    // Category count calculation
+      const categoryMap: { [key: string]: number } = {};
+      data.forEach((post:any) => {
+        if (categoryMap[post.category]) {
+          categoryMap[post.category]++;
+        } else {
+          categoryMap[post.category] = 1;
+        }
+      });
 
-  const filteredPosts = mockForumPosts.filter((post:any) => {
-    const matchesCategory = selectedCategory === 'all' || post.category.toLowerCase() === selectedCategory
-    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.content.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+      const categoriesArr = Object.entries(categoryMap).map(([name, count]) => ({
+        id: name,
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        count
+      }));
+      setCategories(categoriesArr);
+
+      console.log(data);
+    } catch (err:any) {
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Something went wrong!";
+      toast.error(errorMsg);
+    }
+  },[]);
+
+useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+useEffect(() => {
+  
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const res = await apiServiceApi.get('/api/api-service/community/stats');
+      const data = res.data;
+      console.log(data);
+      setStats(data);
+    } catch (err:any) {
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Something went wrong!";
+      toast.error(errorMsg);
+    }finally {
+      setLoading(false);
+    }
+  };
+
+  fetchStats();
+}, []);
+
+const handleLoadMore = () => {
+  setVisibleCount(prev => prev + 3); 
+};
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -72,79 +119,67 @@ const Main: React.FC = () => {
 
           {/* Categories */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
-            <div className="space-y-2">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedCategory === category.id
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'hover:bg-gray-50 text-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span>{category.name}</span>
-                    <span className="text-sm text-gray-500">{category.count}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+          <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
+          <div className="space-y-2">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                  selectedCategory === category.id
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>{category.name}</span>
+                  <span className="text-sm text-gray-500">{category.count}</span>
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
 
           {/* Community Stats */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Community Stats</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">Members</span>
+         {loading ? (
+        <LoadingSpinner />
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="font-semibold text-gray-900 mb-4">Community Stats</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Users className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">Members</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{stats?.totalUsers ?? '-'}</span>
                 </div>
-                <span className="font-medium text-gray-900">2,847</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">Posts</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <MessageSquare className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">Posts</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{stats?.totalPosts ?? '-'}</span>
                 </div>
-                <span className="font-medium text-gray-900">1,234</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">This Week</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">This Week</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{stats?.postsThisWeek ?? '-'}</span>
                 </div>
-                <span className="font-medium text-gray-900">89</span>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Main Content */}
         <div className="lg:col-span-3">
           {/* Posts List */}
           <div className="space-y-4">
-            {filteredPosts.map((post:any) => (
+            {filteredPosts.slice(0, visibleCount).map((post:any) => (
               <div key={post.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-300 transition-colors">
                 <div className="flex items-start space-x-4">
-                  {/* Author Avatar */}
-                  <div className="flex-shrink-0">
-                    {post.author.avatar ? (
-                      <img
-                        src={post.author.avatar}
-                        alt={post.author.name}
-                        className="w-10 h-10 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                        <span className="text-primary-600 font-medium text-sm">
-                          {post.author.name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
 
                   {/* Post Content */}
                   <div className="flex-1 min-w-0">
@@ -161,12 +196,12 @@ const Main: React.FC = () => {
                         )}
                       </div>
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        post.category === 'API' ? 'bg-blue-100 text-blue-800' :
-                        post.category === 'Webhooks' ? 'bg-purple-100 text-purple-800' :
-                        post.category === 'Announcements' ? 'bg-green-100 text-green-800' :
+                        post.category === 'api' ? 'bg-blue-100 text-blue-800' :
+                        post.category === 'webhooks' ? 'bg-purple-100 text-purple-800' :
+                        post.category === 'announcements' ? 'bg-green-100 text-green-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {post.category}
+                        {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
                       </span>
                     </div>
 
@@ -189,24 +224,24 @@ const Main: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <div className="flex items-center space-x-1">
-                          <span className="font-medium text-gray-900">{post.author.name}</span>
+                          <span className="font-medium text-gray-900">{post.authorName}</span>
                           <span>•</span>
                           <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                        </div>
                       </div>
+                    </div>
                       
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <div className="flex items-center space-x-1">
-                          <MessageSquare className="h-4 w-4" />
+                          <MessageSquare className="h-4 w-4 cursor-pointer" />
                           <span>{post.replies}</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 cursor-pointer" />
                           <span>{post.views}</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <ThumbsUp className="h-4 w-4" />
-                          <span>{post.likes}</span>
+                          <ThumbsUp className="h-4 w-4 cursor-pointer" />
+                          {/* <span>{post.likes}</span> */}
                         </div>
                       </div>
                     </div>
@@ -217,11 +252,13 @@ const Main: React.FC = () => {
           </div>
 
           {/* Load More */}
-          <div className="text-center mt-8">
-            <button className="btn btn-outline">
-              Load More Posts
-            </button>
-          </div>
+          {visibleCount < filteredPosts.length && (
+            <div className="text-center mt-8">
+              <button className="btn btn-outline" onClick={handleLoadMore}>
+                Load More Posts
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -234,22 +271,45 @@ const Main: React.FC = () => {
 }
 
 const NewPostModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    category: 'general',
+    category: '',
     tags: ''
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Creating new post:', formData)
-    onClose()
+  const handleSubmit = async (e: React.FormEvent) => {
+   e.preventDefault();
+  setLoading(true);
+  const payload = {
+    title: formData.title,
+    content: formData.content,
+    category: formData.category,
+    tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) 
+  };
+  try {
+    const res = await apiServiceApi.post('/api/api-service/community/create', payload);
+    if (res.status === 201 || res.data.message) {
+      toast.success("Post created!");
+      onClose();
+    } else {
+      toast.error("Post creation failed!");
+    }
+  } catch (err:any) {
+  const errorMsg =
+    err?.response?.data?.message || // For Axios-style errors
+    err?.data?.message ||           // For fetch/custom error object
+    err?.message ||                 // Fallback: generic JS error
+    "Something went wrong!";
+  toast.error(errorMsg);
   }
+  setLoading(false);
+};
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-sm">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Post</h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -261,7 +321,7 @@ const NewPostModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="input w-full"
+               className="input w-full border border-gray-300 h-10 rounded p-1"
               placeholder="What's your question or topic?"
               required
             />
@@ -274,12 +334,13 @@ const NewPostModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <select
               value={formData.category}
               onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-              className="input w-full"
+              className="input w-full border border-gray-300 h-10 rounded p-1"
             >
               <option value="general">General</option>
               <option value="api">API</option>
               <option value="webhooks">Webhooks</option>
-              <option value="sdks">SDKs</option>
+              <option value="sdk">SDK</option>
+              <option value="announcements">Announcements</option>
             </select>
           </div>
 
@@ -290,7 +351,7 @@ const NewPostModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <textarea
               value={formData.content}
               onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-              className="input w-full h-40"
+              className="input w-full border border-gray-300 h-40 rounded p-1"
               placeholder="Describe your question or share your knowledge..."
               required
             />
@@ -304,24 +365,26 @@ const NewPostModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               type="text"
               value={formData.tags}
               onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-              className="input w-full"
+               className="input w-full border border-gray-300 h-10 rounded p-1"
               placeholder="api, authentication, webhooks"
             />
           </div>
 
           <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-outline"
-            >
+            <button type="button" onClick={onClose} className="btn btn-outline">
               Cancel
             </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-            >
-              Create Post
+            <button type="submit" className="btn btn-primary">
+               {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="4" fill="none" />
+                  </svg>
+                  Creating...
+                </span>
+              ) : (
+                "Create Post"
+              )}
             </button>
           </div>
         </form>

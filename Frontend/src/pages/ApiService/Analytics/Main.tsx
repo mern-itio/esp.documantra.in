@@ -56,15 +56,12 @@ useEffect(() => {
       doc.setFontSize(16);
       doc.text("API Analytics Report", 14, 20);
       doc.setFontSize(12);
-      doc.text(`Date: ${data.date}`, 14, 30);
+      // doc.text(`Date: ${data.date}`, 14, 30);
 
       // --- Summary Table (First Stat) ---
       const summary = data.getAnalyticsStats && data.getAnalyticsStats;
       if (summary) {
-        doc.text(`Total Requests: ${summary.totalRequests}`, 14, 40);
-        doc.text(`Error Rate: ${summary.errorRate}%`, 14, 46);
-        doc.text(`Avg Latency: ${summary.avgLatency}`, 14, 52);
-        doc.text(`API Uptime: ${summary.apiUptime}%`, 14, 58);
+        doc.text(`Summary Data for date ${data.date}.`, 14, 40);
       } else {
         doc.text("No summary data available.", 14, 40);
       }
@@ -161,20 +158,20 @@ useEffect(() => {
     <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
       {/* Header */}
      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-  <div>
-    <h1 className="text-3xl font-bold text-gray-900">API Analytics</h1>
-    <p className="text-gray-600">
-      Monitor your API usage, performance, and error patterns
-    </p>
-  </div>
+    <div>
+      <h1 className="text-3xl font-bold text-gray-900">API Analytics</h1>
+      <p className="text-gray-600">
+        Monitor your API usage, performance, and error patterns
+      </p>
+    </div>
   {/* Right Side Controls */}
-  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-    <input
-      type="date"
-      value={selectedDate}
-      onChange={e => setSelectedDate(e.target.value)}
-      className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+      <input
+        type="date"
+        value={selectedDate}
+        onChange={e => setSelectedDate(e.target.value)}
+        className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
     <button
       className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm hover:bg-gray-100 transition-colors"
       onClick={handleExport}

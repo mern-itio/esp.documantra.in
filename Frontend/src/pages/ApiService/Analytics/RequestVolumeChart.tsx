@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Line, Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { apiServiceApi } from "../../../services/apiHelper";
 import LoadingSpinner from "../../../components/ApiServices/Spinner";
+import { CustomTooltip } from "../../../components/ApiServices/tooltip";
 
 const RequestVolumeChart = () => {
   const [chartData, setChartData] = useState([]);
@@ -34,6 +35,7 @@ const RequestVolumeChart = () => {
   return () => clearTimeout(timer);
 }, []);
 
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Request Volume</h2>
@@ -51,7 +53,7 @@ const RequestVolumeChart = () => {
           <CartesianGrid stroke="#f3f4f6" />
           <XAxis dataKey="date" />
           <YAxis />
-          <Tooltip />
+          <Tooltip content={<CustomTooltip />} /> 
           <Area
             type="monotone"
             dataKey="requests"
