@@ -1,20 +1,11 @@
-import React, { useState } from 'react'
-import { 
-  HelpCircle, 
-  MessageSquare, 
-  Book, 
-  Mail, 
-  Phone, 
-  Clock, 
-  CheckCircle,
-  Search,
-  ChevronRight,
-} from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import { toast } from "react-hot-toast";
 import { apiServiceApi } from '../../../services/apiHelper';
+import { HelpCircle, MessageSquare, Book, Mail, Phone, Clock, CheckCircle,Search,ChevronRight,} from 'lucide-react';
 
 export const SupportPage: React.FC = () => {
-//   const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  //   const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  const [mockTickets, setMockTickets] = useState([]);
   const [showNewTicketModal, setShowNewTicketModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -85,28 +76,22 @@ export const SupportPage: React.FC = () => {
     }
   ]
 
-  const mockTickets = [
-    {
-      id: 'ticket_001',
-      title: 'Webhook delivery failures',
-      status: 'open',
-      priority: 'high',
-      category: 'Technical',
-      createdAt: '2024-07-01T10:00:00Z',
-      lastUpdate: '2024-07-01T14:30:00Z',
-      description: 'Experiencing intermittent webhook delivery failures for envelope.completed events.'
-    },
-    {
-      id: 'ticket_002',
-      title: 'SDK documentation clarification',
-      status: 'resolved',
-      priority: 'low',
-      category: 'Documentation',
-      createdAt: '2024-06-28T15:00:00Z',
-      lastUpdate: '2024-06-29T09:15:00Z',
-      description: 'Need clarification on error handling in the Python SDK.'
-    }
-  ]
+  useEffect(() => {
+
+    const fetchTickets = async () => {
+      try {
+        const response = await apiServiceApi.get('/api/api-service/tickets/all');
+        if (response.status === 200 && response.data) {
+          setMockTickets(response.data); // Store response in mockTickets
+          console.log("Tickets response:", response.data); // Log response
+        }
+      } catch (error) {
+        console.error("API error:", error);
+      }
+    };
+    fetchTickets();
+  }, []); // Empty dependency: runs on first load only
+
 
   const filteredFAQ = faqItems.filter(item =>
     item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -128,30 +113,32 @@ export const SupportPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{channel.title}</h3>
               <p className="text-gray-600 mb-4">{channel.description}</p>
              {channel.action === "Contact Sales" ? (
-  <a
-    href="mailto:shristyv301@gmail.com"
-    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
-  >
-    {channel.action}
-    <ChevronRight className="ml-1 h-4 w-4" />
-  </a>
-) : channel.onClick ? (
-  <button
-    onClick={channel.onClick}
-    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
-  >
-    {channel.action}
-    <ChevronRight className="ml-1 h-4 w-4" />
-  </button>
-) : (
-  <a
-    href={channel.href}
-    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
-  >
-    {channel.action}
-    <ChevronRight className="ml-1 h-4 w-4" />
-  </a>
-)}
+              <a
+              href="mailto:shristyv301@gmail.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+            >
+              {channel.action}
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </a>
+            ) : channel.onClick ? (
+              <button
+                onClick={channel.onClick}
+                className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+              >
+                {channel.action}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </button>
+            ) : (
+              <a
+                href={channel.href}
+                className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+              >
+                {channel.action}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </a>
+            )}
 
             </div>
           )
@@ -205,9 +192,9 @@ export const SupportPage: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {mockTickets.map((ticket) => (
+             {mockTickets.slice(0, 3).map((ticket:any) => (
                 <div
-                  key={ticket.id}
+                  key={ticket._id}
                   className="p-3 border border-gray-200 rounded-lg hover:border-gray-300 cursor-pointer transition-colors"
                 //   onClick={() => setSelectedTicket(ticket)}
                 >

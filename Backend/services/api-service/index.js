@@ -5,9 +5,10 @@ dotenv.config();
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 const apiRoutes = require('./routes/apiRoutes');
+const community = require('./routes/community');
 const esignRoutes = require('./routes/e-signRoute');
-const analyticsMiddleware = require('./middleware/analytics');
 const supportTickets = require('./routes/supportTicket');
+const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(express.json());
  app.get('/api/api-service/health', (_, res) => res.send('API Service is running'));
 
 app.use('/api/api-service', verifyJWT(process.env.ACCESS_TOKEN_SECRET), apiRoutes);
+app.use('/api/api-service/community', verifyJWT(process.env.ACCESS_TOKEN_SECRET), community);
 app.use('/api/api-service/tickets', verifyJWT(process.env.ACCESS_TOKEN_SECRET), supportTickets);
 app.use('/api/api-service/sign', verifyJWT(process.env.ACCESS_TOKEN_SECRET), analyticsMiddleware, esignRoutes );
 

@@ -9,12 +9,18 @@ type StatusCodeDatum = {
 };
 
 const STATUS_COLORS: { [key: string]: string } = {
-  "200": "#2563eb",
+  "200": "#10b981",
   "400": "#ef4444",
   "401": "#f59e42",
-  "404": "#10b981",
-  "500": "#a78bfa",
-  "429": "#f59e42"
+  "404": "#ef4444",
+  "500": "#ef4444",
+};
+const STATUS_MEANINGS: { [key: string]: string } = {
+  "200": "Success",
+  "400": "Bad Request",
+  "401": "Unauthorized",
+  "404": "Not Found",
+  "500": "Server Error",
 };
 
 const StatusCodesChart = () => {
@@ -74,6 +80,7 @@ const StatusCodesChart = () => {
               <div className="flex items-center">
                 <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
                 <span>{entry.code}</span>
+                <span className="ml-2 text-gray-500">({STATUS_MEANINGS[String(entry.code)] || "Unknown"})</span>
               </div>
               <span>
                 {entry.value.toLocaleString()} ({((entry.value / total) * 100).toFixed(1)}%)

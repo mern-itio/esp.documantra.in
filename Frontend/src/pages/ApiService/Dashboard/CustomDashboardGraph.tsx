@@ -3,6 +3,7 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContai
 import { apiServiceApi } from "../../../services/apiHelper";
 import LoadingSpinner from "../../../components/ApiServices/Spinner";
 import TopApiEndpointsChart from "../Analytics/TopApiChart";
+import { CustomTooltip } from "../../../components/ApiServices/tooltip";
 
 // Component body with curly braces
 const CustomDashboardGraphs = () => {
@@ -54,7 +55,7 @@ const CustomDashboardGraphs = () => {
           <CartesianGrid stroke="#f3f4f6" />
           <XAxis dataKey="date" />
           <YAxis />
-          <Tooltip />
+          <Tooltip content={<CustomTooltip />} /> 
           <Line
             type="monotone"
             dataKey="requests"
