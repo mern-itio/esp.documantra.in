@@ -54,6 +54,11 @@ import PDFToolsBatchOptimizationPage from '../pages/PDFTools/BatchOptimizationPa
 import PDFToolsOCRPage from '../pages/PDFTools/OCRPage';
 import PDFToolsMakeSearchablePage from '../pages/PDFTools/MakeSearchablePage';
 import PDFToolsExtractTablesPage from '../pages/PDFTools/ExtractTablesPage';
+import HandwritingRecognition from '../pages/PDFTools/HandwritingRecognitionPage';
+import FillPdfFormPage from '../pages/PDFTools/FillPdfFormPage';
+import FormRecognitionPage from '../pages/PDFTools/FormRecognitionPage';
+import CalculateFieldsPage from '../pages/PDFTools/CalculateFieldsPage';
+import PdfInfoPage from '../pages/PDFTools/PdfInfoPage';
 import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
 import SplitPDFPage from '../pages/LandingPage/SplitPDFPage';
@@ -265,6 +270,7 @@ import ApiServiceMarketPlace from '../pages/ApiService/MarketPlace/Main';
 import ApiServiceCommunity from '../pages/ApiService/Community/Main';
 import ApiServiceSupport from '../pages/ApiService/Support/Main';
 import PublicSignerPage from '../pages/eSign/PublicSignerPage';
+import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -299,9 +305,10 @@ const PDFToolsLayout = () => {
   // }, [selectedCategory]);
 
   const getFilteredTools = () => {
-    let allTools: PDFTool[] = [];
+    let allTools: any[] = [];
 
     if (selectedCategory === 'all') {
+      // @ts-ignore - TypeScript can't infer the complex union type correctly
       allTools = Object.values(mockPDFTools).flatMap(category => category.tools);
       // console.log('Getting all tools from all categories, total:', allTools.length);
     } else {
@@ -318,9 +325,9 @@ const PDFToolsLayout = () => {
 
     if (searchQuery.trim()) {
       const searchFiltered = allTools.filter(tool =>
-        tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.features.some(feature => feature.toLowerCase().includes(searchQuery.toLowerCase()))
+        tool.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tool.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tool.features?.some((feature: string) => feature.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       // console.log(`Search query '${searchQuery}' filtered tools from ${allTools.length} to ${searchFiltered.length}`);
       return searchFiltered;
@@ -797,6 +804,12 @@ const authRoutes = [
   { path: '/pdf-tools/make-searchable', element: <PDFToolsMakeSearchablePage /> },
   { path: '/pdf-tools/extract-tables', element: <PDFToolsExtractTablesPage /> },
   { path: '/pdf-tools/add-watermark', element: <AddWatermark /> },
+  { path: '/pdf-tools/handwriting-recognition', element: <HandwritingRecognition /> },
+  { path: '/pdf-tools/create-form', element: <CreatePdfFormPage /> },
+  { path: '/pdf-tools/fill-form', element: <FillPdfFormPage /> },
+  { path: '/pdf-tools/form-recognition', element: <FormRecognitionPage /> },
+  { path: '/pdf-tools/calculate-fields', element: <CalculateFieldsPage /> },
+  { path: '/pdf-tools/pdf-info', element: <PdfInfoPage /> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 
 ];

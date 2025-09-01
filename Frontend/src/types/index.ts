@@ -316,19 +316,20 @@ export interface EnterpriseSettings {
 
 //PDF Module
 export interface PDFTool {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
+  id?: string;
+  name?: string;
+  description?: string;
+  category?: string;
   inputFormats?: string[];
   outputFormats?: string[];
-  features: string[];
-  complexity: 'easy' | 'medium' | 'advanced';
-  popularity: number;
+  features?: string[];
+  complexity?: 'easy' | 'medium' | 'advanced';
+  popularity?: number;
   avgProcessingTime?: string;
-  icon: string;
+  icon?: string;
   badge?: string;
   premium?: boolean;
+  route?: string;
 }
 
 export interface ToolCategory {

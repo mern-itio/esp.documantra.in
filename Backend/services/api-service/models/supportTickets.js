@@ -28,7 +28,8 @@ const SupportTicketSchema = new mongoose.Schema({
     type: String,
     enum: ['open', 'resolved'],
     default: 'open'
-  }
+  },
+  userId: String,
 });
 
 module.exports = mongoose.model('SupportTicket', SupportTicketSchema);

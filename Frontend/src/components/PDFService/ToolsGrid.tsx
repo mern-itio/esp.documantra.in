@@ -69,9 +69,9 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
       {/* Tools Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {tools.map((tool) => {
-          const Icon = getIcon(tool.icon);
-          const isRecent = recentToolIds.has(tool.id);
-          const isFavorite = favoriteTools.has(tool.id);
+          const Icon = getIcon(tool.icon || 'FileText');
+          const isRecent = recentToolIds.has(tool.id || '');
+          const isFavorite = favoriteTools.has(tool.id || '');
 
           return (
             <div
@@ -103,7 +103,7 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onToggleFavorite(tool.id);
+                      onToggleFavorite(tool.id || '');
                     }}
                     className="p-1 hover:bg-gray-100 rounded transition-colors"
                   >
@@ -138,7 +138,7 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
 
                 {/* Features */}
                 <div className="flex flex-wrap gap-1">
-                  {tool.features.slice(0, 2).map((feature) => (
+                  {(tool.features || []).slice(0, 2).map((feature) => (
                     <span
                       key={feature}
                       className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
@@ -146,9 +146,9 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                       {feature.replace(/_/g, ' ')}
                     </span>
                   ))}
-                  {tool.features.length > 2 && (
+                  {(tool.features || []).length > 2 && (
                     <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                      +{tool.features.length - 2} more
+                      +{(tool.features || []).length - 2} more
                     </span>
                   )}
                 </div>
@@ -158,16 +158,16 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                   <div className="flex items-center space-x-2">
                     <div className={clsx(
                       'px-2 py-1 text-xs font-medium rounded',
-                      getComplexityColor(tool.complexity)
+                      getComplexityColor(tool.complexity || 'medium')
                     )}>
-                      {tool.complexity}
+                      {tool.complexity || 'medium'}
                     </div>
                     <div className={clsx(
                       'flex items-center text-xs font-medium',
-                      getPopularityColor(tool.popularity)
+                      getPopularityColor(tool.popularity || 50)
                     )}>
                       <Zap className="w-3 h-3 mr-1" />
-                      {tool.popularity}%
+                      {tool.popularity || 50}%
                     </div>
                   </div>
                   
