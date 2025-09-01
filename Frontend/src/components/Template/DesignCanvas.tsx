@@ -248,7 +248,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         position={{ x: el.x, y: el.y }}
         bounds="parent"
         onDragStop={(_, d) => updateElement(el.id, { x: d.x, y: d.y })}
-        onResizeStop={(_, __, ref, delta, pos) =>
+        onResizeStop={(_, __, ref, _delta, pos) =>
           updateElement(el.id, {
             width: Math.round(ref.offsetWidth),
             height: Math.round(ref.offsetHeight),

@@ -1,18 +1,8 @@
 // src/pages/template/TemplateDesigner.tsx
 import React, { useEffect, useState } from 'react';
 import {
-  Layers,
-  Type,
-  Image,
-  Square,
-  Circle,
-  FileText,
   Save,
-  Eye,
-  Undo,
-  Redo,
-  Settings,
-  Palette
+  Eye
 } from 'lucide-react';
 import { DesignCanvas } from '../../components/Template/DesignCanvas';
 import { ElementLibrary } from '../../components/Template/ElementLibrary';
@@ -22,14 +12,14 @@ import { templateServiceApi } from '../../services/apiHelper';
 
 export const TemplateDesigner: React.FC = () => {
   // UI state
-  const [selectedTool, setSelectedTool] = useState<string>('select');
   const [selectedElement, setSelectedElement] = useState<CanvasElement | null>(null);
   const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([]);
 
   // History for undo/redo
   const [past, setPast] = useState<CanvasElement[][]>([]);
   const [future, setFuture] = useState<CanvasElement[][]>([]);
-
+console.log(past);
+console.log(future);
   // Preview mode
   const [previewMode, setPreviewMode] = useState<boolean>(false);
 
@@ -37,16 +27,16 @@ export const TemplateDesigner: React.FC = () => {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [templateTitle, setTemplateTitle] = useState<string>('Untitled Template');
   const [saving, setSaving] = useState<boolean>(false);
-
+  setTemplateId("1");
   // Tools list (for UI)
-  const tools = [
-    { id: 'select', name: 'Select', icon: Layers },
-    { id: 'text', name: 'Text', icon: Type },
-    { id: 'image', name: 'Image', icon: Image },
-    { id: 'rectangle', name: 'Rectangle', icon: Square },
-    { id: 'circle', name: 'Circle', icon: Circle },
-    { id: 'signature', name: 'Signature Field', icon: FileText }
-  ];
+  // const tools = [
+  //   { id: 'select', name: 'Select', icon: Layers },
+  //   { id: 'text', name: 'Text', icon: Type },
+  //   { id: 'image', name: 'Image', icon: Image },
+  //   { id: 'rectangle', name: 'Rectangle', icon: Square },
+  //   { id: 'circle', name: 'Circle', icon: Circle },
+  //   { id: 'signature', name: 'Signature Field', icon: FileText }
+  // ];
 
   // ---------- History helpers ----------
   const pushHistory = (nextElements: CanvasElement[]) => {
@@ -55,23 +45,23 @@ export const TemplateDesigner: React.FC = () => {
     setCanvasElements(nextElements);
   };
 
-  const undo = () => {
-    if (past.length === 0) return;
-    const previous = past[past.length - 1];
-    setPast(past.slice(0, -1));
-    setFuture(f => [canvasElements, ...f]);
-    setCanvasElements(previous);
-    setSelectedElement(null);
-  };
+  // const _undo = () => {
+  //   if (past.length === 0) return;
+  //   const previous = past[past.length - 1];
+  //   setPast(past.slice(0, -1));
+  //   setFuture(f => [canvasElements, ...f]);
+  //   setCanvasElements(previous);
+  //   setSelectedElement(null);
+  // };
 
-  const redo = () => {
-    if (future.length === 0) return;
-    const next = future[0];
-    setPast(p => [...p, canvasElements]);
-    setFuture(future.slice(1));
-    setCanvasElements(next);
-    setSelectedElement(null);
-  };
+  // const _redo = () => {
+  //   if (future.length === 0) return;
+  //   const next = future[0];
+  //   setPast(p => [...p, canvasElements]);
+  //   setFuture(future.slice(1));
+  //   setCanvasElements(next);
+  //   setSelectedElement(null);
+  // };
 
   // ---------- Element operations ----------
   const addElement = (element: CanvasElement) => {
