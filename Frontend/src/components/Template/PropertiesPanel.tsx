@@ -70,11 +70,13 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             {tableData.map((row, rIdx) => (
               <div key={rIdx} className="flex">
                 {row.map((cell, cIdx) => (
-                  <input
+                  <textarea
                     key={cIdx}
                     value={cell}
                     onChange={(e) => onCellChange(rIdx, cIdx, e.target.value)}
-                    className="text-xs border border-gray-200 px-2 py-1 m-0.5 w-24"
+                    rows={2}
+                    className="text-xs border border-gray-200 px-2 py-1 m-0.5 w-36"
+                    style={{ resize: 'vertical' }}
                   />
                 ))}
               </div>
@@ -235,6 +237,55 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
             {/* Table cell editor grid */}
             {renderTableEditor()}
+          </div>
+        )}
+
+        {/* Chart config */}
+        {selectedElement.type === 'chart' && (
+          <div className="space-y-3">
+            {/* Chart Type */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Chart Type</label>
+              <select
+                value={selectedElement.chartKind || 'bar'}
+                onChange={(e) => handlePropertyChange('chartKind', e.target.value)}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+              >
+                <option value="bar">Bar</option>
+                <option value="line">Line</option>
+              </select>
+            </div>
+
+            {/* Chart Title */}
+            {/* <div>
+              <label className="block text-xs text-gray-500 mb-1">Chart Title</label>
+              <input
+                type="text"
+                value={selectedElement.content || ''}
+                onChange={(e) => handlePropertyChange('content', e.target.value)}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                placeholder="Enter chart title"
+              />
+            </div> */}
+
+            {/* Chart Data */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Chart Data (JSON)</label>
+              <textarea
+                rows={4}
+                value={JSON.stringify(selectedElement.chartData || {}, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const data = JSON.parse(e.target.value);
+                    handlePropertyChange('chartData', data);
+                  } catch {}
+                }}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Example: {"{ labels: ['Jan','Feb'], datasets: [{ label: 'Sales', data: [10,20] }] }"}
+              </p>
+            </div>
           </div>
         )}
 

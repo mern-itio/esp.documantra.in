@@ -30,8 +30,9 @@ export const ElementLibrary: React.FC<ElementLibraryProps> = ({ onElementSelect 
       name: 'Advanced',
       elements: [
         // table defaultProps includes rows/cols and (optionally) tableData
-        { id: 'table', name: 'Table', icon: Table, type: 'table', defaultProps: { width: 400, height: 200, rows: 3, cols: 3 } },
-        { id: 'chart', name: 'Chart', icon: BarChart3, type: 'chart', defaultProps: { width: 300, height: 200, chartKind: 'bar' as const } }
+        { id: 'table', name: 'Table', icon: Table, type: 'table', defaultProps: { width: 400, height: 200, rows: 6, cols: 3 } },
+        { id: 'chart', name: 'Chart', icon: BarChart3, type: 'chart', defaultProps: { width: 300, height: 200, chartKind: 'bar', chartData: { labels: ['Jan','Feb'], datasets: [{ label: 'Data', data: [1,2], backgroundColor: 'rgba(59,130,246,0.5)' }] } } }
+
       ]
     }
   ];
@@ -49,24 +50,25 @@ export const ElementLibrary: React.FC<ElementLibraryProps> = ({ onElementSelect 
 
     const newElement: CanvasElement = {
       id: `${def.type}_${nanoid(8)}`,
-      type: def.type,
+      type: def?.type,
       x: 100,
       y: 100,
-      width: def.defaultProps.width,
-      height: def.defaultProps.height,
-      content: def.defaultProps.content,
-      src: def.defaultProps.src,
-      placeholder: def.defaultProps.placeholder,
-      checked: def.defaultProps.checked,
+      width: def?.defaultProps?.width,
+      height: def?.defaultProps?.height,
+      content: def?.defaultProps?.content,
+      src: def?.defaultProps?.src,
+      placeholder: def?.defaultProps?.placeholder,
+      checked: def?.defaultProps?.checked,
       rows,
       cols,
       tableData,
-      chartKind: def.defaultProps.chartKind,
-      required: def.defaultProps.required,
+      chartKind: def?.defaultProps?.chartKind,
+      chartData: def?.defaultProps?.chartData,
+      required: def?.defaultProps?.required,
       styles: {
-        ...(def.defaultProps.styles || {}),
+        ...(def?.defaultProps?.styles || {}),
         // sensible table defaults
-        ...(def.type === 'table' ? { borderStyle: def.defaultProps.styles?.borderStyle || 'solid', borderColor: def.defaultProps.styles?.borderColor || '#9CA3AF', borderWidth: def.defaultProps.styles?.borderWidth ?? 1 } : {})
+        ...(def?.type === 'table' ? { borderStyle: def?.defaultProps.styles?.borderStyle || 'solid', borderColor: def?.defaultProps.styles?.borderColor || '#9CA3AF', borderWidth: def?.defaultProps.styles?.borderWidth ?? 1 } : {})
       }
     };
     onElementSelect(newElement);

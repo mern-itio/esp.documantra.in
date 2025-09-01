@@ -43,4 +43,14 @@ export interface CanvasElement {
   chartKind?: 'bar' | 'line' | 'pie';
   required?: boolean;
   styles?: ElementStyles;
+  chartData?: {
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      backgroundColor?: string;
+      borderColor?: string;
+      borderWidth?: number;
+    }>;
+  }; // <- add this
 }

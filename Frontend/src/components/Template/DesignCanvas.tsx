@@ -2,23 +2,27 @@ import React, { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Rnd } from 'react-rnd';
 import type { CanvasElement } from '../../types/template';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar, Line } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 interface DesignCanvasProps {
   elements: CanvasElement[];
   selectedElement: CanvasElement | null;
   onElementSelect: (element: CanvasElement | null) => void;
   onElementsChange: (elements: CanvasElement[]) => void;
+  readOnly?: boolean;   // NEW
 }
 
 export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   elements,
   selectedElement,
   onElementSelect,
-  onElementsChange
+  onElementsChange,
+  readOnly
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
-
-  // editing state for inline cell editor
   const [editingCell, setEditingCell] = useState<{
     elementId: string;
     row: number;
@@ -33,16 +37,16 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
   const handleElementClick = (element: CanvasElement, e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log(element);
     onElementSelect(element);
   };
 
   const handleCanvasClick = (e?: React.MouseEvent) => {
-    // only deselect if clicked directly on canvas background
+    console.log(e);
     if (e && e.target !== canvasRef.current) return;
     onElementSelect(null);
   };
 
-  // commit inline edit to element.tableData
   const commitCellEdit = () => {
     if (!editingCell) return;
     const { elementId, row, col, value } = editingCell;
@@ -54,7 +58,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     const rows = el.rows ?? 3;
     const cols = el.cols ?? 3;
     const data = el.tableData ? el.tableData.map(r => r.slice()) : Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
-    // ensure dimensions
     while (data.length < (el.rows ?? rows)) data.push(Array.from({ length: el.cols ?? cols }, () => ''));
     for (let r = 0; r < data.length; r++) {
       if (!data[r]) data[r] = Array.from({ length: el.cols ?? cols }, () => '');
@@ -65,11 +68,9 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     setEditingCell(null);
   };
 
-  // open editor for a particular cell
   const startCellEdit = (elementId: string, row: number, col: number, initialValue: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingCell({ elementId, row, col, value: initialValue ?? '' });
-    // select element if not already
     const el = elements.find(x => x.id === elementId);
     if (el) onElementSelect(el);
   };
@@ -122,10 +123,8 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       case 'table': {
         const rows = el.rows ?? 3;
-        const cols = el.cols ?? 3;
+        const cols = el.cols ?? 6;
         const tableData = el.tableData || Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
-
-        // table-level styles
         const tableBorderStyle = el.styles?.borderStyle || 'solid';
         const tableBorderColor = el.styles?.borderColor || '#9CA3AF';
         const tableBorderWidth = el.styles?.borderWidth ?? 1;
@@ -166,28 +165,25 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                             borderWidth: `${tableBorderWidth}px`
                           }}
                         >
-                          {/* inline editor */}
                           {isEditing ? (
-                            <input
+                            <textarea
                               autoFocus
                               value={editingCell?.value ?? ''}
                               onChange={(e) => setEditingCell(prev => prev ? { ...prev, value: e.target.value } : prev)}
-                              onBlur={() => commitCellEdit()}
+                              onBlur={commitCellEdit}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  (e.target as HTMLInputElement).blur();
+                                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                                  (e.target as HTMLTextAreaElement).blur();
                                 } else if (e.key === 'Escape') {
                                   setEditingCell(null);
                                 }
                               }}
                               onClick={(e) => e.stopPropagation()}
                               className="w-full h-full p-1 text-xs outline-none border border-blue-200 rounded"
-                              style={{ boxSizing: 'border-box' }}
+                              style={{ boxSizing: 'border-box', resize: 'none', minHeight: 40 }}
                             />
                           ) : (
-                            <div className="truncate" style={{ minHeight: 20 }}>
-                              {cellValue}
-                            </div>
+                            <div style={{ whiteSpace: 'pre-wrap', minHeight: 20 }}>{cellValue}</div>
                           )}
                         </td>
                       );
@@ -200,12 +196,31 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         );
       }
 
-      case 'chart':
+      case 'chart': {
+        // default chart data
+        const chartData = el.chartData || {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+          datasets: [
+            {
+              label: 'Dataset',
+              data: [12, 19, 3, 5, 2],
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }
+          ]
+        };
+
         return (
-          <div className="w-full h-full text-xs text-gray-600 flex items-center justify-center select-none">
-            Chart: {el.chartKind || 'bar'}
+          <div className="w-full h-full flex items-center justify-center">
+            {el.chartKind === 'line' ? (
+              <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+            ) : (
+              <Bar data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+            )}
           </div>
         );
+      }
 
       default:
         return null;
@@ -214,9 +229,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
   const renderElement = (el: CanvasElement) => {
     const isSelected = selectedElement?.id === el.id;
-
     const borderStyle = isSelected ? 'ring-2 ring-blue-500' : 'hover:ring-1 hover:ring-gray-300';
-
     const baseStyle: React.CSSProperties = {
       backgroundColor: el.styles?.backgroundColor || (el.type === 'signature' ? '#F9FAFB' : 'transparent'),
       borderStyle: el.type === 'signature' ? 'dashed' : 'solid',
@@ -244,6 +257,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           })
         }
         onClick={(e: any) => {
+          if(readOnly) return;              // DISABLE selection
           e.stopPropagation();
           handleElementClick(el, e);
         }}
@@ -265,7 +279,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         style={{ width: '8.5in', height: '11in', transform: 'scale(0.8)', transformOrigin: 'top center' }}
         onClick={() => handleCanvasClick()}
       >
-        {/* Canvas Grid */}
         <div
           className="absolute inset-0 opacity-5 pointer-events-none"
           style={{
@@ -274,10 +287,8 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           }}
         />
 
-        {/* Elements */}
         {elements.map(renderElement)}
 
-        {/* Empty State */}
         {elements.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-gray-400">
