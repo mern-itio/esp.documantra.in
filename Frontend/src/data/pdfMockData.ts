@@ -878,7 +878,7 @@ export const mockPDFTools = {
         route: "/pdf-tools/pdf-info"
       },
       {
-        id: "pdf_validator",
+        id: "pdf-validator",
         name: "PDF Validator",
         description: "Validate PDF standards compliance",
         category: "utilities",
@@ -887,35 +887,40 @@ export const mockPDFTools = {
         features: ["standards_validation", "error_detection", "compliance_reporting"],
         complexity: "advanced" as const,
         popularity: 27,
-        icon: "CheckCircle"
+        icon: "CheckCircle",
+        route: "/pdf-tools/pdf-validator"
       },
       {
-        id: "compare_pdfs",
-        name: "Compare PDFs",
-        description: "Compare two PDFs and highlight differences",
+        id: "pdf-compare",
+        name: "PDF Compare",
+        description: "Compare two PDF documents side-by-side",
         category: "utilities",
         inputFormats: ["pdf"],
         outputFormats: ["pdf"],
-        features: ["visual_comparison", "text_comparison", "change_highlighting"],
-        complexity: "medium" as const,
-        popularity: 43,
-        icon: "GitCompare"
+        features: ["side_by_side_comparison", "difference_highlighting", "detailed_analysis"],
+        complexity: "intermediate" as const,
+        popularity: 35,
+        icon: "GitCompare",
+        route: "/pdf-tools/pdf-compare"
       },
       {
-        id: "pdf_repair",
+        id: "pdf-repair",
         name: "PDF Repair",
-        description: "Repair corrupted or damaged PDF files",
+        description: "Repair corrupted PDFs and optimize for fast web viewing",
         category: "utilities",
         inputFormats: ["pdf"],
         outputFormats: ["pdf"],
-        features: ["error_recovery", "structure_repair", "content_reconstruction"],
+        features: ["error_recovery", "structure_repair", "content_reconstruction", "web_optimization"],
         complexity: "advanced" as const,
-        popularity: 19,
-        icon: "Wrench"
+        popularity: 28,
+        icon: "Wrench",
+        route: "/pdf-tools/pdf-repair"
       },
+
+
       {
-        id: "add_bookmarks",
-        name: "Add Bookmarks",
+        id: "pdf-bookmarks",
+        name: "PDF Bookmarks",
         description: "Create navigation bookmarks in PDFs",
         category: "utilities",
         inputFormats: ["pdf"],
@@ -923,10 +928,11 @@ export const mockPDFTools = {
         features: ["automatic_bookmarks", "hierarchical_structure", "custom_titles"],
         complexity: "medium" as const,
         popularity: 38,
-        icon: "Bookmark"
+        icon: "Bookmark",
+        route: "/pdf-tools/pdf-bookmarks"
       },
       {
-        id: "pdf_statistics",
+        id: "pdf-statistics",
         name: "PDF Statistics",
         description: "Analyze document content and statistics",
         category: "utilities",
@@ -935,7 +941,8 @@ export const mockPDFTools = {
         features: ["content_analysis", "usage_statistics", "performance_metrics"],
         complexity: "medium" as const,
         popularity: 32,
-        icon: "BarChart3"
+        icon: "BarChart3",
+        route: "/pdf-tools/pdf-statistics"
       }
     ]
   }

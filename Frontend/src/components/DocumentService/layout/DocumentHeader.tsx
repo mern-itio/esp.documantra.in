@@ -174,36 +174,58 @@ export function DocumentHeader() {
                 {selectedDocuments.length} selected
               </span>
               <div className="flex items-center space-x-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 hover:bg-blue-50 hover:text-blue-700"
-                  onClick={() => setShowShareModal(true)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <Share2 className="w-3 h-3" />
-                </Button>
-                {/* <Button size="sm" variant="ghost" className="h-7 px-2">
-                  <Download className="w-3 h-3" />
-                </Button> */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2"
-                  onClick={() => setShowMoveModal(true)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <Move className="w-3 h-3" />
-                </Button>
-                {/* <Button size="sm" variant="ghost" className="h-7 px-2">
-                  <Star className="w-3 h-3" />
-                </Button> */}
-                {userPermissions.delete_any && (
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600 hover:text-red-700">
-                    <Trash2 className="w-3 h-3" />
+                {/* Share */}
+                <div className="relative group">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 hover:bg-blue-50 hover:text-blue-700"
+                    onClick={() => setShowShareModal(true)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <Share2 className="w-3 h-3" />
                   </Button>
+                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
+                     rounded bg-gray-800 px-2 py-1 text-xs text-white">
+                    Share
+                  </span>
+                </div>
+
+                {/* Move */}
+                <div className="relative group">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2"
+                    onClick={() => setShowMoveModal(true)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <Move className="w-3 h-3" />
+                  </Button>
+                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
+                     rounded bg-gray-800 px-2 py-1 text-xs text-white">
+                    Move
+                  </span>
+                </div>
+
+                {/* Delete */}
+                {userPermissions.delete_any && (
+                  <div className="relative group">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
+                       rounded bg-gray-800 px-2 py-1 text-xs text-white">
+                      Delete
+                    </span>
+                  </div>
                 )}
               </div>
+
             </div>
           )}
 

@@ -1,8 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FiUpload, FiFile, FiTrash2, FiDownload, FiRotateCw, FiPlus, FiX } from 'react-icons/fi';
 import { rotatePDFService } from '../../services/rotatePDFService';
 import type { RotatePDFResponse, RotatePageItem, RotationData } from '../../types/rotatePDF';
 import type { PDFInfo } from '../../types/common';
+
+// Type declarations for PDF.js
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
 
 interface RotatePDFProps {
   onRotateResult: (result: RotatePDFResponse) => void;
@@ -18,7 +25,85 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
   const [rotationMode, setRotationMode] = useState<'individual' | 'batch'>('individual');
   const [batchRotation, setBatchRotation] = useState<90 | 180 | 270>(90);
   const [batchPages, setBatchPages] = useState<string>('');
+  const [pdfThumbnails, setPdfThumbnails] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize PDF.js
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
+        if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        }
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
+    }
+  }, []);
+
+  // Load PDF.js dynamically
+  const loadPDFJS = useCallback(async () => {
+    try {
+      if (typeof window !== 'undefined' && !window.pdfjsLib) {
+        const pdfjsLib = await import('pdfjs-dist');
+        
+        // Set worker path to local file
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        } catch (error) {
+          console.warn("Failed to set PDF.js worker:", error);
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        }
+        
+        // Assign to window
+        window.pdfjsLib = pdfjsLib;
+      }
+      
+      return window.pdfjsLib;
+    } catch (error) {
+      console.error('Error loading PDF.js:', error);
+      throw error;
+    }
+  }, []);
+
+  // Generate PDF thumbnails
+  const generatePDFThumbnails = useCallback(async (pdfFile: File) => {
+    try {
+      const pdfjsLib = await loadPDFJS();
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      const thumbnails: string[] = [];
+      
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 0.3 }); // Small thumbnails
+        
+        const canvas = window.document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Could not get canvas context');
+        
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+        thumbnails.push(canvas.toDataURL());
+      }
+      
+      return thumbnails;
+    } catch (error) {
+      console.error('Error generating PDF thumbnails:', error);
+      return [];
+    }
+  }, [loadPDFJS]);
 
   // Handle file selection
   const handleFileSelect = useCallback(async (file: File) => {
@@ -29,10 +114,15 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
 
     setDocument(file);
 
-    // Get PDF info and initialize page items
+    // Get PDF info, generate thumbnails, and initialize page items
     try {
-      const info = await rotatePDFService.getPDFInfo(file);
+      const [info, thumbnails] = await Promise.all([
+        rotatePDFService.getPDFInfo(file),
+        generatePDFThumbnails(file)
+      ]);
+      
       setPdfInfo(info);
+      setPdfThumbnails(thumbnails);
 
       const initialPages: RotatePageItem[] = Array.from({ length: info.pages }, (_, i) => ({
         id: (i + 1).toString(),
@@ -42,7 +132,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
       }));
       setPageItems(initialPages);
     } catch (error) {
-      console.error('Error getting PDF info:', error);
+      console.error('Error processing PDF:', error);
       onRotateResult({
         success: false,
         error: 'Failed to get PDF information',
@@ -50,7 +140,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
       });
       removeDocument();
     }
-  }, [onRotateResult]);
+  }, [onRotateResult, generatePDFThumbnails]);
 
   // Handle drag and drop
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -83,6 +173,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
     setDocument(null);
     setPdfInfo(null);
     setPageItems([]);
+    setPdfThumbnails([]);
     onRotateResult({
       success: false,
       message: 'Document removed'
@@ -183,34 +274,42 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
     }
   }, [document, pageItems, onRotateResult]);
 
-  // Generate mock page preview with rotation
+  // Generate real PDF page preview with rotation
   const generatePagePreview = (pageNumber: number, rotation: number) => {
+    const thumbnailIndex = pageNumber - 1; // Convert to 0-based index
+    const thumbnail = pdfThumbnails[thumbnailIndex];
+    
+    if (thumbnail) {
+      return (
+        <div className="w-full h-32 rounded-lg overflow-hidden border border-gray-200 bg-white relative">
+          <div 
+            className="w-full h-full flex items-center justify-center"
+            style={{ 
+              transform: `rotate(${rotation}deg)`,
+              transformOrigin: 'center center'
+            }}
+          >
+            <img 
+              src={thumbnail} 
+              alt={`Page ${pageNumber} preview`}
+              className="max-w-full max-h-full object-contain"
+              style={{
+                // Ensure the image doesn't get clipped during rotation
+                width: rotation === 90 || rotation === 270 ? 'auto' : '100%',
+                height: rotation === 90 || rotation === 270 ? '100%' : 'auto'
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+    
+    // Fallback to loading state if thumbnail not available
     return (
-      <div 
-        className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden"
-        style={{ transform: `rotate(${rotation}deg)` }}
-      >
-        {/* Mock PDF content */}
+      <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
         <div className="text-center text-gray-600">
           <div className="text-lg font-semibold mb-1">Page {pageNumber}</div>
-          <div className="text-xs">PDF Content Preview</div>
-        </div>
-        
-        {/* Mock watermark */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-10">
-          <div className="text-6xl font-bold text-gray-300">D</div>
-        </div>
-        
-        {/* Mock logo */}
-        <div className="absolute top-2 right-2 text-xs font-semibold text-orange-500">
-          Dittio
-        </div>
-        
-        {/* Mock content lines */}
-        <div className="absolute bottom-8 left-2 right-2 space-y-1">
-          <div className="h-1 bg-gray-300 rounded"></div>
-          <div className="h-1 bg-gray-300 rounded w-3/4"></div>
-          <div className="h-1 bg-gray-300 rounded w-1/2"></div>
+          <div className="text-xs">Loading preview...</div>
         </div>
       </div>
     );
@@ -414,7 +513,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
                 {pageItems.map((page) => (
                   <div key={page.id} className="relative">
                     {/* Page Preview Card */}
-                    <div className="border-2 rounded-lg p-3 transition-all border-gray-200 bg-white relative">
+                    <div className="border-2 rounded-lg p-3 transition-all border-gray-200 bg-white relative min-h-[200px]">
                       {/* Rotation Button in Top Right Corner */}
                       <button
                         onClick={() => handlePageRotation(page.id, 90)}
@@ -424,8 +523,10 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
                         <FiRotateCw className="w-4 h-4" />
                       </button>
                       
-                      {/* Page Preview */}
-                      {generatePagePreview(page.pageNumber, page.selectedRotation)}
+                      {/* Page Preview Container - Fixed size to prevent overflow */}
+                      <div className="w-full h-32 mb-2 flex items-center justify-center overflow-hidden">
+                        {generatePagePreview(page.pageNumber, page.selectedRotation)}
+                      </div>
                       
                       {/* Page Number Label */}
                       <div className="text-center mt-2">

@@ -60,16 +60,16 @@ async function convertDocToPdfSimple(inputPath, outputPath) {
     doc.pipe(stream);
     
     // Add title
-    doc.fontSize(20).font('Helvetica-Bold').text('Document to PDF Conversion', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
-    doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
-    doc.moveDown(2);
+    // doc.fontSize(20).font('Helvetica-Bold').text('Document to PDF Conversion', { align: 'center' });
+    // doc.moveDown(0.5);
+    // doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
+    // doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
+    // doc.moveDown(2);
     
     // Add extracted text content
     if (textContent && textContent.length > 0) {
-      doc.fontSize(12).font('Helvetica').text('Document Content:', { underline: true });
-      doc.moveDown(0.5);
+      // doc.fontSize(12).font('Helvetica').text('Document Content:', { underline: true });
+      // doc.moveDown(0.5);
       
       // Split text into paragraphs and add to PDF
       const paragraphs = textContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);

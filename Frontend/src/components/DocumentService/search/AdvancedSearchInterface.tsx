@@ -137,7 +137,7 @@ export function AdvancedSearchInterface({
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Search className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Advanced Search</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Search</h2>
           </div>
           <Button
             variant="ghost"

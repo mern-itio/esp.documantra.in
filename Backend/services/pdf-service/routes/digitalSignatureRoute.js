@@ -36,6 +36,9 @@ router.post('/generate-certificate', digitalSignatureController.generateCertific
 router.get('/list-certificates', digitalSignatureController.listCertificates);
 router.post('/test-certificate', digitalSignatureController.testCertificateGeneration);
 
+// Timezone test route
+router.get('/test-timezone', digitalSignatureController.testTimezone);
+
 // Digital signature routes
 router.post('/add-signature', upload.fields([
   { name: 'file', maxCount: 1 },

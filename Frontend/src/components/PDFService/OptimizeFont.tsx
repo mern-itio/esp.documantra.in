@@ -166,14 +166,46 @@ const OptimizeFont: React.FC = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (result?.downloadUrl) {
-      const link = document.createElement('a');
-      link.href = result.downloadUrl;
-      link.download = result.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      try {
+        // Create a proper download URL with the full API base URL
+        const API_BASE_URL = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
+        const fullDownloadUrl = `${API_BASE_URL}${result.downloadUrl}`;
+        
+        console.log('Downloading from URL:', fullDownloadUrl);
+        
+        // Fetch the file to ensure it exists and is valid
+        const response = await fetch(fullDownloadUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+        }
+        
+        // Get the file blob
+        const blob = await response.blob();
+        
+        // Check if the blob is a valid PDF
+        if (blob.type !== 'application/pdf' && !blob.type.includes('pdf')) {
+          console.warn('Downloaded file may not be a valid PDF, type:', blob.type);
+        }
+        
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = result.filename || 'optimized-fonts.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the object URL
+        window.URL.revokeObjectURL(url);
+        
+        toast.success('File downloaded successfully!');
+      } catch (error) {
+        console.error('Download failed:', error);
+        toast.error('Failed to download file. Please try again.');
+      }
     }
   };
 
