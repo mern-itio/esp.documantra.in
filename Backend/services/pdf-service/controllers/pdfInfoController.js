@@ -25,7 +25,16 @@ const pdfInfoController = {
       const producer = pdfDoc.getProducer() || 'Unknown';
       const creationDate = pdfDoc.getCreationDate();
       const modificationDate = pdfDoc.getModificationDate();
-      const keywords = pdfDoc.getKeywords() || [];
+      const rawKeywords = pdfDoc.getKeywords();
+      let keywords = [];
+      if (rawKeywords) {
+        if (Array.isArray(rawKeywords)) {
+          keywords = rawKeywords;
+        } else if (typeof rawKeywords === 'string') {
+          // Split by common delimiters and clean up
+          keywords = rawKeywords.split(/[,;]/).map(keyword => keyword.trim()).filter(keyword => keyword.length > 0);
+        }
+      }
 
       // Get document statistics
       const pageCount = pdfDoc.getPageCount();
@@ -124,6 +133,17 @@ const pdfInfoController = {
       const pdfBytes = await fs.readFile(inputPath);
       const pdfDoc = await PDFDocument.load(pdfBytes);
 
+      const rawKeywords = pdfDoc.getKeywords();
+      let keywords = [];
+      if (rawKeywords) {
+        if (Array.isArray(rawKeywords)) {
+          keywords = rawKeywords;
+        } else if (typeof rawKeywords === 'string') {
+          // Split by common delimiters and clean up
+          keywords = rawKeywords.split(/[,;]/).map(keyword => keyword.trim()).filter(keyword => keyword.length > 0);
+        }
+      }
+
       const metadata = {
         title: pdfDoc.getTitle() || 'No title',
         author: pdfDoc.getAuthor() || 'Unknown',
@@ -132,7 +152,7 @@ const pdfInfoController = {
         producer: pdfDoc.getProducer() || 'Unknown',
         creationDate: pdfDoc.getCreationDate()?.toISOString() || null,
         modificationDate: pdfDoc.getModificationDate()?.toISOString() || null,
-        keywords: pdfDoc.getKeywords() || []
+        keywords
       };
 
       // Clean up input file

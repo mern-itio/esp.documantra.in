@@ -31,7 +31,7 @@ interface Metadata {
   producer: string;
   creationDate: string | null;
   modificationDate: string | null;
-  keywords: string[];
+  keywords: string[] | string | null;
 }
 
 interface Statistics {
@@ -413,7 +413,7 @@ const PdfInfoPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {pdfInfo.metadata.keywords.length > 0 && (
+                      {Array.isArray(pdfInfo.metadata.keywords) && pdfInfo.metadata.keywords.length > 0 && (
                         <div>
                           <h3 className="text-lg font-medium text-gray-900 mb-4">Keywords</h3>
                           <div className="flex flex-wrap gap-2">

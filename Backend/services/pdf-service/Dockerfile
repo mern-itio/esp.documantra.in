@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     ghostscript \
     tesseract-ocr \
     imagemagick \
+    pdftk \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 

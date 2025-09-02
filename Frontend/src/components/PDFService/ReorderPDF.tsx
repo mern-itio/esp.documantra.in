@@ -1,8 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FiUpload, FiFile, FiTrash2, FiDownload, FiMove, FiPlus, FiX } from 'react-icons/fi';
 import { reorderPDFService } from '../../services/reorderPDFService';
 import type { ReorderPDFResponse, ReorderPageItem } from '../../types/reorderPDF';
 import type { PDFInfo } from '../../types/common';
+
+// Type declarations for PDF.js
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
 
 interface ReorderPDFProps {
   onReorderResult: (result: ReorderPDFResponse) => void;
@@ -17,7 +24,85 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
   const [showPagePreview, setShowPagePreview] = useState(true);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pdfThumbnails, setPdfThumbnails] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize PDF.js
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
+        if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        }
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
+    }
+  }, []);
+
+  // Load PDF.js dynamically
+  const loadPDFJS = useCallback(async () => {
+    try {
+      if (typeof window !== 'undefined' && !window.pdfjsLib) {
+        const pdfjsLib = await import('pdfjs-dist');
+        
+        // Set worker path to local file
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        } catch (error) {
+          console.warn("Failed to set PDF.js worker:", error);
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        }
+        
+        // Assign to window
+        window.pdfjsLib = pdfjsLib;
+      }
+      
+      return window.pdfjsLib;
+    } catch (error) {
+      console.error('Error loading PDF.js:', error);
+      throw error;
+    }
+  }, []);
+
+  // Generate PDF thumbnails
+  const generatePDFThumbnails = useCallback(async (pdfFile: File) => {
+    try {
+      const pdfjsLib = await loadPDFJS();
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      const thumbnails: string[] = [];
+      
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 0.3 }); // Small thumbnails
+        
+        const canvas = window.document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Could not get canvas context');
+        
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+        thumbnails.push(canvas.toDataURL());
+      }
+      
+      return thumbnails;
+    } catch (error) {
+      console.error('Error generating PDF thumbnails:', error);
+      return [];
+    }
+  }, [loadPDFJS]);
 
   // Handle file selection
   const handleFileSelect = useCallback(async (file: File) => {
@@ -28,10 +113,15 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
 
     setDocument(file);
 
-    // Get PDF info and initialize page items
+    // Get PDF info, generate thumbnails, and initialize page items
     try {
-      const info = await reorderPDFService.getPDFInfo(file);
+      const [info, thumbnails] = await Promise.all([
+        reorderPDFService.getPDFInfo(file),
+        generatePDFThumbnails(file)
+      ]);
+      
       setPdfInfo(info);
+      setPdfThumbnails(thumbnails);
 
       const initialPages: ReorderPageItem[] = Array.from({ length: info.pages }, (_, i) => ({
         id: (i + 1).toString(),
@@ -40,7 +130,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
       }));
       setPageItems(initialPages);
     } catch (error) {
-      console.error('Error getting PDF info:', error);
+      console.error('Error processing PDF:', error);
       onReorderResult({
         success: false,
         error: 'Failed to get PDF information',
@@ -48,7 +138,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
       });
       removeDocument();
     }
-  }, [onReorderResult]);
+  }, [onReorderResult, generatePDFThumbnails]);
 
   // Handle drag and drop
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -81,6 +171,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     setDocument(null);
     setPdfInfo(null);
     setPageItems([]);
+    setPdfThumbnails([]);
     onReorderResult({
       success: false,
       message: 'Document removed'
@@ -158,31 +249,29 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     }
   }, [pdfInfo]);
 
-  // Generate mock page preview
+  // Generate real PDF page preview
   const generatePagePreview = (pageNumber: number) => {
+    const thumbnailIndex = pageNumber - 1; // Convert to 0-based index
+    const thumbnail = pdfThumbnails[thumbnailIndex];
+    
+    if (thumbnail) {
+      return (
+        <div className="w-full h-32 rounded-lg overflow-hidden border border-gray-200 bg-white">
+          <img 
+            src={thumbnail} 
+            alt={`Page ${pageNumber} preview`}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      );
+    }
+    
+    // Fallback to loading state if thumbnail not available
     return (
       <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
-        {/* Mock PDF content */}
         <div className="text-center text-gray-600">
           <div className="text-lg font-semibold mb-1">Page {pageNumber}</div>
-          <div className="text-xs">PDF Content Preview</div>
-        </div>
-        
-        {/* Mock watermark */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-10">
-          <div className="text-6xl font-bold text-gray-300">D</div>
-        </div>
-        
-        {/* Mock logo */}
-        <div className="absolute top-2 right-2 text-xs font-semibold text-orange-500">
-          Dittio
-        </div>
-        
-        {/* Mock content lines */}
-        <div className="absolute bottom-8 left-2 right-2 space-y-1">
-          <div className="h-1 bg-gray-300 rounded"></div>
-          <div className="h-1 bg-gray-300 rounded w-3/4"></div>
-          <div className="h-1 bg-gray-300 rounded w-1/2"></div>
+          <div className="text-xs">Loading preview...</div>
         </div>
       </div>
     );

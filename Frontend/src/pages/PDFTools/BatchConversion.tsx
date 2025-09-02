@@ -5,8 +5,6 @@ import {
   Upload,
   Download,
   Play,
-  Settings,
-  Info,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -38,7 +36,6 @@ export const BatchConversion: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [results, setResults] = useState<ConversionResult[]>([]);
-  const [showSettings, setShowSettings] = useState(false);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Initialize 5 file input refs
@@ -58,8 +55,8 @@ export const BatchConversion: React.FC = () => {
     }
   }, []);
 
-  const supportedInputFormats = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
-  const supportedOutputFormats = ['pdf', 'docx', 'doc', 'xlsx'];
+  const supportedInputFormats = ['pdf', 'docx', 'xls', 'xlsx'];
+  const supportedOutputFormats = ['pdf', 'docx', 'xlsx'];
 
   const toolInfo = {
     name: 'Batch Conversion',
@@ -373,17 +370,7 @@ export const BatchConversion: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-            <Info className="w-5 h-5" />
-          </button>
-        </div>
+        
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -562,41 +549,6 @@ export const BatchConversion: React.FC = () => {
             </div>
           </div>
 
-          {/* Settings Panel */}
-          {showSettings && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversion Settings</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Output Quality</label>
-                  <select className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option>High Quality</option>
-                    <option>Standard Quality</option>
-                    <option>Optimized Size</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Conversion Options</label>
-                  <div className="mt-2 space-y-2">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" defaultChecked />
-                      <span className="text-sm text-gray-600">Preserve formatting</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" defaultChecked />
-                      <span className="text-sm text-gray-600">Maintain text layout</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      <span className="text-sm text-gray-600">Extract images</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

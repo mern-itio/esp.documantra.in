@@ -138,16 +138,29 @@ router.post('/info', upload.single('file'), async (req, res) => {
     const buffer = await fs.readFile(filePath);
     const isValid = buffer.length > 4 && buffer.toString('ascii', 0, 4) === '%PDF';
     
-    // Estimate page count based on file size (rough approximation)
-    // This is a simple heuristic - in production you might want to use a proper PDF library
-    const estimatedPages = Math.max(1, Math.floor(fileSize / (50 * 1024))); // Assume ~50KB per page
+    let actualPages = 1; // Default fallback
+    
+    if (isValid) {
+      try {
+        // Use pdf-lib to get actual page count
+        const { PDFDocument } = require('pdf-lib');
+        const pdfBytes = await fs.readFile(filePath);
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        actualPages = pdfDoc.getPageCount();
+        console.log(`PDF ${req.file.originalname}: Actual page count = ${actualPages}`);
+      } catch (pdfError) {
+        console.warn('Failed to get actual page count, using fallback:', pdfError.message);
+        // Fallback to size-based estimation if pdf-lib fails
+        actualPages = Math.max(1, Math.floor(fileSize / (50 * 1024)));
+      }
+    }
     
     // Clean up uploaded file
     await fs.remove(filePath);
 
     res.json({
       success: true,
-      pages: estimatedPages,
+      pages: actualPages,
       size: fileSize,
       isValid: isValid
     });

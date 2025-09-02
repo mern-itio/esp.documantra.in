@@ -59,6 +59,11 @@ import FillPdfFormPage from '../pages/PDFTools/FillPdfFormPage';
 import FormRecognitionPage from '../pages/PDFTools/FormRecognitionPage';
 import CalculateFieldsPage from '../pages/PDFTools/CalculateFieldsPage';
 import PdfInfoPage from '../pages/PDFTools/PdfInfoPage';
+import PdfValidatorPage from '../pages/PDFTools/PdfValidatorPage';
+import PdfComparePage from '../pages/PDFTools/PdfComparePage';
+import PdfRepairPage from '../pages/PDFTools/PdfRepairPage';
+import PdfBookmarksPage from '../pages/PDFTools/PdfBookmarksPage';
+import PdfStatisticsPage from '../pages/PDFTools/PdfStatisticsPage';
 import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
 import SplitPDFPage from '../pages/LandingPage/SplitPDFPage';
@@ -810,6 +815,11 @@ const authRoutes = [
   { path: '/pdf-tools/form-recognition', element: <FormRecognitionPage /> },
   { path: '/pdf-tools/calculate-fields', element: <CalculateFieldsPage /> },
   { path: '/pdf-tools/pdf-info', element: <PdfInfoPage /> },
+  { path: '/pdf-tools/pdf-validator', element: <PdfValidatorPage /> },
+  { path: '/pdf-tools/pdf-compare', element: <PdfComparePage /> },
+  { path: '/pdf-tools/pdf-repair', element: <PdfRepairPage /> },
+  { path: '/pdf-tools/pdf-bookmarks', element: <PdfBookmarksPage /> },
+  { path: '/pdf-tools/pdf-statistics', element: <PdfStatisticsPage /> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 
 ];

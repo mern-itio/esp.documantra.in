@@ -39,6 +39,11 @@ const fillPdfFormRoutes = require('./routes/fillPdfFormRoute');
 const formRecognitionRoutes = require('./routes/formRecognitionRoute');
 const calculateFieldsRoutes = require('./routes/calculateFieldsRoute');
 const pdfInfoRoutes = require('./routes/pdfInfoRoute');
+const pdfValidatorRoutes = require('./routes/pdfValidatorRoute');
+const pdfCompareRoutes = require('./routes/pdfCompareRoute');
+const pdfRepairRoutes = require('./routes/pdfRepairRoute');
+const pdfBookmarksRoutes = require('./routes/pdfBookmarksRoute');
+const pdfStatisticsRoutes = require('./routes/pdfStatisticsRoute');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -62,8 +67,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      frameSrc: ["'self'", "http://localhost:2104", "http://165.22.215.73:2104"],
-      frameAncestors: ["'self'", "http://localhost:3000", "http://localhost:5173", "http://165.22.215.73:3000"],
+      frameSrc: ["'self'", "http://localhost:2104", "http://165.22.215.73:2104", "http://165.22.215.73:8081"],
+      frameAncestors: ["'self'", "http://localhost:3000", "http://localhost:5173", "http://165.22.215.73:3000", "http://165.22.215.73:8081"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
@@ -131,7 +136,7 @@ app.use('/outputs', (req, res, next) => {
   // Set headers to allow iframe embedding for PDF files
   if (req.url.endsWith('.pdf')) {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:3000");
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:8081");
   }
   
   next();
@@ -139,6 +144,9 @@ app.use('/outputs', (req, res, next) => {
 
 // Serve converted files (outputs directory) - no auth required
 app.use('/outputs', express.static(path.join(__dirname, 'outputs')));
+
+// Serve PDF repair outputs with API path
+app.use('/api/pdf-service/outputs', express.static(path.join(__dirname, 'outputs')));
 
 // Special handler for PDF files to allow iframe embedding
 app.get('/outputs/:filename', (req, res) => {
@@ -149,12 +157,31 @@ app.get('/outputs/:filename', (req, res) => {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader(
       'Content-Security-Policy',
-      "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:3000"
+      "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:8081"
     );
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('PDF file not found');
+  }
+});
+
+// Special handler for API path PDF files
+app.get('/api/pdf-service/outputs/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'outputs', req.params.filename);
+
+  if (fs.existsSync(filePath)) {
+    // Set appropriate headers for PDF files
+    if (path.extname(filePath).toLowerCase() === '.pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="' + req.params.filename + '"');
+    }
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.sendFile(filePath);
   } else {
     res.status(404).send('PDF file not found');
@@ -664,6 +691,11 @@ app.use('/pdf-fill-form', fillPdfFormRoutes);
 app.use('/pdf-form-recognition', formRecognitionRoutes);
 app.use('/pdf-calculate-fields', calculateFieldsRoutes);
 app.use('/pdf-info', pdfInfoRoutes);
+app.use('/pdf-validator', pdfValidatorRoutes);
+app.use('/pdf-compare', pdfCompareRoutes);
+app.use('/pdf-repair', pdfRepairRoutes);
+app.use('/pdf-bookmarks', pdfBookmarksRoutes);
+app.use('/pdf-statistics', pdfStatisticsRoutes);
     
     // Protected routes that require authentication
     app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);

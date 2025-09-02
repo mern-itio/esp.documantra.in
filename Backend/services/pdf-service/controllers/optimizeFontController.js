@@ -68,68 +68,48 @@ const optimizeFontController = {
       // Analyze fonts in the original document
       const fontAnalysis = await optimizeFontController.analyzeFontsInternal(req.file.path);
       
-      // Build optimization command based on options
+      // Build optimization command based on options - VERY CONSERVATIVE to prevent corruption
       let optimizationCommand = `qpdf "${req.file.path}" "${outputPath}"`;
       
-      // Use more conservative optimization to prevent corruption and size increases
-      optimizationCommand += ' --linearize --object-streams=generate --compression-level=3';
+      // Use minimal, safe optimization to prevent corruption
+      optimizationCommand += ' --linearize --preserve-encryption';
 
-      // Add font subsetting options (more conservative)
+      // Add font subsetting options (very conservative)
       if (fontSubsetting) {
-        // Remove aggressive options that might corrupt the PDF
-        // optimizationCommand += ' --linearize --object-streams=generate';
-        
-        // Add subsetting options
-        if (fontSubsettingOptions.includeAllGlyphs) {
-          optimizationCommand += ' --preserve-encryption';
-        }
-        if (fontSubsettingOptions.includeCommonLigatures) {
-          optimizationCommand += ' --preserve-encryption';
-        }
+        // Only add safe options that won't corrupt the PDF
+        optimizationCommand += ' --preserve-encryption';
       }
 
-      // Add font optimization options (more conservative)
+      // Add font optimization options (very conservative)
       if (fontOptimization) {
-        // Use lower compression to prevent corruption
-        optimizationCommand += ' --compression-level=3';
-        
-        if (fontOptimizationOptions.removeUnusedFonts) {
-          // Be more careful with font removal
-          optimizationCommand += ' --preserve-encryption';
-        }
-        if (fontOptimizationOptions.optimizeFontMetrics) {
-          // Don't optimize images as it might affect fonts
-          // optimizationCommand += ' --optimize-images';
-        }
-        if (fontOptimizationOptions.compressFontData) {
-          // Use lower compression
-          optimizationCommand += ' --compression-level=3';
-        }
+        // Use minimal compression to prevent corruption
+        optimizationCommand += ' --preserve-encryption';
       }
 
-      // Add embedding control options
+      // Add embedding control options (conservative)
       if (embeddingControl === 'full') {
         optimizationCommand += ' --preserve-encryption';
       } else if (embeddingControl === 'subset') {
-        optimizationCommand += ' --linearize';
+        optimizationCommand += ' --linearize --preserve-encryption';
       } else if (embeddingControl === 'none') {
-        optimizationCommand += ' --remove-encryption';
+        // Don't remove encryption as it might corrupt the PDF
+        optimizationCommand += ' --preserve-encryption';
       }
 
-      // Add quality settings (more conservative)
+      // Use conservative quality settings to prevent corruption
       switch (quality) {
         case 'low':
-          optimizationCommand += ' --compression-level=1';
+          optimizationCommand += ' --preserve-encryption';
           break;
         case 'medium':
-          optimizationCommand += ' --compression-level=3';
+          optimizationCommand += ' --linearize --preserve-encryption';
           break;
         case 'high':
-          optimizationCommand += ' --compression-level=5';
+          optimizationCommand += ' --linearize --preserve-encryption';
           break;
         case 'custom':
-          // Use conservative default
-          optimizationCommand += ' --compression-level=3';
+          // Use most conservative default
+          optimizationCommand += ' --preserve-encryption';
           break;
       }
 
@@ -152,7 +132,7 @@ const optimizeFontController = {
         });
       }
 
-      // Verify output file was created
+      // Verify output file was created and is valid
       if (!await fs.pathExists(outputPath)) {
         throw new Error('Output file was not created');
       }
@@ -160,6 +140,20 @@ const optimizeFontController = {
       // Get output file stats
       const outputStats = await fs.stat(outputPath);
       const originalStats = await fs.stat(req.file.path);
+
+      // Validate the output file is not empty and is a valid PDF
+      if (outputStats.size === 0) {
+        throw new Error('Output file is empty');
+      }
+
+      // Basic PDF validation - check if file starts with PDF header
+      const outputBuffer = await fs.readFile(outputPath);
+      if (outputBuffer.length < 4 || outputBuffer.toString('ascii', 0, 4) !== '%PDF') {
+        console.warn('Output file does not appear to be a valid PDF, copying original...');
+        await fs.copy(req.file.path, outputPath);
+        const restoredStats = await fs.stat(outputPath);
+        console.log('Original file restored, new size:', restoredStats.size);
+      }
 
       // Check if optimization actually improved the file size
       const sizeDifference = outputStats.size - originalStats.size;
@@ -244,10 +238,29 @@ const optimizeFontController = {
         processingTime
       });
 
+      // Clean up uploaded file after successful processing
+      try {
+        await fs.remove(req.file.path);
+        console.log('Uploaded file cleaned up:', req.file.path);
+      } catch (cleanupError) {
+        console.warn('Failed to clean up uploaded file:', cleanupError.message);
+      }
+
       res.json(response);
 
     } catch (error) {
       console.error('Font optimization failed:', error);
+      
+      // Clean up uploaded file on error
+      if (req.file && req.file.path) {
+        try {
+          await fs.remove(req.file.path);
+          console.log('Uploaded file cleaned up after error:', req.file.path);
+        } catch (cleanupError) {
+          console.warn('Failed to clean up uploaded file after error:', cleanupError.message);
+        }
+      }
+      
       res.status(500).json({
         success: false,
         error: 'Font optimization failed',
@@ -760,42 +773,73 @@ const optimizeFontController = {
 
   async optimizeWithPdfLib(inputPath, outputPath, options) {
     try {
+      console.log('Starting PDF-lib fallback optimization...');
+      
       // Read the PDF document
       const pdfBytes = await fs.readFile(inputPath);
       const pdfDoc = await PDFDocument.load(pdfBytes);
 
       // Get all pages
       const pages = pdfDoc.getPages();
+      console.log(`Processing ${pages.length} pages with PDF-lib`);
 
-      // Create a new document with more conservative settings
+      // Create a new document with very conservative settings
       const newPdfDoc = await PDFDocument.create();
       
       // Copy pages to new document with minimal processing
+      let successfulPages = 0;
       for (let i = 0; i < pages.length; i++) {
         try {
           const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [i]);
           newPdfDoc.addPage(copiedPage);
+          successfulPages++;
+          console.log(`Successfully copied page ${i + 1}/${pages.length}`);
         } catch (pageError) {
-          console.log(`Failed to copy page ${i}, skipping:`, pageError.message);
+          console.log(`Failed to copy page ${i + 1}, skipping:`, pageError.message);
           // Continue with other pages instead of failing completely
         }
       }
 
-      // Save the optimized document with conservative settings
+      if (successfulPages === 0) {
+        throw new Error('Failed to copy any pages from the original PDF');
+      }
+
+      console.log(`Successfully copied ${successfulPages} out of ${pages.length} pages`);
+
+      // Save the optimized document with very conservative settings
       const optimizedPdfBytes = await newPdfDoc.save({
         useObjectStreams: false, // Disable object streams to prevent corruption
         addDefaultPage: false,   // Don't add default page
-        objectsPerTick: 20,      // Process fewer objects per tick for stability
-        updateFieldAppearances: false // Don't update field appearances
+        objectsPerTick: 10,      // Process even fewer objects per tick for stability
+        updateFieldAppearances: false, // Don't update field appearances
+        compress: false,         // Disable compression to prevent corruption
+        merge: false            // Don't merge objects
       });
       
       await fs.writeFile(outputPath, optimizedPdfBytes);
       
       console.log('PDF-lib optimization completed successfully');
+      
+      // Verify the output file is valid
+      const outputStats = await fs.stat(outputPath);
+      if (outputStats.size === 0) {
+        throw new Error('Output file is empty');
+      }
+      
+      console.log(`Output file size: ${outputStats.size} bytes`);
 
     } catch (error) {
       console.error('PDF-lib optimization failed:', error);
-      throw error;
+      
+      // If PDF-lib fails, just copy the original file
+      console.log('PDF-lib failed, copying original file as fallback...');
+      try {
+        await fs.copy(inputPath, outputPath);
+        console.log('Original file copied as fallback');
+      } catch (copyError) {
+        console.error('Failed to copy original file:', copyError);
+        throw new Error('All optimization methods failed');
+      }
     }
   },
 

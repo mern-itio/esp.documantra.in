@@ -7,13 +7,15 @@ const { PDFDocument, PDFForm, PDFSignature, PDFDict, PDFName, PDFArray, PDFStrin
 
 const execAsync = promisify(exec);
 function formatTimestamp(date = new Date()) {
-  return date.toLocaleString('en-GB', {
+  // Always use India Standard Time (IST - UTC+5:30)
+  return date.toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: 'Asia/Kolkata'
   }).replace(',', ''); 
 }
 
@@ -178,10 +180,20 @@ const digitalSignatureController = {
     }
 
     // Lines for signature info
+    const currentTime = new Date();
+    const formattedTime = formatTimestamp(currentTime);
+    
+    // Log timezone information for debugging
+    console.log('Digital Signature Timezone Info:', {
+      utcTime: currentTime.toISOString(),
+      indianTime: formattedTime,
+      timezone: 'Asia/Kolkata (IST)'
+    });
+    
     const signatureLines = [
       `Digitally Signed by: ${certificate.subject.getField('CN')?.value || 'Unknown'}`,
       `Reason: ${reason}`,
-      `Date: ${formatTimestamp(new Date())}`,
+      `Date: ${formattedTime}`,
       `Location: ${location}`
     ];
 
@@ -243,7 +255,7 @@ const digitalSignatureController = {
       reason,
       location,
       contactInfo,
-      timestamp: timestamp ? new Date().toISOString() : undefined,
+      timestamp: timestamp ? formatTimestamp(new Date()) : undefined,
       certificate: certificatePem,
       signatureAlgorithm: 'SHA256withRSA'
     };
@@ -463,7 +475,7 @@ const digitalSignatureController = {
       const timestamp = new Date();
       const timestampToken = {
         hash: hash,
-        timestamp: timestamp.toISOString(),
+        timestamp: formatTimestamp(timestamp),
         serialNumber: `TS-${Date.now()}`,
         authority: 'Simulated Timestamp Authority',
         algorithm: 'SHA256',
@@ -565,6 +577,30 @@ const digitalSignatureController = {
       console.error('Error testing certificate generation:', error);
       res.status(500).json({
         error: 'Failed to test certificate generation',
+        details: error.message
+      });
+    }
+  },
+
+  // Test timezone detection
+  async testTimezone(req, res) {
+    try {
+      const currentTime = new Date();
+      const formattedTime = formatTimestamp(currentTime);
+      
+      res.json({
+        success: true,
+        timezone: {
+          fixed: 'Asia/Kolkata (IST)',
+          utc: currentTime.toISOString(),
+          indianTime: formattedTime,
+          note: 'All timestamps now use Indian Standard Time (UTC+5:30)'
+        }
+      });
+    } catch (error) {
+      console.error('Error testing timezone:', error);
+      res.status(500).json({
+        error: 'Failed to test timezone',
         details: error.message
       });
     }

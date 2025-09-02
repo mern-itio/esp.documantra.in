@@ -42,7 +42,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   const [isSplitting, setIsSplitting] = useState(false);
   const [splitProgress, setSplitProgress] = useState(0);
   const [splitMode, setSplitMode] = useState<'pages' | 'custom' | 'bookmarks' | 'size'>('pages');
-  const [pagesPerSplit, setPagesPerSplit] = useState(1);
+  const [pagesPerSplit, setPagesPerSplit] = useState<number | ''>('');
   const [maxSizeMB, setMaxSizeMB] = useState(10);
   const [customRanges, setCustomRanges] = useState<CustomRange[]>([]);
   const [splitResult, setSplitResult] = useState<SplitPDFResponse | null>(null);
@@ -159,7 +159,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
       };
 
       if (splitMode === 'pages') {
-        request.pagesPerSplit = pagesPerSplit;
+        request.pagesPerSplit = pagesPerSplit || 1;
       } else if (splitMode === 'size') {
         request.maxSizeMB = maxSizeMB;
       } else if (splitMode === 'custom') {
@@ -217,7 +217,8 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   };
 
   const canSplit = document && !document.error && !document.isProcessing && 
-    (splitMode !== 'custom' || customRanges.length > 0);
+    (splitMode !== 'custom' || customRanges.length > 0) &&
+    (splitMode !== 'pages' || (pagesPerSplit && pagesPerSplit > 0));
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -377,11 +378,15 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                   min="1"
                   max={document.pages}
                   value={pagesPerSplit}
-                  onChange={(e) => setPagesPerSplit(parseInt(e.target.value) || 1)}
+                  placeholder="Enter number of pages per file"
+                  onChange={(e) => setPagesPerSplit(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Will create {Math.ceil(document.pages / pagesPerSplit)} files
+                  {pagesPerSplit && pagesPerSplit > 0 
+                    ? `Will create ${Math.ceil(document.pages / pagesPerSplit)} files`
+                    : 'Enter a number to see how many files will be created'
+                  }
                 </p>
               </div>
             </div>
