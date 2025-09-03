@@ -21,6 +21,13 @@ const digitalSignatureRoutes = require('./routes/digitalSignatureRoute');
 const setPermissionsRoutes = require('./routes/setPermissionsRoute');
 const addWatermarkRoutes = require('./routes/addWatermarkRoute');
 const removeMetadataRoutes = require('./routes/removeMetadataRoute');
+const editMetadataRoutes = require('./routes/editMetadataRoute');
+const spellCheckRoutes = require('./routes/spellCheckRoute');
+const findReplaceRoutes = require('./routes/findReplaceRoute');
+const redactRoutes = require('./routes/redactRoute');
+const stampRoutes = require('./routes/stampRoute');
+const commentRoutes = require('./routes/commentRoute');
+const dbCommentRoutes = require('./routes/dbCommentRoute');
 const compressPDFRoutes = require('./routes/compressPDFRoute');
 const optimizeImageRoutes = require('./routes/optimizeImageRoute');
 const optimizeFontRoutes = require('./routes/optimizeFontRoute');
@@ -214,8 +221,8 @@ app.get('/pdf-remove-metadata/download/:filename', async (req, res) => {
   }
 });
 
-// Direct download route for compressed PDF files - no auth required
-app.get('/pdf-compress/download/:filename', async (req, res) => {
+// Direct download route for edit metadata files - no auth required
+app.get('/pdf-edit-metadata/download/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, 'outputs', filename);
@@ -237,6 +244,191 @@ app.get('/pdf-compress/download/:filename', async (req, res) => {
   } catch (error) {
     console.error('Error serving download file:', error);
     res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+// Direct download route for spell check files - no auth required
+app.get('/pdf-spell-check/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+app.get('/pdf-spell-check/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+
+// Direct download route for compressed PDF files - no auth required
+app.get('/pdf-find-replace/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+// Direct download route for redacted files - no auth required
+app.get('/pdf-redact/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'uploads', filename);
+
+    // console.log(`Direct download route - looking for file: ${filename}`);
+    // console.log(`Direct download route - file path: ${filePath}`);
+
+    if (!fs.existsSync(filePath)) {
+      console.log(`Direct download route - file not found: ${filePath}`);
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    console.log(`Direct download route - file found, serving: ${filename}`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving redacted file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+// Direct download route for stamped files - no auth required
+app.get('/pdf-stamps/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'uploads', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving stamped file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
+
+// Preview route for stamped files - inline display
+app.get('/pdf-stamps/preview/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'uploads', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error serving preview file:', error);
+    res.status(500).json({ error: 'Failed to serve preview file' });
+  }
+});
+
+// Preview route for commented files - inline display
+app.get('/pdf-comments/preview/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'uploads', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error serving preview file:', error);
+    res.status(500).json({ error: 'Failed to serve preview file' });
   }
 });
 
@@ -674,6 +866,13 @@ app.use('/pdf-digital-signature', digitalSignatureRoutes);
 app.use('/pdf-permissions', setPermissionsRoutes);
 app.use('/pdf-watermark', addWatermarkRoutes);
 app.use('/pdf-remove-metadata', removeMetadataRoutes);
+app.use('/pdf-edit-metadata', editMetadataRoutes);
+app.use('/pdf-spell-check', spellCheckRoutes);
+app.use('/pdf-find-replace', findReplaceRoutes);
+app.use('/pdf-redact', redactRoutes);
+app.use('/pdf-stamps', stampRoutes);
+app.use('/pdf-comments', commentRoutes);
+app.use('/pdf-comments-db', dbCommentRoutes);
 app.use('/pdf-compress', compressPDFRoutes);
 app.use('/pdf-optimize-image', optimizeImageRoutes);
 app.use('/pdf', optimizeFontRoutes);

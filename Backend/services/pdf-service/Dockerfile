@@ -8,11 +8,14 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     imagemagick \
     pdftk \
+    enscript \
+    aspell aspell-en \
     poppler-utils \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
+RUN pip3 install --break-system-packages PyMuPDF
 # Copy package.json and package-lock.json for local packages first
 COPY packages/auth-lib/package*.json ./packages/auth-lib/
 COPY packages/validators/package*.json ./packages/validators/

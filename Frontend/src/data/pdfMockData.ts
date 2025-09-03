@@ -261,7 +261,7 @@ export const mockPDFTools = {
         icon: "Highlighter"
       },
       {
-        id: "add-comments",
+        id: "add-comments-db",
         name: "Add Comments",
         description: "Add sticky notes and comments with threading",
         category: "editing",
@@ -270,7 +270,22 @@ export const mockPDFTools = {
         features: ["comment_threading", "user_tracking", "reply_system"],
         complexity: "easy" as const,
         popularity: 78,
-        icon: "MessageCircle"
+        icon: "MessageCircle",
+        route: "/pdf-tools/add-comments-db"
+      },
+      {
+        id: "add-comments",
+        name: "Add Comments (Shared)",
+        description: "Create shareable PDF documents with collaborative commenting",
+        category: "editing",
+        inputFormats: ["pdf"],
+        outputFormats: ["pdf"],
+        features: ["shareable_links", "user_authentication", "real_time_collaboration"],
+        complexity: "medium" as const,
+        popularity: 85,
+        icon: "Share2",
+        route: "/pdf-tools/add-comments",
+        badge: "New"
       },
       {
         id: "draw-annotations",
@@ -297,7 +312,7 @@ export const mockPDFTools = {
         icon: "Stamp"
       },
       {
-        id: "redact-pdf",
+        id: "redact-content",
         name: "Redact Content",
         description: "Permanently remove sensitive information",
         category: "editing",
@@ -307,8 +322,24 @@ export const mockPDFTools = {
         complexity: "medium" as const,
         popularity: 57,
         icon: "EyeOff",
-        badge: "Security"
+        badge: "Security",
+        route: "/pdf-tools/redact-content"
       },
+      {
+        id: "add-stamps",
+        name: "Add Stamps",
+        description: "Insert stamps and custom annotations",
+        category: "editing",
+        inputFormats: ["pdf"],
+        outputFormats: ["pdf"],
+        features: ["stamp_library", "custom_stamps", "date_stamps"],
+        complexity: "easy" as const,
+        popularity: 72,
+        icon: "Stamp",
+        badge: "New",
+        route: "/pdf-tools/add-stamps"
+      },
+      
       {
         id: "find-replace",
         name: "Find & Replace",
@@ -319,10 +350,11 @@ export const mockPDFTools = {
         features: ["regex_support", "case_sensitivity", "whole_word_matching"],
         complexity: "medium" as const,
         popularity: 61,
-        icon: "Search"
+        icon: "Search",
+        route: "/pdf-tools/find-replace"
       },
       {
-        id: "spell_check",
+        id: "spell-check",
         name: "Spell Check",
         description: "Check spelling and grammar in PDF text",
         category: "editing",
@@ -331,10 +363,11 @@ export const mockPDFTools = {
         features: ["multilingual_support", "custom_dictionaries", "suggestions"],
         complexity: "easy" as const,
         popularity: 53,
-        icon: "CheckCircle"
+        icon: "CheckCircle",
+        route: "/pdf-tools/spell-check"
       },
       {
-        id: "edit_metadata",
+        id: "edit-metadata",
         name: "Edit Metadata",
         description: "Modify document properties and metadata",
         category: "editing",
@@ -343,7 +376,8 @@ export const mockPDFTools = {
         features: ["custom_properties", "metadata_templates", "bulk_editing"],
         complexity: "medium" as const,
         popularity: 34,
-        icon: "Info"
+        icon: "Info",
+        route: "/pdf-tools/edit-metadata"
       }
     ]
   },

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { documentTrackingService } from '../../services/documentTrackingService';
 import { Eye, Download, FileText, User, Clock, AlertCircle } from 'lucide-react';
+import { pdfApi } from '../../services/apiHelper';
 
 const SharedDocumentPage: React.FC = () => {
   const { linkToken } = useParams<{ linkToken: string }>();
@@ -32,20 +33,17 @@ const SharedDocumentPage: React.FC = () => {
       setLoading(true);
       
       // Call the backend to access the shared document
-      const response = await fetch(`http://localhost:2104/document-tracking/share/${token}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await pdfApi.post(`/document-tracking/share/${token}`, {
+        
         body: JSON.stringify({ userId }),
       });
 
-      if (!response.ok) {
+      if (response.status < 200 || response.status >= 300) {
         throw new Error('Failed to access document');
       }
 
       // Get the document info
-      const data = await response.json();
+      const data = response.data;
       setDocumentInfo(data);
       
               // Log the document view with user ID
@@ -67,7 +65,7 @@ const SharedDocumentPage: React.FC = () => {
   };
 
   const handleDownload = () => {
-    window.open(`http://localhost:2104/document-tracking/download/${linkToken}`, '_blank');
+    window.open(`${pdfApi.defaults.baseURL}/document-tracking/download/${linkToken}`, '_blank');
   };
 
   if (loading) {
@@ -137,7 +135,7 @@ const SharedDocumentPage: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => window.open(`http://localhost:2104/document-tracking/download/${linkToken}`, '_blank')}
+              onClick={() => window.open(`${pdfApi.defaults.baseURL}/document-tracking/download/${linkToken}`, '_blank')}
               className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Eye className="h-5 w-5" />

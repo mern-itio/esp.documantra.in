@@ -42,6 +42,14 @@ import PDFToolsRemovePasswordPage from '../pages/PDFTools/RemovePasswordPage';
 import PDFToolsDigitalSignaturePage from '../pages/PDFTools/DigitalSignaturePage';
 import PDFToolsSetPermissionsPage from '../pages/PDFTools/SetPermissions';
 import PDFToolsRemoveMetadataPage from '../pages/PDFTools/RemoveMetadataPage';
+import PDFToolsEditMetadataPage from '../pages/PDFTools/EditMetadataPage';
+import PDFToolsSpellCheckPage from '../pages/PDFTools/SpellCheckPage';
+import PDFToolsFindReplacePage from '../pages/PDFTools/FindReplacePage';
+import PDFToolsRedactContentPage from '../pages/PDFTools/RedactContentPage';
+import PDFToolsAddStampsPage from '../pages/PDFTools/AddStampsPage';
+import PDFToolsAddCommentsPage from '../pages/PDFTools/AddCommentsPage';
+import PDFToolsDBAddCommentsPage from '../pages/PDFTools/DBAddCommentsPage';
+import PDFToolsSharedDocumentPage from '../pages/PDFTools/SharedDocumentPage';
 import PDFToolsCompressPDFPage from '../pages/PDFTools/CompressPDFPage';
 import PDFToolsOptimizeImagePage from '../pages/PDFTools/OptimizeImagePage';
 import PDFToolsOptimizeFontPage from '../pages/PDFTools/OptimizeFontPage';
@@ -522,6 +530,8 @@ const guestRoutes = [
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
+  { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
+
 
   // PDF Tool Pages
   { path: '/pdf-to-word', element: <PDFToWordPage /> },
@@ -796,6 +806,14 @@ const authRoutes = [
   { path: '/pdf-tools/digital-signature', element: <PDFToolsDigitalSignaturePage /> },
   { path: '/pdf-tools/set-permissions', element: <PDFToolsSetPermissionsPage /> },
   { path: '/pdf-tools/remove-metadata', element: <PDFToolsRemoveMetadataPage /> },
+  { path: '/pdf-tools/edit-metadata', element: <PDFToolsEditMetadataPage /> },
+  { path: '/pdf-tools/spell-check', element: <PDFToolsSpellCheckPage /> },
+  { path: '/pdf-tools/find-replace', element: <PDFToolsFindReplacePage /> },
+  { path: '/pdf-tools/redact-content', element: <PDFToolsRedactContentPage /> },
+  { path: '/pdf-tools/add-stamps', element: <PDFToolsAddStampsPage /> },
+  { path: '/pdf-tools/add-comments-db', element: <PDFToolsAddCommentsPage /> },
+  { path: '/pdf-tools/add-comments', element: <PDFToolsDBAddCommentsPage /> },
+  { path: '/pdf-comments/shared/:linkToken', element: <PDFToolsSharedDocumentPage /> },
   { path: '/pdf-tools/compress-pdf', element: <PDFToolsCompressPDFPage /> },
   { path: '/pdf-tools/optimize-image', element: <PDFToolsOptimizeImagePage /> },
   { path: '/pdf-tools/optimize-font', element: <PDFToolsOptimizeFontPage /> },
@@ -820,7 +838,6 @@ const authRoutes = [
   { path: '/pdf-tools/pdf-repair', element: <PdfRepairPage /> },
   { path: '/pdf-tools/pdf-bookmarks', element: <PdfBookmarksPage /> },
   { path: '/pdf-tools/pdf-statistics', element: <PdfStatisticsPage /> },
-  { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 
 ];
 
