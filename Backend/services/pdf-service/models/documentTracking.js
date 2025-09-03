@@ -7,7 +7,7 @@ const documentTrackingSchema = new mongoose.Schema({
   originalFilename: { type: String, required: true },
   savedFilename: { type: String, required: false }, // Actual filename on disk
   userId: { type: String, required: true, index: true },
-  action: { type: String, enum: ['view', 'download', 'edit', 'delete', 'upload', 'permission_set', 'metadata_removed', 'compressed', 'optimized'], required: true },
+  action: { type: String, enum: ['view', 'download', 'edit', 'delete', 'upload', 'permission_set', 'metadata_removed', 'compressed', 'optimized', 'spell_checked'], required: true },
   timestamp: { type: Date, default: Date.now, index: true },
   ipAddress: { type: String, required: false },
   userAgent: { type: String, required: false },

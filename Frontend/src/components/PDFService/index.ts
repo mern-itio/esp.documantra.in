@@ -13,6 +13,8 @@ export { default as RemoveUnusedObjects } from './RemoveUnusedObjects';
 export { default as LinearizePDF } from './LinearizePDF';
 export { default as ColorOptimization } from './ColorOptimization';
 export { default as QualityAnalysis } from './QualityAnalysis';
+export { default as EditMetadata } from './EditMetadata';
+export { default as SpellCheck } from './SpellCheck';
 
 
 // Components with named exports
