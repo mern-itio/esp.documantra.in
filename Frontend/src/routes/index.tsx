@@ -49,7 +49,6 @@ import PDFToolsRedactContentPage from '../pages/PDFTools/RedactContentPage';
 import PDFToolsAddStampsPage from '../pages/PDFTools/AddStampsPage';
 import PDFToolsAddCommentsPage from '../pages/PDFTools/AddCommentsPage';
 import PDFToolsDBAddCommentsPage from '../pages/PDFTools/DBAddCommentsPage';
-import PDFToolsHighlightTextPage from '../pages/PDFTools/HighlightTextPage';
 import PDFToolsSharedDocumentPage from '../pages/PDFTools/SharedDocumentPage';
 import PDFToolsCompressPDFPage from '../pages/PDFTools/CompressPDFPage';
 import PDFToolsOptimizeImagePage from '../pages/PDFTools/OptimizeImagePage';
@@ -269,7 +268,6 @@ import { ImageToPDF } from '../pages/PDFTools/ImageToPdf';
 import { PdfToEpub } from '../pages/PDFTools/PdfToEpub';
 import { BatchConversion } from '../pages/PDFTools/BatchConversion';
 import AddWatermark from '../components/PDFService/AddWatermark';
-import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
 
 // Api-service imports started 
 import ApiServiceDashboard from '../pages/ApiService/Dashboard/main';
@@ -291,7 +289,7 @@ const PDFToolsLayout = () => {
   const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedTool, setSelectedTool] = useState<PDFTool | null>(null);
+  // const [selectedTool, setSelectedTool] = useState<PDFTool | null>(null);
   const [currentView, setCurrentView] = useState<'tools' | 'viewer' | 'editor' | 'batch' | 'analytics' | 'workflows' | 'quality' | 'cloud' | 'help' | 'admin'>('tools');
   const [processingStats, setProcessingStats] = useState<ProcessingStats>(mockProcessingStats);
   const [favoriteTools, setFavoriteTools] = useState<Set<string>>(new Set());
@@ -355,7 +353,7 @@ const PDFToolsLayout = () => {
   const handleToolSelect = (tool: PDFTool) => {
     console.log('Tool selected:', tool);
     console.log('Navigating to:', `/pdf-tools/${tool.id}`);
-    setSelectedTool(tool);
+    // setSelectedTool(tool);
     navigate(`/pdf-tools/${tool.id}`);
 
     // Add to recent tools
@@ -814,7 +812,6 @@ const authRoutes = [
   { path: '/pdf-tools/add-stamps', element: <PDFToolsAddStampsPage /> },
   { path: '/pdf-tools/add-comments-db', element: <PDFToolsAddCommentsPage /> },
   { path: '/pdf-tools/add-comments', element: <PDFToolsDBAddCommentsPage /> },
-  { path: '/pdf-tools/highlight-text', element: <PDFToolsHighlightTextPage /> },
   { path: '/pdf-comments/shared/:linkToken', element: <PDFToolsSharedDocumentPage /> },
   { path: '/pdf-tools/compress-pdf', element: <PDFToolsCompressPDFPage /> },
   { path: '/pdf-tools/optimize-image', element: <PDFToolsOptimizeImagePage /> },
@@ -840,7 +837,6 @@ const authRoutes = [
   { path: '/pdf-tools/pdf-repair', element: <PdfRepairPage /> },
   { path: '/pdf-tools/pdf-bookmarks', element: <PdfBookmarksPage /> },
   { path: '/pdf-tools/pdf-statistics', element: <PdfStatisticsPage /> },
-  { path: '/pdf-tools/pdf-editor', element: <AdvancedPDFEditor /> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 
 

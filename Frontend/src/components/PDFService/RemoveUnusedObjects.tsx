@@ -17,7 +17,6 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
-  Eye,
   Settings,
   BarChart3,
   RefreshCw,
@@ -32,7 +31,7 @@ const RemoveUnusedObjects: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isPreviewing, setIsPreviewing] = useState(false);
+  // const [isPreviewing, setIsPreviewing] = useState(false);
   const [result, setResult] = useState<RemoveUnusedObjectsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<ObjectAnalysis | null>(null);
@@ -164,30 +163,7 @@ const RemoveUnusedObjects: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handlePreview = async () => {
-    if (!validateForm()) return;
-
-    setIsPreviewing(true);
-    setError(null);
-
-    try {
-      const request: RemoveUnusedObjectsRequest = {
-        file: selectedFile!,
-        ...cleanupSettings
-      };
-
-      const previewResponse = await removeUnusedObjectsService.previewCleanup(request);
-      // Handle preview response (could show in a modal or separate section)
-      console.log('Preview response:', previewResponse);
-    } catch (err: any) {
-      console.error('Preview error:', err);
-      setError(`Failed to preview cleanup: ${err.message}`);
-    } finally {
-      setIsPreviewing(false);
-    }
-  };
+  }; 
 
   const handleBatchCleanup = async () => {
     if (batchFiles.length === 0) {
