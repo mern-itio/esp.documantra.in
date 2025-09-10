@@ -143,6 +143,15 @@ const EnvelopeDetails: React.FC = () => {
       console.log(err);
     }
   }
+const handleDownloadSignedPdf = (id:String) => {
+  const downloadUrl = `${import.meta.env.VITE_ESIGN_SERVICE_URL}/api/e-sign/signatures/download/${id}`;
+  window.open(downloadUrl, '_blank');
+};
+const handleDownloadAll = () =>{
+    const downloadUrl = `${import.meta.env.VITE_ESIGN_SERVICE_URL}/api/e-sign/signatures/download-all/${id}`;
+  window.open(downloadUrl, '_blank');
+}
+
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -211,7 +220,9 @@ const EnvelopeDetails: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="flex flex-wrap gap-3">
             {envelope?.status === 'completed' && (
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={() => handleDownloadAll()}
+              >
                 <Download className="w-4 h-4" />
                   Download PDF
               </button>
@@ -336,7 +347,9 @@ const EnvelopeDetails: React.FC = () => {
                 />
                 Preview
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() => handleDownloadSignedPdf(document.id)}
+              >
                 <Download className="w-4 h-4" />
                 Download
               </button>

@@ -7,9 +7,7 @@ import {
   CheckCircle, 
   AlertCircle,
   Eye,
-  MoreHorizontal,
   Filter,
-  Download,
   Users,
   Calendar
 } from 'lucide-react';
