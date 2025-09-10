@@ -101,6 +101,7 @@ const CompressPDF: React.FC = () => {
       };
 
       const response = await compressPDFService.compressPDF(request);
+      console.log('Compression response:', response);
       setResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during compression');
@@ -149,8 +150,8 @@ const CompressPDF: React.FC = () => {
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+  const formatFileSize = (bytes: number | undefined) => {
+    if (!bytes || bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -162,16 +163,16 @@ const CompressPDF: React.FC = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
-             <Link
-                to="/pdf-tools"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
+            <Link
+              to="/pdf-tools"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Extract PDF Pages</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Compress PDF</h1>
               <p className="mt-2 text-sm text-gray-600">
-                Extract specific pages from your PDF documents with precision and ease
+                Reduce file size while maintaining quality
               </p>
             </div>
           </div>
@@ -185,7 +186,7 @@ const CompressPDF: React.FC = () => {
             <Upload className="w-5 h-5 text-gray-500" />
             <h2 className="text-xl font-semibold text-gray-900">Upload PDF</h2>
           </div>
-          
+
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
             <input
               ref={fileInputRef}
@@ -194,7 +195,7 @@ const CompressPDF: React.FC = () => {
               onChange={handleFileSelect}
               className="hidden"
             />
-            
+
             {!selectedFile ? (
               <div className="space-y-4">
                 <FileText className="w-12 h-12 text-gray-400 mx-auto" />
@@ -244,31 +245,28 @@ const CompressPDF: React.FC = () => {
               <nav className="-mb-px flex space-x-8">
                 <button
                   onClick={() => setActiveTab('presets')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'presets'
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'presets'
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   Presets
                 </button>
                 <button
                   onClick={() => setActiveTab('custom')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'custom'
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'custom'
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   Custom
                 </button>
                 <button
                   onClick={() => setActiveTab('advanced')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'advanced'
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'advanced'
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   Advanced
                 </button>
@@ -282,11 +280,10 @@ const CompressPDF: React.FC = () => {
                   <div
                     key={preset.id}
                     onClick={() => handlePresetSelect(preset)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedPreset?.id === preset.id
+                    className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedPreset?.id === preset.id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
@@ -595,13 +592,33 @@ const CompressPDF: React.FC = () => {
               </div>
               <div className="text-center p-4 bg-white rounded-lg">
                 <p className="text-sm text-gray-600">Compressed Size</p>
-                <p className="text-lg font-semibold text-green-600">{formatFileSize(result.fileSize)}</p>
+                <p className={`text-lg font-semibold ${result.compressedFileSize < result.originalFileSize ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatFileSize(result.compressedFileSize)}
+                </p>
               </div>
               <div className="text-center p-4 bg-white rounded-lg">
                 <p className="text-sm text-gray-600">Reduction</p>
-                <p className="text-lg font-semibold text-blue-600">{result.compressionRatio}</p>
+                <p className={`text-lg font-semibold ${result.compressedFileSize < result.originalFileSize ? 'text-blue-600' : 'text-red-600'}`}>
+                  {result.compressionRatio}
+                </p>
               </div>
             </div>
+
+            {/* Warning for size increase */}
+            {result.compressedFileSize >= result.originalFileSize && (
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium">File size increased after compression</p>
+                    <p className="mt-1">
+                      This usually happens when the PDF is already well-compressed or very small.
+                      The compressed file may have better structure and compatibility, but the size increased by {Math.abs(parseFloat(result.compressionRatio))}%.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-center">
               <Button

@@ -31,7 +31,8 @@ const PdfBookmarksPage: React.FC = () => {
   // UI state
   const [expandedBookmarks, setExpandedBookmarks] = useState<Set<string>>(new Set());
   const [newBookmarkTitle, setNewBookmarkTitle] = useState('');
-  const [newBookmarkPage, setNewBookmarkPage] = useState(1);
+  const [newBookmarkPage, setNewBookmarkPage] = useState<number | null>(1);
+
 
   // PDF preview
   const [currentPage, setCurrentPage] = useState(1);
@@ -141,7 +142,7 @@ const PdfBookmarksPage: React.FC = () => {
       return;
     }
 
-    if (newBookmarkPage < 1 || newBookmarkPage > totalPages) {
+    if (newBookmarkPage === null || newBookmarkPage < 1 || newBookmarkPage > totalPages) {
       toast.error(`Please enter a page number between 1 and ${totalPages}`);
       return;
     }
@@ -369,11 +370,21 @@ const PdfBookmarksPage: React.FC = () => {
                         placeholder="Page number"
                         min="1"
                         max={totalPages}
-                        value={newBookmarkPage}
-                        onChange={(e) => setNewBookmarkPage(parseInt(e.target.value) || 1)}
+                        value={newBookmarkPage === null ? "" : newBookmarkPage}
+                        onFocus={() => setNewBookmarkPage(null)}  // clears when clicked
+                        onBlur={(e) => {
+                          // reset to 1 if user leaves empty
+                          if (!e.target.value) setNewBookmarkPage(1);
+                        }}
+                        onChange={(e) =>
+                          setNewBookmarkPage(
+                            e.target.value ? parseInt(e.target.value, 10) : null
+                          )
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
+
                     <button
                       onClick={addBookmark}
                       className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -546,8 +557,8 @@ const PdfBookmarksPage: React.FC = () => {
                             key={bookmark.id}
                             onClick={() => navigateToPage(bookmark.page + 1)}
                             className={`px-2 py-1 text-xs rounded ${currentPage === bookmark.page + 1
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                               }`}
                             title={bookmark.title}
                           >

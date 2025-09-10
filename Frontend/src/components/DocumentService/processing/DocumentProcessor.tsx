@@ -66,8 +66,12 @@ export function DocumentProcessor({
   const loadAnalysis = async () => {
     try {
       setError(null);
+      console.log('Loading analysis for document:', documentId);
+      
       // First check the analysis status
       const statusResponse = await documentAnalysisAPI.getAnalysisStatus(documentId);
+      console.log('Status response:', statusResponse);
+      
       if (statusResponse.success) {
         const status = statusResponse.data.processingStatus;
         setProcessingStatus(status);
@@ -75,26 +79,41 @@ export function DocumentProcessor({
         if (status === 'completed') {
           // If completed, get the full analysis
           const analysisResponse = await documentAnalysisAPI.getDocumentAnalysis(documentId);
+          // console.log('Analysis response:', analysisResponse);
+          
           if (analysisResponse.success && analysisResponse.data) {
             setAnalysis(analysisResponse.data);
+          } else {
+            setError('Failed to load analysis data');
           }
         } else if (status === 'processing' || status === 'pending') {
           // If still processing, no analysis data yet
           setAnalysis(undefined);
+        } else if (status === 'failed') {
+          // If failed, show error
+          setError(statusResponse.data.processingError || 'Analysis failed');
+          setAnalysis(undefined);
         } else {
-          // If not started or failed, no analysis exists
+          // If not started, no analysis exists
           setAnalysis(undefined);
         }
+      } else {
+        setError(statusResponse.message || 'Failed to check analysis status');
+        setProcessingStatus('not_started');
       }
     } catch (error: any) {
       console.error('Failed to load analysis:', error);
+      setError(error.message || 'Failed to load analysis');
       setProcessingStatus('not_started');
     }
   };
 
   const checkProcessingStatus = async () => {
     try {
+      // console.log('Checking processing status for document:', documentId);
       const response = await documentAnalysisAPI.getAnalysisStatus(documentId);
+      // console.log('Processing status response:', response);
+      
       if (response.success) {
         const status = response.data.processingStatus;
         setProcessingStatus(status);
@@ -103,9 +122,13 @@ export function DocumentProcessor({
         if (status === 'completed') {
           await loadAnalysis();
         }
+      } else {
+        console.error('Failed to get processing status:', response.message);
+        setError(response.message || 'Failed to check processing status');
       }
     } catch (error: any) {
       console.error('Failed to check processing status:', error);
+      setError(error.message || 'Failed to check processing status');
     }
   };
 
@@ -115,7 +138,10 @@ export function DocumentProcessor({
       setError(null);
       setProcessingStatus('pending');
       
+      // console.log('Starting document processing for:', documentId);
       const response = await documentAnalysisAPI.processDocument(documentId);
+      // console.log('Process document response:', response);
+      
       if (response.success) {
         setProcessingStatus('processing');
         // The status will be updated by the polling effect
@@ -188,18 +214,21 @@ export function DocumentProcessor({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <AlertCircle className="w-5 h-5 text-red-600" />
-            <span>Processing Error</span>
+            <span>Analysis Error</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
-            <h3 className="text-sm font-medium text-red-900 mb-2">
-              Processing Failed
+            <h3 className="text-lg font-medium text-red-900 mb-2">
+              Analysis Failed
             </h3>
-            <p className="text-red-500 mb-6">
+            <p className="text-red-500 mb-4">
               {error}
             </p>
+            <div className="text-sm text-gray-600 mb-6">
+              This could be due to network issues, server problems, or document format issues.
+            </div>
             <div className="flex space-x-3 justify-center">
               <Button
                 onClick={handleReprocess}
@@ -208,13 +237,16 @@ export function DocumentProcessor({
                 className="border-red-200 text-red-700 hover:bg-red-50"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Retry
+                Retry Analysis
               </Button>
               <Button
-                onClick={() => setError(null)}
+                onClick={() => {
+                  setError(null);
+                  loadAnalysis();
+                }}
                 variant="ghost"
               >
-                Dismiss
+                Refresh
               </Button>
             </div>
           </div>
@@ -271,6 +303,9 @@ export function DocumentProcessor({
         <Card>
           <CardContent className="text-center py-8">
             <div className="text-gray-500">Loading analysis data...</div>
+            <div className="text-xs text-gray-400 mt-2">
+              Analysis data: {analysis ? 'Present but incomplete' : 'Not loaded'}
+            </div>
           </CardContent>
         </Card>
       </div>

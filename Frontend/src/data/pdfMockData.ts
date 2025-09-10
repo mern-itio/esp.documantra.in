@@ -258,7 +258,9 @@ export const mockPDFTools = {
         features: ["color_picker", "opacity_control", "highlight_styles"],
         complexity: "easy" as const,
         popularity: 82,
-        icon: "Highlighter"
+        icon: "Highlighter",
+        route: "/pdf-tools/highlight-text",
+
       },
       {
         id: "add-comments-db",
@@ -845,7 +847,7 @@ export const mockPDFTools = {
 
       },
       {
-        id: "flatten-form",
+        id: "fill-form",
         name: "Flatten Form",
         description: "Convert fillable forms to static content",
         category: "forms",

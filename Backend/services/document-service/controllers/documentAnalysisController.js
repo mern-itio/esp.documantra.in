@@ -111,14 +111,22 @@ class DocumentAnalysisController {
         { upsert: true, new: true }
       );
 
-      // Get the full file path - document.filePath should already contain the full path
+      // Get the full file path - document.filePath should already contain the full path from multer
       let filePath = document.filePath;
       
-      // If filePath is relative, construct the full path
+      console.log('Original filePath from document:', filePath);
+      console.log('Is absolute path:', path.isAbsolute(filePath));
+      
+      // The filePath from multer should already be absolute, but let's verify
       if (!path.isAbsolute(filePath)) {
-        const uploadsDir = path.join(__dirname, '../../uploads');
+        console.log('File path is relative, constructing absolute path...');
+        // Get the correct uploads directory path
+        const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
         filePath = path.join(uploadsDir, document.filePath);
+        console.log('Constructed filePath:', filePath);
       }
+      
+      console.log('Final filePath for analysis:', filePath);
 
       // Process document asynchronously
       this.processDocumentAsync(documentId, filePath, document.mimeType, analysisRecord._id);
@@ -156,8 +164,53 @@ class DocumentAnalysisController {
 
       // Check if file exists
       const fs = require('fs');
+      console.log('Checking if file exists at:', filePath);
+      
       if (!fs.existsSync(filePath)) {
-        throw new Error(`File not found at path: ${filePath}`);
+        // Try alternative paths - the file might be in a user-specific directory
+        const fileName = path.basename(filePath);
+        const alternativePaths = [
+          // Try the original path first
+          filePath,
+          // Try in current working directory
+          path.join(process.cwd(), 'uploads', fileName),
+          // Try in the document service uploads
+          path.join(__dirname, '..', '..', 'uploads', fileName),
+          // Try in the Backend uploads
+          path.join(process.cwd(), 'Backend', 'services', 'document-service', 'uploads', fileName),
+          // Try in the root uploads
+          path.join(process.cwd(), 'uploads', fileName),
+          // Try to find the file by searching in common upload directories
+          path.join(process.cwd(), 'services', 'uploads', fileName),
+          path.join(process.cwd(), 'services', 'document-service', 'uploads', fileName)
+        ];
+        
+        console.log('File not found, trying alternative paths:', alternativePaths);
+        
+        let foundPath = null;
+        for (const altPath of alternativePaths) {
+          console.log('Checking path:', altPath);
+          if (fs.existsSync(altPath)) {
+            foundPath = altPath;
+            console.log('Found file at alternative path:', altPath);
+            break;
+          }
+        }
+        
+        if (foundPath) {
+          filePath = foundPath;
+        } else {
+          // List all files in uploads directory for debugging
+          const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+          try {
+            const files = await fs.promises.readdir(uploadsDir, { recursive: true });
+            console.log('Files in uploads directory:', files);
+          } catch (err) {
+            console.log('Could not read uploads directory:', err.message);
+          }
+          
+          throw new Error(`File not found at path: ${filePath}. Tried alternative paths: ${alternativePaths.join(', ')}`);
+        }
       }
 
       // Perform the actual analysis with timeout
@@ -362,14 +415,22 @@ class DocumentAnalysisController {
         }
       });
 
-      // Get the full file path - document.filePath should already contain the full path
+      // Get the full file path - document.filePath should already contain the full path from multer
       let filePath = document.filePath;
       
-      // If filePath is relative, construct the full path
+      console.log('Reprocess - Original filePath from document:', filePath);
+      console.log('Reprocess - Is absolute path:', path.isAbsolute(filePath));
+      
+      // The filePath from multer should already be absolute, but let's verify
       if (!path.isAbsolute(filePath)) {
-        const uploadsDir = path.join(__dirname, '../../uploads');
+        console.log('Reprocess - File path is relative, constructing absolute path...');
+        // Get the correct uploads directory path
+        const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
         filePath = path.join(uploadsDir, document.filePath);
+        console.log('Reprocess - Constructed filePath:', filePath);
       }
+      
+      console.log('Reprocess - Final filePath for analysis:', filePath);
 
       // Process document asynchronously
       this.processDocumentAsync(documentId, filePath, document.mimeType, analysisRecord._id);

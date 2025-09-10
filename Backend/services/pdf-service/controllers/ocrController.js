@@ -353,9 +353,9 @@ async function createSearchablePDF(imagePath, text, outputPath) {
     // If Ghostscript fails, try to create a text file instead
     try {
       const txtPath = outputPath.replace(/\.[^/.]+$/, '.txt');
-      await fs.writeFile(txtPath, `OCR Result for image: ${path.basename(imagePath)}\n\nExtracted Text:\n${text}`);
+      // await fs.writeFile(txtPath, `OCR Result for image: ${path.basename(imagePath)}\n\nExtracted Text:\n${text}`);
 
-      console.log(`Created text file instead of PDF: ${txtPath}`);
+      // console.log(`Created text file instead of PDF: ${txtPath}`);
       return txtPath;
     } catch (fallbackError) {
       console.error('Fallback text creation also failed:', fallbackError);

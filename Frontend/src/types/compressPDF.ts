@@ -20,21 +20,19 @@ export interface CompressPDFResponse {
   message: string;
   filename: string;
   downloadUrl: string;
-  totalPages: number | string;
-  fileSize: number;
+  compressedFileSize: number;
   originalFileSize: number;
   sizeReduction: number;
   compressionRatio: string;
-  compressionSettings: {
-    compressionLevel: string;
-    imageQuality: number;
-    downscaleImages: boolean;
-    maxImageResolution: number;
-    removeMetadata: boolean;
-    linearize: boolean;
-    objectStreams: string;
-    compressionMethod: string;
-  };
+  compressionPreset: string;
+  imageQuality: number;
+  maxImageResolution: number;
+  removeMetadata: boolean;
+  downscaleImages: boolean;
+  linearize: boolean;
+  objectStreams: string;
+  compressionMethod: string;
+  customSettings?: any;
 }
 
 export interface CompressionPreset {
