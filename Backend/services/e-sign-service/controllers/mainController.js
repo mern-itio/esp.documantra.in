@@ -8,6 +8,7 @@ const {signRequestTemplate, signReminderTemplate } = require('../emails/emailTem
 const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
 const ObjectId = mongoose.Types.ObjectId;
+const { signAndEmbed } = require('../services/digitalSignatureService');
 
 const envelopesData = async (req, res) => {
     const userId = req.user.data.id;
@@ -319,58 +320,47 @@ const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage) =>
 };
 
 const addSignature = async (req, res) => {
-  const { fieldId, signature } = req.body;
+  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName } = req.body;
 
-  if (!fieldId || !signature) {
-    return res.status(400).json({ message: 'Field ID and signature are required' });
+  if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
+    return res.status(400).json({ message: 'All parameters are required' });
   }
 
-  // Step 1: Find the signature field by ID
-  let field = await SignatureField.findById(fieldId);
-  if (!field) {
-    return res.status(404).json({ message: 'Signature field not found' });
-  }
-
-  // Step 2: Update the signature field with the provided signature
-  field.signature = signature; // Assuming signature is a base64 string or similar
-  field.status = 'completed'; // Mark the field as completed
-  await field.save();
-  // Make recipient completed in recipientPermission doc.
-    const SignedRecipient = await RecipientPermission.findOne({
-        envelopeId: field.envelopeId,
-        recipientId:field.recipientId
-      });
-
-    if(SignedRecipient){
-      SignedRecipient.status = 'completed';
-      await SignedRecipient.save();
-    }
-
-  const pendingFields = await SignatureField.find({
-    envelopeId: field.envelopeId,
-    status: 'pending'
-  });
+  try {
+    const result = await signAndEmbed({
+      envelopeId,
+      documentId,
+      recipientId,
+      certificateId,
+      signerName,
+      signatureImageBase64
+    });
+    // Send to next recipient
+    const pendingFields = await SignatureField.find({
+      envelopeId: envelopeId,
+      status: 'pending'
+    });
     if (pendingFields.length === 0) {
       // If no more pending fields for the same envelope, mark envelope as completed
-      const envelope = await Envelope.findById(field.envelopeId);
+      const envelope = await Envelope.findById(envelopeId);
         if (envelope) {
           envelope.status = 'completed';
           await envelope.save();
         }
-    }else{
-      const envelope = await Envelope.findById(field.envelopeId);
+      }else{
+      const envelope = await Envelope.findById(envelopeId);
         if (envelope) {
           await sendToRecipients(envelope._id,envelope.subject,envelope.message);
         }
     }
-  return res.status(200).json({
-    status: 'success',
-    message: 'Signature added successfully',
-    data: {
-      fieldId: field._id,
-      signature: field.signature
-    }
-  });
+    res.status(200).json({
+      status: 'success',
+      message: 'Signature added with compliance',
+      data: result
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 const getRecipientByEmail  = async (req, res)=>{
