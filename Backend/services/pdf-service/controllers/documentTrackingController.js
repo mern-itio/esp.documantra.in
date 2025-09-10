@@ -111,8 +111,9 @@ const documentTrackingController = {
       const linkToken = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + (expiresInDays * 24 * 60 * 60 * 1000));
       
-      // Create shareable link
-      const shareableLink = `${req.protocol}://${req.get('host')}/document-tracking/share/${linkToken}`;
+      // Create shareable link - point to backend public route
+      const backendUrl = `${req.protocol}://${req.get('host')}`;
+      const shareableLink = `${backendUrl}/shared-document/${linkToken}`;
 
       // Log the upload event
       const trackingRecord = new DocumentTracking({
@@ -158,13 +159,19 @@ const documentTrackingController = {
     try {
       const { linkToken } = req.params;
       
+      console.log('Accessing shared document with token:', linkToken);
+      console.log('Request method:', req.method);
+      
       const trackingRecord = await DocumentTracking.findOne({ 
         linkToken, 
         isTracked: true,
         expiresAt: { $gt: new Date() }
       });
 
+      console.log('Found tracking record:', trackingRecord ? 'Yes' : 'No');
+      
       if (!trackingRecord) {
+        console.log('Document not found or expired for token:', linkToken);
         return res.status(404).json({ error: 'Document not found or link expired' });
       }
 
@@ -200,14 +207,17 @@ const documentTrackingController = {
         });
 
         // Return document info for frontend to display
-        res.json({
+        const responseData = {
           success: true,
           documentId: trackingRecord.documentId,
           documentName: trackingRecord.documentName,
           originalFilename: trackingRecord.originalFilename,
           downloadUrl: `/document-tracking/download/${linkToken}`,
           message: 'Document access logged successfully'
-        });
+        };
+        
+        console.log('Returning document info:', responseData);
+        res.json(responseData);
       }
     } catch (error) {
       console.error('Error accessing shared document:', error);

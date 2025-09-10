@@ -66,6 +66,11 @@ export function DuplicateFilenameModal({
       setIsChecking(true);
       setError(null);
       
+      // If the filename is the same as the original, it's not a duplicate for our purposes
+      if (filename === duplicateFile.name) {
+        return true;
+      }
+      
       const response = await documentAPI.checkDuplicateFilename(filename, folderId);
       
       if (response.success && response.isDuplicate) {

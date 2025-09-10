@@ -33,9 +33,8 @@ const SharedDocumentPage: React.FC = () => {
       setLoading(true);
       
       // Call the backend to access the shared document
-      const response = await pdfApi.post(`/document-tracking/share/${token}`, {
-        
-        body: JSON.stringify({ userId }),
+      const response = await pdfApi.post(`/shared-document/${token}`, {
+        userId: userId
       });
 
       if (response.status < 200 || response.status >= 300) {
@@ -57,15 +56,21 @@ const SharedDocumentPage: React.FC = () => {
         }
 
       setLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accessing shared document:', err);
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        response: err.response?.data,
+        status: err.response?.status,
+        statusText: err.response?.statusText
+      });
       setError(err instanceof Error ? err.message : 'Failed to access document');
       setLoading(false);
     }
   };
 
   const handleDownload = () => {
-    window.open(`${pdfApi.defaults.baseURL}/document-tracking/download/${linkToken}`, '_blank');
+    window.open(`${pdfApi.defaults.baseURL}/shared-download/${linkToken}`, '_blank');
   };
 
   if (loading) {
@@ -135,7 +140,7 @@ const SharedDocumentPage: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => window.open(`${pdfApi.defaults.baseURL}/document-tracking/download/${linkToken}`, '_blank')}
+              onClick={() => window.open(`${pdfApi.defaults.baseURL}/shared-download/${linkToken}`, '_blank')}
               className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Eye className="h-5 w-5" />

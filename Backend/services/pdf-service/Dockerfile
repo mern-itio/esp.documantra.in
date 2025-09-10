@@ -12,10 +12,16 @@ RUN apt-get update && apt-get install -y \
     aspell aspell-en \
     poppler-utils \
     python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3 /usr/bin/python
 
 WORKDIR /app
-RUN pip3 install --break-system-packages PyMuPDF
+
+# Copy requirements.txt first for better Docker layer caching
+COPY services/pdf-service/requirements.txt ./services/pdf-service/
+
+# Install Python dependencies
+RUN pip3 install --break-system-packages -r ./services/pdf-service/requirements.txt
 # Copy package.json and package-lock.json for local packages first
 COPY packages/auth-lib/package*.json ./packages/auth-lib/
 COPY packages/validators/package*.json ./packages/validators/
@@ -27,6 +33,9 @@ COPY services/pdf-service/package*.json ./services/pdf-service/
 COPY packages/auth-lib ./packages/auth-lib
 COPY packages/validators ./packages/validators
 COPY services/pdf-service ./services/pdf-service
+
+# Make Python scripts executable
+RUN chmod +x ./services/pdf-service/scripts/*.py
 
 # Install dependencies inside local packages
 WORKDIR /app/packages/auth-lib

@@ -374,12 +374,12 @@ async function convertPptToPdf(inputPath, outputPath) {
     
     doc.pipe(stream);
     
-    // Add title page
-    doc.fontSize(20).font('Helvetica-Bold').text('PowerPoint to PDF Conversion', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
-    doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
-    doc.moveDown(2);
+    // // Add title page
+    // doc.fontSize(20).font('Helvetica-Bold').text('PowerPoint to PDF Conversion', { align: 'center' });
+    // doc.moveDown(0.5);
+    // doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
+    // doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
+    // doc.moveDown(2);
     
     try {
       // Try to extract content using pptxgenjs
@@ -393,17 +393,17 @@ async function convertPptToPdf(inputPath, outputPath) {
       console.log(`Found ${slideCount} slides in presentation`);
       
       // Add slide count info
-      doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
-      doc.moveDown(2);
+      // doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
+      // doc.moveDown(2);
       
       // Process each slide
       for (let i = 0; i < slideCount; i++) {
         const slide = pptx.getSlides()[i];
         
         // Add slide header
-        doc.addPage();
-        doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${i + 1}`, { align: 'center' });
-        doc.moveDown(0.5);
+        // doc.addPage();
+        // doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${i + 1}`, { align: 'center' });
+        // doc.moveDown(0.5);
         
         // Extract text content from slide
         if (slide && slide.texts && slide.texts.length > 0) {
@@ -441,11 +441,11 @@ async function convertPptToPdf(inputPath, outputPath) {
       console.log('Could not extract detailed content, creating basic PDF...');
       
       // Fallback: Create a basic PDF with file info
-      doc.fontSize(14).font('Helvetica').text('Content extraction was limited, but the file has been converted.');
+      // doc.fontSize(14).font('Helvetica').text('Content extraction was limited, but the file has been converted.');
       doc.moveDown(1);
-      doc.fontSize(12).text('The PowerPoint file has been successfully converted to PDF format.');
+      // doc.fontSize(12).text('The PowerPoint file has been successfully converted to PDF format.');
       doc.moveDown(1);
-      doc.fontSize(10).text('For better content extraction, ensure the PowerPoint file is in .pptx format and not corrupted.');
+      // doc.fontSize(10).text('For better content extraction, ensure the PowerPoint file is in .pptx format and not corrupted.');
     }
     
     doc.end();
@@ -496,12 +496,12 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
     doc.pipe(stream);
     
     // Add title page
-    doc.fontSize(20).font('Helvetica-Bold').text('PowerPoint to PDF Conversion', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
-    doc.fontSize(10).text(`Format: ${fileExtension.toUpperCase()}`, { align: 'center' });
-    doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
-    doc.moveDown(2);
+    // doc.fontSize(20).font('Helvetica-Bold').text('PowerPoint to PDF Conversion', { align: 'center' });
+    // doc.moveDown(0.5);
+    // doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
+    // doc.fontSize(10).text(`Format: ${fileExtension.toUpperCase()}`, { align: 'center' });
+    // doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
+    // doc.moveDown(2);
     
     let slideCount = 0;
     let contentExtracted = false;
@@ -523,14 +523,14 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
           
           if (slideCount > 0) {
             // Add slide count info
-            doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
+            // doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
             doc.moveDown(2);
             
             // Process each slide
             slides.forEach((slide, index) => {
               // Add slide header
               doc.addPage();
-              doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${index + 1}`, { align: 'center' });
+              // doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${index + 1}`, { align: 'center' });
               doc.moveDown(0.5);
               
               // Extract text content from slide
@@ -603,7 +603,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
                 console.log(`Manually extracted ${slideCount} slides`);
                 
                 // Add slide count info
-                doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
+                // doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
                 doc.moveDown(2);
                 
                 // Process each slide
@@ -611,7 +611,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
                   if (slide.trim().length > 0) {
                     // Add slide header
                     doc.addPage();
-                    doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${index + 1}`, { align: 'center' });
+                    // doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${index + 1}`, { align: 'center' });
                     doc.moveDown(0.5);
                     
                 // Split slide into lines and add content
@@ -636,11 +636,11 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
         
     // Method 3: For .ppt files, try to extract basic info
     if (fileExtension === '.ppt') {
-        doc.fontSize(14).font('Helvetica-Bold').text('Legacy PowerPoint Format (.ppt)', { align: 'center' });
+        // doc.fontSize(14).font('Helvetica-Bold').text('Legacy PowerPoint Format (.ppt)', { align: 'center' });
         doc.moveDown(1);
-        doc.fontSize(12).font('Helvetica').text('This is a legacy PowerPoint format. Content extraction is limited.');
+        // doc.fontSize(12).font('Helvetica').text('This is a legacy PowerPoint format. Content extraction is limited.');
         doc.moveDown(1);
-        doc.fontSize(12).text('For better results, consider converting to .pptx format first.');
+        // doc.fontSize(12).text('For better results, consider converting to .pptx format first.');
         doc.moveDown(2);
         
         // Try to get basic file information
@@ -1022,7 +1022,6 @@ async function convertPdfToHtml(inputPath, outputPath) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF to HTML Conversion</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -1048,8 +1047,6 @@ async function convertPdfToHtml(inputPath, outputPath) {
 </head>
 <body>
     <div class="header">
-        <h1>PDF to HTML Conversion</h1>
-        <p>PDF file: ${path.basename(inputPath)}</p>
     </div>
     <div class="error-message">
         <h3>Conversion Notice</h3>
@@ -1088,7 +1085,7 @@ async function convertPdfToHtml(inputPath, outputPath) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF to HTML Conversion</title>
+    <title></title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -1113,9 +1110,6 @@ async function convertPdfToHtml(inputPath, outputPath) {
 </head>
 <body>
     <div class="header">
-        <h1>PDF to HTML Conversion</h1>
-        <p>Converted from PDF with ${pageCount} pages</p>
-        <p>Original file: ${path.basename(inputPath)}</p>
     </div>
     ${paragraphs.map(para => `<div class="paragraph">${para}</div>`).join('\n')}
 </body>
@@ -1180,16 +1174,16 @@ async function convertHtmlToPdf(inputPath, outputPath) {
     doc.pipe(stream);
     
     // Add title
-    doc.fontSize(20).font('Helvetica-Bold').text('HTML to PDF Conversion', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
-    doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
-    doc.fontSize(10).text('Method: Text extraction (no Puppeteer required)', { align: 'center' });
-    doc.moveDown(2);
+    // doc.fontSize(20).font('Helvetica-Bold').text('HTML to PDF Conversion', { align: 'center' });
+    // doc.moveDown(0.5);
+    // doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
+    // doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
+    // doc.fontSize(10).text('Method: Text extraction (no Puppeteer required)', { align: 'center' });
+    // doc.moveDown(2);
     
     // Add extracted text content
     if (textContent.length > 0) {
-      doc.fontSize(12).font('Helvetica').text('Extracted Content:', { underline: true });
+      // doc.fontSize(12).font('Helvetica').text('Extracted Content:', { underline: true });
       doc.moveDown(0.5);
       
       // Split text into paragraphs and add to PDF

@@ -68,16 +68,17 @@ const compressPDFController = {
       // Add compression options based on level
       switch (compressionLevel) {
         case 'low':
-          qpdfCommand += ' --linearize --object-streams=generate --compression-level=1';
+          qpdfCommand += ' --linearize --object-streams=generate --compression-level=1 --optimize-images';
           break;
         case 'medium':
-          qpdfCommand += ' --linearize --object-streams=generate --compression-level=5';
+          qpdfCommand += ' --linearize --object-streams=generate --compression-level=5 --optimize-images';
           break;
         case 'high':
-          qpdfCommand += ' --linearize --object-streams=generate --compression-level=9';
+          qpdfCommand += ' --linearize --object-streams=generate --compression-level=9 --optimize-images';
           break;
         case 'custom':
           // Use custom settings
+          qpdfCommand += ' --linearize --object-streams=generate --optimize-images';
           if (customSettings.compressionLevel) {
             qpdfCommand += ` --compression-level=${customSettings.compressionLevel}`;
           }
@@ -86,7 +87,7 @@ const compressPDFController = {
           }
           break;
         default:
-          qpdfCommand += ' --linearize --object-streams=generate --compression-level=5';
+          qpdfCommand += ' --linearize --object-streams=generate --compression-level=5 --optimize-images';
       }
 
       // Add object streams option
@@ -167,15 +168,30 @@ const compressPDFController = {
           gsCommand += ' -dPDFACompatibilityPolicy=1';
         }
 
-        gsCommand += ` -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${gsOutputPath}" "${outputPath}"`;
+        gsCommand += ` -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${gsOutputPath}" "${req.file.path}"`;
 
         console.log('Executing Ghostscript command:', gsCommand);
         await execAsync(gsCommand);
 
-        // Replace the output file with Ghostscript version if it was created
+        // Check if Ghostscript output was created and compare sizes
         if (await fs.pathExists(gsOutputPath)) {
-          await fs.move(gsOutputPath, outputPath, { overwrite: true });
-          console.log('Ghostscript compression completed');
+          const gsStats = await fs.stat(gsOutputPath);
+          const qpdfStats = await fs.stat(outputPath);
+          
+          console.log('File size comparison:', {
+            original: originalFileSize,
+            qpdf: qpdfStats.size,
+            ghostscript: gsStats.size
+          });
+          
+          // Use the smaller file
+          if (gsStats.size < qpdfStats.size) {
+            await fs.move(gsOutputPath, outputPath, { overwrite: true });
+            console.log('Using Ghostscript output (smaller file)');
+          } else {
+            await fs.unlink(gsOutputPath);
+            console.log('Using qpdf output (smaller file)');
+          }
         }
 
       } catch (gsError) {
@@ -197,6 +213,22 @@ const compressPDFController = {
       const originalFileSize = originalStats.size;
       const sizeReduction = originalFileSize - fileSize;
       const compressionRatio = ((sizeReduction / originalFileSize) * 100).toFixed(2);
+
+      console.log('File size calculation:', {
+        originalFileSize,
+        compressedFileSize: fileSize,
+        sizeReduction,
+        compressionRatio: `${compressionRatio}%`
+      });
+
+      // Check if compression actually reduced file size
+      if (fileSize >= originalFileSize) {
+        console.warn('Compression increased file size, this might indicate the file is already well-compressed');
+        // For very small files, this is normal due to PDF structure overhead
+        if (originalFileSize < 10240) { // Less than 10KB
+          console.log('Small file detected - size increase is normal due to PDF structure overhead');
+        }
+      }
 
       // Log document tracking event
       try {
