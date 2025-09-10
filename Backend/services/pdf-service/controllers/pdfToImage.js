@@ -16,6 +16,8 @@ const {
   convertPdfToDoc,
   convertPdfToExcel,
   convertExcelToPdf,
+  convertExcelToDoc,
+  convertDocToExcel,
   convertPdfToPpt,
   convertPptToPdf,
   convertPdfToTxt,
@@ -697,10 +699,10 @@ exports.batchConvert = async (req, res) => {
       return res.status(400).json({ error: "Output formats array required for each file" });
     }
 
-    console.log('Batch conversion started. Files:', req.files.length);
-    console.log('Output formats:', parsedOutputFormats);
-    console.log('Request body:', req.body);
-    console.log('Files received:', req.files.map(f => ({ name: f.originalname, mimetype: f.mimetype, size: f.size })));
+    // console.log('Batch conversion started. Files:', req.files.length);
+    // console.log('Output formats:', parsedOutputFormats);
+    // console.log('Request body:', req.body);
+    // console.log('Files received:', req.files.map(f => ({ name: f.originalname, mimetype: f.mimetype, size: f.size })));
 
     const results = [];
     const convertedFiles = [];
@@ -767,6 +769,12 @@ exports.batchConvert = async (req, res) => {
               // Use the fallback method that doesn't require LibreOffice
               result = await convertDocToPdf(tempDocPath, tempPdfPath6);
               break;
+            case 'xlsx':
+              const tempDocPath2 = path.join(uploadDir, generateFilename('temp_doc2', path.extname(file.originalname)));
+              const tempXlsxPath2 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.xlsx`);
+              fs.writeFileSync(tempDocPath2, file.buffer);
+              result = await convertDocToExcel(tempDocPath2, tempXlsxPath2);
+              break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);
           }
@@ -778,6 +786,12 @@ exports.batchConvert = async (req, res) => {
               const tempPdfPath7 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pdf`);
               fs.writeFileSync(tempExcelPath, file.buffer);
               result = await convertExcelToPdf(tempExcelPath, tempPdfPath7);
+              break;
+            case 'docx':
+              const tempExcelPath2 = path.join(uploadDir, generateFilename('temp_excel2', path.extname(file.originalname)));
+              const tempDocxPath2 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.docx`);
+              fs.writeFileSync(tempExcelPath2, file.buffer);
+              result = await convertExcelToDoc(tempExcelPath2, tempDocxPath2);
               break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);
@@ -866,7 +880,9 @@ exports.batchConvert = async (req, res) => {
           if (tempPdfPath4 && fs.existsSync(tempPdfPath4)) fs.unlinkSync(tempPdfPath4);
           if (tempPdfPath5 && fs.existsSync(tempPdfPath5)) fs.unlinkSync(tempPdfPath5);
           if (tempDocPath && fs.existsSync(tempDocPath)) fs.unlinkSync(tempDocPath);
+          if (tempDocPath2 && fs.existsSync(tempDocPath2)) fs.unlinkSync(tempDocPath2);
           if (tempExcelPath && fs.existsSync(tempExcelPath)) fs.unlinkSync(tempExcelPath);
+          if (tempExcelPath2 && fs.existsSync(tempExcelPath2)) fs.unlinkSync(tempExcelPath2);
           if (tempPptPath && fs.existsSync(tempPptPath)) fs.unlinkSync(tempPptPath);
           if (tempTxtPath2 && fs.existsSync(tempTxtPath2)) fs.unlinkSync(tempTxtPath2);
           if (tempHtmlPath2 && fs.existsSync(tempHtmlPath2)) fs.unlinkSync(tempHtmlPath2);

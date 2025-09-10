@@ -328,7 +328,7 @@ const addImageWatermark = async (req, res) => {
   }
 };
 
-// Preview watermark (returns a sample page with watermark)
+// Preview watermark (returns all pages with watermark)
 const previewWatermark = async (req, res) => {
   try {
     if (!req.file) {
@@ -342,7 +342,9 @@ const previewWatermark = async (req, res) => {
       fontColor = '#FF0000',
       opacity = 0.3,
       rotation = -45,
-      previewPage = 1
+      startPage = 1,
+      endPage = null,
+      excludePages = ''
     } = req.body;
 
     if (!text || text.trim() === '') {
@@ -361,9 +363,10 @@ const previewWatermark = async (req, res) => {
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pages = pdfDoc.getPages();
 
-    const previewPageNum = Math.min(parseInt(previewPage) || 1, pages.length);
-    const page = pages[previewPageNum - 1];
-    const { width, height } = page.getSize();
+    // Parse page ranges (same logic as main watermark function)
+    const startPageNum = parseInt(startPage) || 1;
+    const endPageNum = endPage ? parseInt(endPage) : pages.length;
+    const excludePagesArray = excludePages ? excludePages.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p)) : [];
 
     // Convert hex color to RGB
     const hexToRgb = (hex) => {
@@ -377,57 +380,70 @@ const previewWatermark = async (req, res) => {
 
     const color = hexToRgb(fontColor);
 
-    // Calculate position
-    let x, y;
-    switch (position) {
-      case 'top-left':
-        x = 50;
-        y = height - 50;
-        break;
-      case 'top-center':
-        x = width / 2;
-        y = height - 50;
-        break;
-      case 'top-right':
-        x = width - 50;
-        y = height - 50;
-        break;
-      case 'bottom-left':
-        x = 50;
-        y = 50;
-        break;
-      case 'bottom-center':
-        x = width / 2;
-        y = 50;
-        break;
-      case 'bottom-right':
-        x = width - 50;
-        y = 50;
-        break;
-      case 'middle-left':
-        x = 50;
-        y = height / 2;
-        break;
-      case 'middle-right':
-        x = width - 50;
-        y = height / 2;
-        break;
-      case 'center':
-      default:
-        x = width / 2;
-        y = height / 2;
-        break;
-    }
+    // Add watermark to all specified pages (same logic as main watermark function)
+    for (let i = 0; i < pages.length; i++) {
+      const pageNum = i + 1;
+      
+      // Skip if page is not in range or is excluded
+      if (pageNum < startPageNum || pageNum > endPageNum || excludePagesArray.includes(pageNum)) {
+        continue;
+      }
 
-    // Add watermark text
-    page.drawText(text, {
-      x,
-      y,
-      size: parseInt(fontSize),
-      color: rgb(color.r, color.g, color.b),
-      opacity: parseFloat(opacity),
-      rotate: { angle: parseFloat(rotation), type: 'degrees' }
-    });
+      const page = pages[i];
+      const { width, height } = page.getSize();
+
+      // Calculate position
+      let x, y;
+      switch (position) {
+        case 'top-left':
+          x = 50;
+          y = height - 50;
+          break;
+        case 'top-center':
+          x = width / 2;
+          y = height - 50;
+          break;
+        case 'top-right':
+          x = width - 50;
+          y = height - 50;
+          break;
+        case 'bottom-left':
+          x = 50;
+          y = 50;
+          break;
+        case 'bottom-center':
+          x = width / 2;
+          y = 50;
+          break;
+        case 'bottom-right':
+          x = width - 50;
+          y = 50;
+          break;
+        case 'middle-left':
+          x = 50;
+          y = height / 2;
+          break;
+        case 'middle-right':
+          x = width - 50;
+          y = height / 2;
+          break;
+        case 'center':
+        default:
+          x = width / 2;
+          y = height / 2;
+          break;
+      }
+
+      // Add watermark text
+      page.drawText(text, {
+        x,
+        y,
+        size: parseInt(fontSize),
+        color: rgb(color.r, color.g, color.b),
+        opacity: parseFloat(opacity),
+        rotate: { angle: parseFloat(rotation), type: 'degrees' }
+      });
+    }
 
     // Save the preview PDF
     const modifiedPdfBytes = await pdfDoc.save();
@@ -441,7 +457,8 @@ const previewWatermark = async (req, res) => {
       message: 'Preview generated successfully',
       filename: outputFilename,
       previewUrl: `/outputs/${outputFilename}`,
-      fileSize: modifiedPdfBytes.length
+      fileSize: modifiedPdfBytes.length,
+      pagesProcessed: pages.length
     });
 
   } catch (error) {

@@ -8,12 +8,19 @@ import {
   FileText,
   Image,
   FileSpreadsheet,
-  Presentation
+  Presentation,
+  Download,
+  Trash2,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 import { EmptyState } from '../common/EmptyState';
 import { Button } from '../ui/button';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { cn, formatDate, formatFileSize } from '../../common/lib/utils';
+import { useState } from 'react';
+import type { Document } from '../../common/types';
+import { documentAPI } from '../../../services/api';
 
 
 const getFileTypeIcon = (type: string) => {
@@ -41,10 +48,15 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
     selectedDocuments, 
     setSelectedDocuments,
     toggleFavorite,
-    searchQuery 
+    searchQuery,
+    userPermissions,
+    toggleArchive,
+    moveToTrash
   } = useDocumentStore();
   
   const documents = getFilteredDocuments();
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {
     if (isSelected) {
@@ -61,6 +73,30 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
       setSelectedDocuments([]);
     }
   };
+
+  const handleDropdownToggle = (documentId: string) => {
+    console.log('🔍 Toggling dropdown for document:', documentId, 'Current open:', openDropdown);
+    setOpenDropdown(openDropdown === documentId ? null : documentId);
+  };
+
+  const handleDownload = async (document: Document) => {
+    setIsDownloading(document.id);
+    setOpenDropdown(null);
+    try {
+      const result = await documentAPI.downloadDocument(document.id);
+      console.log('Download result:', result);
+      if (result.success) {
+        console.log('Download started successfully');
+      } else {
+        console.error('Download failed:', result.message);
+      }
+    } catch (error) {
+      console.error('Failed to download document:', error);
+    } finally {
+      setIsDownloading(null);
+    }
+  };
+
 
   if (documents.length === 0) {
     return (
@@ -109,10 +145,10 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
               <div
                 key={document.id}
                 className={cn(
-                  "px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer",
+                  "px-4 py-3 hover:bg-gray-50 transition-colors",
                   isSelected && "bg-blue-50"
                 )}
-                onClick={() => onDocumentSelect?.(document as any)}
+                onDoubleClick={() => onDocumentSelect?.(document as any)}
               >
                 <div className="flex items-center space-x-4">
                   <input
@@ -189,6 +225,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                             toggleFavorite(document.id);
                           }}
                           className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          title={document.isFavorite ? "Remove from favorites" : "Add to favorites"}
                         >
                           {document.isFavorite ? (
                             <Star className="w-4 h-4 text-yellow-500 fill-current" />
@@ -197,14 +234,90 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                           )}
                         </button>
                         
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
+                        <div className="relative">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDropdownToggle(document.id);
+                            }}
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                          
+                          {openDropdown === document.id && (
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
+                              <button 
+                                className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50" 
+                                style={{cursor: 'pointer'}}
+                              >
+                                <Eye className="w-4 h-4" />
+                                <span>Preview</span>
+                              </button>
+                              <button 
+                                className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                onClick={(e) => {
+                                  console.log('🔍 Download button clicked for:', document.name);
+                                  e.stopPropagation();
+                                  handleDownload(document);
+                                }}
+                                disabled={isDownloading === document.id}
+                                style={{cursor: 'pointer'}}
+                              >
+                                {isDownloading === document.id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                                    <span>Downloading...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Download className="w-4 h-4" />
+                                    <span>Download</span>
+                                  </>
+                                )}
+                              </button>
+                              <button 
+                                className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50"
+                                onClick={(e) => {
+                                  console.log('🔍 Archive button clicked for:', document.name);
+                                  e.stopPropagation();
+                                  toggleArchive(document.id);
+                                  setOpenDropdown(null);
+                                }}
+                                style={{cursor: 'pointer'}}
+                              >
+                                {document.isArchived ? (
+                                  <>
+                                    <ArchiveRestore className="w-4 h-4" />
+                                    <span>Unarchive</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Archive className="w-4 h-4" />
+                                    <span>Archive</span>
+                                  </>
+                                )}
+                              </button>
+                              <div className="border-t border-gray-100 my-1" />
+                              {userPermissions.delete_own && (
+                                <button 
+                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    moveToTrash(document.id);
+                                    setOpenDropdown(null);
+                                  }}
+                                  style={{cursor: 'pointer'}}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span>Move to Trash</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

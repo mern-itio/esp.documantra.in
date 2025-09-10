@@ -11,8 +11,7 @@ import {
   Share2,
   Trash2,
   Move,
-  // Star,
-  Folder
+  Folder,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -24,11 +23,13 @@ import { ShareModal } from '../modals/ShareModal';
 import { MoveDocumentsModal } from '../modals/MoveDocumentsModal';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { folderAPI, documentAPI } from '../../../services/api';
-
+import { useNavigate } from 'react-router-dom';
 export function DocumentHeader() {
   const {
     searchQuery,
     setSearchQuery,
+    searchFilters,
+    setSearchFilters,
     viewMode,
     setViewMode,
     sortBy,
@@ -39,11 +40,6 @@ export function DocumentHeader() {
     isLoading
   } = useDocumentStore();
 
-  // Debug logging for selection
-  // console.log('🔍 DocumentHeader - selectedDocuments:', selectedDocuments);
-  // console.log('🔍 DocumentHeader - hasSelection:', selectedDocuments.length > 0);
-  // console.log('🔍 DocumentHeader - store state:', useDocumentStore.getState());
-
   const [showUpload, setShowUpload] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -53,11 +49,9 @@ export function DocumentHeader() {
   const [folders, setFolders] = useState<any[]>([]);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const [showTooltip, setShowTooltip] = useState(false);
-
+  const navigate = useNavigate();
   const hasSelection = selectedDocuments.length > 0;
 
-  // Debug logging for hasSelection
-  console.log('🔍 DocumentHeader - hasSelection calculated:', hasSelection);
 
   const handleSortToggle = () => {
     setSorting(sortBy, sortOrder === 'asc' ? 'desc' : 'asc');
@@ -75,13 +69,27 @@ export function DocumentHeader() {
   const handleCreateFolderSubmit = async (folderData: { name: string; description: string; color: string; icon: string }) => {
     try {
       const response = await folderAPI.createFolder(folderData);
+
       if (response.success) {
         setShowCreateFolder(false);
-        // Refresh folders list
-        loadFolders();
+
+        const store = useDocumentStore.getState();
+        await store.fetchFolders(); // Refresh folders in the store
+        await store.refreshData(); // Refresh all data
+
+        await loadFolders();
+        // navigate(`/folders/${response.data.id}`);
+        navigate(`/documents/folder`);
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('folderCreated', {
+          detail: { folder: response.data }
+        }));
+
+      } else {
+        console.error('❌ DocumentHeader: Folder creation failed:', response.message);
       }
     } catch (error) {
-      console.error('Failed to create folder:', error);
+      console.error('❌ DocumentHeader: Failed to create folder:', error);
     }
   };
 
@@ -104,11 +112,14 @@ export function DocumentHeader() {
   const loadFolders = async () => {
     try {
       const response = await folderAPI.getUserFolders();
+
       if (response.success) {
         setFolders(response.data);
+      } else {
+        console.error('❌ DocumentHeader: Failed to load folders:', response.message);
       }
     } catch (error) {
-      console.error('Failed to load folders:', error);
+      console.error('❌ DocumentHeader: Failed to load folders:', error);
     }
   };
 
@@ -133,6 +144,13 @@ export function DocumentHeader() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMoreMenu]);
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSearchFilters({});
+  };
+
+  // Check if any filters are applied
+  const hasActiveFilters = searchQuery || Object.keys(searchFilters).length > 0;
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4">
       {/* Breadcrumb */}
@@ -161,6 +179,11 @@ export function DocumentHeader() {
             <Filter className="w-4 h-4 mr-2" />
             Filters
           </Button>
+          {hasActiveFilters && (
+            <Button variant="outline" onClick={clearFilters}>
+              Clear All
+            </Button>
+          )}
         </div>
 
         {/* Right side - Actions */}

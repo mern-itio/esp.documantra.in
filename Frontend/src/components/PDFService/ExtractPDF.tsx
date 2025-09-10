@@ -95,14 +95,54 @@ const ExtractPDF: React.FC = () => {
 
   // Update custom selection
   const updateCustomSelection = (id: string, field: keyof PageSelection, value: any) => {
-    setCustomSelections(prev => prev.map(sel => 
-      sel.id === id ? { ...sel, [field]: value } : sel
-    ));
+    setCustomSelections(prev => prev.map(sel => {
+      if (sel.id === id) {
+        // If changing type from page to range, initialize proper value structure
+        if (field === 'type' && value === 'range' && typeof sel.value === 'number') {
+          return { ...sel, [field]: value, value: { start: sel.value, end: sel.value } };
+        }
+        // If changing type from range to page, convert to number
+        if (field === 'type' && value === 'page' && typeof sel.value === 'object') {
+          return { ...sel, [field]: value, value: (sel.value as any).start || 1 };
+        }
+        return { ...sel, [field]: value };
+      }
+      return sel;
+    }));
   };
 
   // Remove custom selection
   const removeCustomSelection = (id: string) => {
     setCustomSelections(prev => prev.filter(sel => sel.id !== id));
+  };
+
+  // Parse page numbers string (handles ranges like "1-3,5,7-9")
+  const parsePageNumbers = (input: string): number[] => {
+    if (!input.trim()) return [];
+    
+    const pages: number[] = [];
+    const parts = input.split(',').map(p => p.trim());
+    
+    for (const part of parts) {
+      if (part.includes('-')) {
+        // Handle range (e.g., "1-3")
+        const [start, end] = part.split('-').map(n => parseInt(n.trim()));
+        if (!isNaN(start) && !isNaN(end) && start <= end) {
+          for (let i = start; i <= end; i++) {
+            pages.push(i);
+          }
+        }
+      } else {
+        // Handle single page (e.g., "5")
+        const page = parseInt(part);
+        if (!isNaN(page)) {
+          pages.push(page);
+        }
+      }
+    }
+    
+    // Remove duplicates and sort
+    return [...new Set(pages)].sort((a, b) => a - b);
   };
 
   // Extract PDF
@@ -114,7 +154,8 @@ const ExtractPDF: React.FC = () => {
       let result: ExtractPDFResponse;
 
       if (extractMode === 'pages') {
-        const pages = pageNumbers.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+        const pages = parsePageNumbers(pageNumbers);
+        console.log('Parsed page numbers:', pages, 'from input:', pageNumbers);
         if (pages.length === 0) {
           alert('Please enter valid page numbers');
           return;
@@ -303,7 +344,7 @@ const ExtractPDF: React.FC = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="text-sm text-gray-500 mt-2">
-                Enter page numbers separated by commas. Use ranges like "5-7" for consecutive pages.
+                Enter page numbers separated by commas. Use ranges like "5-7" for consecutive pages. Examples: "1,3,5" or "1-3,7-9" or "1,3-5,8".
               </p>
             </div>
           )}
@@ -383,11 +424,14 @@ const ExtractPDF: React.FC = () => {
                             type="number"
                             min="1"
                             max={pdfInfo.pages}
-                            value={(selection.value as any).start || 1}
-                            onChange={(e) => updateCustomSelection(selection.id, 'value', {
-                              ...selection.value as any,
-                              start: parseInt(e.target.value) || 1
-                            })}
+                            value={typeof selection.value === 'object' ? (selection.value as any).start || 1 : 1}
+                            onChange={(e) => {
+                              const currentValue = typeof selection.value === 'object' ? selection.value as any : { start: 1, end: 1 };
+                              updateCustomSelection(selection.id, 'value', {
+                                ...currentValue,
+                                start: parseInt(e.target.value) || 1
+                              });
+                            }}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-20"
                             placeholder="Start"
                           />
@@ -396,11 +440,14 @@ const ExtractPDF: React.FC = () => {
                             type="number"
                             min="1"
                             max={pdfInfo.pages}
-                            value={(selection.value as any).end || 1}
-                            onChange={(e) => updateCustomSelection(selection.id, 'value', {
-                              ...selection.value as any,
-                              end: parseInt(e.target.value) || 1
-                            })}
+                            value={typeof selection.value === 'object' ? (selection.value as any).end || 1 : 1}
+                            onChange={(e) => {
+                              const currentValue = typeof selection.value === 'object' ? selection.value as any : { start: 1, end: 1 };
+                              updateCustomSelection(selection.id, 'value', {
+                                ...currentValue,
+                                end: parseInt(e.target.value) || 1
+                              });
+                            }}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-20"
                             placeholder="End"
                           />

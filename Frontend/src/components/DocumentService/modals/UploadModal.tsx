@@ -5,6 +5,7 @@ import { useDocumentStore } from '../../common/store/documentStore';
 import { formatFileSize } from '../../common/lib/utils';
 import { DuplicateFilenameModal } from './DuplicateFilenameModal';
 import { documentAPI } from '../../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -21,7 +22,8 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  
+  const navigate = useNavigate();
+
   // Duplicate filename handling
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateFile, setDuplicateFile] = useState<File | null>(null);
@@ -57,19 +59,19 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   const validateFiles = (files: File[]) => {
     const errors: string[] = [];
-    
+
     files.forEach((file, index) => {
       const extension = file.name.split('.').pop()?.toLowerCase() || '';
-      
+
       if (!SUPPORTED_TYPES.includes(extension)) {
         errors.push(`File ${index + 1}: Unsupported file type (.${extension})`);
       }
-      
+
       if (userPermissions.uploadLimit !== -1 && file.size > userPermissions.uploadLimit) {
         errors.push(`File ${index + 1}: File size exceeds limit (${formatFileSize(userPermissions.uploadLimit)})`);
       }
     });
-    
+
     return errors;
   };
 
@@ -93,7 +95,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
-    
+
     const errors = validateFiles(selectedFiles);
     if (errors.length > 0) {
       setUploadError(errors.join('\n'));
@@ -103,14 +105,14 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     try {
       setIsUploading(true);
       setUploadError(null);
-      
+
       // Check for duplicates before uploading
       const hasDuplicates = await checkForDuplicates(selectedFiles);
       if (hasDuplicates) {
         setIsUploading(false);
         return; // Wait for user to resolve duplicates
       }
-      
+
       // Upload files one by one to handle individual duplicates
       for (const file of selectedFiles) {
         try {
@@ -127,10 +129,11 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           throw error; // Re-throw other errors
         }
       }
-      
+
       // Clear selected files and close modal on success
       setSelectedFiles([]);
       onClose();
+      navigate(`/all-documents`);
     } catch (error: any) {
       console.error('Upload failed:', error);
       setUploadError(error.message || 'Upload failed. Please try again.');
@@ -146,30 +149,30 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   const handleDuplicateResolve = async (newFilename: string) => {
     if (!duplicateFile) return;
-    
+
     // Create a new File object with the new name
     const renamedFile = new File([duplicateFile], newFilename, {
       type: duplicateFile.type,
       lastModified: duplicateFile.lastModified,
     });
-    
+
     // Replace the duplicate file with the renamed one
-    setSelectedFiles(files => 
+    setSelectedFiles(files =>
       files.map(file => file === duplicateFile ? renamedFile : file)
     );
-    
+
     // Reset duplicate state
     setDuplicateFile(null);
     setExistingDocument(null);
     setShowDuplicateModal(false);
-    
+
     // Continue with upload directly without duplicate check
     try {
       setIsUploading(true);
       setUploadError(null);
-      
+
       await uploadFiles([renamedFile], currentFolderId || undefined);
-      
+
       // Clear selected files and close modal on success
       setSelectedFiles([]);
       onClose();
@@ -215,8 +218,8 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
               <AlertCircle className="w-4 h-4 text-blue-600" />
               <div className="text-sm text-blue-800">
                 <p>
-                  Upload limit: {userPermissions.uploadLimit === -1 
-                    ? 'Unlimited' 
+                  Upload limit: {userPermissions.uploadLimit === -1
+                    ? 'Unlimited'
                     : formatFileSize(userPermissions.uploadLimit)} per file
                 </p>
                 <p className="text-xs mt-1">
@@ -241,11 +244,10 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
           {/* Drop Zone */}
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive 
-                ? 'border-blue-500 bg-blue-50' 
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
+                ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-300 hover:border-gray-400'
-            }`}
+              }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
@@ -258,7 +260,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             <p className="text-gray-500 mb-4">
               Select multiple files to upload them all at once
             </p>
-            
+
             <input
               type="file"
               multiple
@@ -268,11 +270,10 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
               id="file-upload"
               disabled={isUploading}
             />
-            <label 
-              htmlFor="file-upload" 
-              className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 cursor-pointer ${
-                isUploading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+            <label
+              htmlFor="file-upload"
+              className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               Browse Files
             </label>
@@ -318,14 +319,14 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             )}
           </div>
           <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={onClose}
               disabled={isUploading}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleUpload}
               disabled={selectedFiles.length === 0 || isUploading}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400"

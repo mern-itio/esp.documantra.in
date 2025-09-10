@@ -31,7 +31,10 @@ export interface WatermarkPreviewRequest {
   fontColor: string;
   opacity: number;
   rotation: number;
-  previewPage: number;
+  startPage?: number;
+  endPage?: string;
+  excludePages?: string;
+  previewPage?: number; // Made optional for backward compatibility
 }
 
 export interface WatermarkResponse {
