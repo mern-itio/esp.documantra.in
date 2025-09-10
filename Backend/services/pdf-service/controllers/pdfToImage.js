@@ -765,7 +765,7 @@ exports.batchConvert = async (req, res) => {
               const tempPdfPath6 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pdf`);
               fs.writeFileSync(tempDocPath, file.buffer);
               // Use the fallback method that doesn't require LibreOffice
-              result = await convertDocToPdfFallback(tempDocPath, tempPdfPath6);
+              result = await convertDocToPdf(tempDocPath, tempPdfPath6);
               break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);

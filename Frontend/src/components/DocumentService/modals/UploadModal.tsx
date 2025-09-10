@@ -111,27 +111,28 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
         return; // Wait for user to resolve duplicates
       }
       
-      await uploadFiles(selectedFiles, currentFolderId || undefined);
+      // Upload files one by one to handle individual duplicates
+      for (const file of selectedFiles) {
+        try {
+          await uploadFiles([file], currentFolderId || undefined);
+        } catch (error: any) {
+          // Handle duplicate filename error from backend
+          if (error.code === 'DUPLICATE_FILENAME' && error.data?.existingDocument) {
+            setDuplicateFile(file);
+            setExistingDocument(error.data.existingDocument);
+            setShowDuplicateModal(true);
+            setIsUploading(false);
+            return;
+          }
+          throw error; // Re-throw other errors
+        }
+      }
       
       // Clear selected files and close modal on success
       setSelectedFiles([]);
       onClose();
     } catch (error: any) {
       console.error('Upload failed:', error);
-      
-      // Handle duplicate filename error from backend
-      if (error.code === 'DUPLICATE_FILENAME' && error.data?.existingDocument) {
-        // Find the file that caused the duplicate
-        const duplicateFile = selectedFiles.find(file => file.name === error.data.existingDocument.name);
-        if (duplicateFile) {
-          setDuplicateFile(duplicateFile);
-          setExistingDocument(error.data.existingDocument);
-          setShowDuplicateModal(true);
-          setIsUploading(false);
-          return;
-        }
-      }
-      
       setUploadError(error.message || 'Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
@@ -143,7 +144,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     setUploadError(null); // Clear error when files change
   };
 
-  const handleDuplicateResolve = (newFilename: string) => {
+  const handleDuplicateResolve = async (newFilename: string) => {
     if (!duplicateFile) return;
     
     // Create a new File object with the new name
@@ -162,8 +163,22 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     setExistingDocument(null);
     setShowDuplicateModal(false);
     
-    // Continue with upload
-    handleUpload();
+    // Continue with upload directly without duplicate check
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+      
+      await uploadFiles([renamedFile], currentFolderId || undefined);
+      
+      // Clear selected files and close modal on success
+      setSelectedFiles([]);
+      onClose();
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      setUploadError(error.message || 'Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDuplicateCancel = () => {

@@ -250,8 +250,8 @@ import { QualityAnalyzer } from '../components/PDFService/QualityAnalyzer';
 import { WorkflowDesigner } from '../components/PDFService/WorkflowDesigner';
 import { Analytics } from '../components/PDFService/Analytics';
 import { BatchProcessor } from '../components/PDFService/BatchProcessor';
-import { PDFEditor } from '../components/PDFService/PDFEditor';
-import { PDFViewer } from '../components/PDFService/PDFViewer';
+// import { PDFEditor } from '../components/PDFService/PDFEditor';
+// import { PDFViewer } from '../components/PDFService/PDFViewer';
 import { Header } from '../components/PDFService/Header';
 import { PdftoDoc } from '../pages/PDFTools/PDFtoDoc';
 import { DoctoPdf } from '../pages/PDFTools/DoctoPdf';
@@ -289,7 +289,7 @@ const PDFToolsLayout = () => {
   const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedTool, setSelectedTool] = useState<PDFTool | null>(null);
+  // const [selectedTool, setSelectedTool] = useState<PDFTool | null>(null);
   const [currentView, setCurrentView] = useState<'tools' | 'viewer' | 'editor' | 'batch' | 'analytics' | 'workflows' | 'quality' | 'cloud' | 'help' | 'admin'>('tools');
   const [processingStats, setProcessingStats] = useState<ProcessingStats>(mockProcessingStats);
   const [favoriteTools, setFavoriteTools] = useState<Set<string>>(new Set());
@@ -353,7 +353,7 @@ const PDFToolsLayout = () => {
   const handleToolSelect = (tool: PDFTool) => {
     console.log('Tool selected:', tool);
     console.log('Navigating to:', `/pdf-tools/${tool.id}`);
-    setSelectedTool(tool);
+    // setSelectedTool(tool);
     navigate(`/pdf-tools/${tool.id}`);
 
     // Add to recent tools
@@ -393,9 +393,9 @@ const PDFToolsLayout = () => {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'viewer':
-        return <PDFViewer selectedTool={selectedTool} onBack={() => setCurrentView('tools')} />;
+        // return <PDFViewer selectedTool={selectedTool} onBack={() => setCurrentView('tools')} />;
       case 'editor':
-        return <PDFEditor onBack={() => setCurrentView('tools')} />;
+        // return <PDFEditor onBack={() => setCurrentView('tools')} />;
       case 'batch':
         return <BatchProcessor onBack={() => setCurrentView('tools')} />;
       case 'analytics':
@@ -530,7 +530,6 @@ const guestRoutes = [
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
-  { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 
 
   // PDF Tool Pages
@@ -838,6 +837,8 @@ const authRoutes = [
   { path: '/pdf-tools/pdf-repair', element: <PdfRepairPage /> },
   { path: '/pdf-tools/pdf-bookmarks', element: <PdfBookmarksPage /> },
   { path: '/pdf-tools/pdf-statistics', element: <PdfStatisticsPage /> },
+  { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
+
 
 ];
 

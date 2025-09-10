@@ -28,6 +28,7 @@ const redactRoutes = require('./routes/redactRoute');
 const stampRoutes = require('./routes/stampRoute');
 const commentRoutes = require('./routes/commentRoute');
 const dbCommentRoutes = require('./routes/dbCommentRoute');
+const highlightRoutes = require('./routes/highlightRoute');
 const compressPDFRoutes = require('./routes/compressPDFRoute');
 const optimizeImageRoutes = require('./routes/optimizeImageRoute');
 const optimizeFontRoutes = require('./routes/optimizeFontRoute');
@@ -51,6 +52,7 @@ const pdfCompareRoutes = require('./routes/pdfCompareRoute');
 const pdfRepairRoutes = require('./routes/pdfRepairRoute');
 const pdfBookmarksRoutes = require('./routes/pdfBookmarksRoute');
 const pdfStatisticsRoutes = require('./routes/pdfStatisticsRoute');
+const documentTrackingController = require('./controllers/documentTrackingController');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -873,6 +875,7 @@ app.use('/pdf-redact', redactRoutes);
 app.use('/pdf-stamps', stampRoutes);
 app.use('/pdf-comments', commentRoutes);
 app.use('/pdf-comments-db', dbCommentRoutes);
+app.use('/pdf-highlight', highlightRoutes);
 app.use('/pdf-compress', compressPDFRoutes);
 app.use('/pdf-optimize-image', optimizeImageRoutes);
 app.use('/pdf', optimizeFontRoutes);
@@ -895,9 +898,18 @@ app.use('/pdf-compare', pdfCompareRoutes);
 app.use('/pdf-repair', pdfRepairRoutes);
 app.use('/pdf-bookmarks', pdfBookmarksRoutes);
 app.use('/pdf-statistics', pdfStatisticsRoutes);
+
+// Public routes for shared document access (no authentication required)
+app.get('/shared-document/:linkToken', (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  res.redirect(`${frontendUrl}/shared-document/${req.params.linkToken}`);
+});
+
+app.post('/shared-document/:linkToken', documentTrackingController.accessSharedDocument);
+app.get('/shared-download/:linkToken', documentTrackingController.downloadSharedDocument);
     
-    // Protected routes that require authentication
-    app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);
+// Protected routes that require authentication
+app.use('/document-tracking', verifyJWT(process.env.ACCESS_TOKEN_SECRET), documentTrackingRoutes);
 
 // Add debugging for route matching
 app.use((req, res, next) => {

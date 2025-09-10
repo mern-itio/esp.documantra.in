@@ -43,18 +43,18 @@ const createPdfFormController = {
       doc.pipe(writeStream);
 
       // Add form header
-      doc.fontSize(24)
-         .font('Helvetica-Bold')
-         .fillColor(styling.primaryColor)
-         .text(formName, { align: 'center' })
-         .moveDown(0.5);
+      // doc.fontSize(24)
+      //    .font('Helvetica-Bold')
+      //    .fillColor(styling.primaryColor)
+      //    .text(formName, { align: 'center' })
+      //    .moveDown(0.5);
 
-      // Add form description
-      doc.fontSize(14)
-         .font('Helvetica')
-         .fillColor(styling.secondaryColor)
-         .text('Interactive Fillable Form', { align: 'center' })
-         .moveDown(2);
+      // // Add form description
+      // doc.fontSize(14)
+      //    .font('Helvetica')
+      //    .fillColor(styling.secondaryColor)
+      //    .text('Interactive Fillable Form', { align: 'center' })
+      //    .moveDown(2);
 
       // Process form fields
       let currentY = doc.y;
