@@ -56,7 +56,29 @@ export const BatchConversion: React.FC = () => {
   }, []);
 
   const supportedInputFormats = ['pdf', 'docx', 'xls', 'xlsx'];
-  const supportedOutputFormats = ['pdf', 'docx', 'xlsx'];
+  
+  // Define supported output formats for each input type
+  const getSupportedOutputFormats = (inputType: string) => {
+    switch (inputType.toLowerCase()) {
+      case 'pdf':
+        return ['docx', 'xlsx', 'pptx', 'txt', 'html', 'epub'];
+      case 'docx':
+      case 'doc':
+        return ['pdf', 'xlsx'];
+      case 'xlsx':
+      case 'xls':
+        return ['pdf', 'docx'];
+      case 'pptx':
+      case 'ppt':
+        return ['pdf'];
+      case 'txt':
+        return ['pdf'];
+      case 'html':
+        return ['pdf'];
+      default:
+        return ['pdf'];
+    }
+  };
 
   const toolInfo = {
     name: 'Batch Conversion',
@@ -67,7 +89,7 @@ export const BatchConversion: React.FC = () => {
     popularity: 98,
     avgProcessingTime: '2-10 minutes',
     inputFormats: supportedInputFormats,
-    outputFormats: supportedOutputFormats,
+    outputFormats: ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'html', 'epub'], // All possible output formats
     features: [
       '5 individual file inputs',
       'Multiple formats',
@@ -82,22 +104,28 @@ export const BatchConversion: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Get the first supported output format for this file type
+    const inputType = getFileType(file.name);
+    const supportedFormats = getSupportedOutputFormats(inputType);
+    const defaultOutputFormat = supportedFormats[0] || 'pdf';
+
     // Update or add file at specific index
     setFiles(prev => {
       const newFiles = [...prev];
       const existingIndex = newFiles.findIndex(f => f.id === `file-${index}`);
       
       if (existingIndex >= 0) {
-        // Update existing file
+        // Update existing file and set appropriate output format
         newFiles[existingIndex] = {
           ...newFiles[existingIndex],
-          file: file
+          file: file,
+          outputFormat: defaultOutputFormat
         };
       } else {
-        // Add new file with default output format
+        // Add new file with appropriate output format
         newFiles.push({
           file: file,
-          outputFormat: 'pdf', // Default output format
+          outputFormat: defaultOutputFormat,
           id: `file-${index}`
         });
       }
@@ -137,7 +165,19 @@ export const BatchConversion: React.FC = () => {
 
   const getDefaultOutputFormat = (index: number) => {
     const fileData = getFileAtIndex(index);
-    return fileData?.outputFormat || 'pdf';
+    if (fileData?.outputFormat) {
+      return fileData.outputFormat;
+    }
+    
+    // If no file is selected, default to PDF
+    if (!fileData?.file) {
+      return 'pdf';
+    }
+    
+    // If file is selected, use the first supported output format for that input type
+    const inputType = getFileType(fileData.file.name);
+    const supportedFormats = getSupportedOutputFormats(inputType);
+    return supportedFormats[0] || 'pdf';
   };
 
   const getFormatIcon = (format: string) => {
@@ -299,11 +339,17 @@ export const BatchConversion: React.FC = () => {
                 onChange={(e) => updateOutputFormat(i, e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                {supportedOutputFormats.map(format => (
-                  <option key={format} value={format}>
-                    {format.toUpperCase()}
-                  </option>
-                ))}
+                {(() => {
+                  const fileData = getFileAtIndex(i);
+                  const inputType = fileData?.file ? getFileType(fileData.file.name) : 'pdf';
+                  const supportedFormats = getSupportedOutputFormats(inputType);
+                  
+                  return supportedFormats.map(format => (
+                    <option key={format} value={format}>
+                      {format.toUpperCase()}
+                    </option>
+                  ));
+                })()}
               </select>
               
               {/* File Input */}

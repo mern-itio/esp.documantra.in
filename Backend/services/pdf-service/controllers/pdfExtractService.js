@@ -151,6 +151,8 @@ const extractCustomSelection = async (filePath, selections, outputName = null) =
   const pageNumbers = new Set();
   
   for (const selection of selections) {
+    console.log('Processing selection:', JSON.stringify(selection, null, 2));
+    
     if (selection.type === 'page') {
       if (!Number.isInteger(selection.value) || selection.value <= 0) {
         throw new Error('Page numbers must be positive integers');
@@ -161,6 +163,12 @@ const extractCustomSelection = async (filePath, selections, outputName = null) =
       pageNumbers.add(selection.value);
     } else if (selection.type === 'range') {
       const { start, end } = selection.value;
+      
+      // Add validation for missing start or end
+      if (start === undefined || end === undefined) {
+        throw new Error(`Range selection is missing start or end value. Received: ${JSON.stringify(selection.value)}`);
+      }
+      
       if (!Number.isInteger(start) || start <= 0 || !Number.isInteger(end) || end <= 0) {
         throw new Error('Range start and end must be positive integers');
       }

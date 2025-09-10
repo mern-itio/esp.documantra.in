@@ -160,14 +160,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       const response = await documentAPI.getUserDocuments(params);
 
       if (response.success) {
-        console.log('🔍 fetchDocuments: API response:', response.data);
-        console.log('🔍 fetchDocuments: Documents array:', response.data.documents);
         
         // Transform API response to match our Document interface
         const transformedDocuments: Document[] = response.data.documents.map((doc: any) => {
-          console.log('🔍 fetchDocuments: Processing document:', doc);
-          console.log('🔍 fetchDocuments: Document _id:', doc._id);
-          console.log('🔍 fetchDocuments: Document keys:', Object.keys(doc));
           
           return {
             id: doc._id,
@@ -190,8 +185,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
             content: doc.content
           };
         });
-
-        console.log('🔍 fetchDocuments: Transformed documents:', transformedDocuments);
         set({ documents: transformedDocuments });
       }
     } catch (error: any) {

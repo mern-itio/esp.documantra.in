@@ -79,7 +79,24 @@ class AddWatermarkService {
     formData.append('fontColor', request.fontColor);
     formData.append('opacity', request.opacity.toString());
     formData.append('rotation', request.rotation.toString());
-    formData.append('previewPage', request.previewPage.toString());
+    
+    // Add page range parameters if provided
+    if (request.startPage !== undefined) {
+      formData.append('startPage', request.startPage.toString());
+    }
+    if (request.endPage !== undefined) {
+      formData.append('endPage', request.endPage);
+    }
+    if (request.excludePages !== undefined) {
+      formData.append('excludePages', request.excludePages);
+    }
+    
+    // Add previewPage for backward compatibility (default to 1 if not provided)
+    if (request.previewPage !== undefined) {
+      formData.append('previewPage', request.previewPage.toString());
+    } else {
+      formData.append('previewPage', '1');
+    }
 
     const response = await pdfApi.post(`${this.baseUrl}/preview`, formData, {
       headers: {

@@ -32,7 +32,7 @@ export const ExcelToPdf: React.FC = () => {
   // Hardcoded tool information for PDF to Word
   const toolInfo = {
     name: 'Excel to PDF',
-    description: 'Convert Excel Files PDF documents with high accuracy',
+    description: 'Convert Excel Files to PDF documents with high accuracy',
     icon: FileTextIcon,
     premium: false,
     // badge: 'Popular',

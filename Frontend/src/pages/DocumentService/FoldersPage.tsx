@@ -1,19 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Folder, 
-  FolderOpen, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Folder,
+  FolderOpen,
   FolderPlus,
   Star,
-  Archive
+  Archive,
+  Search,
+  SortAsc,
+  SortDesc,
+  ChevronRight,
+  Home
 } from 'lucide-react';
 import { folderAPI, documentAPI } from '../../services/api';
 import { Button } from '../../components/DocumentService/ui/button';
 import { Card, CardContent } from '../../components/DocumentService/ui/card';
+import { Input } from '../../components/DocumentService/ui/input';
 import { CreateFolderModal } from '../../components/DocumentService/modals/CreateFolderModal';
 import { MoveDocumentsModal } from '../../components/DocumentService/modals/MoveDocumentsModal';
 import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
 import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
+import { useDocumentStore } from '../../components/common/store/documentStore';
 import type { Document } from '../../components/common/types';
+import { cn } from '../../components/common/lib/utils';
+import { Link } from 'react-router-dom';
 
 interface FolderData {
   _id: string;
@@ -58,7 +67,6 @@ const FoldersPage: React.FC = () => {
   // const { user } = useAuth();
   const [folders, setFolders] = useState<FolderData[]>([]);
   const [currentFolder, setCurrentFolder] = useState<FolderDetails | null>(null);
-  // const [breadcrumbs, setBreadcrumbs] = useState<Array<{ id: string; name: string; color: string }>>([]);
   // const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -66,21 +74,80 @@ const FoldersPage: React.FC = () => {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [viewMode] = useState<'list' | 'grid'>('grid');
+  const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for forcing re-renders
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date' | 'docCount'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Get folders from the document store
+  const storeFolders = useDocumentStore(state => state.folders);
 
   // Load user folders
   useEffect(() => {
     loadFolders();
+    // Also load folders into the store
+    const store = useDocumentStore.getState();
+    store.fetchFolders();
   }, []);
+
+  // Debug: Monitor folders state changes
+  useEffect(() => {
+  }, [folders]);
+
+  // Listen for folder creation events from DocumentHeader
+  useEffect(() => {
+    const handleFolderCreated = () => {
+      loadFolders();
+    };
+
+    // Listen for custom event
+    window.addEventListener('folderCreated', handleFolderCreated);
+
+    return () => {
+      window.removeEventListener('folderCreated', handleFolderCreated);
+    };
+  }, []);
+
+  // Sync store folders with local state
+  useEffect(() => {
+    if (storeFolders && storeFolders.length > 0) {
+      // Transform store folders to match local FolderData interface
+      const transformedFolders: FolderData[] = storeFolders.map(folder => ({
+        _id: folder.id,
+        name: folder.name,
+        description: '', // Default value since not in store Folder interface
+        color: folder.color || '#3b82f6',
+        icon: folder.icon || 'Folder',
+        documentCount: folder.documentCount || 0,
+        folderCount: 0, // Default value since not in store Folder interface
+        totalSize: 0, // Default value since not in store Folder interface
+        isFavorite: false, // Default value since not in store Folder interface
+        isArchived: false, // Default value since not in store Folder interface
+        createdAt: folder.createdAt || new Date().toISOString(),
+        modifiedAt: folder.createdAt || new Date().toISOString(), // Use createdAt as fallback
+        ownerId: folder.ownerId || '',
+        parentId: folder.parentId || undefined, // Convert null to undefined
+        path: '' // Default value since not in store Folder interface
+      }));
+
+      setFolders(transformedFolders);
+    }
+  }, [storeFolders]);
 
   const loadFolders = async () => {
     try {
       setIsLoading(true);
       const response = await folderAPI.getUserFolders();
+
       if (response.success) {
         setFolders(response.data);
+      } else {
+        console.error('❌ Failed to load folders:', response.message);
       }
     } catch (error) {
-      console.error('Failed to load folders:', error);
+      console.error('❌ Failed to load folders:', error);
     } finally {
       setIsLoading(false);
     }
@@ -122,38 +189,67 @@ const FoldersPage: React.FC = () => {
         subfolders: [],
         documents: []
       });
-      // setBreadcrumbs([{ id: folder._id, name: folder.name, color: folder.color }]);
     }
   };
 
-  // const handleBackToRoot = () => {
-  //   setCurrentFolder(null);
-  //   setBreadcrumbs([]);
-  //   setSelectedDocuments([]);
-  // };
+  const handleBackToRoot = () => {
+    setCurrentFolder(null);
+    setSelectedDocuments([]);
+  };
 
-  const handleCreateFolder = async (folderData: { name: string; description: string; color: string; icon: string }) => {
+
+  const handleCreateFolder = useCallback(async (folderData: { name: string; description: string; color: string; icon: string }) => {
     try {
       const parentId = currentFolder?.folder._id || undefined;
+
       const response = await folderAPI.createFolder({
         ...folderData,
         parentId
       });
-      
+
+
       if (response.success) {
         setShowCreateModal(false);
-        if (currentFolder) {
-          // Refresh current folder
-          await loadFolderDetails(currentFolder.folder._id);
-        } else {
-          // Refresh root folders
-          await loadFolders();
+
+        // Force immediate state update by adding the new folder to local state
+        if (response.data) {
+          const newFolder = {
+            _id: response.data._id || response.data.id,
+            name: response.data.name,
+            description: response.data.description || '',
+            color: response.data.color || '#3b82f6',
+            icon: response.data.icon || 'Folder',
+            documentCount: 0,
+            folderCount: 0,
+            totalSize: 0,
+            isFavorite: false,
+            isArchived: false,
+            createdAt: response.data.createdAt || new Date().toISOString(),
+            modifiedAt: response.data.modifiedAt || new Date().toISOString(),
+            ownerId: response.data.ownerId || '',
+            parentId: response.data.parentId,
+            path: response.data.path || ''
+          };
+
+
+          // Add to local state immediately
+          setFolders(prev => {
+            const updated = [...prev, newFolder];
+            return updated;
+          });
         }
+
+        await loadFolders();
+
+        // Force a UI update by incrementing the refresh key
+        setRefreshKey(prev => prev + 1);
+      } else {
+        console.error('❌ Folder creation failed:', response.message);
       }
     } catch (error) {
-      console.error('Failed to create folder:', error);
+      console.error('❌ Failed to create folder:', error);
     }
-  };
+  }, [currentFolder]);
 
   const handleMoveDocuments = async (targetFolderId: string | null) => {
     try {
@@ -176,15 +272,15 @@ const FoldersPage: React.FC = () => {
   const handleDocumentSelect = (documentId: string, isSelected?: boolean) => {
     if (isSelected !== undefined) {
       // Called from DocumentCard with boolean
-      setSelectedDocuments(prev => 
-        isSelected 
+      setSelectedDocuments(prev =>
+        isSelected
           ? [...prev, documentId]
           : prev.filter(id => id !== documentId)
       );
     } else {
       // Called from checkbox onChange
-      setSelectedDocuments(prev => 
-        prev.includes(documentId) 
+      setSelectedDocuments(prev =>
+        prev.includes(documentId)
           ? prev.filter(id => id !== documentId)
           : [...prev, documentId]
       );
@@ -236,6 +332,81 @@ const FoldersPage: React.FC = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Filter and sort functions
+  const getFilteredAndSortedFolders = () => {
+    let filtered = [...folders];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(folder =>
+        folder.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (folder.description && folder.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }  
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'size':
+          comparison = a.totalSize - b.totalSize;
+          break;
+        case 'date':
+          comparison = new Date(a.modifiedAt).getTime() - new Date(b.modifiedAt).getTime();
+          break;
+        case 'docCount':
+          comparison = a.documentCount - b.documentCount;
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  };
+
+  const getFilteredAndSortedDocuments = () => {
+    if (!currentFolder) return [];
+
+    let filtered = [...currentFolder.documents];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(doc =>
+        doc.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'size':
+          comparison = a.size - b.size;
+          break;
+        case 'date':
+          comparison = new Date(a.modifiedAt).getTime() - new Date(b.modifiedAt).getTime();
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  };
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -245,54 +416,108 @@ const FoldersPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">   
+    <div key={refreshKey} className="min-h-screen bg-gray-50">
+      {/* Filter Bar */}
+      {/* Static Breadcrumb Navigation */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3">
+        <div className="max-w-7xl mx-auto">
+          <nav className="flex items-center space-x-1 text-sm">
+            {/* Root/Home */}
+            <Link to="/all-documents"
+              className={cn(
+                "flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
+
+              )}
+            >
+              <span>Document Management</span>
+            </Link>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <button
+              onClick={handleBackToRoot}
+              className="flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+            >
+              <Home className="w-4 h-4" />
+              <span>Folders</span>
+            </button>
+
+            {/* Current folder breadcrumb */}
+            {currentFolder && (
+              <>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <div className="flex items-center space-x-2 px-2 py-1 rounded-md text-gray-900 font-medium">
+                  <div
+                    className="w-3 h-3 rounded"
+                    style={{ backgroundColor: currentFolder.folder.color }}
+                  />
+                  <span>{currentFolder.folder.name}</span>
+                </div>
+              </>
+            )}
+          </nav>
+        </div>
+      </div>
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between space-x-4">
+            {/* Search and Quick Filters */}
+            <div className="flex items-center space-x-4 flex-1">
+              <div className="relative max-w-md flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search folders and documents..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4"
+                />
+              </div>
+             
+            </div>
+
+            {/* Sort and Filter Controls */}
+            <div className="flex items-center space-x-2">
+              {/* Sort Dropdown */}
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="flex items-center space-x-1"
+                >
+                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                  <span>Sort</span>
+                </Button>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="name">Name</option>
+                  <option value="size">Size</option>
+                  <option value="date">Date</option>
+                  {!currentFolder && <option value="docCount">Documents</option>}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {currentFolder ? (
           // Folder contents view
           <div className="space-y-6">
-            {/* Subfolders */}
-            {/* {currentFolder.subfolders.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Subfolders</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {currentFolder.subfolders.map((subfolder) => (
-                    <Card
-                      key={subfolder._id}
-                      className="cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() => handleFolderClick(subfolder)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className="w-10 h-10 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: subfolder.color }}
-                          >
-                            <Folder className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {subfolder.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {subfolder.documentCount} documents, {subfolder.folderCount} subfolders
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )} */}
+
 
             {/* Documents */}
-            {currentFolder.documents.length > 0 && (
+            {getFilteredAndSortedDocuments().length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
-                  {currentFolder.documents.length > 0 && (
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Documents ({getFilteredAndSortedDocuments().length})
+                  </h2>
+                  {getFilteredAndSortedDocuments().length > 0 && (
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
@@ -301,7 +526,7 @@ const FoldersPage: React.FC = () => {
                       >
                         {selectedDocuments.length === currentFolder.documents.length ? 'Deselect All' : 'Select All'}
                       </Button>
-                      
+
                       {selectedDocuments.length > 0 && (
                         <Button
                           variant="outline"
@@ -315,10 +540,10 @@ const FoldersPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {currentFolder.documents.map((document) => {
+                    {getFilteredAndSortedDocuments().map((document) => {
                       const transformedDoc = transformDocumentData(document);
                       return (
                         <div key={document._id} className="relative">
@@ -360,7 +585,7 @@ const FoldersPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {currentFolder.documents.map((document) => (
+                        {getFilteredAndSortedDocuments().map((document) => (
                           <tr key={document._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <input
@@ -426,7 +651,7 @@ const FoldersPage: React.FC = () => {
             )}
 
             {/* Empty state */}
-            {currentFolder.subfolders.length === 0 && currentFolder.documents.length === 0 && (
+            {currentFolder.subfolders.length === 0 && getFilteredAndSortedDocuments().length === 0 && (
               <div className="text-center py-12">
                 <Folder className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No items in this folder</h3>
@@ -449,7 +674,7 @@ const FoldersPage: React.FC = () => {
         ) : (
           // Root folders view
           <div className="space-y-6">
-            {folders.length === 0 ? (
+            {getFilteredAndSortedFolders().length === 0 ? (
               <div className="text-center py-12">
                 <Folder className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No folders yet</h3>
@@ -465,7 +690,7 @@ const FoldersPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {folders.map((folder) => (
+                {getFilteredAndSortedFolders().map((folder) => (
                   <Card
                     key={folder._id}
                     className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
@@ -489,12 +714,12 @@ const FoldersPage: React.FC = () => {
                             </p>
                           )}
                           <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
-                                                         <span className="flex items-center space-x-1">
-                               <div className="w-3 h-3 bg-gray-200 rounded flex items-center justify-center">
-                                 <span className="text-xs text-gray-600">D</span>
-                               </div>
-                               <span>{folder.documentCount}</span>
-                             </span>
+                            <span className="flex items-center space-x-1">
+                              <div className="w-3 h-3 bg-gray-200 rounded flex items-center justify-center">
+                                <span className="text-xs text-gray-600">D</span>
+                              </div>
+                              <span>{folder.documentCount}</span>
+                            </span>
                             <span className="flex items-center space-x-1">
                               <Folder className="h-3 w-3" />
                               <span>{folder.folderCount}</span>
@@ -503,7 +728,7 @@ const FoldersPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
                         <div className="flex items-center space-x-2">
                           {folder.isFavorite && (
@@ -529,8 +754,12 @@ const FoldersPage: React.FC = () => {
       {/* Modals */}
       <CreateFolderModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateFolder}
+        onClose={() => {
+          setShowCreateModal(false);
+        }}
+        onSubmit={async (folderData) => {
+          await handleCreateFolder(folderData);
+        }}
         parentFolderName={currentFolder?.folder.name}
       />
 

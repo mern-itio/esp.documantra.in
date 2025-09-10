@@ -686,10 +686,9 @@ const authRoutes = [
   },
   {
     path: '/documents/folder',
-    element: (
-      <DocumentLayout>
+    element: (    
         <FoldersPage />
-      </DocumentLayout>
+  
     )
   },
   {

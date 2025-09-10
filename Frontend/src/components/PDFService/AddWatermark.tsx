@@ -141,7 +141,10 @@ const AddWatermark: React.FC = () => {
           fontColor: textFormData.fontColor,
           opacity: textFormData.opacity,
           rotation: textFormData.rotation,
-          previewPage: 1
+          startPage: textFormData.startPage,
+          endPage: textFormData.endPage,
+          excludePages: textFormData.excludePages,
+          previewPage: 1 // Default value for backward compatibility
         };
 
         const response = await addWatermarkService.previewWatermark(previewRequest);

@@ -262,7 +262,7 @@ async function convertExcelToPdf(inputPath, outputPath) {
     const stream = fs.createWriteStream(outputPath);
     doc.pipe(stream);
 
-    doc.fontSize(14).text(`Excel to PDF Export - Sheet: ${sheetName}`, { align: 'center' });
+    // doc.fontSize(14).text(`Excel to PDF Export - Sheet: ${sheetName}`, { align: 'center' });
     doc.moveDown();
 
     const rowHeight = 20;
@@ -1232,6 +1232,212 @@ async function convertHtmlToPdf(inputPath, outputPath) {
 
 
 /**
+ * Convert Excel (XLSX) to DOCX using xlsx and docx packages
+ * @param {string} inputPath - Path to input Excel file
+ * @param {string} outputPath - Path where DOCX will be saved
+ * @returns {Promise<Object>} - Result object with file size
+ */
+async function convertExcelToDoc(inputPath, outputPath) {
+  try {
+    
+    // Check if input file exists
+    if (!fs.existsSync(inputPath)) {
+      throw new Error(`Input file does not exist: ${inputPath}`);
+    }
+    
+    const workbook = XLSX.readFile(inputPath);
+    
+    // Check if workbook has any sheets
+    if (!workbook.SheetNames) {
+      throw new Error('Excel file is corrupted - no SheetNames property');
+    }
+    
+    if (workbook.SheetNames.length === 0) {
+      throw new Error('Excel file contains no sheets');
+    }
+    
+    const sheetName = workbook.SheetNames[0];
+    
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Check if worksheet exists
+    if (!worksheet) {
+      throw new Error(`Sheet "${sheetName}" not found in Excel file`);
+    }
+    
+    
+    let jsonData;
+    try {
+      // Method 1: Try with header: 1
+      jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    } catch (method1Error) {
+      try {
+        // Method 2: Try without header option
+        jsonData = XLSX.utils.sheet_to_json(worksheet);
+      } catch (method2Error) {
+        try {
+          // Method 3: Try with raw option
+          jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
+        } catch (method3Error) {
+          throw new Error(`All data extraction methods failed. Last error: ${method3Error.message}`);
+        }
+      }
+    }
+    
+    
+    // Check if we have any data
+    if (!jsonData) {
+      throw new Error('Failed to extract data from Excel sheet - jsonData is null/undefined');
+    }
+    
+    if (!Array.isArray(jsonData)) {
+      jsonData = [jsonData];
+    }
+    
+    if (jsonData.length === 0) {
+      throw new Error('Excel sheet contains no data');
+    }
+    
+    
+    // Prepare all paragraphs first
+    const paragraphs = [];
+    
+   
+    
+    paragraphs.push(new Paragraph({ text: "" }));
+    
+    jsonData.forEach((row, rowIndex) => {
+      try {
+        if (Array.isArray(row) && row.length > 0) {
+          // Filter out empty cells
+          const nonEmptyCells = row.filter(cell => cell !== null && cell !== undefined && cell !== '');
+          
+          if (nonEmptyCells.length > 0) {
+            // Create a paragraph for each row
+            const rowText = nonEmptyCells.map(cell => String(cell)).join(' | ');
+            const paragraph = new Paragraph({
+              text: `${rowText}`,
+              spacing: { after: 200 }
+            });
+            paragraphs.push(paragraph);
+          }
+        } else if (row !== null && row !== undefined && row !== '') {
+          // Handle single cell values
+          const paragraph = new Paragraph({
+            text: `${String(row)}`,
+            spacing: { after: 200 }
+          });
+          paragraphs.push(paragraph);
+        }
+      } catch (rowError) {
+        console.error(`Error processing row ${rowIndex}:`, rowError);
+        // Add error row instead of failing completely
+        const errorParagraph = new Paragraph({
+          text: `Row ${rowIndex + 1}: [Error processing this row]`,
+          spacing: { after: 200 }
+        });
+        paragraphs.push(errorParagraph);
+      }
+    });
+    
+    
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: paragraphs,
+      }],
+    });
+    
+    const docBuffer = await Packer.toBuffer(doc);
+    await fs.writeFile(outputPath, docBuffer);
+    
+    const stats = await fs.stat(outputPath);
+    
+    return {
+      success: true,
+      fileSize: stats.size,
+      message: 'Excel converted to DOCX using data extraction',
+      outputFile: path.basename(outputPath),
+      extractedRows: jsonData.length,
+      sheetName: sheetName
+    };
+    
+  } catch (error) {
+    console.error('Error in Excel to DOCX conversion:', error);
+    console.error('Error stack:', error.stack);
+    throw new Error(`Failed to convert Excel to DOCX: ${error.message}`);
+  }
+}
+
+/**
+ * Convert DOCX to XLSX using mammoth and xlsx packages
+ * @param {string} inputPath - Path to input DOCX file
+ * @param {string} outputPath - Path where XLSX will be saved
+ * @returns {Promise<Object>} - Result object with file size
+ */
+async function convertDocToExcel(inputPath, outputPath) {
+  try {
+    console.log('Starting DOCX to XLSX conversion...');
+    
+    // Read the DOCX file and extract text
+    const result = await mammoth.extractRawText({ path: inputPath });
+    const textContent = result.value;
+    
+    console.log(`Extracted ${textContent.length} characters from DOCX`);
+    
+    // Split text into lines and then into cells
+    const lines = textContent.split(/\r?\n/).filter(line => line.trim().length > 0);
+    
+    // Create a simple table structure
+    const worksheetData = [];
+    
+    // Add header row
+    worksheetData.push(['Content']);
+    
+    // Add each line as a row
+    lines.forEach(line => {
+      // Split line by common delimiters (tabs, multiple spaces, commas)
+      const cells = line.split(/\t|  +|,|;/).map(cell => cell.trim()).filter(cell => cell.length > 0);
+      
+      if (cells.length > 1) {
+        // If line has multiple cells, add them as separate columns
+        worksheetData.push(cells);
+      } else {
+        // If line is single content, add it as one cell
+        worksheetData.push([line.trim()]);
+      }
+    });
+    
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    
+    // Write the XLSX file
+    XLSX.writeFile(workbook, outputPath);
+    
+    const stats = await fs.stat(outputPath);
+    
+    console.log('DOCX to XLSX conversion completed successfully.');
+    
+    return {
+      success: true,
+      fileSize: stats.size,
+      message: 'DOCX converted to XLSX using text extraction',
+      outputFile: path.basename(outputPath),
+      extractedLines: lines.length,
+      extractedCharacters: textContent.length
+    };
+    
+  } catch (error) {
+    console.error('Error in DOCX to XLSX conversion:', error);
+    throw new Error(`Failed to convert DOCX to XLSX: ${error.message}`);
+  }
+}
+
+/**
  * Clean up old files (utility function)
  * @param {string} directory - Directory to clean
  * @param {number} maxAge - Maximum age in hours
@@ -1264,6 +1470,8 @@ module.exports = {
   convertDocToPdfAlternative,
   convertPdfToExcel,
   convertExcelToPdf,
+  convertExcelToDoc,
+  convertDocToExcel,
   convertPdfToPpt,
   convertPptToPdf,
   convertPptToPdfAdvanced,
