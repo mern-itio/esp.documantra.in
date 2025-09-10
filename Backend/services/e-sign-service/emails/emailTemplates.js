@@ -8,6 +8,14 @@ const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, si
   <p><a href="${signLink}" target="_blank">Sign Document</a></p>
   <p>Thank you!</p>
 `;
+const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => `
+  <p>Hello ${recipientName},</p>
+  <p>This is a reminder to sign the document: <strong>${envelopeSubject}</strong>.</p>
+  <p>Message from sender: ${envelopeMessage || "No message provided."}</p>
+  <p>Please click the link below to review and sign the document:</p>
+  <p><a href="${signLink}" target="_blank">Sign Document</a></p>
+  <p>Thank you!</p>
+`;
 
 const envelopeCompletedTemplate = (recipientName, envelopeSubject) => `
   <p>Hello ${recipientName},</p>
@@ -18,4 +26,5 @@ const envelopeCompletedTemplate = (recipientName, envelopeSubject) => `
 module.exports = {
   signRequestTemplate,
   envelopeCompletedTemplate,
+  signReminderTemplate
 };

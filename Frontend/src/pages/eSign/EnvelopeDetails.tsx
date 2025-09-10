@@ -71,7 +71,9 @@ const EnvelopeDetails: React.FC = () => {
     completed: 'bg-green-100 text-green-800',
     expired: 'bg-red-100 text-red-800',
     voided: 'bg-gray-100 text-gray-600',
-    declined: 'bg-red-100 text-red-800'
+    declined: 'bg-red-100 text-red-800',
+    "in-progress": 'bg-yellow-100 text-yellow-800', // Added
+    "archived":'bg-red-100 text-red-800'//Added
   };
 
   const statusIcons = {
@@ -81,7 +83,9 @@ const EnvelopeDetails: React.FC = () => {
     completed: CheckCircle,
     expired: AlertCircle,
     voided: AlertCircle,
-    declined: AlertCircle
+    declined: AlertCircle,
+    "in-progress": Clock, // added
+    "archived": AlertCircle
   };
 
   const completedRecipients = envelope.recipients.filter((r: any) => r.status === 'completed' || r.status === 'signed').length;
@@ -103,6 +107,42 @@ const EnvelopeDetails: React.FC = () => {
       ipAddress: '192.168.1.1'
     });
   };
+  const envArchive = async() => {
+    try{
+        const response = await eSignApi.post('/api/e-sign/envelope/archive/'+id);
+        if(response.status ==200){
+          alert("Envelope archived successfully...");
+          setEnvelope((prevEnvelope:any) => ({
+            ...prevEnvelope,
+            status: response.data.envelope.status, // or whatever new status was set
+          }));
+        }
+    }catch (err){
+      console.log(err);
+    }
+  }
+  const envDelete = async() => {
+    try{
+        const response = await eSignApi.post('/api/e-sign/envelope/delete/'+id);
+        if(response.status ==200){
+          alert("Envelope Deleted successfully...")
+           navigate(`/e-sign/dashboard`);
+          console.log(response.data);
+        }
+    }catch (err){
+      console.log(err);
+    }
+  }
+  const envReminder = async() =>{
+    try{
+      const response = await eSignApi.post('/api/e-sign/envelope/reminder/'+id);
+      if(response.status == 200){
+        alert("Reminder has been sent to the pending recipients.");
+      }
+    }catch (err){
+      console.log(err);
+    }
+  }
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -170,22 +210,31 @@ const EnvelopeDetails: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="flex flex-wrap gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Download className="w-4 h-4" />
-            Download PDF
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <Send className="w-4 h-4" />
-            Send Reminder
-          </button>
+            {envelope?.status === 'completed' && (
+              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <Download className="w-4 h-4" />
+                  Download PDF
+              </button>
+            )}
+            {envelope?.status === 'in-progress' && (
+              <button
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() => envReminder()}
+              >
+                <Send className="w-4 h-4" />
+                Send Reminder
+              </button>
+            )}
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
             <Copy className="w-4 h-4" />
             Duplicate
           </button>
+         {envelope?.status != 'completed' && (
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
             <Edit className="w-4 h-4" />
             Edit
           </button>
+        )}
         </div>
       </div>
     </div>
@@ -355,17 +404,19 @@ const EnvelopeDetails: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+             onClick={()=>envArchive()}>
               <Archive className="w-4 h-4" />
               Archive
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+             onClick={()=>envDelete()}>
               <Trash2 className="w-4 h-4" />
               Delete
             </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            {/* <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
               <MoreHorizontal className="w-5 h-5" />
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

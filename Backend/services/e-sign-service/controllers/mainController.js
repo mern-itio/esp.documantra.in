@@ -4,8 +4,9 @@ const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const axios = require('axios');
 const sendEmail = require('../emails/sendEmail');
-const {signRequestTemplate } = require('../emails/emailTemplates');
+const {signRequestTemplate, signReminderTemplate } = require('../emails/emailTemplates');
 const mongoose = require('mongoose');
+const SignatureFields = require('../models/SignatureFields');
 const ObjectId = mongoose.Types.ObjectId;
 
 const envelopesData = async (req, res) => {
@@ -334,13 +335,23 @@ const addSignature = async (req, res) => {
   field.signature = signature; // Assuming signature is a base64 string or similar
   field.status = 'completed'; // Mark the field as completed
   await field.save();
+  // Make recipient completed in recipientPermission doc.
+    const SignedRecipient = await RecipientPermission.findOne({
+        envelopeId: field.envelopeId,
+        recipientId:field.recipientId
+      });
 
-  // if no more pending fields for the same envelope, mark envelope as completed
+    if(SignedRecipient){
+      SignedRecipient.status = 'completed';
+      await SignedRecipient.save();
+    }
+
   const pendingFields = await SignatureField.find({
     envelopeId: field.envelopeId,
     status: 'pending'
   });
     if (pendingFields.length === 0) {
+      // If no more pending fields for the same envelope, mark envelope as completed
       const envelope = await Envelope.findById(field.envelopeId);
         if (envelope) {
           envelope.status = 'completed';
@@ -383,6 +394,119 @@ const getRecipientByEmail  = async (req, res)=>{
 
 }
 
+const envelopeArchive = async (req, res) => {
+  try {
+    const envelopeId = req.params.envelopeId; 
+    const envelope = await Envelope.findById(envelopeId);
+    if(envelope){
+    // Update the status to "archived"
+    envelope.status = "archived";
+    await envelope.save();
+    return res.status(200).json({ message: "Envelope archived successfully", envelope });
+    }
+  } catch (error) {
+    console.error("Error checking envelope existence:", error);
+    return false; // In case of error, assume envelope does not exist
+  }
+}
+const envelopeDelete = async (req, res) => {
+  try {
+    const envelopeId = req.params.envelopeId; 
+     // Validate envelopeId is a valid ObjectId
+    if (!ObjectId.isValid(envelopeId)) {
+      return res.status(400).json({ message: "Invalid envelope ID." });
+    }
+    const envelope = await Envelope.findOneAndDelete({ _id: new ObjectId(envelopeId) });
+    if(envelope){
+      return res.status(200).json({ message: "Envelope deleted successfully", envelope });
+    }
+  } catch (error) {
+    console.error("Error checking envelope existence:", error);
+    return false; // In case of error, assume envelope does not exist
+  }
+}
+const envelopeReminder = async (req, res) => {
+  try {
+    const envelopeId = req.params.envelopeId;
+    const envelope = await Envelope.findById(envelopeId);
+
+    if (envelope && envelope.status === "in-progress") {
+      const pendingSignatureFields = await SignatureFields.find({
+        envelopeId: envelopeId,
+        status: "pending"
+      }).populate('recipientId');
+
+      const recipientsMap = new Map();
+      pendingSignatureFields.forEach(field => {
+        const recipient = field.recipientId;
+        if (recipient && !recipientsMap.has(recipient._id.toString())) {
+          recipientsMap.set(recipient._id.toString(), recipient);
+        }
+      });
+
+      const uniqueRecipients = Array.from(recipientsMap.values());
+
+      // Loop through unique recipients
+      for (const recipient of uniqueRecipients) {
+        const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelope._id}/${recipient._id}`;
+        const html = signReminderTemplate(recipient.name,envelope.subject,envelope.message,signLink);
+        // Send Reminder E-Mail to pending recipients
+        await sendEmail(
+            recipient.email,
+          `Reminder: Action Required: Sign "${envelope.subject}"`,
+          html
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Reminder emails processing initiated',
+        recipients: uniqueRecipients,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Envelope not in progress or not found',
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+    });
+  }
+};
+const duplicateEnvelope = async (req, res) => {
+  try {
+    const { envelopeId } = req.params;
+
+    const originalEnvelope = await Envelope.findById(envelopeId);
+    if (!originalEnvelope) {
+      return res.status(404).json({ message: "Envelope not found" });
+    }
+
+    const envelopeData = originalEnvelope.toObject();
+    delete envelopeData._id;
+    delete envelopeData.createdAt;
+    delete envelopeData.updatedAt;
+
+    envelopeData.status = "draft";
+    envelopeData.subject = `${originalEnvelope.subject || "Untitled"} (Copy)`;
+
+    const dublicateEnvelope = new Envelope(envelopeData);
+    await dublicateEnvelope.save();
+
+    return res.status(201).json({
+      message: "Envelope duplicated successfully",
+      envelope: dublicateEnvelope
+    });
+  } catch (error) {
+    console.error("Error duplicating envelope:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
 // Export functions
 module.exports = {
   envelopesData,
@@ -392,5 +516,9 @@ module.exports = {
   getSignatureFields,
   sendEnvelope,
   addSignature,
-  getRecipientByEmail
+  getRecipientByEmail,
+  envelopeArchive,
+  envelopeDelete,
+  envelopeReminder,
+  duplicateEnvelope
 };
