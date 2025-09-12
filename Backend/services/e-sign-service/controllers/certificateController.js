@@ -2,6 +2,7 @@
 const Recipient = require('../models/Recipient');
 const Envelope = require('../models/Envelope');
 const { issueCertificate } = require('../services/pkiService');
+const { logActivity } = require("../services/activityLogService");
 
 const issueCertController = async (req, res) => {
   try {
@@ -20,6 +21,11 @@ const issueCertController = async (req, res) => {
     // Issue certificate (service should NOT return privateKey)
     const cert = await issueCertificate(recipientId, envelopeId);
 
+    // Step 3: Log certificate issued action
+    await logActivity(envelopeId, "CERTIFICATE_ISSUED", "Sender", {
+      recipientId,
+      certificateId: cert.certificateId,
+    });
     // cert should only contain safe fields: certificateId, publicKey, certPem, validTill
     return res.status(201).json({
       message: 'Certificate issued successfully',

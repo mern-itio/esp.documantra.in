@@ -15,6 +15,7 @@ const SignatureFields = require('../models/SignatureFields');
 const { requestTimestamp } = require('./tsaService');
 const { decrypt } = require('../utils/keyEncryption');
 const RecipientPermission = require('../models/RecipientPermission');
+const { logActivity } = require("./activityLogService");
 
 const signer = new SignPdf();
 
@@ -162,6 +163,11 @@ async function signAndEmbed({ envelopeId, documentId, recipientId, certificateId
       signature: signatureImageBase64
     });
   }
+  await logActivity(envelopeId, 'DOC_SIGNED', 'Recipient', {
+    signatureRecordId: signatureRecord._id,
+    signedDocumentId: signedDocument._id,
+    pdfHash: signedPdfHash,
+  });
 
   await AuditTrail.create({
     envelopeId,

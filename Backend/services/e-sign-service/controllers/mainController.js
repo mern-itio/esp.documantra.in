@@ -9,6 +9,8 @@ const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
 const ObjectId = mongoose.Types.ObjectId;
 const { signAndEmbed } = require('../services/digitalSignatureService');
+const {logActivity} = require('../services/activityLogService');
+const { ActivityLogs } = require('../models/ActivityLogs');
 
 const envelopesData = async (req, res) => {
     const userId = req.user.data.id;
@@ -346,11 +348,23 @@ const addSignature = async (req, res) => {
         if (envelope) {
           envelope.status = 'completed';
           await envelope.save();
+          // Log individual field signature
+          await logActivity(envelopeId, "Envelope_Completed", "Recipient", {
+            recipientId,
+            documentId,
+            fieldId,
+            signerName,
+          });
         }
       }else{
       const envelope = await Envelope.findById(envelopeId);
         if (envelope) {
           await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+          // Log individual field signature
+          await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
+            subject:envelope.subject,
+            message:envelope.message
+          });
         }
     }
     res.status(200).json({
@@ -480,6 +494,7 @@ const duplicateEnvelope = async (req, res) => {
     delete envelopeData._id;
     delete envelopeData.createdAt;
     delete envelopeData.updatedAt;
+    delete envelopeData.recipientIds;
 
     envelopeData.status = "draft";
     envelopeData.subject = `${originalEnvelope.subject || "Untitled"} (Copy)`;
@@ -496,6 +511,15 @@ const duplicateEnvelope = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+const activityLogs = async (req, res) =>{
+  try {
+    const logs = await ActivityLogs.find({ envelopeId: req.params.envelopeId }).sort({ timestamp: -1 });
+    res.status(200).json({ logs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch activity logs' });
+  }
+}
 
 // Export functions
 module.exports = {
@@ -510,5 +534,6 @@ module.exports = {
   envelopeArchive,
   envelopeDelete,
   envelopeReminder,
-  duplicateEnvelope
+  duplicateEnvelope,
+  activityLogs
 };

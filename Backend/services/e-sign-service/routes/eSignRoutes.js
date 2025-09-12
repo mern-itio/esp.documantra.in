@@ -1,6 +1,6 @@
 const express = require('express');
 const { Upload, insertRecipient,updateEnvelope,saveSignatureFields } = require('../controllers/eSignController');
-const { envelopesData,envelopesDetail, getEnvelopeStats,envelopExists,sendEnvelope,addSignature,getRecipientByEmail,envelopeArchive,envelopeDelete,envelopeReminder  } = require('../controllers/mainController');
+const { envelopesData,envelopesDetail, getEnvelopeStats,envelopExists,sendEnvelope,addSignature,getRecipientByEmail,envelopeArchive,envelopeDelete,envelopeReminder,duplicateEnvelope,activityLogs  } = require('../controllers/mainController');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
@@ -31,5 +31,7 @@ router.get('/get-recipient/:email',getRecipientByEmail);
 router.post('/envelope/archive/:envelopeId',envelopeArchive);
 router.post('/envelope/delete/:envelopeId',envelopeDelete);
 router.post('/envelope/reminder/:envelopeId',envelopeReminder);
+router.get('/envelope/duplicate/:envelopeId', duplicateEnvelope);
+router.get('/envelope/activity-log/:envelopeId', activityLogs);
 
 module.exports = router;

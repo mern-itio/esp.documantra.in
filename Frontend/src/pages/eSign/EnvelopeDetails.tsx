@@ -23,16 +23,29 @@ import {
 import { useApp } from '../../context/AppContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { eSignApi } from '../../services/apiHelper';
+import ActionButton from '../../components/ESign/ActionButton';
 
 const EnvelopeDetails: React.FC = () => { 
   const { id } = useParams<{ id: string }>();
+  const [sending, setSending] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [duplicating, setDuplicating] = useState(false);
   const navigate = useNavigate();
   const {addAuditEntry } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
   useEffect(() => {
     fetchEnvelopeDetails();
+    fetchLogs();
   }, []);
   const [envelope, setEnvelope] = useState<any>(null);
+  const fetchLogs = async () =>{
+    try{
+      const response = await eSignApi.get(`/api/e-sign/envelope/activity-log/${id}`);
+      setLogs(response.data.logs || []);
+    }catch (err){
+      console.log(err);
+    }
+  }
 
   const fetchEnvelopeDetails = async () => {
       try {
@@ -151,6 +164,37 @@ const handleDownloadAll = () =>{
     const downloadUrl = `${import.meta.env.VITE_ESIGN_SERVICE_URL}/api/e-sign/signatures/download-all/${id}`;
   window.open(downloadUrl, '_blank');
 }
+const handleSendEnvelope = async () => {
+    if (!id) return;
+    setSending(true);
+      try {
+        await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+        alert('Envelope sent successfully!');
+        navigate('/e-sign/dashboard');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to send envelope. Try again.');
+      } finally {
+        setSending(false);
+      }
+    // In a real app, this would trigger email sending
+    navigate('/e-sign/dashboard');
+  };
+const handleDuplicate = async () =>{
+  if(!id) return;
+  setDuplicating(true);
+  try{
+    const response = await eSignApi.get(`/api/e-sign/envelope/duplicate/${id}`);
+      if(response.status== 201){
+        alert('Envelope duplicated succesfully...');
+        navigate('/e-sign/dashboard');
+      }
+  }catch (err){
+    console.log(err);
+  }finally {
+    setDuplicating(false);
+  }
+}
 
 
   const renderOverview = () => (
@@ -172,8 +216,7 @@ const handleDownloadAll = () =>{
             <p className="text-sm font-medium text-gray-700 mb-1">Progress</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                <div className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(completedRecipients / envelope.recipients.length) * 100}%` }}
                 />
               </div>
@@ -236,10 +279,24 @@ const handleDownloadAll = () =>{
                 Send Reminder
               </button>
             )}
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <Copy className="w-4 h-4" />
-            Duplicate
-          </button>
+              <ActionButton
+                onClick={handleDuplicate}
+                loading={duplicating}
+                icon={<Copy className="w-4 h-4 text-gray-700" />}
+                variant="secondary"
+              >
+              Duplicate
+              </ActionButton>
+          {envelope?.status === 'draft' && (
+            <ActionButton
+              onClick={handleSendEnvelope}
+              loading={sending}
+              icon={<Send className="w-4 h-4 text-white" />}
+              variant="primary"
+            >
+              Send Envelope
+            </ActionButton>
+          )}
          {envelope?.status != 'completed' && (
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
             <Edit className="w-4 h-4" />
@@ -360,10 +417,11 @@ const handleDownloadAll = () =>{
     </div>
   );
 
-  const renderActivity = () => (
-    <div className="space-y-4">
-      {envelope.auditTrail?.map((entry:any) => (
-        <div key={entry.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+const renderActivity = () => (
+  <div className="space-y-4">
+    {logs.length > 0 ? (
+      logs.map((entry) => (
+        <div key={entry._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start space-x-4">
             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
               <Activity className="w-5 h-5 text-gray-600" />
@@ -371,30 +429,36 @@ const handleDownloadAll = () =>{
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-semibold text-gray-900 capitalize">
-                  {entry.action.replace('_', ' ')}
+                  {entry.action.replace(/_/g, ' ')}
                 </h4>
                 <span className="text-sm text-gray-500">
                   {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-2">{entry.details}</p>
+              <p className="text-sm text-gray-600 mb-2">
+                {typeof entry.details === 'object'
+                  ? JSON.stringify(entry.details)
+                  : entry.details}
+              </p>
               <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>Actor: {entry.actor}</span>
-                <span>IP: {entry.ipAddress}</span>
-                <span>{format(new Date(entry.timestamp), 'MMM d, yyyy HH:mm')}</span>
+                <span>Type: {entry.type}</span>
               </div>
             </div>
           </div>
         </div>
-      )) || (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
-          <p className="text-gray-500">Activity will appear here as actions are taken on this envelope.</p>
-        </div>
-      )}
-    </div>
-  );
+      ))
+    ) : (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
+        <p className="text-gray-500">
+          Activity will appear here as actions are taken on this envelope.
+        </p>
+      </div>
+    )}
+  </div>
+);
+
 
   return (
     <div className="min-h-screen bg-gray-50">
