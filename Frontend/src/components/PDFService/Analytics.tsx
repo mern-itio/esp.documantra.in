@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   TrendingUp, 
@@ -10,10 +10,14 @@ import {
   Target,
   BarChart3,
   PieChart,
-  Activity
+  Activity,
+  RefreshCw,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import type { ProcessingStats } from '../../types';
 import { formatNumber, formatPercentage } from '../../utils';
+import { analyticsService, type AnalyticsData, type AnalyticsFilters } from '../../services/analyticsService';
 
 interface AnalyticsProps {
   stats: ProcessingStats;
@@ -21,27 +25,145 @@ interface AnalyticsProps {
 }
 
 export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
-  const { dailyUsage, performanceMetrics, qualityMetrics } = stats;
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('7d');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const mockChartData = [
-    { name: 'Mon', operations: 2100, users: 450 },
-    { name: 'Tue', operations: 2400, users: 520 },
-    { name: 'Wed', operations: 2200, users: 480 },
-    { name: 'Thu', operations: 2800, users: 630 },
-    { name: 'Fri', operations: 3200, users: 720 },
-    { name: 'Sat', operations: 1800, users: 380 },
-    { name: 'Sun', operations: 1600, users: 340 }
-  ];
+  // Load analytics data on component mount and when time range changes
+  useEffect(() => {
+    loadAnalyticsData();
+  }, [timeRange]);
 
-  const categoryUsage = [
-    { category: 'Conversion', usage: 35, color: 'bg-blue-500' },
-    { category: 'Editing', usage: 22, color: 'bg-green-500' },
-    { category: 'Pages', usage: 18, color: 'bg-yellow-500' },
-    { category: 'Security', usage: 12, color: 'bg-red-500' },
-    { category: 'Optimization', usage: 8, color: 'bg-purple-500' },
-    { category: 'OCR', usage: 3, color: 'bg-pink-500' },
-    { category: 'Forms', usage: 2, color: 'bg-indigo-500' }
-  ];
+  // Set up real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshAnalyticsData();
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const filters: AnalyticsFilters = { timeRange };
+      const data = await analyticsService.getAnalyticsData(filters);
+      setAnalyticsData(data);
+    } catch (err) {
+      console.error('Error loading analytics data:', err);
+      setError('Failed to load analytics data');
+      // Fallback to static data if API fails
+      setAnalyticsData(getFallbackData());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshAnalyticsData = async () => {
+    try {
+      setRefreshing(true);
+      const filters: AnalyticsFilters = { timeRange };
+      const data = await analyticsService.getAnalyticsData(filters);
+      setAnalyticsData(data);
+    } catch (err) {
+      console.error('Error refreshing analytics data:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const getFallbackData = (): AnalyticsData => {
+    const { dailyUsage, performanceMetrics, qualityMetrics } = stats;
+    return {
+      dailyUsage,
+      performanceMetrics,
+      qualityMetrics,
+      usageTrend: [
+        { date: '2024-01-01', operations: 2100, users: 450 },
+        { date: '2024-01-02', operations: 2400, users: 520 },
+        { date: '2024-01-03', operations: 2200, users: 480 },
+        { date: '2024-01-04', operations: 2800, users: 630 },
+        { date: '2024-01-05', operations: 3200, users: 720 },
+        { date: '2024-01-06', operations: 1800, users: 380 },
+        { date: '2024-01-07', operations: 1600, users: 340 }
+      ],
+      categoryUsage: [
+        { category: 'Conversion', usage: 35, color: 'bg-blue-500' },
+        { category: 'Editing', usage: 22, color: 'bg-green-500' },
+        { category: 'Pages', usage: 18, color: 'bg-yellow-500' },
+        { category: 'Security', usage: 12, color: 'bg-red-500' },
+        { category: 'Optimization', usage: 8, color: 'bg-purple-500' },
+        { category: 'OCR', usage: 3, color: 'bg-pink-500' },
+        { category: 'Forms', usage: 2, color: 'bg-indigo-500' }
+      ],
+      recentActivity: [],
+      topDocuments: []
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={onBack}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+              <p className="text-gray-600">Loading analytics data...</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !analyticsData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={onBack}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+              <p className="text-gray-600">Error loading data</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-red-900 mb-2">Failed to Load Analytics</h3>
+          <p className="text-red-700 mb-4">{error}</p>
+          <button
+            onClick={loadAnalyticsData}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analyticsData) return null;
+
+  const { dailyUsage, performanceMetrics, qualityMetrics, usageTrend, categoryUsage, recentActivity, topDocuments } = analyticsData;
 
   return (
     <div className="space-y-6">
@@ -62,11 +184,24 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-            <option>Last 7 days</option>
-            <option>Last 30 days</option>
-            <option>Last 90 days</option>
+          <select 
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d' | '1y')}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="1y">Last year</option>
           </select>
+          <button
+            onClick={refreshAnalyticsData}
+            disabled={refreshing}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh data"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
@@ -159,22 +294,28 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
           </div>
           
           <div className="space-y-4">
-            {mockChartData.map((day) => (
-              <div key={day.name} className="flex items-center space-x-4">
-                <div className="w-8 text-sm font-medium text-gray-600">{day.name}</div>
-                <div className="flex-1 flex items-center space-x-2">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${(day.operations / 3500) * 100}%` }}
-                    />
-                  </div>
-                  <div className="text-sm font-medium text-gray-900 w-16 text-right">
-                    {formatNumber(day.operations)}
+            {usageTrend.slice(-7).map((day) => {
+              const date = new Date(day.date);
+              const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+              const maxOperations = Math.max(...usageTrend.map(d => d.operations));
+              
+              return (
+                <div key={day.date} className="flex items-center space-x-4">
+                  <div className="w-8 text-sm font-medium text-gray-600">{dayName}</div>
+                  <div className="flex-1 flex items-center space-x-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${maxOperations > 0 ? (day.operations / maxOperations) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 w-16 text-right">
+                      {formatNumber(day.operations)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -308,6 +449,73 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
                 />
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity and Top Documents */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+            <Activity className="w-5 h-5 text-gray-400" />
+          </div>
+          
+          <div className="space-y-3">
+            {recentActivity.length > 0 ? (
+              recentActivity.slice(0, 5).map((activity) => (
+                <div key={activity.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {activity.action} - {activity.documentName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(activity.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p>No recent activity</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Documents */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Most Active Documents</h3>
+            <FileText className="w-5 h-5 text-gray-400" />
+          </div>
+          
+          <div className="space-y-3">
+            {topDocuments.length > 0 ? (
+              topDocuments.map((doc, index) => (
+                <div key={doc.documentId} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {doc.documentName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {doc.actionCount} actions • Last: {new Date(doc.lastAction).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p>No document activity</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

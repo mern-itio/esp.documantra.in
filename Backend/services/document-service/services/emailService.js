@@ -19,19 +19,33 @@ class EmailService {
     }
 
     try {
-      // Configure email transporter (you can use Gmail, SendGrid, etc.)
-      this.transporter = nodemailer.createTransport({
-        service: process.env.EMAIL_SERVICE || 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        },
-        // Add additional options for Gmail
-        ...(process.env.EMAIL_SERVICE === 'gmail' && {
-          secure: true,
-          port: 465
-        })
-      });
+      // Configure email transporter
+      if (process.env.EMAIL_SERVICE === 'sendgrid') {
+        // SendGrid configuration (allows custom from addresses)
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.sendgrid.net',
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'apikey',
+            pass: process.env.EMAIL_PASSWORD // SendGrid API key
+          }
+        });
+      } else {
+        // Gmail configuration (restricts from addresses)
+        this.transporter = nodemailer.createTransport({
+          service: process.env.EMAIL_SERVICE || 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+          },
+          // Add additional options for Gmail
+          ...(process.env.EMAIL_SERVICE === 'gmail' && {
+            secure: true,
+            port: 465
+          })
+        });
+      }
       
       // console.log('✅ Email service configured successfully');
       // console.log('🔍 Using service:', process.env.EMAIL_SERVICE || 'gmail');
@@ -50,7 +64,7 @@ class EmailService {
   }
 
   // Send workflow assignment notification
-  async sendWorkflowAssignment(assigneeEmail, assigneeName, workflowName, documentName, documentId, stepName, dueDate) {
+  async sendWorkflowAssignment(assigneeEmail, assigneeName, workflowName, documentName, documentId, stepName, dueDate, senderEmail = null) {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping workflow assignment email to ${assigneeEmail}`);
@@ -95,14 +109,18 @@ class EmailService {
     `;
 
     try {
+      // Use the user's email as sender
+      const fromAddress = senderEmail || process.env.EMAIL_USER;
+      const fromName = `"${assigneeName}" <${fromAddress}>`;
+      
       await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        from: fromName,
         to: assigneeEmail,
         subject: subject,
         html: htmlContent
       });
       
-      console.log(`✅ Workflow assignment email sent to ${assigneeEmail}`);
+      console.log(`✅ Workflow assignment email sent to ${assigneeEmail} from ${fromName} (on behalf of ${senderEmail})`);
       return true;
     } catch (error) {
       console.error(`❌ Failed to send workflow assignment email to ${assigneeEmail}:`, error);
@@ -111,7 +129,7 @@ class EmailService {
   }
 
   // Send workflow completion notification
-  async sendWorkflowCompletion(workflowName, documentName, completedBy, completedSteps) {
+  async sendWorkflowCompletion(workflowName, documentName, completedBy, completedSteps, senderEmail = null) {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping workflow completion email`);
@@ -143,18 +161,22 @@ class EmailService {
 
     try {
       // Send to workflow creator and all assignees
-      const recipients = [process.env.EMAIL_FROM || process.env.EMAIL_USER];
+      const recipients = [senderEmail || process.env.EMAIL_USER];
       
       for (const recipient of recipients) {
+        // Use the user's email as sender
+        const fromAddress = senderEmail || process.env.EMAIL_USER;
+        const fromName = `"${completedBy}" <${fromAddress}>`;
+        
         await this.transporter.sendMail({
-          from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+          from: fromName,
           to: recipient,
           subject: subject,
           html: htmlContent
         });
       }
       
-      console.log(`✅ Workflow completion notification sent`);
+      console.log(`✅ Workflow completion notification sent from ${fromName} (on behalf of ${senderEmail})`);
       return true;
     } catch (error) {
       console.error(`❌ Failed to send workflow completion notification:`, error);
@@ -163,7 +185,7 @@ class EmailService {
   }
 
   // Send collaborator invitation
-  async sendCollaboratorInvitation(email, documentName, documentId, inviterName, permissions) {
+  async sendCollaboratorInvitation(email, documentName, documentId, inviterName, permissions, senderEmail = null) {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping collaborator invitation email to ${email}`);
@@ -200,14 +222,18 @@ class EmailService {
     `;
 
     try {
+      // Use the user's email as sender
+      const fromAddress = senderEmail || process.env.EMAIL_USER;
+      const fromName = `"${inviterName}" <${fromAddress}>`;
+      
       await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        from: fromName,
         to: email,
         subject: subject,
         html: htmlContent
       });
       
-      console.log(`✅ Collaborator invitation email sent to ${email}`);
+      console.log(`✅ Collaborator invitation email sent to ${email} from ${fromName} (on behalf of ${senderEmail})`);
       return true;
     } catch (error) {
       console.error(`❌ Failed to send collaborator invitation email to ${email}:`, error);
@@ -216,12 +242,13 @@ class EmailService {
   }
 
   // Send document share notification
-  async sendDocumentShareNotification(email, documentName, documentId, sharerName, permission, message) {
+  async sendDocumentShareNotification(email, documentName, documentId, sharerName, permission, message, senderEmail = null) {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping document share notification to ${email}`);
       return false;
     }
+
 
     const subject = `Document Shared: ${documentName}`;
     
@@ -260,14 +287,21 @@ class EmailService {
     `;
 
     try {
+      console.log('🔍 Email Service Debug - About to send email with from:', senderEmail);
+      console.log('🔍 Email Service Debug - Authenticated user:', process.env.EMAIL_USER);
+      
+      // Use Gmail's authenticated email but show who actually sent it
+      const fromAddress = process.env.EMAIL_USER; // Gmail requires this
+      const fromName = `"${sharerName} (${senderEmail})" <${fromAddress}>`;
+      
       await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        from: fromName,
         to: email,
         subject: subject,
         html: htmlContent
       });
       
-      console.log(`✅ Document share notification sent to ${email}`);
+      console.log(`✅ Document share notification sent to ${email} from ${fromName} (on behalf of ${senderEmail})`);
       return true;
     } catch (error) {
       console.error(`❌ Failed to send document share notification to ${email}:`, error);
@@ -276,7 +310,7 @@ class EmailService {
   }
 
   // Send test email
-  async sendTestEmail() {
+  async sendTestEmail(senderEmail = null) {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping test email`);
@@ -306,14 +340,18 @@ class EmailService {
     `;
 
     try {
+      // Use the user's email as sender
+      const fromAddress = senderEmail || process.env.EMAIL_USER;
+      const toAddress = senderEmail || process.env.EMAIL_USER;
+      
       await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: process.env.EMAIL_USER,
+        from: fromAddress,
+        to: toAddress,
         subject: subject,
         html: htmlContent
       });
       
-      console.log(`✅ Test email sent successfully to ${process.env.EMAIL_USER}`);
+      console.log(`✅ Test email sent successfully to ${toAddress} from ${fromAddress}`);
       return true;
     } catch (error) {
       console.error(`❌ Failed to send test email:`, error);

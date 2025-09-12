@@ -242,10 +242,8 @@ import { mockPDFTools, mockProcessingStats } from '../data/pdfMockData';
 import { ToolsGrid } from '../components/PDFService/ToolsGrid';
 import { HelpSystem } from '../components/PDFService/HelpSystem';
 import { CloudConnector } from '../components/PDFService/CloudConnector';
-import { QualityAnalyzer } from '../components/PDFService/QualityAnalyzer';
 import { WorkflowDesigner } from '../components/PDFService/WorkflowDesigner';
 import { Analytics } from '../components/PDFService/Analytics';
-import { BatchProcessor } from '../components/PDFService/BatchProcessor';
 // import { PDFEditor } from '../components/PDFService/PDFEditor';
 // import { PDFViewer } from '../components/PDFService/PDFViewer';
 import { Header } from '../components/PDFService/Header';
@@ -280,6 +278,7 @@ import ApiServiceCommunity from '../pages/ApiService/Community/Main';
 import ApiServiceSupport from '../pages/ApiService/Support/Main';
 import PublicSignerPage from '../pages/eSign/PublicSignerPage';
 import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
+import OAuthCallback from '../pages/OAuthCallback';
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -347,8 +346,8 @@ const PDFToolsLayout = () => {
   };
 
   const handleToolSelect = (tool: PDFTool) => {
-    console.log('Tool selected:', tool);
-    console.log('Navigating to:', `/pdf-tools/${tool.id}`);
+    // console.log('Tool selected:', tool);
+    // console.log('Navigating to:', `/pdf-tools/${tool.id}`);
     // setSelectedTool(tool);
     navigate(`/pdf-tools/${tool.id}`);
 
@@ -393,13 +392,13 @@ const PDFToolsLayout = () => {
       case 'editor':
         // return <PDFEditor onBack={() => setCurrentView('tools')} />;
       case 'batch':
-        return <BatchProcessor onBack={() => setCurrentView('tools')} />;
+        return <BatchConversion onBack={() => setCurrentView('tools')} />;
       case 'analytics':
         return <Analytics stats={processingStats} onBack={() => setCurrentView('tools')} />;
       case 'workflows':
         return <WorkflowDesigner onBack={() => setCurrentView('tools')} />;
       case 'quality':
-        return <QualityAnalyzer onBack={() => setCurrentView('tools')} />;
+        return <PDFToolsQualityAnalysisPage onBack={() => setCurrentView('tools')} />;
       case 'cloud':
         return <CloudConnector onBack={() => setCurrentView('tools')} />;
       case 'help':
@@ -526,6 +525,7 @@ const guestRoutes = [
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
+  { path: '/oauth-callback', element: <OAuthCallback /> },
 
 
   // PDF Tool Pages

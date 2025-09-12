@@ -1,8 +1,12 @@
 import React from 'react';
 import QualityAnalysis from '../../components/PDFService/QualityAnalysis';
 
-const QualityAnalysisPage: React.FC = () => {
-  return <QualityAnalysis />;
+interface QualityAnalysisPageProps {
+  onBack?: () => void;
+}
+
+const QualityAnalysisPage: React.FC<QualityAnalysisPageProps> = ({ onBack }) => {
+  return <QualityAnalysis onBack={onBack} />;
 };
 
 export default QualityAnalysisPage;

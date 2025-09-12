@@ -94,7 +94,10 @@ const AddPageNumbers: React.FC = () => {
         fontSize: formData.fontSize,
         fontColor: formData.fontColor,
         format: formData.format,
-        margin: formData.margin
+        margin: formData.margin,
+        excludePages: formData.excludePages ?
+          formData.excludePages.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p)) :
+          undefined
       };
 
       // console.log('Generating preview with request:', previewRequest);

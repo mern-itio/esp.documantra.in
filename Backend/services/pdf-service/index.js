@@ -2,6 +2,8 @@ const express = require('express');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const session = require('express-session');
+const multer = require('multer');
 const pdfRoutes = require('./routes/pdfRoutes');
 const conversionRoutes = require('./routes/pdftoImage');
 const pdfTextEditRoutes = require('./routes/pdfTextEditRoutes');
@@ -52,7 +54,10 @@ const pdfCompareRoutes = require('./routes/pdfCompareRoute');
 const pdfRepairRoutes = require('./routes/pdfRepairRoute');
 const pdfBookmarksRoutes = require('./routes/pdfBookmarksRoute');
 const pdfStatisticsRoutes = require('./routes/pdfStatisticsRoute');
+const analyticsRoutes = require('./routes/analyticsRoute');
+const cloudConnectorRoutes = require('./routes/cloudConnectorRoutes');
 const documentTrackingController = require('./controllers/documentTrackingController');
+const { trackPdfOperation, trackBatchOperation } = require('./middleware/operationTracking');
 const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
@@ -66,6 +71,17 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: "*"
+}));
+
+// Session middleware for OAuth state management
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to true in production with HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
 // Configure helmet with CSP that allows iframe embedding for outputs
@@ -409,6 +425,30 @@ app.get('/pdf-stamps/preview/:filename', async (req, res) => {
   }
 });
 
+app.get('/pdf-compress/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'outputs', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error serving download file:', error);
+    res.status(500).json({ error: 'Failed to serve download file' });
+  }
+});
 // Preview route for commented files - inline display
 app.get('/pdf-comments/preview/:filename', async (req, res) => {
   try {
@@ -849,55 +889,83 @@ app.get('/converted_*.pdf', (req, res, next) => {
 
 // Note: Removed conflicting PDF route that was intercepting requests
 // PDF files are now handled by specific routes in addPageNumbersRoutes
-app.use('/pdf', pdfRoutes);
-app.use('/convert', conversionRoutes);
-app.use('/pdf-text-edit', pdfTextEditRoutes);
-app.use('/pdf-service', mergePdfRoutes);
-app.use('/pdf-split', splitPdfRoutes);
-app.use('/pdf-extract', extractPdfRoutes);
-app.use('/pdf-delete', deletePdfPagesRoutes);
-app.use('/pdf-reorder', reorderPdfPagesRoutes);
-app.use('/pdf-rotate', rotatePdfPagesRoutes);
-app.use('/pdf-crop', cropPdfPagesRoutes);
-app.use('/pdf-insert', insertPdfPagesRoutes);
-app.use('/pdf-page-numbers', addPageNumbersRoutes);
-app.use('/pdf-header-footer', addHeaderFooterRoutes);
-app.use('/pdf-password', addPasswordRoutes);
-app.use('/pdf-remove-password', removePasswordRoutes);
-app.use('/pdf-digital-signature', digitalSignatureRoutes);
-app.use('/pdf-permissions', setPermissionsRoutes);
-app.use('/pdf-watermark', addWatermarkRoutes);
-app.use('/pdf-remove-metadata', removeMetadataRoutes);
-app.use('/pdf-edit-metadata', editMetadataRoutes);
-app.use('/pdf-spell-check', spellCheckRoutes);
-app.use('/pdf-find-replace', findReplaceRoutes);
-app.use('/pdf-redact', redactRoutes);
-app.use('/pdf-stamps', stampRoutes);
-app.use('/pdf-comments', commentRoutes);
-app.use('/pdf-comments-db', dbCommentRoutes);
-app.use('/pdf-highlight', highlightRoutes);
-app.use('/pdf-compress', compressPDFRoutes);
-app.use('/pdf-optimize-image', optimizeImageRoutes);
-app.use('/pdf', optimizeFontRoutes);
-app.use('/pdf-remove-unused-objects', removeUnusedObjectsRoutes);
-app.use('/pdf-linearize', linearizePDFRoutes);
-app.use('/pdf-color-optimization', colorOptimizationRoutes);
-app.use('/pdf-quality-analysis', qualityAnalysisRoutes);
-app.use('/pdf-batch-optimization', batchOptimizationRoutes);
-app.use('/pdf-ocr', ocrRoutes);
-app.use('/pdf-make-searchable', makeSearchableRoutes);
-app.use('/pdf-extract-tables', extractTablesRoutes);
-app.use('/pdf-handwriting-recognition', handwritingRecognitionRoutes);
-app.use('/pdf-create-form', createPdfFormRoutes);
-app.use('/pdf-fill-form', fillPdfFormRoutes);
-app.use('/pdf-form-recognition', formRecognitionRoutes);
-app.use('/pdf-calculate-fields', calculateFieldsRoutes);
-app.use('/pdf-info', pdfInfoRoutes);
-app.use('/pdf-validator', pdfValidatorRoutes);
-app.use('/pdf-compare', pdfCompareRoutes);
-app.use('/pdf-repair', pdfRepairRoutes);
-app.use('/pdf-bookmarks', pdfBookmarksRoutes);
-app.use('/pdf-statistics', pdfStatisticsRoutes);
+// Apply tracking middleware to all PDF routes
+app.use('/pdf', trackPdfOperation, pdfRoutes);
+app.use('/convert', trackPdfOperation, conversionRoutes);
+app.use('/pdf-text-edit', trackPdfOperation, pdfTextEditRoutes);
+app.use('/pdf-service', trackPdfOperation, mergePdfRoutes);
+app.use('/pdf-split', trackPdfOperation, splitPdfRoutes);
+app.use('/pdf-extract', trackPdfOperation, extractPdfRoutes);
+app.use('/pdf-delete', trackPdfOperation, deletePdfPagesRoutes);
+app.use('/pdf-reorder', trackPdfOperation, reorderPdfPagesRoutes);
+app.use('/pdf-rotate', trackPdfOperation, rotatePdfPagesRoutes);
+app.use('/pdf-crop', trackPdfOperation, cropPdfPagesRoutes);
+app.use('/pdf-insert', trackPdfOperation, insertPdfPagesRoutes);
+app.use('/pdf-page-numbers', trackPdfOperation, addPageNumbersRoutes);
+app.use('/pdf-header-footer', trackPdfOperation, addHeaderFooterRoutes);
+app.use('/pdf-password', trackPdfOperation, addPasswordRoutes);
+app.use('/pdf-remove-password', trackPdfOperation, removePasswordRoutes);
+app.use('/pdf-digital-signature', trackPdfOperation, digitalSignatureRoutes);
+app.use('/pdf-permissions', trackPdfOperation, setPermissionsRoutes);
+app.use('/pdf-watermark', trackPdfOperation, addWatermarkRoutes);
+app.use('/pdf-remove-metadata', trackPdfOperation, removeMetadataRoutes);
+app.use('/pdf-edit-metadata', trackPdfOperation, editMetadataRoutes);
+app.use('/pdf-spell-check', trackPdfOperation, spellCheckRoutes);
+app.use('/pdf-find-replace', trackPdfOperation, findReplaceRoutes);
+app.use('/pdf-redact', trackPdfOperation, redactRoutes);
+app.use('/pdf-stamps', trackPdfOperation, stampRoutes);
+app.use('/pdf-comments', trackPdfOperation, commentRoutes);
+app.use('/pdf-comments-db', trackPdfOperation, dbCommentRoutes);
+app.use('/pdf-highlight', trackPdfOperation, highlightRoutes);
+app.use('/pdf-compress', trackPdfOperation, compressPDFRoutes);
+app.use('/pdf-optimize-image', trackPdfOperation, optimizeImageRoutes);
+app.use('/pdf-optimize-font', trackPdfOperation, optimizeFontRoutes);
+app.use('/pdf-remove-unused-objects', trackPdfOperation, removeUnusedObjectsRoutes);
+app.use('/pdf-linearize', trackPdfOperation, linearizePDFRoutes);
+app.use('/pdf-color-optimization', trackPdfOperation, colorOptimizationRoutes);
+app.use('/pdf-quality-analysis', trackPdfOperation, qualityAnalysisRoutes);
+app.use('/pdf-batch-optimization', trackBatchOperation, batchOptimizationRoutes);
+app.use('/pdf-ocr', trackPdfOperation, ocrRoutes);
+app.use('/pdf-make-searchable', trackPdfOperation, makeSearchableRoutes);
+app.use('/pdf-extract-tables', trackPdfOperation, extractTablesRoutes);
+app.use('/pdf-handwriting-recognition', trackPdfOperation, handwritingRecognitionRoutes);
+app.use('/pdf-create-form', trackPdfOperation, createPdfFormRoutes);
+app.use('/pdf-fill-form', trackPdfOperation, fillPdfFormRoutes);
+app.use('/pdf-form-recognition', trackPdfOperation, formRecognitionRoutes);
+app.use('/pdf-calculate-fields', trackPdfOperation, calculateFieldsRoutes);
+app.use('/pdf-info', trackPdfOperation, pdfInfoRoutes);
+app.use('/pdf-validator', trackPdfOperation, pdfValidatorRoutes);
+app.use('/pdf-compare', trackPdfOperation, pdfCompareRoutes);
+app.use('/pdf-repair', trackPdfOperation, pdfRepairRoutes);
+app.use('/pdf-bookmarks', trackPdfOperation, pdfBookmarksRoutes);
+app.use('/pdf-statistics', trackPdfOperation, pdfStatisticsRoutes);
+app.use('/analytics', verifyJWT(process.env.ACCESS_TOKEN_SECRET), analyticsRoutes);
+
+// Cloud connector routes - separate public and protected routes
+// Public routes (no authentication required)
+app.get('/cloud-connector/callback', (req, res, next) => {
+  // Import the controller directly for the callback route
+  const cloudConnectorController = require('./controllers/cloudConnectorController');
+  cloudConnectorController.connectService(req, res, next);
+});
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB limit
+  }
+});
+
+// Protected routes (authentication required)
+// Special route for file upload with multer middleware
+app.post('/cloud-connector/upload', verifyJWT(process.env.ACCESS_TOKEN_SECRET), upload.single('fileData'), (req, res, next) => {
+  const cloudConnectorController = require('./controllers/cloudConnectorController');
+  cloudConnectorController.uploadFile(req, res, next);
+});
+
+// Other cloud connector routes
+app.use('/cloud-connector', verifyJWT(process.env.ACCESS_TOKEN_SECRET), cloudConnectorRoutes);
 
 // Public routes for shared document access (no authentication required)
 app.get('/shared-document/:linkToken', (req, res) => {

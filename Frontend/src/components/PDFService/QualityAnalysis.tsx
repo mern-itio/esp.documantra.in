@@ -10,9 +10,9 @@ import type {
   // QualityAnalysisT,
   QualityAnalysisPreset,
 } from '../../types/qualityAnalysis';
-import { 
-  FileText, 
-  BarChart3, 
+import {
+  FileText,
+  BarChart3,
   CheckCircle,
   AlertCircle,
   ArrowLeft,
@@ -23,8 +23,11 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+interface QualityAnalysisProps {
+  onBack?: () => void;
+}
 
-const QualityAnalysis: React.FC = () => {
+const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<QualityAnalysisResponse | null>(null);
@@ -55,7 +58,7 @@ const QualityAnalysis: React.FC = () => {
         setError('Please select a PDF file');
         return;
       }
-      
+
       setSelectedFile(file);
       setError(null);
       setResult(null);
@@ -74,7 +77,7 @@ const QualityAnalysis: React.FC = () => {
         file: selectedFile,
         preset: selectedPreset
       });
-      
+
       setResult(response);
       setSuccess('Quality analysis completed successfully!');
     } catch (error: any) {
@@ -116,12 +119,21 @@ const QualityAnalysis: React.FC = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
-            <Link
-              to="/pdf-tools"
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
+            {onBack ? (
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            ) : (
+              <Link
+                to="/pdf-tools"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+            )}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Quality Analysis</h1>
               <p className="mt-2 text-sm text-gray-600">
@@ -152,7 +164,7 @@ const QualityAnalysis: React.FC = () => {
             />
           </label>
         </div>
-        
+
         {selectedFile && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <div className="flex items-center justify-between">
@@ -267,7 +279,7 @@ const QualityAnalysis: React.FC = () => {
               <FileText className="w-5 h-5 mr-2 text-blue-600" />
               Document Information
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">{result.analysis.totalPages}</p>
@@ -294,7 +306,7 @@ const QualityAnalysis: React.FC = () => {
               <Target className="w-5 h-5 mr-2 text-green-600" />
               Structure Analysis
             </h3>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">Structure Score</span>
@@ -302,7 +314,7 @@ const QualityAnalysis: React.FC = () => {
                   {result.analysis.structureAnalysis.structureScore}/100
                 </Badge>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">Status</span>
                 <Badge variant={result.analysis.structureAnalysis.isValid ? 'success' : 'destructive'}>
@@ -329,7 +341,7 @@ const QualityAnalysis: React.FC = () => {
               <TrendingUp className="w-5 h-5 mr-2 text-purple-600" />
               Content Analysis
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className={`text-2xl font-bold ${getQualityScoreColor(result.analysis.contentAnalysis.textQuality)}`}>
@@ -367,7 +379,7 @@ const QualityAnalysis: React.FC = () => {
               <Zap className="w-5 h-5 mr-2 text-yellow-600" />
               Performance Analysis
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className={`text-2xl font-bold ${qualityAnalysisHelpers.getLoadTimeColor(result.analysis.performanceAnalysis.loadTime)}`}>
@@ -405,7 +417,7 @@ const QualityAnalysis: React.FC = () => {
                 <Lightbulb className="w-5 h-5 mr-2 text-yellow-600" />
                 Optimization Suggestions
               </h3>
-              
+
               <div className="space-y-3">
                 {result.analysis.optimizationSuggestions.map((suggestion, index) => (
                   <div key={index} className="p-4 border rounded-lg">

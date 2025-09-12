@@ -805,7 +805,8 @@ class DocumentController {
             id,
             req.user.data.name || req.user.data.email,
             permission,
-            message
+            message,
+            req.user.data.email // Pass current user's email as sender
           );
         }
       } catch (emailError) {

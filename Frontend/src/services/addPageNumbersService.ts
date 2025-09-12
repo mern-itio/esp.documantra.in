@@ -51,6 +51,9 @@ export const addPageNumbersService = {
     formData.append('fontColor', request.fontColor);
     formData.append('format', request.format);
     formData.append('margin', request.margin.toString());
+    if (request.excludePages && request.excludePages.length > 0) {
+      formData.append('excludePages', JSON.stringify(request.excludePages));
+    }
 
     const response = await pdfApi.post('/pdf-page-numbers/preview-page-numbers', formData, {
       headers: {
