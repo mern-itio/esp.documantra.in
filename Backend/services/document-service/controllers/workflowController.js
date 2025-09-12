@@ -78,7 +78,7 @@ class WorkflowController {
       // Add workflow assignees as collaborators
       const assigneeEmails = steps.map(step => step.assignee);
       console.log(`🔍 Workflow creation: Adding collaborators for assignees:`, assigneeEmails);
-      await WorkflowController.addWorkflowCollaborators(documentId, assigneeEmails, req.user.data.name || req.user.data.email);
+      await WorkflowController.addWorkflowCollaborators(documentId, assigneeEmails, req.user.data.name || req.user.data.email, req.user.data.email);
 
       // Send email notifications to assignees
       for (const step of steps) {
@@ -90,7 +90,8 @@ class WorkflowController {
             document.name,
             documentId,
             step.name,
-            step.dueDate
+            step.dueDate,
+            req.user.data.email // Pass current user's email as sender
           );
         } catch (error) {
           console.log(`⚠️ Email notification failed for ${step.assignee}:`, error.message);
@@ -201,7 +202,8 @@ class WorkflowController {
             workflow.name,
             document.name,
             req.user.data.name || req.user.data.email,
-            workflow.steps
+            workflow.steps,
+            req.user.data.email // Pass current user's email as sender
           );
         }
       }
@@ -291,7 +293,7 @@ class WorkflowController {
   }
 
   // Helper method to add workflow collaborators
-  static async addWorkflowCollaborators(documentId, assigneeEmails, inviterName) {
+  static async addWorkflowCollaborators(documentId, assigneeEmails, inviterName, senderEmail) {
     try {
       console.log(`🔍 Adding workflow collaborators for document ${documentId}`);
       console.log(`🔍 Assignee emails:`, assigneeEmails);
@@ -344,7 +346,8 @@ class WorkflowController {
             document.name,
             documentId,
             inviterName,
-            ['edit', 'comment']
+            ['edit', 'comment'],
+            senderEmail // Pass current user's email as sender
           );
         } catch (error) {
           console.log(`⚠️ Collaborator invitation email failed for ${email}:`, error.message);

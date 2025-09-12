@@ -62,8 +62,22 @@ const addPageNumbersController = {
 
       // Parse exclude pages
       let excludePageNumbers = [];
-      if (excludePages && excludePages.length > 0) {
-        excludePageNumbers = excludePages.map(p => parseInt(p)).filter(p => !isNaN(p));
+      if (excludePages) {
+        // Handle both string and array formats
+        let pagesToExclude = excludePages;
+        if (typeof excludePages === 'string') {
+          // Parse string format (e.g., "1,2,3" or "[1,2,3]")
+          try {
+            pagesToExclude = JSON.parse(excludePages);
+          } catch (e) {
+            // If JSON parsing fails, try comma-separated values
+            pagesToExclude = excludePages.split(',').map(p => p.trim());
+          }
+        }
+        
+        if (Array.isArray(pagesToExclude) && pagesToExclude.length > 0) {
+          excludePageNumbers = pagesToExclude.map(p => parseInt(p)).filter(p => !isNaN(p) && p > 0);
+        }
       }
 
               // Determine page range
@@ -202,7 +216,8 @@ const addPageNumbersController = {
         fontSize = 12,
         fontColor = '#000000',
         format = 'Page {page} of {total}',
-        margin = 20
+        margin = 20,
+        excludePages = []
       } = req.body;
 
       // Ensure numeric parameters are properly converted
@@ -223,6 +238,26 @@ const addPageNumbersController = {
       const pages = pdfDoc.getPages();
       const totalPages = pages.length;
 
+      // Parse exclude pages
+      let excludePageNumbers = [];
+      if (excludePages) {
+        // Handle both string and array formats
+        let pagesToExclude = excludePages;
+        if (typeof excludePages === 'string') {
+          // Parse string format (e.g., "1,2,3" or "[1,2,3]")
+          try {
+            pagesToExclude = JSON.parse(excludePages);
+          } catch (e) {
+            // If JSON parsing fails, try comma-separated values
+            pagesToExclude = excludePages.split(',').map(p => p.trim());
+          }
+        }
+        
+        if (Array.isArray(pagesToExclude) && pagesToExclude.length > 0) {
+          excludePageNumbers = pagesToExclude.map(p => parseInt(p)).filter(p => !isNaN(p) && p > 0);
+        }
+      }
+
       // Parse font color
       let parsedColor;
       try {
@@ -241,6 +276,11 @@ const addPageNumbersController = {
 
        
        for (let i = 0; i < totalPages; i++) {
+         // Skip excluded pages
+         if (excludePageNumbers.includes(i + 1)) {
+           continue;
+         }
+
          const page = pages[i];
          const { width, height } = page.getSize();
          

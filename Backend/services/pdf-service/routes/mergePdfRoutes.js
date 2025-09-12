@@ -37,10 +37,6 @@ const upload = multer({
 // Merge PDFs endpoint
 router.post('/merge', upload.array('files'), async (req, res) => {
   try {
-    console.log('Merge request received:', {
-      filesCount: req.files ? req.files.length : 0,
-      body: req.body
-    });
 
     if (!req.files || req.files.length < 2) {
       return res.status(400).json({ 
@@ -53,11 +49,9 @@ router.post('/merge', upload.array('files'), async (req, res) => {
     let orderedFilenames = [];
     try {
       orderedFilenames = JSON.parse(req.body.orderedFilenames);
-      console.log('Parsed ordered filenames:', orderedFilenames);
     } catch (error) {
       // If no order specified, use upload order
       orderedFilenames = req.files.map(file => file.originalname);
-      console.log('Using upload order for filenames:', orderedFilenames);
     }
 
     // Parse options if provided
@@ -65,15 +59,10 @@ router.post('/merge', upload.array('files'), async (req, res) => {
     if (req.body.options) {
       try {
         options = JSON.parse(req.body.options);
-        console.log('Parsed options:', options);
       } catch (error) {
         console.warn('Failed to parse options:', error);
       }
-    }
-
-    console.log(`Merging ${req.files.length} PDF files...`);
-    console.log('Order:', orderedFilenames);
-    console.log('Options:', options);
+    }   
 
     // Call the merge service
     const mergedFilePath = await mergePDFs(req.files, orderedFilenames);
@@ -83,7 +72,6 @@ router.post('/merge', upload.array('files'), async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    console.log('Sending merged file:', mergedFilePath);
 
     // Send the merged file
     res.sendFile(mergedFilePath, (err) => {
@@ -147,7 +135,6 @@ router.post('/info', upload.single('file'), async (req, res) => {
         const pdfBytes = await fs.readFile(filePath);
         const pdfDoc = await PDFDocument.load(pdfBytes);
         actualPages = pdfDoc.getPageCount();
-        console.log(`PDF ${req.file.originalname}: Actual page count = ${actualPages}`);
       } catch (pdfError) {
         console.warn('Failed to get actual page count, using fallback:', pdfError.message);
         // Fallback to size-based estimation if pdf-lib fails

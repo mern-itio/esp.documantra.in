@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { FiUpload, FiFile, FiTrash2, FiCrop, FiRotateCw } from 'react-icons/fi';
+import { FiUpload, FiFile, FiTrash2, FiCrop } from 'react-icons/fi';
 import { cropPDFService } from '../../services/cropPDFService';
 import type { CropPDFResponse, CropData } from '../../types/cropPDF';
 import type { PDFInfo } from '../../types/common';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Type declarations for PDF.js
 declare global {
@@ -57,7 +58,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfPages, setPdfPages] = useState<PDFPage[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +67,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
     try {
       if (typeof window !== 'undefined' && !window.pdfjsLib) {
         const pdfjsLib = await import('pdfjs-dist');
-        
+
         // Set worker path to local file
         try {
           pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -75,11 +76,11 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
           console.warn('Failed to set PDF.js worker:', error);
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';
         }
-        
+
         // Assign to window
         window.pdfjsLib = pdfjsLib;
       }
-      
+
       return window.pdfjsLib;
     } catch (error) {
       console.error('Error loading PDF.js:', error);
@@ -92,42 +93,42 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
     try {
       setLoading(true);
       // console.log('Starting PDF rendering...');
-      
+
       const pdfjsLib = await loadPDFJS();
       // console.log('PDF.js loaded successfully');
-      
+
       const arrayBuffer = await file.arrayBuffer();
       // console.log('File converted to ArrayBuffer, size:', arrayBuffer.byteLength);
-      
+
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       // console.log('PDF document loaded, pages:', pdf.numPages);
-      
+
       const pages: PDFPage[] = [];
-      
+
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         // console.log(`Rendering page ${pageNum}...`);
         const page = await pdf.getPage(pageNum);
         const viewport = page.getViewport({ scale: 1.0 });
-        
+
         // console.log(`Page ${pageNum} viewport:`, viewport.width, 'x', viewport.height);
-        
+
         // Create canvas for this page
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d')!;
-        
+
         // Set canvas dimensions
         canvas.width = viewport.width;
         canvas.height = viewport.height;
-        
+
         // Render page to canvas
         const renderContext = {
           canvasContext: context,
           viewport: viewport
         };
-        
+
         await page.render(renderContext).promise;
         // console.log(`Page ${pageNum} rendered to canvas`);
-        
+
         pages.push({
           pageNumber: pageNum,
           canvas: canvas,
@@ -135,14 +136,14 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
           height: viewport.height
         });
       }
-      
+
       // console.log('All pages rendered, setting state...');
       setPdfPages(pages);
       setLoading(false);
     } catch (error) {
       console.error('Error rendering PDF:', error);
       setLoading(false);
-      
+
       // Provide more specific error messages
       let errorMessage = 'Unknown error occurred';
       if (error instanceof Error) {
@@ -156,7 +157,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
           errorMessage = error.message;
         }
       }
-      
+
       // Show error to user
       alert(`Failed to render PDF: ${errorMessage}\n\nCheck the browser console for more details.`);
     }
@@ -175,7 +176,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
     const initializePDFJS = async () => {
       try {
         // console.log('Initializing PDF.js on component mount...');
-        
+
         // Check if PDF.js is already loaded and fix worker path if needed
         // if (typeof window !== 'undefined' && window.pdfjsLib) {
         //   console.log('PDF.js already loaded, checking worker path...');
@@ -186,13 +187,13 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
         //     console.log('Worker path fixed to local file');
         //   }
         // }
-        
+
         await loadPDFJS();
       } catch (error) {
         console.warn('Failed to initialize PDF.js on mount:', error);
       }
     };
-    
+
     initializePDFJS();
   }, [loadPDFJS]);
 
@@ -211,7 +212,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
       setCropAreas([]);
       setCropSelection(null);
       setCurrentPage(1);
-      
+
       // Render PDF pages
       await renderPDFPages(file);
     } catch (error) {
@@ -283,11 +284,11 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
   // Handle mouse events for cropping
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!pdfContainerRef.current) return;
-    
+
     const rect = pdfContainerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     setIsSelecting(true);
     setCropSelection({
       startX: x,
@@ -301,11 +302,11 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isSelecting || !cropSelection || !pdfContainerRef.current) return;
-    
+
     const rect = pdfContainerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     setCropSelection(prev => prev ? {
       ...prev,
       endX: x,
@@ -317,32 +318,32 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
 
   const handleMouseUp = useCallback(() => {
     if (!isSelecting || !cropSelection) return;
-    
+
     setIsSelecting(false);
-    
+
     // Validate crop selection (minimum size)
     if (cropSelection.width < 20 || cropSelection.height < 20) {
       setCropSelection(null);
       return;
     }
-    
+
     // Convert to PDF coordinates
     const currentPageData = pdfPages.find(p => p.pageNumber === currentPage);
     if (currentPageData && pdfContainerRef.current) {
       const rect = pdfContainerRef.current.getBoundingClientRect();
       const scaleX = currentPageData.width / rect.width;
       const scaleY = currentPageData.height / rect.height;
-      
-              const cropData: CropData = {
-          page: currentPage,
-          cropArea: {
-            x: Math.min(cropSelection.startX, cropSelection.endY) * scaleX,
-            y: Math.min(cropSelection.startY, cropSelection.endY) * scaleY,
-            width: cropSelection.width * scaleX,
-            height: cropSelection.height * scaleY
-          }
-        };
-      
+
+      const cropData: CropData = {
+        page: currentPage,
+        cropArea: {
+          x: Math.min(cropSelection.startX, cropSelection.endY) * scaleX,
+          y: Math.min(cropSelection.startY, cropSelection.endY) * scaleY,
+          width: cropSelection.width * scaleX,
+          height: cropSelection.height * scaleY
+        }
+      };
+
       setCropAreas(prev => [...prev, cropData]);
       setCropSelection(null);
     }
@@ -396,10 +397,10 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
   const renderCurrentPage = () => {
     // console.log('renderCurrentPage called, currentPage:', currentPage);
     // console.log('pdfPages:', pdfPages);
-    
+
     const currentPageData = pdfPages.find(p => p.pageNumber === currentPage);
     // console.log('currentPageData:', currentPageData);
-    
+
     if (!currentPageData) {
       // console.log('No page data found for current page');
       return (
@@ -415,10 +416,10 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
     try {
       const dataUrl = currentPageData.canvas.toDataURL();
       // console.log('Canvas data URL generated, length:', dataUrl.length);
-      
+
       return (
         <div className="w-full h-full relative">
-          <img 
+          <img
             src={dataUrl}
             alt={`Page ${currentPage}`}
             className="w-full h-auto"
@@ -446,11 +447,10 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
       {/* File Upload Area */}
       {!pdfDocument && (
         <div
-          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
-            dragActive 
-              ? 'border-blue-500 bg-blue-50' 
+          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${dragActive
+              ? 'border-blue-500 bg-blue-50'
               : 'border-gray-300 hover:border-gray-400'
-          }`}
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -466,7 +466,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"
-            style={{cursor: 'pointer'}}
+            style={{ cursor: 'pointer' }}
           >
             Choose PDF File
           </button>
@@ -500,7 +500,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
               <button
                 onClick={removeDocument}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
-                style={{cursor: 'pointer'}}
+                style={{ cursor: 'pointer' }}
               >
                 <FiTrash2 className="h-6 w-6" />
               </button>
@@ -515,7 +515,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                 <button
                   onClick={clearAllCrops}
                   className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                  style={{cursor: 'pointer'}}
+                  style={{ cursor: 'pointer' }}
                 >
                   Clear All Crops
                 </button>
@@ -525,7 +525,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
             {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-blue-800 text-sm">
-                <strong>How to crop:</strong> Click and drag your mouse over the PDF page to select the area you want to keep. 
+                <strong>How to crop:</strong> Click and drag your mouse over the PDF page to select the area you want to keep.
                 The selected area will be highlighted in blue. You can make multiple selections on different pages.
               </p>
             </div>
@@ -536,7 +536,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                 disabled={currentPage <= 1}
                 className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FiRotateCw className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
               </button>
               <span className="text-lg font-medium text-gray-900">
                 Page {currentPage} of {pdfInfo.pages}
@@ -546,7 +546,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                 disabled={currentPage >= pdfInfo.pages}
                 className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FiRotateCw className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5" />
               </button>
             </div>
 
@@ -575,10 +575,10 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                   style={{ maxWidth: '500px', maxHeight: '100vh', border: '1px solid #ddd' }}
                 >
                   {renderCurrentPage()}
-                  
+
                   {/* Active crop selection */}
                   {cropSelection && (
-                    <div 
+                    <div
                       className="absolute border-2 border-blue-500  bg-opacity-20"
                       style={{
                         left: Math.min(cropSelection.startX, cropSelection.endX),
@@ -588,20 +588,20 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                       }}
                     />
                   )}
-                  
+
                   {/* Applied crop areas for current page */}
                   {cropAreas.filter(crop => crop.page === currentPage).map((crop, index) => {
                     const currentPageData = pdfPages.find(p => p.pageNumber === currentPage);
                     if (!currentPageData) return null;
-                    
+
                     const rect = pdfContainerRef.current?.getBoundingClientRect();
                     if (!rect) return null;
-                    
+
                     const scaleX = rect.width / currentPageData.width;
                     const scaleY = rect.height / currentPageData.height;
-                    
+
                     return (
-                      <div 
+                      <div
                         key={index}
                         className="absolute border-2 border-green-500 bg-opacity-20"
                         style={{
@@ -625,13 +625,13 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                   {cropAreas.map((crop, index) => (
                     <div key={index} className="flex items-center justify-between bg-white rounded p-3">
                       <div className="text-sm text-green-700">
-                        <span className="font-medium">Page {crop.page}</span> - 
+                        <span className="font-medium">Page {crop.page}</span> -
                         {Math.round(crop.cropArea.width)} × {Math.round(crop.cropArea.height)} pts
                       </div>
                       <button
                         onClick={() => removeCropArea(index)}
                         className="text-red-500 hover:text-red-700"
-                        style={{cursor: 'pointer'}}
+                        style={{ cursor: 'pointer' }}
                       >
                         <FiTrash2 className="w-4 h-4" />
                       </button>
@@ -647,7 +647,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                 onClick={handleCrop}
                 disabled={cropping || cropAreas.length === 0}
                 className="bg-blue-600 text-white py-4 px-8 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center mx-auto"
-                style={{cursor: 'pointer'}}
+                style={{ cursor: 'pointer' }}
               >
                 {cropping ? (
                   <>

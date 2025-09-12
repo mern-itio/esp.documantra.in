@@ -31,6 +31,7 @@ export interface PageNumberPreviewRequest {
   fontColor: string;
   format: string;
   margin: number;
+  excludePages?: number[];
 }
 
 export interface PageNumberPreviewResponse {

@@ -64,7 +64,7 @@ export const optimizeFontService = {
         });
       }
 
-      const response = await pdfApi.post('/pdf/optimize-font', formData, {
+      const response = await pdfApi.post('/pdf-optimize-font/optimize-font', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -83,7 +83,7 @@ export const optimizeFontService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await pdfApi.post('/pdf/analyze-fonts', formData, {
+      const response = await pdfApi.post('/pdf-optimize-font/analyze-fonts', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -99,7 +99,7 @@ export const optimizeFontService = {
   // Get font optimization presets
   async getFontOptimizationPresets(): Promise<FontOptimizationPreset[]> {
     try {
-      const response = await pdfApi.get('/pdf/font-optimization-presets');
+      const response = await pdfApi.get('/pdf-optimize-font/font-optimization-presets');
       return response.data;
     } catch (error) {
       console.error('Failed to get font optimization presets:', error);
@@ -110,7 +110,7 @@ export const optimizeFontService = {
   // Check font optimization tools
   async checkFontOptimizationTools(): Promise<FontOptimizationTools> {
     try {
-      const response = await pdfApi.get('/pdf/font-optimization-tools');
+      const response = await pdfApi.get('/pdf-optimize-font/font-optimization-tools');
       return response.data;
     } catch (error) {
       console.error('Failed to check font optimization tools:', error);
@@ -128,7 +128,7 @@ export const optimizeFontService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await pdfApi.post('/pdf/font-optimization-recommendations', formData, {
+      const response = await pdfApi.post('/pdf-optimize-font/font-optimization-recommendations', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -197,7 +197,7 @@ export const optimizeFontService = {
         formData.append('quality', request.quality);
       }
 
-      const response = await pdfApi.post('/pdf/preview-font-optimization', formData, {
+      const response = await pdfApi.post('/pdf-optimize-font/preview-font-optimization', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -277,7 +277,7 @@ export const optimizeFontService = {
         formData.append('quality', options.quality);
       }
 
-      const response = await pdfApi.post('/pdf/batch-optimize-fonts', formData, {
+      const response = await pdfApi.post('/pdf-optimize-font/batch-optimize-fonts', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
