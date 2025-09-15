@@ -18,7 +18,9 @@ const TrashPage: React.FC = () => {
     selectedDocuments,
     setSelectedDocuments,
     restoreFromTrash, 
-    permanentlyDelete 
+    permanentlyDelete,
+    sortBy,
+    sortOrder
   } = useDocumentStore();
 
   // Fetch deleted documents when component mounts
@@ -71,6 +73,36 @@ const TrashPage: React.FC = () => {
 
     loadDeletedDocuments();
   }, []);
+
+  // Sort documents using document store sorting
+  const sortedDocuments = deletedDocuments.sort((a, b) => {
+    let aValue: any, bValue: any;
+
+    switch (sortBy) {
+      case 'name':
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+        break;
+      case 'date':
+        aValue = new Date(a.deletedAt || a.modifiedAt);
+        bValue = new Date(b.deletedAt || b.modifiedAt);
+        break;
+      case 'size':
+        aValue = a.size;
+        bValue = b.size;
+        break;
+      case 'type':
+        aValue = a.type.toLowerCase();
+        bValue = b.type.toLowerCase();
+        break;
+      default:
+        return 0;
+    }
+
+    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {
     if (isSelected) {
@@ -169,7 +201,7 @@ const TrashPage: React.FC = () => {
 
       {/* Content */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {deletedDocuments.map((document: Document) => {
+        {sortedDocuments.map((document: Document) => {
           const isSelected = selectedDocuments.includes(document.id);
           return (
             <div key={document.id} className="relative">

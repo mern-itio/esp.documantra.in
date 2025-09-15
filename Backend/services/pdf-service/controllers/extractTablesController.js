@@ -142,22 +142,35 @@ async function processFileExtractTables(
   const outputDir = path.join(__dirname, '../outputs');
   await fs.ensureDir(outputDir);
 
-  // Convert PDF to images for table detection
-  const imagePath = await convertPDFToImage(file.path, pageRange);
+  // Convert PDF to images for table detection (all pages)
+  const imagePaths = await convertPDFToImages(file.path, pageRange);
   
-  // Perform table detection and extraction
-  const tables = await detectAndExtractTables(
-    imagePath,
-    detectionMethod,
-    language,
-    preserveFormatting,
-    extractHeaders
-  );
+  // Perform table detection and extraction on all pages
+  const allTables = [];
+  for (const { path: imagePath, pageNum } of imagePaths) {
+    const pageTables = await detectAndExtractTables(
+      imagePath,
+      detectionMethod,
+      language,
+      preserveFormatting,
+      extractHeaders,
+      pageNum
+    );
+    
+    // Add page information to each table
+    pageTables.forEach(table => {
+      table.pageNumber = pageNum;
+      table.name = `Page ${pageNum} - ${table.name}`;
+    });
+    
+    allTables.push(...pageTables);
+  }
+
 
   // Generate output file
   const outputFilename = `tables_${path.parse(file.originalname).name}_${timestamp}_${randomSuffix}`;
   const outputPath = await generateOutputFile(
-    tables,
+    allTables,
     outputFormat,
     outputDir,
     outputFilename,
@@ -165,7 +178,9 @@ async function processFileExtractTables(
   );
 
   // Cleanup temporary files
-  await fs.remove(imagePath);
+  for (const { path: imagePath } of imagePaths) {
+    await fs.remove(imagePath);
+  }
 
   const processingTime = Date.now() - startTime;
 
@@ -175,9 +190,10 @@ async function processFileExtractTables(
     downloadUrl: `/pdf-extract-tables/download/${path.basename(outputPath)}`,
     originalSize: file.size,
     processedSize: await fs.stat(outputPath).then(stats => stats.size),
-    tablesDetected: tables.length,
-    totalRows: tables.reduce((sum, table) => sum + table.rows.length, 0),
-    totalColumns: tables.reduce((sum, table) => Math.max(sum, table.columns), 0),
+    tablesDetected: allTables.length,
+    totalRows: allTables.reduce((sum, table) => sum + table.rows.length, 0),
+    totalColumns: allTables.reduce((sum, table) => Math.max(sum, table.columns), 0),
+    pagesProcessed: imagePaths.length,
     detectionMethod,
     outputFormat,
     preserveFormatting,
@@ -188,37 +204,78 @@ async function processFileExtractTables(
   };
 }
 
-async function convertPDFToImage(pdfPath, pageRange) {
+async function convertPDFToImages(pdfPath, pageRange) {
   const timestamp = Date.now();
   const randomSuffix = Math.round(Math.random() * 1E9);
   const outputDir = path.join(__dirname, '../outputs');
-  const imagePath = path.join(outputDir, `temp_${timestamp}_${randomSuffix}.png`);
+  const imagePaths = [];
 
-  // Enhanced Ghostscript command for better OCR quality
-  let gsCommand = `gs -sDEVICE=pngalpha -dNOPAUSE -dBATCH -dSAFER -dPDFSETTINGS=/printer -r600 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile="${imagePath}"`;
+  // First, get the total number of pages in the PDF
+  let totalPages = 1;
+  try {
+    // Try multiple methods to get page count
+    const methods = [
+      `gs -q -dNODISPLAY -c "(${pdfPath}) (r) file runpdfbegin pdfpagecount = quit"`,
+      `pdfinfo "${pdfPath}" | grep Pages | awk '{print $2}'`,
+      `qpdf --show-npages "${pdfPath}"`
+    ];
+    
+    for (const method of methods) {
+      try {
+        const { stdout } = await execAsync(method);
+        const pageCount = parseInt(stdout.trim());
+        if (pageCount && pageCount > 0) {
+          totalPages = pageCount;
+          break;
+        }
+      } catch (methodError) {
+        console.log(`Method failed: ${method.split(' ')[0]}`);
+        continue;
+      }
+    }
+    
+    if (totalPages === 1) {
+      console.log('Could not determine page count, defaulting to 1 page');
+    }
+  } catch (error) {
+    console.log('Could not determine page count, defaulting to 1 page');
+  }
 
+  // Determine which pages to process
+  let pagesToProcess = [];
   if (pageRange) {
-    const pages = parsePageRange(pageRange);
-    if (pages.length > 0) {
-      gsCommand += ` -dFirstPage=${pages[0]} -dLastPage=${pages[pages.length - 1]}`;
+    pagesToProcess = parsePageRange(pageRange);
+    // Filter out pages that don't exist
+    pagesToProcess = pagesToProcess.filter(page => page >= 1 && page <= totalPages);
+  } else {
+    // Process all pages if no range specified
+    pagesToProcess = Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  // Convert each page to a separate image
+  for (const pageNum of pagesToProcess) {
+    const imagePath = path.join(outputDir, `temp_${timestamp}_${randomSuffix}_page_${pageNum}.png`);
+    
+    // Enhanced Ghostscript command for better OCR quality
+    const gsCommand = `gs -sDEVICE=pngalpha -dNOPAUSE -dBATCH -dSAFER -dPDFSETTINGS=/printer -r600 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dFirstPage=${pageNum} -dLastPage=${pageNum} -sOutputFile="${imagePath}" "${pdfPath}"`;
+
+    try {
+      await execAsync(gsCommand);
+      imagePaths.push({ path: imagePath, pageNum });
+    } catch (error) {
+      // Fallback to standard settings
+      const fallbackCommand = `gs -sDEVICE=pngalpha -dNOPAUSE -dBATCH -dSAFER -dPDFSETTINGS=/printer -r300 -dFirstPage=${pageNum} -dLastPage=${pageNum} -sOutputFile="${imagePath}" "${pdfPath}"`;
+      try {
+        await execAsync(fallbackCommand);
+        imagePaths.push({ path: imagePath, pageNum });
+      } catch (fallbackError) {
+        console.error(`Failed to convert page ${pageNum}:`, fallbackError.message);
+        // Continue with other pages
+      }
     }
   }
 
-  gsCommand += ` "${pdfPath}"`;
-
-  try {
-    console.log('Converting PDF to high-quality image for OCR...');
-    await execAsync(gsCommand);
-    console.log('PDF to image conversion successful');
-    return imagePath;
-  } catch (error) {
-    console.log('High-quality conversion failed, trying fallback...');
-    // Fallback to first page only with standard settings
-    const fallbackCommand = `gs -sDEVICE=pngalpha -dNOPAUSE -dBATCH -dSAFER -dPDFSETTINGS=/printer -r300 -dFirstPage=1 -dLastPage=1 -sOutputFile="${imagePath}" "${pdfPath}"`;
-    await execAsync(fallbackCommand);
-    console.log('Fallback conversion successful');
-    return imagePath;
-  }
+  return imagePaths;
 }
 
 async function detectAndExtractTables(
@@ -226,7 +283,8 @@ async function detectAndExtractTables(
   detectionMethod,
   language,
   preserveFormatting,
-  extractHeaders
+  extractHeaders,
+  pageNum = 1
 ) {
   const tables = [];
 
@@ -238,46 +296,60 @@ async function detectAndExtractTables(
       tesseractConfig += ` --tessdata-dir ${path.join(__dirname, '..')}`;
     }
 
-    // First attempt: Use PSM 6 (uniform block of text) for better table detection
-    console.log('Attempting table extraction with PSM 6...');
-    const { stdout: textOutput } = await execAsync(`tesseract "${imagePath}" stdout ${tesseractConfig}`);
+    // Try multiple OCR approaches for better results
+    const ocrAttempts = [
+      { config: `--oem 3 --psm 6 -l ${language}`, name: 'PSM 6 (uniform block)' },
+      { config: `--oem 3 --psm 3 -l ${language}`, name: 'PSM 3 (fully automatic)' },
+      { config: `--oem 3 --psm 4 -l ${language}`, name: 'PSM 4 (single column)' },
+      { config: `--oem 3 --psm 11 -l ${language}`, name: 'PSM 11 (sparse text with OSD)' }
+    ];
     
-    // Parse the output to detect table structures
-    const lines = textOutput.split('\n').filter(line => line.trim());
-    console.log('Extracted text lines:', lines.length);
-    console.log('Sample lines:', lines.slice(0, 5));
+    let bestResult = { tables: [], lines: [], quality: 0 };
     
-    let detectedTables = parseTextForTables(lines, preserveFormatting, extractHeaders);
-    console.log('Detected tables with PSM 6:', detectedTables.length);
+    for (const attempt of ocrAttempts) {
+      try {
+        const { stdout: textOutput } = await execAsync(`tesseract "${imagePath}" stdout ${attempt.config}`);
+        
+        // Parse the output to detect table structures
+        const lines = textOutput.split('\n').filter(line => line.trim());
+        
+        if (lines.length > 0) {
+          
+          const detectedTables = parseTextForTables(lines, preserveFormatting, extractHeaders);
+          
+          // Calculate quality score based on table count and line count
+          const quality = detectedTables.length * 10 + lines.length;
+          
+          if (quality > bestResult.quality) {
+            bestResult = { tables: detectedTables, lines, quality };
+          }
+        }
+      } catch (attemptError) {
+        console.log(`OCR attempt failed with ${attempt.name}:`, attemptError.message);
+      }
+    }
     
-    tables.push(...detectedTables);
+    tables.push(...bestResult.tables);
 
-    // If no tables detected or poor quality, try alternative PSM modes
-    if (detectedTables.length === 0 || hasPoorQualityText(lines)) {
-      console.log('Poor text quality detected, trying alternative OCR modes...');
+    // If no tables detected or poor quality, try alternative approaches
+    if (bestResult.tables.length === 0 || hasPoorQualityText(bestResult.lines)) {
       
       // Try different PSM modes for better layout analysis
       const alternativeConfigs = [
-        `--oem 3 --psm 3 -l ${language}`, // Fully automatic page segmentation
-        `--oem 3 --psm 4 -l ${language}`, // Assume a single column of text
         `--oem 3 --psm 8 -l ${language}`, // Single word
         `--oem 3 --psm 13 -l ${language}`, // Raw line
-        `--oem 3 --psm 11 -l ${language}`, // Sparse text with OSD
         `--oem 3 --psm 12 -l ${language}`  // Sparse text without OSD
       ];
       
       for (const altConfig of alternativeConfigs) {
         try {
-          console.log(`Trying alternative OCR mode: ${altConfig}`);
           const { stdout: altTextOutput } = await execAsync(`tesseract "${imagePath}" stdout ${altConfig}`);
           const altLines = altTextOutput.split('\n').filter(line => line.trim());
           
-          if (hasBetterQualityText(altLines, lines)) {
-            console.log(`Better quality text found with ${altConfig}`);
+          if (hasBetterQualityText(altLines, bestResult.lines)) {
             const altTables = parseTextForTables(altLines, preserveFormatting, extractHeaders);
             
             if (altTables.length > 0) {
-              console.log(`Alternative detection with ${altConfig} found ${altTables.length} tables`);
               // Replace the tables with better quality ones
               tables.length = 0;
               tables.push(...altTables);
@@ -292,7 +364,6 @@ async function detectAndExtractTables(
 
       // If still no tables, try with different image preprocessing
   if (tables.length === 0) {
-    console.log('No tables detected with standard OCR, trying image preprocessing...');
     const preprocessedTables = await tryImagePreprocessing(imagePath, language, preserveFormatting, extractHeaders);
     if (preprocessedTables.length > 0) {
       tables.push(...preprocessedTables);
@@ -301,7 +372,6 @@ async function detectAndExtractTables(
   
   // Final fallback: try to reconstruct table from partial data
   if (tables.length === 0) {
-    console.log('No tables detected, attempting table reconstruction from partial data...');
     const reconstructedTables = await reconstructTableFromPartialData(lines, preserveFormatting, extractHeaders);
     if (reconstructedTables.length > 0) {
       tables.push(...reconstructedTables);
@@ -350,38 +420,28 @@ async function reconstructTableFromPartialData(lines, preserveFormatting, extrac
   try {
     console.log('Attempting table reconstruction from partial data...');
     
-    // Look for patterns that suggest table structure
+    // Look for lines that could be table data based on structure
     const tableData = [];
-    const potentialHeaders = [];
     
     for (const line of lines) {
       const lowerLine = line.toLowerCase();
       
-      // Check if this line contains table-related content
+      // Skip title lines
       if (lowerLine.includes('table') || lowerLine.includes('data')) {
-        continue; // Skip title lines
-      }
-      
-      // Check for potential headers
-      if (lowerLine.includes('disability') || lowerLine.includes('category') || 
-          lowerLine.includes('participants') || lowerLine.includes('ballots') ||
-          lowerLine.includes('accuracy') || lowerLine.includes('time')) {
-        potentialHeaders.push(line);
         continue;
       }
       
-      // Check for data rows
-      if (lowerLine.includes('blind') || lowerLine.includes('low vision') ||
-          lowerLine.includes('dexterity') || lowerLine.includes('mobility')) {
+      // Check if line has table-like structure (multiple words, some spacing)
+      const words = line.split(/\s+/);
+      if (words.length >= 3 && line.length > 15) {
         tableData.push(line);
       }
     }
     
     if (tableData.length > 0) {
-      console.log(`Found ${tableData.length} potential data rows for reconstruction`);
       
       // Try to reconstruct the table structure
-      const reconstructedTable = await reconstructTableStructure(tableData, potentialHeaders, preserveFormatting, extractHeaders);
+      const reconstructedTable = await reconstructTableStructure(tableData, [], preserveFormatting, extractHeaders);
       if (reconstructedTable) {
         tables.push(reconstructedTable);
       }
@@ -396,85 +456,41 @@ async function reconstructTableFromPartialData(lines, preserveFormatting, extrac
 
 async function reconstructTableStructure(dataRows, headers, preserveFormatting, extractHeaders) {
   try {
-    // Define the expected table structure based on your example
-    const expectedColumns = [
-      'Disability Category',
-      'Participants', 
-      'Ballots Completed',
-      'Ballots Incomplete/Terminated',
-      'Accuracy',
-      'Time to complete'
-    ];
-    
     // Parse the data rows
     const parsedRows = [];
     for (const row of dataRows) {
       const cells = parseTableRow(row, preserveFormatting);
-      if (cells.length >= 3) { // Minimum expected columns
+      if (cells.length >= 2) { // Minimum 2 columns
         parsedRows.push(cells);
       }
     }
     
     if (parsedRows.length === 0) return null;
     
-    // Try to map the parsed data to the expected structure
-    const mappedRows = [];
-    for (const row of parsedRows) {
-      const mappedRow = new Array(expectedColumns.length).fill('');
-      
-      // Map based on content patterns
-      for (let i = 0; i < row.length; i++) {
-        const cell = row[i].toLowerCase();
-        
-        if (cell.includes('blind') || cell.includes('low vision') || 
-            cell.includes('dexterity') || cell.includes('mobility')) {
-          mappedRow[0] = row[i]; // Disability Category
-        } else if (/^\d+$/.test(cell) && parseInt(cell) <= 10) {
-          // Participants (usually small numbers)
-          if (mappedRow[1] === '') {
-            mappedRow[1] = row[i];
-          } else if (mappedRow[2] === '') {
-            mappedRow[2] = row[i];
-          } else if (mappedRow[3] === '') {
-            mappedRow[3] = row[i];
-          }
-        } else if (cell.includes('%')) {
-          mappedRow[4] = row[i]; // Accuracy
-        } else if (cell.includes('sec') || cell.includes('n=')) {
-          mappedRow[5] = row[i]; // Time to complete
-        } else if (cell.includes('n=')) {
-          // This might be part of accuracy or time
-          if (mappedRow[4] === '') {
-            mappedRow[4] = row[i];
-          } else if (mappedRow[5] === '') {
-            mappedRow[5] = row[i];
-          }
-        }
-      }
-      
-      // Only add rows that have meaningful data
-      if (mappedRow.some(cell => cell !== '')) {
-        mappedRows.push(mappedRow);
-      }
-    }
+    // Find the maximum number of columns
+    const maxColumns = Math.max(...parsedRows.map(row => row.length));
     
-    if (mappedRows.length === 0) return null;
+    // Create generic headers if none provided
+    const genericHeaders = Array.from({ length: maxColumns }, (_, index) => `Column ${index + 1}`);
+    
+    // Normalize all rows to have the same number of columns
+    const normalizedRows = parsedRows.map(row => {
+      const normalized = [...row];
+      while (normalized.length < maxColumns) {
+        normalized.push('');
+      }
+      return normalized;
+    });
     
     // Create the reconstructed table
     const table = {
       name: 'Reconstructed Table',
-      rows: extractHeaders ? [expectedColumns, ...mappedRows] : mappedRows,
-      columns: expectedColumns.length,
-      confidence: 0.7 // Higher confidence for mapped tables
+      rows: extractHeaders ? [genericHeaders, ...normalizedRows] : normalizedRows,
+      columns: maxColumns,
+      confidence: 0.6
     };
     
-    console.log(`Successfully reconstructed table with ${table.rows.length} rows and ${table.columns} columns`);
-    console.log('Mapped structure:');
-    table.rows.forEach((row, index) => {
-      console.log(`  Row ${index}:`, row);
-    });
-    
-    return table;
+     return table;
     
   } catch (error) {
     console.log('Table structure reconstruction failed:', error.message);
@@ -547,7 +563,6 @@ async function tryImagePreprocessing(imagePath, language, preserveFormatting, ex
         if (hasBetterQualityText(processedLines, [])) {
           const processedTables = parseTextForTables(processedLines, preserveFormatting, extractHeaders);
           if (processedTables.length > 0) {
-            console.log(`Image preprocessing successful, found ${processedTables.length} tables`);
             tables.push(...processedTables);
             break;
           }
@@ -574,8 +589,7 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
   let tableStarted = false;
   let tableHeaders = [];
   let inTableSection = false;
-
-  console.log('Parsing text for tables, total lines:', lines.length);
+  let tableCount = 0;
 
   // First pass: identify potential table sections
   for (let i = 0; i < lines.length; i++) {
@@ -587,23 +601,19 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
     const isTableTitle = isTableTitleLine(line);
     const isTableHeader = isTableHeaderLine(line);
     const isTableData = isTableDataLine(line);
-    
-    console.log(`Line ${i + 1}: "${line.substring(0, 50)}..." - Title: ${isTableTitle}, Header: ${isTableHeader}, Data: ${isTableData}`);
-    
-    // Start table if we find a header OR if we find data and no table is started yet
-    if ((isTableHeader || isTableData) && !tableStarted) {
+   // Start table if we find a header OR if we find data and no table is started yet
+    // But don't start a new table if we just found a title
+    if ((isTableHeader || isTableData) && !tableStarted && !isTableTitle) {
       tableStarted = true;
       currentTable = [];
       tableHeaders = [];
       inTableSection = false;
-      console.log(`  Starting new table section with ${isTableHeader ? 'header' : 'data'}: "${line}"`);
     }
     
     if (isTableHeader && tableStarted && !inTableSection) {
       // This might be a header row
       tableHeaders = parseTableRow(line, preserveFormatting);
       inTableSection = true;
-      console.log(`  Found table headers:`, tableHeaders);
       continue;
     }
     
@@ -611,7 +621,6 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
       // This is table data
       const cells = parseTableRow(line, preserveFormatting);
       currentTable.push(cells);
-      console.log(`  Added table row with ${cells.length} cells:`, cells);
       inTableSection = true; // Mark that we're in table section
       continue;
     }
@@ -622,7 +631,6 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
       // This might be the header row
       tableHeaders = parseTableRow(line, preserveFormatting);
       inTableSection = true;
-      console.log(`  Treating first data row as headers:`, tableHeaders);
       continue;
     }
     
@@ -631,39 +639,87 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
       if (isLikelyTableContinuation(line, currentTable, tableHeaders)) {
         const cells = parseTableRow(line, preserveFormatting);
         currentTable.push(cells);
-        console.log(`  Added continuation row with ${cells.length} cells:`, cells);
       } else {
-        // Only end the table if we have a significant gap or clear end marker
-        // For now, let's be more permissive and only end on very clear non-table content
-        const isVeryDifferent = !isLikelyTableRelated(line);
+        // Check if this might be the start of a new table
+        const isNewTableStart = isTableTitleLine(line) || isTableHeaderLine(line);
         
-        // Don't end table immediately on non-table content, wait for more evidence
-        if (isVeryDifferent && currentTable.length > 0 && !isLikelyTableRelated(line)) {
-          // Check if the next few lines are also non-table content
-          let consecutiveNonTableLines = 1;
-          let hasMoreDataAhead = false;
-          
-          for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-            if (!isTableDataLine(lines[j]) && !isTableHeaderLine(lines[j])) {
-              consecutiveNonTableLines++;
-            } else {
-              hasMoreDataAhead = true;
-              break;
-            }
-          }
-          
-          // Only end table if we have many consecutive non-table lines AND no more data ahead
-          if (consecutiveNonTableLines >= 3 && !hasMoreDataAhead) {
-            // End of table section
-            console.log(`  Ending table section with ${currentTable.length} data rows and ${tableHeaders.length} headers`);
+        if (isNewTableStart && currentTable.length > 0) {
+          // Only end current table if we found a new table title (not just headers)
+          if (isTableTitleLine(line)) {
             const table = createTableFromRowsAndHeaders(tableHeaders, currentTable, extractHeaders);
             if (table.rows.length > 0) {
+              tableCount++;
+              table.name = `Table ${tableCount}`;
+              tables.push(table);
+            }
+            
+            // Start new table
+            tableStarted = true;
+            currentTable = [];
+            tableHeaders = [];
+            inTableSection = false;
+          } else if (isTableHeaderLine(line)) {
+            tableHeaders = parseTableRow(line, preserveFormatting);
+            inTableSection = true;
+          }
+        } else if (isNewTableStart && currentTable.length === 0) {
+          // Start a new table only if it's a title, not just headers
+          if (isTableTitleLine(line)) {
+            tableStarted = true;
+            currentTable = [];
+            tableHeaders = [];
+            inTableSection = false;
+          }
+        } else {
+          // Check for clear table separation patterns
+          const isClearTableEnd = isClearTableEndMarker(line);
+          
+          if (isClearTableEnd && currentTable.length > 0) {
+            // End current table
+            const table = createTableFromRowsAndHeaders(tableHeaders, currentTable, extractHeaders);
+            if (table.rows.length > 0) {
+              tableCount++;
+              table.name = `Table ${tableCount}`;
               tables.push(table);
             }
             tableStarted = false;
             currentTable = [];
             tableHeaders = [];
             inTableSection = false;
+          } else {
+            // Only end the table if we have a significant gap or clear end marker
+            const isVeryDifferent = !isLikelyTableRelated(line);
+            
+            // Don't end table immediately on non-table content, wait for more evidence
+            if (isVeryDifferent && currentTable.length > 0 && !isLikelyTableRelated(line)) {
+              // Check if the next few lines are also non-table content
+              let consecutiveNonTableLines = 1;
+              let hasMoreDataAhead = false;
+              
+              for (let j = i + 1; j < Math.min(i + 2, lines.length); j++) {
+                if (!isTableDataLine(lines[j]) && !isTableHeaderLine(lines[j]) && !isTableTitleLine(lines[j])) {
+                  consecutiveNonTableLines++;
+                } else {
+                  hasMoreDataAhead = true;
+                  break;
+                }
+              }
+              
+              // Only end table if we have consecutive non-table lines AND no more data ahead
+              if (consecutiveNonTableLines >= 3 && !hasMoreDataAhead && currentTable.length >= 3) {
+                // End of table section
+                const table = createTableFromRowsAndHeaders(tableHeaders, currentTable, extractHeaders);
+                if (table.rows.length > 0) {
+                  tableCount++;
+                  table.name = `Table ${tableCount}`;
+                  tables.push(table);
+                }
+                tableStarted = false;
+                currentTable = [];
+                tableHeaders = [];
+                inTableSection = false;
+              }
+            }
           }
         }
       }
@@ -672,16 +728,16 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
 
   // Add the last table if exists
   if (currentTable.length > 0 || tableHeaders.length > 0) {
-    console.log(`  Adding final table with ${currentTable.length} data rows and ${tableHeaders.length} headers`);
     const table = createTableFromRowsAndHeaders(tableHeaders, currentTable, extractHeaders);
     if (table.rows.length > 0) {
+      tableCount++;
+      table.name = `Table ${tableCount}`;
       tables.push(table);
     }
   }
   
   // If we have multiple tables with the same structure, merge them
   if (tables.length > 1) {
-    console.log('Merging tables with similar structure...');
     const mergedTables = [];
     const processedTables = new Set();
     
@@ -692,14 +748,15 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
       const similarTables = [currentTable];
       processedTables.add(i);
       
-      // Find tables with similar structure
+      // Find tables with similar structure (same number of columns)
       for (let j = i + 1; j < tables.length; j++) {
         if (processedTables.has(j)) continue;
         
         const otherTable = tables[j];
+        // Merge tables with same column count and reasonable data
         if (otherTable.columns === currentTable.columns && 
             otherTable.rows.length > 0 && 
-            otherTable.rows[0].length === currentTable.rows[0].length) {
+            currentTable.rows.length > 0) {
           similarTables.push(otherTable);
           processedTables.add(j);
         }
@@ -708,20 +765,21 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
       // Merge similar tables
       if (similarTables.length > 1) {
         const mergedTable = {
-          name: `Merged Table ${mergedTables.length + 1}`,
+          name: `Table ${mergedTables.length + 1}`,
           rows: [],
           columns: currentTable.columns,
           confidence: 0.9
         };
         
-        // Add headers from first table
+        // Add headers from first table (if it has headers)
         if (similarTables[0].rows.length > 0) {
           mergedTable.rows.push(similarTables[0].rows[0]);
         }
         
         // Add data rows from all tables
         for (const table of similarTables) {
-          for (let k = 1; k < table.rows.length; k++) {
+          const startIndex = similarTables[0].rows.length > 0 ? 1 : 0; // Skip header if already added
+          for (let k = startIndex; k < table.rows.length; k++) {
             mergedTable.rows.push(table.rows[k]);
           }
         }
@@ -732,80 +790,70 @@ function parseTextForTables(lines, preserveFormatting, extractHeaders) {
       }
     }
     
-    console.log(`Merged into ${mergedTables.length} tables`);
     return mergedTables;
   }
 
-  console.log('Total tables detected:', tables.length);
   return tables;
 }
 
 function isTableTitleLine(line) {
-  // Check if line contains table-related keywords
-  const tableKeywords = ['table', 'data', 'results', 'summary', 'statistics', 'information'];
+  // Check if line looks like a table title based on structure
   const lowerLine = line.toLowerCase();
-  return tableKeywords.some(keyword => lowerLine.includes(keyword));
+  
+  // Check for table numbering patterns
+  const hasTableNumber = /\btable\s+\d+/i.test(line) || /\bfigure\s+\d+/i.test(line);
+  
+  // Check for lines that start with "Table" followed by a number or colon
+  const hasTableStart = /^table\s*\d*:?/i.test(line.trim());
+  
+  // Check for page references like "Page 1 - Table", "Page 2 - Table"
+  const hasPageReference = /^page\s+\d+\s*-\s*table/i.test(line.trim());
+  
+  // Check for lines that are likely titles (short, no numbers, reasonable length)
+  const isShortTitle = line.length < 50 && !/\d/.test(line) && line.length > 3 && line.length < 30;
+  
+  return hasTableNumber || hasTableStart || hasPageReference || isShortTitle;
 }
 
 function isTableHeaderLine(line) {
-  // Check if line looks like table headers
+  // Check if line looks like table headers based on structure, not content
   const words = line.split(/\s+/);
   const lowerLine = line.toLowerCase();
   
-  // Check for common table header patterns first
-  const headerPatterns = [
-    'disability category',
-    'participants',
-    'ballots',
-    'accuracy',
-    'time to complete',
-    'results'
-  ];
-  
-  const hasHeaderPattern = headerPatterns.some(pattern => lowerLine.includes(pattern));
-  
-  // If it has header patterns, it's likely a header
-  if (hasHeaderPattern) {
-    return true;
+  // Filter out table titles and page references
+  if (isTableTitleLine(line)) {
+    return false;
   }
   
-  // Check for specific header content that matches your table
-  if (lowerLine.includes('disability') || lowerLine.includes('category') ||
-      lowerLine.includes('participants') || lowerLine.includes('ballots') ||
-      lowerLine.includes('accuracy') || lowerLine.includes('time') ||
-      lowerLine.includes('complete')) {
-    return true;
+  // Filter out garbled text
+  const specialCharCount = (line.match(/[^a-zA-Z0-9\s.,;:()%$€£¥°'"-]/g) || []).length;
+  const specialCharRatio = specialCharCount / line.length;
+  if (specialCharRatio > 0.3) {
+    return false;
   }
   
-  // More specific checks for your table structure
-  // Look for lines that contain multiple header-like words
-  const headerWords = ['disability', 'category', 'participants', 'ballots', 'accuracy', 'time', 'complete'];
-  const headerWordCount = headerWords.filter(word => lowerLine.includes(word)).length;
-  
-  if (headerWordCount >= 2) {
+  // Check for specific header patterns like "ID Name Score"
+  if (lowerLine.includes('id') && lowerLine.includes('name') && lowerLine.includes('score')) {
     return true;
   }
   
   // Check for consistent spacing (at least 2 spaces between words)
   const spaces = line.match(/\s{2,}/g);
   if (spaces && spaces.length >= 2) {
-    // Additional check: headers usually don't contain numbers
+    // Headers usually don't contain numbers
     const hasNumbers = /\d/.test(line);
     if (!hasNumbers) {
       return true;
     }
   }
   
-  // Check for garbled OCR text that might be headers
-  // Look for patterns like "FE EC Nl ial" which might be "Disability Category"
+  // Check for multiple words that could be headers
   if (words.length >= 3) {
     const hasNumbers = /\d/.test(line);
     if (!hasNumbers) {
-      // Check if this looks like it could be a header row
-      const hasConsistentLength = words.every(word => word.length >= 2);
-      // But exclude clearly garbled text like "FE EC Nl ial"
-      const isGarbled = lowerLine.includes('fe') && lowerLine.includes('ec') && lowerLine.includes('nl');
-      if (hasConsistentLength && !isGarbled) {
+      // Check if words have reasonable length (not too short, not garbled)
+      const hasReasonableWords = words.every(word => word.length >= 2 && word.length <= 20);
+      if (hasReasonableWords) {
         return true;
       }
     }
@@ -815,153 +863,73 @@ function isTableHeaderLine(line) {
 }
 
 function isTableDataLine(line) {
-  // Enhanced table data detection
+  // Simple table data detection based on actual content structure
   const words = line.split(/\s+/);
-  
-  // Check for specific table data patterns from your example
   const lowerLine = line.toLowerCase();
   
-  // FIRST: Filter out clearly garbled OCR text that's not table data
-  const garbledPatterns = [
-    'fe ec nl ial',  // Garbled "Disability Category"
-    'nl ee',         // Garbled text
-    'ma i ho no id iid', // Garbled text
-    'a a il il'      // Garbled text
-  ];
-  
-  if (garbledPatterns.some(pattern => lowerLine.includes(pattern))) {
+  // Filter out table titles and page references
+  if (isTableTitleLine(line)) {
     return false;
   }
   
-  // Additional specific checks for common garbled patterns
-  if (lowerLine.includes('nl') && lowerLine.includes('ee')) {
-    return false; // "nl ee" pattern
+  // Filter out lines that look like headers (ID, Name, Score)
+  if (lowerLine.includes('id') && lowerLine.includes('name') && lowerLine.includes('score')) {
+    return false;
   }
   
-  if (lowerLine.includes('ma') && lowerLine.includes('i') && lowerLine.includes('ho')) {
-    return false; // "ma I HO" pattern
+  // Filter out lines that are just "Page X - Table"
+  if (/^page\s+\d+\s*-\s*table$/i.test(line.trim())) {
+    return false;
   }
   
-  if (lowerLine.includes('a a il il')) {
-    return false; // "A A il il" pattern
+  // Filter out clearly garbled OCR text
+  const specialCharCount = (line.match(/[^a-zA-Z0-9\s.,;:()%$€£¥°'"-]/g) || []).length;
+  const specialCharRatio = specialCharCount / line.length;
+  if (specialCharRatio > 0.4) {
+    return false;
   }
   
-  // Special case for very short mobility-related lines (check this FIRST, before word count)
-  if (lowerLine.includes('ow') || lowerLine.includes('ee') || lowerLine.includes('mobility')) {
-    return true;
+  // Filter out lines with too many single characters (garbled OCR)
+  const singleCharWords = words.filter(word => word.length === 1 && /[a-zA-Z]/.test(word));
+  const singleCharRatio = singleCharWords.length / words.length;
+  if (singleCharRatio > 0.5) {
+    return false;
   }
   
-  // Special case: disability category rows that might be shorter
-  if (lowerLine.includes('blind') || lowerLine.includes('low vision') || 
-      lowerLine.includes('dexterity') || lowerLine.includes('mobility')) {
-    return true;
-  }
-  
-  // General filtering for poor quality lines
-  // Filter out lines that are too short and don't contain meaningful data
-  if (line.length < 10) {
+  // Filter out very short lines unless they contain numbers
+  if (line.length < 8) {
     const hasNumbers = /\d/.test(line);
-    const hasPercentage = line.includes('%');
-    const hasSec = line.includes('sec');
-    if (!hasNumbers && !hasPercentage && !hasSec) {
+    if (!hasNumbers) {
       return false;
     }
   }
   
-  // Filter out lines with mostly single characters (garbled OCR)
-  const singleCharWords = words.filter(word => word.length === 1 && /[a-zA-Z]/.test(word));
-  if (singleCharWords.length > 0 && singleCharWords.length >= words.length * 0.5) {
-    return false;
-  }
-  
-  // Must have multiple words (but allow exceptions for special cases above)
-  if (words.length < 3) return false;
-  
-  // Check for consistent spacing (at least 2 spaces between words)
-  const spaces = line.match(/\s{2,}/g);
+  // Must have at least 2 words
+  if (words.length < 2) return false;
   
   // Check for mixed content (text and numbers) which is typical in table data
   const hasNumbers = /\d/.test(line);
   const hasLetters = /[a-zA-Z]/.test(line);
   const hasMixedContent = hasNumbers && hasLetters;
   
-  // Check for percentage signs, units, etc. which are common in table data
-  const hasSpecialChars = /[%$€£¥°'"]/.test(line);
+  // Check for consistent spacing (at least 2 spaces between words)
+  const spaces = line.match(/\s{2,}/g);
   
-  // Check for consistent structure (similar to previous methods but more robust)
-  const isLongEnough = line.length > 20;
+  // Check for specific patterns like "User X" or "X User Y" or "X | User Y | Z"
+  const hasUserPattern = /user\s+\d+/i.test(line) || /\d+\s+user\s+\d+/i.test(line) || /\d+\s*\|\s*user\s+\d+/i.test(line);
   
-  const dataPatterns = [
-    'blind',
-    'low vision',
-    'dexterity',
-    'mobility',
-    'sec',
-    'n=',
-    '%'
-  ];
-  
-  const hasDataPattern = dataPatterns.some(pattern => lowerLine.includes(pattern));
-  
-  // Exclude descriptive/subtitle text that might be mistaken for table data
-  const isDescriptiveText = lowerLine.includes('example') || 
-                           lowerLine.includes('data table') ||
-                           lowerLine.includes('this is') ||
-                           lowerLine.includes('of a');
-  
-  if (isDescriptiveText) {
-    return false;
-  }
-  
-
-  
-  // More permissive detection for your specific case
-  // If it has the data patterns and mixed content, it's likely table data
-  if (hasDataPattern && hasMixedContent && words.length >= 5) {
-    return true;
-  }
-  
-  // Alternative: if it has data patterns and is long enough, consider it table data
-  if (hasDataPattern && isLongEnough && words.length >= 4) {
-    return true;
-  }
-  
-  // Super permissive: if we're already in a table section and this line has any content,
-  // consider it potentially part of the table
-  if (lowerLine.length > 0 && !lowerLine.includes('example') && !lowerLine.includes('data table')) {
-    // Check if this might be a continuation of table data
-    const hasAnyContent = lowerLine.length > 2;
-    if (hasAnyContent) {
-      return true;
-    }
-  }
-  
-  // Final fallback: if we're in a table context and the line has any meaningful content
-  if (lowerLine.length > 0 && !lowerLine.includes('example') && !lowerLine.includes('data table')) {
-    // Additional check: filter out clearly garbled text
-    const words = line.split(/\s+/);
-    const hasGarbledText = words.some(word => word.length === 1 && /[a-zA-Z]/.test(word)) && 
-                           words.filter(word => word.length === 1).length > words.length * 0.3;
-    
-    // Don't treat garbled text as table data
-    if (hasGarbledText) {
-      return false;
-    }
-    
-    return true;
-  }
-  
-  // Combine indicators (more permissive)
+  // Basic indicators for table data
   const indicators = [
-    spaces && spaces.length >= 2, // Optional spacing
-    words.length >= 3,            // Reduced word requirement
-    hasMixedContent,
-    isLongEnough,
-    hasDataPattern
+    spaces && spaces.length >= 1, // Has some spacing
+    words.length >= 2,            // Has multiple words
+    hasMixedContent,              // Has both text and numbers
+    hasNumbers,                   // Has numbers
+    line.length > 10,             // Is reasonably long
+    hasUserPattern                // Has user pattern
   ];
   
   const positiveIndicators = indicators.filter(Boolean).length;
-  return positiveIndicators >= 2; // Reduced threshold from 3 to 2
+  return positiveIndicators >= 2; // Need at least 2 indicators (reduced from 3)
 }
 
 function isLikelyTableContinuation(line, currentTable, tableHeaders) {
@@ -981,17 +949,8 @@ function isLikelyTableContinuation(line, currentTable, tableHeaders) {
 }
 
 function isLikelyTableRelated(line) {
-  // Check if the line is likely related to table content
+  // Check if the line is likely related to table content based on structure
   const lowerLine = line.toLowerCase();
-  
-  // Check for table-related keywords
-  const tableKeywords = [
-    'blind', 'low vision', 'dexterity', 'mobility',
-    'participants', 'ballots', 'accuracy', 'time',
-    'sec', 'n=', '%', 'completed', 'incomplete'
-  ];
-  
-  const hasTableKeywords = tableKeywords.some(keyword => lowerLine.includes(keyword));
   
   // Check for numbers (common in table data)
   const hasNumbers = /\d/.test(line);
@@ -1000,8 +959,34 @@ function isLikelyTableRelated(line) {
   const hasLetters = /[a-zA-Z]/.test(line);
   const hasMixedContent = hasNumbers && hasLetters;
   
-  // If it has table keywords or mixed content, it's likely table-related
-  return hasTableKeywords || hasMixedContent;
+  // Check for multiple words (typical table structure)
+  const words = line.split(/\s+/);
+  const hasMultipleWords = words.length >= 2;
+  
+  // If it has mixed content and multiple words, it's likely table-related
+  return hasMixedContent && hasMultipleWords;
+}
+
+function isClearTableEndMarker(line) {
+  // Check for clear indicators that a table has ended
+  const lowerLine = line.toLowerCase();
+  
+  // Check for footnote patterns
+  const hasFootnotes = /^\(\d+\)/.test(line.trim());
+  
+  // Check for empty lines or very short lines that might indicate table end
+  const isEmptyOrShort = line.trim().length === 0 || line.trim().length < 3;
+  
+  // Check for new table titles that indicate end of previous table
+  const isNewTableTitle = /^table\s*\d*:?/i.test(line.trim()) || /^page\s+\d+\s*-\s*table/i.test(line.trim());
+  
+  // Check for lines that are clearly section headers or titles (long descriptive text)
+  const isSectionHeader = line.length > 30 && !/\d/.test(line) && lowerLine.includes(' ');
+  
+  // Don't treat single numbers as table end markers (they might be part of the data)
+  const isSingleNumber = /^\d+$/.test(line.trim());
+  
+  return (hasFootnotes || isEmptyOrShort || isNewTableTitle || isSectionHeader) && !isSingleNumber;
 }
 
 function parseTableRow(line, preserveFormatting) {
@@ -1043,125 +1028,34 @@ function parseTableRow(line, preserveFormatting) {
         cells.push(lastCell);
       }
     } else {
-          // Simple 6-column parsing for your specific table structure
+      // Simple parsing based on spacing
       const parts = line.split(/\s+/);
       
-      // Column 1: Disability Category (first 1-2 words)
-      let category = '';
-      let i = 0;
+      // Try to split based on multiple spaces first
+      const spacePattern = /\s{2,}/g;
+      const spaceMatches = [...line.matchAll(spacePattern)];
       
-      // Build category (Low Vision, Blind, etc.)
-      if (parts[i].toLowerCase().includes('low')) {
-        category = parts[i] + ' ' + parts[i + 1]; // "Low Vision"
-        i += 2;
-      } else if (parts[i].toLowerCase().includes('blind') || 
-                 parts[i].toLowerCase().includes('dexterity') || 
-                 parts[i].toLowerCase().includes('mobility')) {
-        category = parts[i];
-        i += 1;
+      if (spaceMatches.length >= 2) {
+        // Split on multiple spaces
+        let lastIndex = 0;
+        for (const match of spaceMatches) {
+          const cell = line.substring(lastIndex, match.index).trim();
+          if (cell) cells.push(cell);
+          lastIndex = match.index + match[0].length;
+        }
+        // Add the last cell
+        const lastCell = line.substring(lastIndex).trim();
+        if (lastCell) cells.push(lastCell);
       } else {
-        category = parts[i];
-        i += 1;
-      }
-      
-      cells.push(category);
-      
-      // Column 2: Participants (first number)
-      if (i < parts.length && /\d/.test(parts[i])) {
-        cells.push(parts[i]);
-        i++;
-      } else {
-        cells.push('');
-      }
-      
-      // Column 3: Ballots Completed (second number)
-      if (i < parts.length && /\d/.test(parts[i])) {
-        cells.push(parts[i]);
-        i++;
-      } else {
-        cells.push('');
-      }
-      
-      // Column 4: Ballots Incomplete (third number)
-      if (i < parts.length && /\d/.test(parts[i])) {
-        cells.push(parts[i]);
-        i++;
-      } else {
-        cells.push('');
-      }
-      
-      // Column 5: Accuracy (percentage)
-      if (i < parts.length && parts[i].includes('%')) {
-        cells.push(parts[i]);
-        i++;
-      } else {
-        cells.push('');
-      }
-      
-      // Column 6: Time (combine remaining parts: n=X number sec, n=Y)
-      let timeColumn = '';
-      while (i < parts.length) {
-        if (timeColumn) timeColumn += ' ';
-        timeColumn += parts[i];
-        i++;
-      }
-      cells.push(timeColumn);
-      
-      // If we still don't have cells, fall back to simple splitting
-      if (cells.length === 0) {
-        cells = line.split(/\s+/).map(cell => cell.trim());
+        // Fall back to simple word splitting
+        cells = parts.map(part => part.trim()).filter(part => part.length > 0);
       }
     }
   }
   
-  // Special handling removed for simpler 6-column parsing
+  // Clean up cells
   if (cells.length > 0) {
-    cells = cells.map((cell, index) => {
-      // Handle special cases like "Low Vision" being split
-      if (index === 0 && cell.toLowerCase() === 'low' && cells[index + 1] && cells[index + 1].toLowerCase() === 'vision') {
-        return 'Low Vision';
-      }
-      
-      // Handle "Bl I ee" -> "Blind"
-      if (index === 0 && cell.toLowerCase() === 'bl' && cells[index + 1] && cells[index + 1].toLowerCase() === 'i') {
-        return 'Blind';
-      }
-      
-      // Handle "EA CH ei iid" -> "Dexterity"
-      if (index === 0 && cell.toLowerCase() === 'ea' && cells[index + 1] && cells[index + 1].toLowerCase() === 'ch') {
-        return 'Dexterity';
-      }
-      
-      // Handle "ow ee" -> "Mobility"
-      if (index === 0 && cell.toLowerCase() === 'ow' && cells[index + 1] && cells[index + 1].toLowerCase() === 'ee') {
-        return 'Mobility';
-      }
-      
-      return cell;
-    });
-    
-    // Remove duplicate/merged cells - but be more careful about what we remove
-    cells = cells.filter((cell, index) => {
-      if (index === 0) return true;
-      const prevCell = cells[index - 1];
-      
-      // Only remove cells that are actually part of the disability category name
-      // Don't remove legitimate data cells like numbers
-      if (index === 1 && 
-          (prevCell === 'Low Vision' || prevCell === 'Blind' || 
-           prevCell === 'Dexterity' || prevCell === 'Mobility')) {
-        // Check if this cell is actually part of the name or legitimate data
-        if (cell.toLowerCase() === 'vision' || 
-            cell.toLowerCase() === 'i' || 
-            cell.toLowerCase() === 'ch' || 
-            cell.toLowerCase() === 'ee') {
-          return false; // Remove only if it's part of the name
-        }
-        // Keep it if it's legitimate data (like numbers)
-      }
-      
-      return true;
-    });
+    cells = cells.map(cell => cell.trim()).filter(cell => cell.length > 0);
   }
   
   // Filter out empty cells and clean up
@@ -1190,45 +1084,12 @@ function createTableFromRowsAndHeaders(headers, dataRows, extractHeaders) {
     tableRows = [headers.map(() => '')];
   }
 
-  // If we have data but no headers, try to infer headers
+  // If we have data but no headers, create generic headers
   if (headers.length === 0 && dataRows.length > 0) {
-    // Use the actual table structure from your PDF instead of generic column names
-    const firstRow = dataRows[0];
-    if (firstRow && firstRow.length > 0) {
-      // Try to map the data to expected columns based on content
-      const inferredHeaders = [];
-      for (let i = 0; i < firstRow.length; i++) {
-        const cell = firstRow[i].toLowerCase();
-        
-        if (i === 0) {
-          // First column is usually the category
-          inferredHeaders.push('Disability Category');
-        } else if (i === 1 && /\d/.test(cell)) {
-          // Second column with numbers is usually participants
-          inferredHeaders.push('Participants');
-        } else if (i === 2 && /\d/.test(cell)) {
-          // Third column with numbers is usually ballots completed
-          inferredHeaders.push('Ballots Completed');
-        } else if (i === 3 && /\d/.test(cell)) {
-          // Fourth column with numbers is usually ballots incomplete
-          inferredHeaders.push('Ballots Incomplete/Terminated');
-        } else if (i === 4 && cell.includes('%')) {
-          // Fifth column with percentages is accuracy
-          inferredHeaders.push('Accuracy');
-        } else if (i === 5) {
-          // Sixth column is always time to complete
-          inferredHeaders.push('Time to complete');
-        } else {
-          // Default column name
-          inferredHeaders.push(`Column ${i + 1}`);
-        }
-      }
-      tableHeaders = inferredHeaders;
-    } else {
-      // Fallback to generic headers
-      tableHeaders = dataRows[0].map((_, index) => `Column ${index + 1}`);
-    }
-    // Don't remove the first data row - keep all data rows
+    // Create generic column headers based on the number of columns
+    const maxColumns = Math.max(...dataRows.map(row => row.length));
+    tableHeaders = Array.from({ length: maxColumns }, (_, index) => `Column ${index + 1}`);
+    // Keep all data rows
     tableRows = dataRows;
   }
 
@@ -1256,17 +1117,7 @@ function createTableFromRowsAndHeaders(headers, dataRows, extractHeaders) {
     rows: extractHeaders ? [normalizedHeaders, ...normalizedRows] : normalizedRows,
     columns: maxColumns,
     confidence: 0.8
-  };
-
-  // Log the final table structure for debugging
-  console.log('Final table structure:');
-  console.log('Headers:', normalizedHeaders);
-  console.log('Data rows:', normalizedRows.length);
-  console.log('Total columns:', maxColumns);
-  console.log('Sample rows:');
-  table.rows.slice(0, 3).forEach((row, index) => {
-    console.log(`  Row ${index}:`, row);
-  });
+  }; 
 
   return table;
 }
@@ -1448,7 +1299,7 @@ module.exports = {
   reconstructTableFromPartialData,
   reconstructTableStructure,
   // Export main processing functions for testing
-  convertPDFToImage,
+  convertPDFToImages,
   detectAndExtractTables,
   processFileExtractTables
 };

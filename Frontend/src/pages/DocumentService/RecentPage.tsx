@@ -42,11 +42,10 @@ const RecentPage: React.FC = () => {
     loadRecentDocuments();
   }, [currentFolderId, fetchDocuments, fetchFolders]);
 
-  // Get filtered documents from store and filter for recent ones
+  // Get filtered documents from store (already sorted by store's sorting settings)
   const allFilteredDocuments = getFilteredDocuments();
   const filteredDocuments = allFilteredDocuments
     .filter((doc: any) => !doc.isDeleted && !doc.isArchived)
-    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 100);
 
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {

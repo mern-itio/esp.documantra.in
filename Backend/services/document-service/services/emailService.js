@@ -309,6 +309,71 @@ class EmailService {
     }
   }
 
+  // Send PDF share notification
+  async sendPDFShareNotification(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null) {
+    // Check if email service is configured
+    if (!this.isConfigured()) {
+      console.log(`⚠️ Email service not configured, skipping PDF share notification to ${email}`);
+      return false;
+    }
+
+    const emailSubject = subject || `Document Shared: ${documentName}`;
+    
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+          <h2 style="color: #3498db; margin-bottom: 20px;">📄 Document Shared with You</h2>
+          
+          <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="color: #2c3e50; margin-bottom: 15px;">${documentName}</h3>
+            <p style="color: #555; margin-bottom: 10px;"><strong>Shared by:</strong> ${sharerName}</p>
+            ${message ? `<p style="color: #555; margin-bottom: 10px;"><strong>Message:</strong> ${message}</p>` : ''}
+            <p style="color: #555; margin-bottom: 10px;"><strong>Shared at:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          
+          <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60; margin-bottom: 20px;">
+            <p style="margin: 0; color: #27ae60;">
+              <strong>You can now view this document without logging in!</strong>
+            </p>
+          </div>
+          
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="${shareUrl}" 
+               style="background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-bottom: 10px;">
+              View Document
+            </a>
+          </div>
+          
+          <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <p style="margin: 0; color: #666; font-size: 14px;">
+              This document was shared with you via a secure link. You can view it directly without creating an account.
+              If you have any questions, please contact ${sharerName} at ${senderEmail || 'the sender'}.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      // Use the user's email as sender
+      const fromAddress = senderEmail || process.env.EMAIL_USER;
+      const fromName = `"${sharerName}" <${fromAddress}>`;
+      
+      await this.transporter.sendMail({
+        from: fromName,
+        to: email,
+        subject: emailSubject,
+        html: htmlContent
+      });
+      
+      console.log(`✅ PDF share notification sent to ${email} from ${fromName} (on behalf of ${senderEmail})`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to send PDF share notification to ${email}:`, error);
+      return false;
+    }
+  }
+
   // Send test email
   async sendTestEmail(senderEmail = null) {
     // Check if email service is configured

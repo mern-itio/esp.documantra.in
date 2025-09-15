@@ -45,6 +45,7 @@ export interface Document {
   isFavorite: boolean;
   isDeleted?: boolean;
   deletedAt?: string;
+  description?: string; // Document description
 }
 
 export interface Folder {

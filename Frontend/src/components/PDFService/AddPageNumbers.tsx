@@ -61,15 +61,28 @@ const AddPageNumbers: React.FC = () => {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        setError('Please select a valid PDF file');
+        setSelectedFile(null);
+        return;
+      }
+
+      const fileSizeMB = file.size / 1024 / 1024;
+      if (fileSizeMB > 2) {
+        setError('File size should not exceed 2 MB');
+        setSelectedFile(null);
+        return;
+      }
+
+      // ✅ valid file
       setSelectedFile(file);
       setError('');
       setResult(null);
       setPreviewUrl('');
-    } else if (file) {
-      setError('Please select a valid PDF file');
     }
   };
+
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({
@@ -315,6 +328,9 @@ const AddPageNumbers: React.FC = () => {
               <div className="text-sm text-gray-500">
                 File size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
               </div>
+            )}
+            {error && (
+              <div className="text-sm text-red-600">{error}</div>
             )}
           </div>
         </CardContent>
@@ -606,12 +622,13 @@ const AddPageNumbers: React.FC = () => {
         <CardContent>
           <div className="space-y-3 text-sm text-gray-600">
             <p><strong>1.</strong> Upload your PDF file</p>
-            <p><strong>2.</strong> Choose the position where you want page numbers to appear</p>
-            <p><strong>3.</strong> Customize the font size, color, and margin</p>
-            <p><strong>4.</strong> Select a format for your page numbers</p>
-            <p><strong>5.</strong> Optionally set page range and exclude specific pages</p>
-            <p><strong>6.</strong> Generate a preview to see how it will look</p>
-            <p><strong>7.</strong> Add page numbers and download your modified PDF</p>
+            <p><strong>2.</strong> Maximum file size: 2MB</p>
+            <p><strong>3.</strong> Choose the position where you want page numbers to appear</p>
+            <p><strong>4.</strong> Customize the font size, color, and margin</p>
+            <p><strong>5.</strong> Select a format for your page numbers</p>
+            <p><strong>6.</strong> Optionally set page range and exclude specific pages</p>
+            <p><strong>7.</strong> Generate a preview to see how it will look</p>
+            <p><strong>8.</strong> Add page numbers and download your modified PDF</p>
           </div>
         </CardContent>
       </Card>

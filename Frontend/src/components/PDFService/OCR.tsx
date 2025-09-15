@@ -216,7 +216,7 @@ const OCR: React.FC = () => {
                     Drag and drop PDF or image files here, or click to browse
                   </p>
                   <p className="text-sm text-gray-400">
-                    Maximum 5 files, 100MB each. Supports PDF, JPG, PNG, TIFF, BMP
+                    Maximum 2MB. Supports PDF, JPG, PNG, TIFF, BMP
                   </p>
                 </div>
                 

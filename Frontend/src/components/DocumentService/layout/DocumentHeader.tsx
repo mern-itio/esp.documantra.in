@@ -21,6 +21,7 @@ import { SearchModal } from '../modals/SearchModal';
 import { CreateFolderModal } from '../modals/CreateFolderModal';
 import { ShareModal } from '../modals/ShareModal';
 import { MoveDocumentsModal } from '../modals/MoveDocumentsModal';
+import PDFShareButton from '../sharing/PDFShareButton';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { folderAPI, documentAPI } from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -310,6 +311,9 @@ export function DocumentHeader() {
               Upload
             </Button>
           )}
+
+          {/* PDF Share */}
+          <PDFShareButton />
 
           {/* More Actions */}
           <div className="relative" ref={moreMenuRef}>

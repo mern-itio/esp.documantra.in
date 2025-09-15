@@ -65,7 +65,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
   const getSupportedOutputFormats = (inputType: string) => {
     switch (inputType.toLowerCase()) {
       case 'pdf':
-        return ['docx', 'xlsx', 'pptx', 'txt', 'html', 'epub'];
+        return ['docx', 'xlsx', 'pptx', 'txt', 'html'];
       case 'docx':
       case 'doc':
         return ['pdf', 'xlsx'];
@@ -93,7 +93,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
     popularity: 98,
     avgProcessingTime: '2-10 minutes',
     inputFormats: supportedInputFormats,
-    outputFormats: ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'html', 'epub'], // All possible output formats
+    outputFormats: ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'html'], // All possible output formats
     features: [
       '5 individual file inputs',
       'Multiple formats',
@@ -192,7 +192,6 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
       case 'pptx': return '📈';
       case 'txt': return '📃';
       case 'html': return '🌐';
-      case 'epub': return '📚';
       default: return '📁';
     }
   };
@@ -264,7 +263,13 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${fileName}.${outputFormat}`;
+      
+      // Create clean filename by removing original extension and adding new one
+      const cleanFileName = fileName.replace(/\.[^/.]+$/, '') + '.' + outputFormat;
+      a.download = cleanFileName;
+      
+      console.log(`Download filename: ${cleanFileName} (original: ${fileName}, format: ${outputFormat})`);
+      
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

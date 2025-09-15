@@ -108,11 +108,43 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve PDF.js library files with proper MIME types for ES modules
 app.use('/pdfjs', (req, res, next) => {
+  // Set CORS headers for PDF.js files
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
   if (req.url.endsWith('.mjs')) {
     res.setHeader('Content-Type', 'application/javascript');
   }
   next();
 }, express.static(path.join(__dirname, 'public')));
+
+// Specific route for PDF.js files with better error handling
+app.get('/pdfjs/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'public', filename);
+  
+  console.log(`PDF.js file request: ${filename}`);
+  console.log(`PDF.js file path: ${filePath}`);
+  
+  if (fs.existsSync(filePath)) {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Set proper MIME type
+    if (filename.endsWith('.mjs')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+    
+    console.log(`Serving PDF.js file: ${filename}`);
+    res.sendFile(filePath);
+  } else {
+    console.log(`PDF.js file not found: ${filename}`);
+    res.status(404).json({ error: 'PDF.js file not found' });
+  }
+});
 
 // DB Connection
 connectDB();

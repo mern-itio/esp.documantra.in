@@ -191,7 +191,7 @@ const ExtractTables: React.FC = () => {
               <p className="text-gray-600 mb-2">
                 Drop PDF files here or <span className="text-blue-600 font-medium">click to browse</span>
               </p>
-              <p className="text-sm text-gray-500">Supports up to 5 PDF files, 100MB each</p>
+              <p className="text-sm text-gray-500">Upload file having less pages and smaller sizes for better performance upto 2MB</p>
             </div>
 
             <input
@@ -444,6 +444,8 @@ const ExtractTables: React.FC = () => {
                           </div>
                           <div className="flex items-center space-x-2">
                             <span>Language: {getLanguageName(result.language)}</span>
+                            <span>•</span>
+                            <span>Pages Processed: {result.pagesProcessed || 'N/A'}</span>
                             <span>•</span>
                             <span>Processing Time: {result.processingTime}ms</span>
                           </div>

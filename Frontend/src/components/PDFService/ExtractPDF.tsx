@@ -266,7 +266,7 @@ const ExtractPDF: React.FC = () => {
                 browse files
               </button>
             </p>
-            <p className="text-sm text-gray-500">Maximum file size: 100MB</p>
+            <p className="text-sm text-gray-500">Maximum file size: 2MB</p>
             <input
               ref={fileInputRef}
               type="file"
