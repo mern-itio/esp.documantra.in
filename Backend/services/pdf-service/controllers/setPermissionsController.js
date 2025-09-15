@@ -324,16 +324,49 @@ const setPermissionsController = {
         // Load PDF.js dynamically
         async function loadPDFJS() {
             try {
+                console.log('Attempting to load PDF.js from local server...');
                 const pdfjsLib = await import('/pdfjs/pdf.min.mjs');
                 window.pdfjsLib = pdfjsLib;
-                console.log('PDF.js loaded successfully:', pdfjsLib);
+                console.log('PDF.js loaded successfully from local server');
                 
                 // Start the PDF viewer once PDF.js is loaded
                 initPDFViewer();
-            } catch (error) {
-                console.error('Failed to load PDF.js:', error);
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('error').textContent = 'Failed to load PDF.js library: ' + error.message;
+            } catch (localError) {
+                console.warn('Local PDF.js failed, trying CDN fallback:', localError.message);
+                
+                try {
+                    // Fallback to CDN (works with HTTP)
+                    console.log('Loading PDF.js from CDN...');
+                    const pdfjsLib = await import('https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.mjs');
+                    window.pdfjsLib = pdfjsLib;
+                    console.log('PDF.js loaded successfully from CDN');
+                    
+                    // Start the PDF viewer once PDF.js is loaded
+                    initPDFViewer();
+                } catch (cdnError) {
+                    console.error('Both local and CDN PDF.js failed:', cdnError);
+                    console.log('Falling back to iframe viewer');
+                    
+                    // Hide loading and show iframe fallback
+                    document.getElementById('loading').style.display = 'none';
+                    const iframe = document.getElementById('pdf-iframe');
+                    if (iframe) {
+                        iframe.style.display = 'block';
+                        console.log('Using iframe fallback for PDF viewing');
+                    } else {
+                        // Show detailed error for debugging
+                        const errorEl = document.getElementById('error');
+                        if (errorEl) {
+                            errorEl.style.display = 'block';
+                            errorEl.innerHTML = \`
+                                <strong>Failed to load PDF.js library</strong><br>
+                                Local error: \${localError.message}<br>
+                                CDN error: \${cdnError.message}<br>
+                                <small>Check browser console for more details</small>
+                            \`;
+                        }
+                    }
+                }
             }
         }
         
@@ -468,13 +501,14 @@ const setPermissionsController = {
         </div>
     </div>
 
-    <div class="main-content">
-        <div class="pdf-container">
-            <div id="loading" class="loading">Loading PDF...</div>
-            <div id="error" class="error" style="display: none;"></div>
-            <canvas id="pdf-canvas" class="pdf-canvas" style="display: none;"></canvas>
+        <div class="main-content">
+            <div class="pdf-container">
+                <div id="loading" class="loading">Loading PDF...</div>
+                <div id="error" class="error" style="display: none;"></div>
+                <canvas id="pdf-canvas" class="pdf-canvas" style="display: none;"></canvas>
+                <iframe id="pdf-iframe" class="pdf-embed" style="display: none;" src="/pdf-permissions/raw-pdf/${token}/${filename}"></iframe>
+            </div>
         </div>
-    </div>
 
     <div class="controls">
         <button class="control-btn" id="prevBtn" title="Previous Page">◀</button>
@@ -508,7 +542,17 @@ const setPermissionsController = {
             
             // Set PDF.js worker
             const pdfjsLib = window.pdfjsLib;
-            pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+            
+            // Try local worker first, then CDN fallback
+            try {
+                console.log('Setting PDF.js worker to local server...');
+                pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+                console.log('PDF.js worker configured (local):', pdfjsLib.GlobalWorkerOptions.workerSrc);
+            } catch (workerError) {
+                console.warn('Local worker failed, using CDN worker:', workerError.message);
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs';
+                console.log('PDF.js worker configured (CDN):', pdfjsLib.GlobalWorkerOptions.workerSrc);
+            }
                 
                 let pdfDoc = null;
                 let pageNum = 1;
@@ -520,20 +564,45 @@ const setPermissionsController = {
                 const pdfUrl = '/pdf-permissions/raw-pdf/${token}/${filename}';
                 console.log('Loading PDF from:', pdfUrl);
                 
-                pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-            pdfDoc = pdf;
-            document.getElementById('totalPages').textContent = pdf.numPages;
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('pdf-canvas').style.display = 'block';
-            
-            // Render the first page
-            renderPage(pageNum);
-        }).catch(function(error) {
-            console.error('Error loading PDF:', error);
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('error').textContent = 'Error loading PDF: ' + error.message;
-        });
+                pdfjsLib.getDocument({
+                    url: pdfUrl,
+                    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+                    cMapPacked: true,
+                    standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/'
+                }).promise.then(function(pdf) {
+                    console.log('PDF loaded successfully:', pdf);
+                    pdfDoc = pdf;
+                    document.getElementById('totalPages').textContent = pdf.numPages;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('pdf-canvas').style.display = 'block';
+                    
+                    // Render the first page
+                    renderPage(pageNum);
+                }).catch(function(error) {
+                    console.error('Error loading PDF with PDF.js:', error);
+                    console.log('Falling back to iframe viewer');
+                    
+                    // Hide PDF.js elements
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('pdf-canvas').style.display = 'none';
+                    
+                    // Show iframe fallback
+                    const iframe = document.getElementById('pdf-iframe');
+                    if (iframe) {
+                        iframe.style.display = 'block';
+                        console.log('Using iframe fallback for PDF viewing');
+                    } else {
+                        const errorEl = document.getElementById('error');
+                        if (errorEl) {
+                            errorEl.style.display = 'block';
+                            errorEl.innerHTML = \`
+                                <strong>Error loading PDF</strong><br>
+                                Error: \${error.message}<br>
+                                <small>Check browser console for more details</small>
+                            \`;
+                        }
+                    }
+                });
         
         function renderPage(num) {
             pageRendering = true;

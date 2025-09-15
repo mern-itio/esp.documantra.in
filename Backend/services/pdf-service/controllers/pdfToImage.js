@@ -57,33 +57,33 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
     // Load the single-page PDF using pdf-lib to get dimensions
     const pdfBytes = fs.readFileSync(pdfPath);
     const pdfDoc = await PDFLibDoc.load(pdfBytes);
-    
+
     // Get the page dimensions
     const pages = pdfDoc.getPages();
     if (pages.length === 0) {
       throw new Error('No pages found in PDF');
     }
-    
+
     const page = pages[0]; // Should only have one page
     const { width, height } = page.getSize();
-    
+
     // Create canvas with page dimensions (scale up for better quality)
     const scale = 2.0;
     const canvasWidth = Math.ceil(width * scale);
     const canvasHeight = Math.ceil(height * scale);
-    
+
     const canvas = createCanvas(canvasWidth, canvasHeight);
     const context = canvas.getContext('2d');
-    
+
     // Set white background
     context.fillStyle = 'white';
     context.fillRect(0, 0, canvasWidth, canvasHeight);
-    
+
     // Now render the actual PDF content to canvas
     try {
       // Load PDF using pdfjs-dist for rendering
       const pdfjsLib = require('pdfjs-dist');
-      
+
       // For pdfjs-dist v4, we need to set up the worker differently
       if (!globalThis.pdfjsWorker) {
         try {
@@ -96,35 +96,35 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';
         }
       }
-      
+
       // Load the PDF document
       const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
       const pdfDocument = await loadingTask.promise;
-      
+
       console.log(`PDF document loaded, page count: ${pdfDocument.numPages}`);
-      
+
       // Get the first page (should be the only page)
       const pdfPage = await pdfDocument.getPage(1);
-      
+
       console.log(`Page 1 loaded, dimensions: ${pdfPage.width} x ${pdfPage.height}`);
-      
+
       // Create viewport with scaling
       const viewport = pdfPage.getViewport({ scale: scale });
-      
+
       console.log(`Viewport created with scale ${scale}: ${viewport.width} x ${viewport.height}`);
-      
+
       // Set canvas dimensions to match viewport
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-      
+
       console.log(`Canvas dimensions set to: ${canvas.width} x ${canvas.height}`);
-      
+
       // Clear canvas and set white background again
       context.fillStyle = 'white';
       context.fillRect(0, 0, canvas.width, canvas.height);
-      
+
       console.log('Canvas cleared and white background set');
-      
+
       // Render the PDF page to canvas
       const renderContext = {
         canvasContext: context,
@@ -132,15 +132,15 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
         enableWebGL: false,
         renderInteractiveForms: false
       };
-      
+
       console.log('Starting PDF page rendering...');
       await pdfPage.render(renderContext).promise;
       console.log('PDF page rendering completed');
-      
+
       // Check if canvas has content by sampling some pixels
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       let hasContent = false;
-      
+
       // Sample pixels to check if they're not all white
       for (let i = 0; i < imageData.data.length; i += 100) { // Sample every 100th pixel
         if (imageData.data[i] !== 255 || imageData.data[i + 1] !== 255 || imageData.data[i + 2] !== 255) {
@@ -148,9 +148,9 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
           break;
         }
       }
-      
+
       console.log(`Canvas content check: ${hasContent ? 'Has content' : 'Empty/white'}`);
-      
+
       if (!hasContent) {
         console.warn('Canvas appears to be empty after PDF rendering, adding test pattern');
         // Add a simple test pattern to verify canvas is working
@@ -161,25 +161,25 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
         context.fillStyle = 'green';
         context.fillRect(130, 10, 50, 50);
       }
-      
+
       // Save the canvas as PNG
       const buffer = canvas.toBuffer('image/png');
       fs.writeFileSync(outputPath, buffer);
-      
+
       console.log(`Canvas saved as PNG: ${outputPath}`);
-      
+
       return true;
-      
+
     } catch (renderError) {
       console.warn(`PDF rendering failed, using fallback: ${renderError.message}`);
-      
+
       // Fallback: Create a simple representation of the page
       const png = new PNG({
         width: canvasWidth,
         height: canvasHeight,
         filterType: -1
       });
-      
+
       // Fill with white background
       for (let i = 0; i < png.data.length; i += 4) {
         png.data[i] = 255;     // R - White
@@ -187,25 +187,25 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
         png.data[i + 2] = 255; // B - White
         png.data[i + 3] = 255; // A - Opaque
       }
-      
+
       // Add a simple border to show page boundaries
       const borderWidth = 2;
       const borderColor = [200, 200, 200, 255];
-      
+
       // Draw borders
       for (let x = 0; x < png.width; x++) {
         for (let b = 0; b < borderWidth; b++) {
           // Top and bottom borders
           const topIndex = (b * png.width + x) * 4;
           const bottomIndex = ((png.height - 1 - b) * png.width + x) * 4;
-          
+
           if (topIndex < png.data.length - 3) {
             png.data[topIndex] = borderColor[0];
             png.data[topIndex + 1] = borderColor[1];
             png.data[topIndex + 2] = borderColor[2];
             png.data[topIndex + 3] = borderColor[3];
           }
-          
+
           if (bottomIndex < png.data.length - 3) {
             png.data[bottomIndex] = borderColor[0];
             png.data[bottomIndex + 1] = borderColor[1];
@@ -214,20 +214,20 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
           }
         }
       }
-      
+
       for (let y = 0; y < png.height; y++) {
         for (let b = 0; b < borderWidth; b++) {
           // Left and right borders
           const leftIndex = (y * png.width + b) * 4;
           const rightIndex = (y * png.width + (png.width - 1 - b)) * 4;
-          
+
           if (leftIndex < png.data.length - 3) {
             png.data[leftIndex] = borderColor[0];
             png.data[leftIndex + 1] = borderColor[1];
             png.data[leftIndex + 2] = borderColor[2];
             png.data[leftIndex + 3] = borderColor[3];
           }
-          
+
           if (rightIndex < png.data.length - 3) {
             png.data[rightIndex] = borderColor[0];
             png.data[rightIndex + 1] = borderColor[1];
@@ -236,16 +236,16 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
           }
         }
       }
-      
+
       // Add page info text
       const infoText = `Page ${pageIndex + 1} - ${Math.round(width)}x${Math.round(height)} pt`;
       const infoY = png.height - 20;
       const infoColor = [100, 100, 100, 255];
-      
+
       // Simple text representation (horizontal line)
       const lineLength = Math.min(infoText.length * 6, png.width - 40);
       const lineStart = Math.floor((png.width - lineLength) / 2);
-      
+
       for (let x = lineStart; x < lineStart + lineLength; x++) {
         if (x >= 0 && x < png.width) {
           const index = (infoY * png.width + x) * 4;
@@ -257,14 +257,14 @@ async function convertSinglePageToImage(pdfPath, pageIndex, outputPath) {
           }
         }
       }
-      
+
       // Write PNG to file
       const pngBuffer = PNG.sync.write(png);
       fs.writeFileSync(outputPath, pngBuffer);
-      
+
       return true;
     }
-    
+
   } catch (error) {
     console.error(`Error converting page ${pageIndex + 1} to image:`, error);
     return false;
@@ -285,42 +285,42 @@ function formatTextAsHtml(text) {
 exports.convertPDFtoImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No PDF file uploaded" });
-    
+
     // Ensure output directory exists
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
-    
+
     const pdfPath = path.join(uploadDir, generateFilename('uploaded', 'pdf'));
     fs.writeFileSync(pdfPath, req.file.buffer);
 
     console.log('Starting PDF to image conversion using split approach...');
     console.log('PDF path:', pdfPath);
     console.log('Output directory:', outputDir);
-    
+
     // First, split the PDF into individual pages
     const splitResult = await splitByPages(pdfPath, 1);
-    
+
     if (!splitResult || splitResult.length === 0) {
       throw new Error('Failed to split PDF into pages');
     }
-    
+
     console.log(`PDF split successfully into ${splitResult.length} pages`);
-    
+
     // Convert each split PDF page to an image
     const imageFiles = [];
     const imagePaths = [];
-    
+
     for (let i = 0; i < splitResult.length; i++) {
       const splitPdfPath = splitResult[i];
       const imageFileName = `page_${i + 1}.png`;
       const imagePath = path.join(outputDir, imageFileName);
-      
+
       console.log(`Converting split PDF ${i + 1} to image: ${imageFileName}`);
-      
+
       // Convert the single-page PDF to image
       const success = await convertSinglePageToImage(splitPdfPath, i, imagePath);
-      
+
       if (success) {
         imageFiles.push(imageFileName);
         imagePaths.push(imagePath);
@@ -328,7 +328,7 @@ exports.convertPDFtoImage = async (req, res) => {
       } else {
         console.warn(`Failed to convert page ${i + 1} to image`);
       }
-      
+
       // Clean up the split PDF file
       try {
         if (fs.existsSync(splitPdfPath)) {
@@ -338,7 +338,7 @@ exports.convertPDFtoImage = async (req, res) => {
         console.log('Error cleaning up split PDF file:', cleanupError.message);
       }
     }
-    
+
     // Clean up the original uploaded PDF
     try {
       if (fs.existsSync(pdfPath)) {
@@ -347,21 +347,21 @@ exports.convertPDFtoImage = async (req, res) => {
     } catch (cleanupError) {
       console.log('Error cleaning up uploaded PDF:', cleanupError.message);
     }
-    
+
     console.log('Generated image files:', imageFiles);
-    
+
     if (imageFiles.length === 0) {
       throw new Error('No image files were created');
     }
-    
+
     // Return relative paths for frontend (fix Windows path separators)
     const relativeFiles = imagePaths.map(file => {
       const relativePath = file.replace(process.cwd(), '');
       return relativePath.replace(/\\/g, '/');
     });
-    
-    res.json({ 
-      message: "PDF converted to images successfully using split approach", 
+
+    res.json({
+      message: "PDF converted to images successfully using split approach",
       images: relativeFiles,
       outputDir: outputDir.replace(process.cwd(), '').replace(/\\/g, '/'),
       fileCount: imageFiles.length,
@@ -372,12 +372,12 @@ exports.convertPDFtoImage = async (req, res) => {
         successfulConversions: imageFiles.length
       }
     });
-    
+
   } catch (err) {
     console.error('PDF to Image Error:', err.message);
-    res.status(500).json({ 
-      error: "Conversion failed", 
-      details: err.message 
+    res.status(500).json({
+      error: "Conversion failed",
+      details: err.message
     });
   }
 };
@@ -402,11 +402,11 @@ exports.convertImagesToPDF = async (req, res) => {
     // Create a unique filename for the output PDF
     const outputPdfName = `output_${Date.now()}.pdf`;
     const outputPdfPath = path.join(__dirname, '..', 'outputs', outputPdfName); // Save to outputs directory
-    
+
     console.log('Creating PDF at:', outputPdfPath);
     console.log('Current directory:', __dirname);
     console.log('Outputs directory:', path.join(__dirname, '..', 'outputs'));
-    
+
     const doc = new PDFDocument({ autoFirstPage: false });
     const stream = fs.createWriteStream(outputPdfPath);
     doc.pipe(stream);
@@ -421,10 +421,10 @@ exports.convertImagesToPDF = async (req, res) => {
 
     stream.on('finish', () => {
       console.log('PDF created at:', outputPdfPath);
-      
+
       // Return relative path for frontend (path to outputs directory)
       const relativePath = `/outputs/${path.basename(outputPdfPath)}`;
-      
+
       console.log('Sending response to frontend:', {
         message: "Images converted to PDF successfully",
         pdf: relativePath,
@@ -432,9 +432,9 @@ exports.convertImagesToPDF = async (req, res) => {
         originalFiles: req.files.map(f => f.originalname),
         fileCount: req.files.length
       });
-      
-      res.json({ 
-        message: "Images converted to PDF successfully", 
+
+      res.json({
+        message: "Images converted to PDF successfully",
         pdf: relativePath,
         originalPath: outputPdfPath,
         originalFiles: req.files.map(f => f.originalname),
@@ -449,9 +449,9 @@ exports.convertImagesToPDF = async (req, res) => {
 
   } catch (err) {
     console.error('Image to PDF Error:', err.message);
-    res.status(500).json({ 
-      error: "Conversion failed", 
-      details: err.message 
+    res.status(500).json({
+      error: "Conversion failed",
+      details: err.message
     });
   }
 };
@@ -472,30 +472,30 @@ exports.convertPdfToEpub = async (req, res) => {
     if (!fs.existsSync(epubImageDir)) fs.mkdirSync(epubImageDir, { recursive: true });
 
     console.log('EPUB conversion: Starting PDF to image conversion using split approach...');
-    
+
     // First, split the PDF into individual pages
     const splitResult = await splitByPages(epubPdfPath, 1);
-    
+
     if (!splitResult || splitResult.length === 0) {
       throw new Error('Failed to split PDF for EPUB');
     }
-    
+
     console.log(`EPUB conversion: PDF split successfully into ${splitResult.length} pages`);
-    
+
     // Convert each split PDF page to an image
     const imageFiles = [];
     const imagePaths = [];
-    
+
     for (let i = 0; i < splitResult.length; i++) {
       const splitPdfPath = splitResult[i];
       const imageFileName = `page_${i + 1}.png`;
       const imagePath = path.join(epubImageDir, imageFileName);
-      
+
       console.log(`EPUB conversion: Converting split PDF ${i + 1} to image: ${imageFileName}`);
-      
+
       // Convert the single-page PDF to image
       const success = await convertSinglePageToImage(splitPdfPath, i, imagePath);
-      
+
       if (success) {
         imageFiles.push(imageFileName);
         imagePaths.push(imagePath);
@@ -503,7 +503,7 @@ exports.convertPdfToEpub = async (req, res) => {
       } else {
         console.warn(`EPUB conversion: Failed to convert page ${i + 1} to image`);
       }
-      
+
       // Clean up the split PDF file
       try {
         if (fs.existsSync(splitPdfPath)) {
@@ -513,7 +513,7 @@ exports.convertPdfToEpub = async (req, res) => {
         console.log('Error cleaning up split PDF file:', cleanupError.message);
       }
     }
-    
+
     // Clean up the original uploaded PDF
     try {
       if (fs.existsSync(epubPdfPath)) {
@@ -522,11 +522,11 @@ exports.convertPdfToEpub = async (req, res) => {
     } catch (cleanupError) {
       console.log('Error cleaning up uploaded PDF:', cleanupError.message);
     }
-    
+
     if (imageFiles.length === 0) {
       throw new Error('No image files were created for EPUB');
     }
-    
+
     console.log(`EPUB conversion: Generated ${imageFiles.length} image files`);
 
     // Run OCR on each image (temporarily disabled)
@@ -538,7 +538,7 @@ exports.convertPdfToEpub = async (req, res) => {
     //       return '';
     //     });
     // }));
-    
+
     // For now, just use empty OCR text
     const ocrTexts = imagePaths.map(() => '');
 
@@ -568,25 +568,25 @@ exports.convertPdfToEpub = async (req, res) => {
     };
 
     await new Epub(epubOptions).promise;
-    
+
     // Return relative path for frontend
     const relativePath = `/epubs/${path.basename(outputEpubFile)}`;
-    
+
     console.log('EPUB created at:', outputEpubFile);
     console.log('Sending response to frontend:', {
       message: 'PDF converted to EPUB successfully.',
       epub: relativePath
     });
-    
-    res.json({ 
-      message: 'PDF converted to EPUB successfully.', 
-      epub: relativePath 
+
+    res.json({
+      message: 'PDF converted to EPUB successfully.',
+      epub: relativePath
     });
   } catch (err) {
     console.error('PDF to EPUB Error:', err.message);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to convert PDF to EPUB.',
-      details: err.message 
+      details: err.message
     });
   }
 };
@@ -627,7 +627,7 @@ async function convertPdfToEpubForBatch(file) {
     //       return '';
     //     });
     // }));
-    
+
     // For now, just use empty OCR text
     const ocrTexts = imagePaths.map(() => '');
 
@@ -657,12 +657,12 @@ async function convertPdfToEpubForBatch(file) {
     };
 
     await new Epub(epubOptions).promise;
-    
+
     // Return relative path for frontend
     const relativePath = `/epubs/${path.basename(outputEpubFile)}`;
-    
+
     console.log('EPUB created at:', outputEpubFile);
-    
+
     return {
       message: 'PDF converted to EPUB successfully.',
       epub: relativePath
@@ -685,7 +685,7 @@ exports.batchConvert = async (req, res) => {
     }
 
     const { outputFormats } = req.body; // Array of desired output formats
-    
+
     // Parse outputFormats if it's a JSON string
     let parsedOutputFormats;
     try {
@@ -694,7 +694,7 @@ exports.batchConvert = async (req, res) => {
       console.error('Error parsing outputFormats:', error);
       return res.status(400).json({ error: "Invalid outputFormats format" });
     }
-    
+
     if (!parsedOutputFormats || !Array.isArray(parsedOutputFormats) || parsedOutputFormats.length !== req.files.length) {
       return res.status(400).json({ error: "Output formats array required for each file" });
     }
@@ -711,12 +711,12 @@ exports.batchConvert = async (req, res) => {
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
       const targetFormat = parsedOutputFormats[i];
-      
+
       console.log(`Processing file ${i + 1}: ${file.originalname} -> ${targetFormat}`);
 
       try {
         let result;
-        
+
         // Determine conversion based on input and output formats
         if (file.mimetype === 'application/pdf') {
           // PDF input conversions
@@ -736,9 +736,11 @@ exports.batchConvert = async (req, res) => {
               break;
             case 'pptx':
               const tempPdfPath3 = path.join(uploadDir, generateFilename('temp_pdf3', 'pdf'));
-              const tempPptxPath = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pptx`);
+              const originalName3 = path.parse(file.originalname).name;
+              const finalPptxPath = path.join(__dirname, '..', 'outputs', `${originalName3}.pptx`);
               fs.writeFileSync(tempPdfPath3, file.buffer);
-              result = await convertPdfToPpt(tempPdfPath3, tempPptxPath);
+              result = await convertPdfToPpt(tempPdfPath3, finalPptxPath);
+              result.outputFile = path.basename(finalPptxPath); // ensure correct filename
               break;
             case 'txt':
               const tempPdfPath4 = path.join(uploadDir, generateFilename('temp_pdf4', 'pdf'));
@@ -838,14 +840,14 @@ exports.batchConvert = async (req, res) => {
 
         // Add successful result
         let downloadUrl;
-        
+
         // Use the outputFile property from the result, or construct from the result properties
         if (result.outputFile) {
           downloadUrl = `/outputs/${result.outputFile}`;
         } else {
           // Fallback to other result properties
           downloadUrl = result.downloadUrl || result.pdf || result.epub;
-          
+
           // Ensure the download URL has the proper format
           if (downloadUrl && !downloadUrl.startsWith('/')) {
             downloadUrl = `/outputs/${downloadUrl}`;
@@ -853,7 +855,7 @@ exports.batchConvert = async (req, res) => {
             downloadUrl = `/outputs${downloadUrl}`;
           }
         }
-        
+
         results.push({
           fileName: file.originalname,
           inputFormat: path.extname(file.originalname).substring(1),
@@ -871,7 +873,7 @@ exports.batchConvert = async (req, res) => {
             format: targetFormat
           });
         }
-        
+
         // Clean up temporary input files
         try {
           if (tempPdfPath && fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath);
@@ -892,7 +894,7 @@ exports.batchConvert = async (req, res) => {
 
       } catch (error) {
         console.error(`Error converting ${file.originalname}:`, error);
-        
+
         results.push({
           fileName: file.originalname,
           inputFormat: path.extname(file.originalname).substring(1),
@@ -935,7 +937,7 @@ async function createZipFile(files) {
   const archiver = require('archiver');
   const zipFileName = `batch_conversion_${Date.now()}.zip`;
   const zipPath = path.join(__dirname, '..', 'outputs', zipFileName);
-  
+
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(zipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });

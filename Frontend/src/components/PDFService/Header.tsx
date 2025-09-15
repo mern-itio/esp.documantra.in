@@ -63,8 +63,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         {/* Logo and Brand */}
-        <div className="flex items-center space-x-4">         
-          
+        <div className="flex items-center space-x-4">
+
           {/* Stats Pills */}
           <div className="hidden md:flex items-center space-x-3">
             <div className="bg-blue-50 px-3 py-1 rounded-full">
@@ -74,9 +74,12 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div className="bg-green-50 px-3 py-1 rounded-full">
               <span className="text-xs font-medium text-green-700">
-                {loading ? '...' : `${displayStats.successRate}%`} success rate
+                {loading
+                  ? '...'
+                  : `${Number(displayStats.successRate).toFixed(2)}%`} success rate
               </span>
             </div>
+
           </div>
         </div>
 
@@ -100,66 +103,60 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => onViewChange('editor')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'editor'
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'editor'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <Edit3 className="w-4 h-4 mr-1 inline" />
               Editor
             </button>
             <button
               onClick={() => onViewChange('batch')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'batch'
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'batch'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <Zap className="w-4 h-4 mr-1 inline" />
               Batch
             </button>
             <button
               onClick={() => onViewChange('workflows')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'workflows'
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'workflows'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <Workflow className="w-4 h-4 mr-1 inline" />
               Workflows
             </button>
             <button
               onClick={() => onViewChange('quality')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'quality'
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'quality'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <Target className="w-4 h-4 mr-1 inline" />
               Quality
             </button>
             <button
               onClick={() => onViewChange('cloud')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'cloud'
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'cloud'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <Cloud className="w-4 h-4 mr-1 inline" />
               Cloud
             </button>
             <button
               onClick={() => onViewChange('analytics')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'analytics'
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'analytics'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <BarChart3 className="w-4 h-4 mr-1 inline" />
               Analytics

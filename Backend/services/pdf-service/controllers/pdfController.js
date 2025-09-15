@@ -262,29 +262,63 @@ async function convertExcelToPdf(inputPath, outputPath) {
     const stream = fs.createWriteStream(outputPath);
     doc.pipe(stream);
 
-    // doc.fontSize(14).text(`Excel to PDF Export - Sheet: ${sheetName}`, { align: 'center' });
-    doc.moveDown();
-
-    const rowHeight = 20;
+    let y = 50; // starting Y position
     const colSpacing = 150;
+    const pageHeight = (doc.page && doc.page.height) ? doc.page.height - 50 : 742; // default A4
 
-    // Draw table rows
     sheet.forEach((row, rowIndex) => {
+      if (!Array.isArray(row) || row.length === 0) {
+        return; // skip invalid/empty row
+      }
+
+      // First pass → measure each cell height
+      const cellHeights = row.map((cell) => {
+        const text = (cell !== null && cell !== undefined) ? String(cell) : '';
+        let textHeight = 0;
+        try {
+          textHeight = doc.heightOfString(text, { width: colSpacing - 8, align: 'left' });
+        } catch {
+          textHeight = 0; // fallback
+        }
+        if (isNaN(textHeight)) textHeight = 0;
+        return textHeight + 8; // add padding
+      });
+
+      // Ensure a minimum row height
+      let maxRowHeight = Math.max(28, ...cellHeights);
+      if (!isFinite(maxRowHeight) || isNaN(maxRowHeight)) {
+        maxRowHeight = 28;
+      }
+
+      // Check for page break
+      if (y + maxRowHeight > pageHeight) {
+        doc.addPage();
+        y = 50;
+      }
+
+      // Draw cells
       row.forEach((cell, colIndex) => {
         const text = (cell !== null && cell !== undefined) ? String(cell) : '';
-        doc.fontSize(10).text(text, 30 + colIndex * colSpacing, 100 + rowIndex * rowHeight, {
-          width: colSpacing - 10,
+        const x = 30 + (colIndex * colSpacing);
+        const safeY = isFinite(y) ? y : 50;
+
+        doc.fontSize(8).text(text, x, safeY, {
+          width: colSpacing - 8,
           align: 'left',
         });
       });
+
+      // Move down
+      y += maxRowHeight;
+      if (!isFinite(y) || isNaN(y)) {
+        y = 50; // reset if something goes wrong
+      }
     });
 
     doc.end();
-
     await new Promise(resolve => stream.on('finish', resolve));
 
     console.log('✅ Excel to PDF conversion completed.');
-
     const stats = await fs.stat(outputPath);
 
     return {
@@ -299,6 +333,8 @@ async function convertExcelToPdf(inputPath, outputPath) {
     throw new Error('Failed to convert Excel to PDF');
   }
 }
+
+
 
 /**
  * Convert PDF to PowerPoint (PPTX) using NPM packages

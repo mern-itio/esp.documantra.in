@@ -274,7 +274,7 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
           {uploadedFiles.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Convert PDF to HTML</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Convert PDF Files to HTML</h3>
                 <button
                   onClick={processFiles}
                   disabled={isProcessing}

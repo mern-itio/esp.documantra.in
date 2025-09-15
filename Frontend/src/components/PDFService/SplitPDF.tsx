@@ -558,7 +558,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
         <div className="text-center text-gray-500">
           <p>Upload a PDF file to get started</p>
           <div className="mt-4 text-xs text-gray-400">
-            <p>• Maximum file size: 100MB</p>
+            <p>• Maximum file size: 1MB</p>
             <p>• Only PDF files are supported</p>
             <p>• Choose from multiple split modes</p>
           </div>

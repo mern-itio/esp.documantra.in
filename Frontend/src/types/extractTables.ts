@@ -34,6 +34,7 @@ export interface ExtractTablesResult {
   tablesDetected: number;
   totalRows: number;
   totalColumns: number;
+  pagesProcessed?: number;
   detectionMethod: string;
   outputFormat: string;
   preserveFormatting: boolean;

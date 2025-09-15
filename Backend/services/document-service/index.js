@@ -11,6 +11,7 @@ const commentRoutes = require('./routes/commentRoutes');
 const versionRoutes = require('./routes/versionRoutes');
 const workflowRoutes = require('./routes/workflowRoutes');
 const documentAnalysisRoutes = require('./routes/documentAnalysisRoutes');
+const pdfShareRoutes = require('./routes/pdfShareRoutes');
 
 dotenv.config();
 
@@ -100,6 +101,11 @@ app.get('/test-email', async (req, res) => {
   }
 });
 
+// Public PDF Share Routes (No Authentication Required) - Must be before JWT middleware
+console.log('🔧 Registering public PDF share routes at /public/pdf-share');
+app.use('/public/pdf-share', require('./routes/pdfSharePublicRoutes'));
+console.log('✅ Public PDF share routes registered successfully');
+
 // JWT Middleware (applied to API routes only)
 app.use('/api', verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 
@@ -110,6 +116,7 @@ app.use('/api', commentRoutes);
 app.use('/api', versionRoutes);
 app.use('/api', workflowRoutes);
 app.use('/api/document-analysis', documentAnalysisRoutes);
+app.use('/api/pdf-share', pdfShareRoutes);
 
 // Error handling middleware
 app.use((error, req, res, next) => {

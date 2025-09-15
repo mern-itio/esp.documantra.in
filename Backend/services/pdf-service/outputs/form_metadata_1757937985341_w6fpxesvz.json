@@ -1,0 +1,111 @@
+{
+  "formName": "Untitled Form",
+  "formFields": [
+    {
+      "id": "1757937977523",
+      "name": "field_1",
+      "type": "radio",
+      "label": "Field 1",
+      "required": false,
+      "options": [
+        "Option 1",
+        "Option 2"
+      ]
+    },
+    {
+      "id": "1757937978051",
+      "name": "field_2",
+      "type": "checkbox",
+      "label": "Field 2",
+      "required": false
+    },
+    {
+      "id": "1757937978502",
+      "name": "field_3",
+      "type": "select",
+      "label": "Field 3",
+      "required": false,
+      "options": [
+        "Option 1",
+        "Option 2"
+      ]
+    },
+    {
+      "id": "1757937978883",
+      "name": "field_4",
+      "type": "date",
+      "label": "Field 4",
+      "required": false
+    },
+    {
+      "id": "1757937979235",
+      "name": "field_5",
+      "type": "number",
+      "label": "Field 5",
+      "required": false
+    },
+    {
+      "id": "1757937979580",
+      "name": "field_6",
+      "type": "email",
+      "label": "Field 6",
+      "required": false
+    },
+    {
+      "id": "1757937979919",
+      "name": "field_7",
+      "type": "textarea",
+      "label": "Field 7",
+      "required": false
+    },
+    {
+      "id": "1757937980259",
+      "name": "field_8",
+      "type": "text",
+      "label": "Field 8",
+      "required": false
+    },
+    {
+      "id": "1757937982672",
+      "name": "field_9",
+      "type": "checkbox",
+      "label": "Field 9",
+      "required": false
+    },
+    {
+      "id": "1757937983360",
+      "name": "field_10",
+      "type": "radio",
+      "label": "Field 10",
+      "required": false,
+      "options": [
+        "Option 1",
+        "Option 2"
+      ]
+    }
+  ],
+  "pageSize": "A4",
+  "orientation": "portrait",
+  "margins": {
+    "top": 50,
+    "bottom": 50,
+    "left": 50,
+    "right": 50
+  },
+  "styling": {
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#6b7280"
+  },
+  "created": "2025-09-15T12:06:25.341Z",
+  "totalFields": 10,
+  "fieldTypes": [
+    "radio",
+    "checkbox",
+    "select",
+    "date",
+    "number",
+    "email",
+    "textarea",
+    "text"
+  ]
+}

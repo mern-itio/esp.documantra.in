@@ -365,9 +365,10 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
           <h3 className="text-2xl font-semibold text-gray-900 mb-4">
             Drop your PDF here or click to browse
           </h3>
-          <p className="text-gray-600 mb-6 text-lg">
+          <p className="text-gray-600 mb-2 text-lg">
             Select a PDF file to rotate its pages
           </p>
+           <p className="text-sm text-gray-500 mb-6">Maximum file size: 2MB</p>
           <button
             onClick={() => fileInputRef.current?.click()}
             className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"

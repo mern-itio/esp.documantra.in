@@ -6,6 +6,7 @@ import { useAuth } from '../components/AuthService/AuthContext';
 import DashboardLayout from '../layouts/DashboardLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import PublicSignerLayout from '../layouts/PublicSignerLayout';
+import SharedDocumentLayout from '../layouts/SharedDocumentLayout';
 // import AdminLayout from '../layouts/AdminLayout';
 
 // Landing Page Components
@@ -73,6 +74,7 @@ import PdfRepairPage from '../pages/PDFTools/PdfRepairPage';
 import PdfBookmarksPage from '../pages/PDFTools/PdfBookmarksPage';
 import PdfStatisticsPage from '../pages/PDFTools/PdfStatisticsPage';
 import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
+import SharedDocument from '../pages/SharedDocument';
 import CompressPDFPage from '../pages/LandingPage/CompressPDFPage';
 import SplitPDFPage from '../pages/LandingPage/SplitPDFPage';
 import PDFToExcelPage from '../pages/LandingPage/PDFToExcelPage';
@@ -204,6 +206,7 @@ import { UploadModal } from '../components/DocumentService/modals/UploadModal';
 import { CollaborationHub } from '../components/DocumentService/collaboration/CollaborationHub';
 
 import { SharedDocumentsPage } from '../pages/DocumentService/SharedDocumentsPage';
+import SharedPDFPage from '../pages/DocumentService/SharedPDFPage';
 import FoldersPage from '../pages/DocumentService/FoldersPage';
 import RecentPage from '../pages/DocumentService/RecentPage';
 import FavoritesPage from '../pages/DocumentService/FavoritesPage';
@@ -283,6 +286,7 @@ import ApiServiceSupport from '../pages/ApiService/Support/Main';
 import PublicSignerPage from '../pages/eSign/PublicSignerPage';
 import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
 import OAuthCallback from '../pages/OAuthCallback';
+import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -394,7 +398,7 @@ const PDFToolsLayout = () => {
       case 'viewer':
         // return <PDFViewer selectedTool={selectedTool} onBack={() => setCurrentView('tools')} />;
       case 'editor':
-        // return <PDFEditor onBack={() => setCurrentView('tools')} />;
+        return <PdfEditorPage />;
       case 'batch':
         return <BatchConversion onBack={() => setCurrentView('tools')} />;
       case 'analytics':
@@ -530,7 +534,8 @@ const guestRoutes = [
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
   { path: '/oauth-callback', element: <OAuthCallback /> },
-
+  
+  // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages
   { path: '/pdf-to-word', element: <PDFToWordPage /> },
@@ -685,6 +690,14 @@ const authRoutes = [
     element: (
       <DocumentLayout>
         <SharedDocumentsPage />
+      </DocumentLayout>
+    )
+  },
+  {
+    path: '/documents/shared-pdf',
+    element: (
+      <DocumentLayout>
+        <SharedPDFPage />
       </DocumentLayout>
     )
   },
@@ -864,6 +877,12 @@ const router = createBrowserRouter([
       { path: '/template/form-view/:id', element:<FormView/>}
     ],
   },
+  {
+    // Shared Document Routes (Clean layout without header/footer)
+    element: <SharedDocumentLayout />,
+    children: [
+      { path: '/shared/:shareToken', element: <SharedDocument /> },
+    ],
+  },
 ]);
-
 export default router;

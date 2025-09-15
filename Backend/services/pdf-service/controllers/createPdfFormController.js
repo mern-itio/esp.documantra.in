@@ -14,9 +14,9 @@ const createPdfFormController = {
         margins = { top: 50, bottom: 50, left: 50, right: 50 },
         styling = {
           fontFamily: 'Helvetica',
-          fontSize: 12,
+          fontSize: 10,
           primaryColor: '#2563eb',
-          secondaryColor: '#6b7280'
+          secondaryColor: '#000000ff'
         }
       } = req.body;
 
@@ -429,22 +429,83 @@ async function addFormField(doc, field, startY, styling) {
       currentY += fieldHeight;
       break;
 
-    case 'select':
     case 'radio':
-    case 'checkbox':
-      // Add options
+      // Add radio button options with proper spacing
       if (field.options) {
+        const optionSpacing = 80; // Increased spacing between options
+        const radioRadius = 5;
+        const labelOffset = 15; // Distance from radio button to label
+        const maxOptionsPerRow = 3; // Maximum options per row
+        let rowOffset = 0;
+        
         field.options.forEach((option, index) => {
-          doc.circle(60 + (index * 30), currentY + 12, 5)
+          const rowIndex = Math.floor(index / maxOptionsPerRow);
+          const colIndex = index % maxOptionsPerRow;
+          const xPosition = 60 + (colIndex * optionSpacing);
+          const yPosition = currentY + (rowIndex * 25); // 25px spacing between rows
+          
+          // Draw radio button circle
+          doc.circle(xPosition, yPosition + 12, radioRadius)
              .strokeColor(styling.primaryColor)
              .lineWidth(1)
              .stroke();
+          
+          // Add option label with proper spacing
           doc.fontSize(10)
              .font('Helvetica')
              .fillColor(styling.secondaryColor)
-             .text(option, 70 + (index * 30), currentY + 8);
+             .text(option, xPosition + labelOffset, yPosition + 8);
         });
+        
+        // Adjust currentY for multi-row radio buttons
+        const totalRows = Math.ceil(field.options.length / maxOptionsPerRow);
+        currentY += (totalRows - 1) * 25;
       }
+      break;
+
+    case 'checkbox':
+      // Add checkbox options with proper spacing
+      if (field.options) {
+        const optionSpacing = 80; // Increased spacing between options
+        const checkboxSize = 8;
+        const labelOffset = 15; // Distance from checkbox to label
+        const maxOptionsPerRow = 3; // Maximum options per row
+        
+        field.options.forEach((option, index) => {
+          const rowIndex = Math.floor(index / maxOptionsPerRow);
+          const colIndex = index % maxOptionsPerRow;
+          const xPosition = 60 + (colIndex * optionSpacing);
+          const yPosition = currentY + (rowIndex * 25); // 25px spacing between rows
+          
+          // Draw checkbox square
+          doc.rect(xPosition - checkboxSize/2, yPosition + 8, checkboxSize, checkboxSize)
+             .strokeColor(styling.primaryColor)
+             .lineWidth(1)
+             .stroke();
+          
+          // Add option label with proper spacing
+          doc.fontSize(10)
+             .font('Helvetica')
+             .fillColor(styling.secondaryColor)
+             .text(option, xPosition + labelOffset, yPosition + 8);
+        });
+        
+        // Adjust currentY for multi-row checkboxes
+        const totalRows = Math.ceil(field.options.length / maxOptionsPerRow);
+        currentY += (totalRows - 1) * 25;
+      }
+      break;
+
+    case 'select':
+      // Add dropdown select field
+      doc.rect(50, currentY, 200, fieldHeight)
+         .strokeColor(styling.primaryColor)
+         .lineWidth(1)
+         .stroke();
+      doc.fontSize(10)
+         .font('Helvetica')
+         .fillColor(styling.secondaryColor)
+         .text('Select an option...', 60, currentY + 8);
       break;
 
     case 'number':

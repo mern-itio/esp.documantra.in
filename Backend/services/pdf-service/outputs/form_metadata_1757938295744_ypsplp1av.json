@@ -1,0 +1,65 @@
+{
+  "formName": "Untitled Form",
+  "formFields": [
+    {
+      "id": "1757938287419",
+      "name": "field_1",
+      "type": "text",
+      "label": "Field 1",
+      "required": false
+    },
+    {
+      "id": "1757938287975",
+      "name": "field_2",
+      "type": "textarea",
+      "label": "Field 2",
+      "required": false
+    },
+    {
+      "id": "1757938288387",
+      "name": "field_3",
+      "type": "email",
+      "label": "Field 3",
+      "required": false
+    },
+    {
+      "id": "1757938291623",
+      "name": "field_4",
+      "type": "checkbox",
+      "label": "Field 4",
+      "required": false
+    },
+    {
+      "id": "1757938292310",
+      "name": "field_5",
+      "type": "radio",
+      "label": "Field 5",
+      "required": false,
+      "options": [
+        "Option 1",
+        "Option 2"
+      ]
+    }
+  ],
+  "pageSize": "A4",
+  "orientation": "portrait",
+  "margins": {
+    "top": 50,
+    "bottom": 50,
+    "left": 50,
+    "right": 50
+  },
+  "styling": {
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#6b7280"
+  },
+  "created": "2025-09-15T12:11:35.744Z",
+  "totalFields": 5,
+  "fieldTypes": [
+    "text",
+    "textarea",
+    "email",
+    "checkbox",
+    "radio"
+  ]
+}

@@ -78,7 +78,10 @@ const addHeaderFooterController = {
           const textAlign = addHeaderFooterController.getTextAlign(headerPosition);
           const headerTextToUse = customHeaderText || headerText;
           
-          page.drawText(headerTextToUse, {
+          // Replace placeholders with actual values
+          const processedHeaderText = addHeaderFooterController.replacePlaceholders(headerTextToUse, pageNum, totalPages);
+          
+          page.drawText(processedHeaderText, {
             x: headerCoords.x,
             y: headerCoords.y,
             size: parseInt(fontSize),
@@ -86,7 +89,7 @@ const addHeaderFooterController = {
             font: await pdfDoc.embedFont(StandardFonts.Helvetica),
             textAlign: textAlign
           });
-          // console.log(`Header added to page ${pageNum}`);
+          // console.log(`Header added to page ${pageNum}: ${processedHeaderText}`);
         }
 
         // Add footer if enabled
@@ -95,7 +98,10 @@ const addHeaderFooterController = {
           const textAlign = addHeaderFooterController.getTextAlign(footerPosition);
           const footerTextToUse = customFooterText || footerText;
           
-          page.drawText(footerTextToUse, {
+          // Replace placeholders with actual values
+          const processedFooterText = addHeaderFooterController.replacePlaceholders(footerTextToUse, pageNum, totalPages);
+          
+          page.drawText(processedFooterText, {
             x: footerCoords.x,
             y: footerCoords.y,
             size: parseInt(fontSize),
@@ -103,7 +109,7 @@ const addHeaderFooterController = {
             font: await pdfDoc.embedFont(StandardFonts.Helvetica),
             textAlign: textAlign
           });
-          // console.log(`Footer added to page ${pageNum}`);
+          // console.log(`Footer added to page ${pageNum}: ${processedFooterText}`);
         }
 
         pagesModified++;
@@ -210,7 +216,10 @@ const addHeaderFooterController = {
           const textAlign = addHeaderFooterController.getTextAlign(headerPosition);
           const headerTextToUse = customHeaderText || headerText;
           
-          page.drawText(headerTextToUse, {
+          // Replace placeholders with actual values
+          const processedHeaderText = addHeaderFooterController.replacePlaceholders(headerTextToUse, pageNum, totalPages);
+          
+          page.drawText(processedHeaderText, {
             x: headerCoords.x,
             y: headerCoords.y,
             size: parseInt(fontSize),
@@ -226,7 +235,10 @@ const addHeaderFooterController = {
           const textAlign = addHeaderFooterController.getTextAlign(footerPosition);
           const footerTextToUse = customFooterText || footerText;
           
-          page.drawText(footerTextToUse, {
+          // Replace placeholders with actual values
+          const processedFooterText = addHeaderFooterController.replacePlaceholders(footerTextToUse, pageNum, totalPages);
+          
+          page.drawText(processedFooterText, {
             x: footerCoords.x,
             y: footerCoords.y,
             size: parseInt(fontSize),
@@ -317,6 +329,14 @@ const addHeaderFooterController = {
     const g = parseInt(hex.substr(2, 2), 16) / 255;
     const b = parseInt(hex.substr(4, 2), 16) / 255;
     return rgb(r, g, b);
+  },
+
+  replacePlaceholders(text, currentPage, totalPages) {
+    if (!text) return text;
+    
+    return text
+      .replace(/\{page\}/g, currentPage.toString())
+      .replace(/\{total\}/g, totalPages.toString());
   }
 };
 

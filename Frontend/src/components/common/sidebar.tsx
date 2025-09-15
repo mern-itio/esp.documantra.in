@@ -44,6 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'recent', label: 'Recent', path: '/recent', icon: Clock },
         { id: 'favorites', label: 'Favorites', path: '/documents/favorites', icon: Star },
         { id: 'shared', label: 'Shared with me', path: '/documents/shared', icon: Share2 },
+        { id: 'shared-pdf', label: 'Shared PDF', path: '/documents/shared-pdf', icon: Share2 },
         { id: 'archived', label: 'Archived', path: '/documents/archived', icon: Archive },
         { id: 'folders', label: 'Folders', path: '/documents/folder', icon: Folder },
         { id: 'trash', label: 'Trash', path: '/documents/trash', icon: Trash2 }

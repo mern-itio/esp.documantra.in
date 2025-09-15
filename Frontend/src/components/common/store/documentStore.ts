@@ -476,10 +476,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   setSelectedDocuments: (documentIds: string[]) => {
-    console.log('🔍 Store - setSelectedDocuments called with:', documentIds);
-    console.log('🔍 Store - Previous state:', get().selectedDocuments);
     set({ selectedDocuments: documentIds });
-    console.log('🔍 Store - New state:', get().selectedDocuments);
   },
 
   setCurrentFolder: async (folderId: string | null) => {
@@ -507,9 +504,15 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   getFilteredDocuments: () => {
     const { documents, currentFolderId, searchQuery, searchFilters, sortBy, sortOrder } = get();
 
+
     let filtered = documents.filter(doc => {
       // Exclude deleted documents
       if (doc.isDeleted) return false;
+
+      // Exclude shared PDF documents from regular document list
+      if (doc.type === 'pdf' && doc.description === 'PDF uploaded for sharing') {
+        return false;
+      }
 
       // Folder filter
       if (currentFolderId && doc.folderId !== currentFolderId) return false;

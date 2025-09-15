@@ -1,8 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { 
-  Upload, 
-  Download, 
-  X, 
+import {
+  Upload,
+  Download,
+  X,
   GripVertical,
   Info,
   Loader2,
@@ -54,7 +54,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
     if (!files) return;
 
     // Filter for PDF files only
-    const pdfFiles = Array.from(files).filter(file => 
+    const pdfFiles = Array.from(files).filter(file =>
       file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
     );
 
@@ -64,13 +64,15 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
     if (pdfFiles.length === 0) return;
 
-    // Check file size limits (100MB per file, 500MB total)
-    const maxFileSize = 100 * 1024 * 1024; // 100MB
-    const maxTotalSize = 500 * 1024 * 1024; // 500MB
-    
+    // Check file size limits (5MB per file, 25MB total)
+    const maxFileSize = 5 * 1024 * 1024; // 5 MB
+
+    // (optional) adjust total size if needed
+    const maxTotalSize = 25 * 1024 * 1024;
+
     const oversizedFiles = pdfFiles.filter(file => file.size > maxFileSize);
     if (oversizedFiles.length > 0) {
-      alert(`Some files are too large. Maximum file size is 100MB. Skipped: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      alert(`Some files are too large. Maximum file size is 5MB. Skipped: ${oversizedFiles.map(f => f.name).join(', ')}`);
     }
 
     const validFiles = pdfFiles.filter(file => file.size <= maxFileSize);
@@ -78,7 +80,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
     const currentTotalSize = documents.reduce((sum, doc) => sum + doc.size, 0);
     const newTotalSize = currentTotalSize + validFiles.reduce((sum, file) => sum + file.size, 0);
-    
+
     if (newTotalSize > maxTotalSize) {
       alert('Total file size would exceed 500MB limit. Please remove some files first.');
       return;
@@ -100,20 +102,20 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
       try {
         const pdfInfo = await mergePDFService.getPDFInfo(doc.file);
         const validation = await mergePDFService.validatePDF(doc.file);
-        
-        setDocuments(prev => prev.map(d => 
-          d.id === doc.id 
-            ? { 
-                ...d, 
-                pages: pdfInfo.pages, 
-                isProcessing: false,
-                error: validation.isValid ? undefined : validation.error
-              }
+
+        setDocuments(prev => prev.map(d =>
+          d.id === doc.id
+            ? {
+              ...d,
+              pages: pdfInfo.pages,
+              isProcessing: false,
+              error: validation.isValid ? undefined : validation.error
+            }
             : d
         ));
       } catch (error) {
-        setDocuments(prev => prev.map(d => 
-          d.id === doc.id 
+        setDocuments(prev => prev.map(d =>
+          d.id === doc.id
             ? { ...d, isProcessing: false, error: 'Failed to process PDF' }
             : d
         ));
@@ -203,7 +205,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
         const response = await fetch(result.mergedFile.downloadUrl);
         const blob = await response.blob();
         const mergedFile = new File([blob], result.mergedFile.filename, { type: 'application/pdf' });
-        
+
         setTimeout(() => {
           setIsMerging(false);
           onMergeComplete?.(mergedFile);
@@ -233,11 +235,10 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
       {/* File Upload Area */}
       <div
-        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
-          isDragging 
-            ? 'border-blue-500 bg-blue-50' 
+        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDragging
+            ? 'border-blue-500 bg-blue-50'
             : 'border-gray-300 hover:border-gray-400'
-        }`}
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -285,9 +286,8 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
             {documents.map((doc, index) => (
               <div
                 key={doc.id}
-                className={`bg-white rounded-xl border border-gray-200 p-4 transition-all duration-200 hover:shadow-md ${
-                  dragOverIndex === index ? 'border-blue-400 shadow-lg' : ''
-                }`}
+                className={`bg-white rounded-xl border border-gray-200 p-4 transition-all duration-200 hover:shadow-md ${dragOverIndex === index ? 'border-blue-400 shadow-lg' : ''
+                  }`}
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOverItem(e, index)}
@@ -307,22 +307,22 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-6xl text-gray-200 font-bold">D</div>
                         </div>
-                        
+
                         {/* Oltio Logo */}
                         <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                           Oltio
                         </div>
-                        
+
                         {/* Orange Highlight Circle */}
                         <div className="absolute bottom-4 right-4 w-3 h-3 bg-orange-400 rounded-full"></div>
-                        
+
                         {/* Left Side Lines */}
                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 space-y-1">
                           {[1, 2, 3].map((i) => (
                             <div key={i} className="w-8 h-1 bg-blue-600 rounded"></div>
                           ))}
                         </div>
-                        
+
                         {/* Right Side Text Lines */}
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 space-y-1 text-right">
                           {[1, 2, 3].map((i) => (
@@ -392,7 +392,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
           {isMerging && (
             <div className="mt-4 max-w-md mx-auto">
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${mergeProgress}%` }}
                 />
@@ -409,8 +409,8 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
           <p>Upload at least 2 PDF files to get started</p>
           <p className="text-sm mt-1">Drag and drop to reorder documents after upload</p>
           <div className="mt-4 text-xs text-gray-400">
-            <p>• Maximum file size: 100MB per file</p>
-            <p>• Maximum total size: 500MB</p>
+            <p>• Maximum file size: 5MB per file</p>
+            <p>• Maximum total size: 25MB</p>
             <p>• Only PDF files are supported</p>
           </div>
         </div>

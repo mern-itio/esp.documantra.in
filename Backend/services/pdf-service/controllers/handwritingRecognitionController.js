@@ -42,14 +42,24 @@ const handwritingRecognitionController = {
             });
           }
 
-          // Perform OCR with Tesseract
+          // Perform OCR with Tesseract with optimized settings for handwriting
           const result = await Tesseract.recognize(processedImagePath, language, {
             logger: m => console.log(m),
-            errorHandler: err => console.error(err)
+            errorHandler: err => console.error(err),
+            // Optimize for handwriting recognition
+            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+            tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
+            preserve_interword_spaces: '1',
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?;:()[]{}"\'- ',
+            user_words_suffix: 'user-words',
+            user_patterns_suffix: 'user-patterns'
           });
 
+          // Clean and filter the recognized text
+          const cleanedText = cleanRecognizedText(result.data.text);
+          
           // Filter results by confidence
-          const filteredText = result.data.text
+          const filteredText = cleanedText
             .split('\n')
             .filter(line => line.trim().length > 0)
             .map(line => ({
@@ -63,15 +73,15 @@ const handwritingRecognitionController = {
             await fs.remove(processedImagePath);
           }
 
-          // Save recognized text to file for download
+          // Save recognized text to file for download (one file per image)
           const textFilename = `handwriting_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.txt`;
           const textFilePath = path.join(__dirname, '../outputs', textFilename);
-          await fs.writeFile(textFilePath, result.data.text);
+          await fs.writeFile(textFilePath, cleanedText);
 
           results.push({
             filename: file.originalname,
             recognizedText: filteredText,
-            fullText: result.data.text,
+            fullText: cleanedText,
             confidence: result.data.confidence,
             language: language,
             processingTime: Date.now() - Date.now(),
@@ -154,20 +164,34 @@ const handwritingRecognitionController = {
           const cursiveLanguage = language === 'eng' ? 'eng' : language;
 
           const result = await Tesseract.recognize(processedImagePath, cursiveLanguage, {
-            logger: m => console.log(m)
+            logger: m => console.log(m),
+            // Optimize for cursive handwriting recognition
+            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+            tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
+            preserve_interword_spaces: '1',
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?;:()[]{}"\'- ',
+            user_words_suffix: 'user-words',
+            user_patterns_suffix: 'user-patterns',
+            // Additional settings for cursive
+            textord_min_linesize: '2.5',
+            textord_old_baselines: '0',
+            textord_old_xheight: '0'
           });
 
           // Clean up processed image
           await fs.remove(processedImagePath);
 
-          // Save recognized text to file for download
+          // Clean the recognized text
+          const cleanedText = cleanRecognizedText(result.data.text);
+
+          // Save recognized text to file for download (one file per image)
           const textFilename = `cursive_handwriting_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.txt`;
           const textFilePath = path.join(__dirname, '../outputs', textFilename);
-          await fs.writeFile(textFilePath, result.data.text);
+          await fs.writeFile(textFilePath, cleanedText);
 
           results.push({
             filename: file.originalname,
-            recognizedText: result.data.text,
+            recognizedText: cleanedText,
             confidence: result.data.confidence,
             language: cursiveLanguage,
             cursiveEnhanced: true,
@@ -257,7 +281,7 @@ const handwritingRecognitionController = {
             current.accuracy > best.accuracy ? current : best
           );
 
-          // Save accuracy results to file for download
+          // Save accuracy results to file for download (one file per image)
           const accuracyFilename = `accuracy_tuning_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.txt`;
           const accuracyFilePath = path.join(__dirname, '../outputs', accuracyFilename);
 
@@ -545,27 +569,39 @@ async function preprocessImageForOCR(imagePath, options = {}) {
 
   let pipeline = sharp(imagePath);
 
+  // Resize image for better OCR (handwriting is often small)
+  pipeline = pipeline.resize(2000, 2000, {
+    fit: 'inside',
+    withoutEnlargement: false
+  });
+
   if (enhance) {
     pipeline = pipeline.modulate({
       brightness: brightness,
-      contrast: contrast
+      contrast: contrast,
+      saturation: 0 // Remove color for better text recognition
     });
   }
 
   if (denoise) {
-    pipeline = pipeline.median(1);
+    // Use more aggressive denoising for handwriting
+    pipeline = pipeline.median(2);
   }
 
   if (sharpen) {
+    // Sharpen more aggressively for handwriting
     pipeline = pipeline.sharpen({
-      sigma: 1,
+      sigma: 1.5,
       flat: 1,
-      jagged: 2
+      jagged: 3
     });
   }
 
-  // Convert to grayscale for better OCR
-  pipeline = pipeline.grayscale();
+  // Convert to grayscale and enhance contrast
+  pipeline = pipeline.grayscale().normalize();
+
+  // Apply threshold to make text more distinct
+  pipeline = pipeline.threshold(128);
 
   await pipeline.toFile(outputPath);
   return outputPath;
@@ -583,21 +619,31 @@ async function preprocessImageForCursive(imagePath, options = {}) {
 
   let pipeline = sharp(imagePath);
 
+  // Resize image for better cursive recognition
+  pipeline = pipeline.resize(2500, 2500, {
+    fit: 'inside',
+    withoutEnlargement: false
+  });
+
   if (enhanceCursive) {
     // Enhance contrast for cursive text
     pipeline = pipeline.modulate({
       brightness: brightness,
-      contrast: contrast
+      contrast: contrast,
+      saturation: 0
     });
   }
 
   if (smoothing) {
     // Apply smoothing to reduce noise while preserving cursive curves
-    pipeline = pipeline.median(2);
+    pipeline = pipeline.median(3);
   }
 
-  // Convert to grayscale
-  pipeline = pipeline.grayscale();
+  // Convert to grayscale and normalize
+  pipeline = pipeline.grayscale().normalize();
+
+  // Apply adaptive threshold for cursive text
+  pipeline = pipeline.threshold(120);
 
   await pipeline.toFile(outputPath);
   return outputPath;
@@ -633,6 +679,26 @@ function levenshteinDistance(str1, str2) {
   }
 
   return matrix[str2.length][str1.length];
+}
+
+// Clean recognized text to remove noise and improve readability
+function cleanRecognizedText(text) {
+  if (!text) return '';
+  
+  return text
+    // Remove common OCR noise characters
+    .replace(/[^\w\s.,!?;:()\[\]{}"'-]/g, ' ')
+    // Remove multiple spaces
+    .replace(/\s+/g, ' ')
+    // Remove lines with only single characters or very short words
+    .split('\n')
+    .filter(line => {
+      const words = line.trim().split(/\s+/);
+      return words.length > 0 && words.some(word => word.length > 1);
+    })
+    // Join back with proper line breaks
+    .join('\n')
+    .trim();
 }
 
 module.exports = handwritingRecognitionController;
