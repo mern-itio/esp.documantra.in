@@ -11,6 +11,7 @@ const ObjectId = mongoose.Types.ObjectId;
 const { signAndEmbed } = require('../services/digitalSignatureService');
 const {logActivity} = require('../services/activityLogService');
 const { ActivityLogs } = require('../models/ActivityLogs');
+const Document = require('../models/Document');
 
 const envelopesData = async (req, res) => {
     const userId = req.user.data.id;
@@ -520,7 +521,82 @@ const activityLogs = async (req, res) =>{
     res.status(500).json({ message: 'Failed to fetch activity logs' });
   }
 }
-
+const removeRecFromEnvelope = async (req, res) => {
+  try {
+    const { recipientId, envelopeId } = req.params;
+    // Validate IDs
+    if (!recipientId && !envelopeId) {
+      return res.status(400).json({ message: "Invalid recipient or envelope ID." });
+    }
+    // Remove recipientId from Envelope's recipientIds array
+    const envelope = await Envelope.findById(envelopeId);
+    if (envelope) {
+      envelope.recipientIds = envelope.recipientIds.filter(id => id.toString() !== recipientId);
+      await envelope.save();
+    //remove record from RecipientPermission
+      await RecipientPermission.deleteMany({ recipientId: recipientId, envelopeId: envelopeId });
+      return res.status(200).json({ message: "Recipient deleted succesfully..." });
+    }
+  } catch (error) {
+    console.error("Error removing recipient from envelope:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+const removeDocFromEnvelope = async (req, res) => {
+  try {
+    const { documentId, envelopeId } = req.params;
+    // Validate IDs
+    if (!documentId && !envelopeId) {
+      return res.status(400).json({ message: "Invalid document or envelope ID." });
+    }
+    // Remove documentId from Envelope's documentIds array
+    const envelope = await Envelope.findById(envelopeId);
+    if (envelope) {
+      envelope.documentIds = envelope.documentIds.filter(id => id.toString() !== documentId);
+      await envelope.save();
+      await Document.deleteOne({ _id: documentId });
+      return res.status(200).json({ message: "Document deleted succesfully..." });
+    }
+  } catch (error) {
+    console.error("Error removing document from envelope:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+const getEnvSignFields = async (req, res) => {
+  const { envelopeId } = req.params;
+  try {
+    const signatureFields = await SignatureField.find({ envelopeId: envelopeId });
+    if (!signatureFields) {
+      return res.status(404).json({ message: 'Envelope not found' });
+    }
+    return res.status(200).json({
+      status: 'success',
+      signatureFields: signatureFields
+    });
+  } catch (error) {
+    console.error('Error fetching signature fields:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+const removeDocSignField = async (req, res) => {
+  try {
+    const { fieldId } = req.params;
+    // Validate fieldId
+    if (!fieldId) {
+      return res.status(400).json({ message: "Invalid field ID." });
+    }
+    // Remove Signature Field by ID
+    const field = await SignatureField.findByIdAndDelete(fieldId);
+    if (field) {
+      return res.status(200).json({ message: "Signature field deleted successfully." });
+    } else {
+      return res.status(404).json({ message: "Signature field not found." });
+    }
+  } catch (error) {
+    console.error("Error removing signature field:", error);
+    res.status(500).json({ message: "Server error", error });
+  } 
+}
 // Export functions
 module.exports = {
   envelopesData,
@@ -535,5 +611,9 @@ module.exports = {
   envelopeDelete,
   envelopeReminder,
   duplicateEnvelope,
-  activityLogs
+  activityLogs,
+  removeRecFromEnvelope,
+  removeDocFromEnvelope,
+  getEnvSignFields,
+  removeDocSignField
 };

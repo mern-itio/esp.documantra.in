@@ -16,13 +16,15 @@ import {
 import { useApp } from '../../context/AppContext';
 import type{ Document, Recipient } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
-import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
+import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector'; 
 import {eSignApi} from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 
 type SignatureField = {
   id: string;
+  _id?: string; // for backward compatibility
   docId: string;
+  documentId?: string; // for backward compatibility
   recipientId: string;
   page: number;
   x: number;
@@ -59,7 +61,8 @@ const EnvelopeCreator: React.FC = () => {
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
   const [sending, setSending] = useState(false);
-  
+  const [nextLoading, setNextLoading] = useState(false);
+
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
     { id: 2, name: 'Recipients', description: 'Add signers' },
@@ -147,8 +150,8 @@ const saveSignatureFields = async () => {
   if (!envelopeId || signatureFields.length === 0) return;
 
   const fieldsData = signatureFields.map(field => ({
-    envelopeId: envelopeId,
-    documentId: field.docId,
+    _id: field._id, 
+    documentId: field.docId ?? field.documentId, // for backward compatibility
     recipientId: field.recipientId,
     page: field.page,
     x: field.x,
@@ -165,7 +168,8 @@ const saveSignatureFields = async () => {
       signatureFields: fieldsData
     });
     if (response.status === 200) {
-      console.log('Signature fields saved successfully:', response.data);
+      console.log('Signature fields saved successfully:', response.data.data.signatureFields);
+      setSignatureFields(response.data.data.signatureFields);
       await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
     }
   } catch (error) {
@@ -204,35 +208,56 @@ const updateEnvelope = async () => {
 };
 // Update your "Next" button handler:
 const handleNext = async () => {
-  if (currentStep === 1) {
-    await uploadDocuments(currentStep);
-  }
-  if (currentStep === 2 && recipients?.length !=0) {
-    await insertRecipient();
-  }
-  if (currentStep === 3) {
-    if (signatureFields.length === 0) {
-      alert('Please add at least one signature field.');
-      return;
+    if (nextLoading) return;
+    setNextLoading(true);
+    try {
+      if (currentStep === 1) {
+        await uploadDocuments(currentStep);
+      }
+      if (currentStep === 2 && recipients?.length !=0) {
+        await insertRecipient();
+      }
+      if (currentStep === 3) {
+        if (signatureFields.length === 0) {
+          alert('Please add at least one signature field.');
+          return;
+        }
+        // Here you can save the signature fields to the server or state
+        await saveSignatureFields();
+      }
+      if (currentStep === 4) {
+        console.log('Step 4');
+        await updateEnvelope();
+      }
+      if (currentStep === 5) {
+        await updateEnvelope();
+      }
+      if (currentStep === 6) {
+        alert('Envelope created successfully, Ready to send!');
+        await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
+      }
+      setCurrentStep(prev => Math.min(6, prev + 1));
+    } catch (err) {
+      console.error('handleNext error:', err);
+      // optionally surface error to user
+    } finally {
+      // small delay to avoid flicker (optional)
+      // await new Promise(r => setTimeout(r, 150));
+      setNextLoading(false);
     }
-    // Here you can save the signature fields to the server or state
-    await saveSignatureFields();
-  }
-  if (currentStep === 4) {
-    console.log('Step 4');
-    await updateEnvelope();
-  }
-  if (currentStep === 5) {
-    await updateEnvelope();
-  }
-  if (currentStep === 6) {
-    alert('Envelope created successfully, Ready to send!');
-    await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
-  }
-  setCurrentStep(prev => Math.min(6, prev + 1));
-};
+  };
 
-  const removeDocument = (docId: string) => {
+  const removeDocument = async (docId: string) => {
+    // Heuristic: If the ID is a MongoDB ObjectId (24 hex chars), treat it as DB record
+    const isDbRecord = /^[a-fA-F0-9]{24}$/.test(docId);
+    if(isDbRecord && envelopeId) {
+      try{
+        await eSignApi.post(`/api/e-sign/envelope/remove-document/${docId}/${envelopeId}`);
+        console.log(`Document ${docId} deleted from DB successfully.`);
+      }catch (error) {
+        console.error('Failed to delete document from DB:', error);
+      }
+    }
     setDocuments(prev => prev.filter(doc => doc.id !== docId));
   };
 
@@ -271,7 +296,20 @@ const handleNext = async () => {
     }
   }
 
-  const removeRecipient = (id: string) => {
+  const removeRecipient = async (id: string) => {
+    // Check if coming from db and delete from db too
+
+  // Heuristic: If the ID is a MongoDB ObjectId (24 hex chars), treat it as DB record
+  const isDbRecord = /^[a-fA-F0-9]{24}$/.test(id);
+
+  if (isDbRecord) {
+    try {
+      await eSignApi.post(`/api/e-sign/envelope/remove-recipient/${id}/${envelopeId}`);// Adjust API path if needed
+      console.log(`Recipient ${id} deleted from DB successfully.`);
+    } catch (error) {
+      console.error('Failed to delete recipient from DB:', error);
+    }
+  }
     setRecipients(prev => prev.filter(recipient => recipient.id !== id));
   };
 
@@ -310,8 +348,6 @@ const handleNext = async () => {
       } finally {
         setSending(false);
       }
-    // In a real app, this would trigger email sending
-    navigate('/e-sign/dashboard');
   };
   useEffect(() => {
     getSteps();
@@ -329,6 +365,7 @@ const getSteps = async () => {
               case 1:
                 setCurrentStep(1);
                 setEnvelopeId(envelopeId)
+                if(envelopeId) await getEnvelopeDetail(envelopeId);
                 break;
               case 2:
                 setCurrentStep(2);
@@ -337,6 +374,7 @@ const getSteps = async () => {
               case 3:
                 setCurrentStep(3);
                 await getEnvelopeDetail(envelopeId);
+                await getSignatureFields(envelopeId);
                 break;
               case 4:
                 setCurrentStep(4);
@@ -357,6 +395,17 @@ const getSteps = async () => {
           }
     }
 }
+const getSignatureFields = async (envelopeId: string) => {
+  try {
+    const response = await eSignApi.get(`/api/e-sign/envelope/get-signature-fields/${envelopeId}`);
+    if (response.status === 200) {
+      setSignatureFields(response.data.signatureFields);
+      console.log('Fetched signature fields:', response.data.signatureFields);
+    }
+  } catch (error) {
+    console.error('Error fetching signature fields:', error);
+  }
+};
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -769,7 +818,7 @@ const getSteps = async () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/e-sign/dashboard'))}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -907,11 +956,20 @@ const getSteps = async () => {
               {currentStep < 6 ? (
                 <button
                   onClick={handleNext}
-                  disabled={!canProceedToNext()}
+                  disabled={!canProceedToNext() || nextLoading}
                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Next
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                  {nextLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    <>Next<ArrowLeft className="w-4 h-4 rotate-180" /></>
+                  )}
                 </button>
               ) : (
                 <button
@@ -923,7 +981,7 @@ const getSteps = async () => {
                 </button>
               )}
             </div>
-          </div>
+          </div>  
         </div>
       </div>
     </div>

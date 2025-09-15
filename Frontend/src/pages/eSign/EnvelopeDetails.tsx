@@ -66,7 +66,7 @@ const EnvelopeDetails: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Envelope Not Found</h2>
           <p className="text-gray-600 mb-6">The envelope you're looking for doesn't exist or has been removed.</p>
           <Link
-            to="/"
+            to="{/e-sign/dashboard}"
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -298,10 +298,14 @@ const handleDuplicate = async () =>{
             </ActionButton>
           )}
          {envelope?.status != 'completed' && (
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <Edit className="w-4 h-4" />
-            Edit
-          </button>
+        <button
+          className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          onClick={() => navigate(`/e-sign/edit/${envelope?.id}`)}
+        >
+          <Edit className="w-4 h-4" />
+          Edit
+        </button>
+
         )}
         </div>
       </div>
@@ -435,9 +439,9 @@ const renderActivity = () => (
                   {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-gray-600 mb-2 break-words">
                 {typeof entry.details === 'object'
-                  ? JSON.stringify(entry.details)
+                  ? JSON.stringify(entry.details, null, 2)
                   : entry.details}
               </p>
               <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -467,7 +471,7 @@ const renderActivity = () => (
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/e-sign/dashboard'))}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

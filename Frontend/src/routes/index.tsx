@@ -730,6 +730,7 @@ const authRoutes = [
   // E-Signature Routes
   { path: '/e-sign/dashboard', element: <EsignDashboard /> },
   { path: '/e-sign/create', element: <EsignEnvelopeCreator /> },
+  { path: '/e-sign/edit/:envelopeId', element: <EsignEnvelopeCreator /> },
   { path: '/e-sign/envelope/:id', element: <EsignEnvelopeDetails /> },
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },

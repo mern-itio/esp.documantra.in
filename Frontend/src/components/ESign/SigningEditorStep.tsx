@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { FileText, UserCircle, X } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
+import { eSignApi } from "../../services/apiHelper";
 
 export type Doc = {
   id: string;
@@ -21,7 +22,9 @@ export type Recipient = {
 
 type SignatureField = {
   id: string;
+  _id?: string; // for backward compatibility
   docId: string;
+  documentId?: string; // for backward compatibility
   recipientId: string;
   page: number;
   x: number;
@@ -54,7 +57,6 @@ export default function SigningEditorStep({
       pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
     }
   }, []);
-
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -109,20 +111,32 @@ export default function SigningEditorStep({
   const handleFieldMouseDown = (e: React.MouseEvent, field: SignatureField) => {
     if (field.recipientId !== activeRecipientId) return;
     e.stopPropagation();
-    setMovingFieldId(field.id);
+    setMovingFieldId(field.id ?? field._id ?? null);
     setMoveOffset({ x: e.clientX - field.x, y: e.clientY - field.y });
   };
 
   useEffect(() => {
     if (!movingFieldId) return;
-    const handleMouseMove = (e: MouseEvent) => setSignatureFields(fields => fields.map(f => f.id === movingFieldId ? {...f, x: e.clientX - (moveOffset?.x ?? 0), y: e.clientY - (moveOffset?.y ?? 0)} : f));
+    const handleMouseMove = (e: MouseEvent) => setSignatureFields(fields => fields.map(f => f.id ?? f._id === movingFieldId ? {...f, x: e.clientX - (moveOffset?.x ?? 0), y: e.clientY - (moveOffset?.y ?? 0)} : f));
     const handleMouseUp = () => { setMovingFieldId(null); setMoveOffset(null); };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
     return () => { window.removeEventListener("mousemove", handleMouseMove); window.removeEventListener("mouseup", handleMouseUp); };
   }, [movingFieldId, moveOffset]);
 
-  const handleDeleteField = (id: string) => setSignatureFields(fields => fields.filter(f => f.id !== id));
+  const handleDeleteField = async (id: string) => {
+     // Heuristic: If the ID is a MongoDB ObjectId (24 hex chars), treat it as DB record
+    const isDbRecord = /^[a-fA-F0-9]{24}$/.test(id);
+    if(isDbRecord && id) {
+          try{
+            await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${id}`);
+            console.log(`Signature field ${id} deleted from DB successfully.`);
+          }catch (error) {
+            console.error('Failed to delete signature field from DB:', error);
+          }
+        }
+    setSignatureFields(fields => fields.filter(f => (f.id ?? f._id) !== id));
+  }
 
   const onDocLoadSuccess = ({ numPages }: { numPages: number }) => { setNumPages(numPages); };
 
@@ -163,13 +177,13 @@ export default function SigningEditorStep({
                   <Page pageNumber={currentPage} width={800} className="shadow mb-4" />
                   {/* Signature fields */}
                   {signatureFields
-                    .filter(f => f.docId === activeDocId && f.page === currentPage)
+                  .filter(f => (f.docId ?? f.documentId) === activeDocId && f.page === currentPage)
                     .map(f => {
                       const isActiveRecipient = f.recipientId === activeRecipientId;
                       const color = recipientColorMap[f.recipientId] || "#2563eb";
                       return (
                         <div
-                          key={f.id}
+                          key={f.id?? f._id}
                           style={{
                             position: "absolute",
                             left: f.x,
@@ -191,20 +205,29 @@ export default function SigningEditorStep({
                           ✍ Signature
                           {isActiveRecipient && (
                             <button
-                              onClick={e => { e.stopPropagation(); handleDeleteField(f.id); }}
+                              onClick={e => { e.stopPropagation(); handleDeleteField(f.id ?? f._id); }}
                               style={{
                                 position: "absolute",
-                                top: -10,
-                                right: -10,
+                                top: 0,
+                                right: 0,
                                 width: 22,
                                 height: 22,
                                 borderRadius: "50%",
-                                border: `1px solid ${color}`,
-                                background: "#fff"
+                                border: `1px solid ${recipientColorMap[activeRecipientId!] || "#2563eb"}`,
+                                background: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transform: "translate(50%, -50%)",
+                                cursor: "pointer",
+                                zIndex: 11,
+                                padding: 0,
+                                lineHeight: 1
                               }}
                             >
-                              <X size={14} />
+                              <X size={14} style={{ display: "block" }} />
                             </button>
+
                           )}
                         </div>
                       );

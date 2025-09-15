@@ -34,7 +34,7 @@ app.use("/api/e-sign", certificateRoutes);
 app.use("/api/e-sign", otpRoutes);
 app.use('/api/e-sign', digitalSignatureRoutes);
 app.use('/api/e-sign', tsaRoutes);
-app.use('/api/e-sign/',verificationRoutes);
+app.use('/api/e-sign',verificationRoutes);
 app.use('/api/e-sign/anchor', anchorRoutes);
 
 app.use('/api/e-sign', verifyJWT(process.env.ACCESS_TOKEN_SECRET), eSignRoutes);
