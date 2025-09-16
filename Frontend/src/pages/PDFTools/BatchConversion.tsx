@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Upload,
@@ -36,6 +36,7 @@ interface BatchConversionProps {
 }
 
 export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
+   const location = useLocation();
   const [files, setFiles] = useState<FileWithFormat[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
@@ -411,7 +412,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
             </button>
           ) : (
             <Link
-              to="/pdf-tools"
+                 to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

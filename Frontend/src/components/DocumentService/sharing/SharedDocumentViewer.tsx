@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Eye, Download, Lock, AlertCircle, FileText, User, Calendar, MessageSquare } from 'lucide-react';
 import { pdfShareService } from '../../../services/pdfShareService';
+import type { Comment } from '../../../services/pdfShareService';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
@@ -25,6 +26,7 @@ interface SharedDocumentData {
     message: string;
     expiresAt?: string;
     viewCount: number;
+    isOwner?: boolean;
   };
 }
 
@@ -38,9 +40,35 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1);
+  const [pdfDocument, setPdfDocument] = useState<any>(null);
   const [email, setEmail] = useState('');
+  const [comments, setComments] = useState<Comment[]>([]);
+  // Removed showComments state - comments now always visible in sidebar when available
+  const [newComment, setNewComment] = useState('');
+  const [commentAuthor, setCommentAuthor] = useState('');
+  const [commentEmail, setCommentEmail] = useState('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Helper function to get user info from localStorage
+  const getUserInfo = () => {
+    const userInfo = localStorage.getItem('userData');
+    if (userInfo) {
+      try {
+        const user = JSON.parse(userInfo);
+        return {
+          name: user.name || user.email || 'Anonymous',
+          email: user.email || 'anonymous@example.com'
+        };
+      } catch (e) {
+        console.warn('Failed to parse user info from localStorage:', e);
+      }
+    }
+    return {
+      name: 'Anonymous',
+      email: 'anonymous@example.com'
+    };
+  };
 
   // Load PDF.js
   useEffect(() => {
@@ -49,7 +77,6 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
         // Point to the worker file in your public folder
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
           window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         }
       } catch (err) {
         console.warn("Failed to set PDF.js worker:", err);
@@ -62,20 +89,19 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
     try {
       if (typeof window !== 'undefined' && !window.pdfjsLib) {
         const pdfjsLib = await import('pdfjs-dist');
-        
+
         // Set worker path to local file
         try {
           pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         } catch (error) {
           console.warn("Failed to set PDF.js worker:", error);
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';
         }
-        
+
         // Assign to window
         window.pdfjsLib = pdfjsLib;
       }
-      
+
       return window.pdfjsLib;
     } catch (error) {
       console.error('Error loading PDF.js:', error);
@@ -91,11 +117,13 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
         setError('');
 
         const response = await pdfShareService.getSharedDocument(shareToken, email, password);
-        
+
         if (response.success) {
           setDocumentData(response.data);
           setPasswordRequired(false);
           await loadPDFDocument(response.data.document.id);
+
+          await loadComments();
         } else {
           setError('Failed to load document');
         }
@@ -116,26 +144,45 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
     }
   }, [shareToken, email, password]);
 
+  // Separate effect for password input to prevent focus loss
+  const [passwordInput, setPasswordInput] = useState('');
+
   // Load PDF document
   const loadPDFDocument = async (documentId: string) => {
     try {
       const pdfjsLib = await loadPDFJS();
-      if (!pdfjsLib) return;
-
-      console.log('Loading PDF document:', documentId);
-      
+      if (!pdfjsLib) {
+        console.error('PDF.js library not loaded');
+        return;
+      }
+      console.log("Doc ID:", documentId);
       // Fetch the PDF file from the public endpoint
-      const response = await fetch(`${import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:2102'}/public/pdf-share/file/${shareToken}`);
+      const pdfUrl = `${import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:2102'}/public/pdf-share/file/${shareToken}`;
+
+      const response = await fetch(pdfUrl);
 
       if (!response.ok) {
+        console.error('Failed to fetch PDF document. Status:', response.status, response.statusText);
         throw new Error('Failed to fetch PDF document');
       }
 
       const arrayBuffer = await response.arrayBuffer();
+
+      if (arrayBuffer.byteLength === 0) {
+        console.error('PDF file is empty');
+        throw new Error('PDF file is empty');
+      }
+
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      
+
+      setPdfDocument(pdf);
       setTotalPages(pdf.numPages);
       setPdfPages(Array.from({ length: pdf.numPages }, (_, i) => ({ pageNumber: i + 1 })));
+
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
+        renderPage(1);
+      });
     } catch (error) {
       console.error('Error loading PDF:', error);
       // Fallback to mock data for demo
@@ -144,92 +191,101 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
     }
   };
 
-  // Render PDF page
-  const renderPage = useCallback(async (pageNumber: number) => {
-    if (!canvasRef.current || !documentData) return;
+  const loadComments = async () => {
+    try {
+      const response = await pdfShareService.getSharedDocumentComments(shareToken);
+      if (response.success) {
+        setComments(response.data);
+      }
+    } catch (err: any) {
+      console.error('Error loading comments:', err);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
 
     try {
-      const pdfjsLib = await loadPDFJS();
-      if (!pdfjsLib) return;
+      // Get user info from local storage if available
+      const userInfo = getUserInfo();
 
+      const response = await pdfShareService.addSharedDocumentComment(shareToken, {
+        content: newComment,
+        position: { page: currentPage, x: 0, y: 0 },
+        authorName: userInfo.name,
+        authorEmail: userInfo.email
+      });
+
+      if (response.success) {
+        setComments(prev => [response.data, ...prev]);
+        setNewComment('');
+        setCommentAuthor('');
+        setCommentEmail('');
+      }
+    } catch (err: any) {
+      console.error('Error adding comment:', err);
+    }
+  };
+
+  // Render PDF page
+  const renderPage = useCallback(async (pageNumber: number) => {
+    if (!canvasRef.current || !pdfDocument) {
+      return;
+    }
+
+    try {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
-      if (!context) return;
+
+      if (!context) {
+        console.error('Cannot get canvas context');
+        return;
+      }
 
       // Clear canvas
       context.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Fetch the PDF file from the public endpoint
-      const response = await fetch(`${import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:2102'}/public/pdf-share/file/${shareToken}`);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch PDF document');
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const page = await pdf.getPage(pageNumber);
+      const page = await pdfDocument.getPage(pageNumber);
       const viewport = page.getViewport({ scale: scale });
-      
+
       // Set canvas dimensions
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-      
+
       const renderContext = {
         canvasContext: context,
         viewport: viewport
       };
-      
+
       await page.render(renderContext).promise;
     } catch (error) {
       console.error('Error rendering PDF page:', error);
-      
-      // Fallback to placeholder
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
-      if (context) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.fillStyle = '#f8f9fa';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        context.fillStyle = '#6b7280';
-        context.font = '24px Arial';
-        context.textAlign = 'center';
-        context.fillText('PDF Preview', canvas.width / 2, canvas.height / 2 - 20);
-        
-        context.font = '16px Arial';
-        context.fillText(`Page ${pageNumber} of ${totalPages}`, canvas.width / 2, canvas.height / 2 + 20);
-        
-        context.fillText('PDF content would be displayed here', canvas.width / 2, canvas.height / 2 + 50);
-      }
+
+      // Retry once after a short delay
+      setTimeout(() => {
+        if (canvasRef.current && pdfDocument) {
+          renderPage(pageNumber);
+        }
+      }, 100);
     }
-  }, [documentData, scale, totalPages, loadPDFJS]);
+  }, [pdfDocument, scale]);
 
   // Render current page when page number or scale changes
   useEffect(() => {
-    if (currentPage > 0) {
+    if (currentPage > 0 && pdfDocument) {
       renderPage(currentPage);
     }
-  }, [currentPage, scale, renderPage]);
+  }, [currentPage, scale, renderPage, pdfDocument]);
 
   const handlePasswordSubmit = async () => {
-    if (!password.trim()) {
+    if (!passwordInput.trim()) {
       setError('Please enter a password');
       return;
     }
-    
-    // Reload document with password
-    const response = await pdfShareService.getSharedDocument(shareToken, email, password);
-    
-    if (response.success) {
-      setDocumentData(response.data);
-      setPasswordRequired(false);
-      setError('');
-    } else {
-      setError('Invalid password');
-    }
+
+    // Set the password and trigger reload
+    setPassword(passwordInput);
+    setError('');
   };
 
   const handleDownload = async () => {
@@ -294,24 +350,24 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
             <Lock size={48} className="mx-auto text-blue-500 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Password Required</h2>
             <p className="text-gray-600 mb-6">This document is protected with a password</p>
-            
+
             <div className="space-y-4">
               <Input
                 type="password"
                 placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
               />
               <Button
                 onClick={handlePasswordSubmit}
                 className="w-full"
-                disabled={!password.trim()}
+                disabled={!passwordInput.trim()}
               >
                 Access Document
               </Button>
             </div>
-            
+
             {error && (
               <Alert className="mt-4 bg-red-50 border-red-200 text-red-800">
                 {error}
@@ -352,7 +408,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {documentData.share.allowDownload && (
                 <Button
@@ -364,7 +420,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                   Download
                 </Button>
               )}
-              
+
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <Eye size={16} />
                 <span>{documentData.share.viewCount} views</span>
@@ -398,7 +454,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
               </span>
             </div>
           </div>
-          
+
           {documentData.share.message && (
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-start space-x-2">
@@ -410,7 +466,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
               </div>
             </div>
           )}
-          
+
           {documentData.share.expiresAt && (
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center space-x-2">
@@ -423,64 +479,305 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
           )}
         </Card>
 
-        {/* PDF Viewer */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">Document Preview</h3>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage <= 1}
-                  size="sm"
-                  variant="outline"
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage >= totalPages}
-                  size="sm"
-                  variant="outline"
-                >
-                  Next
-                </Button>
+        {/* PDF Viewer with Comments Sidebar */}
+        <div className="flex gap-6">
+          {/* PDF Viewer */}
+          <Card className="flex-1 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">Document Preview</h3>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage <= 1}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Next
+                  </Button>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={() => setScale(Math.max(0.5, scale - 0.25))}
+                    size="sm"
+                    variant="outline"
+                  >
+                    -
+                  </Button>
+                  <span className="text-sm text-gray-600 w-12 text-center">
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <Button
+                    onClick={() => setScale(Math.min(2, scale + 0.25))}
+                    size="sm"
+                    variant="outline"
+                  >
+                    +
+                  </Button>
+                </div>
               </div>
-              
-              <div className="flex items-center space-x-2">
+            </div>
+
+            <div className="w-full m-auto border rounded-lg overflow-hidden bg-white">
+              <canvas
+                ref={canvasRef}
+                className="w-full h-auto"
+                style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
+              />
+            </div>
+          </Card>
+
+          {/* Comments Sidebar - Always show if there are comments or if comments are allowed */}
+          {(comments.length > 0 || documentData?.share.allowComments || documentData?.share.isOwner) && (
+            <Card className="w-80 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Comments</h3>
+                <span className="text-sm text-gray-500">{comments.length} comments</span>
+              </div>
+
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {comments.map((comment) => (
+                  <div key={comment._id} className={`border-b border-gray-100 pb-4 last:border-b-0 ${comment.isAdminComment ? 'bg-blue-50 p-3 rounded-lg' : ''}`}>
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${comment.isAdminComment ? 'bg-blue-600' : 'bg-blue-100'}`}>
+                        <User size={16} className={comment.isAdminComment ? 'text-white' : 'text-blue-600'} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <span className={`font-medium text-sm ${comment.isAdminComment ? 'text-blue-900' : 'text-gray-900'}`}>
+                            {comment.authorName}
+                            {comment.isAdminComment && (
+                              <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
+                                Admin
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className={`text-sm mt-1 ${comment.isAdminComment ? 'text-blue-800' : 'text-gray-700'}`}>{comment.content}</p>
+                        {comment.replies.length > 0 && (
+                          <div className="mt-3 ml-4 space-y-2">
+                            {comment.replies.map((reply) => (
+                              <div key={reply._id} className="flex items-start space-x-2">
+                                <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                                  <User size={12} className="text-gray-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-medium text-xs text-gray-700">
+                                      {reply.authorName}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(reply.timestamp).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600 mt-1">{reply.content}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {comments.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    <MessageSquare size={32} className="mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No comments yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Add Comment Form or Message */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                {documentData?.share.allowComments ? (
+                  <div className="space-y-3">
+                    {(() => {
+                      const userInfo = getUserInfo();
+                      const isLoggedIn = localStorage.getItem('userData') !== null;
+
+                      return isLoggedIn ? (
+                        <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                          <p>Commenting as: <strong>{userInfo.name}</strong></p>
+                        </div>
+                      ) : (
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            placeholder="Your name"
+                            value={commentAuthor}
+                            onChange={(e) => setCommentAuthor(e.target.value)}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <input
+                            type="email"
+                            placeholder="Email"
+                            value={commentEmail}
+                            onChange={(e) => setCommentEmail(e.target.value)}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      );
+                    })()}
+                    <textarea
+                      placeholder="Add a comment..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      rows={3}
+                    />
+                    <Button
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim()}
+                      size="sm"
+                      className="w-full"
+                    >
+                      Add Comment
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-4">
+                    <MessageSquare size={24} className="mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">Comments are disabled for this document</p>
+                    <p className="text-xs text-gray-400 mt-1">You can view existing comments but cannot add new ones</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Old Comments Panel - Removed, now using sidebar */}
+        {false && (documentData?.share.allowComments || documentData?.share.isOwner) && (
+          <Card className="p-6 mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">Comments</h3>
+              <span className="text-sm text-gray-500">{comments.length} comments</span>
+            </div>
+
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {comments.map((comment) => (
+                <div key={comment._id} className={`border-b border-gray-100 pb-4 last:border-b-0 ${comment.isAdminComment ? 'bg-blue-50 p-3 rounded-lg' : ''}`}>
+                  <div className="flex items-start space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${comment.isAdminComment ? 'bg-blue-600' : 'bg-blue-100'}`}>
+                      <User size={16} className={comment.isAdminComment ? 'text-white' : 'text-blue-600'} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className={`font-medium text-sm ${comment.isAdminComment ? 'text-blue-900' : 'text-gray-900'}`}>
+                          {comment.authorName}
+                          {comment.isAdminComment && (
+                            <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
+                              Admin
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(comment.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className={`text-sm mt-1 ${comment.isAdminComment ? 'text-blue-800' : 'text-gray-700'}`}>{comment.content}</p>
+                      {comment.replies.length > 0 && (
+                        <div className="mt-3 ml-4 space-y-2">
+                          {comment.replies.map((reply) => (
+                            <div key={reply._id} className="flex items-start space-x-2">
+                              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                                <User size={12} className="text-gray-600" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium text-xs text-gray-700">
+                                    {reply.authorName}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(reply.timestamp).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 mt-1">{reply.content}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {comments.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  <MessageSquare size={32} className="mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No comments yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Add Comment Form */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="space-y-3">
+                {(() => {
+                  const userInfo = getUserInfo();
+                  const isLoggedIn = localStorage.getItem('userData') !== null;
+
+                  return isLoggedIn ? (
+                    <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                      <p>Commenting as: <strong>{userInfo.name}</strong> ({userInfo.email})</p>
+                    </div>
+                  ) : (
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder="Your name"
+                        value={commentAuthor}
+                        onChange={(e) => setCommentAuthor(e.target.value)}
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        value={commentEmail}
+                        onChange={(e) => setCommentEmail(e.target.value)}
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  );
+                })()}
+                <textarea
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={3}
+                />
                 <Button
-                  onClick={() => setScale(Math.max(0.5, scale - 0.25))}
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
                   size="sm"
-                  variant="outline"
+                  className="w-full"
                 >
-                  -
-                </Button>
-                <span className="text-sm text-gray-600 w-12 text-center">
-                  {Math.round(scale * 100)}%
-                </span>
-                <Button
-                  onClick={() => setScale(Math.min(2, scale + 0.25))}
-                  size="sm"
-                  variant="outline"
-                >
-                  +
+                  Add Comment
                 </Button>
               </div>
             </div>
-          </div>
-          
-          <div className="w-full m-auto border rounded-lg overflow-hidden bg-white">
-            <canvas
-              ref={canvasRef}
-              className="w-full h-auto"
-              style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
-            />
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {/* Email Tracking (Optional) */}
         {!email && (

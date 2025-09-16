@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 import { makeSearchableService } from '../../services/makeSearchableService';
 import type { MakeSearchableRequest, MakeSearchableResponse, MakeSearchableResult } from '../../types/makeSearchable';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const MakeSearchable: React.FC = () => {
+   const location = useLocation();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [language, setLanguage] = useState('eng');
   const [accuracy, setAccuracy] = useState<'fast' | 'balanced' | 'accurate'>('balanced');
@@ -148,7 +149,7 @@ const MakeSearchable: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+              to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

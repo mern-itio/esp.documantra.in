@@ -223,6 +223,9 @@ export const documentAPI = {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Document not found. Please make sure the document exists and you have access to it.');
+        }
         throw new Error(`Download failed: ${response.status} ${response.statusText}`);
       }
 

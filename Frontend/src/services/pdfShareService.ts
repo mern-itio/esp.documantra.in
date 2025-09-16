@@ -62,6 +62,44 @@ export interface SharedDocument {
   isActive: boolean;
   expiresAt?: string;
   createdAt: string;
+  allowComments?: boolean;
+  isOwner?: boolean;
+}
+
+export interface Comment {
+  _id: string;
+  documentId: string;
+  author: string;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  position: {
+    page: number;
+    x: number;
+    y: number;
+  };
+  timestamp: string;
+  replies: Array<{
+    _id: string;
+    author: string;
+    authorName: string;
+    authorAvatar: string;
+    content: string;
+    timestamp: string;
+    mentions: string[];
+  }>;
+  resolved: boolean;
+  mentions: string[];
+  attachments: Array<{
+    name: string;
+    size: number;
+    type: string;
+    url: string;
+  }>;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  isAdminComment?: boolean;
+  adminUserId?: string;
 }
 
 export interface PDFUploadResponse {
@@ -174,17 +212,130 @@ export const pdfShareService = {
       };
     };
   }> {
-    const response = await fetch(`${DOCUMENT_API_BASE_URL}/public/pdf-share/view/${shareToken}`, {
-      method: 'POST',
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (email) queryParams.append('email', email);
+    if (password) queryParams.append('password', password);
+    
+    const url = `${DOCUMENT_API_BASE_URL}/public/pdf-share/${shareToken}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to load document' }));
       throw new Error(errorData.message || 'Failed to load document');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get comments for shared document
+   */
+  async getSharedDocumentComments(shareToken: string): Promise<{
+    success: boolean;
+    data: Comment[];
+  }> {
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/public/pdf-share/${shareToken}/comments`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to load comments' }));
+      throw new Error(errorData.message || 'Failed to load comments');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get comments for shared document (authenticated - for admins)
+   */
+  async getSharedDocumentCommentsAuth(shareToken: string): Promise<{
+    success: boolean;
+    data: Comment[];
+  }> {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('Authentication required for loading comments');
+    }
+
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/comments/${shareToken}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to load comments' }));
+      throw new Error(errorData.message || 'Failed to load comments');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Add comment to shared document
+   */
+  async addSharedDocumentComment(shareToken: string, comment: {
+    content: string;
+    position?: { page: number; x: number; y: number };
+    authorName?: string;
+    authorEmail?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: Comment;
+  }> {
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/public/pdf-share/${shareToken}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(comment),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to add comment' }));
+      throw new Error(errorData.message || 'Failed to add comment');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Add admin comment to shared document (authenticated)
+   */
+  async addAdminComment(shareToken: string, comment: {
+    content: string;
+    position?: { page: number; x: number; y: number };
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: Comment;
+  }> {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('Authentication required for admin comments');
+    }
+
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/admin-comment/${shareToken}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(comment),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to add admin comment' }));
+      throw new Error(errorData.message || 'Failed to add admin comment');
     }
 
     return response.json();

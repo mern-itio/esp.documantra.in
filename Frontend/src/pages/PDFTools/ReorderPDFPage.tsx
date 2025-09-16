@@ -3,10 +3,11 @@ import ReorderPDF from '../../components/PDFService/ReorderPDF';
 import type { ReorderPDFResponse } from '../../types/reorderPDF';
 import { reorderPDFService } from '../../services/reorderPDFService';
 import { FiDownload, FiX } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const ReorderPDFPage: React.FC = () => {
+   const location = useLocation();
   const [reorderResult, setReorderResult] = useState<ReorderPDFResponse | null>(null);
 
   const handleReorderResult = (result: ReorderPDFResponse) => {
@@ -29,7 +30,7 @@ const ReorderPDFPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                 to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

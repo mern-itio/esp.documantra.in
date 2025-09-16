@@ -357,7 +357,17 @@ const PDFToolsLayout = () => {
     // console.log('Tool selected:', tool);
     // console.log('Navigating to:', `/pdf-tools/${tool.id}`);
     // setSelectedTool(tool);
-    navigate(`/pdf-tools/${tool.id}`);
+    
+    // Get current category from URL or tool's category
+    const urlParams = new URLSearchParams(location.search);
+    const currentCategory = urlParams.get('category') || tool.category;
+    
+    // Navigate with category parameter to maintain sidebar state
+    const navigateUrl = currentCategory 
+      ? `/pdf-tools/${tool.id}?category=${currentCategory}`
+      : `/pdf-tools/${tool.id}`;
+    
+    navigate(navigateUrl);
 
     // Add to recent tools
     setRecentTools(prev => {
@@ -425,6 +435,7 @@ const PDFToolsLayout = () => {
               onToggleFavorite={toggleFavorite}
               recentTools={recentTools}
               searchQuery={searchQuery}
+              selectedCategory={selectedCategory}
             />
           </div>
         );

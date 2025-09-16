@@ -7,13 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../Do
 
 // PDF.js imports
 import * as pdfjsLib from 'pdfjs-dist';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 // Use the correct worker version that matches the installed pdfjs-dist
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 const AddPageNumbers: React.FC = () => {
+   const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -281,7 +282,7 @@ const AddPageNumbers: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                 to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

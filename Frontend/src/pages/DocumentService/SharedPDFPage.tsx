@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, FileText, Eye, Download, Trash2, ExternalLink } from 'lucide-react';
+import { Share2, FileText, Eye, Download, Trash2, ExternalLink, MessageSquare, User } from 'lucide-react';
 import { pdfShareService } from '../../services/pdfShareService';
-import type { SharedDocument } from '../../services/pdfShareService';
+import type { SharedDocument, Comment } from '../../services/pdfShareService';
 import { Button } from '../../components/DocumentService/ui/button';
 import { Card } from '../../components/DocumentService/ui/card';
 import Badge from '../../components/DocumentService/ui/badge';
@@ -22,8 +22,33 @@ const SharedPDFPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1);
   const [pdfDocument, setPdfDocument] = useState<any>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [commentAuthor, setCommentAuthor] = useState('');
+  const [commentEmail, setCommentEmail] = useState('');
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Helper function to get user info from localStorage
+  const getUserInfo = () => {
+    const userInfo = localStorage.getItem('userData');
+    if (userInfo) {
+      try {
+        const user = JSON.parse(userInfo);
+        return {
+          name: user.name || user.email || 'Anonymous',
+          email: user.email || 'anonymous@example.com'
+        };
+      } catch (e) {
+        console.warn('Failed to parse user info from localStorage:', e);
+      }
+    }
+    return {
+      name: 'Anonymous',
+      email: 'anonymous@example.com'
+    };
+  };
 
   // Load PDF.js
   useEffect(() => {
@@ -31,7 +56,6 @@ const SharedPDFPage: React.FC = () => {
       try {
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
           window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         }
       } catch (err) {
         console.warn("Failed to set PDF.js worker:", err);
@@ -47,7 +71,6 @@ const SharedPDFPage: React.FC = () => {
         
         try {
           pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         } catch (error) {
           console.warn("Failed to set PDF.js worker:", error);
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';
@@ -88,6 +111,11 @@ const SharedPDFPage: React.FC = () => {
   // Filter and sort documents using document store sorting
   const filteredDocuments = sharedDocuments
     .filter(doc => {
+      // Always exclude revoked documents
+      if (!doc.isActive) {
+        return false;
+      }
+      
       const matchesSearch = doc.document.name.toLowerCase().includes(searchQuery.toLowerCase());
       
       let matchesFilter = true;
@@ -154,7 +182,16 @@ const SharedPDFPage: React.FC = () => {
     setShowPDFViewer(true);
     setCurrentPage(1);
     setScale(1);
+    setShowComments(false);
+    setComments([]);
     await loadPDFDocument(doc.shareToken);
+   
+    
+    if (doc.allowComments || doc.isOwner) {
+      await loadComments(doc.shareToken);
+    } else {
+      console.log('Comments not allowed for this document');
+    }
   };
 
   const loadPDFDocument = async (shareToken: string) => {
@@ -175,6 +212,83 @@ const SharedPDFPage: React.FC = () => {
       setTotalPages(pdf.numPages);
     } catch (err: any) {
       console.error('Error loading PDF:', err);
+    }
+  };
+
+  const loadComments = async (shareToken: string) => {
+    try {
+      // Check if user is logged in and try authenticated API first
+      const token = localStorage.getItem('token');
+      
+      
+      if (token) {
+        try {
+          const response = await pdfShareService.getSharedDocumentCommentsAuth(shareToken);
+          if (response.success) {
+            setComments(response.data);
+            return;
+          }
+        } catch (authError) {
+          console.warn('Auth API failed, falling back to public API:', authError);
+        }
+      }
+      
+      const response = await pdfShareService.getSharedDocumentComments(shareToken);
+      if (response.success) {
+        setComments(response.data);
+      }
+    } catch (err: any) {
+      console.error('Error loading comments:', err);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedDocument) return;
+
+    try {
+      // Check if user is the document owner (admin)
+      const isAdmin = selectedDocument.isOwner;
+      
+      if (isAdmin) {
+        // Check if token exists
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No token found for admin comment');
+          alert('Please log in again to add admin comments');
+          return;
+        }
+        
+        
+     
+        // Add admin comment
+        const response = await pdfShareService.addAdminComment(selectedDocument.shareToken, {
+          content: newComment,
+          position: { page: currentPage, x: 0, y: 0 }
+        });
+
+        if (response.success) {
+          setComments(prev => [response.data, ...prev]);
+          setNewComment('');
+        }
+      } else {
+        // Add regular comment
+        const userInfo = getUserInfo();
+        const response = await pdfShareService.addSharedDocumentComment(selectedDocument.shareToken, {
+          content: newComment,
+          position: { page: currentPage, x: 0, y: 0 },
+          authorName: userInfo.name,
+          authorEmail: userInfo.email
+        });
+
+        if (response.success) {
+          setComments(prev => [response.data, ...prev]);
+          setNewComment('');
+          setCommentAuthor('');
+          setCommentEmail('');
+        }
+      }
+    } catch (err: any) {
+      console.error('Error adding comment:', err);
     }
   };
 
@@ -386,6 +500,20 @@ const SharedPDFPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center space-x-2">
+                  {(selectedDocument?.allowComments || selectedDocument?.isOwner) && (
+                    <Button
+                      variant={showComments ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowComments(!showComments)}
+                    >
+                      <MessageSquare size={14} className="mr-1" />
+                      Comments ({comments.length})
+                      {selectedDocument?.isOwner && !selectedDocument?.allowComments && (
+                        <span className="ml-1 text-xs text-blue-600">(Admin)</span>
+                      )}
+                    </Button>
+                  )}
+                  
                   <Button
                     variant="outline"
                     size="sm"
@@ -409,14 +537,139 @@ const SharedPDFPage: React.FC = () => {
               </div>
 
               {/* PDF Content */}
-              <div className="flex-1 overflow-auto p-4 bg-gray-100">
-                <div className="flex justify-center">
+              <div className="flex-1 overflow-auto p-4 bg-gray-100 flex">
+                <div className="flex-1 flex justify-center">
                   <canvas
                     ref={canvasRef}
                     className="shadow-lg bg-white"
                     style={{ maxWidth: '100%', height: 'auto' }}
                   />
                 </div>
+                
+                {/* Comments Panel */}
+                {showComments && (selectedDocument?.allowComments || selectedDocument?.isOwner) && (
+                  <div className="w-80 ml-4 bg-white rounded-lg shadow-lg flex flex-col">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="font-semibold text-gray-900">Comments</h3>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {comments.map((comment) => (
+                        <div key={comment._id} className={`border-b border-gray-100 pb-3 ${comment.isAdminComment ? 'bg-blue-50 p-3 rounded-lg' : ''}`}>
+                          <div className="flex items-start space-x-2">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${comment.isAdminComment ? 'bg-blue-600' : 'bg-blue-100'}`}>
+                              <User size={16} className={comment.isAdminComment ? 'text-white' : 'text-blue-600'} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2">
+                                <span className={`font-medium text-sm ${comment.isAdminComment ? 'text-blue-900' : 'text-gray-900'}`}>
+                                  {comment.authorName}
+                                  {comment.isAdminComment && (
+                                    <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
+                                      Admin
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(comment.timestamp).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <p className={`text-sm mt-1 ${comment.isAdminComment ? 'text-blue-800' : 'text-gray-700'}`}>{comment.content}</p>
+                              {comment.replies.length > 0 && (
+                                <div className="mt-2 ml-4 space-y-2">
+                                  {comment.replies.map((reply) => (
+                                    <div key={reply._id} className="flex items-start space-x-2">
+                                      <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <User size={12} className="text-gray-600" />
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-2">
+                                          <span className="font-medium text-xs text-gray-700">
+                                            {reply.authorName}
+                                          </span>
+                                          <span className="text-xs text-gray-500">
+                                            {new Date(reply.timestamp).toLocaleDateString()}
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 mt-1">{reply.content}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {comments.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                          <MessageSquare size={32} className="mx-auto mb-2 text-gray-300" />
+                          <p className="text-sm">No comments yet</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Add Comment Form */}
+                    <div className="p-4 border-t border-gray-200">
+                      <div className="space-y-3">
+                        {(() => {
+                          const userInfo = getUserInfo();
+                          const isLoggedIn = localStorage.getItem('userData') !== null;
+                          const isAdmin = selectedDocument?.isOwner;
+
+                          if (isAdmin) {
+                            return (
+                              <div className="text-sm text-blue-700 bg-blue-100 p-2 rounded border border-blue-200">
+                                <p>Commenting as <strong>Admin</strong>: <strong>{userInfo.name}</strong></p>                               
+                              </div>
+                            );
+                          } else if (isLoggedIn) {
+                            return (
+                              <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                                <p>Commenting as: <strong>{userInfo.name}</strong></p>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="flex space-x-2">
+                                <input
+                                  type="text"
+                                  placeholder="Your name"
+                                  value={commentAuthor}
+                                  onChange={(e) => setCommentAuthor(e.target.value)}
+                                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <input
+                                  type="email"
+                                  placeholder="Email"
+                                  value={commentEmail}
+                                  onChange={(e) => setCommentEmail(e.target.value)}
+                                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            );
+                          }
+                        })()}
+                        <textarea
+                          placeholder="Add a comment..."
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                        <Button
+                          onClick={handleAddComment}
+                          disabled={!newComment.trim()}
+                          size="sm"
+                          className="w-full"
+                        >
+                          Add Comment
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

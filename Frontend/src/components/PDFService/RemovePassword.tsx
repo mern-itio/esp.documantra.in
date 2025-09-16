@@ -4,10 +4,11 @@ import type { RemovePasswordRequest, PasswordProtectionCheck } from '../../types
 import { Button } from '../DocumentService/ui/button';
 import { Input } from '../DocumentService/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Unlock, Shield, Download, FileText, CheckCircle, AlertCircle, Info, Eye, EyeOff, Lock } from 'lucide-react';
 
 const RemovePassword: React.FC = () => {
+   const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -126,7 +127,7 @@ const RemovePassword: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b p-2">
         <div className="flex items-center space-x-4">
-          <Link to="/pdf-tools" className="text-gray-600 hover:text-gray-800">
+          <Link to={`/pdf-tools${location.search}`} className="text-gray-600 hover:text-gray-800">
             <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>

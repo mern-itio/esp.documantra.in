@@ -24,9 +24,10 @@ import type {
   OCRResponse, 
   OCRLanguage,
 } from '../../types/ocr';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const OCR: React.FC = () => {
+   const location = useLocation();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<OCRResponse | null>(null);
@@ -166,7 +167,7 @@ const OCR: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -213,10 +214,10 @@ const OCR: React.FC = () => {
                     {selectedFiles.length === 0 ? 'Select files for OCR' : `${selectedFiles.length} file(s) selected`}
                   </p>
                   <p className="text-gray-500">
-                    Drag and drop PDF or image files here, or click to browse
+                    Drag and drop image files here, or click to browse
                   </p>
                   <p className="text-sm text-gray-400">
-                    Maximum 2MB. Supports PDF, JPG, PNG, TIFF, BMP
+                    Maximum 2MB. Supports JPG, PNG, TIFF, BMP
                   </p>
                 </div>
                 

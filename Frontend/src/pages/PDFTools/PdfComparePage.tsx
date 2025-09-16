@@ -11,7 +11,7 @@ import {
   Target,
   AlertCircle,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { pdfCompareService } from '../../services/pdfCompareService';
 import type { ComparisonResult } from '../../services/pdfCompareService';
@@ -33,7 +33,7 @@ interface PDFPreview {
 
 const PdfComparePage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
-  
+   const location = useLocation();
   // PDF comparison
   const [selectedFile1, setSelectedFile1] = useState<File | null>(null);
   const [selectedFile2, setSelectedFile2] = useState<File | null>(null);
@@ -291,7 +291,7 @@ const PdfComparePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

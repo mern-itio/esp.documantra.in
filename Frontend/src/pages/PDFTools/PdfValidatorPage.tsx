@@ -14,7 +14,7 @@ import {
   AlertCircle,
   CheckSquare
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { pdfValidatorService } from '../../services/pdfValidatorService';
 import type { ValidationResult, ValidationStandards } from '../../services/pdfValidatorService';
@@ -22,6 +22,7 @@ import type { ValidationResult, ValidationStandards } from '../../services/pdfVa
 type ActiveTab = 'validation' | 'standards';
 
 const PdfValidatorPage: React.FC = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<ActiveTab>('validation');
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -111,7 +112,7 @@ const PdfValidatorPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                 to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

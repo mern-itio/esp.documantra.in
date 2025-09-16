@@ -22,12 +22,13 @@ import {
   TrendingUp,
   Lightbulb
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 interface QualityAnalysisProps {
   onBack?: () => void;
 }
 
 const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
+   const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<QualityAnalysisResponse | null>(null);
@@ -128,7 +129,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
               </button>
             ) : (
               <Link
-                to="/pdf-tools"
+                   to={`/pdf-tools${location.search}`}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />

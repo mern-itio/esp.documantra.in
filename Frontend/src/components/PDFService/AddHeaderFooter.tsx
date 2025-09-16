@@ -4,7 +4,7 @@ import type { AddHeaderFooterRequest, HeaderFooterPreviewRequest } from '../../t
 import { Button } from '../DocumentService/ui/button';
 import { Input } from '../DocumentService/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 // PDF.js imports
@@ -14,6 +14,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 const AddHeaderFooter: React.FC = () => {
+   const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -269,7 +270,7 @@ const AddHeaderFooter: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                 to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
