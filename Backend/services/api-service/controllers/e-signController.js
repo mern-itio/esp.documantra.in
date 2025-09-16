@@ -27,12 +27,26 @@ const createEnvelope = async (req, res) => {
       }
     );
 
+   res.locals.analyticsResponse = {
+    status: response.status,
+    statusText: response.statusText,
+    message: response.data.message || response.data.status || 'Success',
+    data: response.data
+  };
     return res.status(response.status).json(response.data);
-} catch (err) {
-  if (err.response) {
-    return res.status(err.response.status).json(err.response.data);
-  }
-  return res.status(500).json({ error: 'Failed to create envelope', details: err.message });
+}catch (err) {
+  console.error('Error:', err);
+  res.locals.analyticsResponse = {
+    status: err.response ? err.response.status : 500,
+    statusText: err.response ? err.response.statusText : "Error",
+    message:err.response.data.message,
+     data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
 }
 };  
 const forwardRecipientsRequest = async (req, res) => {
@@ -53,13 +67,27 @@ const forwardRecipientsRequest = async (req, res) => {
         }
       }
     );
-
+    res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message:response.data.status,
+      data: response.data
+    };
     return res.status(response.status).json(response.data);
   } catch (err) {
-    return res.status(err.response ? err.response.status : 500).json(
-      err.response ? err.response.data : { error: 'Proxy request failed', details: err.message }
-    );
-  }
+    console.error('Error:', err);
+    res.locals.analyticsResponse = {
+      status: err.response ? err.response.status : 500,
+      statusText: err.response ? err.response.statusText : "Error",
+      message:err.response ? err.response.data.message: "Error",
+      data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
+}
 };
 const getEnvelopeDetail = async (req, res) => {
   try {
@@ -77,8 +105,6 @@ const getEnvelopeDetail = async (req, res) => {
         }
       }
     );
-
-    console.log('Response',response.data.data);
     
     res.locals.analyticsResponse = {
       status: response.status,
@@ -86,17 +112,16 @@ const getEnvelopeDetail = async (req, res) => {
       message:response.data.status,
       data: response.data
     };
-    // console.log('Controller set analyticsResponse:', res.locals.analyticsResponse);
     return res.status(response.status).json(response.data);
     // Forward response with correct status
   } catch (err) {
-  console.error('Error:', err);
-  res.locals.analyticsResponse = {
-    status: err.response ? err.response.status : 500,
-    statusText: err.response ? err.response.statusText : "Error",
-    message:err.response.data.message,
-    data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
-  };
+    console.error('Error:', err);
+    res.locals.analyticsResponse = {
+      status: err.response ? err.response.status : 500,
+      statusText: err.response ? err.response.statusText : "Error",
+      message:err.response ? err.response.data.message: "Error",
+      data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    };
   return res.status(
     err.response ? err.response.status : 500
   ).json(
@@ -124,15 +149,28 @@ const saveSignatureFields = async (req, res) => {
       }
     );
 
+    res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message:response.data.status,
+      data: response.data
+    };
     return res.status(response.status).json(response.data);
 
   } catch (err) {
-    return res.status(
-      err.response ? err.response.status : 500
-    ).json(
-      err.response ? err.response.data : { error: 'Proxy request failed', details: err.message }
-    );
-  }
+    console.error('Error:', err);
+    res.locals.analyticsResponse = {
+      status: err.response ? err.response.status : 500,
+      statusText: err.response ? err.response.statusText : "Error",
+      message:err.response ? err.response.data.message: "Error",
+      data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
+}
 };
 const updateEnvelope = async (req, res) => {
   try {
@@ -151,14 +189,28 @@ const updateEnvelope = async (req, res) => {
         }
     });
 
+    res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message:response.data.status,
+      data: response.data
+    };
     return res.status(response.status).json(response.data);
+    // Forward response with correct status
   } catch (err) {
-    return res.status(
-      err.response ? err.response.status : 500
-    ).json(
-      err.response ? err.response.data : { error: 'Proxy request failed', details: err.message }
-    );
-  }
+    console.error('Error:', err);
+    res.locals.analyticsResponse = {
+      status: err.response ? err.response.status : 500,
+      statusText: err.response ? err.response.statusText : "Error",
+      message:err.response ? err.response.data.message: "Error",
+      data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
+}
 };
 const sendEnvelope = async (req, res) => {
   try {
@@ -172,16 +224,28 @@ const sendEnvelope = async (req, res) => {
 
     const response = await axios.post(`${ESIGN_API_BASE}/api/e-sign/send-envelope/${envelopeId}`, {}, { headers });
 
-    // Success response 
+    res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message:response.data.status,
+      data: response.data
+    };
     return res.status(response.status).json(response.data);
+    // Forward response with correct status
   } catch (err) {
-    // Error handling 
-    return res.status(
-      err.response ? err.response.status : 500
-    ).json(
-      err.response ? err.response.data : { error: "Proxy request failed", details: err.message }
-    );
-  }
+    console.error('Error:', err);
+    res.locals.analyticsResponse = {
+      status: err.response ? err.response.status : 500,
+      statusText: err.response ? err.response.statusText : "Error",
+      message:err.response ? err.response.data.message: "Error",
+      data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
+}
 };
 const getSignatureFields = async (req, res) => {
   try {
@@ -195,14 +259,28 @@ const getSignatureFields = async (req, res) => {
 
     const response = await axios.get(`${ESIGN_API_BASE}/api/e-sign/public/document/signature-fields/${id}`, { headers });
 
+    res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message:response.data.status,
+      data: response.data
+    };
     return res.status(response.status).json(response.data);
+    // Forward response with correct status
   } catch (err) {
-    return res.status(
-      err.response ? err.response.status : 500
-    ).json(
-      err.response ? err.response.data : { error: "Proxy request failed", details: err.message }
-    );
-  }
+    console.error('Error:', err);
+    res.locals.analyticsResponse = {
+      status: err.response ? err.response.status : 500,
+      statusText: err.response ? err.response.statusText : "Error",
+      message:err.response ? err.response.data.message: "Error",
+      data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
+}
 };
 const addSignature = async (req, res) => {
   try {
@@ -228,7 +306,7 @@ const addSignature = async (req, res) => {
 
       if (esignApiKey) {
         // Update usageCount
-        esignApiKey.usageCount = (esignApiKey.usageCount || 0) + 1;
+       esignApiKey.usageCount = (esignApiKey.usageCount || 0) + 1;
 
         // Get current year and month
         const now = new Date();
@@ -266,15 +344,28 @@ const addSignature = async (req, res) => {
     }
 
     // --- End sandbox usage update ---
-
+res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message:response.data.status,
+      data: response.data
+    };
     return res.status(response.status).json(response.data);
+    // Forward response with correct status
   } catch (err) {
-    return res.status(
-      err.response ? err.response.status : 500
-    ).json(
-      err.response ? err.response.data : { error: 'Proxy request failed', details: err.message }
-    );
-  }
+    console.error('Error:', err);
+    res.locals.analyticsResponse = {
+      status: err.response ? err.response.status : 500,
+      statusText: err.response ? err.response.statusText : "Error",
+      message:err.response ? err.response.data.message: "Error",
+      data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    };
+  return res.status(
+    err.response ? err.response.status : 500
+  ).json(
+    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  );
+}
 };
 
 module.exports = { createEnvelope, forwardRecipientsRequest, saveSignatureFields, updateEnvelope, getEnvelopeDetail, sendEnvelope, getSignatureFields, addSignature };

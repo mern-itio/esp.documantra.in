@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { eSignApi } from "../../services/apiHelper";
+
 interface ActiveField {
   _id: string;
   type: string;
@@ -13,7 +14,6 @@ interface ActiveField {
   status: string;
 }
 
-
 interface SignPadProps {
   isSignPad: boolean;
   setIsSignPad: (open: boolean) => void;
@@ -22,13 +22,16 @@ interface SignPadProps {
   documentId: string;
   envelopeID?: string;
   defaultSign?: string | null;
-  onSaveSign?: (fieldId: string, signatureUrl: string) => void; //
+  onSaveSign?: (fieldId: string, signatureUrl: string) => void;
 }
 
 function SignPad({
   isSignPad,
   setIsSignPad,
   activeField,
+  currentUserId,
+  documentId,
+  envelopeID,
   defaultSign = null,
   onSaveSign
 }: SignPadProps) {
@@ -48,7 +51,6 @@ function SignPad({
 
   const allColors = ["blue", "red", "black"];
 
-  // Convert typed text to signature image
   const convertToImg = (font: string, text: string, color: string) => {
     if (!text) return;
     const canvas = document.createElement("canvas");
@@ -107,26 +109,44 @@ function SignPad({
       return;
     }
 
+    // Issue Certificate
+    const certificateId = await issueCertificate(currentUserId, envelopeID);
+    console.log(certificateId);
     const payload = {
       fieldId: activeField?._id,
-      signature: isSignImg
+      signatureImageBase64: isSignImg,
+      envelopeId: envelopeID!,
+      documentId,
+      recipientId: currentUserId,
+      certificateId,
+      signerName: 'John Doe' 
     };
+
     const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
-    if (response.status == 200) {
-        alert("Signature submitted successfully!");
-        console.log("Signature submitted:", response.data);
-            // Forward the signed data to parent
-            onSaveSign?.(activeField?._id || "", isSignImg);
-            // Close the SignPad
-            setIsSignPad(false);
+
+    if (response.status === 200) {
+      alert("Signature submitted successfully!");
+      onSaveSign?.(activeField?._id || "", isSignImg);
+      setIsSignPad(false);
     } else {
       alert("Failed to submit signature. Please try again.");
-        return;
     }
-
-    setIsSignPad(false);
   };
+const issueCertificate = async(recipientId:any, envelopeId:any) =>{
+  const payload = {
+    recipientId:recipientId,
+    envelopeId:envelopeId
+  }
+  try{
+    const issueCertificate = await eSignApi.post('/api/e-sign/certificates/issue',payload);
+    if(issueCertificate){
+      return issueCertificate.data.certificateId;
+    }
+  }catch (err){
+    console.log(err);
+  }
 
+ }
   return (
     <>
       {isSignPad && (
@@ -135,7 +155,6 @@ function SignPad({
             className="bg-white rounded-xl p-6 w-[550px] max-h-[600px] overflow-y-auto"
             style={{ boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px" }}
           >
-            {/* Header */}
             <div className="flex justify-between items-center mb-4">
               <div className="font-bold text-lg">Signature</div>
               <div
@@ -146,7 +165,6 @@ function SignPad({
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-4 mb-4">
               {["draw", "upload", "typed"].map((tab) => (
                 <button
@@ -161,7 +179,6 @@ function SignPad({
               ))}
             </div>
 
-            {/* Signature Area */}
             <div className="flex flex-col items-center gap-2">
               {isTab === "draw" && (
                 <SignatureCanvas
@@ -186,7 +203,6 @@ function SignPad({
                     hidden
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (!file) return; // handle no file case
                       if (!file) return;
                       if (file.size > 5 * 1024 * 1024) {
                         alert("File size should not exceed 5MB!");
@@ -202,41 +218,39 @@ function SignPad({
                 </label>
               )}
 
-            {isTab === "typed" && (
-            <>
-                <input
-                type="text"
-                value={typedSignature}
-                onChange={(e) => {
-                    setTypedSignature(e.target.value);
-                    convertToImg(fontSelect, e.target.value, penColor);
-                }}
-                placeholder="Type your signature"
-                className="border p-1 w-full"
-                />
-                <div className="flex gap-2">
-                {fontOptions.map((f) => (
-                    <button
-                    key={f.value}
-                    style={{
-                        fontFamily: f.value,
-                        backgroundColor: fontSelect === f.value ? "#d0e7ff" : "",
+              {isTab === "typed" && (
+                <>
+                  <input
+                    type="text"
+                    value={typedSignature}
+                    onChange={(e) => {
+                      setTypedSignature(e.target.value);
+                      convertToImg(fontSelect, e.target.value, penColor);
                     }}
-                    className="px-2 py-1 border rounded"
-                    onClick={() => {
-                        setFontSelect(f.value);
-                        convertToImg(f.value, typedSignature, penColor);
-                    }}
-                    >
-                    {f.value}
-                    </button>
-                ))}
-                </div>
-            </>
-            )}
+                    placeholder="Type your signature"
+                    className="border p-1 w-full"
+                  />
+                  <div className="flex gap-2">
+                    {fontOptions.map((f) => (
+                      <button
+                        key={f.value}
+                        style={{
+                          fontFamily: f.value,
+                          backgroundColor: fontSelect === f.value ? "#d0e7ff" : "",
+                        }}
+                        className="px-2 py-1 border rounded"
+                        onClick={() => {
+                          setFontSelect(f.value);
+                          convertToImg(f.value, typedSignature, penColor);
+                        }}
+                      >
+                        {f.value}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
 
-
-              {/* Color Picker for Draw/Typed */}
               {(isTab === "draw" || isTab === "typed") && (
                 <div className="flex gap-2 mt-2">
                   {allColors.map((color) => (
@@ -246,8 +260,7 @@ function SignPad({
                       className="w-6 h-6 rounded"
                       onClick={() => {
                         setPenColor(color);
-                        if (isTab === "typed")
-                          convertToImg(fontSelect, typedSignature, color);
+                        if (isTab === "typed") convertToImg(fontSelect, typedSignature, color);
                       }}
                     />
                   ))}
@@ -255,13 +268,12 @@ function SignPad({
               )}
             </div>
 
-            {/* Preview */}
             {isSignImg && isTab !== "draw" && (
               <div className="flex flex-col items-center mt-4">
                 <img src={isSignImg} alt="signature-preview" className="h-32" />
               </div>
             )}
-            {/* Common Buttons */}
+
             <div className="flex gap-2 mt-4 justify-center flex-wrap">
               <button className="px-2 py-1 border rounded" onClick={handleClear}>
                 Clear

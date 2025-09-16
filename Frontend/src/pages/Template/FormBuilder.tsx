@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Plus, 
   Type, 
@@ -16,9 +16,12 @@ import {
   GripVertical
 } from 'lucide-react';
 import { FormPreview } from '../../components/Template/FormPreview';
+import { useParams } from 'react-router-dom';
+import { templateServiceApi } from '../../services/apiHelper';
 
 interface FormField {
-  id: string;
+  formId?:string;
+  _id:string
   type: string;
   label: string;
   placeholder?: string;
@@ -28,9 +31,11 @@ interface FormField {
 }
 
 export const FormBuilder: React.FC = () => {
+  const { id: formId } = useParams<{ id: string }>();
   const [formFields, setFormFields] = useState<FormField[]>([]);
   const [selectedField, setSelectedField] = useState<FormField | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [formTitle, setFormTitle] = useState('Untitled Form');
 
   const fieldTypes = [
     { type: 'text', label: 'Text Input', icon: Type },
@@ -43,9 +48,39 @@ export const FormBuilder: React.FC = () => {
     { type: 'textarea', label: 'Text Area', icon: FileText }
   ];
 
+  useEffect(() => {
+  if (!formId) return;
+  getFormDetail(formId);
+
+}, [formId]);
+
+const getFormDetail = async(formId:any)=>{
+  try{
+    const response = await templateServiceApi.get(`/api/template/get-form-details/${formId}`);
+    if(response){
+      console.log(response);
+       setFormFields(response.data.fields || []);
+       setFormTitle(response.data.title || 'Untitled Form');
+    }
+  }catch (err){
+    console.log(err);
+  }
+}
+const saveFormFields = async () => {
+  try {
+    await templateServiceApi.post('/api/template/add-fields', {
+      formId,
+      fields: formFields,
+    });
+    alert('Fields saved successfully');
+  } catch (err) {
+    console.error(err);
+    alert('Failed to save fields');
+  }
+}; 
   const addField = (type: string) => {
     const newField: FormField = {
-      id: `field_${Date.now()}`,
+      _id: `field_${Date.now()}`,
       type,
       label: `${type.charAt(0).toUpperCase() + type.slice(1)} Field`,
       placeholder: `Enter ${type}...`,
@@ -59,25 +94,25 @@ export const FormBuilder: React.FC = () => {
   const updateField = (fieldId: string, updates: Partial<FormField>) => {
     setFormFields(fields => 
       fields.map(field => 
-        field.id === fieldId 
+        field._id === fieldId 
           ? { ...field, ...updates }
           : field
       )
     );
-    if (selectedField?.id === fieldId) {
+    if (selectedField?._id === fieldId) {
       setSelectedField({ ...selectedField, ...updates });
     }
   };
 
   const deleteField = (fieldId: string) => {
-    setFormFields(fields => fields.filter(field => field.id !== fieldId));
-    if (selectedField?.id === fieldId) {
+    setFormFields(fields => fields.filter(field => field._id !== fieldId));
+    if (selectedField?._id === fieldId) {
       setSelectedField(null);
     }
   };
 
   const moveField = (fieldId: string, direction: 'up' | 'down') => {
-    const currentIndex = formFields.findIndex(field => field.id === fieldId);
+    const currentIndex = formFields.findIndex(field => field._id === fieldId);
     if (currentIndex === -1) return;
 
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
@@ -124,7 +159,7 @@ export const FormBuilder: React.FC = () => {
         {/* Top Toolbar */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-gray-900">Untitled Form</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{formTitle}</h1>
             <span className="text-sm text-gray-500">{formFields.length} fields</span>
           </div>
           <div className="flex items-center space-x-3">
@@ -139,7 +174,9 @@ export const FormBuilder: React.FC = () => {
               <Eye className="w-4 h-4 mr-2" />
               {showPreview ? 'Edit' : 'Preview'}
             </button>
-            <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium">
+            <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+            onClick={saveFormFields}
+            >
               <Save className="w-4 h-4 mr-2" />
               Save Form
             </button>
@@ -160,9 +197,9 @@ export const FormBuilder: React.FC = () => {
               <div className="max-w-2xl mx-auto space-y-4">
                 {formFields.map((field, index) => (
                   <div
-                    key={field.id}
+                    key={field._id}
                     className={`border-2 rounded-lg p-4 transition-all ${
-                      selectedField?.id === field.id
+                      selectedField?._id === field._id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
@@ -178,7 +215,7 @@ export const FormBuilder: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            moveField(field.id, 'up');
+                            moveField(field._id, 'up');
                           }}
                           disabled={index === 0}
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
@@ -188,7 +225,7 @@ export const FormBuilder: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            moveField(field.id, 'down');
+                            moveField(field._id, 'down');
                           }}
                           disabled={index === formFields.length - 1}
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
@@ -198,7 +235,7 @@ export const FormBuilder: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteField(field.id);
+                            deleteField(field._id);
                           }}
                           className="p-1 text-gray-400 hover:text-red-600"
                         >
@@ -238,7 +275,7 @@ export const FormBuilder: React.FC = () => {
                         <div className="space-y-2">
                           {field.options?.map((option, optionIndex) => (
                             <label key={optionIndex} className="flex items-center">
-                              <input type="radio" name={field.id} className="mr-2" disabled />
+                              <input type="radio" name={field._id} className="mr-2" disabled />
                               <span className="text-gray-700">{option}</span>
                             </label>
                           ))}
@@ -281,7 +318,7 @@ export const FormBuilder: React.FC = () => {
                       <input
                         type="text"
                         value={selectedField.label}
-                        onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
+                        onChange={(e) => updateField(selectedField._id, { label: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -291,7 +328,7 @@ export const FormBuilder: React.FC = () => {
                       <input
                         type="text"
                         value={selectedField.placeholder || ''}
-                        onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
+                        onChange={(e) => updateField(selectedField._id, { placeholder: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -301,7 +338,7 @@ export const FormBuilder: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={selectedField.required}
-                          onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
+                          onChange={(e) => updateField(selectedField._id, { required: e.target.checked })}
                           className="mr-2"
                         />
                         <span className="text-sm font-medium text-gray-700">Required field</span>
@@ -320,14 +357,14 @@ export const FormBuilder: React.FC = () => {
                                 onChange={(e) => {
                                   const newOptions = [...(selectedField.options || [])];
                                   newOptions[index] = e.target.value;
-                                  updateField(selectedField.id, { options: newOptions });
+                                  updateField(selectedField._id, { options: newOptions });
                                 }}
                                 className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                               />
                               <button
                                 onClick={() => {
                                   const newOptions = selectedField.options?.filter((_, i) => i !== index) || [];
-                                  updateField(selectedField.id, { options: newOptions });
+                                  updateField(selectedField._id, { options: newOptions });
                                 }}
                                 className="p-1 text-gray-400 hover:text-red-600"
                               >
@@ -338,7 +375,7 @@ export const FormBuilder: React.FC = () => {
                           <button
                             onClick={() => {
                               const newOptions = [...(selectedField.options || []), `Option ${(selectedField.options?.length || 0) + 1}`];
-                              updateField(selectedField.id, { options: newOptions });
+                              updateField(selectedField._id, { options: newOptions });
                             }}
                             className="text-sm text-blue-600 hover:text-blue-700"
                           >

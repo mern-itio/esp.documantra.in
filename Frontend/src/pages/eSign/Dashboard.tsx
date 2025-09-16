@@ -7,9 +7,7 @@ import {
   CheckCircle, 
   AlertCircle,
   Eye,
-  MoreHorizontal,
   Filter,
-  Download,
   Users,
   Calendar
 } from 'lucide-react';
@@ -47,7 +45,8 @@ const Dashboard: React.FC = () => {
     expired: 'bg-red-100 text-red-800',
     voided: 'bg-gray-100 text-gray-600',
     declined: 'bg-red-100 text-red-800',
-    "in-progress": 'bg-yellow-100 text-yellow-800', // added
+    "in-progress": 'bg-yellow-100 text-yellow-800', // Added
+    "archived":'bg-red-100 text-red-800'//Added
   };
 
   const statusIcons = {
@@ -59,6 +58,7 @@ const Dashboard: React.FC = () => {
     voided: AlertCircle,
     declined: AlertCircle,
     "in-progress": Clock, // added
+    "archived": AlertCircle
   };
 
   const filteredEnvelopes = envelopes.filter(envelope => {
@@ -182,10 +182,10 @@ const Dashboard: React.FC = () => {
                 <option value="status">Status</option>
               </select>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+            {/* <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
               <Download className="w-4 h-4" />
               Export
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -298,9 +298,9 @@ const Dashboard: React.FC = () => {
                         <Eye className="w-4 h-4" />
                         View
                       </Link>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                      {/* <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                         <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

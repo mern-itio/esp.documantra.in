@@ -15,7 +15,7 @@ const EnvelopeSchema = new mongoose.Schema({
   documentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
   recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipient" }],
   signatureType: { type: String, enum: ["standard", "advanced", "qualified"], default: "standard" },
-  status: { type: String, enum: ["draft", "in-progress", "completed"], default: "draft" }
+  status: { type: String, enum: ["draft", "in-progress", "completed", "archived"], default: "draft" }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Envelope', EnvelopeSchema);

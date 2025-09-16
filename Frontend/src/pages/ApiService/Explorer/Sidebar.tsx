@@ -10,7 +10,7 @@ type SidebarProps = {
 export const apiList: ApiType[] = [
   {
     name: "Envelope Upload",
-    endpoint: "/api/api-service/sign/upload",
+    endpoint: "/api/api-service/sign/upload-envelope",
     method: "POST",
     showFile: true,
     description: "This endpoint is used to upload an envelope for signing.",

@@ -1,10 +1,11 @@
 
-const { isEmailValid } = require('@draftnsign/validators');//
+const { isEmailValid } = require('@draftnsign/validators');
 const Envelope = require('../models/Envelope');
 const Document = require('../models/Document');
 const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const SignatureField = require('../models/SignatureFields');
+const { logActivity } = require("../services/activityLogService");
 // Documents Upload 
 const Upload = async (req, res) => {
     const { files } = req;
@@ -22,6 +23,9 @@ const Upload = async (req, res) => {
         sender: userId,
       });
       await envelope.save();
+
+      // Log envelope creation
+      await logActivity(envelope._id.toString(), "ENVELOPE_CREATED", "Sender", { senderId: userId });
     }
     // Step 2: Create document records
     const docs = await Promise.all(
@@ -34,6 +38,14 @@ const Upload = async (req, res) => {
           fileSize: file.size
         });
         await doc.save();
+
+        // Log document upload
+        await logActivity(envelope._id.toString(), "DOCUMENT_UPLOADED", "Sender", {
+          senderId: userId,
+          documentId: doc._id,
+          fileName: file.filename,
+        });
+
         return doc._id;
       })
     );
@@ -52,6 +64,7 @@ const Upload = async (req, res) => {
 
 const insertRecipient = async (req, res) => {
   const { recipients, envelopeId } = req.body;
+  const userId = req.user.data.id;
 
   if (!envelopeId) {
     return res.status(400).json({ message: 'Envelope ID is required' });
@@ -75,6 +88,11 @@ const insertRecipient = async (req, res) => {
           name: r.name,
           email: r.email
         });
+        // Log recipient created
+        await logActivity(envelopeId, "RECIPIENT_CREATED", "Sender", {
+          senderId: userId,
+          recipientId: recipient._id,
+        });
       }
       // Step 2: Check if this recipient already has permission for this envelope
       let existingPermission = await RecipientPermission.findOne({
@@ -88,10 +106,11 @@ const insertRecipient = async (req, res) => {
         existingPermission.order = r.order ?? existingPermission.order;
         existingPermission.authLevel = r.authentication;
         await existingPermission.save();
-        // Attach recipient to envelope if not already present
-        if (!envelope.recipientIds.includes(recipient._id)) {
-          envelope.recipientIds.push(recipient._id);
-        }
+        // Log recipient permission updated
+        await logActivity(envelopeId, "RECIPIENT_PERMISSION_UPDATED", "Sender", {
+          senderId: userId,
+          recipientId: recipient._id,
+        });
       } else {
         await RecipientPermission.create({
           recipientId: recipient._id,
@@ -100,6 +119,11 @@ const insertRecipient = async (req, res) => {
           order: r.order,
           status: 'waiting',
           authLevel: r.authentication
+        });
+        // Log recipient permission created
+        await logActivity(envelopeId, "RECIPIENT_PERMISSION_CREATED", "Sender", {
+          senderId: userId,
+          recipientId: recipient._id,
         });
       }
       // Attach recipient to envelope if not already present
@@ -110,9 +134,14 @@ const insertRecipient = async (req, res) => {
     })
   );
 
-
   // Step 3: Save updated envelope
   await envelope.save();
+
+  // Log envelope updated (recipients added)
+  await logActivity(envelopeId, "RECIPIENTS_ADDED_TO_ENVELOPE", "Sender", {
+    senderId: userId,
+    recipientIds: recps,
+  });
 
   return res.status(200).json({
     status: 'success',
@@ -124,41 +153,93 @@ const insertRecipient = async (req, res) => {
 
 const saveSignatureFields = async (req, res) => {
   const { signatureFields, envelopeId } = req.body;
+  const userId = req.user.data.id;
+
   if (!envelopeId) {
     return res.status(400).json({ message: 'Envelope ID is required' });
   }
   if (!signatureFields || signatureFields.length === 0) {
     return res.status(400).json({ message: 'No signature fields provided' });
   }
-  const fields = await Promise.all(
-      signatureFields.map(async (sf) => {
-        const field = new SignatureField({
+
+  const processedFields = await Promise.all(
+    signatureFields.map(async (sf) => {
+      if (sf._id) {
+        // Update existing field
+        const updatedField = await SignatureField.findByIdAndUpdate(
+          sf._id,
+          {
+            envelopeId: envelopeId,
+            documentId: sf.documentId,
+            recipientId: sf.recipientId,
+            page: sf.page,
+            x: sf.x,
+            y: sf.y,
+            width: sf.width,
+            height: sf.height,
+            type: sf.type,
+            status: sf.status || 'pending',
+          },
+          { new: true }  // Return the updated document
+        );
+
+        // Optionally log update activity
+        await logActivity(envelopeId, "SIGNATURE_FIELD_UPDATED", "Sender", {
+          senderId: userId,
+          signatureFieldId: updatedField._id,
+          documentId: sf.documentId,
+          recipientId: sf.recipientId,
+        });
+
+        return updatedField;
+      } else {
+        // Create new field
+        const newField = new SignatureField({
           envelopeId: envelopeId,
           documentId: sf.documentId,
           recipientId: sf.recipientId,
           page: sf.page,
           x: sf.x,
-          y:sf.y,
-          width:sf.width,
-          height:sf.height,
-          type:sf.type,
-          status:sf.status || 'pending',
+          y: sf.y,
+          width: sf.width,
+          height: sf.height,
+          type: sf.type,
+          status: sf.status || 'pending',
         });
-        await field.save();
-        return field._id;
-      })
-    );
-    return res.status(200).json({
-        status: 'success',
-        message: 'Signature fields added successfully',
-        data: {
-          envelopeId: envelopeId,
 
-        }
-    });
+        await newField.save();
+
+        // Log creation activity
+        await logActivity(envelopeId, "SIGNATURE_FIELD_ADDED", "Sender", {
+          senderId: userId,
+          signatureFieldId: newField._id,
+          documentId: sf.documentId,
+          recipientId: sf.recipientId,
+        });
+
+        return newField;
+      }
+    })
+  );
+
+  // Log overall save operation
+  await logActivity(envelopeId, "ALL_SIGNATURE_FIELDS_SAVED", "Sender", {
+    senderId: userId,
+  });
+
+  return res.status(200).json({
+    status: 'success',
+    message: 'Signature fields saved successfully',
+    data: {
+      envelopeId,
+      signatureFields: processedFields,  // Return full array of saved/updated fields
+    }
+  });
 };
+
 const updateEnvelope = async (req, res) => {
    const { envelopeData,envelopeId } = req.body;
+   const userId = req.user.data.id;
     if (!envelopeId) {
       return res.status(400).json({ message: 'Envelope ID is required' });
     }
@@ -181,6 +262,11 @@ const updateEnvelope = async (req, res) => {
     envelope.status = envelopeData.status || envelope.status;
     // Step 3: Save updated envelope
     await envelope.save();
+    
+    // Log envelope updated
+    await logActivity(envelopeId, "ENVELOPE_UPDATED", "Sender", {
+      senderId: userId
+    });
     return res.status(200).json({
       status: 'success',
       message: 'Envelope updated successfully',

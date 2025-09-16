@@ -1,6 +1,6 @@
 const express = require('express');
 const { Upload, insertRecipient,updateEnvelope,saveSignatureFields } = require('../controllers/eSignController');
-const { envelopesData,envelopesDetail, getEnvelopeStats,envelopExists,sendEnvelope,addSignature,getRecipientByEmail  } = require('../controllers/mainController');
+const { envelopesData,envelopesDetail, getEnvelopeStats,envelopExists,sendEnvelope,addSignature,getRecipientByEmail,envelopeArchive,envelopeDelete,envelopeReminder,duplicateEnvelope,activityLogs,removeRecFromEnvelope,removeDocFromEnvelope,getEnvSignFields,removeDocSignField  } = require('../controllers/mainController');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
@@ -27,6 +27,15 @@ router.get('/envelope/:id', envelopesDetail);
 router.get('/envelope-exist/:id', envelopExists);
 router.get('/analytics/envelope-stats', getEnvelopeStats);
 router.post('/send-envelope/:envelopeId',sendEnvelope);
-router.get('/get-recipient/:email',getRecipientByEmail );
+router.get('/get-recipient/:email',getRecipientByEmail);
+router.post('/envelope/archive/:envelopeId',envelopeArchive);
+router.post('/envelope/delete/:envelopeId',envelopeDelete);
+router.post('/envelope/reminder/:envelopeId',envelopeReminder);
+router.get('/envelope/duplicate/:envelopeId', duplicateEnvelope);
+router.get('/envelope/activity-log/:envelopeId', activityLogs);
+router.post('/envelope/remove-recipient/:recipientId/:envelopeId', removeRecFromEnvelope);
+router.post('/envelope/remove-document/:documentId/:envelopeId',removeDocFromEnvelope);
+router.get('/envelope/get-signature-fields/:envelopeId',getEnvSignFields);
+router.post('/envelope/remove-signature-field/:fieldId', removeDocSignField);
 
 module.exports = router;

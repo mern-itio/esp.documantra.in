@@ -1,19 +1,19 @@
 import Sidebar from './Sidebar';
 import { useState } from "react";
 import { apiList } from "./Sidebar";
-import APIRequestForm from "./ApiRequestForm";
-import APIResponseViewer from "./ApiResponseViewer";
 import CurlPreview from "./CurlPreview";
 import UseCaseBlock from "./UseCaseBlock";
+import APIRequestForm from "./ApiRequestForm";
+import APIResponseViewer from "./ApiResponseViewer";
 
 export default function APIExplorer() {
-  const [response, setResponse] = useState<unknown>(null);
   const [selectedApi, setSelectedApi] = useState(apiList[0]);
   const [sandboxKey, setSandboxKey] = useState<string>("");
   const [body, setBody] = useState<string>("{}");
+  const [responseMap, setResponseMap] = useState<{[key: string]: unknown}>({});
 
   return (
-     <div className="flex flex-col md:flex-row gap-8 w-full">
+     <div className="flex flex-col md:flex-row gap-8 w-full  bg-gray-50">
       {/* Sidebar */}
       <div className="w-full md:w-65 max-w-xs mx-auto min-w-0 bg-white border-r shadow-sm">
         <Sidebar onApiSelect={setSelectedApi} activeEndpoint={selectedApi.endpoint} selectedApi={selectedApi} />
@@ -28,8 +28,8 @@ export default function APIExplorer() {
          {/* CurlPreview just below description */}
         <CurlPreview api={selectedApi} sandboxKey={sandboxKey} authToken={localStorage.getItem("accessToken") || ""} body={body} />
         
-         <APIRequestForm selectedApi={selectedApi} onResponse={setResponse} setSandboxKey={setSandboxKey}  setBody={setBody} />
-        <APIResponseViewer response={response} />
+         <APIRequestForm selectedApi={selectedApi} onResponse={(endpoint, resp) => setResponseMap(prev => ({ ...prev, [endpoint]: resp }))} setSandboxKey={setSandboxKey}  setBody={setBody} />
+        <APIResponseViewer response={responseMap[selectedApi.endpoint]} />
       </div>
       {/* RIGHT PANE: Use Cases */}
     <div className="flex flex-col w-[340px] min-w-[280px] max-w-xs p-4 rounded-lg bg-gray-50 border shadow text-gray-700 text-sm h-fit mt-2">
