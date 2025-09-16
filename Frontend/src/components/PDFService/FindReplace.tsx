@@ -8,7 +8,7 @@ import type {
   FindReplacePreview
 } from '../../types/findReplace';
 import { Button } from '../DocumentService/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Upload, 
@@ -35,6 +35,7 @@ import {
 import FindReplaceToolbar from './FindReplaceToolbar';
 
 const FindReplace: React.FC = () => {
+   const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<FindReplaceResponse | null>(null);
@@ -244,7 +245,7 @@ const FindReplace: React.FC = () => {
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center">
               <Link
-                to="/pdf-tools"
+                   to={`/pdf-tools${location.search}`}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />

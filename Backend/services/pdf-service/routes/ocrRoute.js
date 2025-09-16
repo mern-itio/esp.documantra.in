@@ -45,5 +45,6 @@ const upload = multer({
 router.get('/languages', ocrController.getAvailableLanguages);
 router.post('/process', upload.array('files', 5), ocrController.performOCR);
 router.get('/tools', ocrController.checkOCRTools);
+router.get('/download/:filename', ocrController.downloadFile);
 
 module.exports = router;

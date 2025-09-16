@@ -11,6 +11,7 @@ interface ToolsGridProps {
   onToggleFavorite: (toolId: string) => void;
   recentTools: PDFTool[];
   searchQuery: string;
+  selectedCategory?: string;
 }
 
 export const ToolsGrid: React.FC<ToolsGridProps> = ({
@@ -19,9 +20,33 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
   favoriteTools,
   onToggleFavorite,
   recentTools,
-  searchQuery
+  searchQuery,
+  selectedCategory
 }) => {
   const recentToolIds = new Set(recentTools.map(tool => tool.id));
+
+  const getCategoryDisplayName = (category?: string) => {
+    switch (category) {
+      case 'conversion':
+        return 'PDF Conversion Tools';
+      case 'editing':
+        return 'PDF Editing Tools';
+      case 'pages':
+        return 'PDF Page Management Tools';
+      case 'security':
+        return 'PDF Security Tools';
+      case 'optimization':
+        return 'PDF Optimization Tools';
+      case 'ocr':
+        return 'PDF OCR & Text Tools';
+      case 'forms':
+        return 'PDF Forms Tools';
+      case 'utilities':
+        return 'PDF Utility Tools';
+      default:
+        return 'PDF Tools';
+    }
+  };
 
   const getIcon = (iconName: string) => {
     const IconComponent = (Icons as any)[iconName];
@@ -53,7 +78,7 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            PDF Tools
+            {getCategoryDisplayName(selectedCategory)}
             {searchQuery && (
               <span className="text-base font-normal text-gray-500 ml-2">
                 - Results for "{searchQuery}"

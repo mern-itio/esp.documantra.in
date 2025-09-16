@@ -11,7 +11,7 @@ import {
   Type,
   Upload
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { pdfApi } from '../../services/apiHelper';
 
@@ -49,6 +49,7 @@ interface FieldType {
 }
 
 const CreatePdfFormPage: React.FC = () => {
+   const location = useLocation();
   const [formName, setFormName] = useState('Untitled Form');
   const [formFields, setFormFields] = useState<FormField[]>([]);
   const [selectedField, setSelectedField] = useState<FormField | null>(null);
@@ -400,7 +401,7 @@ const CreatePdfFormPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+              to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

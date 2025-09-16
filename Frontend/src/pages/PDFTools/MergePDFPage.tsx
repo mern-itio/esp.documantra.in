@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Download, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import MergePDF from '../../components/PDFService/MergePDF';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const MergePDFPage: React.FC = () => {
+  const location = useLocation();
   const [mergeResult, setMergeResult] = useState<{
     success: boolean;
     file?: File;
@@ -45,7 +46,7 @@ const MergePDFPage: React.FC = () => {
           <div className="py-6">
             <div className="flex items-center ">
               <Link
-                to="/pdf-tools"
+                   to={`/pdf-tools${location.search}`}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />

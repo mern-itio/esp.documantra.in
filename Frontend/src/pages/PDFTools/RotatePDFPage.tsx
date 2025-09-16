@@ -3,10 +3,11 @@ import RotatePDF from '../../components/PDFService/RotatePDF';
 import type { RotatePDFResponse } from '../../types/rotatePDF';
 import { rotatePDFService } from '../../services/rotatePDFService';
 import { FiDownload, FiX } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const RotatePDFPage: React.FC = () => {
+   const location = useLocation();
   const [rotateResult, setRotateResult] = useState<RotatePDFResponse | null>(null);
 
   const handleRotateResult = (result: RotatePDFResponse) => {
@@ -29,7 +30,7 @@ const RotatePDFPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

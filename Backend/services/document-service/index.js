@@ -101,12 +101,8 @@ app.get('/test-email', async (req, res) => {
   }
 });
 
-// Public PDF Share Routes (No Authentication Required) - Must be before JWT middleware
-console.log('🔧 Registering public PDF share routes at /public/pdf-share');
 app.use('/public/pdf-share', require('./routes/pdfSharePublicRoutes'));
-console.log('✅ Public PDF share routes registered successfully');
 
-// JWT Middleware (applied to API routes only)
 app.use('/api', verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 
 // API Routes
@@ -159,14 +155,4 @@ const PORT = process.env.PORT || 2102;
 app.listen(PORT, () => {
   console.log(`Document Service running on ${PORT}/`);
   
-  // Initialize email service after environment is loaded
-  // const emailService = require('./services/emailService');
-  // emailService.initializeTransporter();
-  
-  // if (emailService.isConfigured()) {
-  //   console.log('✅ Email service is configured and ready');
-  // } else {
-  //   console.log('⚠️ Email service is not configured. Workflows will work without email notifications.');
-  //   console.log('   To enable email notifications, set EMAIL_USER, EMAIL_PASSWORD, and EMAIL_FROM in your .env file');
-  // }
 });

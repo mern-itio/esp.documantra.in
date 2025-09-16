@@ -123,6 +123,17 @@ const commentSchema = new mongoose.Schema({
   versionDescription: {
     type: String,
     required: false
+  },
+  // Admin comment flag
+  isAdminComment: {
+    type: Boolean,
+    default: false
+  },
+  // Admin user ID for admin comments
+  adminUserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
   }
 }, {
   timestamps: true

@@ -243,7 +243,8 @@ class PDFShareController {
       }
 
       // Check password if required
-      if (sharedDocument.password && req.body.password !== sharedDocument.password) {
+      const password = req.body.password || req.query.password;
+      if (sharedDocument.password && password !== sharedDocument.password) {
         return res.status(401).json({
           success: false,
           message: 'Password required to access this document',
@@ -255,8 +256,9 @@ class PDFShareController {
       await sharedDocument.incrementView();
 
       // Mark recipient as viewed if email provided
-      if (req.body.email) {
-        await sharedDocument.markAsViewed(req.body.email);
+      const email = req.body.email || req.query.email;
+      if (email) {
+        await sharedDocument.markAsViewed(email);
       }
 
       res.json({
@@ -285,6 +287,188 @@ class PDFShareController {
       res.status(500).json({
         success: false,
         message: 'Failed to retrieve shared document',
+        error: error.message
+      });
+    }
+  }
+
+  // Get comments for shared document
+  async getSharedDocumentComments(req, res) {
+    try {
+      
+      const { shareToken } = req.params;
+
+      const sharedDocument = await SharedDocument.findOne({ shareToken });
+      if (!sharedDocument) {
+        return res.status(404).json({
+          success: false,
+          message: 'Shared document not found'
+        });
+      }
+
+      // Check if share is accessible
+      if (!sharedDocument.isAccessible()) {
+        return res.status(403).json({
+          success: false,
+          message: 'This shared document is no longer accessible'
+        });
+      }
+
+    
+      const Comment = require('../models/Comment');
+      const comments = await Comment.find({ documentId: sharedDocument.documentId })
+        .sort({ timestamp: -1 })
+        .populate('replies', null, null, { sort: { timestamp: 1 } });
+
+      res.json({
+        success: true,
+        data: comments
+      });
+
+    } catch (error) {
+      console.error('Error getting shared document comments:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve comments',
+        error: error.message
+      });
+    }
+  }
+
+  // Add comment to shared document
+  async addSharedDocumentComment(req, res) {
+    try {
+      const { shareToken } = req.params;
+      const { content, position, authorName, authorEmail } = req.body;
+
+      const sharedDocument = await SharedDocument.findOne({ shareToken });
+      if (!sharedDocument) {
+        return res.status(404).json({
+          success: false,
+          message: 'Shared document not found'
+        });
+      }
+
+      // Check if share is accessible
+      if (!sharedDocument.isAccessible()) {
+        return res.status(403).json({
+          success: false,
+          message: 'This shared document is no longer accessible'
+        });
+      }
+
+      // Check if comments are allowed for adding new comments
+      if (!sharedDocument.allowComments) {
+        return res.status(403).json({
+          success: false,
+          message: 'Comments are not allowed for this document'
+        });
+      }
+
+      const Comment = require('../models/Comment');
+      const comment = new Comment({
+        documentId: sharedDocument.documentId,
+        author: authorEmail || 'anonymous',
+        authorName: authorName || 'Anonymous',
+        authorAvatar: '',
+        content,
+        position: position || { page: 1, x: 0, y: 0 },
+        mentions: [],
+        attachments: []
+      });
+
+      await comment.save();
+      await comment.populate('replies');
+
+      res.status(201).json({
+        success: true,
+        message: 'Comment added successfully',
+        data: comment
+      });
+
+    } catch (error) {
+      console.error('Error adding shared document comment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add comment',
+        error: error.message
+      });
+    }
+  }
+
+  // Add admin comment to shared document (authenticated)
+  async addAdminComment(req, res) {
+    try {
+      
+      const { shareToken } = req.params;
+      const { content, position } = req.body;
+      
+      if (!req.user || !req.user.data) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        });
+      }
+      
+      const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
+      const userName = req.user.data.name || req.user.data.email;
+      
+
+      const sharedDocument = await SharedDocument.findOne({ shareToken });
+      if (!sharedDocument) {
+        return res.status(404).json({
+          success: false,
+          message: 'Shared document not found'
+        });
+      }
+
+      // Check if user is the owner of the shared document
+      if (sharedDocument.ownerId.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only the document owner can add admin comments'
+        });
+      }
+
+      // Check if share is accessible
+      if (!sharedDocument.isAccessible()) {
+        return res.status(403).json({
+          success: false,
+          message: 'This shared document is no longer accessible'
+        });
+      }
+
+      // Admin can always comment, no need to check allowComments
+
+      const Comment = require('../models/Comment');
+      const comment = new Comment({
+        documentId: sharedDocument.documentId,
+        author: userEmail,
+        authorName: userName,
+        authorAvatar: '',
+        content,
+        position: position || { page: 1, x: 0, y: 0 },
+        mentions: [],
+        attachments: [],
+        isAdminComment: true,
+        adminUserId: userId
+      });
+
+      await comment.save();
+      await comment.populate('replies');
+
+      res.status(201).json({
+        success: true,
+        message: 'Admin comment added successfully',
+        data: comment
+      });
+
+    } catch (error) {
+      console.error('Error adding admin comment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add admin comment',
         error: error.message
       });
     }
@@ -367,15 +551,27 @@ class PDFShareController {
   async getUserSharedDocuments(req, res) {
     try {
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
       const { page = 1, limit = 10 } = req.query;
 
-      const sharedDocuments = await SharedDocument.find({ ownerId: userId })
+      // Find documents where user is owner OR recipient
+      const sharedDocuments = await SharedDocument.find({
+        $or: [
+          { ownerId: userId },
+          { 'recipients.email': userEmail }
+        ]
+      })
         .populate('documentId', 'name size createdAt')
         .sort({ createdAt: -1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
 
-      const total = await SharedDocument.countDocuments({ ownerId: userId });
+      const total = await SharedDocument.countDocuments({
+        $or: [
+          { ownerId: userId },
+          { 'recipients.email': userEmail }
+        ]
+      });
 
       res.json({
         success: true,
@@ -390,7 +586,9 @@ class PDFShareController {
             downloadCount: share.downloadCount,
             isActive: share.isActive,
             expiresAt: share.expiresAt,
-            createdAt: share.createdAt
+            createdAt: share.createdAt,
+            allowComments: share.allowComments,
+            isOwner: share.ownerId === userId
           })),
           pagination: {
             current: parseInt(page),

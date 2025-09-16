@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import InsertPDF from '../../components/PDFService/InsertPDF';
 import type { InsertPDFResponse } from '../../types/insertPDF';
 import { FiDownload, FiCheckCircle, FiXCircle } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const InsertPDFPage: React.FC = () => {
+   const location = useLocation();
   const [insertResult, setInsertResult] = useState<InsertPDFResponse | null>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -42,7 +43,7 @@ const InsertPDFPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+              to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

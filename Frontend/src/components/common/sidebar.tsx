@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {LayoutDashboard, FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, UserCog, LayoutDashboardIcon, FileSignatureIcon, BarChart3Icon, Key,  BarChart3, FolderOpen, Play, Book, Webhook, Package, TestTube, Store, Users, HelpCircle, Layers, Layout, Cpu, ClipboardList, ShoppingCart, Code, Zap} from 'lucide-react';
 
 interface SidebarProps {
@@ -32,6 +32,61 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Function to determine active view based on current route
+  const getActiveViewFromRoute = (pathname: string): string => {
+    // Check for exact matches first
+    if (pathname === '/dashboard') return 'dashboard';
+    if (pathname === '/all-documents') return 'all-documents';
+    if (pathname === '/recent') return 'recent';
+    if (pathname === '/documents/favorites') return 'favorites';
+    if (pathname === '/documents/shared') return 'shared';
+    if (pathname === '/documents/shared-pdf') return 'shared-pdf';
+    if (pathname === '/documents/archived') return 'archived';
+    if (pathname === '/documents/folder') return 'folders';
+    if (pathname === '/documents/trash') return 'trash';
+ 
+    // Check for PDF Tools routes
+    if (pathname.startsWith('/pdf-tools')) {
+      const urlParams = new URLSearchParams(location.search);
+      const category = urlParams.get('category');
+      
+      // If we have a category in the URL, use it
+      if (category === 'conversion') return 'conversion';
+      if (category === 'editing') return 'editing';
+      if (category === 'pages') return 'pages';
+      if (category === 'security') return 'security';
+      if (category === 'optimization') return 'optimization';
+      if (category === 'ocr') return 'ocr';
+      if (category === 'forms') return 'forms';
+      if (category === 'utilities') return 'utilities';
+      
+      return 'all'; // Default to all tools
+    }   
+    
+    return 'dashboard'; // Default fallback
+  };
+
+  // Update active view when route changes
+  useEffect(() => {
+    const newActiveView = getActiveViewFromRoute(location.pathname);
+    setActiveView(newActiveView);
+    
+    // Also expand the appropriate parent menu
+    const pathname = location.pathname;
+    if (pathname.startsWith('/documents/') || pathname === '/all-documents' || pathname === '/recent') {
+      setExpandedMenu('document-management');
+    } else if (pathname.startsWith('/e-sign/')) {
+      setExpandedMenu('e-sign');
+    } else if (pathname.startsWith('/template/')) {
+      setExpandedMenu('template');
+    } else if (pathname.startsWith('/pdf-tools')) {
+      setExpandedMenu('pdf-tools');
+    } else if (pathname.startsWith('/api-service/')) {
+      setExpandedMenu('API-Keys');
+    }
+  }, [location.pathname, setActiveView]);
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },

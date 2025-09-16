@@ -85,5 +85,12 @@ router.post('/upload', upload.single('pdf'), handleMulterError, pdfShareControll
 router.post('/share', pdfShareController.createShareAndSendEmails);
 router.get('/my-shares', pdfShareController.getUserSharedDocuments);
 router.delete('/revoke/:shareToken', pdfShareController.revokeSharedDocument);
+router.post('/admin-comment/:shareToken', pdfShareController.addAdminComment);
+router.get('/comments/:shareToken', pdfShareController.getSharedDocumentComments);
+
+// Public PDF Sharing Routes (No Authentication Required)
+router.get('/public/:shareToken', pdfShareController.getSharedDocument);
+router.get('/public/:shareToken/comments', pdfShareController.getSharedDocumentComments);
+router.post('/public/:shareToken/comments', pdfShareController.addSharedDocumentComment);
 
 module.exports = router;

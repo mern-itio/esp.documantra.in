@@ -1,8 +1,8 @@
 import React from 'react';
-import { ChevronRight, Home, Clock, Heart, Archive, Trash2, Folder, Users } from 'lucide-react';
+import { ChevronRight, Home, Clock, Heart, Archive, Trash2, Folder, Users, File, ArrowLeft } from 'lucide-react';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { cn } from '../../common/lib/utils';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function BreadcrumbNavigation() {
   const { getBreadcrumbs, setCurrentFolder } = useDocumentStore();
@@ -26,32 +26,34 @@ export function BreadcrumbNavigation() {
     } else if (path === '/documents/shared') {
       return { name: 'Shared', icon: Users, isActive: true };
     } else if (path === '/documents/folder') {
-      return { name: 'Folders', icon: Folder, isActive: true };
+      return { name: 'Folders', icon: Folder, isActive: true };    
+    } else if (path === '/documents/shared-pdf') {
+      return { name: 'Shared PDF', icon: File, isActive: true };
     }
     
     return null;
   };
 
   const currentPage = getCurrentPageInfo();
-
+const navigate = useNavigate();
   return (
     <nav className="flex items-center space-x-1 text-sm">
       {/* Home/All Documents - always show as root */}
       <button
-        onClick={() => setCurrentFolder(null)}
+       onClick={() => navigate("/all-documents")}
         className={cn(
           "flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
          
         )}
       >
         {/* <File className="w-4 h-4 text-gray-500" /> */}
-        <span>Document Management</span>
+        <span><ArrowLeft className="w-4 h-4 text-gray-500" /></span>
       </button>
 
       {/* Current Page */}
       {currentPage && (
         <>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
+          {/* <ChevronRight className="w-4 h-4 text-gray-400" /> */}
           <div className="flex items-center space-x-1 px-2 py-1 rounded-md">
             <currentPage.icon className="w-4 h-4 text-gray-500" />
             <span className="text-gray-900 font-medium">{currentPage.name}</span>

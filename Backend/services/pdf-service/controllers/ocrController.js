@@ -176,6 +176,43 @@ const ocrController = {
   },
 
   /**
+   * Download OCR result file
+   */
+  async downloadFile(req, res) {
+    try {
+      const { filename } = req.params;
+      const filePath = path.join(__dirname, '..', 'outputs', filename);
+
+      // Check if file exists
+      if (!await fs.pathExists(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found'
+        });
+      }
+
+      // Set appropriate headers
+      const ext = path.extname(filename).toLowerCase();
+      const contentType = ext === '.pdf' ? 'application/pdf' : 'text/plain';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+    } catch (error) {
+      console.error('Download error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to download file',
+        error: error.message
+      });
+    }
+  },
+
+  /**
    * Check OCR tools availability
    */
   async checkOCRTools(req, res) {
@@ -240,7 +277,10 @@ async function processFileOCR(file, language, accuracy, outputFormat) {
   const outputFilename = `ocr-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${file.originalname}`;
   const outputPath = path.join(__dirname, '..', 'outputs', outputFilename);
 
-  await fs.ensureDir(path.dirname(outputPath));
+  // Ensure output directory exists
+  const outputDir = path.dirname(outputPath);
+  await fs.ensureDir(outputDir);
+  console.log(`Output directory ensured: ${outputDir}`);
 
   // Convert to image if it's a PDF
   let imagePath = file.path;
@@ -257,10 +297,13 @@ async function processFileOCR(file, language, accuracy, outputFormat) {
 
   if (outputFormat === 'txt') {
     finalOutputPath = outputPath.replace(/\.[^/.]+$/, '.txt');
+    console.log(`Creating text file: ${finalOutputPath}`);
     await fs.writeFile(finalOutputPath, ocrResult.text);
     downloadUrl = `/pdf-ocr/download/${path.basename(finalOutputPath)}`;
   } else if (outputFormat === 'pdf') {
+    console.log(`Creating searchable PDF from: ${imagePath}`);
     finalOutputPath = await createSearchablePDF(imagePath, ocrResult.text, outputPath);
+    console.log(`Final output path: ${finalOutputPath}`);
     downloadUrl = `/pdf-ocr/download/${path.basename(finalOutputPath)}`;
   }
 
@@ -269,12 +312,23 @@ async function processFileOCR(file, language, accuracy, outputFormat) {
     await fs.remove(imagePath);
   }
 
+  // Check if final output file exists and get its size
+  let processedSize = 0;
+  try {
+    const stats = await fs.stat(finalOutputPath);
+    processedSize = stats.size;
+    console.log(`Final output file exists: ${finalOutputPath}, size: ${processedSize} bytes`);
+  } catch (error) {
+    console.error(`Error getting file stats for ${finalOutputPath}:`, error);
+    throw new Error(`Output file was not created successfully: ${finalOutputPath}`);
+  }
+
   return {
     filename: file.originalname,
     outputFilename: path.basename(finalOutputPath),
     downloadUrl,
     originalSize: file.size,
-    processedSize: await fs.stat(finalOutputPath).then(stats => stats.size),
+    processedSize,
     confidence: ocrResult.confidence,
     textLength: ocrResult.text.length,
     language,
@@ -339,23 +393,30 @@ async function performTesseractOCR(imagePath, language, accuracy) {
  */
 async function createSearchablePDF(imagePath, text, outputPath) {
   try {
-    // Use Ghostscript to create PDF from image (more reliable than ImageMagick)
+    // Use Ghostscript to create PDF from image
     const pdfPath = outputPath.replace(/\.[^/.]+$/, '.pdf');
 
-    // Create a simple PDF from the image using Ghostscript
-    // This bypasses ImageMagick's security policy restrictions
-    await execAsync(`gs -sDEVICE=pdfwrite -dNOPAUSE -dBATCH -dSAFER -dPDFSETTINGS=/printer -sOutputFile="${pdfPath}" "${imagePath}"`);
-
-    return pdfPath;
+    // Try a simpler approach first - convert image to PDF using basic Ghostscript
+    try {
+      await execAsync(`gs -sDEVICE=pdfwrite -dNOPAUSE -dBATCH -dSAFER -dCompatibilityLevel=1.4 -sOutputFile="${pdfPath}" "${imagePath}"`);
+      return pdfPath;
+    } catch (error) {
+      console.log(`PDF creation failed, will create text file instead: ${error.message}`);
+      throw error;
+    }
   } catch (error) {
     console.error('Error creating PDF with Ghostscript:', error);
 
     // If Ghostscript fails, try to create a text file instead
     try {
       const txtPath = outputPath.replace(/\.[^/.]+$/, '.txt');
-      // await fs.writeFile(txtPath, `OCR Result for image: ${path.basename(imagePath)}\n\nExtracted Text:\n${text}`);
+      
+      // Ensure the output directory exists
+      await fs.ensureDir(path.dirname(txtPath));
+      
+      // Create the text file with OCR content
+      await fs.writeFile(txtPath, ` ${path.basename(imagePath)}${text}`);
 
-      // console.log(`Created text file instead of PDF: ${txtPath}`);
       return txtPath;
     } catch (fallbackError) {
       console.error('Fallback text creation also failed:', fallbackError);

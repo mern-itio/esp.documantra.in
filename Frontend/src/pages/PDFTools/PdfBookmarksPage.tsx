@@ -14,7 +14,7 @@ import {
   BookmarkCheck,
   ArrowLeft,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { pdfBookmarksService } from '../../services/pdfBookmarksService';
 import { pdfApi } from '../../services/apiHelper';
@@ -23,6 +23,7 @@ import type { Bookmark as BookmarkType, AutoDetectResult, CustomBookmarksResult 
 
 const PdfBookmarksPage: React.FC = () => {
   // State management
+   const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
@@ -287,7 +288,7 @@ const PdfBookmarksPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+                 to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

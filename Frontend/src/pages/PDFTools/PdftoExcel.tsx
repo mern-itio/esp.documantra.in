@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Upload,
@@ -15,6 +15,7 @@ import {
 import { pdfService } from '../../services/pdfService';
 
 export const PdfToExcel: React.FC = () => {
+   const location = useLocation();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
@@ -176,7 +177,7 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
-            to="/pdf-tools"
+              to={`/pdf-tools${location.search}`}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

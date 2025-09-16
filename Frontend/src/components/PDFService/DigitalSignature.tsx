@@ -21,10 +21,11 @@ import {
   File,
   ArrowLeft
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const DigitalSignature: React.FC = () => {
   // State management
+   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'sign' | 'verify' | 'certificates'>('sign');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -219,7 +220,7 @@ const DigitalSignature: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-              to="/pdf-tools"
+              to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

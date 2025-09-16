@@ -4,9 +4,10 @@ import type { AddPasswordRequest } from '../../types/addPassword';
 import { Button } from '../DocumentService/ui/button';
 import { Input } from '../DocumentService/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Lock, Shield, Download, FileText, CheckCircle, AlertCircle, Info } from 'lucide-react';
 const AddPassword: React.FC = () => {
+   const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ownerPassword, setOwnerPassword] = useState('');
   const [userPassword, setUserPassword] = useState('');
@@ -157,7 +158,7 @@ const AddPassword: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b p-2">
         <div className="flex items-center space-x-4">
-          <Link to="/pdf-tools" className="text-gray-600 hover:text-gray-800">
+          <Link to={`/pdf-tools${location.search}`} className="text-gray-600 hover:text-gray-800">
             <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>

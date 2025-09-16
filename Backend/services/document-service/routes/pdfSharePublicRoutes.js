@@ -33,7 +33,7 @@ router.get('/debug/all', async (req, res) => {
   try {
     const sharedDocuments = await SharedDocument.find({})
       .populate('documentId', 'name size')
-      .select('shareToken ownerName isActive expiresAt createdAt')
+      .select('shareToken ownerName isActive expiresAt createdAt allowComments')
       .sort({ createdAt: -1 })
       .limit(10);
     
@@ -46,7 +46,8 @@ router.get('/debug/all', async (req, res) => {
         ownerName: doc.ownerName,
         isActive: doc.isActive,
         expiresAt: doc.expiresAt,
-        createdAt: doc.createdAt
+        createdAt: doc.createdAt,
+        allowComments: doc.allowComments
       }))
     });
   } catch (error) {
@@ -62,6 +63,11 @@ router.get('/debug/all', async (req, res) => {
 console.log('🔗 Registering public routes: /view/:shareToken and /download/:shareToken');
 router.post('/view/:shareToken', pdfShareController.getSharedDocument);
 router.post('/download/:shareToken', pdfShareController.downloadSharedDocument);
+
+// Additional public routes for direct access (must be after specific routes)
+router.get('/:shareToken/comments', pdfShareController.getSharedDocumentComments);
+router.post('/:shareToken/comments', pdfShareController.addSharedDocumentComment);
+router.get('/:shareToken', pdfShareController.getSharedDocument);
 
 // Public PDF file access for shared documents
 router.get('/file/:shareToken', async (req, res) => {
