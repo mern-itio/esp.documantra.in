@@ -56,6 +56,8 @@ const pdfBookmarksRoutes = require('./routes/pdfBookmarksRoute');
 const pdfStatisticsRoutes = require('./routes/pdfStatisticsRoute');
 const analyticsRoutes = require('./routes/analyticsRoute');
 const cloudConnectorRoutes = require('./routes/cloudConnectorRoutes');
+const workflowRoutes = require('./routes/workflowRoutes');
+const smartConversionRoutes = require('./routes/smartConversionRoute');
 const documentTrackingController = require('./controllers/documentTrackingController');
 const { trackPdfOperation, trackBatchOperation } = require('./middleware/operationTracking');
 const connectDB = require('./config/db');
@@ -971,7 +973,9 @@ app.use('/pdf-compare', trackPdfOperation, pdfCompareRoutes);
 app.use('/pdf-repair', trackPdfOperation, pdfRepairRoutes);
 app.use('/pdf-bookmarks', trackPdfOperation, pdfBookmarksRoutes);
 app.use('/pdf-statistics', trackPdfOperation, pdfStatisticsRoutes);
+app.use('/workflows', verifyJWT(process.env.ACCESS_TOKEN_SECRET), workflowRoutes);
 app.use('/analytics', verifyJWT(process.env.ACCESS_TOKEN_SECRET), analyticsRoutes);
+app.use('/smart-conversion', trackPdfOperation, smartConversionRoutes);
 
 // Cloud connector routes - separate public and protected routes
 // Public routes (no authentication required)

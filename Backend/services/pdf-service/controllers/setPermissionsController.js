@@ -52,11 +52,41 @@ const setPermissionsController = {
 
       console.log('Executing qpdf command:', qpdfCommand);
 
-      const { stdout, stderr } = await execAsync(qpdfCommand);
+      let stdout = '';
+      let stderr = '';
 
-      if (stderr && !stderr.includes('WARNING')) {
-        console.error('QPDF stderr:', stderr);
+      try {
+        const result = await execAsync(qpdfCommand);
+        stdout = result.stdout;
+        stderr = result.stderr;
+
+        // Log warnings but don't treat them as errors
+        if (stderr) {
+          if (stderr.includes('WARNING')) {
+            console.log('QPDF warnings (non-critical):', stderr);
+          } else {
+            console.error('QPDF stderr:', stderr);
+          }
+        }
+      } catch (error) {
+        // Check if it's just warnings (qpdf returns code 3 for warnings)
+        if (error.code === 3 && error.stderr && error.stderr.includes('operation succeeded with warnings')) {
+          console.log('QPDF completed with warnings (non-critical):', error.stderr);
+          stdout = error.stdout || '';
+          stderr = error.stderr;
+          // Continue processing - the file was created successfully
+        } else {
+          // Real error - rethrow
+          throw error;
+        }
       }
+
+      // Verify the output file was created
+      if (!await fs.pathExists(outputPath)) {
+        throw new Error('Failed to create protected PDF file');
+      }
+
+      console.log('Protected PDF created successfully:', outputPath);
 
       // Generate secure viewing link instead of download link
       const secureToken = crypto.randomBytes(32).toString('hex');
@@ -92,38 +122,40 @@ const setPermissionsController = {
       const stats = await fs.stat(outputPath);
       const fileSize = (stats.size / 1024 / 1024).toFixed(2);
 
-      // Log document tracking event
-      try {
-        const DocumentTracking = require('../models/documentTracking');
-        const documentId = crypto.randomBytes(16).toString('hex');
-        const userId = req.user?.id || 'anonymous';
-        
-        const trackingRecord = new DocumentTracking({
-          documentId,
-          documentName: req.file.originalname,
-          documentType: 'pdf',
-          originalFilename: req.file.originalname,
-          userId,
-          action: 'permission_set',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent'),
-          isTracked: true,
-          trackingSource: 'automatic',
-          metadata: {
-            permissions: permissionsData.permissions,
-            isPasswordProtected: permissionsData.isPasswordProtected,
-            isOwnerProtected: permissionsData.isOwnerProtected,
-            secureToken,
-            secureLink
-          }
-        });
+      // Log document tracking event (async, non-blocking)
+      setImmediate(async () => {
+        try {
+          const DocumentTracking = require('../models/documentTracking');
+          const documentId = crypto.randomBytes(16).toString('hex');
+          const userId = req.user?.id || 'anonymous';
+          
+          const trackingRecord = new DocumentTracking({
+            documentId,
+            documentName: req.file.originalname,
+            documentType: 'pdf',
+            originalFilename: req.file.originalname,
+            userId,
+            action: 'permission_set',
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            isTracked: true,
+            trackingSource: 'automatic',
+            metadata: {
+              permissions: permissionsData.permissions,
+              isPasswordProtected: permissionsData.isPasswordProtected,
+              isOwnerProtected: permissionsData.isOwnerProtected,
+              secureToken,
+              secureLink
+            }
+          });
 
-        await trackingRecord.save();
-        console.log('Document tracking event logged for permission set');
-      } catch (trackingError) {
-        console.error('Failed to log document tracking event:', trackingError);
-        // Don't fail the main operation if tracking fails
-      }
+          await trackingRecord.save();
+          console.log('Document tracking event logged for permission set');
+        } catch (trackingError) {
+          console.error('Failed to log document tracking event:', trackingError);
+          // Don't fail the main operation if tracking fails
+        }
+      });
 
       res.json({
         success: true,
@@ -145,8 +177,15 @@ const setPermissionsController = {
         }
       });
 
-      // Clean up input file
-      await fs.remove(inputPath);
+      // Clean up input file (async, non-blocking)
+      setImmediate(async () => {
+        try {
+          await fs.remove(inputPath);
+          console.log('Input file cleaned up:', inputPath);
+        } catch (cleanupError) {
+          console.error('Failed to clean up input file:', cleanupError);
+        }
+      });
 
     } catch (error) {
       console.error('Error setting permissions:', error);
@@ -188,11 +227,43 @@ const setPermissionsController = {
         return res.status(404).json({ error: 'PDF file not found' });
       }
 
-      // Instead of serving PDF directly, serve a custom HTML viewer with embedded PDF
-      const htmlContent = setPermissionsController.generateSecurePDFViewer(permissionsData, token, filename);
+      // Check if user wants simple PDF view (for debugging)
+      const simpleView = req.query.simple === 'true';
       
-      res.setHeader('Content-Type', 'text/html');
-      res.send(htmlContent);
+      if (simpleView) {
+        // Serve PDF directly for debugging
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+      } else {
+        // Try to convert PDF to images for secure viewing (prevents bypass)
+        try {
+          console.log('Attempting to convert PDF to images for secure viewing...');
+          const imageUrls = await setPermissionsController.convertPDFToImagesForViewing(filePath, token);
+          const htmlContent = setPermissionsController.generateSecurePDFViewer(permissionsData, token, filename, imageUrls);
+          
+          // Set CSP headers for secure image viewer
+          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('Content-Security-Policy', "script-src 'self' 'unsafe-inline'; img-src 'self';");
+          res.send(htmlContent);
+        } catch (conversionError) {
+          console.error('Error converting PDF to images, falling back to simple PDF view:', conversionError);
+          
+          // Fallback: Serve PDF directly with basic restrictions
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', 'inline');
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.setHeader('X-Download-Options', 'noopen');
+          res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+          
+          const fileStream = fs.createReadStream(filePath);
+          fileStream.pipe(res);
+        }
+      }
 
     } catch (error) {
       console.error('Error viewing secure PDF:', error);
@@ -208,6 +279,14 @@ const setPermissionsController = {
       const permissionsPath = path.join(__dirname, 'permissions', `${token}.json`);
       if (await fs.pathExists(permissionsPath)) {
         await fs.remove(permissionsPath);
+        
+        // Also clean up associated images
+        const imageDir = path.join(__dirname, '..', 'temp-images', token);
+        if (await fs.pathExists(imageDir)) {
+          await fs.remove(imageDir);
+          console.log('Cleaned up images for token:', token);
+        }
+        
         res.json({ success: true, message: 'Secure link revoked successfully' });
       } else {
         res.status(404).json({ error: 'Secure link not found' });
@@ -215,6 +294,71 @@ const setPermissionsController = {
     } catch (error) {
       console.error('Error revoking secure link:', error);
       res.status(500).json({ error: 'Failed to revoke secure link' });
+    }
+  },
+
+  // Cleanup expired tokens and their images (call this periodically)
+  async cleanupExpiredTokens() {
+    try {
+      const permissionsDir = path.join(__dirname, 'permissions');
+      const tempImagesDir = path.join(__dirname, '..', 'temp-images');
+      
+      if (!await fs.pathExists(permissionsDir)) return;
+      
+      const files = await fs.readdir(permissionsDir);
+      const now = new Date();
+      let cleanedCount = 0;
+      
+      // Process files in batches to prevent memory issues
+      const batchSize = 10;
+      for (let i = 0; i < files.length; i += batchSize) {
+        const batch = files.slice(i, i + batchSize);
+        
+        await Promise.all(batch.map(async (file) => {
+          if (file.endsWith('.json')) {
+            const token = file.replace('.json', '');
+            const permissionsPath = path.join(permissionsDir, file);
+            
+            try {
+              const permissionsData = await fs.readJson(permissionsPath);
+              
+              if (new Date(permissionsData.expiresAt) < now) {
+                // Remove expired permission file
+                await fs.remove(permissionsPath);
+                
+                // Remove associated images
+                const imageDir = path.join(tempImagesDir, token);
+                if (await fs.pathExists(imageDir)) {
+                  await fs.remove(imageDir);
+                }
+                
+                cleanedCount++;
+                console.log('Cleaned up expired token:', token);
+              }
+            } catch (error) {
+              console.error('Error processing token file:', file, error);
+              // Remove corrupted file
+              try {
+                await fs.remove(permissionsPath);
+                cleanedCount++;
+              } catch (removeError) {
+                console.error('Failed to remove corrupted file:', removeError);
+              }
+            }
+          }
+        }));
+        
+        // Small delay between batches to prevent overwhelming the system
+        if (i + batchSize < files.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      if (cleanedCount > 0) {
+        console.log(`Cleanup completed: removed ${cleanedCount} expired tokens`);
+      }
+    } catch (error) {
+      console.error('Error during cleanup:', error);
     }
   },
 
@@ -247,11 +391,10 @@ const setPermissionsController = {
         return res.status(404).json({ error: 'PDF file not found' });
       }
 
-      // Set restrictive headers to prevent downloads and enforce permissions
+      // Set headers for PDF serving
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'inline');
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
       res.setHeader('X-PDF-Permissions', JSON.stringify(permissionsData.permissions));
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       res.setHeader('Pragma', 'no-cache');
@@ -271,6 +414,52 @@ const setPermissionsController = {
     }
   },
 
+  // Direct PDF download (for testing)
+  async downloadPDF(req, res) {
+    try {
+      const { token, filename } = req.params;
+      
+      // Load permissions data
+      const permissionsPath = path.join(__dirname, 'permissions', `${token}.json`);
+      if (!await fs.pathExists(permissionsPath)) {
+        return res.status(404).json({ error: 'Secure link not found or expired' });
+      }
+
+      const permissionsData = await fs.readJson(permissionsPath);
+      
+      // Check if link has expired
+      if (new Date() > new Date(permissionsData.expiresAt)) {
+        await fs.remove(permissionsPath);
+        return res.status(410).json({ error: 'Secure link has expired' });
+      }
+
+      // Check if filename matches
+      if (permissionsData.filename !== filename) {
+        return res.status(403).json({ error: 'Invalid secure link' });
+      }
+
+      const filePath = path.join(__dirname, '..', 'outputs', filename);
+      if (!await fs.pathExists(filePath)) {
+        return res.status(404).json({ error: 'PDF file not found' });
+      }
+
+      // Set headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${permissionsData.originalFile}"`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
+      // Stream the PDF file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      res.status(500).json({ error: 'Failed to download PDF' });
+    }
+  },
+
   async getCurrentPermissions(req, res) {
     try {
       if (!req.file) {
@@ -282,10 +471,33 @@ const setPermissionsController = {
       // Use qpdf to analyze current permissions
       const qpdfCommand = `qpdf --show-encryption "${inputPath}"`;
 
-      const { stdout, stderr } = await execAsync(qpdfCommand);
+      let stdout = '';
+      let stderr = '';
 
-      if (stderr && !stderr.includes('WARNING')) {
-        console.error('QPDF stderr:', stderr);
+      try {
+        const result = await execAsync(qpdfCommand);
+        stdout = result.stdout;
+        stderr = result.stderr;
+
+        // Log warnings but don't treat them as errors
+        if (stderr) {
+          if (stderr.includes('WARNING')) {
+            console.log('QPDF warnings (non-critical):', stderr);
+          } else {
+            console.error('QPDF stderr:', stderr);
+          }
+        }
+      } catch (error) {
+        // Check if it's just warnings (qpdf returns code 3 for warnings)
+        if (error.code === 3 && error.stderr && error.stderr.includes('operation succeeded with warnings')) {
+          console.log('QPDF completed with warnings (non-critical):', error.stderr);
+          stdout = error.stdout || '';
+          stderr = error.stderr;
+          // Continue processing - the analysis was successful
+        } else {
+          // Real error - rethrow
+          throw error;
+        }
       }
 
       const permissions = parseQpdfPermissions(stdout);
@@ -309,8 +521,110 @@ const setPermissionsController = {
     }
   },
 
-  // Generate secure PDF viewer HTML with embedded PDF
-  generateSecurePDFViewer(permissionsData, token, filename) {
+  // Convert PDF to images for secure viewing (prevents copy/print bypass)
+  async convertPDFToImagesForViewing(filePath, token) {
+    try {
+      const outputDir = path.join(__dirname, '..', 'temp-images', token);
+      await fs.ensureDir(outputDir);
+      
+      // Use pdftoppm to convert PDF to images
+      const command = `pdftoppm -png -r 150 "${filePath}" "${path.join(outputDir, 'page')}"`;
+      console.log('Converting PDF to images:', command);
+      
+      let stdout = '';
+      let stderr = '';
+
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('PDF conversion timeout after 30 seconds')), 60000);
+      });
+
+      try {
+        const result = await Promise.race([
+          execAsync(command),
+          timeoutPromise
+        ]);
+        stdout = result.stdout;
+        stderr = result.stderr;
+      } catch (error) {
+        // Handle pdftoppm warnings (similar to qpdf)
+        if (error.code === 3 && error.stderr && error.stderr.includes('WARNING')) {
+          console.log('pdftoppm completed with warnings (non-critical):', error.stderr);
+          stdout = error.stdout || '';
+          stderr = error.stderr;
+        } else {
+          throw error;
+        }
+      }
+      
+      if (stderr && !stderr.includes('WARNING')) {
+        console.error('pdftoppm stderr:', stderr);
+      }
+      
+      // Get list of generated images
+      const files = await fs.readdir(outputDir);
+      const imageFiles = files.filter(file => file.endsWith('.png')).sort();
+      
+      if (imageFiles.length === 0) {
+        throw new Error('No images were generated from PDF');
+      }
+      
+      console.log('Generated images:', imageFiles);
+      return imageFiles.map(file => `/pdf-permissions/image/${token}/${file}`);
+      
+    } catch (error) {
+      console.error('Error converting PDF to images:', error);
+      throw error;
+    }
+  },
+
+  // Serve individual image for secure viewing
+  async serveSecureImage(req, res) {
+    try {
+      const { token, filename } = req.params;
+      
+      // Load permissions data
+      const permissionsPath = path.join(__dirname, 'permissions', `${token}.json`);
+      if (!await fs.pathExists(permissionsPath)) {
+        return res.status(404).json({ error: 'Secure link not found or expired' });
+      }
+
+      const permissionsData = await fs.readJson(permissionsPath);
+      
+      // Check if link has expired
+      if (new Date() > new Date(permissionsData.expiresAt)) {
+        await fs.remove(permissionsPath);
+        return res.status(410).json({ error: 'Secure link has expired' });
+      }
+
+      const imagePath = path.join(__dirname, '..', 'temp-images', token, filename);
+      if (!await fs.pathExists(imagePath)) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+
+      // Set headers for image serving
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      // Additional security headers
+      res.setHeader('X-Download-Options', 'noopen');
+      res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      // Stream the image file
+      const fileStream = fs.createReadStream(imagePath);
+      fileStream.pipe(res);
+
+    } catch (error) {
+      console.error('Error serving secure image:', error);
+      res.status(500).json({ error: 'Failed to serve image' });
+    }
+  },
+
+  // Generate secure PDF viewer HTML with image-based viewing
+  generateSecurePDFViewer(permissionsData, token, filename, imageUrls) {
     const restrictions = permissionsData.permissions;
     
     return `
@@ -320,58 +634,124 @@ const setPermissionsController = {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure PDF Viewer - ${permissionsData.originalFile}</title>
-    <script type="module">
-        // Load PDF.js dynamically
-        async function loadPDFJS() {
-            try {
-                console.log('Attempting to load PDF.js from local server...');
-                const pdfjsLib = await import('/pdfjs/pdf.min.mjs');
-                window.pdfjsLib = pdfjsLib;
-                console.log('PDF.js loaded successfully from local server');
-                
-                // Start the PDF viewer once PDF.js is loaded
-                initPDFViewer();
-            } catch (localError) {
-                console.warn('Local PDF.js failed, trying CDN fallback:', localError.message);
-                
-                try {
-                    // Fallback to CDN (works with HTTP)
-                    console.log('Loading PDF.js from CDN...');
-                    const pdfjsLib = await import('https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.mjs');
-                    window.pdfjsLib = pdfjsLib;
-                    console.log('PDF.js loaded successfully from CDN');
-                    
-                    // Start the PDF viewer once PDF.js is loaded
-                    initPDFViewer();
-                } catch (cdnError) {
-                    console.error('Both local and CDN PDF.js failed:', cdnError);
-                    console.log('Falling back to iframe viewer');
-                    
-                    // Hide loading and show iframe fallback
-                    document.getElementById('loading').style.display = 'none';
-                    const iframe = document.getElementById('pdf-iframe');
-                    if (iframe) {
-                        iframe.style.display = 'block';
-                        console.log('Using iframe fallback for PDF viewing');
-                    } else {
-                        // Show detailed error for debugging
-                        const errorEl = document.getElementById('error');
-                        if (errorEl) {
-                            errorEl.style.display = 'block';
-                            errorEl.innerHTML = \`
-                                <strong>Failed to load PDF.js library</strong><br>
-                                Local error: \${localError.message}<br>
-                                CDN error: \${cdnError.message}<br>
-                                <small>Check browser console for more details</small>
-                            \`;
-                        }
-                    }
+    <script>
+        // Image-based PDF viewer - completely secure, no PDF content accessible
+        let currentPage = 1;
+        let totalPages = ${imageUrls.length};
+        let scale = 1.0;
+        
+        function initImagePDFViewer() {
+            console.log('Initializing secure image-based PDF viewer...');
+            
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+            
+            // Show image container
+            const imageContainer = document.getElementById('image-container');
+            if (imageContainer) {
+                imageContainer.style.display = 'block';
+                console.log('Image container displayed');
+            }
+            
+            // Update page info
+            updatePageInfo();
+            
+            // Initialize controls
+            initControls();
+            
+            console.log('Secure PDF viewer initialized with', totalPages, 'pages');
+        }
+        
+        function updatePageInfo() {
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+        
+        function showPage(pageNum) {
+            // Hide all pages
+            for (let i = 1; i <= totalPages; i++) {
+                const page = document.getElementById('page-' + i);
+                if (page) {
+                    page.style.display = 'none';
                 }
+            }
+            
+            // Show current page
+            const currentPageEl = document.getElementById('page-' + pageNum);
+            if (currentPageEl) {
+                currentPageEl.style.display = 'block';
+                currentPageEl.style.transform = 'scale(' + scale + ')';
+                currentPageEl.style.transformOrigin = 'top center';
             }
         }
         
-        // Start loading PDF.js
-        loadPDFJS();
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                showPage(currentPage);
+                updatePageInfo();
+            }
+        }
+        
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                showPage(currentPage);
+                updatePageInfo();
+            }
+        }
+        
+        function zoomIn() {
+            scale = Math.min(scale * 1.2, 3.0);
+            showPage(currentPage);
+        }
+        
+        function zoomOut() {
+            scale = Math.max(scale / 1.2, 0.5);
+            showPage(currentPage);
+        }
+        
+        function printPDF() {
+            if (${restrictions.allowPrint}) {
+                // Print only the current page
+                const printWindow = window.open('', '_blank');
+                const currentPageEl = document.getElementById('page-' + currentPage);
+                if (currentPageEl) {
+                    printWindow.document.write(\`
+                        <html>
+                            <head><title>Print Page \${currentPage}</title></head>
+                            <body style="margin:0; padding:0;">
+                                <img src="\${currentPageEl.src}" style="max-width:100%; height:auto;">
+                            </body>
+                        </html>
+                    \`);
+                    printWindow.document.close();
+                    printWindow.print();
+                }
+            } else {
+                showWarning('Printing is not allowed for this document.');
+            }
+        }
+        
+        // Initialize viewer controls
+        function initControls() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const zoomInBtn = document.getElementById('zoomInBtn');
+            const zoomOutBtn = document.getElementById('zoomOutBtn');
+            const printBtn = document.getElementById('printBtn');
+            
+            if (prevBtn) prevBtn.addEventListener('click', previousPage);
+            if (nextBtn) nextBtn.addEventListener('click', nextPage);
+            if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
+            if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
+            if (printBtn) printBtn.addEventListener('click', printPDF);
+            
+            console.log('Controls initialized');
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initImagePDFViewer);
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -473,12 +853,7 @@ const setPermissionsController = {
             width: 100%;
             height: 100%;
             border: none;
-        }
-        .pdf-canvas {
-            display: block;
-            margin: 0 auto;
-            max-width: 100%;
-            height: auto;
+            background: white;
         }
         .loading {
             text-align: center;
@@ -505,8 +880,11 @@ const setPermissionsController = {
             <div class="pdf-container">
                 <div id="loading" class="loading">Loading PDF...</div>
                 <div id="error" class="error" style="display: none;"></div>
-                <canvas id="pdf-canvas" class="pdf-canvas" style="display: none;"></canvas>
-                <iframe id="pdf-iframe" class="pdf-embed" style="display: none;" src="/pdf-permissions/raw-pdf/${token}/${filename}"></iframe>
+                <div id="image-container" style="display: none;">
+                    ${imageUrls.map((url, index) => `
+                        <img id="page-${index + 1}" class="pdf-page" src="${url}" style="display: ${index === 0 ? 'block' : 'none'}; max-width: 100%; height: auto; margin: 0 auto; display: block;">
+                    `).join('')}
+                </div>
             </div>
         </div>
 
@@ -528,160 +906,6 @@ const setPermissionsController = {
     </div>
 
     <script>
-        // Initialize PDF viewer
-        function initPDFViewer() {
-            // Check if required DOM elements exist
-            const loadingEl = document.getElementById('loading');
-            const errorEl = document.getElementById('error');
-            const canvasEl = document.getElementById('pdf-canvas');
-            
-            if (!loadingEl || !errorEl || !canvasEl) {
-                console.error('Required DOM elements not found');
-                return;
-            }
-            
-            // Set PDF.js worker
-            const pdfjsLib = window.pdfjsLib;
-            
-            // Try local worker first, then CDN fallback
-            try {
-                console.log('Setting PDF.js worker to local server...');
-                pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
-                console.log('PDF.js worker configured (local):', pdfjsLib.GlobalWorkerOptions.workerSrc);
-            } catch (workerError) {
-                console.warn('Local worker failed, using CDN worker:', workerError.message);
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs';
-                console.log('PDF.js worker configured (CDN):', pdfjsLib.GlobalWorkerOptions.workerSrc);
-            }
-                
-                let pdfDoc = null;
-                let pageNum = 1;
-                let pageRendering = false;
-                let pageNumPending = null;
-                let scale = 1.5;
-                
-                // Load the PDF
-                const pdfUrl = '/pdf-permissions/raw-pdf/${token}/${filename}';
-                console.log('Loading PDF from:', pdfUrl);
-                
-                pdfjsLib.getDocument({
-                    url: pdfUrl,
-                    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
-                    cMapPacked: true,
-                    standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/'
-                }).promise.then(function(pdf) {
-                    console.log('PDF loaded successfully:', pdf);
-                    pdfDoc = pdf;
-                    document.getElementById('totalPages').textContent = pdf.numPages;
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('pdf-canvas').style.display = 'block';
-                    
-                    // Render the first page
-                    renderPage(pageNum);
-                }).catch(function(error) {
-                    console.error('Error loading PDF with PDF.js:', error);
-                    console.log('Falling back to iframe viewer');
-                    
-                    // Hide PDF.js elements
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('pdf-canvas').style.display = 'none';
-                    
-                    // Show iframe fallback
-                    const iframe = document.getElementById('pdf-iframe');
-                    if (iframe) {
-                        iframe.style.display = 'block';
-                        console.log('Using iframe fallback for PDF viewing');
-                    } else {
-                        const errorEl = document.getElementById('error');
-                        if (errorEl) {
-                            errorEl.style.display = 'block';
-                            errorEl.innerHTML = \`
-                                <strong>Error loading PDF</strong><br>
-                                Error: \${error.message}<br>
-                                <small>Check browser console for more details</small>
-                            \`;
-                        }
-                    }
-                });
-        
-        function renderPage(num) {
-            pageRendering = true;
-            
-            pdfDoc.getPage(num).then(function(page) {
-                const viewport = page.getViewport({scale: scale});
-                const canvas = document.getElementById('pdf-canvas');
-                const ctx = canvas.getContext('2d');
-                
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                
-                const renderTask = page.render(renderContext);
-                
-                renderTask.promise.then(function() {
-                    pageRendering = false;
-                    if (pageNumPending !== null) {
-                        renderPage(pageNumPending);
-                        pageNumPending = null;
-                    }
-                });
-            });
-            
-            document.getElementById('currentPage').textContent = num;
-        }
-        
-        function queueRenderPage(num) {
-            if (pageRendering) {
-                pageNumPending = num;
-            } else {
-                renderPage(num);
-            }
-        }
-        
-        function previousPage() {
-            console.log('Previous page clicked, current page:', pageNum);
-            if (pageNum <= 1) {
-                console.log('Already on first page');
-                return;
-            }
-            pageNum--;
-            console.log('Navigating to page:', pageNum);
-            queueRenderPage(pageNum);
-        }
-        
-        function nextPage() {
-            console.log('Next page clicked, current page:', pageNum);
-            if (pageNum >= pdfDoc.numPages) {
-                console.log('Already on last page');
-                return;
-            }
-            pageNum++;
-            console.log('Navigating to page:', pageNum);
-            queueRenderPage(pageNum);
-        }
-        
-        function zoomIn() {
-            scale *= 1.2;
-            queueRenderPage(pageNum);
-        }
-        
-        function zoomOut() {
-            scale *= 0.8;
-            queueRenderPage(pageNum);
-        }
-        
-        function printPDF() {
-            if (${restrictions.allowPrint}) {
-                window.print();
-            } else {
-                showWarning('Printing is not allowed for this document.');
-            }
-        }
-        
         // Disable right-click context menu
         document.addEventListener('contextmenu', e => e.preventDefault());
         
@@ -718,31 +942,12 @@ const setPermissionsController = {
             const warningMessage = document.getElementById('warningMessage');
             warningMessage.textContent = message;
             warning.style.display = 'block';
-            setTimeout(() => warning.style.display = 'none', 3000);
+            setTimeout(() => warning.style.display = 'none', 2000);
         }
         
         // Show appropriate warning based on permissions
         if (!${restrictions.allowCopy}) {
             showWarning('Copying is not allowed for this document. Text selection and copying are disabled.');
-        }
-        
-        // Add event listeners for buttons
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const zoomInBtn = document.getElementById('zoomInBtn');
-        const zoomOutBtn = document.getElementById('zoomOutBtn');
-        
-        if (prevBtn) prevBtn.addEventListener('click', previousPage);
-        if (nextBtn) nextBtn.addEventListener('click', nextPage);
-        if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
-        if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
-        
-        ${restrictions.allowPrint ? `
-        const printBtn = document.getElementById('printBtn');
-        if (printBtn) printBtn.addEventListener('click', printPDF);
-        ` : ''}
-        
-        console.log('Event listeners added successfully');
         }
     </script>
 </body>
@@ -815,5 +1020,30 @@ function parsePermissionBits(bits) {
 }
 
 
+
+// Add global error handlers to prevent crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit the process
+});
+
+// Initialize cleanup on startup (async to prevent blocking)
+setTimeout(() => {
+  setPermissionsController.cleanupExpiredTokens().catch(error => {
+    console.error('Startup cleanup error:', error);
+  });
+}, 10000); // Wait 10 seconds after startup
+
+// Run cleanup every hour
+setInterval(() => {
+  setPermissionsController.cleanupExpiredTokens().catch(error => {
+    console.error('Periodic cleanup error:', error);
+  });
+}, 60 * 60 * 1000);
 
 module.exports = setPermissionsController;

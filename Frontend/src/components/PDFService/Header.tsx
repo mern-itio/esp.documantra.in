@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden md:flex items-center space-x-3">
             <div className="bg-blue-50 px-3 py-1 rounded-full">
               <span className="text-xs font-medium text-blue-700">
-                {loading ? '...' : formatNumber(displayStats.totalOperations)} operations today
+                {loading ? '...' : formatNumber(displayStats.totalOperations)} operations in last 7 days
               </span>
             </div>
             <div className="bg-green-50 px-3 py-1 rounded-full">

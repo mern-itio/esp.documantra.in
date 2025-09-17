@@ -115,8 +115,6 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
           // Call the conversion API using the service
           const result = await pdfService.convertPdftoImage(file);
           
-          console.log('Conversion result:', result);
-          
           // Add successful result
           setResults(prev => [...prev, {
             name: file.name,
@@ -125,7 +123,9 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
             images: result.images || [],
             outputDir: result.outputDir,
             fileCount: result.fileCount,
-            method: result.method || 'unknown'
+            method: result.method || 'unknown',
+            zipUrl: result.zipUrl, // Include zipUrl in the result
+            originalFile: result.originalFile // Include originalFile for download naming
           }]);
           
         } catch (error) {
@@ -158,20 +158,16 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
   };
 
   const downloadResult = async (result: any) => {
-    if (result.status === 'success' && result.images && result.images.length > 0) {
+    if (result.status === 'success') {
       try {
-        // Download each image
-        for (let i = 0; i < result.images.length; i++) {
-          const imagePath = result.images[i];
-          const filename = `converted_image_${i + 1}.png`;
+        const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
+        
+        // If zip file is available, download it
+        if (result.zipUrl) {
+          const zipUrl = `${baseUrl}${result.zipUrl}`;
+          console.log(`Downloading zip file from: ${zipUrl}`);
           
-          // Use the download service to get the image
-          const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
-          const fullUrl = `${baseUrl}${imagePath}`;
-          
-          console.log(`Downloading image from: ${fullUrl}`);
-          
-          const response = await fetch(fullUrl);
+          const response = await fetch(zipUrl);
           
           if (!response.ok) {
             throw new Error(`Download failed: ${response.status} ${response.statusText}`);
@@ -181,14 +177,45 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = filename;
+          a.download = `${result.originalFile?.replace(/\.[^/.]+$/, '') || 'converted'}_images.zip`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
           document.body.removeChild(a);
+          
+          console.log('Successfully downloaded zip file with all images');
+        } else if (result.images && result.images.length > 0) {
+          console.log('Zip URL not available, falling back to individual downloads');
+          // Fallback: Download each image individually
+          for (let i = 0; i < result.images.length; i++) {
+            const imagePath = result.images[i];
+            const filename = `page_${i + 1}.png`;
+            
+            const fullUrl = `${baseUrl}${imagePath}`;
+            console.log(`Downloading image from: ${fullUrl}`);
+            
+            const response = await fetch(fullUrl);
+            
+            if (!response.ok) {
+              throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }
+          
+          console.log(`Successfully downloaded ${result.images.length} images individually`);
+        } else {
+          console.log('No zip URL or images available for download');
+          alert('No files available for download. Please try converting again.');
         }
-        
-        console.log(`Successfully downloaded ${result.images.length} images`);
       } catch (error) {
         console.error('Download error:', error);
         alert('Failed to download converted images. Please try again.');
@@ -371,7 +398,7 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                           className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
                           <Download className="w-4 h-4" />
-                          <span>Download Images</span>
+                          <span>Download Zip</span>
                         </button>
                       )}
                     </div>

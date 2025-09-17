@@ -44,6 +44,7 @@ import PDFToolsDigitalSignaturePage from '../pages/PDFTools/DigitalSignaturePage
 import PDFToolsSetPermissionsPage from '../pages/PDFTools/SetPermissions';
 import PDFToolsRemoveMetadataPage from '../pages/PDFTools/RemoveMetadataPage';
 import PDFToolsEditMetadataPage from '../pages/PDFTools/EditMetadataPage';
+import SmartConversion from '../components/PDFService/SmartConversion';
 import PDFToolsSpellCheckPage from '../pages/PDFTools/SpellCheckPage';
 import PDFToolsFindReplacePage from '../pages/PDFTools/FindReplacePage';
 import PDFToolsRedactContentPage from '../pages/PDFTools/RedactContentPage';
@@ -822,6 +823,7 @@ const authRoutes = [
   { path: '/pdf-tools/set-permissions', element: <PDFToolsSetPermissionsPage /> },
   { path: '/pdf-tools/remove-metadata', element: <PDFToolsRemoveMetadataPage /> },
   { path: '/pdf-tools/edit-metadata', element: <PDFToolsEditMetadataPage /> },
+  { path: '/pdf-tools/smart-conversion', element: <SmartConversion /> },
   { path: '/pdf-tools/spell-check', element: <PDFToolsSpellCheckPage /> },
   { path: '/pdf-tools/find-replace', element: <PDFToolsFindReplacePage /> },
   { path: '/pdf-tools/redact-content', element: <PDFToolsRedactContentPage /> },

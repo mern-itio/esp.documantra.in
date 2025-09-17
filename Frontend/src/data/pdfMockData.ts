@@ -185,14 +185,14 @@ export const mockPDFTools = {
         name: "Smart Conversion",
         description: "AI-powered format detection and optimal conversion",
         category: "conversion",
-        inputFormats: ["any"],
-        outputFormats: ["any"],
+        inputFormats: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "jpg", "png", "gif", "bmp", "tiff", "svg", "eps", "ai"],
+        outputFormats: ["pdf", "word", "excel", "powerpoint", "html", "txt", "image"],
         features: ["format_detection", "quality_optimization", "smart_settings"],
-        complexity: "advanced" as const,
-        popularity: 58,
-        icon: "Zap",
-        badge: "AI",
-        premium: true
+        complexity: "easy" as const,
+        popularity: 92,
+        avgProcessingTime: "30-60 seconds",
+        icon: "Brain",
+        badge: "AI"
       }
     ]
   },

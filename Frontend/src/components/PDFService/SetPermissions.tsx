@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { FiUpload, FiEye, FiLock, FiCheck, FiX } from 'react-icons/fi';
 import { setPermissionsService } from '../../services/setPermissionsService';
 import type { SetPermissionsRequest, SetPermissionsResponse, CurrentPermissionsResponse } from '../../types/setPermissions';
@@ -10,7 +10,7 @@ interface SetPermissionsProps {
 }
 
 const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) => {
-   const location = useLocation();
+  const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -18,7 +18,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
   const [result, setResult] = useState<SetPermissionsResponse | null>(null);
   const [currentPermissions, setCurrentPermissions] = useState<CurrentPermissionsResponse | null>(null);
   // const [showAdvanced, setShowAdvanced] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Permission states
@@ -108,10 +108,31 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
       setProcessing(false);
     }
   }, [selectedFile, permissions, onPermissionsResult]);
+  const [viewEnabled, setViewEnabled] = useState(false);
+  const [countdown, setCountdown] = useState(7);
 
+  useEffect(() => {
+    if (result) {
+      setViewEnabled(false);
+      setCountdown(7);
+
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setViewEnabled(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [result]);
   // Open secure PDF in new tab
   const handleOpenSecurePDF = useCallback(async () => {
-    if (!result) return;
+    if (!result || !viewEnabled) return; // prevent click before 7s
 
     try {
       await setPermissionsService.openSecurePDF(result.secureViewLink);
@@ -119,7 +140,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
       console.error('Error opening secure PDF:', error);
       alert('Failed to open secure PDF');
     }
-  }, [result]);
+  }, [result, viewEnabled]);
 
   // Update permission
   const updatePermission = useCallback((key: keyof SetPermissionsRequest, value: boolean | string) => {
@@ -201,7 +222,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Set Permissions</h1>
               <p className="mt-2 text-sm text-gray-600">
-               Control document permissions and access
+                Control document permissions and access
               </p>
             </div>
           </div>
@@ -211,11 +232,10 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
       {/* File Upload Section */}
       {!selectedFile && (
         <div
-          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
-            dragActive 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400'
-          }`}
+          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${dragActive
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-300 hover:border-gray-400'
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -343,14 +363,14 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-gray-900">Granular Permissions</h4>
-             
+
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Basic Permissions */}
               <div className="space-y-4">
                 <h5 className="font-medium text-gray-700">Basic Access</h5>
-                
+
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
@@ -395,7 +415,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
               {/* Advanced Permissions */}
               <div className="space-y-4">
                 <h5 className="font-medium text-gray-700">Advanced Features</h5>
-                
+
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
@@ -473,15 +493,28 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                 <p className="text-green-700">{result.message}</p>
               </div>
             </div>
-            <button
-              onClick={handleOpenSecurePDF}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-            >
-              <FiEye className="w-4 h-4" />
-              <span>View Secure PDF</span>
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleOpenSecurePDF}
+                disabled={!viewEnabled}
+                className={`px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors ${viewEnabled
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  }`}
+              >
+                {!viewEnabled && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                )}
+                <FiEye className="w-4 h-4" />
+                <span className='text-xs'>
+                  {viewEnabled
+                    ? 'View Secure PDF'
+                    : `Your file is getting ready... (${countdown}s)`}
+                </span>
+              </button>            
+            </div>
           </div>
-          
+
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-sm">
               <span className="font-medium text-green-800">File:</span>

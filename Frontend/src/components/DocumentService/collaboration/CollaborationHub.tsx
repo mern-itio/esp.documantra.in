@@ -12,6 +12,7 @@ import { VersionManager } from '../version/VersionManager';
 import { WorkflowManager } from '../workflow/WorkflowManager';
 import { DocumentProcessor } from '../processing/DocumentProcessor';
 import { useCollaborationStore } from '../../common/store/collaborationStore';
+import { useDocumentStore } from '../../common/store/documentStore';
 
 interface CollaborationHubProps {
   document: Document;
@@ -44,6 +45,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
     restoreVersion,
     // processDocument
   } = useCollaborationStore();
+
 
   // Check user permissions for this document
   const getUserPermissions = () => {
@@ -201,6 +203,17 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
       if (response.success) {
         setDocumentContent(response.data.content || '');
         setIsLoadingContent(false);
+        
+        // Update the document in store with the latest data from backend (including updated view count)
+        // The backend API already increments the view count, so we just sync the data
+        const updatedDocument = response.data;
+        useDocumentStore.setState((state: any) => ({
+          documents: state.documents.map((doc: any) =>
+            doc.id === document.id
+              ? { ...doc, views: updatedDocument.views || doc.views }
+              : doc
+          )
+        }));
       } else {
         console.error('Failed to load document content:', response.message);
         // Generate placeholder content as fallback
