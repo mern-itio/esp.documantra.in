@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertTriangle, FileText, Edit3 } from 'lucide-react';
+import { X, AlertTriangle, FileText } from 'lucide-react';
 import { Button } from '../ui/button';
 import { documentAPI } from '../../../services/api';
 
@@ -187,11 +187,10 @@ export function DuplicateFilenameModal({
                 type="text"
                 value={newFilename}
                 onChange={handleFilenameChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter new filename"
                 disabled={isResolving}
               />
-              <Edit3 className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" />
             </div>
             <div className="flex items-center justify-between mt-2">
               <p className="text-xs text-gray-500">

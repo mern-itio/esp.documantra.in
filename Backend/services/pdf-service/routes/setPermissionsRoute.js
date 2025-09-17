@@ -36,8 +36,14 @@ router.post('/set-permissions', upload.single('file'), setPermissionsController.
 // View PDF with enforced permissions (secure link)
 router.get('/view/:token/:filename', setPermissionsController.viewSecurePDF);
 
-// Serve raw PDF for iframe (with restrictions)
+// Serve raw PDF for iframe (with restrictions) - DEPRECATED
 router.get('/raw-pdf/:token/:filename', setPermissionsController.serveRawPDF);
+
+// Serve secure images for PDF viewing
+router.get('/image/:token/:filename', setPermissionsController.serveSecureImage);
+
+// Direct PDF download (for testing)
+router.get('/download/:token/:filename', setPermissionsController.downloadPDF);
 
 // Revoke secure link
 router.delete('/revoke/:token', setPermissionsController.revokeSecureLink);

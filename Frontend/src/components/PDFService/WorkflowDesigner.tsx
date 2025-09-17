@@ -1,89 +1,86 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Plus, 
   Play, 
   Save, 
   Trash2, 
-  ArrowRight,
-  Settings,
   Copy,
   Edit3,
   Clock,
   Users,
-  Zap
+  Zap,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { mockPDFTools } from '../../data/pdfMockData';
+import { workflowTemplateAPI } from '../../services/workflowService';
+import type { WorkflowTemplate, WorkflowStep } from '../../services/workflowService';
+import { WorkflowExecutionModal } from './WorkflowExecutionModal';
 
-interface WorkflowStep {
-  id: string;
-  toolId: string;
-  name: string;
-  order: number;
-  settings?: Record<string, any>;
-}
-
-interface Workflow {
-  id: string;
-  name: string;
-  description: string;
-  steps: WorkflowStep[];
-  isTemplate: boolean;
-  usage: number;
-  avgTime: string;
-}
+// Remove duplicate interface - using imported WorkflowStep and WorkflowTemplate
 
 interface WorkflowDesignerProps {
   onBack: () => void;
 }
 
 export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) => {
-  const [workflows, setWorkflows] = useState<Workflow[]>([
-    {
-      id: 'wf_001',
-      name: 'Document Preparation',
-      description: 'Complete document preparation workflow',
-      steps: [
-        { id: 'step_1', toolId: 'ocr_text_recognition', name: 'OCR Processing', order: 1 },
-        { id: 'step_2', toolId: 'edit_text', name: 'Edit Text', order: 2 },
-        { id: 'step_3', toolId: 'add_password', name: 'Add Security', order: 3 },
-        { id: 'step_4', toolId: 'compress_pdf', name: 'Optimize', order: 4 }
-      ],
-      isTemplate: false,
-      usage: 89,
-      avgTime: '8 minutes'
-    },
-    {
-      id: 'wf_002',
-      name: 'Archive Processing',
-      description: 'Batch archive processing workflow',
-      steps: [
-        { id: 'step_5', toolId: 'merge_pdfs', name: 'Merge Documents', order: 1 },
-        { id: 'step_6', toolId: 'add_bookmarks', name: 'Add Navigation', order: 2 },
-        { id: 'step_7', toolId: 'compress_pdf', name: 'Compress', order: 3 }
-      ],
-      isTemplate: true,
-      usage: 67,
-      avgTime: '4 minutes'
-    }
-  ]);
-
-  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowTemplate | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showExecutionModal, setShowExecutionModal] = useState(false);
 
   // @ts-ignore - TypeScript can't infer the complex union type correctly
   const allTools = Object.values(mockPDFTools).flatMap(category => category.tools) as any[];
 
+  // Load workflows on component mount
+  useEffect(() => {
+    loadWorkflows();
+  }, []);
+
+  const loadWorkflows = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await workflowTemplateAPI.getWorkflowTemplates();
+      if (response.success) {
+        setWorkflows(response.data);
+      } else {
+        setError('Failed to load workflows');
+      }
+    } catch (err) {
+      console.error('Error loading workflows:', err);
+      setError('Failed to load workflows');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const createNewWorkflow = () => {
-    const newWorkflow: Workflow = {
-      id: `wf_${Date.now()}`,
+    const newWorkflow: WorkflowTemplate = {
+      _id: `wf_${Date.now()}`,
       name: 'New Workflow',
       description: 'Custom workflow description',
       steps: [],
-      isTemplate: false,
+      isTemplate: true,
+      isPublic: false,
+      createdBy: '',
+      createdByName: '',
+      category: 'custom',
+      tags: [],
       usage: 0,
-      avgTime: '0 minutes'
+      avgTime: '0 minutes',
+      metadata: {
+        complexity: 'easy',
+        inputFormats: [],
+        outputFormats: [],
+        features: []
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     setWorkflows(prev => [newWorkflow, ...prev]);
     setSelectedWorkflow(newWorkflow);
@@ -109,7 +106,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
     };
 
     setSelectedWorkflow(updatedWorkflow);
-    setWorkflows(prev => prev.map(wf => wf.id === selectedWorkflow.id ? updatedWorkflow : wf));
+    setWorkflows(prev => prev.map(wf => wf._id === selectedWorkflow._id ? updatedWorkflow : wf));
   };
 
   const removeStep = (stepId: string) => {
@@ -125,24 +122,44 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
     };
 
     setSelectedWorkflow(updatedWorkflow);
-    setWorkflows(prev => prev.map(wf => wf.id === selectedWorkflow.id ? updatedWorkflow : wf));
+    setWorkflows(prev => prev.map(wf => wf._id === selectedWorkflow._id ? updatedWorkflow : wf));
   };
 
-  const duplicateWorkflow = (workflow: Workflow) => {
-    const duplicated: Workflow = {
-      ...workflow,
-      id: `wf_${Date.now()}`,
-      name: `${workflow.name} (Copy)`,
-      usage: 0
-    };
-    setWorkflows(prev => [duplicated, ...prev]);
+  const duplicateWorkflow = async (workflow: WorkflowTemplate) => {
+    try {
+      setLoading(true);
+      const response = await workflowTemplateAPI.duplicateWorkflowTemplate(workflow._id);
+      if (response.success) {
+        setWorkflows(prev => [response.data, ...prev]);
+      } else {
+        setError('Failed to duplicate workflow');
+      }
+    } catch (err) {
+      console.error('Error duplicating workflow:', err);
+      setError('Failed to duplicate workflow');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteWorkflow = (workflowId: string) => {
-    setWorkflows(prev => prev.filter(wf => wf.id !== workflowId));
-    if (selectedWorkflow?.id === workflowId) {
-      setSelectedWorkflow(null);
-      setIsEditing(false);
+  const deleteWorkflow = async (workflowId: string) => {
+    try {
+      setLoading(true);
+      const response = await workflowTemplateAPI.deleteWorkflowTemplate(workflowId);
+      if (response.success) {
+        setWorkflows(prev => prev.filter(wf => wf._id !== workflowId));
+        if (selectedWorkflow?._id === workflowId) {
+          setSelectedWorkflow(null);
+          setIsEditing(false);
+        }
+      } else {
+        setError('Failed to delete workflow');
+      }
+    } catch (err) {
+      console.error('Error deleting workflow:', err);
+      setError('Failed to delete workflow');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -150,6 +167,51 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
     const tool = allTools.find(t => t.id === toolId);
     if (!tool) return Icons.FileText;
     return (Icons as any)[tool.icon] || Icons.FileText;
+  };
+
+  const saveWorkflow = async () => {
+    if (!selectedWorkflow) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      let response;
+      if (selectedWorkflow._id.startsWith('wf_')) {
+        // New workflow - create it
+        response = await workflowTemplateAPI.createWorkflowTemplate({
+          name: selectedWorkflow.name,
+          description: selectedWorkflow.description,
+          steps: selectedWorkflow.steps,
+          category: selectedWorkflow.category,
+          tags: selectedWorkflow.tags,
+          isPublic: selectedWorkflow.isPublic,
+          metadata: selectedWorkflow.metadata
+        });
+      } else {
+        // Existing workflow - update it
+        response = await workflowTemplateAPI.updateWorkflowTemplate(selectedWorkflow._id, selectedWorkflow);
+      }
+
+      if (response.success) {
+        setWorkflows(prev => prev.map(wf => wf._id === selectedWorkflow._id ? response.data : wf));
+        setSelectedWorkflow(response.data);
+        setIsEditing(false);
+      } else {
+        setError('Failed to save workflow');
+      }
+    } catch (err) {
+      console.error('Error saving workflow:', err);
+      setError('Failed to save workflow');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRunWorkflow = () => {
+    if (selectedWorkflow && selectedWorkflow.steps.length > 0) {
+      setShowExecutionModal(true);
+    }
   };
 
   return (
@@ -171,15 +233,31 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
             </div>
           </div>
 
-          <button
-            onClick={createNewWorkflow}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span>New Workflow</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+            <button
+              onClick={createNewWorkflow}
+              disabled={loading}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <Plus className="w-5 h-5" />
+              <span>New Workflow</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mx-6 mt-4">
+          <div className="flex">
+            <AlertCircle className="w-5 h-5 text-red-400" />
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Workflows List */}
@@ -192,9 +270,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
             <div className="space-y-3">
               {workflows.map((workflow) => (
                 <div
-                  key={workflow.id}
+                  key={workflow._id}
                   className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedWorkflow?.id === workflow.id
+                    selectedWorkflow?._id === workflow._id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -212,6 +290,11 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                             Template
                           </span>
                         )}
+                        {workflow.isPublic && (
+                          <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                            Public
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{workflow.description}</p>
                     </div>
@@ -222,16 +305,18 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                           e.stopPropagation();
                           duplicateWorkflow(workflow);
                         }}
-                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        disabled={loading}
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                       >
                         <Copy className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteWorkflow(workflow.id);
+                          deleteWorkflow(workflow._id);
                         }}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        disabled={loading}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -273,7 +358,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                           onChange={(e) => {
                             const updated = { ...selectedWorkflow, name: e.target.value };
                             setSelectedWorkflow(updated);
-                            setWorkflows(prev => prev.map(wf => wf.id === updated.id ? updated : wf));
+                            setWorkflows(prev => prev.map(wf => wf._id === updated._id ? updated : wf));
                           }}
                           className="text-xl font-bold text-gray-900 border-b border-gray-300 bg-transparent focus:outline-none focus:border-blue-500"
                         />
@@ -286,7 +371,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                           onChange={(e) => {
                             const updated = { ...selectedWorkflow, description: e.target.value };
                             setSelectedWorkflow(updated);
-                            setWorkflows(prev => prev.map(wf => wf.id === updated.id ? updated : wf));
+                            setWorkflows(prev => prev.map(wf => wf._id === updated._id ? updated : wf));
                           }}
                           className="text-gray-600 mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm"
                           rows={2}
@@ -300,16 +385,25 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => setIsEditing(!isEditing)}
-                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      disabled={loading}
+                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Edit3 className="w-4 h-4" />
                       <span>{isEditing ? 'Done' : 'Edit'}</span>
                     </button>
-                    <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <button 
+                      onClick={handleRunWorkflow}
+                      disabled={loading || !selectedWorkflow.steps.length}
+                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                    >
                       <Play className="w-4 h-4" />
                       <span>Run Workflow</span>
                     </button>
-                    <button className="flex items-center space-x-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                    <button 
+                      onClick={saveWorkflow}
+                      disabled={loading}
+                      className="flex items-center space-x-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
+                    >
                       <Save className="w-4 h-4" />
                       <span>Save</span>
                     </button>
@@ -332,7 +426,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {selectedWorkflow.steps.map((step, index) => {
+                      {selectedWorkflow.steps.map((step) => {
                         const Icon = getToolIcon(step.toolId);
                         const tool = allTools.find(t => t.id === step.toolId);
                         
@@ -355,13 +449,12 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                                 </div>
                                 
                                 <div className="flex items-center space-x-2">
-                                  <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                                    <Settings className="w-4 h-4" />
-                                  </button>
+                                
                                   {isEditing && (
                                     <button
                                       onClick={() => removeStep(step.id)}
-                                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                      disabled={loading}
+                                      className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -370,9 +463,6 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                               </div>
                             </div>
                             
-                            {index < selectedWorkflow.steps.length - 1 && (
-                              <ArrowRight className="w-5 h-5 text-gray-400" />
-                            )}
                           </div>
                         );
                       })}
@@ -408,7 +498,8 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                         <button
                           key={tool.id}
                           onClick={() => addStepToWorkflow(tool.id)}
-                          className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
+                          disabled={loading}
+                          className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
                         >
                           <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
                             <Icon className="w-4 h-4 text-blue-600" />
@@ -427,6 +518,13 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
           </div>
         )}
       </div>
+
+      {/* Workflow Execution Modal */}
+      <WorkflowExecutionModal
+        isOpen={showExecutionModal}
+        onClose={() => setShowExecutionModal(false)}
+        workflow={selectedWorkflow}
+      />
     </div>
   );
 };

@@ -15,6 +15,7 @@ export { default as ColorOptimization } from './ColorOptimization';
 export { default as QualityAnalysis } from './QualityAnalysis';
 export { default as EditMetadata } from './EditMetadata';
 export { default as SpellCheck } from './SpellCheck';
+export { default as SmartConversion } from './SmartConversion';
 
 
 // Components with named exports

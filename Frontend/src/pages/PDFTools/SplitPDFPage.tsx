@@ -45,7 +45,7 @@ const SplitPDFPage: React.FC = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full">
+                <div className="bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full mb-4">
                   Advanced Tool
                 </div>
               </div>

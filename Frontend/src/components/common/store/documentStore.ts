@@ -60,6 +60,7 @@ interface DocumentState {
   moveToTrash: (documentId: string) => Promise<void>;
   restoreFromTrash: (documentId: string) => Promise<void>;
   permanentlyDelete: (documentId: string) => Promise<void>;
+
 }
 
 // Helper function to get user data from localStorage
@@ -659,5 +660,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     } catch (error: any) {
       console.error('Failed to permanently delete document:', error);
     }
-  }
+  },
+
 }));
