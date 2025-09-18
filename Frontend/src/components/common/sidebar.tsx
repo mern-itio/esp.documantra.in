@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'advanceTemplateDesign', label: 'Advance Design', path: '/template/advance-designer', icon: Layout },
         { id: 'aiTemplateDesign', label: 'AI Design', path: '/template/ai-studio', icon: Cpu },
         { id: 'templateLibrary', label: 'Library', path: '/template/library', icon: Archive },
-        { id: 'formBuilder', label: 'Form Builder', path: '/template/form-builder', icon: ClipboardList },
+        { id: 'formBuilder', label: 'Form Builder', path: '/template/form-list', icon: ClipboardList },
         { id: 'templateMarketPlace', label: 'Marketplace', path: '/template/marketplace', icon: ShoppingCart },
         { id: 'templateAnlytics', label: 'Anlytics', path: '/template/anylytics', icon: BarChart3 },
         { id: 'apiManagement', label: 'API Management', path: '/template/api-management', icon: Code },
