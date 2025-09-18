@@ -12,13 +12,21 @@ class RemovePasswordService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await axios.post(`${this.baseURL}/pdf-remove-password/check-protection`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    try {
+      const response = await axios.post(`${this.baseURL}/pdf-remove-password/check-protection`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-    return response.data;
+      return response.data;
+    } catch (error: any) {
+      console.error('Protection check error:', error);
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to check password protection');
+    }
   }
 
   async removePassword(request: RemovePasswordRequest): Promise<RemovePasswordResponse> {
@@ -26,22 +34,30 @@ class RemovePasswordService {
     formData.append('file', request.file);
     formData.append('password', request.password);
 
-    const response = await axios.post(`${this.baseURL}/pdf-remove-password/remove-password`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    try {
+      const response = await axios.post(`${this.baseURL}/pdf-remove-password/remove-password`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-    // Construct full URL for download
-    const baseURL = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
-    const downloadUrl = response.data.downloadUrl.startsWith('http') 
-      ? response.data.downloadUrl 
-      : `${baseURL}${response.data.downloadUrl}`;
+      // Construct full URL for download
+      const baseURL = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
+      const downloadUrl = response.data.downloadUrl.startsWith('http') 
+        ? response.data.downloadUrl 
+        : `${baseURL}${response.data.downloadUrl}`;
 
-    return {
-      ...response.data,
-      downloadUrl
-    };
+      return {
+        ...response.data,
+        downloadUrl
+      };
+    } catch (error: any) {
+      console.error('Password removal error:', error);
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to remove password protection');
+    }
   }
 
   async downloadFile(url: string, filename: string): Promise<void> {

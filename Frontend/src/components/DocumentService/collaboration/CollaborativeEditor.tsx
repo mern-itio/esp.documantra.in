@@ -11,7 +11,7 @@ import {
 import { Button } from '../ui/button';
 import { PresenceIndicator } from './PresenceIndicator';
 import { CommentSystem } from './CommentSystem';
-import type { CollaborativeUser, DocumentComment } from '../../common/types/collaboration';
+import type { CollaborativeUser, DocumentComment, CommentReply } from '../../common/types/collaboration';
 import { formatDate } from '../../common/lib/utils';
 
 interface CollaborativeEditorProps {
@@ -19,10 +19,14 @@ interface CollaborativeEditorProps {
   content: string;
   activeUsers: CollaborativeUser[];
   comments: DocumentComment[];
+  onReplyAdd: (commentId: string, reply: Omit<CommentReply, 'id' | 'timestamp'>) => void;
+  onCommentResolve?: (commentId: string) => void;
   isEditable: boolean;
   document?: any; // Add document for owner information
   onContentChange: (content: string) => void;
   onCommentAdd: (comment: Omit<DocumentComment, 'id' | 'timestamp'>) => void;
+  canAddComments?: boolean;
+  isLoadingComments?: boolean;
 }
 
 export function CollaborativeEditor({
@@ -32,7 +36,11 @@ export function CollaborativeEditor({
   comments,
   isEditable,
   onContentChange,
-  onCommentAdd
+  onCommentAdd,
+  onReplyAdd,
+  onCommentResolve,
+  canAddComments = true,
+  isLoadingComments = false
 }: CollaborativeEditorProps) {
   const [localContent, setLocalContent] = useState(content);
   const [isEditing, setIsEditing] = useState(false);
@@ -207,6 +215,10 @@ export function CollaborativeEditor({
               documentId={documentId}
               comments={comments}
               onCommentAdd={onCommentAdd}
+              onReplyAdd={onReplyAdd}
+              onCommentResolve={onCommentResolve}
+              isLoading={isLoadingComments}
+              canAddComments={canAddComments}
             />
           </div>
         )}
