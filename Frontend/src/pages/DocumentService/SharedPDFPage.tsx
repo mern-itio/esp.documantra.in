@@ -14,7 +14,7 @@ const SharedPDFPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery] = useState('');
   const [filterStatus] = useState<'all' | 'active' | 'expired' | 'revoked'>('all');
-  
+
   // Get sorting from document store
   const { sortBy, sortOrder } = useDocumentStore();
   const [selectedDocument, setSelectedDocument] = useState<SharedDocument | null>(null);
@@ -30,7 +30,7 @@ const SharedPDFPage: React.FC = () => {
   const [commentEmail, setCommentEmail] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [documentToShare, setDocumentToShare] = useState<SharedDocument | null>(null);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Helper function to get user info from localStorage
@@ -71,17 +71,17 @@ const SharedPDFPage: React.FC = () => {
     try {
       if (typeof window !== 'undefined' && !window.pdfjsLib) {
         const pdfjsLib = await import('pdfjs-dist');
-        
+
         try {
           pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
         } catch (error) {
           console.warn("Failed to set PDF.js worker:", error);
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';
         }
-        
+
         window.pdfjsLib = pdfjsLib;
       }
-      
+
       return window.pdfjsLib;
     } catch (error) {
       console.error('Error loading PDF.js:', error);
@@ -95,7 +95,7 @@ const SharedPDFPage: React.FC = () => {
       try {
         setLoading(true);
         const response = await pdfShareService.getUserSharedDocuments();
-        
+
         if (response.success) {
           setSharedDocuments(response.data.sharedDocuments);
         } else {
@@ -118,9 +118,9 @@ const SharedPDFPage: React.FC = () => {
       if (!doc.isActive) {
         return false;
       }
-      
+
       const matchesSearch = doc.document.name.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       let matchesFilter = true;
       if (filterStatus === 'active') {
         matchesFilter = doc.isActive && (!doc.expiresAt || new Date(doc.expiresAt) > new Date());
@@ -129,7 +129,7 @@ const SharedPDFPage: React.FC = () => {
       } else if (filterStatus === 'revoked') {
         matchesFilter = !doc.isActive;
       }
-      
+
       return matchesSearch && matchesFilter;
     })
     .sort((a, b) => {
@@ -164,21 +164,25 @@ const SharedPDFPage: React.FC = () => {
     });
 
   const handleRevokeShare = async (shareToken: string) => {
+    const confirmRevoke = window.confirm("Are you sure you want to delete this document?");
+    if (!confirmRevoke) return;
+
     try {
       const response = await pdfShareService.revokeSharedDocument(shareToken);
       if (response.success) {
-        setSharedDocuments(prev => 
-          prev.map(doc => 
-            doc.shareToken === shareToken 
+        setSharedDocuments(prev =>
+          prev.map(doc =>
+            doc.shareToken === shareToken
               ? { ...doc, isActive: false }
               : doc
           )
         );
       }
     } catch (err: any) {
-      console.error('Failed to revoke share:', err);
+      console.error("Failed to revoke share:", err);
     }
   };
+
 
   const handleShareDocument = (doc: SharedDocument) => {
     // Only allow owners to share documents
@@ -210,8 +214,8 @@ const SharedPDFPage: React.FC = () => {
     setShowComments(false);
     setComments([]);
     await loadPDFDocument(doc.shareToken);
-   
-    
+
+
     if (doc.allowComments || doc.isOwner) {
       await loadComments(doc.shareToken);
     } else {
@@ -232,7 +236,7 @@ const SharedPDFPage: React.FC = () => {
 
       const arrayBuffer = await response.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      
+
       setPdfDocument(pdf);
       setTotalPages(pdf.numPages);
     } catch (err: any) {
@@ -244,8 +248,8 @@ const SharedPDFPage: React.FC = () => {
     try {
       // Check if user is logged in and try authenticated API first
       const token = localStorage.getItem('token');
-      
-      
+
+
       if (token) {
         try {
           const response = await pdfShareService.getSharedDocumentCommentsAuth(shareToken);
@@ -257,7 +261,7 @@ const SharedPDFPage: React.FC = () => {
           console.warn('Auth API failed, falling back to public API:', authError);
         }
       }
-      
+
       const response = await pdfShareService.getSharedDocumentComments(shareToken);
       if (response.success) {
         setComments(response.data);
@@ -273,7 +277,7 @@ const SharedPDFPage: React.FC = () => {
     try {
       // Check if user is the document owner (admin)
       const isAdmin = selectedDocument.isOwner;
-      
+
       if (isAdmin) {
         // Check if token exists
         const token = localStorage.getItem('token');
@@ -282,9 +286,9 @@ const SharedPDFPage: React.FC = () => {
           alert('Please log in again to add admin comments');
           return;
         }
-        
-        
-     
+
+
+
         // Add admin comment
         const response = await pdfShareService.addAdminComment(selectedDocument.shareToken, {
           content: newComment,
@@ -324,22 +328,22 @@ const SharedPDFPage: React.FC = () => {
     try {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
+
       if (!context) return;
 
       context.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       const page = await pdfDocument.getPage(pageNumber);
       const viewport = page.getViewport({ scale: scale });
-      
+
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-      
+
       const renderContext = {
         canvasContext: context,
         viewport: viewport
       };
-      
+
       await page.render(renderContext).promise;
     } catch (error) {
       console.error('Error rendering PDF page:', error);
@@ -398,7 +402,7 @@ const SharedPDFPage: React.FC = () => {
         <div className="text-center py-12">
           <Share2 size={48} className="mx-auto mb-4 text-gray-300" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No shared documents</h3>
-         
+
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -459,7 +463,7 @@ const SharedPDFPage: React.FC = () => {
                   <ExternalLink size={14} className="mr-1" />
                   View
                 </Button>
-                
+
                 {doc.isOwner && (
                   <Button
                     size="sm"
@@ -470,8 +474,8 @@ const SharedPDFPage: React.FC = () => {
                     <Share size={14} />
                   </Button>
                 )}
-                
-                {doc.isActive && (
+
+                {doc.isOwner && (
                   <Button
                     size="sm"
                     variant="destructive"
@@ -491,7 +495,7 @@ const SharedPDFPage: React.FC = () => {
       {showPDFViewer && selectedDocument && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs " onClick={() => setShowPDFViewer(false)} />
-          
+
           <div className="absolute inset-0 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
               {/* Header */}
@@ -504,7 +508,7 @@ const SharedPDFPage: React.FC = () => {
                     Page {currentPage} of {totalPages}
                   </span>
                 </div>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -550,7 +554,7 @@ const SharedPDFPage: React.FC = () => {
                       )}
                     </Button>
                   )}
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -582,14 +586,14 @@ const SharedPDFPage: React.FC = () => {
                     style={{ maxWidth: '100%', height: 'auto' }}
                   />
                 </div>
-                
+
                 {/* Comments Panel */}
                 {showComments && (selectedDocument?.allowComments || selectedDocument?.isOwner) && (
                   <div className="w-80 ml-4 bg-white rounded-lg shadow-lg flex flex-col">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="font-semibold text-gray-900">Comments</h3>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                       {comments.map((comment) => (
                         <div key={comment._id} className={`border-b border-gray-100 pb-3 ${comment.isAdminComment ? 'bg-blue-50 p-3 rounded-lg' : ''}`}>
@@ -638,7 +642,7 @@ const SharedPDFPage: React.FC = () => {
                           </div>
                         </div>
                       ))}
-                      
+
                       {comments.length === 0 && (
                         <div className="text-center text-gray-500 py-8">
                           <MessageSquare size={32} className="mx-auto mb-2 text-gray-300" />
@@ -646,7 +650,7 @@ const SharedPDFPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Add Comment Form */}
                     <div className="p-4 border-t border-gray-200">
                       <div className="space-y-3">
@@ -658,7 +662,7 @@ const SharedPDFPage: React.FC = () => {
                           if (isAdmin) {
                             return (
                               <div className="text-sm text-blue-700 bg-blue-100 p-2 rounded border border-blue-200">
-                                <p>Commenting as <strong>Admin</strong>: <strong>{userInfo.name}</strong></p>                               
+                                <p>Commenting as <strong>Admin</strong>: <strong>{userInfo.name}</strong></p>
                               </div>
                             );
                           } else if (isLoggedIn) {
