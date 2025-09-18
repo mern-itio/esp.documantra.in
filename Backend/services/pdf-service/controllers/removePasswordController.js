@@ -73,10 +73,42 @@ const removePasswordController = {
       console.error('Error removing password protection:', error);
       
       // Check if it's a password error
-      if (error.message.includes('qpdf error:') && error.message.includes('password')) {
+      if (error.message.includes('qpdf error:') && 
+          (error.message.includes('password') || error.message.includes('authentication'))) {
+        return res.status(401).json({
+          error: 'Invalid password',
+          details: 'The password you entered is incorrect. Please check the password and try again.'
+        });
+      }
+      
+      // Check stderr for password-related errors
+      if (error.stderr && 
+          (error.stderr.includes('password') || 
+           error.stderr.includes('authentication') ||
+           error.stderr.includes('invalid password') ||
+           error.stderr.includes('incorrect password'))) {
+        return res.status(401).json({
+          error: 'Invalid password',
+          details: 'The password you entered is incorrect. Please check the password and try again.'
+        });
+      }
+      
+      // Check for direct qpdf password error messages
+      if (error.message.includes('invalid password') || 
+          error.message.includes('incorrect password') ||
+          error.message.includes('authentication failed')) {
+        return res.status(401).json({
+          error: 'Invalid password',
+          details: 'The password you entered is incorrect. Please check the password and try again.'
+        });
+      }
+
+      // Check if file is not password protected
+      if (error.message.includes('qpdf error:') && 
+          (error.message.includes('not encrypted') || error.message.includes('not password protected'))) {
         return res.status(400).json({
-          error: 'Incorrect password or file is not password protected',
-          details: 'Please check the password or ensure the file has password protection'
+          error: 'File is not password protected',
+          details: 'This PDF file is not password protected. No password removal is needed.'
         });
       }
 
@@ -98,8 +130,9 @@ const removePasswordController = {
       try {
         const { stdout, stderr } = await execAsync(`qpdf --show-encryption "${req.file.path}"`);
         
+        
         // If no encryption info, file is not protected
-        if (stdout.includes('File is not encrypted')) {
+        if (stdout.includes('File is not encrypted') || stdout.trim() === '') {
           return res.json({
             isProtected: false,
             message: 'File is not password protected'
@@ -110,28 +143,80 @@ const removePasswordController = {
         const encryptionInfo = {
           isProtected: true,
           encryptionType: 'Unknown',
-          permissions: 'Unknown'
+          permissions: 'Unknown',
+          message: 'File is password protected'
         };
 
-        // Extract encryption type
-        if (stdout.includes('256-bit')) {
+        // Extract encryption type from qpdf output
+        // qpdf shows R = 3 for RC4, R = 4 for AES-128, R = 5 for AES-256
+        if (stdout.includes('R = 5')) {
           encryptionInfo.encryptionType = 'AES-256';
-        } else if (stdout.includes('128-bit')) {
+        } else if (stdout.includes('R = 4')) {
           encryptionInfo.encryptionType = 'AES-128';
-        } else if (stdout.includes('40-bit')) {
+        } else if (stdout.includes('R = 3')) {
+          encryptionInfo.encryptionType = 'RC4-128';
+        } else if (stdout.includes('R = 2')) {
           encryptionInfo.encryptionType = 'RC4-40';
         }
 
-        // Extract permissions
-        if (stdout.includes('print=full')) {
-          encryptionInfo.permissions = 'Full printing allowed';
-        } else if (stdout.includes('print=none')) {
-          encryptionInfo.permissions = 'No printing allowed';
+        // Extract permissions from qpdf output
+        // Parse the P value and permission flags
+        const pMatch = stdout.match(/P = (-?\d+)/);
+        if (pMatch) {
+          const pValue = parseInt(pMatch[1]);
+          const permissions = [];
+          
+          // Parse individual permissions
+          if (stdout.includes('extract for any purpose: allowed')) {
+            permissions.push('Extract allowed');
+          } else if (stdout.includes('extract for any purpose: not allowed')) {
+            permissions.push('Extract restricted');
+          }
+          
+          if (stdout.includes('print high resolution: allowed')) {
+            permissions.push('High-res printing allowed');
+          } else if (stdout.includes('print low resolution: allowed')) {
+            permissions.push('Low-res printing allowed');
+          } else if (stdout.includes('print high resolution: not allowed') && stdout.includes('print low resolution: not allowed')) {
+            permissions.push('No printing allowed');
+          }
+          
+          if (stdout.includes('modify anything: allowed')) {
+            permissions.push('Full modification allowed');
+          } else if (stdout.includes('modify other: allowed')) {
+            permissions.push('Limited modification allowed');
+          } else if (stdout.includes('modify other: not allowed')) {
+            permissions.push('No modification allowed');
+          }
+          
+          if (permissions.length > 0) {
+            encryptionInfo.permissions = permissions.join(', ');
+          }
+        }
+
+        // If we still don't have specific info, set defaults
+        if (encryptionInfo.encryptionType === 'Unknown' && stdout.length > 0) {
+          encryptionInfo.encryptionType = 'Password Protected';
+        }
+
+        if (encryptionInfo.permissions === 'Unknown' && stdout.length > 0) {
+          encryptionInfo.permissions = 'Restricted (requires password)';
         }
 
         return res.json(encryptionInfo);
 
       } catch (qpdfError) {
+        
+        // Check if the error indicates the file is encrypted but we can't read it without password
+        if (qpdfError.message.includes('password') || qpdfError.stderr?.includes('password')) {
+          return res.json({
+            isProtected: true,
+            encryptionType: 'Password Protected',
+            permissions: 'Restricted (requires password)',
+            message: 'File is password protected'
+          });
+        }
+        
         // If qpdf fails, file might be corrupted or not a valid PDF
         return res.status(400).json({
           error: 'Unable to analyze PDF encryption',

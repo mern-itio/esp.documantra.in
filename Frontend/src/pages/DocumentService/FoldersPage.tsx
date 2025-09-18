@@ -9,7 +9,8 @@ import {
   SortAsc,
   SortDesc,
   ChevronRight,
-  Home
+  Home,
+  ArrowLeft
 } from 'lucide-react';
 import { folderAPI, documentAPI } from '../../services/api';
 import { Button } from '../../components/DocumentService/ui/button';
@@ -81,16 +82,30 @@ const FoldersPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'date' | 'docCount'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Get folders from the document store
-  const storeFolders = useDocumentStore(state => state.folders);
+  // Get folders and functions from the document store
+  const { 
+    folders: storeFolders,
+    documents: storeDocuments,
+    fetchDocuments,
+    fetchFolders
+  } = useDocumentStore();
 
   // Load user folders
   useEffect(() => {
-    loadFolders();
-    // Also load folders into the store
-    const store = useDocumentStore.getState();
-    store.fetchFolders();
-  }, []);
+    const loadInitialData = async () => {
+      await loadFolders();
+      // Also load folders into the store
+      await fetchFolders();
+      // Load root documents into the store
+      await fetchDocuments({ 
+        folderId: null,
+        sortBy: 'modifiedAt',
+        sortOrder: 'desc'
+      });
+    };
+    
+    loadInitialData();
+  }, [fetchFolders, fetchDocuments]);
 
   // Debug: Monitor folders state changes
   useEffect(() => {
@@ -159,6 +174,14 @@ const FoldersPage: React.FC = () => {
       const response = await folderAPI.getFolder(folderId);
       if (response.success) {
         setCurrentFolder(response.data);
+        
+        // Load documents into the document store so DocumentCard can access them
+        await fetchDocuments({ 
+          folderId: folderId,
+          sortBy: 'modifiedAt',
+          sortOrder: 'desc'
+        });
+        
         // await loadBreadcrumbs(folderId);
       }
     } catch (error) {
@@ -192,9 +215,16 @@ const FoldersPage: React.FC = () => {
     }
   };
 
-  const handleBackToRoot = () => {
+  const handleBackToRoot = async () => {
     setCurrentFolder(null);
     setSelectedDocuments([]);
+    
+    // Load root documents into the document store
+    await fetchDocuments({ 
+      folderId: null,
+      sortBy: 'modifiedAt',
+      sortOrder: 'desc'
+    });
   };
 
 
@@ -288,11 +318,12 @@ const FoldersPage: React.FC = () => {
   };
 
   const handleSelectAll = () => {
-    if (currentFolder?.documents) {
-      if (selectedDocuments.length === currentFolder.documents.length) {
+    const folderDocuments = getFilteredAndSortedDocuments();
+    if (folderDocuments.length > 0) {
+      if (selectedDocuments.length === folderDocuments.length) {
         setSelectedDocuments([]);
       } else {
-        setSelectedDocuments(currentFolder.documents.map(doc => doc._id));
+        setSelectedDocuments(folderDocuments.map(doc => doc.id));
       }
     }
   };
@@ -301,24 +332,6 @@ const FoldersPage: React.FC = () => {
     setSelectedDocument(document);
   };
 
-  const transformDocumentData = (doc: DocumentData): Document => ({
-    id: doc._id,
-    name: doc.name,
-    type: doc.type,
-    size: doc.size,
-    createdAt: doc.createdAt,
-    modifiedAt: doc.modifiedAt,
-    uploadedBy: doc.uploadedBy,
-    ownerId: doc.ownerId,
-    folderId: doc.folderId || null,
-    tags: [], // Add tags if available in your data
-    shared: false, // Add shared status if available
-    views: 0, // Add views if available
-    downloads: 0, // Add downloads if available
-    sharedWith: [], // Add sharedWith if available
-    isArchived: doc.isArchived,
-    isFavorite: doc.isFavorite
-  });
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -374,7 +387,13 @@ const FoldersPage: React.FC = () => {
   const getFilteredAndSortedDocuments = () => {
     if (!currentFolder) return [];
 
-    let filtered = [...currentFolder.documents];
+    // Use documents from the store instead of local folder documents for real-time updates
+    const folderDocuments = storeDocuments.filter(doc => 
+      doc.folderId === currentFolder.folder._id || 
+      (currentFolder.folder._id === null && !doc.folderId)
+    );
+
+    let filtered = [...folderDocuments];
 
     // Apply search filter
     if (searchQuery) {
@@ -429,9 +448,9 @@ const FoldersPage: React.FC = () => {
 
               )}
             >
-              <span>Document Management</span>
+              <span><ArrowLeft className='w-4 h-4 text-gray-500' /></span>
             </Link>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+          
             <button
               onClick={handleBackToRoot}
               className="flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
@@ -524,7 +543,7 @@ const FoldersPage: React.FC = () => {
                         size="sm"
                         onClick={handleSelectAll}
                       >
-                        {selectedDocuments.length === currentFolder.documents.length ? 'Deselect All' : 'Select All'}
+{selectedDocuments.length === getFilteredAndSortedDocuments().length && getFilteredAndSortedDocuments().length > 0 ? 'Deselect All' : 'Select All'}
                       </Button>
 
                       {selectedDocuments.length > 0 && (
@@ -544,13 +563,12 @@ const FoldersPage: React.FC = () => {
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {getFilteredAndSortedDocuments().map((document) => {
-                      const transformedDoc = transformDocumentData(document);
                       return (
-                        <div key={document._id} className="relative">
+                        <div key={document.id} className="relative">
                           <DocumentCard
-                            document={transformedDoc}
-                            isSelected={selectedDocuments.includes(document._id)}
-                            onSelect={(isSelected) => handleDocumentSelect(document._id, isSelected)}
+                            document={document}
+                            isSelected={selectedDocuments.includes(document.id)}
+                            onSelect={(isSelected) => handleDocumentSelect(document.id, isSelected)}
                             onClick={handleDocumentClick}
                           />
                         </div>
@@ -565,7 +583,7 @@ const FoldersPage: React.FC = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <input
                               type="checkbox"
-                              checked={selectedDocuments.length === currentFolder.documents.length}
+                              checked={selectedDocuments.length === getFilteredAndSortedDocuments().length && getFilteredAndSortedDocuments().length > 0}
                               onChange={handleSelectAll}
                               className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             />
@@ -586,12 +604,12 @@ const FoldersPage: React.FC = () => {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {getFilteredAndSortedDocuments().map((document) => (
-                          <tr key={document._id} className="hover:bg-gray-50">
+                          <tr key={document.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <input
                                 type="checkbox"
-                                checked={selectedDocuments.includes(document._id)}
-                                onChange={() => handleDocumentSelect(document._id)}
+                                checked={selectedDocuments.includes(document.id)}
+                                onChange={() => handleDocumentSelect(document.id)}
                                 className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                               />
                             </td>
@@ -602,8 +620,7 @@ const FoldersPage: React.FC = () => {
                                 </div>
                                 <button
                                   onClick={() => {
-                                    const transformedDoc = transformDocumentData(document);
-                                    handleDocumentClick(transformedDoc);
+                                    handleDocumentClick(document);
                                   }}
                                   className="text-sm font-medium text-gray-900 hover:text-primary-600 hover:underline cursor-pointer"
                                 >
@@ -623,8 +640,7 @@ const FoldersPage: React.FC = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    const transformedDoc = transformDocumentData(document);
-                                    handleDocumentClick(transformedDoc);
+                                    handleDocumentClick(document);
                                   }}
                                 >
                                   Open
@@ -633,7 +649,7 @@ const FoldersPage: React.FC = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    setSelectedDocuments([document._id]);
+                                    setSelectedDocuments([document.id]);
                                     setShowMoveModal(true);
                                   }}
                                 >
@@ -651,7 +667,7 @@ const FoldersPage: React.FC = () => {
             )}
 
             {/* Empty state */}
-            {currentFolder.subfolders.length === 0 && getFilteredAndSortedDocuments().length === 0 && (
+            {getFilteredAndSortedFolders().length === 0 && getFilteredAndSortedDocuments().length === 0 && (
               <div className="text-center py-12">
                 <Folder className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No items in this folder</h3>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, FileText, Eye, Download, Trash2, ExternalLink, MessageSquare, User } from 'lucide-react';
+import { Share2, FileText, Eye, Download, Trash2, ExternalLink, MessageSquare, User, Share } from 'lucide-react';
 import { pdfShareService } from '../../services/pdfShareService';
 import type { SharedDocument, Comment } from '../../services/pdfShareService';
 import { Button } from '../../components/DocumentService/ui/button';
 import { Card } from '../../components/DocumentService/ui/card';
 import Badge from '../../components/DocumentService/ui/badge';
 import { useDocumentStore } from '../../components/common/store/documentStore';
+import PDFShareModal from '../../components/DocumentService/sharing/PDFShareModal';
 
 const SharedPDFPage: React.FC = () => {
   const [sharedDocuments, setSharedDocuments] = useState<SharedDocument[]>([]);
@@ -27,6 +28,8 @@ const SharedPDFPage: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
   const [commentEmail, setCommentEmail] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [documentToShare, setDocumentToShare] = useState<SharedDocument | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -175,6 +178,28 @@ const SharedPDFPage: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to revoke share:', err);
     }
+  };
+
+  const handleShareDocument = (doc: SharedDocument) => {
+    // Only allow owners to share documents
+    if (!doc.isOwner) {
+      console.warn('Only document owners can share documents');
+      return;
+    }
+    setDocumentToShare(doc);
+    setShowShareModal(true);
+  };
+
+  const handleShareSuccess = (shareData: any) => {
+    // Optionally refresh the shared documents list or show a success message
+    console.log('Document shared successfully:', shareData);
+    setShowShareModal(false);
+    setDocumentToShare(null);
+  };
+
+  const handleCloseShareModal = () => {
+    setShowShareModal(false);
+    setDocumentToShare(null);
   };
 
   const handleViewDocument = async (doc: SharedDocument) => {
@@ -366,7 +391,7 @@ const SharedPDFPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-2">
 
       {/* Documents Grid */}
       {filteredDocuments.length === 0 ? (
@@ -435,11 +460,23 @@ const SharedPDFPage: React.FC = () => {
                   View
                 </Button>
                 
+                {doc.isOwner && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleShareDocument(doc)}
+                    title="Share this document"
+                  >
+                    <Share size={14} />
+                  </Button>
+                )}
+                
                 {doc.isActive && (
                   <Button
                     size="sm"
                     variant="destructive"
                     onClick={() => handleRevokeShare(doc.shareToken)}
+                    title="Revoke access"
                   >
                     <Trash2 size={14} />
                   </Button>
@@ -675,6 +712,14 @@ const SharedPDFPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* PDF Share Modal */}
+      <PDFShareModal
+        isOpen={showShareModal}
+        onClose={handleCloseShareModal}
+        onSuccess={handleShareSuccess}
+        existingDocument={documentToShare}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-const PDF_API_BASE_URL = import.meta.env.VITE_PDF_API_BASE_URL || 'http://localhost:2104';
+const PDF_API_BASE_URL = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
 
 // Helper function to get auth token
 const getAuthToken = (): string | null => {

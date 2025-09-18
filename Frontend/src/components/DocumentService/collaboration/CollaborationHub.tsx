@@ -671,10 +671,14 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                 content={isLoadingContent ? 'Loading document content...' : documentContent}
                 activeUsers={activeUsers}
                 comments={comments}
+                onReplyAdd={handleAddCommentReply}
+                onCommentResolve={handleResolveComment}
                 isEditable={userPermissions.canEdit} // Respect user permissions
                 document={document}
                 onContentChange={handleContentChange}
                 onCommentAdd={handleAddComment}
+                canAddComments={userPermissions.canComment}
+                isLoadingComments={isLoadingComments}
               />
             </>
           )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, RotateCcw } from 'lucide-react';
+import { Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/DocumentService/ui/button';
 import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
 import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
@@ -12,13 +12,16 @@ import type { Document } from '../../components/common/types';
 const TrashPage: React.FC = () => {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [deletedDocuments, setDeletedDocuments] = useState<Document[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   
   const { 
     selectedDocuments,
     setSelectedDocuments,
     restoreFromTrash, 
     permanentlyDelete,
+    viewMode,
+    isLoading,
+    searchQuery,
+    searchFilters,
     sortBy,
     sortOrder
   } = useDocumentStore();
@@ -27,7 +30,6 @@ const TrashPage: React.FC = () => {
   useEffect(() => {
     const loadDeletedDocuments = async () => {
       try {
-        setIsLoading(true);
         const response = await documentAPI.getDeletedDocuments({
           limit: 100
         });
@@ -61,48 +63,86 @@ const TrashPage: React.FC = () => {
           setDeletedDocuments(transformedDocuments);
         } else {
           console.warn('Unexpected API response structure:', response);
-          setDeletedDocuments([]);
         }
       } catch (error) {
         console.error('Failed to load deleted documents:', error);
-        setDeletedDocuments([]);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     loadDeletedDocuments();
   }, []);
 
-  // Sort documents using document store sorting
-  const sortedDocuments = deletedDocuments.sort((a, b) => {
-    let aValue: any, bValue: any;
+  // Filter and sort documents based on store settings (same logic as getFilteredDocuments but for deleted docs)
+  const filteredDocuments = deletedDocuments
+    .filter(doc => {
+      // Apply search filter
+      if (searchQuery) {
+        const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             doc.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+        if (!matchesSearch) return false;
+      }
 
-    switch (sortBy) {
-      case 'name':
-        aValue = a.name.toLowerCase();
-        bValue = b.name.toLowerCase();
-        break;
-      case 'date':
-        aValue = new Date(a.deletedAt || a.modifiedAt);
-        bValue = new Date(b.deletedAt || b.modifiedAt);
-        break;
-      case 'size':
-        aValue = a.size;
-        bValue = b.size;
-        break;
-      case 'type':
-        aValue = a.type.toLowerCase();
-        bValue = b.type.toLowerCase();
-        break;
-      default:
-        return 0;
-    }
+      // Apply document type filter
+      if (searchFilters?.type && searchFilters.type.length > 0) {
+        if (!searchFilters.type.includes(doc.type)) return false;
+      }
 
-    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-    return 0;
-  });
+      // Apply date range filter
+      if (searchFilters?.dateRange) {
+        const docDate = new Date(doc.deletedAt || doc.modifiedAt);
+        const fromDate = new Date(searchFilters.dateRange.from);
+        const toDate = new Date(searchFilters.dateRange.to);
+        
+        if (docDate < fromDate || docDate > toDate) return false;
+      }
+
+      // Apply size filter
+      if (searchFilters?.sizeRange) {
+        const sizeInMB = doc.size / (1024 * 1024);
+        if (sizeInMB < searchFilters.sizeRange.min || sizeInMB > searchFilters.sizeRange.max) {
+          return false;
+        }
+      }
+
+      // Apply tags filter
+      if (searchFilters?.tags && searchFilters.tags.length > 0) {
+        const hasMatchingTag = searchFilters.tags.some(filterTag => 
+          doc.tags?.some(docTag => docTag.toLowerCase().includes(filterTag.toLowerCase()))
+        );
+        if (!hasMatchingTag) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'date':
+          aValue = new Date(a.deletedAt || a.modifiedAt);
+          bValue = new Date(b.deletedAt || b.modifiedAt);
+          break;
+        case 'size':
+          aValue = a.size;
+          bValue = b.size;
+          break;
+        case 'type':
+          aValue = a.type.toLowerCase();
+          bValue = b.type.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {
     if (isSelected) {
@@ -112,6 +152,10 @@ const TrashPage: React.FC = () => {
       const newSelection = selectedDocuments.filter(id => id !== documentId);
       setSelectedDocuments(newSelection);
     }
+  };
+
+  const handleDocumentClick = (document: Document) => {
+    setSelectedDocument(document);
   };
   const handleRestore = async (documentId: string) => {
     try {
@@ -155,7 +199,7 @@ const TrashPage: React.FC = () => {
     );
   }
 
-  if (deletedDocuments.length === 0) {
+  if (filteredDocuments.length === 0) {
     return (
       <EmptyState
         icon={Trash2}
@@ -167,7 +211,7 @@ const TrashPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Header Actions */}
       {selectedDocuments.length > 0 && (
         <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg">
@@ -200,8 +244,11 @@ const TrashPage: React.FC = () => {
       )}
 
       {/* Content */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {sortedDocuments.map((document: Document) => {
+      <div className={viewMode === 'grid' 
+        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        : "space-y-2"
+      }>
+        {filteredDocuments.map((document: Document) => {
           const isSelected = selectedDocuments.includes(document.id);
           return (
             <div key={document.id} className="relative">
@@ -209,8 +256,8 @@ const TrashPage: React.FC = () => {
                 document={document}
                 isSelected={isSelected}
                 onSelect={(selected) => handleDocumentSelect(document.id, selected)}
+                onClick={handleDocumentClick}
                 showActionsMenu={false}
-                // onClick={handleDocumentClick}
               />
               
               {/* Trash-specific actions overlay */}
@@ -248,6 +295,18 @@ const TrashPage: React.FC = () => {
           );
         })}
       </div>
+   
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800">Important Notice</h4>
+              <p className="text-sm text-yellow-700">
+                Documents in trash will be permanently deleted after 30 days. You can restore them at any time before then.
+              </p>
+            </div>
+          </div>
+        </div>
     </div>
   );
 };

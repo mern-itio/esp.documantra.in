@@ -1,0 +1,32 @@
+ files-1758170939128-448036764_temp.pngInvoice Date: 8/7/2025
+
+Transaction ID: TXN-1754562006337-SUCCESS
+Merchant Information
+
+Company: TechCorp Solutions
+
+Website: techcorpsolutions.com
+
+Customer Information
+
+Name: John Doe
+
+Email: \|@example.com
+
+Phone: +1 (555) 123-4567
+
+Transaction Details
+
+Order ID: ORD-2024-001
+
+Product: Premium Subscription Plan
+
+Payment Method: netbanking
+
+Transaction Date: 8/7/2025, 3:50:06 PM
+Amount Paid: INR 99.99
+
+Status: PAYMENT SUCCESSFUL
+
+This is a computer-generated invoice. No signature required.
+For support, please contact: support@paymentgateway.com

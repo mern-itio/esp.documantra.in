@@ -41,7 +41,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1);
   const [pdfDocument, setPdfDocument] = useState<any>(null);
-  const [email, setEmail] = useState('');
+  const [email] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   // Removed showComments state - comments now always visible in sidebar when available
   const [newComment, setNewComment] = useState('');
@@ -309,10 +309,10 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
     }
   };
 
-  const handleEmailSubmit = () => {
-    // Reload document with email for tracking
-    window.location.reload();
-  };
+  // const handleEmailSubmit = () => {
+  //   // Reload document with email for tracking
+  //   window.location.reload();
+  // };
 
   if (loading) {
     return (
@@ -431,7 +431,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
       </div>
 
       {/* Document Info */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <Card className="p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center space-x-2">
@@ -542,7 +542,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
           {/* Comments Sidebar - Always show if there are comments or if comments are allowed */}
           {(comments.length > 0 || documentData?.share.allowComments || documentData?.share.isOwner) && (
-            <Card className="w-80 p-6">
+            <Card className="w-100 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium">Comments</h3>
                 <span className="text-sm text-gray-500">{comments.length} comments</span>
@@ -780,7 +780,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
         )}
 
         {/* Email Tracking (Optional) */}
-        {!email && (
+        {/* {!email && (
           <Card className="p-4 mt-6">
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-3">
@@ -803,7 +803,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
               </div>
             </div>
           </Card>
-        )}
+        )} */}
       </div>
     </div>
   );

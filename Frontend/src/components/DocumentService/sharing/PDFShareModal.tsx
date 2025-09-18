@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Upload, Eye, Send, Plus, Trash2 } from 'lucide-react';
+import { X, Upload, Eye, Send, Plus, Trash2, FileText } from 'lucide-react';
 import { pdfShareService, type PDFShareRecipient, type PDFShareRequest } from '../../../services/pdfShareService';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -10,6 +10,7 @@ interface PDFShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (shareData: any) => void;
+  existingDocument?: any; // SharedDocument from SharedPDFPage
 }
 
 interface PDFFile {
@@ -18,7 +19,7 @@ interface PDFFile {
   documentId?: string;
 }
 
-const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSuccess, existingDocument }) => {
   const [step, setStep] = useState<'upload' | 'recipients' | 'preview' | 'confirm'>('upload');
   const [pdfFile, setPdfFile] = useState<PDFFile | null>(null);
   const [recipients, setRecipients] = useState<PDFShareRecipient[]>([]);
@@ -33,6 +34,29 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
   const [shareData, setShareData] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle existing document
+  useEffect(() => {
+    if (existingDocument && isOpen) {
+      // Verify the user is the owner of the document
+      if (!existingDocument.isOwner) {
+        setError('You can only share documents that you own');
+        return;
+      }
+      
+      // Set up the existing document for sharing
+      setPdfFile({
+        file: new File([], existingDocument.document.name, { type: 'application/pdf' }), // Dummy file
+        preview: '', // Will be loaded if needed
+        documentId: existingDocument.document._id || existingDocument.document.id
+      });
+      setSubject(`Document shared: ${existingDocument.document.name}`);
+      setStep('recipients'); // Skip upload step for existing documents
+    } else if (!existingDocument && isOpen) {
+      // Reset to upload step for new documents
+      setStep('upload');
+    }
+  }, [existingDocument, isOpen]);
 
   // Load PDF.js
   useEffect(() => {
@@ -222,7 +246,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
       if (response.success) {
         setShareData(response.data);
         setStep('confirm');
-        onSuccess?.(response.data);
+        // Don't call onSuccess here - let user see the confirm step first
       } else {
         setError(response.message || 'Failed to share document');
       }
@@ -271,21 +295,21 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center p-4 border-b bg-gray-50">
-          {['upload', 'recipients', 'preview', 'confirm'].map((stepName, index) => (
+          {(existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 step === stepName ? 'bg-blue-600 text-white' : 
-                ['upload', 'recipients', 'preview', 'confirm'].indexOf(step) > index ? 'bg-green-600 text-white' : 
+                (existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).indexOf(step) > index ? 'bg-green-600 text-white' : 
                 'bg-gray-300 text-gray-600'
               }`}>
-                {index + 1}
+                {existingDocument ? index + 1 : index + 1}
               </div>
               <span className={`ml-2 text-sm ${
                 step === stepName ? 'text-blue-600 font-medium' : 'text-gray-600'
               }`}>
                 {stepName.charAt(0).toUpperCase() + stepName.slice(1)}
               </span>
-              {index < 3 && <div className="w-8 h-0.5 bg-gray-300 mx-2" />}
+              {index < (existingDocument ? 2 : 3) && <div className="w-8 h-0.5 bg-gray-300 mx-2" />}
             </div>
           ))}
         </div>
@@ -298,8 +322,8 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
             </Alert>
           )}
 
-          {/* Step 1: Upload */}
-          {step === 'upload' && (
+          {/* Step 1: Upload (only for new documents) */}
+          {step === 'upload' && !existingDocument && (
             <div className="space-y-6">
               <div className="text-center">
                 <h3 className="text-lg font-medium mb-2">Upload PDF Document</h3>
@@ -330,6 +354,22 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                   <p className="mt-2 text-gray-600">Uploading PDF...</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Existing Document Info (when sharing existing document) */}
+          {existingDocument && step === 'recipients' && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <FileText size={24} className="text-blue-600" />
+                <div>
+                  <h3 className="font-medium text-blue-900">Sharing Existing Document</h3>
+                  <p className="text-sm text-blue-700">{existingDocument.document.name}</p>
+                  <p className="text-xs text-blue-600">
+                    Originally shared on {new Date(existingDocument.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -594,7 +634,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
           <div className="flex space-x-3">
             {step !== 'upload' && step !== 'confirm' && (
               <Button
-                onClick={() => setStep(step === 'recipients' ? 'upload' : 'recipients')}
+                onClick={() => setStep(step === 'recipients' ? (existingDocument ? 'recipients' : 'upload') : 'recipients')}
                 variant="outline"
               >
                 Back
@@ -603,7 +643,10 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
             
             {step === 'confirm' ? (
               <Button
-                onClick={handleClose}
+                onClick={() => {
+                  onSuccess?.(shareData);
+                  handleClose();
+                }}
                 className="bg-green-600 hover:bg-green-700"
               >
                 Done
