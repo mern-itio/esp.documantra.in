@@ -4,7 +4,7 @@ const ActivityLogsSchema = new mongoose.Schema({
   envelopeId: { type: mongoose.Schema.Types.ObjectId, ref: "Envelope", required: true },
   action: { type: String, required: true }, // e.g., "OTP_SENT", "DOC_SIGNED", "TSA_TIMESTAMPED"
   details: { type: mongoose.Schema.Types.Mixed }, // flexible JSON
-  type: { type: String, enum: ["Sender", "Recipient"] },
+  type: { type: String, enum: ["Sender", "Recipient", "System"] },
   timestamp: { type: Date, default: Date.now }
 });
 

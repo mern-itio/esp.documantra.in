@@ -6,7 +6,8 @@ const DocumentSchema = new mongoose.Schema({
   fileName: { type: String, required: true },
   filePath: { type: String, required: true }, // relative path in uploads folder
   fileSize: { type: Number }, // optional
-  mimeType: { type: String } // optional
+  mimeType: { type: String }, // optional
+  preparedDoc:{type: String} // path to the document prepared for final signing
 }, { timestamps: true });
 
 module.exports = mongoose.model('Document', DocumentSchema);

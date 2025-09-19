@@ -22,10 +22,20 @@ const EnvelopeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { recipientId } = useParams<{ recipientId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
+  const [logs, setLogs] = useState<any[]>([]);
   useEffect(() => {
     fetchEnvelopeDetails();
+    fetchLogs();
     console.log(`Envelope ID from URL: ${id}`);
   }, []);
+    const fetchLogs = async () =>{
+      try{
+        const response = await eSignApi.get(`/api/e-sign/public/envelope/activity-log/${id}`);
+        setLogs(response.data.logs || []);
+      }catch (err){
+        console.log(err);
+      }
+    }
   const [envelope, setEnvelope] = useState<any>(null);
   // Active document and signature fields state
   const [activeDocument, setActiveDocument] = useState<any>(null);
@@ -63,6 +73,10 @@ const EnvelopeDetails: React.FC = () => {
         )
       );
     };
+    const handleDownloadAll = () =>{
+    const downloadUrl = `${import.meta.env.VITE_ESIGN_SERVICE_URL}/api/e-sign/signatures/download-all/${id}`;
+      window.open(downloadUrl, '_blank');
+    }
 
 
   if (!envelope) {
@@ -178,6 +192,19 @@ const EnvelopeDetails: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="flex flex-wrap gap-3">
+            {envelope?.status === 'completed' && (
+              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={() => handleDownloadAll()}
+              >
+                <Download className="w-4 h-4" />
+                  Download PDF
+              </button>
+            )}
+        </div>
+      </div>
 
     </div>
   );
@@ -280,10 +307,11 @@ const EnvelopeDetails: React.FC = () => {
     </div>
   );
 
-  const renderActivity = () => (
-    <div className="space-y-4">
-      {envelope.auditTrail?.map((entry:any) => (
-        <div key={entry.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+const renderActivity = () => (
+  <div className="space-y-4">
+    {logs.length > 0 ? (
+      logs.map((entry) => (
+        <div key={entry._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start space-x-4">
             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
               <Activity className="w-5 h-5 text-gray-600" />
@@ -291,31 +319,35 @@ const EnvelopeDetails: React.FC = () => {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-semibold text-gray-900 capitalize">
-                  {entry.action.replace('_', ' ')}
+                  {entry.action.replace(/_/g, ' ')}
                 </h4>
                 <span className="text-sm text-gray-500">
                   {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-2">{entry.details}</p>
+              <p className="text-sm text-gray-600 mb-2 break-words">
+                {typeof entry.details === 'object'
+                  ? JSON.stringify(entry.details, null, 2)
+                  : entry.details}
+              </p>
               <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>Actor: {entry.actor}</span>
-                <span>IP: {entry.ipAddress}</span>
-                <span>{format(new Date(entry.timestamp), 'MMM d, yyyy HH:mm')}</span>
+                <span>Type: {entry.type}</span>
               </div>
             </div>
           </div>
         </div>
-      )) || (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
-          <p className="text-gray-500">Activity will appear here as actions are taken on this envelope.</p>
-        </div>
-      )}
-    </div>
-  );
-
+      ))
+    ) : (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
+        <p className="text-gray-500">
+          Activity will appear here as actions are taken on this envelope.
+        </p>
+      </div>
+    )}
+  </div>
+);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}

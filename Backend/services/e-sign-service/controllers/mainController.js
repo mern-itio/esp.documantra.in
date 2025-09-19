@@ -8,10 +8,11 @@ const {signRequestTemplate, signReminderTemplate } = require('../emails/emailTem
 const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
 const ObjectId = mongoose.Types.ObjectId;
-const { signAndEmbed } = require('../services/digitalSignatureService');
+const { signAndEmbed, initiateRecipientSignature, finalizeSigning, prepareDocumentForFinalSigning } = require('../services/digitalSignatureService');
 const {logActivity} = require('../services/activityLogService');
 const { ActivityLogs } = require('../models/ActivityLogs');
 const Document = require('../models/Document');
+const { issueCertificate } = require('../services/pkiService');
 
 const envelopesData = async (req, res) => {
     const userId = req.user.data.id;
@@ -328,34 +329,57 @@ const addSignature = async (req, res) => {
   if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
     return res.status(400).json({ message: 'All parameters are required' });
   }
-
-  try {
-    const result = await signAndEmbed({
-      envelopeId,
-      documentId,
-      recipientId,
-      certificateId,
-      signerName,
-      signatureImageBase64
+  // Call the certificate function
+  if(!certificateId){
+    const cert = await issueCertificate(recipientId, envelopeId);
+    // Log certificate issued action
+    await logActivity(envelopeId, "CERTIFICATE_ISSUED", "Sender", {
+      recipientId,  
+      certificateId: cert.certificateId,
     });
-    // Send to next recipient
+  }
+  // Call the initiateRecipientSignature
+  const initiateSign = await initiateRecipientSignature({ envelopeId, documentId, recipientId, signatureImageBase64 });
+  if (!initiateSign) {
+    console.log('Failed to initiate recipient signature');
+    return res.status(500).json({ message: 'Failed to initiate signature' });
+  }
+  console.log('Signature field updated:', initiateSign.signatureField);
+  // Check pending recipients and send email to next recipient
+    try {
     const pendingFields = await SignatureField.find({
       envelopeId: envelopeId,
       status: 'pending'
     });
     if (pendingFields.length === 0) {
-      // If no more pending fields for the same envelope, mark envelope as completed
       const envelope = await Envelope.findById(envelopeId);
         if (envelope) {
-          envelope.status = 'completed';
-          await envelope.save();
-          // Log individual field signature
-          await logActivity(envelopeId, "Envelope_Completed", "Recipient", {
-            recipientId,
-            documentId,
-            fieldId,
-            signerName,
-          });
+            // prepare document for final signing if all done
+            const prepareDoc = await prepareDocumentForFinalSigning(envelopeId, documentId);
+            if (!prepareDoc) {
+              console.log('Failed to prepare document for final signing');
+              return res.status(500).json({ message: 'Failed to prepare document for final signing' });
+            }
+            console.log('Document prepared for final signing:', prepareDoc);
+            // Call the final signing function
+            const digiSign = await finalizeSigning(envelopeId, documentId);
+            if (!digiSign) {
+              console.log('Failed to finalize signing');
+              return res.status(500).json({ message: 'Failed to finalize signing' });
+            }
+            // Update envelope status to completed
+            envelope.status = 'completed';
+            //Send an email of completion to the sender and recipients with pdf attached and certificate attached
+            await envelope.save();   
+            await logActivity(envelopeId, "ENVELOPE_COMPLETED", "System", {
+              subject:envelope.subject,
+              message:envelope.message
+            });
+            return res.status(200).json({
+              status: 'success',
+              message: 'Envelope signing completed',
+              data: finalizeSigning
+            }); 
         }
       }else{
       const envelope = await Envelope.findById(envelopeId);
@@ -366,15 +390,15 @@ const addSignature = async (req, res) => {
             subject:envelope.subject,
             message:envelope.message
           });
+          console.log('Envelope sent to next recipient');
+          return res.status(200).json({
+            status: 'success',
+            message: 'Signature added with compliance'
+          });
         }
     }
-    res.status(200).json({
-      status: 'success',
-      message: 'Signature added with compliance',
-      data: result
-    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 

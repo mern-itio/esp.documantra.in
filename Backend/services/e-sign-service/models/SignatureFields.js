@@ -11,7 +11,7 @@ const SignatureFields = new mongoose.Schema({
   width: { type: Number, required: true },
   height: { type: Number, required: true },
   type: { type: String, enum: ["signature", "initials", "date", "text", "checkbox"], required: true },
-  status: { type: String, enum: ["pending", "completed", "declined"], default: "pending" },
+  status: { type: String, enum: ["pending", "completed", "declined","submitted"], default: "pending" },
   signature: { type: String },
 }, { timestamps: true });
 
