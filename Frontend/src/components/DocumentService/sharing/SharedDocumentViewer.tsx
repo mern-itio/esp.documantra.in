@@ -205,15 +205,24 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('userData') !== null;
+    
+    // If not logged in, validate that name and email are provided
+    if (!isLoggedIn && (!commentAuthor.trim() || !commentEmail.trim())) {
+      setError('Please enter your name and email to add a comment');
+      return;
+    }
+
     try {
-      // Get user info from local storage if available
+      // Get user info from local storage if available, otherwise use form inputs
       const userInfo = getUserInfo();
 
       const response = await pdfShareService.addSharedDocumentComment(shareToken, {
         content: newComment,
         position: { page: currentPage, x: 0, y: 0 },
-        authorName: userInfo.name,
-        authorEmail: userInfo.email
+        authorName: isLoggedIn ? userInfo.name : commentAuthor.trim(),
+        authorEmail: isLoggedIn ? userInfo.email : commentEmail.trim()
       });
 
       if (response.success) {
@@ -221,9 +230,11 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
         setNewComment('');
         setCommentAuthor('');
         setCommentEmail('');
+        setError(''); // Clear any previous errors
       }
     } catch (err: any) {
       console.error('Error adding comment:', err);
+      setError('Failed to add comment. Please try again.');
     }
   };
 
@@ -645,12 +656,18 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                     />
                     <Button
                       onClick={handleAddComment}
-                      disabled={!newComment.trim()}
+                      disabled={!newComment.trim() || (!localStorage.getItem('userData') && (!commentAuthor.trim() || !commentEmail.trim()))}
                       size="sm"
                       className="w-full"
                     >
                       Add Comment
                     </Button>
+                    
+                    {error && (
+                      <Alert className="mt-2 bg-red-50 border-red-200 text-red-800">
+                        {error}
+                      </Alert>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center text-gray-500 py-4">

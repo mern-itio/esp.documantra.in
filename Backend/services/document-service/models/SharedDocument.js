@@ -31,7 +31,91 @@ const sharedDocumentSchema = new mongoose.Schema({
     required: true
   },
   
-  // Recipients
+  // Recipients - TO (primary recipients)
+  toRecipients: [{
+    email: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      default: ''
+    },
+    hasViewed: {
+      type: Boolean,
+      default: false
+    },
+    viewedAt: {
+      type: Date,
+      default: null
+    },
+    emailSent: {
+      type: Boolean,
+      default: false
+    },
+    emailSentAt: {
+      type: Date,
+      default: null
+    }
+  }],
+  
+  // CC Recipients
+  ccRecipients: [{
+    email: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      default: ''
+    },
+    hasViewed: {
+      type: Boolean,
+      default: false
+    },
+    viewedAt: {
+      type: Date,
+      default: null
+    },
+    emailSent: {
+      type: Boolean,
+      default: false
+    },
+    emailSentAt: {
+      type: Date,
+      default: null
+    }
+  }],
+  
+  // BCC Recipients
+  bccRecipients: [{
+    email: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      default: ''
+    },
+    hasViewed: {
+      type: Boolean,
+      default: false
+    },
+    viewedAt: {
+      type: Date,
+      default: null
+    },
+    emailSent: {
+      type: Boolean,
+      default: false
+    },
+    emailSentAt: {
+      type: Date,
+      default: null
+    }
+  }],
+  
+  // Legacy recipients field for backward compatibility
   recipients: [{
     email: {
       type: String,
@@ -125,6 +209,9 @@ sharedDocumentSchema.index({ shareToken: 1 });
 sharedDocumentSchema.index({ documentId: 1 });
 sharedDocumentSchema.index({ ownerId: 1 });
 sharedDocumentSchema.index({ 'recipients.email': 1 });
+sharedDocumentSchema.index({ 'toRecipients.email': 1 });
+sharedDocumentSchema.index({ 'ccRecipients.email': 1 });
+sharedDocumentSchema.index({ 'bccRecipients.email': 1 });
 sharedDocumentSchema.index({ expiresAt: 1 });
 sharedDocumentSchema.index({ isActive: 1 });
 
@@ -161,12 +248,38 @@ sharedDocumentSchema.methods.incrementDownload = function() {
 
 // Method to mark recipient as viewed
 sharedDocumentSchema.methods.markAsViewed = function(email) {
-  const recipient = this.recipients.find(r => r.email === email);
+  // Check in TO recipients
+  let recipient = this.toRecipients.find(r => r.email === email);
   if (recipient && !recipient.hasViewed) {
     recipient.hasViewed = true;
     recipient.viewedAt = new Date();
     return this.save();
   }
+  
+  // Check in CC recipients
+  recipient = this.ccRecipients.find(r => r.email === email);
+  if (recipient && !recipient.hasViewed) {
+    recipient.hasViewed = true;
+    recipient.viewedAt = new Date();
+    return this.save();
+  }
+  
+  // Check in BCC recipients
+  recipient = this.bccRecipients.find(r => r.email === email);
+  if (recipient && !recipient.hasViewed) {
+    recipient.hasViewed = true;
+    recipient.viewedAt = new Date();
+    return this.save();
+  }
+  
+  // Legacy support for old recipients field
+  recipient = this.recipients.find(r => r.email === email);
+  if (recipient && !recipient.hasViewed) {
+    recipient.hasViewed = true;
+    recipient.viewedAt = new Date();
+    return this.save();
+  }
+  
   return Promise.resolve(this);
 };
 

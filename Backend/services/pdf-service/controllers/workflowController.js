@@ -475,12 +475,12 @@ class WorkflowController {
         
         case 'pdf-to-text':
           controller = require('./pdfController');
-          methodName = 'convertPdfToText';
+          methodName = 'convertPdfToTxt';
           break;
         
         case 'text-to-pdf':
           controller = require('./pdfController');
-          methodName = 'convertTextToPdf';
+          methodName = 'convertTxtToPdf';
           break;
         
         case 'pdf-to-html':
@@ -489,8 +489,13 @@ class WorkflowController {
           break;
         
         case 'pdf-to-epub':
-          controller = require('./pdfController');
+          controller = require('./pdfToImage');
           methodName = 'convertPdfToEpub';
+          break;
+        
+        case 'pdf-to-image':
+          controller = require('./pdfToImage');
+          methodName = 'convertSinglePageToImage';
           break;
         
         // PDF Optimization Tools
@@ -524,58 +529,13 @@ class WorkflowController {
           methodName = 'optimizeColors';
           break;
         
-        // PDF Security Tools
-        case 'add-password':
-          controller = require('./addPasswordController');
-          methodName = 'addPassword';
-          break;
-        
-        case 'remove-password':
-          controller = require('./removePasswordController');
-          methodName = 'removePassword';
-          break;
-        
-        // PDF Editing Tools
-        case 'merge-pdf':
-          controller = require('./mergePdf');
-          methodName = 'mergePdfs';
-          break;
-        
-        case 'split-pdf':
-          controller = require('./pdfSplitService');
-          methodName = 'splitPDF';
-          break;
-        
-        case 'add-watermark':
-          controller = require('./addWatermarkController');
-          methodName = 'addWatermark';
-          break;
-        
+       
         case 'remove-metadata':
           controller = require('./removeMetadataController');
           methodName = 'removeMetadata';
           break;
         
-        case 'edit-metadata':
-          controller = require('./editMetadataController');
-          methodName = 'editMetadata';
-          break;
-        
-        case 'add-page-numbers':
-          controller = require('./addPageNumbersController');
-          methodName = 'addPageNumbers';
-          break;
-        
-        case 'add-header-footer':
-          controller = require('./addHeaderFooterController');
-          methodName = 'addHeaderFooter';
-          break;
-        
-        case 'pdf-bookmarks':
-          controller = require('./pdfBookmarksController');
-          methodName = 'addBookmarks';
-          break;
-        
+       
         // OCR and Text Tools
         case 'ocr':
           controller = require('./ocrController');
@@ -611,9 +571,9 @@ class WorkflowController {
         }
 
         // Special handling for pdfController functions that don't use Express
-        if (toolId === 'pdf-to-word' || toolId === 'word-to-pdf') {
+        if (toolId === 'pdf-to-word' || toolId === 'word-to-pdf' || toolId === 'pdf-to-image') {
           // Call the function directly
-          const result = await controller[methodName](inputFile, outputPath);
+          const result = await controller[methodName](inputFile, 0, outputPath);
           
           // Ensure the output file exists
           if (!await fs.pathExists(outputPath)) {

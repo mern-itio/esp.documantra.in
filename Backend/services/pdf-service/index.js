@@ -54,6 +54,7 @@ const pdfCompareRoutes = require('./routes/pdfCompareRoute');
 const pdfRepairRoutes = require('./routes/pdfRepairRoute');
 const pdfBookmarksRoutes = require('./routes/pdfBookmarksRoute');
 const pdfStatisticsRoutes = require('./routes/pdfStatisticsRoute');
+const advancedPdfEditorRoutes = require('./routes/advancedPdfEditorRoutes');
 const analyticsRoutes = require('./routes/analyticsRoute');
 const cloudConnectorRoutes = require('./routes/cloudConnectorRoutes');
 const workflowRoutes = require('./routes/workflowRoutes');
@@ -126,8 +127,6 @@ app.get('/pdfjs/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, 'public', filename);
   
-  console.log(`PDF.js file request: ${filename}`);
-  console.log(`PDF.js file path: ${filePath}`);
   
   if (fs.existsSync(filePath)) {
     // Set CORS headers
@@ -140,10 +139,8 @@ app.get('/pdfjs/:filename', (req, res) => {
       res.setHeader('Content-Type', 'application/javascript');
     }
     
-    console.log(`Serving PDF.js file: ${filename}`);
     res.sendFile(filePath);
   } else {
-    console.log(`PDF.js file not found: ${filename}`);
     res.status(404).json({ error: 'PDF.js file not found' });
   }
 });
@@ -154,12 +151,10 @@ connectDB();
 // Ensure outputs directory exists
 const outputsDir = path.join(__dirname, 'outputs');
 fs.ensureDirSync(outputsDir);
-console.log(`PDF Service: Outputs directory ensured at: ${outputsDir}`);
 
 // Ensure epubs directory exists
 const epubsDir = path.join(__dirname, 'epubs');
 fs.ensureDirSync(epubsDir);
-console.log(`PDF Service: EPUBs directory ensured at: ${epubsDir}`);
 
 // Cleanup old files every hour (files older than 24 hours)
 setInterval(async () => {
@@ -189,8 +184,6 @@ app.get('/health', (req, res) => {
 
 // Add debugging middleware for /outputs requests
 app.use('/outputs', (req, res, next) => {
-  console.log(`PDF Service: Static file request for: ${req.url}`);
-  console.log(`PDF Service: Full path: ${path.join(__dirname, 'outputs', req.url)}`);
   
   // Set headers to allow iframe embedding for PDF files
   if (req.url.endsWith('.pdf')) {
@@ -383,15 +376,11 @@ app.get('/pdf-redact/download/:filename', async (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, 'uploads', filename);
 
-    // console.log(`Direct download route - looking for file: ${filename}`);
-    // console.log(`Direct download route - file path: ${filePath}`);
 
     if (!fs.existsSync(filePath)) {
-      console.log(`Direct download route - file not found: ${filePath}`);
       return res.status(404).json({ error: 'File not found' });
     }
 
-    console.log(`Direct download route - file found, serving: ${filename}`);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -908,15 +897,11 @@ app.use("/epubs", express.static("epubs")); // Serve EPUB files
 
 // Serve PDF files from root directory - no auth required
 app.get('/converted_*.pdf', (req, res, next) => {
-  console.log(`PDF Service: Converted PDF file request for: ${req.url}`);
   const pdfPath = path.join(__dirname, req.url);
-  console.log(`PDF Service: Full PDF path: ${pdfPath}`);
   
   if (fs.existsSync(pdfPath)) {
-    console.log(`PDF Service: PDF file found, serving: ${pdfPath}`);
     res.sendFile(pdfPath);
   } else {
-    console.log(`PDF Service: PDF file not found: ${pdfPath}`);
     res.status(404).send('PDF file not found');
   }
 });
@@ -973,6 +958,7 @@ app.use('/pdf-compare', trackPdfOperation, pdfCompareRoutes);
 app.use('/pdf-repair', trackPdfOperation, pdfRepairRoutes);
 app.use('/pdf-bookmarks', trackPdfOperation, pdfBookmarksRoutes);
 app.use('/pdf-statistics', trackPdfOperation, pdfStatisticsRoutes);
+app.use('/advanced-editor', trackPdfOperation, advancedPdfEditorRoutes);
 app.use('/workflows', verifyJWT(process.env.ACCESS_TOKEN_SECRET), workflowRoutes);
 app.use('/analytics', verifyJWT(process.env.ACCESS_TOKEN_SECRET), analyticsRoutes);
 app.use('/smart-conversion', trackPdfOperation, smartConversionRoutes);
@@ -1023,6 +1009,49 @@ app.use((req, res, next) => {
 
 // Conversion routes
 
+
+// Global error handler to prevent server crashes
+process.on('uncaughtException', (error) => {
+  console.error('=== UNCAUGHT EXCEPTION ===');
+  console.error('Error:', error);
+  console.error('Stack:', error.stack);
+  console.error('=== END UNCAUGHT EXCEPTION ===');
+  // Don't exit the process, just log the error
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('=== UNHANDLED REJECTION ===');
+  console.error('Reason:', reason);
+  console.error('Promise:', promise);
+  console.error('=== END UNHANDLED REJECTION ===');
+  // Don't exit the process, just log the error
+});
+
+process.on('exit', (code) => {
+  console.error('=== PROCESS EXIT ===');
+  console.error('Exit code:', code);
+  console.error('=== END PROCESS EXIT ===');
+});
+
+process.on('SIGTERM', () => {
+  console.error('=== SIGTERM RECEIVED ===');
+  console.error('=== END SIGTERM ===');
+});
+
+process.on('SIGINT', () => {
+  console.error('=== SIGINT RECEIVED ===');
+  console.error('=== END SIGINT ===');
+});
+
+// Global error middleware
+app.use((error, req, res, next) => {
+  console.error('Global error handler:', error);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    details: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
+});
 
 // Start server
 const PORT = process.env.PORT || 2104;

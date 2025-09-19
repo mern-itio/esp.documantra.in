@@ -8,7 +8,6 @@ const { PDFDocument } = require('pdf-lib');
 // Import all conversion functions from pdfController
 const {
   convertDocToPdf,
-  convertDocToPdfSimple,
   convertPdfToDoc,
   convertPdfToExcel,
   convertExcelToPdf,
@@ -16,13 +15,15 @@ const {
   convertDocToExcel,
   convertPdfToPpt,
   convertPptToPdf,
-  convertPptToPdfAdvanced,
   convertPdfToTxt,
   convertTxtToPdf,
   convertPdfToHtml,
   convertHtmlToPdf,
   cleanupOldFiles
 } = require('./pdfController');
+
+// Import PDF to image conversion function from pdfToImage controller
+const { convertSinglePageToImage } = require('./pdfToImage');
 
 const execAsync = promisify(exec);
 
@@ -549,7 +550,7 @@ function generateConversionRecommendations(analysis) {
       recommendations.targetFormats = ['pdf', 'html'];
       break;
     case 'pdf':
-      recommendations.targetFormats = ['word', 'excel', 'powerpoint', 'html', 'txt'];
+      recommendations.targetFormats = ['word', 'excel', 'powerpoint', 'html', 'txt', 'image'];
       break;
     case 'text':
       recommendations.targetFormats = ['pdf', 'word', 'html'];
@@ -658,7 +659,9 @@ async function performSmartConversion(filePath, targetFormat, settings, baseName
 
   const timestamp = Date.now();
   const randomSuffix = Math.round(Math.random() * 1E9);
-  const outputFilename = `${baseName}_converted_${timestamp}_${randomSuffix}.${targetFormat}`;
+  // Use .png extension for image format
+  const fileExtension = targetFormat === 'image' ? 'png' : targetFormat;
+  const outputFilename = `${baseName}_converted_${timestamp}_${randomSuffix}.${fileExtension}`;
   const outputPath = path.join(outputsDir, outputFilename);
 
   try {
@@ -696,6 +699,14 @@ async function performSmartConversion(filePath, targetFormat, settings, baseName
         conversionResult = await convertPdfToTxt(filePath, outputPath);
       } else if (targetFormat === 'html') {
         conversionResult = await convertPdfToHtml(filePath, outputPath);
+      } else if (targetFormat === 'image' || targetFormat === 'png') {
+        // Convert PDF to image (PNG format)
+        const success = await convertSinglePageToImage(filePath, 0, outputPath);
+        if (success) {
+          conversionResult = { success: true, message: 'PDF converted to image successfully' };
+        } else {
+          throw new Error('Failed to convert PDF to image');
+        }
       } else {
         throw new Error(`Conversion from PDF to ${targetFormat} not supported`);
       }
@@ -794,6 +805,22 @@ async function analyzeConversionQuality(filePath, targetFormat) {
         analysis.characteristics.push('large_file');
         analysis.quality = 'acceptable';
         analysis.recommendations.push('Consider further compression for web use');
+      }
+    } else if (targetFormat === 'image' || targetFormat === 'png') {
+      // Analyze image quality
+      analysis.characteristics.push('valid_image');
+      analysis.characteristics.push('png_format');
+      
+      if (stats.size < 500 * 1024) { // < 500KB
+        analysis.characteristics.push('small_image');
+        analysis.quality = 'excellent';
+      } else if (stats.size < 2 * 1024 * 1024) { // < 2MB
+        analysis.characteristics.push('medium_image');
+        analysis.quality = 'good';
+      } else {
+        analysis.characteristics.push('large_image');
+        analysis.quality = 'acceptable';
+        analysis.recommendations.push('Consider image compression for web use');
       }
     }
 

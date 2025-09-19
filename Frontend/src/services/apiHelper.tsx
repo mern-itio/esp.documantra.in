@@ -15,6 +15,11 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    // Remove Content-Type header for FormData to let browser set it with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     // console.log(`${serviceName} API Request:`, {
     //   method: config.method?.toUpperCase(),
     //   url: config.url,
