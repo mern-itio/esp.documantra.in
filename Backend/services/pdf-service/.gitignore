@@ -85,7 +85,6 @@ uploaded_images/
 certificates/
 permissions/
 public/
-scripts/
 *.pdf
 *.docx
 *.png
