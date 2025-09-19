@@ -630,6 +630,9 @@ async function convertPdfToEpubForBatch(file) {
   }
 }
 
+// Export the convertSinglePageToImage function for use in other controllers
+exports.convertSinglePageToImage = convertSinglePageToImage;
+
 // Batch Conversion - Handle multiple files with different output formats
 exports.batchConvert = async (req, res) => {
   try {

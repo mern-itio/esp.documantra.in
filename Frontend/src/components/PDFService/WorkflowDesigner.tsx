@@ -14,7 +14,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { mockPDFTools } from '../../data/pdfMockData';
 import { workflowTemplateAPI } from '../../services/workflowService';
 import type { WorkflowTemplate, WorkflowStep } from '../../services/workflowService';
 import { WorkflowExecutionModal } from './WorkflowExecutionModal';
@@ -33,8 +32,37 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
   const [error, setError] = useState<string | null>(null);
   const [showExecutionModal, setShowExecutionModal] = useState(false);
 
-  // @ts-ignore - TypeScript can't infer the complex union type correctly
-  const allTools = Object.values(mockPDFTools).flatMap(category => category.tools) as any[];
+  // Only show tools that are actually implemented in the backend
+  const supportedTools = [
+    // PDF Conversion Tools
+    { id: 'pdf-to-word', name: 'PDF to Word', description: 'Convert PDF to Word document', icon: 'FileText', category: 'conversion' },
+    { id: 'word-to-pdf', name: 'Word to PDF', description: 'Convert Word document to PDF', icon: 'FileText', category: 'conversion' },
+    { id: 'pdf-to-excel', name: 'PDF to Excel', description: 'Convert PDF to Excel spreadsheet', icon: 'FileSpreadsheet', category: 'conversion' },
+    { id: 'excel-to-pdf', name: 'Excel to PDF', description: 'Convert Excel spreadsheet to PDF', icon: 'FileSpreadsheet', category: 'conversion' },
+    { id: 'pdf-to-ppt', name: 'PDF to PowerPoint', description: 'Convert PDF to PowerPoint presentation', icon: 'Presentation', category: 'conversion' },
+    { id: 'ppt-to-pdf', name: 'PowerPoint to PDF', description: 'Convert PowerPoint presentation to PDF', icon: 'Presentation', category: 'conversion' },
+    { id: 'pdf-to-text', name: 'PDF to Text', description: 'Extract text from PDF', icon: 'FileText', category: 'conversion' },
+    { id: 'text-to-pdf', name: 'Text to PDF', description: 'Convert text file to PDF', icon: 'FileText', category: 'conversion' },
+    { id: 'pdf-to-html', name: 'PDF to HTML', description: 'Convert PDF to HTML', icon: 'Globe', category: 'conversion' },
+    { id: 'pdf-to-epub', name: 'PDF to EPUB', description: 'Convert PDF to EPUB ebook', icon: 'BookOpen', category: 'conversion' },
+    { id: 'pdf-to-image', name: 'PDF to Image', description: 'Convert PDF to image (PNG)', icon: 'Image', category: 'conversion' },
+    
+    // PDF Optimization Tools
+    { id: 'compress-pdf', name: 'Compress PDF', description: 'Reduce PDF file size', icon: 'Minimize2', category: 'optimization' },
+    { id: 'optimize-image', name: 'Optimize Images', description: 'Optimize images in PDF', icon: 'Image', category: 'optimization' },
+    { id: 'optimize-font', name: 'Optimize Fonts', description: 'Optimize fonts in PDF', icon: 'Type', category: 'optimization' },
+    { id: 'remove-unused-objects', name: 'Remove Unused Objects', description: 'Remove unused objects from PDF', icon: 'Trash2', category: 'optimization' },
+    { id: 'linearize-pdf', name: 'Linearize PDF', description: 'Optimize PDF for web viewing', icon: 'Zap', category: 'optimization' },
+    { id: 'color-optimization', name: 'Color Optimization', description: 'Optimize colors in PDF', icon: 'Palette', category: 'optimization' },
+    { id: 'remove-metadata', name: 'Remove Metadata', description: 'Remove metadata from PDF', icon: 'Shield', category: 'optimization' },
+    
+    // OCR and Text Tools
+    { id: 'ocr', name: 'OCR', description: 'Extract text from images using OCR', icon: 'Eye', category: 'text' },
+    { id: 'make-searchable', name: 'Make Searchable', description: 'Make PDF text searchable', icon: 'Search', category: 'text' },
+    
+  
+   
+  ];
 
   // Load workflows on component mount
   useEffect(() => {
@@ -90,7 +118,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
   const addStepToWorkflow = (toolId: string) => {
     if (!selectedWorkflow) return;
 
-    const tool = allTools.find(t => t.id === toolId);
+    const tool = supportedTools.find(t => t.id === toolId);
     if (!tool) return;
 
     const newStep: WorkflowStep = {
@@ -164,7 +192,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
   };
 
   const getToolIcon = (toolId: string) => {
-    const tool = allTools.find(t => t.id === toolId);
+    const tool = supportedTools.find(t => t.id === toolId);
     if (!tool) return Icons.FileText;
     return (Icons as any)[tool.icon] || Icons.FileText;
   };
@@ -428,7 +456,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                     <div className="space-y-4">
                       {selectedWorkflow.steps.map((step) => {
                         const Icon = getToolIcon(step.toolId);
-                        const tool = allTools.find(t => t.id === step.toolId);
+                        const tool = supportedTools.find(t => t.id === step.toolId);
                         
                         return (
                           <div key={step.id} className="flex items-center space-x-4">
@@ -488,32 +516,37 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Tools</h3>
               
-              {Object.entries(mockPDFTools).map(([categoryId, category]) => (
-                <div key={categoryId} className="mb-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">{category.category}</h4>
-                  <div className="space-y-2">
-                    {category.tools.slice(0, 5).map((tool) => {
-                      const Icon = (Icons as any)[tool.icon] || Icons.FileText;
-                      return (
-                        <button
-                          key={tool.id}
-                          onClick={() => addStepToWorkflow(tool.id)}
-                          disabled={loading}
-                          className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                            <Icon className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">{tool.name}</div>
-                            <div className="text-xs text-gray-500 truncate">{tool.description}</div>
-                          </div>
-                        </button>
-                      );
-                    })}
+              {['conversion', 'optimization', 'text'].map((category) => {
+                const categoryTools = supportedTools.filter(tool => tool.category === category);
+                const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+                
+                return (
+                  <div key={category} className="mb-6">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">{categoryName} Tools</h4>
+                    <div className="space-y-2">
+                      {categoryTools.map((tool) => {
+                        const Icon = (Icons as any)[tool.icon] || Icons.FileText;
+                        return (
+                          <button
+                            key={tool.id}
+                            onClick={() => addStepToWorkflow(tool.id)}
+                            disabled={loading}
+                            className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                              <Icon className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 truncate">{tool.name}</div>
+                              <div className="text-xs text-gray-500 truncate">{tool.description}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

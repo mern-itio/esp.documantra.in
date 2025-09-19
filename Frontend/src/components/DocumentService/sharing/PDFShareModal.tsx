@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Upload, Eye, Send, Plus, Trash2, FileText } from 'lucide-react';
+import { X, Upload, Eye, Send, FileText } from 'lucide-react';
 import { pdfShareService, type PDFShareRecipient, type PDFShareRequest } from '../../../services/pdfShareService';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -22,7 +22,14 @@ interface PDFFile {
 const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSuccess, existingDocument }) => {
   const [step, setStep] = useState<'upload' | 'recipients' | 'preview' | 'confirm'>('upload');
   const [pdfFile, setPdfFile] = useState<PDFFile | null>(null);
-  const [recipients, setRecipients] = useState<PDFShareRecipient[]>([]);
+  const [toRecipients, setToRecipients] = useState<PDFShareRecipient[]>([]);
+  const [ccRecipients, setCcRecipients] = useState<PDFShareRecipient[]>([]);
+  const [bccRecipients, setBccRecipients] = useState<PDFShareRecipient[]>([]);
+  const [toInput, setToInput] = useState('');
+  const [ccInput, setCcInput] = useState('');
+  const [bccInput, setBccInput] = useState('');
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [allowDownload, setAllowDownload] = useState(true);
@@ -43,7 +50,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
         setError('You can only share documents that you own');
         return;
       }
-      
+
       // Set up the existing document for sharing
       setPdfFile({
         file: new File([], existingDocument.document.name, { type: 'application/pdf' }), // Dummy file
@@ -78,7 +85,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
     try {
       if (typeof window !== 'undefined' && !window.pdfjsLib) {
         const pdfjsLib = await import('pdfjs-dist');
-        
+
         // Set worker path to local file
         try {
           pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -87,11 +94,11 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
           console.warn("Failed to set PDF.js worker:", error);
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';
         }
-        
+
         // Assign to window
         window.pdfjsLib = pdfjsLib;
       }
-      
+
       return window.pdfjsLib;
     } catch (error) {
       console.error('Error loading PDF.js:', error);
@@ -111,7 +118,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
     try {
       // Upload PDF to backend
       const uploadResponse = await pdfShareService.uploadPDFForSharing(file);
-      
+
       if (uploadResponse.success) {
         // Generate preview using PDF.js
         let preview = '';
@@ -122,17 +129,17 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             const page = await pdf.getPage(1);
             const viewport = page.getViewport({ scale: 0.5 });
-            
+
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d')!;
             canvas.width = viewport.width;
             canvas.height = viewport.height;
-            
+
             const renderContext = {
               canvasContext: context,
               viewport: viewport
             };
-            
+
             await page.render(renderContext).promise;
             preview = canvas.toDataURL();
           } catch (previewError) {
@@ -145,7 +152,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
           preview,
           documentId: uploadResponse.data.documentId
         });
-        
+
         setSubject(`Document shared: ${file.name}`);
         setStep('recipients');
       } else {
@@ -178,23 +185,143 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
     event.preventDefault();
   };
 
-  const addRecipient = () => {
-    setRecipients([...recipients, { email: '', name: '', isCC: false }]);
+  // Parse emails from input string
+  const parseEmails = (input: string): string[] => {
+    return input
+      .split(/[,;\s]+/)
+      .map(email => email.trim())
+      .filter(email => email.length > 0);
   };
 
-  const updateRecipient = (index: number, field: keyof PDFShareRecipient, value: string | boolean) => {
-    const updated = [...recipients];
-    updated[index] = { ...updated[index], [field]: value };
-    setRecipients(updated);
+  // Validate email format
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
-  const removeRecipient = (index: number) => {
-    setRecipients(recipients.filter((_, i) => i !== index));
+  // Add emails to recipients array
+  const addEmailsToRecipients = (type: 'to' | 'cc' | 'bcc', emails: string[]) => {
+    const validEmails = emails.filter(isValidEmail);
+    const newRecipients = validEmails.map(email => ({ email, name: '' }));
+
+    switch (type) {
+      case 'to':
+        setToRecipients(prev => {
+          const existingEmails = prev.map(r => r.email);
+          const uniqueNewRecipients = newRecipients.filter(r => !existingEmails.includes(r.email));
+          return [...prev, ...uniqueNewRecipients];
+        });
+        break;
+      case 'cc':
+        setCcRecipients(prev => {
+          const existingEmails = prev.map(r => r.email);
+          const uniqueNewRecipients = newRecipients.filter(r => !existingEmails.includes(r.email));
+          return [...prev, ...uniqueNewRecipients];
+        });
+        break;
+      case 'bcc':
+        setBccRecipients(prev => {
+          const existingEmails = prev.map(r => r.email);
+          const uniqueNewRecipients = newRecipients.filter(r => !existingEmails.includes(r.email));
+          return [...prev, ...uniqueNewRecipients];
+        });
+        break;
+    }
+  };
+
+  // Handle input change and auto-add emails
+  const handleInputChange = (type: 'to' | 'cc' | 'bcc', value: string) => {
+    switch (type) {
+      case 'to':
+        setToInput(value);
+        break;
+      case 'cc':
+        setCcInput(value);
+        break;
+      case 'bcc':
+        setBccInput(value);
+        break;
+    }
+  };
+
+  // Handle input key press (Enter, comma, semicolon)
+  const handleInputKeyPress = (type: 'to' | 'cc' | 'bcc', e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',' || e.key === ';') {
+      e.preventDefault();
+      const inputValue = e.currentTarget.value;
+      const emails = parseEmails(inputValue);
+
+      if (emails.length > 0) {
+        addEmailsToRecipients(type, emails);
+        // Clear input after adding emails
+        switch (type) {
+          case 'to':
+            setToInput('');
+            break;
+          case 'cc':
+            setCcInput('');
+            break;
+          case 'bcc':
+            setBccInput('');
+            break;
+        }
+      }
+    }
+  };
+
+  // Handle input blur (when user clicks away)
+  const handleInputBlur = (type: 'to' | 'cc' | 'bcc') => {
+    let inputValue = '';
+    switch (type) {
+      case 'to':
+        inputValue = toInput;
+        break;
+      case 'cc':
+        inputValue = ccInput;
+        break;
+      case 'bcc':
+        inputValue = bccInput;
+        break;
+    }
+
+    const emails = parseEmails(inputValue);
+    if (emails.length > 0) {
+      addEmailsToRecipients(type, emails);
+      // Clear input after adding emails
+      switch (type) {
+        case 'to':
+          setToInput('');
+          break;
+        case 'cc':
+          setCcInput('');
+          break;
+        case 'bcc':
+          setBccInput('');
+          break;
+      }
+    }
+  };
+
+  // Remove recipient
+  const removeRecipient = (type: 'to' | 'cc' | 'bcc', index: number) => {
+    switch (type) {
+      case 'to':
+        setToRecipients(toRecipients.filter((_, i) => i !== index));
+        break;
+      case 'cc':
+        setCcRecipients(ccRecipients.filter((_, i) => i !== index));
+        break;
+      case 'bcc':
+        setBccRecipients(bccRecipients.filter((_, i) => i !== index));
+        break;
+    }
   };
 
   const validateRecipients = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    for (const recipient of recipients) {
+    const allRecipients = [...toRecipients, ...ccRecipients, ...bccRecipients];
+
+    for (const recipient of allRecipients) {
       if (!recipient.email || !emailRegex.test(recipient.email)) {
         setError('Please enter valid email addresses for all recipients');
         return false;
@@ -207,8 +334,8 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
     if (step === 'upload' && pdfFile) {
       setStep('recipients');
     } else if (step === 'recipients') {
-      if (recipients.length === 0) {
-        setError('Please add at least one recipient');
+      if (toRecipients.length === 0) {
+        setError('Please add at least one TO recipient');
         return;
       }
       if (!validateRecipients()) {
@@ -232,7 +359,9 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
     try {
       const shareRequest: PDFShareRequest = {
         documentId: pdfFile.documentId,
-        recipients: recipients.filter(r => r.email),
+        toRecipients: toRecipients.filter(r => r.email),
+        ccRecipients: ccRecipients.filter(r => r.email),
+        bccRecipients: bccRecipients.filter(r => r.email),
         subject: subject || `Document shared: ${pdfFile.file.name}`,
         message,
         allowDownload,
@@ -242,7 +371,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
       };
 
       const response = await pdfShareService.createShareAndSendEmails(shareRequest);
-      
+
       if (response.success) {
         setShareData(response.data);
         setStep('confirm');
@@ -261,7 +390,14 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
   const handleClose = () => {
     setStep('upload');
     setPdfFile(null);
-    setRecipients([]);
+    setToRecipients([]);
+    setCcRecipients([]);
+    setBccRecipients([]);
+    setToInput('');
+    setCcInput('');
+    setBccInput('');
+    setShowCc(false);
+    setShowBcc(false);
     setSubject('');
     setMessage('');
     setAllowDownload(true);
@@ -297,16 +433,14 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
         <div className="flex items-center justify-center p-4 border-b bg-gray-50">
           {(existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).map((stepName, index) => (
             <div key={stepName} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step === stepName ? 'bg-blue-600 text-white' : 
-                (existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).indexOf(step) > index ? 'bg-green-600 text-white' : 
-                'bg-gray-300 text-gray-600'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === stepName ? 'bg-blue-600 text-white' :
+                  (existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).indexOf(step) > index ? 'bg-green-600 text-white' :
+                    'bg-gray-300 text-gray-600'
+                }`}>
                 {existingDocument ? index + 1 : index + 1}
               </div>
-              <span className={`ml-2 text-sm ${
-                step === stepName ? 'text-blue-600 font-medium' : 'text-gray-600'
-              }`}>
+              <span className={`ml-2 text-sm ${step === stepName ? 'text-blue-600 font-medium' : 'text-gray-600'
+                }`}>
                 {stepName.charAt(0).toUpperCase() + stepName.slice(1)}
               </span>
               {index < (existingDocument ? 2 : 3) && <div className="w-8 h-0.5 bg-gray-300 mx-2" />}
@@ -378,54 +512,135 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">Add Recipients</h3>
-                <p className="text-gray-600">Enter email addresses of people you want to share with</p>
+                <p className="text-gray-600">Enter email addresses separated by commas or press Enter</p>
               </div>
 
-              <div className="space-y-4">
-                {recipients.map((recipient, index) => (
-                  <div key={index} className="flex items-center space-x-4 p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <Input
-                        placeholder="Email address"
-                        value={recipient.email}
-                        onChange={(e) => updateRecipient(index, 'email', e.target.value)}
-                        type="email"
-                      />
-                    </div>
-                    <div className="w-48">
-                      <Input
-                        placeholder="Name (optional)"
-                        value={recipient.name || ''}
-                        onChange={(e) => updateRecipient(index, 'name', e.target.value)}
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`cc-${index}`}
-                        checked={recipient.isCC}
-                        onChange={(e) => updateRecipient(index, 'isCC', e.target.checked)}
-                        className="rounded"
-                      />
-                      <label htmlFor={`cc-${index}`} className="text-sm text-gray-600">CC</label>
-                    </div>
-                    <button
-                      onClick={() => removeRecipient(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+              {/* TO Recipients */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <label className="text-sm font-medium text-gray-700 w-8">To</label>
+                  <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
+                    {/* Email chips */}
+                    {toRecipients.map((recipient, index) => (
+                      <div
+                        key={`to-chip-${index}`}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200"
+                      >
+                        <span>{recipient.email}</span>
+                        <button
+                          onClick={() => removeRecipient('to', index)}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    {/* Input field */}
+                    <input
+                      type="text"
+                      value={toInput}
+                      onChange={(e) => handleInputChange('to', e.target.value)}
+                      onKeyDown={(e) => handleInputKeyPress('to', e)}
+                      onBlur={() => handleInputBlur('to')}
+                      placeholder={toRecipients.length === 0 ? "Enter email addresses..." : ""}
+                      className="flex-1 min-w-[200px] border-none outline-none bg-transparent text-sm"
+                    />
                   </div>
-                ))}
+                </div>
+              </div>
 
-                <Button
-                  onClick={addRecipient}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Plus size={20} className="mr-2" />
-                  Add Recipient
-                </Button>
+              {/* CC Recipients */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 flex items-center">
+                    {!showCc ? (
+                      <button
+                        onClick={() => setShowCc(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Cc
+                      </button>
+                    ) : (
+                      <label className="text-sm font-medium text-gray-700">Cc</label>
+                    )}
+                  </div>
+                  {showCc && (
+                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
+                      {/* Email chips */}
+                      {ccRecipients.map((recipient, index) => (
+                        <div
+                          key={`cc-chip-${index}`}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 border border-gray-200"
+                        >
+                          <span>{recipient.email}</span>
+                          <button
+                            onClick={() => removeRecipient('cc', index)}
+                            className="ml-2 text-gray-600 hover:text-gray-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      {/* Input field */}
+                      <input
+                        type="text"
+                        value={ccInput}
+                        onChange={(e) => handleInputChange('cc', e.target.value)}
+                        onKeyDown={(e) => handleInputKeyPress('cc', e)}
+                        onBlur={() => handleInputBlur('cc')}
+                        placeholder={ccRecipients.length === 0 ? "Enter email addresses..." : ""}
+                        className="flex-1 min-w-[200px] border-none outline-none bg-transparent text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* BCC Recipients */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 flex items-center">
+                    {!showBcc ? (
+                      <button
+                        onClick={() => setShowBcc(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Bcc
+                      </button>
+                    ) : (
+                      <label className="text-sm font-medium text-gray-700">Bcc</label>
+                    )}
+                  </div>
+                  {showBcc && (
+                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
+                      {/* Email chips */}
+                      {bccRecipients.map((recipient, index) => (
+                        <div
+                          key={`bcc-chip-${index}`}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 border border-gray-200"
+                        >
+                          <span>{recipient.email}</span>
+                          <button
+                            onClick={() => removeRecipient('bcc', index)}
+                            className="ml-2 text-gray-600 hover:text-gray-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      {/* Input field */}
+                      <input
+                        type="text"
+                        value={bccInput}
+                        onChange={(e) => handleInputChange('bcc', e.target.value)}
+                        onKeyDown={(e) => handleInputKeyPress('bcc', e)}
+                        onBlur={() => handleInputBlur('bcc')}
+                        placeholder={bccRecipients.length === 0 ? "Enter email addresses..." : ""}
+                        className="flex-1 min-w-[200px] border-none outline-none bg-transparent text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -481,9 +696,12 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                     <div className="mt-3">
                       <p className="font-medium">{pdfFile.file.name}</p>
                       <p className="text-sm text-gray-600">
-                        {(pdfFile.file.size / 1024 / 1024).toFixed(2)} MB
+                        {pdfFile.file.size < 1024 * 1024
+                          ? `${(pdfFile.file.size / 1024).toFixed(2)} KB`
+                          : `${(pdfFile.file.size / 1024 / 1024).toFixed(2)} MB`}
                       </p>
                     </div>
+
                   </Card>
                 </div>
 
@@ -532,19 +750,61 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
               {/* Recipients Summary */}
               <div>
-                <h4 className="font-medium mb-3">Recipients ({recipients.length})</h4>
-                <div className="space-y-2">
-                  {recipients.map((recipient, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{recipient.email}</p>
-                        {recipient.name && <p className="text-sm text-gray-600">{recipient.name}</p>}
+                <h4 className="font-medium mb-3">Recipients ({toRecipients.length + ccRecipients.length + bccRecipients.length})</h4>
+                <div className="space-y-3">
+                  {/* TO Recipients */}
+                  {toRecipients.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">To ({toRecipients.length})</h5>
+                      <div className="space-y-2">
+                        {toRecipients.map((recipient, index) => (
+                          <div key={`to-preview-${index}`} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div>
+                              <p className="font-medium">{recipient.email}</p>
+                              {recipient.name && <p className="text-sm text-gray-600">{recipient.name}</p>}
+                            </div>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">TO</span>
+                          </div>
+                        ))}
                       </div>
-                      {recipient.isCC && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">CC</span>
-                      )}
                     </div>
-                  ))}
+                  )}
+
+                  {/* CC Recipients */}
+                  {ccRecipients.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">CC ({ccRecipients.length})</h5>
+                      <div className="space-y-2">
+                        {ccRecipients.map((recipient, index) => (
+                          <div key={`cc-preview-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <p className="font-medium">{recipient.email}</p>
+                              {recipient.name && <p className="text-sm text-gray-600">{recipient.name}</p>}
+                            </div>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">CC</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BCC Recipients */}
+                  {bccRecipients.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">BCC ({bccRecipients.length})</h5>
+                      <div className="space-y-2">
+                        {bccRecipients.map((recipient, index) => (
+                          <div key={`bcc-preview-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <p className="font-medium">{recipient.email}</p>
+                              {recipient.name && <p className="text-sm text-gray-600">{recipient.name}</p>}
+                            </div>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">BCC</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -609,10 +869,19 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                 <h4 className="font-medium">Email Status</h4>
                 {shareData.recipients.map((recipient: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium">{recipient.email}</span>
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      recipient.sent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium">{recipient.email}</span>
+                      {recipient.type && (
+                        <span className={`px-2 py-1 text-xs rounded ${recipient.type === 'TO' ? 'bg-blue-100 text-blue-800' :
+                            recipient.type === 'CC' ? 'bg-gray-100 text-gray-800' :
+                              'bg-gray-100 text-gray-800'
+                          }`}>
+                          {recipient.type}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded ${recipient.sent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
                       {recipient.sent ? 'Sent' : 'Failed'}
                     </span>
                   </div>
@@ -630,7 +899,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
           >
             {step === 'confirm' ? 'Close' : 'Cancel'}
           </Button>
-          
+
           <div className="flex space-x-3">
             {step !== 'upload' && step !== 'confirm' && (
               <Button
@@ -640,7 +909,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                 Back
               </Button>
             )}
-            
+
             {step === 'confirm' ? (
               <Button
                 onClick={() => {
@@ -662,7 +931,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
             ) : (
               <Button
                 onClick={handleNext}
-                disabled={loading || (step === 'upload' && !pdfFile) || (step === 'recipients' && recipients.length === 0)}
+                disabled={loading || (step === 'upload' && !pdfFile) || (step === 'recipients' && toRecipients.length === 0)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Next

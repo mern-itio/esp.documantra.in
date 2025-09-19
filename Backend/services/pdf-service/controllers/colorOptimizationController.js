@@ -36,7 +36,6 @@ const colorOptimizationController = {
       // Ensure outputs directory exists
       const outputsDir = path.join(__dirname, '..', 'outputs');
       await fs.ensureDir(outputsDir);
-      console.log('Outputs directory ensured at:', outputsDir);
 
       const inputPath = req.file.path;
       const outputFilename = `color-optimized-${Date.now()}.pdf`;

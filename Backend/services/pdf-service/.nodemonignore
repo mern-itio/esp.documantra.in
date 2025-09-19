@@ -1,0 +1,24 @@
+# Ignore temporary files and directories
+uploads/
+outputs/
+temp/
+temp-images/
+epubs/
+images/
+scripts/
+public/
+node_modules/
+
+# Ignore specific file patterns
+*.log
+*.pdf
+*.json.tmp
+edits-*.json
+edited-*.pdf
+test_*.json
+test_*.pdf
+
+# Ignore any files in temp directories
+**/temp/**
+**/uploads/**
+**/outputs/**

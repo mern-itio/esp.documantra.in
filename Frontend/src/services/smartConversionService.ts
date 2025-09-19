@@ -266,7 +266,7 @@ export const smartConversionService = {
   // Utility function to get supported target formats for source format
   getSupportedTargetFormats(sourceFormat: string): string[] {
     const formatMap: { [key: string]: string[] } = {
-      'pdf': ['word', 'excel', 'powerpoint', 'html', 'txt'],
+      'pdf': ['word', 'excel', 'powerpoint', 'html', 'txt', 'image'],
       'word': ['pdf', 'excel'],
       'excel': ['pdf', 'word'],
       'powerpoint': ['pdf'],

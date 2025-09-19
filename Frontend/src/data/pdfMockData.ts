@@ -301,18 +301,7 @@ export const mockPDFTools = {
         popularity: 65,
         icon: "PenTool"
       },
-      {
-        id: "add-stamps",
-        name: "Add Stamps",
-        description: "Insert stamps and custom annotations",
-        category: "editing",
-        inputFormats: ["pdf"],
-        outputFormats: ["pdf"],
-        features: ["stamp_library", "custom_stamps", "date_stamps"],
-        complexity: "easy" as const,
-        popularity: 49,
-        icon: "Stamp"
-      },
+   
       {
         id: "redact-content",
         name: "Redact Content",

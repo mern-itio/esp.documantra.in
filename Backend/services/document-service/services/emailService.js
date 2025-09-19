@@ -310,7 +310,7 @@ class EmailService {
   }
 
   // Send PDF share notification
-  async sendPDFShareNotification(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null) {
+  async sendPDFShareNotification(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null, cc = [], bcc = [], recipientType = 'TO') {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping PDF share notification to ${email}`);
@@ -333,7 +333,7 @@ class EmailService {
           
           <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60; margin-bottom: 20px;">
             <p style="margin: 0; color: #27ae60;">
-              <strong>You can now view this document without logging in!</strong>
+              <strong>You can now view this document!</strong>
             </p>
           </div>
           
@@ -359,17 +359,135 @@ class EmailService {
       const fromAddress = senderEmail || process.env.EMAIL_USER;
       const fromName = `"${sharerName}" <${fromAddress}>`;
       
-      await this.transporter.sendMail({
+      // Prepare email options based on recipient type
+      const mailOptions = {
         from: fromName,
-        to: email,
         subject: emailSubject,
         html: htmlContent
-      });
+      };
+
+      // Handle different recipient types
+      if (recipientType === 'TO_CC') {
+        // Send email to TO and CC recipients (BCC recipients are not included)
+        mailOptions.to = email; // TO recipients
+        if (cc && cc.length > 0) {
+          mailOptions.cc = cc.map(recipient => recipient.email || recipient).join(', ');
+        }
+      } else if (recipientType === 'BCC') {
+        // For BCC recipients, they should see all TO and CC recipients
+        // but they should be in the BCC field themselves
+        mailOptions.to = email; // TO recipients (what BCC recipient sees as TO)
+        if (cc && cc.length > 0) {
+          mailOptions.cc = cc.map(recipient => recipient.email || recipient).join(', '); // CC recipients
+        }
+        mailOptions.bcc = bcc; // BCC recipient sees themselves in BCC field
+      } else if (recipientType === 'ALL') {
+        // Send one email with all recipients properly set
+        mailOptions.to = email; // TO recipients
+        if (cc && cc.length > 0) {
+          mailOptions.cc = cc.map(recipient => recipient.email || recipient).join(', ');
+        }
+        if (bcc && bcc.length > 0) {
+          mailOptions.bcc = bcc.map(recipient => recipient.email || recipient).join(', ');
+        }
+      } else if (recipientType === 'CC') {
+        // For CC recipients, send as TO with BCC included (but not other CC recipients)
+        mailOptions.to = email;
+        if (bcc && bcc.length > 0) {
+          mailOptions.bcc = bcc.map(recipient => recipient.email || recipient).join(', ');
+        }
+      } else {
+        // For TO recipients, send as TO with CC and BCC included
+        mailOptions.to = email;
+        if (cc && cc.length > 0) {
+          mailOptions.cc = cc.map(recipient => recipient.email || recipient).join(', ');
+        }
+        if (bcc && bcc.length > 0) {
+          mailOptions.bcc = bcc.map(recipient => recipient.email || recipient).join(', ');
+        }
+      }
       
-      console.log(`✅ PDF share notification sent to ${email} from ${fromName} (on behalf of ${senderEmail})`);
+      await this.transporter.sendMail(mailOptions);
+      
+      console.log(`✅ PDF share notification sent to ${email} (${recipientType}) from ${fromName} (on behalf of ${senderEmail})`);
+      if (mailOptions.cc) {
+        console.log(`📧 CC: ${mailOptions.cc}`);
+      }
+      if (mailOptions.bcc) {
+        console.log(`📧 BCC: ${mailOptions.bcc}`);
+      }
       return true;
     } catch (error) {
       console.error(`❌ Failed to send PDF share notification to ${email}:`, error);
+      return false;
+    }
+  }
+
+  // Send PDF share notification specifically for BCC recipients
+  async sendPDFShareNotificationBCC(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null) {
+    // Check if email service is configured
+    if (!this.isConfigured()) {
+      console.log(`⚠️ Email service not configured, skipping PDF share notification to BCC ${email}`);
+      return false;
+    }
+
+    const emailSubject = subject || `Document Shared: ${documentName}`;
+    
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+          <h2 style="color: #3498db; margin-bottom: 20px;">📄 Document Shared with You</h2>
+          
+          <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="color: #2c3e50; margin-bottom: 15px;">${documentName}</h3>
+            <p style="color: #555; margin-bottom: 10px;"><strong>Shared by:</strong> ${sharerName}</p>
+            ${message ? `<p style="color: #555; margin-bottom: 10px;"><strong>Message:</strong> ${message}</p>` : ''}
+            <p style="color: #555; margin-bottom: 10px;"><strong>Shared at:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          
+          <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60; margin-bottom: 20px;">
+            <p style="margin: 0; color: #27ae60;">
+              <strong>You can now view this document!</strong>
+            </p>
+          </div>
+          
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="${shareUrl}" 
+               style="background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-bottom: 10px;">
+              View Document
+            </a>
+          </div>
+          
+          <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <p style="margin: 0; color: #666; font-size: 14px;">
+              This document was shared with you via a secure link. You can view it directly without creating an account.
+              If you have any questions, please contact ${sharerName} at ${senderEmail || 'the sender'}.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      // Use the user's email as sender
+      const fromAddress = senderEmail || process.env.EMAIL_USER;
+      const fromName = `"${sharerName}" <${fromAddress}>`;
+      
+      // For BCC, we need to send to a dummy address and BCC the actual recipient
+      const mailOptions = {
+        from: fromName,
+        to: fromAddress, // Send to sender's own address as dummy TO
+        bcc: email, // BCC the actual recipient
+        subject: emailSubject,
+        html: htmlContent
+      };
+      
+      await this.transporter.sendMail(mailOptions);
+      
+      console.log(`✅ PDF share notification sent to BCC ${email} from ${fromName} (on behalf of ${senderEmail})`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to send PDF share notification to BCC ${email}:`, error);
       return false;
     }
   }

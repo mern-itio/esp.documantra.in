@@ -85,7 +85,9 @@ class PDFShareController {
     try {
       const { 
         documentId, 
-        recipients, 
+        toRecipients = [], 
+        ccRecipients = [], 
+        bccRecipients = [],
         subject, 
         message, 
         allowDownload = true, 
@@ -112,17 +114,19 @@ class PDFShareController {
         });
       }
 
-      // Validate recipients
-      if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      // Validate that at least one TO recipient is provided
+      if (!toRecipients || !Array.isArray(toRecipients) || toRecipients.length === 0) {
         return res.status(400).json({
           success: false,
           message: 'At least one recipient is required'
         });
       }
 
-      // Validate email format
+      // Validate email format for all recipients
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      for (const recipient of recipients) {
+      const allRecipients = [...toRecipients, ...(ccRecipients || []), ...(bccRecipients || [])];
+      
+      for (const recipient of allRecipients) {
         if (!emailRegex.test(recipient.email)) {
           return res.status(400).json({
             success: false,
@@ -137,10 +141,17 @@ class PDFShareController {
         ownerId: userId,
         ownerEmail: userEmail,
         ownerName: userName,
-        recipients: recipients.map(recipient => ({
+        toRecipients: toRecipients.map(recipient => ({
           email: recipient.email,
-          name: recipient.name || '',
-          isCC: recipient.isCC || false
+          name: recipient.name || ''
+        })),
+        ccRecipients: (ccRecipients || []).map(recipient => ({
+          email: recipient.email,
+          name: recipient.name || ''
+        })),
+        bccRecipients: (bccRecipients || []).map(recipient => ({
+          email: recipient.email,
+          name: recipient.name || ''
         })),
         allowDownload,
         allowComments,
@@ -156,23 +167,93 @@ class PDFShareController {
       document.shared = true;
       await document.save();
 
-      // Send emails to recipients
+      // Send emails with proper BCC handling
       const emailResults = [];
-      for (const recipient of recipients) {
+      
+      // Send email to TO and CC recipients (they see all recipients)
+      try {
+        const emailSent = await emailService.sendPDFShareNotification(
+          toRecipients.map(r => r.email).join(', '), // TO recipients
+          document.name,
+          sharedDocument.shareToken,
+          userName,
+          sharedDocument.subject,
+          sharedDocument.message,
+          sharedDocument.shareUrl,
+          userEmail,
+          ccRecipients || [],
+          [], // Don't include BCC recipients in this email
+          'TO_CC'
+        );
+
+        // Update TO and CC recipient email statuses
+        for (const recipient of toRecipients) {
+          const recipientDoc = sharedDocument.toRecipients.find(r => r.email === recipient.email);
+          if (recipientDoc) {
+            recipientDoc.emailSent = emailSent;
+            recipientDoc.emailSentAt = new Date();
+          }
+          emailResults.push({
+            email: recipient.email,
+            type: 'TO',
+            sent: emailSent
+          });
+        }
+
+        for (const recipient of ccRecipients || []) {
+          const recipientDoc = sharedDocument.ccRecipients.find(r => r.email === recipient.email);
+          if (recipientDoc) {
+            recipientDoc.emailSent = emailSent;
+            recipientDoc.emailSentAt = new Date();
+          }
+          emailResults.push({
+            email: recipient.email,
+            type: 'CC',
+            sent: emailSent
+          });
+        }
+
+      } catch (emailError) {
+        console.error(`Failed to send email to TO/CC recipients:`, emailError);
+        
+        // Mark TO and CC recipients as failed
+        for (const recipient of toRecipients) {
+          emailResults.push({
+            email: recipient.email,
+            type: 'TO',
+            sent: false,
+            error: emailError.message
+          });
+        }
+        for (const recipient of ccRecipients || []) {
+          emailResults.push({
+            email: recipient.email,
+            type: 'CC',
+            sent: false,
+            error: emailError.message
+          });
+        }
+      }
+
+      // Send separate emails to BCC recipients (they see all recipients but are in BCC field)
+      for (const recipient of bccRecipients || []) {
         try {
           const emailSent = await emailService.sendPDFShareNotification(
-            recipient.email,
+            toRecipients.map(r => r.email).join(', '), // TO recipients (what BCC recipient sees as TO)
             document.name,
             sharedDocument.shareToken,
             userName,
             sharedDocument.subject,
             sharedDocument.message,
             sharedDocument.shareUrl,
-            userEmail
+            userEmail,
+            ccRecipients || [], // CC recipients (what BCC recipient sees as CC)
+            recipient.email, // BCC recipient (what BCC recipient sees as BCC)
+            'BCC'
           );
 
-          // Update recipient email status
-          const recipientDoc = sharedDocument.recipients.find(r => r.email === recipient.email);
+          // Update BCC recipient email status
+          const recipientDoc = sharedDocument.bccRecipients.find(r => r.email === recipient.email);
           if (recipientDoc) {
             recipientDoc.emailSent = emailSent;
             recipientDoc.emailSentAt = new Date();
@@ -180,12 +261,14 @@ class PDFShareController {
 
           emailResults.push({
             email: recipient.email,
+            type: 'BCC',
             sent: emailSent
           });
         } catch (emailError) {
-          console.error(`Failed to send email to ${recipient.email}:`, emailError);
+          console.error(`Failed to send email to BCC ${recipient.email}:`, emailError);
           emailResults.push({
             email: recipient.email,
+            type: 'BCC',
             sent: false,
             error: emailError.message
           });
@@ -554,11 +637,14 @@ class PDFShareController {
       const userEmail = req.user.data.email;
       const { page = 1, limit = 10 } = req.query;
 
-      // Find documents where user is owner OR recipient
+      // Find documents where user is owner OR recipient (check all recipient types)
       const sharedDocuments = await SharedDocument.find({
         $or: [
           { ownerId: userId },
-          { 'recipients.email': userEmail }
+          { 'recipients.email': userEmail },
+          { 'toRecipients.email': userEmail },
+          { 'ccRecipients.email': userEmail },
+          { 'bccRecipients.email': userEmail }
         ]
       })
         .populate('documentId', 'name size createdAt')
@@ -569,7 +655,10 @@ class PDFShareController {
       const total = await SharedDocument.countDocuments({
         $or: [
           { ownerId: userId },
-          { 'recipients.email': userEmail }
+          { 'recipients.email': userEmail },
+          { 'toRecipients.email': userEmail },
+          { 'ccRecipients.email': userEmail },
+          { 'bccRecipients.email': userEmail }
         ]
       });
 
@@ -581,7 +670,10 @@ class PDFShareController {
             shareToken: share.shareToken,
             shareUrl: share.shareUrl,
             document: share.documentId,
-            recipients: share.recipients,
+            toRecipients: share.toRecipients || [],
+            ccRecipients: share.ccRecipients || [],
+            bccRecipients: share.bccRecipients || [],
+            recipients: share.recipients || [], // Legacy support
             viewCount: share.viewCount,
             downloadCount: share.downloadCount,
             isActive: share.isActive,

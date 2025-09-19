@@ -6,12 +6,13 @@ const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http
 export interface PDFShareRecipient {
   email: string;
   name?: string;
-  isCC?: boolean;
 }
 
 export interface PDFShareRequest {
   documentId: string;
-  recipients: PDFShareRecipient[];
+  toRecipients: PDFShareRecipient[];
+  ccRecipients?: PDFShareRecipient[];
+  bccRecipients?: PDFShareRecipient[];
   subject?: string;
   message?: string;
   allowDownload?: boolean;
@@ -48,6 +49,30 @@ export interface SharedDocument {
     size: number;
     createdAt: string;
   };
+  toRecipients: Array<{
+    email: string;
+    name: string;
+    hasViewed: boolean;
+    viewedAt?: string;
+    emailSent: boolean;
+    emailSentAt?: string;
+  }>;
+  ccRecipients: Array<{
+    email: string;
+    name: string;
+    hasViewed: boolean;
+    viewedAt?: string;
+    emailSent: boolean;
+    emailSentAt?: string;
+  }>;
+  bccRecipients: Array<{
+    email: string;
+    name: string;
+    hasViewed: boolean;
+    viewedAt?: string;
+    emailSent: boolean;
+    emailSentAt?: string;
+  }>;
   recipients: Array<{
     email: string;
     name: string;
@@ -56,7 +81,7 @@ export interface SharedDocument {
     viewedAt?: string;
     emailSent: boolean;
     emailSentAt?: string;
-  }>;
+  }>; // Legacy support
   viewCount: number;
   downloadCount: number;
   isActive: boolean;

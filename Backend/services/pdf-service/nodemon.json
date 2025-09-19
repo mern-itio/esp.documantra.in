@@ -1,7 +1,36 @@
 {
-  "watch": ["."],
+  "watch": [
+    "controllers",
+    "routes",
+    "middleware",
+    "config",
+    "models",
+    "utils",
+    "index.js"
+  ],
+  "ignore": [
+    "uploads/**/*",
+    "outputs/**/*",
+    "temp/**/*",
+    "temp/**",
+    "temp-images/**/*",
+    "epubs/**/*",
+    "images/**/*",
+    "scripts/**/*",
+    "public/**/*",
+    "node_modules/**/*",
+    "*.log",
+    "*.pdf",
+    "*.json.tmp",
+    "edits-*.json",
+    "edited-*.pdf",
+    "test_*.json",
+    "test_*.pdf",
+    "**/temp/**",
+    "**/uploads/**",
+    "**/outputs/**"
+  ],
   "ext": "js,json",
-  "ignore": ["node_modules"],
-  "exec": "node index.js",
-  "legacyWatch": true
+  "delay": 2000,
+  "verbose": true
 }
