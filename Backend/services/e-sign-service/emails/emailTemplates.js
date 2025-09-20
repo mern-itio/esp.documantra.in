@@ -21,6 +21,7 @@ const envelopeCompletedTemplate = (recipientName, envelopeSubject) => `
   <p>Hello ${recipientName},</p>
   <p>The document <strong>${envelopeSubject}</strong> has been fully signed and completed.</p>
   <p>Thank you for your action!</p>
+  <p>You can find the Signed documents and certificate attached in this email...</p>
 `;
 
 module.exports = {

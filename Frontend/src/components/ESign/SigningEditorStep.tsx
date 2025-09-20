@@ -117,7 +117,15 @@ export default function SigningEditorStep({
 
   useEffect(() => {
     if (!movingFieldId) return;
-    const handleMouseMove = (e: MouseEvent) => setSignatureFields(fields => fields.map(f => f.id ?? f._id === movingFieldId ? {...f, x: e.clientX - (moveOffset?.x ?? 0), y: e.clientY - (moveOffset?.y ?? 0)} : f));
+    const handleMouseMove = (e: MouseEvent) =>
+      setSignatureFields(fields =>
+        fields.map(f =>
+          // fix: ensure we compare the resolved id string to movingFieldId
+          (f.id ?? f._id) === movingFieldId
+            ? { ...f, x: e.clientX - (moveOffset?.x ?? 0), y: e.clientY - (moveOffset?.y ?? 0) }
+            : f
+        )
+      );
     const handleMouseUp = () => { setMovingFieldId(null); setMoveOffset(null); };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);

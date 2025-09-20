@@ -19,7 +19,7 @@ const issueCertController = async (req, res) => {
     if (!envelope) return res.status(404).json({ error: 'Envelope not found' });
 
     // Issue certificate (service should NOT return privateKey)
-    const cert = await issueCertificate(recipientId, envelopeId);
+    const cert = await issueCertificate(recipientId, envelopeId, recipient.name);
 
     // Step 3: Log certificate issued action
     await logActivity(envelopeId, "CERTIFICATE_ISSUED", "Sender", {

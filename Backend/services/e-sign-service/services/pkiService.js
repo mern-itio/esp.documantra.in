@@ -3,7 +3,7 @@ const { Certificate } = require("../models/Certificate");
 const { AuditTrail } = require("../models/AuditTrail");
 const { encrypt } = require('../utils/keyEncryption');
 // Generate keypair + self-signed certificate for recipient
-const issueCertificate = async (recipientId, envelopeId) => {
+const issueCertificate = async (recipientId, envelopeId, repName) => {
   // 1. Generate RSA keypair (2048 bits is standard, 4096 if you want stronger)
   const keys = forge.pki.rsa.generateKeyPair(2048);
 
@@ -17,7 +17,7 @@ const issueCertificate = async (recipientId, envelopeId) => {
 
   // Issuer & Subject (can customize later)
   const attrs = [
-    { name: "commonName", value: "Digital Signature Recipient" },
+    { name: "commonName", value: repName || "Recipient" },
     { name: "organizationName", value: "DraftnSign" },
     { name: "countryName", value: "IN" }
   ];
@@ -40,7 +40,7 @@ const issueCertificate = async (recipientId, envelopeId) => {
     privateKey: encrypt(privateKeyPem), // Encrypted
     certPem:certPem,
     certSerial: cert.serialNumber,
-    issuer: "YourCompany",
+    issuer: "DraftnSign",
     issuedAt: new Date(),
     validTill: cert.validity.notAfter
   });

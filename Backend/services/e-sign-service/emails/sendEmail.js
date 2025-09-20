@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-require("dotenv").config(); // <-- make sure env vars are loaded
+require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -12,12 +12,13 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
- * Send an email using a provided template
- * @param to - recipient email
- * @param subject - email subject
- * @param html - html content of email
+ * Send an email with optional attachments
+ * @param {string|string[]} to - recipient email(s)
+ * @param {string} subject - email subject
+ * @param {string} html - html body
+ * @param {Array} attachments - optional attachments [{ filename, content, contentType }]
  */
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, attachments = []) => {
   if (!to) throw new Error("Recipient email not provided");
 
   const mailOptions = {
@@ -25,6 +26,7 @@ const sendEmail = async (to, subject, html) => {
     to,
     subject,
     html,
+    attachments, // <-- pass your PDFs here
   };
 
   try {

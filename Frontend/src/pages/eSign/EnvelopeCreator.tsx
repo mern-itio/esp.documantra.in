@@ -406,6 +406,12 @@ const getSignatureFields = async (envelopeId: string) => {
     console.error('Error fetching signature fields:', error);
   }
 };
+ const [isEditable, setIsEditable] = useState(false);
+  const [date, setDate] = useState(
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0]
+  );
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -654,13 +660,23 @@ const getSignatureFields = async (envelopeId: string) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
-                <input
-                  type="date"
-                  value={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // 7 days from today
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                />
-
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    readOnly={!isEditable}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg 
+                      ${isEditable ? "bg-white cursor-text" : "bg-gray-100 cursor-not-allowed"}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsEditable(!isEditable)}
+                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  >
+                    {isEditable ? "Lock" : "Edit"}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">

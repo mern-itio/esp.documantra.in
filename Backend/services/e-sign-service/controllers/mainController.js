@@ -4,7 +4,7 @@ const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const axios = require('axios');
 const sendEmail = require('../emails/sendEmail');
-const {signRequestTemplate, signReminderTemplate } = require('../emails/emailTemplates');
+const {signRequestTemplate, signReminderTemplate, envelopeCompletedTemplate } = require('../emails/emailTemplates');
 const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
 const ObjectId = mongoose.Types.ObjectId;
@@ -13,6 +13,8 @@ const {logActivity} = require('../services/activityLogService');
 const { ActivityLogs } = require('../models/ActivityLogs');
 const Document = require('../models/Document');
 const { issueCertificate } = require('../services/pkiService');
+const { generateAndStoreCompletionCertificate } = require('../services/certificateGenerator');
+const fs = require('fs');
 
 const envelopesData = async (req, res) => {
     const userId = req.user.data.id;
@@ -322,6 +324,37 @@ const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage) =>
     return { error: "Internal error while sending recipient email" };
   }
 };
+const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuffer, signedFilename) => {
+  try{
+    const AllRecipients = await RecipientPermission.find({
+      envelopeId: envelope._id
+    }).populate('recipientId');
+    console.log("AllRecipients:", AllRecipients);
+    for (const Recipient of AllRecipients) {
+        if(Recipient){
+          const html = envelopeCompletedTemplate(
+            Recipient.recipientId.name,
+            envelope.subject
+          );
+          const attachments = [
+                    { filename: certFilename, content: certBuffer, contentType: 'application/pdf' },
+                    { filename: signedFilename, content: signedBuffer, contentType: 'application/pdf' }
+                  ];
+          await sendEmail(
+            Recipient.recipientId.email,
+            `Document "${envelope.subject}" Completed and Signed`,
+            html,
+            attachments
+          );
+
+        }
+      }
+
+  }catch (error){
+    console.error("Error sending to all recipients:", error);
+    return { error: "Internal error while sending recipient email" };
+  }
+}
 
 const addSignature = async (req, res) => {
   const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName } = req.body;
@@ -367,10 +400,30 @@ const addSignature = async (req, res) => {
               console.log('Failed to finalize signing');
               return res.status(500).json({ message: 'Failed to finalize signing' });
             }
+            const signedPdfBuffer = fs.readFileSync(digiSign.finalPath);
+            const signedPdfFilename = `signed-document-${envelopeId}.pdf`;
             // Update envelope status to completed
             envelope.status = 'completed';
-            //Send an email of completion to the sender and recipients with pdf attached and certificate attached
+            
             await envelope.save();   
+            // Generate Certificate of Completion and send email
+            try{
+                const { buffer, filename, filepath } = await generateAndStoreCompletionCertificate(envelope._id);
+                // Persist reference to the envelope (adapt schema as needed)
+                envelope.completionCertificate = {
+                  filename,
+                  path: filepath,          // server path (or store URL if you upload to S3)
+                  mimeType: 'application/pdf',
+                  createdAt: new Date()
+                };
+                await envelope.save();
+                //Send completion email to all recipients
+                await sendToAllRecipients(envelope,buffer,filename,signedPdfBuffer,signedPdfFilename);
+
+            }catch(err){
+                console.error('Error generating completion certificate:', err);
+            }
+
             await logActivity(envelopeId, "ENVELOPE_COMPLETED", "System", {
               subject:envelope.subject,
               message:envelope.message

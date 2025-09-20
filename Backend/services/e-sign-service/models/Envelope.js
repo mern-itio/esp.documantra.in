@@ -1,6 +1,16 @@
 // models/Envelope.js
 const mongoose = require('mongoose');
 
+const CompletionCertificateSchema = new mongoose.Schema({
+  filename: { type: String },
+  path: { type: String },   // server filesystem path (if stored locally)
+  url: { type: String },    // external URL (S3, CDN, signed URL), prefer this in prod
+  mimeType: { type: String, default: 'application/pdf' },
+  size: { type: Number },   // bytes
+  storage: { type: String, enum: ['local', 's3', 'gridfs', 'other'], default: 'local' },
+  createdAt: { type: Date, default: Date.now }
+}, { _id: false }); // embed only, no separate id
+
 const EnvelopeSchema = new mongoose.Schema({
   subject: { type: String },
   message: { type: String },
@@ -15,7 +25,11 @@ const EnvelopeSchema = new mongoose.Schema({
   documentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
   recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipient" }],
   signatureType: { type: String, enum: ["standard", "advanced", "qualified"], default: "standard" },
-  status: { type: String, enum: ["draft", "in-progress", "completed", "archived"], default: "draft" }
+  status: { type: String, enum: ["draft", "in-progress", "completed", "archived"], default: "draft" },
+
+  // NEW FIELD: completion certificate metadata
+  completionCertificate: { type: CompletionCertificateSchema, default: null }
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Envelope', EnvelopeSchema);
