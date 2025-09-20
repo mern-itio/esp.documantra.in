@@ -31,6 +31,7 @@ type SignatureField = {
   y: number;
   width: number;
   height: number;
+  locked?: boolean; // new: when true field is fixed (not movable)
 };
 
 const RECIPIENT_COLORS = [
@@ -109,6 +110,7 @@ export default function SigningEditorStep({
   };
 
   const handleFieldMouseDown = (e: React.MouseEvent, field: SignatureField) => {
+    if (field.locked) return; // do not start move for locked fields
     if (field.recipientId !== activeRecipientId) return;
     e.stopPropagation();
     setMovingFieldId(field.id ?? field._id ?? null);
@@ -147,6 +149,64 @@ export default function SigningEditorStep({
   }
 
   const onDocLoadSuccess = ({ numPages }: { numPages: number }) => { setNumPages(numPages); };
+
+  // add one non-movable signature field per recipient at bottom of last page
+  const addFieldsForAllRecipients = () => {
+    if (!activeDocId || recipients.length === 0) return;
+    const rect = pdfContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    // try to find the rendered page canvas to calculate page position/size
+    const canvas = pdfContainerRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+    const pageRect = canvas?.getBoundingClientRect();
+
+    const pageLeftRel = pageRect ? pageRect.left - rect.left : ( (rect.width - 800) / 2 ); // fallback center
+    const pageTopRel = pageRect ? pageRect.top - rect.top : 0;
+    const pageWidth = pageRect?.width ?? 800;
+    const pageHeight = pageRect?.height ?? 1000;
+
+    const width = 120, height = 40;
+    const bottomMargin = 20;
+    const gap = 12;     // horizontal gap between fields
+    const rowGap = 10;  // vertical gap between rows when wrapping
+    const sideMargin = 24; // keep some space from page edges
+    const targetPage = numPages > 0 ? numPages : 1;
+
+    // compute how many fields fit per row
+    const usableWidth = Math.max(1, pageWidth - sideMargin * 2);
+    const perRow = Math.max(1, Math.floor((usableWidth + gap) / (width + gap)));
+
+    // compute total block width for centering
+    const rowCount = Math.ceil(recipients.length / perRow);
+    const totalRowWidth = Math.min(recipients.length, perRow) * width + (Math.min(recipients.length, perRow) - 1) * gap;
+    const startXBase = pageLeftRel + sideMargin + Math.max(0, (usableWidth - totalRowWidth) / 2);
+
+    const newFields: SignatureField[] = recipients.map((r, idx) => {
+      const col = idx % perRow;
+      const row = Math.floor(idx / perRow);
+      // recalc row width (last row may have fewer items)
+      const itemsInThisRow = Math.min(perRow, Math.max(0, recipients.length - row * perRow));
+      const rowTotalWidth = itemsInThisRow * width + (itemsInThisRow - 1) * gap;
+      // center each row independently
+      const startXForRow = pageLeftRel + sideMargin + Math.max(0, (usableWidth - rowTotalWidth) / 2);
+      const x = startXForRow + col * (width + gap);
+      const y = pageTopRel + pageHeight - height - bottomMargin - row * (height + rowGap);
+
+      return {
+        id: `auto_${Date.now()}_${idx}`,
+        docId: activeDocId,
+        recipientId: r.id,
+        page: targetPage,
+        x,
+        y,
+        width,
+        height,
+        locked: true
+      };
+    });
+
+    setSignatureFields(prev => [...prev, ...newFields]);
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] gap-4">
@@ -204,14 +264,15 @@ export default function SigningEditorStep({
                             alignItems: "center",
                             justifyContent: "center",
                             borderRadius: 6,
-                            cursor: isActiveRecipient ? "move" : "not-allowed",
-                            zIndex: 10
+                            cursor: f.locked ? "not-allowed" : (isActiveRecipient ? "move" : "not-allowed"),
+                            zIndex: 10,
+                            opacity: f.locked ? 0.95 : 1
                           }}
                           onMouseDown={e => handleFieldMouseDown(e, f)}
                           title={`Signature for ${recipients.find(r => r.id === f.recipientId)?.name || "Recipient"}`}
                         >
                           ✍ Signature
-                          {isActiveRecipient && (
+                          {isActiveRecipient && !f.locked && (
                             <button
                               onClick={e => { e.stopPropagation(); handleDeleteField(f.id ?? f._id); }}
                               style={{
@@ -235,7 +296,6 @@ export default function SigningEditorStep({
                             >
                               <X size={14} style={{ display: "block" }} />
                             </button>
-
                           )}
                         </div>
                       );
@@ -317,6 +377,16 @@ export default function SigningEditorStep({
             {/* Toolbox */}
             <div className="border-t border-gray-200 p-4">
               <div className="font-medium text-xs text-gray-500 mb-2">Toolbox</div>
+
+              <div className="mb-2">
+               <button
+                 onClick={addFieldsForAllRecipients}
+                 className="w-full text-sm px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200"
+               >
+                 Add Fixed Field
+               </button>
+              </div>
+
               <div draggable onDragStart={handleDragStart} onDragEnd={handleDragEnd} className="flex items-center gap-2 px-3 py-2 rounded-lg border" style={{borderColor: recipientColorMap[activeRecipientId!] || "#2563eb", background:"#f1f5ff", color:recipientColorMap[activeRecipientId!] || "#2563eb", width:120, cursor:"grab"}}>✍ Signature</div>
               <div className="text-[11px] text-gray-400 mt-2">Drag and drop onto the PDF to add a signature field for the active recipient.<br/><span className="text-blue-500">Tip:</span> Only active recipient's fields are editable.</div>
             </div>
