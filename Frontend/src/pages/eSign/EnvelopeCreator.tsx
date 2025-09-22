@@ -17,20 +17,27 @@ import { useApp } from '../../context/AppContext';
 import type{ Document, Recipient } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector'; 
-import {eSignApi} from '../../services/apiHelper';
+import {eSignApi, templateServiceApi} from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
+type FieldType = "signature" | "text" | "email" | "number";
 
 type SignatureField = {
   id: string;
   _id?: string; // for backward compatibility
   docId: string;
   documentId?: string; // for backward compatibility
-  recipientId: string;
+  recipientId?: string;
   page: number;
   x: number;
   y: number;
   width: number;
   height: number;
+  isPowerForm?: boolean;   // NEW: power-form field flag
+  signerIndex?: number;    // NEW: which PF signer slot (1..N)
+  fieldType?: string;
+  locked?: boolean; // new: when true field is fixed (not movable)
+  label?: string; // new: field label
+  type: FieldType; // <--- required property
 };
 
 const EnvelopeCreator: React.FC = () => {
@@ -38,7 +45,12 @@ const EnvelopeCreator: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  // Power Form State
+  const [mode, setMode] = useState<'normal' | 'power'>('normal');
+  const [powerForms, setPowerForms] = useState<any[]>([]);
+  const [selectedForm, setSelectedForm] = useState<string>("");
+  const [powerFormData, setPowerFormData] = useState<any>(null);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [envelopeData, setEnvelopeData] = useState({
     subject: '',
@@ -65,7 +77,7 @@ const EnvelopeCreator: React.FC = () => {
 
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
-    { id: 2, name: 'Recipients', description: 'Add signers' },
+    { id: 2, name: 'Recipients / Power Form', description: 'Choose workflow and configure' },
     { id: 3, name: 'Fields', description: 'Place signature fields' },
     { id: 4, name: 'Security', description: 'Configure authentication' },
     { id: 5, name: 'Settings', description: 'Configure envelope' },
@@ -145,6 +157,32 @@ const insertRecipient = async () => {
     console.error('Error inserting recipients:', error);
   }
 }
+// Get Power Form Template
+const getPowerForm = async () => {
+  try {
+    const response = await templateServiceApi.get('/api/template/get-form');
+    if (response.status === 200) {
+      //setPowerFormTemplate(response.data.template);
+      setMode('power');
+      console.log('Power Forms:', response.data.form);
+      setPowerForms(response.data.form);
+    }
+  } catch (error) {
+    console.error('Error fetching power form template:', error);
+  }
+};
+const getFormDetails = async (formId: string) => {
+  const response = await templateServiceApi.get(`/api/template/get-form-details/${formId}`);
+  if (response.status === 200) {
+    console.log('Power Forms:', response.data);
+    setPowerFormData(response.data);
+}
+}
+const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const formId = e.target.value;
+    setSelectedForm(formId);       // ✅ update selected
+    getFormDetails(formId);        // ✅ fetch details
+};
 //Step 3: Save Signature fields 
 const saveSignatureFields = async () => {
   if (!envelopeId || signatureFields.length === 0) return;
@@ -152,23 +190,24 @@ const saveSignatureFields = async () => {
   const fieldsData = signatureFields.map(field => ({
     _id: field._id, 
     documentId: field.docId ?? field.documentId, // for backward compatibility
-    recipientId: field.recipientId,
+    recipientId: field.isPowerForm ? null : field.recipientId || null, // PF placeholders may not have recipient
     page: field.page,
     x: field.x,
     y: field.y,
     width: field.width,
     height: field.height,
     type: "signature", // Assuming all fields are signature fields
-    status: 'pending'
+    status: 'pending',
+    isPowerForm: !!field.isPowerForm,
+    signerIndex: field.isPowerForm ? (field.signerIndex ?? null) : null,
+    label: (field.fieldType === 'signature' && !field.label) ? 'Signature' : field.label ?? undefined
   }));
-  console.log('Saving signature fields:', fieldsData);
   try {
     const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
       envelopeId,
       signatureFields: fieldsData
     });
     if (response.status === 200) {
-      console.log('Signature fields saved successfully:', response.data.data.signatureFields);
       setSignatureFields(response.data.data.signatureFields);
       await navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
     }
@@ -214,8 +253,18 @@ const handleNext = async () => {
       if (currentStep === 1) {
         await uploadDocuments(currentStep);
       }
-      if (currentStep === 2 && recipients?.length !=0) {
-        await insertRecipient();
+      if (currentStep === 2 ) {
+        if (mode === 'normal') {
+          if (recipients.length === 0) {
+            alert('Please add at least one recipient.');
+            setNextLoading(false);
+            return;
+        }
+          await insertRecipient();
+        }else {
+          // power form: ensure totalSigners is set
+          navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
+        }
       }
       if (currentStep === 3) {
         if (signatureFields.length === 0) {
@@ -226,7 +275,6 @@ const handleNext = async () => {
         await saveSignatureFields();
       }
       if (currentStep === 4) {
-        console.log('Step 4');
         await updateEnvelope();
       }
       if (currentStep === 5) {
@@ -318,7 +366,12 @@ const handleNext = async () => {
       case 1:
         return documents?.length > 0;
       case 2:
+         if (mode === 'normal') {
         return recipients?.length > 0 && recipients.every(r => r.name && r.email);
+      } else {
+        // power mode'
+        return true; // Fields are optional
+      }
       case 3:
         return true; // Fields are optional
       case 4:
@@ -372,6 +425,7 @@ const getSteps = async () => {
                 setEnvelopeId(envelopeId)
                 break;
               case 3:
+                console.log('Current step', step);
                 setCurrentStep(3);
                 await getEnvelopeDetail(envelopeId);
                 await getSignatureFields(envelopeId);
@@ -470,87 +524,147 @@ const getSignatureFields = async (envelopeId: string) => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Recipients</h3>
-              <p className="text-gray-600 mb-6">Add people who need to sign or receive copies of the documents.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Choose flow: Normal or Power Form</h3>
+              <p className="text-gray-600 mb-6">Normal — add recipients and place recipient-specific signature fields. Power Form — define a reusable form with numbered signer slots.</p>
             </div>
 
-            <button
-              onClick={addRecipient}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Recipient
-            </button>
+            <div className="flex items-center gap-4">
+              <button onClick={() => setMode('normal')} className={`px-4 py-2 rounded-lg ${mode==='normal' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Normal (Recipients)</button>
+              <button onClick={() => getPowerForm()} className={`px-4 py-2 rounded-lg ${mode==='power' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Power Form</button>
+            </div>
+            {mode === 'normal' ? (
+              //Recipient UI
+              <>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Recipients</h3>
+                  <p className="text-gray-600 mb-6">Add people who need to sign or receive copies of the documents.</p>
+                </div>
+                <button
+                  onClick={addRecipient}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Recipient
+                </button>
+                {recipients?.length > 0 && (
+                  <div className="space-y-4">
+                    {recipients.map((recipient, index) => (
+                      <div key={recipient.id} className="bg-gray-50 rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-medium text-gray-900">Recipient {index + 1}</h4>
+                          <button
+                            onClick={() => removeRecipient(recipient.id)}
+                            className="p-1 text-gray-400 hover:text-red-600 rounded"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
 
-            {recipients?.length > 0 && (
-              <div className="space-y-4">
-                {recipients.map((recipient, index) => (
-                  <div key={recipient.id} className="bg-gray-50 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-sm font-medium text-gray-900">Recipient {index + 1}</h4>
-                      <button
-                        onClick={() => removeRecipient(recipient.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 rounded"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                            <input
+                              type="text"
+                              value={recipient.name}
+                              onChange={(e) => updateRecipient(recipient.id, { name: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Full name"
+                            />
+                          </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                        <input
-                          type="text"
-                          value={recipient.name}
-                          onChange={(e) => updateRecipient(recipient.id, { name: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Full name"
-                        />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input
+                              type="email"
+                              value={recipient.email}
+                              onChange={(e) => updateRecipient(recipient.id, { email: e.target.value })}
+                              onBlur={(e) => handleEmailOnBlur(recipient.id, e.target.value )}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="email@example.com"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                            <select
+                              value={recipient.role}
+                              onChange={(e) => updateRecipient(recipient.id, { role: e.target.value as any })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="signer">Signer</option>
+                              <option value="approver">Approver</option>
+                              <option value="carbon_copy">Carbon Copy</option>
+                              <option value="in_person_signer">In-Person Signer</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Authentication</label>
+                            <select
+                              value={recipient.authentication}
+                              onChange={(e) => updateRecipient(recipient.id, { authentication: e.target.value as any })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="none">None</option>
+                              <option value="email">Email Verification</option>
+                              <option value="sms">SMS Verification</option>
+                              <option value="access_code">Access Code</option>
+                              <option value="phone">Phone Verification</option>
+                            </select>
+                          </div>
+                        </div>
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input
-                          type="email"
-                          value={recipient.email}
-                          onChange={(e) => updateRecipient(recipient.id, { email: e.target.value })}
-                          onBlur={(e) => handleEmailOnBlur(recipient.id, e.target.value )}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="email@example.com"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                        <select
-                          value={recipient.role}
-                          onChange={(e) => updateRecipient(recipient.id, { role: e.target.value as any })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="signer">Signer</option>
-                          <option value="approver">Approver</option>
-                          <option value="carbon_copy">Carbon Copy</option>
-                          <option value="in_person_signer">In-Person Signer</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Authentication</label>
-                        <select
-                          value={recipient.authentication}
-                          onChange={(e) => updateRecipient(recipient.id, { authentication: e.target.value as any })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="none">None</option>
-                          <option value="email">Email Verification</option>
-                          <option value="sms">SMS Verification</option>
-                          <option value="access_code">Access Code</option>
-                          <option value="phone">Phone Verification</option>
-                        </select>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+              </>
+              
+            ) : (
+              <div>
+                  <h4 className="text-sm font-medium text-gray-900">Build Power Form</h4>
+                  <p className="text-sm text-gray-500 mb-4">Set the number of signers (slots). You will drag power-form placeholders onto the document in the next step.</p>
+                  {/* select field creation with powerForm list as options */}
+                  <div className="w-full">
+                      <label htmlFor="powerForm" className="block mb-2 text-sm font-medium text-gray-700">
+                        Select Power Form
+                      </label>
+                      <select id="powerForm" value={selectedForm} onChange={handleChange}
+                        className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                          <option value="">-- Choose a Form --</option>
+                          {powerForms.map((form) => (
+                            <option key={form._id} value={form._id}>
+                              {form.title}
+                            </option>
+                          ))}
+                      </select>
+                  </div>
+                   {/* Show selected form details */}
+                    {powerFormData && (
+                      <div className="bg-gray-50  rounded-lg p-4 space-y-4 p-4 mt-4">
+                        <div>
+                          <h5 className="text-lg font-semibold text-gray-900">
+                            {powerFormData.title}
+                          </h5>
+                          <p className="text-sm text-gray-600">{powerFormData.description}</p>
+                        </div>
+
+                        <div>
+                          <h6 className="text-sm font-medium text-gray-800 mb-2">Fields</h6>
+                          <ul className="space-y-2">
+                            {powerFormData.fields.map((field: any) => (
+                              <li
+                                key={field._id}
+                                className="flex items-center justify-between bg-white border rounded p-2 text-sm"
+                              >
+                                <span>{field.label || field.type}</span>
+                                <span className="text-gray-500">{field.type}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
               </div>
             )}
           </div>
@@ -558,7 +672,14 @@ const getSignatureFields = async (envelopeId: string) => {
 
       case 3:
         return (
-          <SigningEditorStep documents={documents} recipients={recipients} signatureFields = {signatureFields} setSignatureFields={setSignatureFields} />
+          <SigningEditorStep 
+            documents={documents} 
+            recipients={recipients} 
+            signatureFields = {signatureFields} 
+            setSignatureFields={setSignatureFields}
+            mode={mode} 
+            powerFormData={powerFormData}
+          />
         );
 
       case 4:
