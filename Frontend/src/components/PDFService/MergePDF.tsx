@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Upload,
   Download,
@@ -9,6 +9,13 @@ import {
 } from 'lucide-react';
 import { mergePDFService } from '../../services/mergePDFService';
 
+// Type declarations for PDF.js
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
+
 interface PDFDocument {
   id: string;
   file: File;
@@ -16,6 +23,7 @@ interface PDFDocument {
   size: number;
   pages: number;
   preview?: string;
+  firstPagePreview?: string;
   isProcessing?: boolean;
   error?: string;
 }
@@ -32,7 +40,49 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
   const [totalSize, setTotalSize] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [showWarning, setShowWarning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize PDF.js worker
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
+        if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        }
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
+    }
+  }, []);
+
+  // Load PDF.js dynamically
+  const loadPDFJS = useCallback(async () => {
+    try {
+      if (typeof window !== 'undefined' && !window.pdfjsLib) {
+        const pdfjsLib = await import('pdfjs-dist');
+        
+        // Set worker path to local file
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        } catch (error) {
+          console.warn("Failed to set PDF.js worker:", error);
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        }
+        
+        // Assign to window
+        window.pdfjsLib = pdfjsLib;
+      }
+      
+      return window.pdfjsLib;
+    } catch (error) {
+      console.error('Error loading PDF.js:', error);
+      throw error;
+    }
+  }, []);
 
   // Calculate totals when documents change
   React.useEffect(() => {
@@ -48,6 +98,77 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const generateFirstPagePreview = async (file: File): Promise<string> => {
+    try {
+      const pdfjsLib = await loadPDFJS();
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      // Get the first page
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 1.0 }); // Higher scale for better quality
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Could not get canvas context');
+      
+      // Set canvas size for high DPI displays
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      canvas.width = viewport.width * devicePixelRatio;
+      canvas.height = viewport.height * devicePixelRatio;
+      
+      // Scale the context to match the device pixel ratio
+      context.scale(devicePixelRatio, devicePixelRatio);
+      
+      // Set the display size (CSS size)
+      canvas.style.width = viewport.width + 'px';
+      canvas.style.height = viewport.height + 'px';
+      
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+      
+      await page.render(renderContext).promise;
+      return canvas.toDataURL();
+    } catch (error) {
+      console.error('Error generating PDF preview:', error);
+      // Fallback to a simple placeholder
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      canvas.width = 200 * devicePixelRatio;
+      canvas.height = 280 * devicePixelRatio;
+      
+      if (ctx) {
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+        canvas.style.width = '200px';
+        canvas.style.height = '280px';
+        
+        // Create a simple PDF-like preview
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, 200, 280);
+        
+        // Add some content lines
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '12px Arial';
+        ctx.fillText('PDF Document', 20, 30);
+        
+        // Add some lines to simulate text
+        for (let i = 0; i < 8; i++) {
+          ctx.fillRect(20, 50 + i * 20, 160, 1);
+        }
+        
+        // Add page number
+        ctx.fillStyle = '#adb5bd';
+        ctx.font = '10px Arial';
+        ctx.fillText('Page 1', 20, canvas.height - 20);
+      }
+      
+      return canvas.toDataURL();
+    }
   };
 
   const handleFileSelect = useCallback(async (files: FileList | null) => {
@@ -97,17 +218,19 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
     setDocuments(prev => [...prev, ...newDocuments]);
 
-    // Process each PDF to get actual page count and validation
+    // Process each PDF to get actual page count, validation, and preview
     for (const doc of newDocuments) {
       try {
         const pdfInfo = await mergePDFService.getPDFInfo(doc.file);
         const validation = await mergePDFService.validatePDF(doc.file);
+        const firstPagePreview = await generateFirstPagePreview(doc.file);
 
         setDocuments(prev => prev.map(d =>
           d.id === doc.id
             ? {
               ...d,
               pages: pdfInfo.pages,
+              firstPagePreview,
               isProcessing: false,
               error: validation.isValid ? undefined : validation.error
             }
@@ -172,10 +295,15 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
   }, [moveDocument]);
 
   const handleMerge = async () => {
-    if (documents.length < 2) return;
+    if (documents.length < 2) {
+      setShowWarning(true);
+      setTimeout(() => setShowWarning(false), 3000);
+      return;
+    }
 
     setIsMerging(true);
     setMergeProgress(0);
+    setShowWarning(false);
 
     try {
       // Prepare the merge request
@@ -233,38 +361,88 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
         <p className="text-gray-600">Combine multiple PDF files into one document with custom ordering</p>
       </div> */}
 
-      {/* File Upload Area */}
-      <div
-        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDragging
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
-          }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Drop PDF files here or click to browse
-        </h3>
-        <p className="text-gray-500 mb-4">
-          Select multiple PDF files to merge together
-        </p>
-        <button
-          onClick={openFileDialog}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+      {/* File Upload Area - Only show when less than 2 documents */}
+      {documents.length < 2 && (
+        <div
+          className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDragging
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 hover:border-gray-400'
+            }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         >
-          Choose Files
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".pdf"
-          onChange={(e) => handleFileSelect(e.target.files)}
-          className="hidden"
-        />
-      </div>
+          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {documents.length === 0 
+              ? 'Drop PDF files here or click to browse'
+              : 'Add more PDF files to merge'
+            }
+          </h3>
+          <p className="text-gray-500 mb-4">
+            {documents.length === 0 
+              ? 'Select multiple PDF files to merge together'
+              : 'Upload at least one more PDF to start merging'
+            }
+          </p>
+          <button
+            onClick={openFileDialog}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {documents.length === 0 ? 'Choose Files' : 'Add More Files'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf"
+            onChange={(e) => handleFileSelect(e.target.files)}
+            className="hidden"
+          />
+        </div>
+      )}
+
+      {/* File Info Section - Show when 2 or more documents */}
+      {documents.length >= 2 && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <Info className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-900">Ready to Merge</h3>
+                <p className="text-sm text-green-700">
+                  {documents.length} PDF files ready for merging
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-green-600 font-medium">
+                {formatFileSize(totalSize)} • {totalPages} pages
+              </div>
+            </div>
+          </div>
+          
+          {/* Add More Files Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={openFileDialog}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+            >
+              Add More Files
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf"
+              onChange={(e) => handleFileSelect(e.target.files)}
+              className="hidden"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Summary Info - Matching the image design */}
       {documents.length > 0 && (
@@ -295,12 +473,18 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
               >
                 <div className="relative">
                   {/* Document Preview Thumbnail */}
-                  <div className="w-full h-32 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden">
+                  <div className="w-full h-48 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden">
                     {doc.isProcessing ? (
                       <div className="flex flex-col items-center space-y-2">
                         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                         <span className="text-xs text-gray-500">Processing...</span>
                       </div>
+                    ) : doc.firstPagePreview ? (
+                      <img 
+                        src={doc.firstPagePreview} 
+                        alt="PDF Preview" 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
                     ) : (
                       <>
                         {/* PDF Preview Background */}
@@ -367,6 +551,18 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
         </div>
       )}
 
+      {/* Warning Message */}
+      {showWarning && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center space-x-2">
+            <Info className="w-5 h-5 text-yellow-600" />
+            <span className="text-yellow-800 font-medium">
+              Please upload at least 2 PDF files to merge
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Merge Button */}
       {documents.length >= 2 && documents.every(doc => !doc.error && !doc.isProcessing) && (
         <div className="text-center">
@@ -413,6 +609,14 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
             <p>• Maximum total size: 25MB</p>
             <p>• Only PDF files are supported</p>
           </div>
+        </div>
+      )}
+
+      {/* Single File Instructions */}
+      {documents.length === 1 && (
+        <div className="text-center text-gray-500">
+          <p>Upload one more PDF file to start merging</p>
+          <p className="text-sm mt-1">Drag and drop to reorder documents after upload</p>
         </div>
       )}
 

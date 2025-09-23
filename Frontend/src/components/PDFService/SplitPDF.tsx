@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   Download, 
   Scissors, 
@@ -9,10 +9,19 @@ import {
   X, 
   Loader2,
   BookOpen,
-  HardDrive
+  HardDrive,
+  Check,
+  Eye
 } from 'lucide-react';
 import { splitPDFService } from '../../services/splitPDFService';
 import type { SplitPDFRequest, SplitPDFResponse } from '../../types/splitPDF';
+
+// Type declarations for PDF.js
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
 
 interface PDFDocument {
   id: string;
@@ -23,6 +32,12 @@ interface PDFDocument {
   preview?: string;
   isProcessing?: boolean;
   error?: string;
+}
+
+interface PDFPage {
+  pageNumber: number;
+  preview: string;
+  isSelected: boolean;
 }
 
 interface CustomRange {
@@ -46,8 +61,48 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   const [maxSizeMB, setMaxSizeMB] = useState(10);
   const [customRanges, setCustomRanges] = useState<CustomRange[]>([]);
   const [splitResult, setSplitResult] = useState<SplitPDFResponse | null>(null);
-  // const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pdfPages, setPdfPages] = useState<PDFPage[]>([]);
+  const [selectedPages, setSelectedPages] = useState<number[]>([]);
+  const [isGeneratingPreviews, setIsGeneratingPreviews] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize PDF.js worker
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        }
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
+    }
+  }, []);
+
+  // Load PDF.js dynamically
+  const loadPDFJS = useCallback(async () => {
+    try {
+      if (typeof window !== 'undefined' && !window.pdfjsLib) {
+        const pdfjsLib = await import('pdfjs-dist');
+        
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        } catch (error) {
+          console.warn("Failed to set PDF.js worker:", error);
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        }
+        
+        window.pdfjsLib = pdfjsLib;
+      }
+      
+      return window.pdfjsLib;
+    } catch (error) {
+      console.error('Error loading PDF.js:', error);
+      throw error;
+    }
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -55,6 +110,56 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Generate page previews
+  const generatePagePreviews = async (file: File, totalPages: number): Promise<PDFPage[]> => {
+    try {
+      const pdfjsLib = await loadPDFJS();
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      const pages: PDFPage[] = [];
+      
+      for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 0.5 }); // Medium scale for previews
+        
+        const canvas = window.document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Could not get canvas context');
+        
+        // Set canvas size for high DPI displays
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        canvas.width = viewport.width * devicePixelRatio;
+        canvas.height = viewport.height * devicePixelRatio;
+        
+        // Scale the context to match the device pixel ratio
+        context.scale(devicePixelRatio, devicePixelRatio);
+        
+        // Set the display size (CSS size)
+        canvas.style.width = viewport.width + 'px';
+        canvas.style.height = viewport.height + 'px';
+        
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+        
+        pages.push({
+          pageNumber: pageNum,
+          preview: canvas.toDataURL(),
+          isSelected: true // Initially all pages are selected
+        });
+      }
+      
+      return pages;
+    } catch (error) {
+      console.error('Error generating page previews:', error);
+      return [];
+    }
   };
 
   const handleFileSelect = useCallback(async (files: FileList | null) => {
@@ -85,21 +190,37 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
     setDocument(newDocument);
 
-    // Get PDF info
+    // Get PDF info and generate page previews
     try {
       const pdfInfo = await splitPDFService.getPDFInfo(file);
-      setDocument(prev => prev ? {
-        ...prev,
-        pages: pdfInfo.pages,
-        isProcessing: false,
-        error: pdfInfo.isValid ? undefined : 'Invalid PDF file'
-      } : null);
+      
+      if (pdfInfo.isValid) {
+        setDocument(prev => prev ? {
+          ...prev,
+          pages: pdfInfo.pages,
+          isProcessing: false
+        } : null);
+
+        // Generate page previews
+        setIsGeneratingPreviews(true);
+        const pagePreviews = await generatePagePreviews(file, pdfInfo.pages);
+        setPdfPages(pagePreviews);
+        setSelectedPages(pagePreviews.map((_, index) => index + 1)); // All pages selected initially
+        setIsGeneratingPreviews(false);
+      } else {
+        setDocument(prev => prev ? {
+          ...prev,
+          isProcessing: false,
+          error: 'Invalid PDF file'
+        } : null);
+      }
     } catch (error) {
       setDocument(prev => prev ? {
         ...prev,
         isProcessing: false,
         error: 'Failed to process PDF'
       } : null);
+      setIsGeneratingPreviews(false);
     }
   }, []);
 
@@ -123,7 +244,52 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   const removeDocument = useCallback(() => {
     setDocument(null);
     setSplitResult(null);
+    setPdfPages([]);
+    setSelectedPages([]);
   }, []);
+
+  // Toggle page selection
+  const togglePageSelection = useCallback((pageNumber: number) => {
+    setSelectedPages(prev => {
+      if (prev.includes(pageNumber)) {
+        return prev.filter(p => p !== pageNumber);
+      } else {
+        return [...prev, pageNumber].sort((a, b) => a - b);
+      }
+    });
+  }, []);
+
+  // Select all pages
+  const selectAllPages = useCallback(() => {
+    setSelectedPages(pdfPages.map(page => page.pageNumber));
+  }, [pdfPages]);
+
+  // Deselect all pages
+  const deselectAllPages = useCallback(() => {
+    setSelectedPages([]);
+  }, []);
+
+  // Calculate split visualization
+  const getSplitVisualization = useCallback(() => {
+    if (splitMode !== 'pages' || !pagesPerSplit || selectedPages.length === 0) {
+      return [];
+    }
+
+    const sortedPages = [...selectedPages].sort((a, b) => a - b);
+    const splits = [];
+    
+    for (let i = 0; i < sortedPages.length; i += pagesPerSplit) {
+      const chunk = sortedPages.slice(i, i + pagesPerSplit);
+      splits.push({
+        id: `split-${i / pagesPerSplit + 1}`,
+        pages: chunk,
+        startPage: chunk[0],
+        endPage: chunk[chunk.length - 1]
+      });
+    }
+    
+    return splits;
+  }, [splitMode, pagesPerSplit, selectedPages]);
 
   const addCustomRange = useCallback(() => {
     const newRange: CustomRange = {
@@ -146,7 +312,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   }, []);
 
   const handleSplit = async () => {
-    if (!document || document.error || document.isProcessing) return;
+    if (!document || document.error || document.isProcessing || selectedPages.length === 0) return;
 
     setIsSplitting(true);
     setSplitProgress(0);
@@ -192,23 +358,15 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
     }
   };
 
-  const downloadFile = async (filename: string) => {
-    try {
-      await splitPDFService.downloadSplitPDF(filename);
-    } catch (error) {
-      console.error('Download error:', error);
-      alert('Failed to download file');
-    }
-  };
-
   const downloadAll = async () => {
     if (!splitResult?.files) return;
     
     try {
+      // Download all files as a zip
       await splitPDFService.downloadAllSplitPDFs(splitResult.files);
     } catch (error) {
       console.error('Download all error:', error);
-      alert('Failed to download some files');
+      alert('Failed to download zip file');
     }
   };
 
@@ -217,6 +375,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   };
 
   const canSplit = document && !document.error && !document.isProcessing && 
+    selectedPages.length > 0 &&
     (splitMode !== 'custom' || customRanges.length > 0) &&
     (splitMode !== 'pages' || (pagesPerSplit && pagesPerSplit > 0));
 
@@ -310,10 +469,80 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
         </div>
       )}
 
-      {/* Split Options */}
+      {/* Page Previews and Split Options */}
       {document && !document.error && !document.isProcessing && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Split Options</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Side - Page Previews */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Select Pages</h3>
+              <div className="flex space-x-2">
+                <button
+                  onClick={selectAllPages}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Select All
+                </button>
+                <button
+                  onClick={deselectAllPages}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Deselect All
+                </button>
+              </div>
+            </div>
+
+            {isGeneratingPreviews ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center space-y-2">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                  <span className="text-sm text-gray-500">Generating page previews...</span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                {pdfPages.map((page) => (
+                  <div
+                    key={page.pageNumber}
+                    className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                      selectedPages.includes(page.pageNumber)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => togglePageSelection(page.pageNumber)}
+                  >
+                    <div className="aspect-[3/4] bg-gray-50 rounded-lg overflow-hidden">
+                      <img
+                        src={page.preview}
+                        alt={`Page ${page.pageNumber}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    
+                    {/* Selection indicator */}
+                    {selectedPages.includes(page.pageNumber) && (
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    
+                    {/* Page number */}
+                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                      {page.pageNumber}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 text-sm text-gray-600">
+              {selectedPages.length} of {pdfPages.length} pages selected
+            </div>
+          </div>
+
+          {/* Right Side - Split Options and Visualization */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Split Options</h3>
           
           {/* Split Mode Selection */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -475,25 +704,55 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
             </div>
           )}
 
-          {/* Split Button */}
-          <div className="mt-6">
-            <button
-              onClick={handleSplit}
-              disabled={!canSplit || isSplitting}
-              className="w-full bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
-            >
-              {isSplitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Splitting PDF...</span>
-                </>
-              ) : (
-                <>
-                  <Scissors className="w-5 h-5" />
-                  <span>Split PDF</span>
-                </>
-              )}
-            </button>
+            {/* Split Visualization */}
+            {splitMode === 'pages' && pagesPerSplit && selectedPages.length > 0 && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                  <Eye className="w-4 h-4 mr-2" />
+                  Split Preview
+                </h4>
+                <div className="space-y-2">
+                  {getSplitVisualization().map((split, index) => (
+                    <div key={split.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-blue-600">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          PDF {index + 1}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Pages {split.startPage}-{split.endPage} ({split.pages.length} page{split.pages.length !== 1 ? 's' : ''})
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-sm text-gray-600">
+                  Will create {getSplitVisualization().length} PDF file{getSplitVisualization().length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
+
+            {/* Split Button */}
+            <div className="mt-6">
+              <button
+                onClick={handleSplit}
+                disabled={!canSplit || isSplitting}
+                className="w-full bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+              >
+                {isSplitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Splitting PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Scissors className="w-5 h-5" />
+                    <span>Split PDF</span>
+                  </>
+                )}
+              </button>
 
             {/* Progress Bar */}
             {isSplitting && (
@@ -508,6 +767,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
               </div>
             )}
           </div>
+          </div>
         </div>
       )}
 
@@ -516,15 +776,13 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Split Results</h3>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={downloadAll}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download All</span>
-              </button>
-            </div>
+            <button
+              onClick={downloadAll}
+              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <Download className="w-5 h-5" />
+              <span>Download as ZIP</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -534,12 +792,9 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                   <div className="w-8 h-10 bg-gray-200 rounded flex items-center justify-center">
                     <FileText className="w-4 h-4 text-gray-600" />
                   </div>
-                  <button
-                    onClick={() => downloadFile(file.filename)}
-                    className="text-blue-600 hover:text-blue-800 transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
+                  <div className="text-xs text-gray-500">
+                    Part {index + 1}
+                  </div>
                 </div>
                 <h4 className="font-medium text-gray-900 text-sm truncate">{file.filename}</h4>
                 <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
@@ -548,7 +803,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-600">
-            Successfully created {splitResult.totalFiles} file{splitResult.totalFiles !== 1 ? 's' : ''}
+            Successfully created {splitResult.totalFiles} file{splitResult.totalFiles !== 1 ? 's' : ''} - Download as ZIP to get all files
           </div>
         </div>
       )}

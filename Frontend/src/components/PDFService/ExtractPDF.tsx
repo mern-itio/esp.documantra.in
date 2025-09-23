@@ -1,22 +1,134 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { FiUpload, FiFile, FiTrash2, FiDownload, FiScissors, FiPlus, FiX } from 'react-icons/fi';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  FiUpload,
+  FiFile,
+  FiDownload,
+  FiScissors,
+  FiX,
+  FiCheck,
+  FiEye,
+} from 'react-icons/fi';
 import { extractPDFService } from '../../services/extractPDFService';
-import type { ExtractPDFResponse, PageSelection } from '../../types/extractPDF';
+import type { ExtractPDFResponse } from '../../types/extractPDF';
 import type { PDFInfo } from '../../types/common';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+
+// Extend window interface for PDF.js
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
 
 const ExtractPDF: React.FC = () => {
   const [document, setDocument] = useState<File | null>(null);
   const [pdfInfo, setPdfInfo] = useState<PDFInfo | null>(null);
   const [extracting, setExtracting] = useState(false);
-  const [extractMode, setExtractMode] = useState<'pages' | 'range' | 'custom'>('pages');
+  const [extractMode, setExtractMode] = useState<'pages' | 'range'>('pages');
   const [pageNumbers, setPageNumbers] = useState<string>('');
   const [startPage, setStartPage] = useState<number>(1);
   const [endPage, setEndPage] = useState<number>(1);
-  const [customSelections, setCustomSelections] = useState<PageSelection[]>([]);
-  const [outputName, setOutputName] = useState<string>('');
   const [extractResult, setExtractResult] = useState<ExtractPDFResponse | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
+  const [pageThumbnails, setPageThumbnails] = useState<string[]>([]);
+  const [loadingThumbnails, setLoadingThumbnails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize PDF.js worker
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Point to the worker file in your public folder
+        if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        }
+      } catch (err) {
+        console.warn("Failed to set PDF.js worker:", err);
+      }
+    }
+  }, []);
+
+  // Load PDF.js dynamically
+  const loadPDFJS = useCallback(async () => {
+    try {
+      if (typeof window !== 'undefined' && !window.pdfjsLib) {
+        const pdfjsLib = await import('pdfjs-dist');
+
+        // Set worker path to local file
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
+        } catch (error) {
+          console.warn("Failed to set PDF.js worker:", error);
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        }
+
+        // Assign to window
+        window.pdfjsLib = pdfjsLib;
+      }
+
+      return window.pdfjsLib;
+    } catch (error) {
+      console.error('Error loading PDF.js:', error);
+      throw error;
+    }
+  }, []);
+
+  // Generate page thumbnails using PDF.js
+  const generatePageThumbnails = useCallback(async (file: File, pageCount: number) => {
+    setLoadingThumbnails(true);
+    try {
+      const pdfjsLib = await loadPDFJS();
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+      const thumbnails: string[] = [];
+      const maxPages = Math.min(pageCount, 20); // Limit to first 20 pages for performance
+
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        try {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 0.5 }); // Medium scale for previews
+
+          const canvas = window.document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          if (!context) throw new Error('Could not get canvas context');
+
+          // Set canvas size for high DPI displays
+          const devicePixelRatio = window.devicePixelRatio || 1;
+          canvas.width = viewport.width * devicePixelRatio;
+          canvas.height = viewport.height * devicePixelRatio;
+
+          // Scale the context to match the device pixel ratio
+          context.scale(devicePixelRatio, devicePixelRatio);
+
+          // Set the display size (CSS size)
+          canvas.style.width = viewport.width + 'px';
+          canvas.style.height = viewport.height + 'px';
+
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          };
+
+          await page.render(renderContext).promise;
+          thumbnails.push(canvas.toDataURL());
+        } catch (error) {
+          console.warn(`Failed to generate thumbnail for page ${pageNum}:`, error);
+          thumbnails.push(''); // Add empty string as placeholder
+        }
+      }
+
+      setPageThumbnails(thumbnails);
+    } catch (error) {
+      console.error('Error generating thumbnails:', error);
+    } finally {
+      setLoadingThumbnails(false);
+    }
+  }, [loadPDFJS]);
 
   // Handle file selection
   const handleFileSelect = useCallback(async (file: File) => {
@@ -27,20 +139,24 @@ const ExtractPDF: React.FC = () => {
 
     setDocument(file);
     setExtractResult(null);
+    setSelectedPages(new Set());
+    setPageThumbnails([]);
 
     // Get PDF info
     try {
       const info = await extractPDFService.getPDFInfo(file);
       setPdfInfo(info);
-      
+
       // Set default range values
       if (info.pages > 0) {
         setEndPage(info.pages);
+        // Generate thumbnails
+        await generatePageThumbnails(file, info.pages);
       }
     } catch (error) {
       console.error('Error getting PDF info:', error);
     }
-  }, []);
+  }, [generatePageThumbnails]);
 
   // Handle drag and drop
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -70,7 +186,33 @@ const ExtractPDF: React.FC = () => {
     }
   };
 
-  // Remove document
+  // Handle page selection
+  const togglePageSelection = (pageNumber: number) => {
+    setSelectedPages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pageNumber)) {
+        newSet.delete(pageNumber);
+      } else {
+        newSet.add(pageNumber);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all pages
+  const selectAllPages = () => {
+    if (pdfInfo) {
+      const allPages = new Set(Array.from({ length: pdfInfo.pages }, (_, i) => i + 1));
+      setSelectedPages(allPages);
+    }
+  };
+
+  // Clear all selections
+  const clearAllSelections = () => {
+    setSelectedPages(new Set());
+  };
+
+  // Remove document and reset to upload state
   const removeDocument = () => {
     setDocument(null);
     setPdfInfo(null);
@@ -78,51 +220,19 @@ const ExtractPDF: React.FC = () => {
     setPageNumbers('');
     setStartPage(1);
     setEndPage(1);
-    setCustomSelections([]);
-    setOutputName('');
+    setSelectedPages(new Set());
+    setPageThumbnails([]);
+    setLoadingThumbnails(false);
   };
 
-  // Add custom selection
-  const addCustomSelection = () => {
-    const newSelection: PageSelection = {
-      id: Date.now().toString(),
-      type: 'page',
-      value: 1,
-      name: `Selection ${customSelections.length + 1}`
-    };
-    setCustomSelections([...customSelections, newSelection]);
-  };
-
-  // Update custom selection
-  const updateCustomSelection = (id: string, field: keyof PageSelection, value: any) => {
-    setCustomSelections(prev => prev.map(sel => {
-      if (sel.id === id) {
-        // If changing type from page to range, initialize proper value structure
-        if (field === 'type' && value === 'range' && typeof sel.value === 'number') {
-          return { ...sel, [field]: value, value: { start: sel.value, end: sel.value } };
-        }
-        // If changing type from range to page, convert to number
-        if (field === 'type' && value === 'page' && typeof sel.value === 'object') {
-          return { ...sel, [field]: value, value: (sel.value as any).start || 1 };
-        }
-        return { ...sel, [field]: value };
-      }
-      return sel;
-    }));
-  };
-
-  // Remove custom selection
-  const removeCustomSelection = (id: string) => {
-    setCustomSelections(prev => prev.filter(sel => sel.id !== id));
-  };
 
   // Parse page numbers string (handles ranges like "1-3,5,7-9")
   const parsePageNumbers = (input: string): number[] => {
     if (!input.trim()) return [];
-    
+
     const pages: number[] = [];
     const parts = input.split(',').map(p => p.trim());
-    
+
     for (const part of parts) {
       if (part.includes('-')) {
         // Handle range (e.g., "1-3")
@@ -140,7 +250,7 @@ const ExtractPDF: React.FC = () => {
         }
       }
     }
-    
+
     // Remove duplicates and sort
     return [...new Set(pages)].sort((a, b) => a - b);
   };
@@ -154,16 +264,22 @@ const ExtractPDF: React.FC = () => {
       let result: ExtractPDFResponse;
 
       if (extractMode === 'pages') {
-        const pages = parsePageNumbers(pageNumbers);
-        console.log('Parsed page numbers:', pages, 'from input:', pageNumbers);
+        let pages: number[];
+        if (selectedPages.size > 0) {
+          // Use selected pages from UI
+          pages = Array.from(selectedPages).sort((a, b) => a - b);
+        } else {
+          // Fall back to parsing page numbers input
+          pages = parsePageNumbers(pageNumbers);
+        }
+        console.log('Pages to extract:', pages);
         if (pages.length === 0) {
-          alert('Please enter valid page numbers');
+          alert('Please select pages to extract');
           return;
         }
         result = await extractPDFService.extractPages({
           file: document,
-          pageNumbers: pages,
-          outputName: outputName || undefined
+          pageNumbers: pages
         });
       } else if (extractMode === 'range') {
         if (startPage > endPage) {
@@ -173,21 +289,7 @@ const ExtractPDF: React.FC = () => {
         result = await extractPDFService.extractRange({
           file: document,
           startPage,
-          endPage,
-          outputName: outputName || undefined
-        });
-      } else if (extractMode === 'custom') {
-        if (customSelections.length === 0) {
-          alert('Please add at least one selection');
-          return;
-        }
-        result = await extractPDFService.extractCustom({
-          file: document,
-          selections: customSelections.map(sel => ({
-            type: sel.type,
-            value: sel.value
-          })),
-          outputName: outputName || undefined
+          endPage
         });
       } else {
         throw new Error('Invalid extract mode');
@@ -229,340 +331,355 @@ const ExtractPDF: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      {/* Header */}
-      {/* <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Extract PDF Pages</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Extract specific pages from your PDF documents. Choose individual pages, page ranges, 
-          or create custom selections to get exactly what you need.
-        </p>
-      </div> */}
-
-      {/* File Upload Section */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2>
-        
-        {!document ? (
-          <div
-            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
-              dragActive 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-lg text-gray-600 mb-2">
-              Drag and drop your PDF here, or{' '}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                browse files
-              </button>
-            </p>
-            <p className="text-sm text-gray-500">Maximum file size: 2MB</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileInputChange}
-              className="hidden"
-            />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8 bg-gray">
+          <div className="flex items-center space-x-4 mb-4">
+            <Link
+              to={`/pdf-tools${location.search}`}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg">
+                <FiScissors className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Extract PDF</h1>
+                <p className="text-gray-600">Extract specific pages from your PDF documents</p>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <FiFile className="h-8 w-8 text-red-500" />
-                <div>
-                  <h3 className="font-medium text-gray-900">{document.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {formatFileSize(document.size)} • {pdfInfo?.pages || 'Unknown'} pages
-                  </p>
+        </div>
+
+        {/* Upload Section - Full Width Initially */}
+        {!document && (
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2>
+
+            <div
+              className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+                }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <p className="text-lg text-gray-600 mb-2">
+                Drag and drop your PDF here, or{' '}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  browse files
+                </button>
+              </p>
+              <p className="text-sm text-gray-500">Maximum file size: 2MB</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+        )}
+
+       
+
+        {/* Main Content - Two Pane Layout */}
+        {document && pdfInfo && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Pane - Page Previews */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <FiEye className="w-5 h-5 mr-2" />
+                  Page Preview
+                </h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={selectAllPages}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={clearAllSelections}
+                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                  >
+                    Clear All
+                  </button>
                 </div>
               </div>
+
+              {loadingThumbnails ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-3 text-gray-600">Loading page previews...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                  {Array.from({ length: pdfInfo.pages }, (_, i) => i + 1).map((pageNum) => (
+                    <div
+                      key={pageNum}
+                      className={`relative cursor-pointer rounded-lg border-2 transition-all ${selectedPages.has(pageNum)
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      onClick={() => togglePageSelection(pageNum)}
+                    >
+                      <div className="aspect-[3/4] bg-white rounded-lg shadow-sm flex items-center justify-center">
+                        {pageThumbnails[pageNum - 1] ? (
+                          <img
+                            src={pageThumbnails[pageNum - 1]}
+                            alt={`Page ${pageNum}`}
+                            className="w-full h-full object-contain rounded-lg"
+                          />
+                        ) : (
+                          <div className="text-center text-gray-400">
+                            <FiFile className="w-8 h-8 mx-auto mb-2" />
+                            <span className="text-sm">Page {pageNum}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute top-2 left-2">
+                        {selectedPages.has(pageNum) && (
+                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <FiCheck className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                        <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+                          {pageNum}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Pane - Extract Options */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Extract Options</h3>
+                <button
+                  onClick={removeDocument}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center"
+                >
+                  <FiX className="w-4 h-4 mr-1" />
+                  Remove File
+                </button>
+              </div>
+
+              {/* Extract Mode Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Split Modes
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'range', label: 'Range', icon: '📄', desc: 'Page range' },
+                    { value: 'pages', label: 'Pages', icon: '📑', desc: 'Select pages', pro: false }
+                  ].map((mode) => (
+                    <button
+                      key={mode.value}
+                      onClick={() => setExtractMode(mode.value as any)}
+                      className={`relative p-3 rounded-lg border-2 text-center transition-all ${extractMode === mode.value
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      {mode.pro && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+                          <span className="text-xs">👑</span>
+                        </div>
+                      )}
+                      <div className="text-2xl mb-1">{mode.icon}</div>
+                      <div className="text-sm font-medium text-gray-900">{mode.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Extract Mode */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Extract mode:
+                </label>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setExtractMode('pages')}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${extractMode === 'pages'
+                        ? 'border-red-500 bg-red-50 text-red-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                  >
+                    Select pages
+                  </button>
+                  <button
+                    onClick={() => setExtractMode('range')}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${extractMode === 'range'
+                        ? 'border-red-500 bg-red-50 text-red-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                  >
+                    Extract all pages
+                  </button>
+                </div>
+              </div>
+
+              {/* Pages to Extract */}
+              {extractMode === 'pages' && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pages to extract:
+                  </label>
+                  <input
+                    type="text"
+                    value={Array.from(selectedPages).sort((a, b) => a - b).join(', ')}
+                    onChange={(e) => setPageNumbers(e.target.value)}
+                    placeholder="e.g., 1, 3, 5-7, 10"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    {selectedPages.size > 0
+                      ? `${selectedPages.size} page(s) selected`
+                      : 'Click on page previews to select pages'
+                    }
+                  </p>
+                </div>
+              )}
+
+              {/* Range Mode */}
+              {extractMode === 'range' && (
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Page
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={pdfInfo.pages}
+                      value={startPage}
+                      onChange={(e) => setStartPage(parseInt(e.target.value) || 1)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End Page
+                    </label>
+                    <input
+                      type="number"
+                      min={startPage}
+                      max={pdfInfo.pages}
+                      value={endPage}
+                      onChange={(e) => setEndPage(parseInt(e.target.value) || startPage)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Merge Checkbox */}
+              <div className="mb-6">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Merge extracted pages into one PDF file.
+                  </span>
+                </label>
+              </div>
+
+              {/* Extract Button */}
               <button
-                onClick={removeDocument}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={handleExtract}
+                disabled={extracting || (extractMode === 'pages' && selectedPages.size === 0)}
+                className="w-full bg-red-600 text-white py-3 px-6 rounded-lg font-medium text-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
-                <FiTrash2 className="h-5 w-5" />
+                {extracting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    Extracting...
+                  </>
+                ) : (
+                  <>
+                    <FiScissors className="h-5 w-5 mr-3" />
+                    Extract PDF
+                  </>
+                )}
               </button>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Extract Options Section */}
-      {document && pdfInfo && (
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Extract Options</h2>
-          
-          {/* Extract Mode Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Extraction Method
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { value: 'pages', label: 'Specific Pages', desc: 'Extract individual pages' },
-                { value: 'range', label: 'Page Range', desc: 'Extract consecutive pages' },
-                { value: 'custom', label: 'Custom Selection', desc: 'Mix of pages and ranges' }
-              ].map((mode) => (
-                <button
-                  key={mode.value}
-                  onClick={() => setExtractMode(mode.value as any)}
-                  className={`p-4 rounded-lg border-2 text-left transition-all ${
-                    extractMode === mode.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="font-medium text-gray-900">{mode.label}</div>
-                  <div className="text-sm text-gray-500">{mode.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Results Section */}
+        {extractResult && (
+          <div className="mt-8">
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Extraction Results</h2>
 
-          {/* Mode-specific inputs */}
-          {extractMode === 'pages' && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Page Numbers
-              </label>
-              <input
-                type="text"
-                value={pageNumbers}
-                onChange={(e) => setPageNumbers(e.target.value)}
-                placeholder="e.g., 1, 3, 5-7, 10"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <p className="text-sm text-gray-500 mt-2">
-                Enter page numbers separated by commas. Use ranges like "5-7" for consecutive pages. Examples: "1,3,5" or "1-3,7-9" or "1,3-5,8".
-              </p>
-            </div>
-          )}
-
-          {extractMode === 'range' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Page
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={pdfInfo.pages}
-                  value={startPage}
-                  onChange={(e) => setStartPage(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Page
-                </label>
-                <input
-                  type="number"
-                  min={startPage}
-                  max={pdfInfo.pages}
-                  value={endPage}
-                  onChange={(e) => setEndPage(parseInt(e.target.value) || startPage)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          )}
-
-          {extractMode === 'custom' && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Custom Selections
-                </label>
-                <button
-                  onClick={addCustomSelection}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <FiPlus className="h-4 w-4 mr-2" />
-                  Add Selection
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {customSelections.map((selection) => (
-                  <div key={selection.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center space-x-4">
-                      <select
-                        value={selection.type}
-                        onChange={(e) => updateCustomSelection(selection.id, 'type', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="page">Single Page</option>
-                        <option value="range">Page Range</option>
-                      </select>
-                      
-                      {selection.type === 'page' ? (
-                        <input
-                          type="number"
-                          min="1"
-                          max={pdfInfo.pages}
-                          value={selection.value as number}
-                          onChange={(e) => updateCustomSelection(selection.id, 'value', parseInt(e.target.value) || 1)}
-                          className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Page number"
-                        />
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="number"
-                            min="1"
-                            max={pdfInfo.pages}
-                            value={typeof selection.value === 'object' ? (selection.value as any).start || 1 : 1}
-                            onChange={(e) => {
-                              const currentValue = typeof selection.value === 'object' ? selection.value as any : { start: 1, end: 1 };
-                              updateCustomSelection(selection.id, 'value', {
-                                ...currentValue,
-                                start: parseInt(e.target.value) || 1
-                              });
-                            }}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-20"
-                            placeholder="Start"
-                          />
-                          <span className="text-gray-500">to</span>
-                          <input
-                            type="number"
-                            min="1"
-                            max={pdfInfo.pages}
-                            value={typeof selection.value === 'object' ? (selection.value as any).end || 1 : 1}
-                            onChange={(e) => {
-                              const currentValue = typeof selection.value === 'object' ? selection.value as any : { start: 1, end: 1 };
-                              updateCustomSelection(selection.id, 'value', {
-                                ...currentValue,
-                                end: parseInt(e.target.value) || 1
-                              });
-                            }}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-20"
-                            placeholder="End"
-                          />
-                        </div>
-                      )}
-                      
-                      <input
-                        type="text"
-                        value={selection.name || ''}
-                        onChange={(e) => updateCustomSelection(selection.id, 'name', e.target.value)}
-                        placeholder="Selection name (optional)"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      
-                      <button
-                        onClick={() => removeCustomSelection(selection.id)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                      >
-                        <FiX className="h-5 w-5" />
-                      </button>
-                    </div>
+              {extractResult.success ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <FiScissors className="h-6 w-6 text-green-600" />
+                    <h3 className="text-lg font-medium text-green-800">
+                      {extractResult.message}
+                    </h3>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Output Name */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Output File Name (Optional)
-            </label>
-            <input
-              type="text"
-              value={outputName}
-              onChange={(e) => setOutputName(e.target.value)}
-              placeholder="e.g., extracted_pages"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-sm text-gray-500 mt-2">
-              Leave empty to use auto-generated names
-            </p>
-          </div>
-
-          {/* Extract Button */}
-          <button
-            onClick={handleExtract}
-            disabled={extracting}
-            className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-          >
-            {extracting ? (
-              <>
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                Extracting Pages...
-              </>
-            ) : (
-              <>
-                <FiScissors className="h-6 w-6 mr-3" />
-                Extract PDF Pages
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* Results Section */}
-      {extractResult && (
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Extraction Results</h2>
-          
-          {extractResult.success ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <FiScissors className="h-6 w-6 text-green-600" />
-                <h3 className="text-lg font-medium text-green-800">
-                  {extractResult.message}
-                </h3>
-              </div>
-              
-              {extractResult.file && (
-                <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <FiFile className="h-8 w-8 text-red-500" />
-                      <div>
-                        <h4 className="font-medium text-gray-900">{extractResult.file.filename}</h4>
-                        <p className="text-sm text-gray-500">
-                          {formatFileSize(extractResult.file.size)}
-                        </p>
+                  {extractResult.file && (
+                    <div className="bg-white rounded-lg p-4 border border-green-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <FiFile className="h-8 w-8 text-red-500" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">{extractResult.file.filename}</h4>
+                            <p className="text-sm text-gray-500">
+                              {formatFileSize(extractResult.file.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleDownload}
+                          className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <FiDownload className="h-4 w-4 mr-2" />
+                          Download
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={handleDownload}
-                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <FiDownload className="h-4 w-4 mr-2" />
-                      Download
-                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                  <div className="flex items-center space-x-3">
+                    <FiX className="h-6 w-6 text-red-600" />
+                    <h3 className="text-lg font-medium text-red-800">
+                      Extraction Failed
+                    </h3>
                   </div>
+                  <p className="text-red-700 mt-2">{extractResult.error}</p>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <div className="flex items-center space-x-3">
-                <FiX className="h-6 w-6 text-red-600" />
-                <h3 className="text-lg font-medium text-red-800">
-                  Extraction Failed
-                </h3>
-              </div>
-              <p className="text-red-700 mt-2">{extractResult.error}</p>
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -163,6 +163,9 @@ const advancedPdfEditorController = {
           const key = `${edit.pageNumber}-${edit.position.x}-${edit.position.y}`;
           editMap.set(key, edit); // Keep only the latest edit for each position
         } else {
+          if (edit.type === 'addShape') {
+            console.log('Found addShape operation:', edit.shapeType);
+          }
           optimizedEdits.push(edit); // Keep non-text edits as-is
         }
       }
@@ -190,8 +193,8 @@ const advancedPdfEditorController = {
       }
       console.log('Input file exists:', inputPath);
 
-      // Use precise text editor script
-      const scriptPath = path.join(__dirname, '..', 'scripts', 'precise_text_editor.py');
+      // Use enhanced PDF editor script that supports shapes
+      const scriptPath = path.join(__dirname, '..', 'scripts', 'enhanced_pdf_editor.py');
       
       console.log('Checking if Python script exists...');
       // Check if script exists
@@ -202,9 +205,8 @@ const advancedPdfEditorController = {
       console.log('Python script exists:', scriptPath);
       
       // Write edits to a temporary file to avoid command line argument issues
-      // Use system temp directory to avoid nodemon watching
       const tempDir = os.tmpdir();
-      tempEditsFile = path.join(tempDir, `pdf-edits-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.json`);
+      const tempEditsFile = path.join(tempDir, `pdf-edits-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.json`);
       console.log('Creating temporary edits file:', tempEditsFile);
       await fs.writeFile(tempEditsFile, JSON.stringify(optimizedEdits, null, 2));
       console.log('Temporary edits file created successfully');
@@ -282,15 +284,17 @@ const advancedPdfEditorController = {
       console.error('Edit application error:', error);
       console.error('Error stack:', error.stack);
       
-      // Clean up any temporary files that might have been created
-      try {
-        if (tempEditsFile && await fs.pathExists(tempEditsFile)) {
+      // Clean up temporary file if it exists
+      if (tempEditsFile && await fs.pathExists(tempEditsFile)) {
+        try {
+          console.log('Cleaning up temporary file in error handler...');
           await fs.remove(tempEditsFile);
           console.log('Temporary file cleaned up in error handler');
+        } catch (cleanupError) {
+          console.warn('Failed to clean up temp file in error handler:', cleanupError.message);
         }
-      } catch (cleanupError) {
-        console.warn('Failed to clean up temp file in error handler:', cleanupError.message);
       }
+      
       
       // Ensure response is sent even if there's an error
       if (!res.headersSent) {

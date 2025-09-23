@@ -36,7 +36,7 @@ export interface PdfInfo {
 }
 
 export interface EditOperation {
-  type: 'replaceText' | 'addText' | 'addImage' | 'addShape' | 'highlight' | 'updateTextBlocks';
+  type: 'replaceText' | 'addText' | 'addImage' | 'addShape' | 'highlight' | 'updateTextBlocks' | 'switchTool' | 'updateAddTextPosition' | 'updateShapes';
   pageNumber: number;
   position: {
     x: number;
@@ -49,8 +49,12 @@ export interface EditOperation {
   text?: string;
   imageData?: string;
   textBlocks?: TextBlock[];
+  shapes?: any[];
   shapeType?: string;
+  shapeId?: string; // Added for tracking shape operations
   points?: Array<{ x: number; y: number }>;
+  tool?: string;
+  textBlockId?: string;
   style?: {
     fontSize?: number;
     fontFamily?: string;

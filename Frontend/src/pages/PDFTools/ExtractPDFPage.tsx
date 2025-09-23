@@ -2,36 +2,17 @@ import React, { useState } from 'react';
 import ExtractPDF from '../../components/PDFService/ExtractPDF';
 import type { ExtractPDFResponse } from '../../types/extractPDF';
 import { FiDownload, FiX } from 'react-icons/fi';
-import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+// import { Link, useLocation } from 'react-router-dom';
+// import { ArrowLeft } from 'lucide-react';
 
 const ExtractPDFPage: React.FC = () => {
   const [extractResult, setExtractResult] = useState<ExtractPDFResponse | null>(null);
- const location = useLocation();
+//  const location = useLocation();
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-             <Link
-                  to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Extract PDF Pages</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Extract specific pages from your PDF documents with precision and ease
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">   
 
       {/* Main Content */}
-      <div className="py-8">
+      <div className="">
         <ExtractPDF />
       </div>
 
