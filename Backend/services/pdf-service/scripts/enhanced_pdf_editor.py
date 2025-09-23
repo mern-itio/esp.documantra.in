@@ -9,10 +9,27 @@ import json
 import base64
 import os
 import sys
+import math
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
 import tempfile
+
+def hex_to_rgb(hex_color):
+    """Convert hex color to RGB tuple (0-1 range)"""
+    hex_color = hex_color.lstrip('#')
+    if len(hex_color) == 6:
+        r = int(hex_color[0:2], 16) / 255.0
+        g = int(hex_color[2:4], 16) / 255.0
+        b = int(hex_color[4:6], 16) / 255.0
+        return (r, g, b)
+    elif len(hex_color) == 3:
+        r = int(hex_color[0:1] * 2, 16) / 255.0
+        g = int(hex_color[1:2] * 2, 16) / 255.0
+        b = int(hex_color[2:3] * 2, 16) / 255.0
+        return (r, g, b)
+    else:
+        return (0, 0, 0)  # Default to black
 
 class EnhancedPDFEditor:
     def __init__(self, input_path):
@@ -24,9 +41,6 @@ class EnhancedPDFEditor:
         try:
             page = self.doc[page_num - 1]
             
-            # Create text rectangle
-            rect = fitz.Rect(x, y, x + width, y + height)
-            
             # Set font properties
             font_size = style.get('fontSize', 12)
             font_family = style.get('fontFamily', 'helv')
@@ -36,21 +50,48 @@ class EnhancedPDFEditor:
             if isinstance(color, str) and color.startswith('#'):
                 color = self.hex_to_rgb(color)
             
-            # Create text insertion point
-            point = fitz.Point(x, y + font_size)
+            # For replaceText operations, add a white background rectangle to cover old text
+            if hasattr(self, '_is_replace_text') and self._is_replace_text:
+                # Create rectangle for the text area
+                rect = fitz.Rect(x, y, x + width, y + height)
+                # Add white rectangle to cover old text
+                page.draw_rect(rect, color=(1, 1, 1), fill=(1, 1, 1))
             
-            # Insert text
-            page.insert_text(
-                point,
-                text,
-                fontsize=font_size,
-                color=color,
-                fontname=font_family
-            )
+            # Font fallback - use standard fonts if custom font fails
+            font_fallback = ['helv', 'times', 'courier', 'symbol', 'zapf']
+            if font_family not in font_fallback:
+                font_family = 'helv'  # Use Helvetica as fallback
             
-            return True
+            # Create text insertion point (adjust for baseline)
+            point = fitz.Point(x, y + font_size * 0.8)  # Adjust for font baseline
+            
+            # Insert text with error handling
+            try:
+                page.insert_text(
+                    point,
+                    text,
+                    fontsize=font_size,
+                    color=color,
+                    fontname=font_family
+                )
+                return True
+            except Exception as text_error:
+                # Try with fallback font if original font fails
+                try:
+                    page.insert_text(
+                        point,
+                        text,
+                        fontsize=font_size,
+                        color=color,
+                        fontname='helv'  # Use Helvetica as fallback
+                    )
+                    return True
+                except Exception as fallback_error:
+                    # print(f"Text insertion failed: {text_error}. Fallback also failed: {fallback_error}")
+                    return False
+            
         except Exception as e:
-            print(f"Error adding text element: {e}")
+            # print(f"Error adding text element: {e}")
             return False
     
     def add_drawing_element(self, page_num, element_type, points, style):
@@ -58,22 +99,30 @@ class EnhancedPDFEditor:
         try:
             page = self.doc[page_num - 1]
             
+            # Convert color to RGB format
+            color_hex = style.get('color', '#000000')
+            if isinstance(color_hex, str) and color_hex.startswith('#'):
+                color = hex_to_rgb(color_hex)
+            else:
+                color = (0, 0, 0)  # Default to black
+            
             if element_type == 'pen':
                 # Draw freehand path
                 if len(points) > 1:
-                    path = page.new_path()
-                    path.move_to(points[0]['x'], points[0]['y'])
-                    for point in points[1:]:
-                        path.line_to(point['x'], point['y'])
-                    
-                    page.draw_path(
-                        path,
-                        color=style.get('color', (0, 0, 0)),
-                        width=style.get('strokeWidth', 2),
-                        fill=None
-                    )
+                    # Draw line segments between consecutive points
+                    for i in range(1, len(points)):
+                        start_point = fitz.Point(points[i-1]['x'], points[i-1]['y'])
+                        end_point = fitz.Point(points[i]['x'], points[i]['y'])
+                        
+                        # Draw line segment
+                        page.draw_line(
+                            start_point,
+                            end_point,
+                            color=color,
+                            width=style.get('strokeWidth', 2)
+                        )
             
-            elif element_type == 'rectangle':
+            elif element_type == 'rectangle' or element_type == 'square':
                 if len(points) >= 2:
                     rect = fitz.Rect(
                         min(p['x'] for p in points),
@@ -83,12 +132,12 @@ class EnhancedPDFEditor:
                     )
                     page.draw_rect(
                         rect,
-                        color=style.get('color', (0, 0, 0)),
+                        color=color,
                         width=style.get('strokeWidth', 2),
                         fill=style.get('fillColor', None)
                     )
             
-            elif element_type == 'ellipse':
+            elif element_type == 'ellipse' or element_type == 'circle':
                 if len(points) >= 2:
                     rect = fitz.Rect(
                         min(p['x'] for p in points),
@@ -112,9 +161,28 @@ class EnhancedPDFEditor:
                         width=style.get('strokeWidth', 2)
                     )
             
+            elif element_type == 'pen':
+                # Draw freehand path
+                if len(points) >= 2:
+                    # Create a path from the points
+                    path = fitz.Path()
+                    path.move_to(fitz.Point(points[0]['x'], points[0]['y']))
+                    
+                    # Add line segments for each subsequent point
+                    for i in range(1, len(points)):
+                        path.line_to(fitz.Point(points[i]['x'], points[i]['y']))
+                    
+                    # Draw the path
+                    page.draw_path(
+                        path,
+                        color=style.get('color', (0, 0, 0)),
+                        width=style.get('strokeWidth', 2),
+                        fill=None
+                    )
+            
             return True
         except Exception as e:
-            print(f"Error adding drawing element: {e}")
+            # print(f"Error adding drawing element: {e}")
             return False
     
     def add_image_element(self, page_num, image_data, x, y, width, height, rotation=0):
@@ -148,7 +216,7 @@ class EnhancedPDFEditor:
                 os.unlink(temp_path)
                 
         except Exception as e:
-            print(f"Error adding image element: {e}")
+            # print(f"Error adding image element: {e}")
             return False
     
     def add_redaction(self, page_num, x, y, width, height, reason, is_permanent=False):
@@ -167,7 +235,7 @@ class EnhancedPDFEditor:
             
             return True
         except Exception as e:
-            print(f"Error adding redaction: {e}")
+            # print(f"Error adding redaction: {e}")
             return False
     
     def add_highlight(self, page_num, x, y, width, height, text, highlight_type='highlight', style=None):
@@ -199,7 +267,7 @@ class EnhancedPDFEditor:
             annot.update()
             return True
         except Exception as e:
-            print(f"Error adding highlight: {e}")
+            # print(f"Error adding highlight: {e}")
             return False
     
     def add_comment(self, page_num, x, y, width, height, comment, style=None):
@@ -222,7 +290,7 @@ class EnhancedPDFEditor:
             annot.update()
             return True
         except Exception as e:
-            print(f"Error adding comment: {e}")
+            # print(f"Error adding comment: {e}")
             return False
     
     def hex_to_rgb(self, hex_color):
@@ -248,7 +316,7 @@ class EnhancedPDFEditor:
             
             return True
         except Exception as e:
-            print(f"Error saving document: {e}")
+            # print(f"Error saving document: {e}")
             return False
     
     def close(self):
@@ -275,12 +343,102 @@ def process_pdf_edits(input_path, edits, output_path):
                     edit.get('style', {})
                 )
             
+            elif edit_type == 'addText':
+                # Handle addText operations from frontend
+                editor.add_text_element(
+                    page_num,
+                    edit.get('text', ''),
+                    edit.get('position', {}).get('x', 0),
+                    edit.get('position', {}).get('y', 0),
+                    edit.get('position', {}).get('width', 100),
+                    edit.get('position', {}).get('height', 20),
+                    edit.get('style', {})
+                )
+            
+            elif edit_type == 'replaceText':
+                # Handle replaceText operations from frontend
+                # Set flag to indicate this is a replaceText operation
+                editor._is_replace_text = True
+                editor.add_text_element(
+                    page_num,
+                    edit.get('newText', ''),
+                    edit.get('position', {}).get('x', 0),
+                    edit.get('position', {}).get('y', 0),
+                    edit.get('position', {}).get('width', 100),
+                    edit.get('position', {}).get('height', 20),
+                    edit.get('style', {})
+                )
+                # Reset flag
+                editor._is_replace_text = False
+            
             elif edit_type == 'pen' or edit_type == 'shape':
                 editor.add_drawing_element(
                     page_num,
                     edit_type,
                     edit.get('points', []),
                     edit.get('style', {})
+                )
+            
+            elif edit_type == 'addShape':
+                # Handle addShape operations from frontend
+                shape_type = edit.get('shapeType', 'square')
+                style = edit.get('style', {})
+                
+                # For pen drawings, skip position calculation
+                if shape_type == 'pen':
+                    points = edit.get('points', [])
+                else:
+                    # For other shapes, calculate position
+                    position = edit.get('position', {})
+                    x = position.get('x', 0)
+                    y = position.get('y', 0)
+                    width = position.get('width', 50)
+                    height = position.get('height', 50)
+                
+                
+                # Create points based on shape type (only for non-pen shapes)
+                if shape_type != 'pen':
+                    if shape_type == 'square' or shape_type == 'rectangle':
+                        points = [
+                            {'x': x, 'y': y},
+                            {'x': x + width, 'y': y},
+                            {'x': x + width, 'y': y + height},
+                            {'x': x, 'y': y + height},
+                            {'x': x, 'y': y}  # Close the rectangle
+                        ]
+                    elif shape_type == 'circle':
+                        # For circle, create points around the circumference
+                        center_x = x + width / 2
+                        center_y = y + height / 2
+                        radius = min(width, height) / 2
+                        points = []
+                        for i in range(0, 360, 10):
+                            angle = math.radians(i)
+                            px = center_x + radius * math.cos(angle)
+                            py = center_y + radius * math.sin(angle)
+                            points.append({'x': px, 'y': py})
+                    elif shape_type == 'line':
+                        points = [
+                            {'x': x, 'y': y},
+                            {'x': x + width, 'y': y + height}
+                        ]
+                    else:
+                        # Default to rectangle
+                        points = [
+                            {'x': x, 'y': y},
+                            {'x': x + width, 'y': y},
+                            {'x': x + width, 'y': y + height},
+                            {'x': x, 'y': y + height},
+                            {'x': x, 'y': y}
+                        ]
+                
+                # For pen drawings, use 'pen' as element_type, otherwise use shape_type
+                element_type = 'pen' if shape_type == 'pen' else shape_type
+                editor.add_drawing_element(
+                    page_num,
+                    element_type,
+                    points,
+                    style
                 )
             
             elif edit_type == 'image':
@@ -351,11 +509,14 @@ if __name__ == "__main__":
         sys.exit(1)
     
     input_path = sys.argv[1]
-    edits_json = sys.argv[2]
+    edits_file = sys.argv[2]
     output_path = sys.argv[3]
     
     try:
-        edits = json.loads(edits_json)
+        # Read edits from file
+        with open(edits_file, 'r') as f:
+            edits = json.load(f)
+        
         result = process_pdf_edits(input_path, edits, output_path)
         print(json.dumps(result))
     except Exception as e:

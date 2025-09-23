@@ -5,7 +5,6 @@ import {
   Upload,
   Download,
   Play,
-  FileText,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -13,10 +12,12 @@ import {
   FileText as FileTextIcon
 } from 'lucide-react';
 import { pdfService } from '../../services/pdfService';
+import { FileUploadStatus } from '../../components/common/FileUploadStatus';
 
 export const TextToPdf: React.FC = () => {
    const location = useLocation();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadTimes, setUploadTimes] = useState<Date[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [results, setResults] = useState<Array<{ 
@@ -53,24 +54,28 @@ export const TextToPdf: React.FC = () => {
 
  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
   const files = Array.from(event.target.files || []);
-  // Allow only PDF files
+  // Allow only text files
   const textFiles = files.filter(
-    (file) => file.type === "application/txt" || file.name.toLowerCase().endsWith(".txt")
+    (file) => file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt")
   );
   if (textFiles.length > 0) {
+    const now = new Date();
     setUploadedFiles((prev) => [...prev, ...textFiles]);
+    setUploadTimes((prev) => [...prev, ...textFiles.map(() => now)]);
   }
 };
 
 const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
   event.preventDefault();
   const files = Array.from(event.dataTransfer.files);
-  // Allow only PDF files
+  // Allow only text files
    const textFiles = files.filter(
-    (file) => file.type === "application/txt" || file.name.toLowerCase().endsWith(".txt")
+    (file) => file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt")
   );
   if (textFiles.length > 0) {
+    const now = new Date();
     setUploadedFiles((prev) => [...prev, ...textFiles]);
+    setUploadTimes((prev) => [...prev, ...textFiles.map(() => now)]);
   }
 };
 
@@ -81,7 +86,13 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
 
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadTimes(prev => prev.filter((_, i) => i !== index));
   };
+
+  const handleAddMoreFiles = () => {
+    fileInputRef.current?.click();
+  };
+
 
   const processFiles = async () => {
     if (uploadedFiles.length === 0) return;
@@ -214,61 +225,50 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Files</h3>
 
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
-            >
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-lg font-medium text-gray-900 mb-2">
-                Drop Text files here or click to upload
-              </p>
-              <p className="text-gray-600 mb-4">
-                Supports: {toolInfo.inputFormats?.join(', ') || 'PPT files'}
-              </p>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            {/* Show upload area only when no files are uploaded */}
+            {uploadedFiles.length === 0 && (
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
               >
-                Choose Files
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept=".txt"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </div>
-
-            {/* Uploaded Files */}
-            {uploadedFiles.length > 0 && (
-              <div className="mt-6">
-                <h4 className="font-medium text-gray-900 mb-3">
-                  Uploaded Files ({uploadedFiles.length})
-                </h4>
-                <div className="space-y-2">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="w-5 h-5 text-gray-500" />
-                        <div>
-                          <p className="font-medium text-gray-900">{file.name}</p>
-                          <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeFile(index)}
-                        className="text-red-500 hover:text-red-700 font-medium text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-900 mb-2">
+                  Drop Text files here or click to upload
+                </p>
+                <p className="text-gray-600 mb-4">
+                  Supports: {toolInfo.inputFormats?.join(', ') || 'Text files'}
+                </p>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Choose Files
+                </button>
               </div>
             )}
+
+            {/* Show file upload status when files are uploaded */}
+            {uploadedFiles.length > 0 && (
+              <FileUploadStatus
+                files={uploadedFiles}
+                uploadTimes={uploadTimes}
+                onRemoveFile={removeFile}
+                onAddMoreFiles={handleAddMoreFiles}
+                acceptedFormats={['txt']}
+                maxFiles={10}
+              />
+            )}
+
+            {/* Single file input for all uploads */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".txt"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
           </div>
 
           {/* Processing */}

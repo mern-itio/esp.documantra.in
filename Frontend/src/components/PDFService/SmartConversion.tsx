@@ -5,7 +5,6 @@ import {
   Settings, 
   CheckCircle, 
   AlertCircle, 
-  FileDown, 
   ArrowLeft,
   Brain,
   Target,
@@ -31,8 +30,6 @@ import { smartConversionService } from '../../services/smartConversionService';
 import type { 
   SmartConversionRequest, 
   SmartConversionResponse,
-  BatchSmartConversionRequest,
-  BatchSmartConversionResponse,
   FormatAnalysis,
   ConversionPreset,
   ConversionProgress
@@ -42,14 +39,10 @@ import { Link } from 'react-router-dom';
 
 const SmartConversion: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
-  const [isBatchConverting, setIsBatchConverting] = useState(false);
   const [result, setResult] = useState<SmartConversionResponse | null>(null);
-  const [batchResult, setBatchResult] = useState<BatchSmartConversionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single');
   const [activeMode, setActiveMode] = useState<'presets' | 'custom' | 'smart'>('smart');
   const [selectedPreset, setSelectedPreset] = useState<ConversionPreset | null>(null);
   const [formatAnalysis, setFormatAnalysis] = useState<FormatAnalysis | null>(null);
@@ -72,7 +65,6 @@ const SmartConversion: React.FC = () => {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const batchFileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-analyze file when selected
   useEffect(() => {
@@ -96,32 +88,6 @@ const SmartConversion: React.FC = () => {
     }
   };
 
-  const handleBatchFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const validFiles: File[] = [];
-    const errors: string[] = [];
-
-    files.forEach(file => {
-      const validation = smartConversionService.validateFile(file);
-      if (validation.valid) {
-        validFiles.push(file);
-      } else {
-        errors.push(`${file.name}: ${validation.error}`);
-      }
-    });
-
-    if (validFiles.length > 0) {
-      setSelectedFiles(validFiles);
-      setError(null);
-      setBatchResult(null);
-    } else {
-      setError('No valid files selected');
-    }
-
-    if (errors.length > 0) {
-      setError(errors.join(', '));
-    }
-  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -139,45 +105,19 @@ const SmartConversion: React.FC = () => {
     setDragActive(false);
 
     const files = Array.from(e.dataTransfer.files);
-    if (activeTab === 'single') {
-      const file = files[0];
-      if (file) {
-        const validation = smartConversionService.validateFile(file);
-        if (validation.valid) {
-          setSelectedFile(file);
-          setError(null);
-          setResult(null);
-          setFormatAnalysis(null);
-        } else {
-          setError(validation.error || 'Invalid file');
-        }
-      }
-    } else {
-      const validFiles: File[] = [];
-      const errors: string[] = [];
-
-      files.forEach(file => {
-        const validation = smartConversionService.validateFile(file);
-        if (validation.valid) {
-          validFiles.push(file);
-        } else {
-          errors.push(`${file.name}: ${validation.error}`);
-        }
-      });
-
-      if (validFiles.length > 0) {
-        setSelectedFiles(validFiles);
+    const file = files[0];
+    if (file) {
+      const validation = smartConversionService.validateFile(file);
+      if (validation.valid) {
+        setSelectedFile(file);
         setError(null);
-        setBatchResult(null);
+        setResult(null);
+        setFormatAnalysis(null);
       } else {
-        setError('No valid files selected');
-      }
-
-      if (errors.length > 0) {
-        setError(errors.join(', '));
+        setError(validation.error || 'Invalid file');
       }
     }
-  }, [activeTab]);
+  }, []);
 
   const analyzeFile = async () => {
     if (!selectedFile) return;
@@ -235,40 +175,6 @@ const SmartConversion: React.FC = () => {
     }
   };
 
-  const handleBatchConvert = async () => {
-    if (selectedFiles.length === 0) return;
-
-    setIsBatchConverting(true);
-    setError(null);
-    setConversionProgress({
-      fileIndex: 0,
-      totalFiles: selectedFiles.length,
-      currentFile: selectedFiles[0].name,
-      progress: 0,
-      status: 'converting',
-      message: 'Starting batch conversion...'
-    });
-
-    try {
-      const request: BatchSmartConversionRequest = {
-        files: selectedFiles,
-        targetFormat: targetFormat as any,
-        qualityLevel,
-        preserveLayout,
-        optimizeForWeb,
-        customSettings: selectedPreset ? selectedPreset.customSettings : customSettings
-      };
-
-      const response = await smartConversionService.batchSmartConvert(request);
-      setBatchResult(response);
-      setConversionProgress(null);
-    } catch (error: any) {
-      setError(error.message);
-      setConversionProgress(null);
-    } finally {
-      setIsBatchConverting(false);
-    }
-  };
 
   const handleDownload = async (filename: string, originalName: string) => {
     try {
@@ -333,43 +239,14 @@ const SmartConversion: React.FC = () => {
           </div>
         </div>
 
-        {/* Mode Tabs */}
-        <div className="mb-6">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setActiveTab('single')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'single'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <FileText className="w-4 h-4 inline mr-2" />
-              Single File
-            </button>
-            <button
-              onClick={() => setActiveTab('batch')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'batch'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <FileDown className="w-4 h-4 inline mr-2" />
-              Batch Convert
-            </button>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - File Upload & Settings */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* File Upload */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Upload className="w-5 h-5 mr-2" />
-                {activeTab === 'single' ? 'Upload File' : 'Upload Files'}
-              </h3>
+        {/* Upload Section - Full Width Initially */}
+        {!selectedFile && (
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Upload className="w-5 h-5 mr-2" />
+              Upload File
+            </h3>
               
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -382,99 +259,45 @@ const SmartConversion: React.FC = () => {
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
-                {activeTab === 'single' ? (
-                  <>
-                    {selectedFile ? (
-                      <div className="space-y-3">
-                        {getFileIcon(selectedFile.name)}
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {smartConversionService.formatFileSize(selectedFile.size)}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedFile(null);
-                            setFormatAnalysis(null);
-                            setResult(null);
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Upload className="w-12 h-12 text-gray-400 mx-auto" />
-                        <div>
-                          <p className="text-sm text-gray-600">
-                            Drag and drop your file here, or{' '}
-                            <button
-                              onClick={() => fileInputRef.current?.click()}
-                              className="text-blue-600 hover:text-blue-500 font-medium"
-                            >
-                              browse
-                            </button>
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Supports PDF, Word, Excel, PowerPoint, Images, and more
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                {selectedFile ? (
+                  <div className="space-y-3">
+                    {getFileIcon((selectedFile as File).name)}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{(selectedFile as File).name}</p>
+                      <p className="text-xs text-gray-500">
+                        {smartConversionService.formatFileSize((selectedFile as File).size)}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setFormatAnalysis(null);
+                        setResult(null);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 ) : (
-                  <>
-                    {selectedFiles.length > 0 ? (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                          {selectedFiles.map((file, index) => (
-                            <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                              {getFileIcon(file.name)}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-900 truncate">
-                                  {file.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {smartConversionService.formatFileSize(file.size)}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedFiles([]);
-                            setBatchResult(null);
-                          }}
+                  <div className="space-y-3">
+                    <Upload className="w-12 h-12 text-gray-400 mx-auto" />
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        Drag and drop your file here, or{' '}
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-blue-600 hover:text-blue-500 font-medium"
                         >
-                          Clear All
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Upload className="w-12 h-12 text-gray-400 mx-auto" />
-                        <div>
-                          <p className="text-sm text-gray-600">
-                            Drag and drop your files here, or{' '}
-                            <button
-                              onClick={() => batchFileInputRef.current?.click()}
-                              className="text-blue-600 hover:text-blue-500 font-medium"
-                            >
-                              browse
-                            </button>
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Select up to 10 files for batch conversion
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                          browse
+                        </button>
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Supports PDF, Word, Excel, PowerPoint, Images, and more
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -485,23 +308,50 @@ const SmartConversion: React.FC = () => {
                 onChange={handleFileSelect}
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.svg,.eps,.ai"
               />
-              <input
-                ref={batchFileInputRef}
-                type="file"
-                className="hidden"
-                multiple
-                onChange={handleBatchFileSelect}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.svg,.eps,.ai"
-              />
             </Card>
+        )}
 
-            {/* Format Analysis */}
-            {formatAnalysis && (
+        {/* File Info + Settings Layout - After Upload, Before Conversion */}
+        {selectedFile && !result && !error && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* File Info */}
+            <div>
               <Card className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Eye className="w-5 h-5 mr-2" />
-                  Format Analysis
+                  <FileText className="w-5 h-5 mr-2" />
+                  File Information
                 </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    {getFileIcon(selectedFile.name)}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {smartConversionService.formatFileSize(selectedFile!.size)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setFormatAnalysis(null);
+                      setResult(null);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Format Analysis */}
+              {formatAnalysis && (
+                <Card className="p-6 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Eye className="w-5 h-5 mr-2" />
+                    Format Analysis
+                  </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Detected Format:</span>
@@ -547,9 +397,11 @@ const SmartConversion: React.FC = () => {
                 </div>
               </Card>
             )}
+            </div>
 
-            {/* Conversion Settings */}
-            <Card className="p-6">
+            {/* Settings Column */}
+            <div>
+              <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <Settings className="w-5 h-5 mr-2" />
                 Conversion Settings
@@ -696,54 +548,60 @@ const SmartConversion: React.FC = () => {
 
               {/* Convert Button */}
               <div className="mt-6">
-                {activeTab === 'single' ? (
-                  <Button
-                    onClick={handleConvert}
-                    disabled={!selectedFile || isConverting || isAnalyzing}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  >
-                    {isConverting ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Converting...
-                      </>
-                    ) : isAnalyzing ? (
-                      <>
-                        <Brain className="w-4 h-4 mr-2 animate-pulse" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        Smart Convert
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleBatchConvert}
-                    disabled={selectedFiles.length === 0 || isBatchConverting}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  >
-                    {isBatchConverting ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Converting {selectedFiles.length} files...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        Batch Convert ({selectedFiles.length} files)
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button
+                  onClick={handleConvert}
+                  disabled={!selectedFile || isConverting || isAnalyzing}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
+                  {isConverting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Converting...
+                    </>
+                  ) : isAnalyzing ? (
+                    <>
+                      <Brain className="w-4 h-4 mr-2 animate-pulse" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Smart Convert
+                    </>
+                  )}
+                </Button>
               </div>
-            </Card>
+              </Card>
+            </div>
           </div>
+        )}
 
-          {/* Right Column - Results */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* Results Section - After Conversion */}
+        {(result || error) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* File Info */}
+            <div>
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  File Information
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    {getFileIcon(selectedFile!.name)}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{selectedFile!.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {smartConversionService.formatFileSize(selectedFile!.size)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Results */}
+            <div className="space-y-6">
             {/* Progress */}
             {conversionProgress && (
               <Card className="p-6">
@@ -842,76 +700,8 @@ const SmartConversion: React.FC = () => {
               </Card>
             )}
 
-            {/* Batch Results */}
-            {batchResult && (
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                  Batch Conversion Complete
-                </h3>
-                
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900">{batchResult.summary.totalFiles}</p>
-                      <p className="text-sm text-gray-600">Total Files</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-green-600">{batchResult.summary.successful}</p>
-                      <p className="text-sm text-gray-600">Successful</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-red-600">{batchResult.summary.failed}</p>
-                      <p className="text-sm text-gray-600">Failed</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {batchResult.results.map((result, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        {getFileIcon(result.originalName)}
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{result.originalName}</p>
-                          <p className="text-xs text-gray-500">
-                            {smartConversionService.formatFileSize(result.originalSize)} → {smartConversionService.formatFileSize(result.convertedSize)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          result.sizeChange < 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {result.sizeChange < 0 ? '-' : '+'}
-                          {Math.abs(parseFloat(result.sizeChangePercent))}%
-                        </span>
-                        <Button
-                          size="sm"
-                          onClick={() => handleDownload(result.outputFilename, result.originalName)}
-                        >
-                          <Download className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {batchResult.errors.length > 0 && (
-                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-red-800 mb-2">Failed Conversions</h4>
-                    {batchResult.errors.map((error, index) => (
-                      <p key={index} className="text-sm text-red-700">
-                        {error.filename}: {error.error}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            )}
-
             {/* Info Card */}
-            {!result && !batchResult && !error && (
+            {!result && !error && (
               <Card className="p-6">
                 <div className="text-center py-8">
                   <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -922,8 +712,9 @@ const SmartConversion: React.FC = () => {
                 </div>
               </Card>
             )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

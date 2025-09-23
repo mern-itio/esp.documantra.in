@@ -12,10 +12,6 @@ import { Card } from '../DocumentService/ui/card';
 import { advancedPdfEditorService, type TextBlock, type PdfInfo } from '../../services/advancedPdfEditorService';
 import type { EditOperation } from '../../types/advancedPdfEditor';
 import { PDFViewer } from './PDFViewer';
-import { TextEditor } from './TextEditor';
-import { DrawingTool } from './DrawingTool';
-import { ImageUploader } from './ImageUploader';
-import { HighlightTool } from './HighlightTool';
 import { Toolbar } from './Toolbar';
 import { PageNavigator } from './PageNavigator';
 import { ZoomControls } from './ZoomControls';
@@ -43,6 +39,12 @@ const AdvancedPDFEditor: React.FC = () => {
     pdfInfo: null,
     fileName: null
   });
+
+  const [shapes, setShapes] = useState<any[]>([]);
+  const [selectedShapeElement, setSelectedShapeElement] = useState<any>(null);
+
+  const [selectedShape, setSelectedShape] = useState<string>('square');
+  const [highlightColor, setHighlightColor] = useState<string>('#ffff00');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,120 @@ const AdvancedPDFEditor: React.FC = () => {
       if (edit.type === 'updateTextBlocks') {
         console.log('Updating text blocks:', edit.textBlocks.length, 'blocks');
         setEditorState(prev => ({ ...prev, textBlocks: edit.textBlocks }));
+        
+        // Don't add drag operations to history or edits
+        if (edit.isDragOperation) {
+          return;
+        }
+        
+        // Only add to history for undo/redo functionality if it's a new text block
+        if (edit.isNewTextBlock) {
+          const newHistory = editHistory.slice(0, historyIndex + 1);
+          newHistory.push(edit);
+          setEditHistory(newHistory);
+          setHistoryIndex(newHistory.length - 1);
+        }
+        return;
+      }
+
+
+      // Handle updateAddTextPosition type
+      if (edit.type === 'updateAddTextPosition') {
+        // Update existing addText operation with new position
+        setEditorState(prev => {
+          const updatedEdits = prev.edits.map(existingEdit => {
+            if (existingEdit.type === 'addText' && existingEdit.textBlockId === edit.textBlockId) {
+              return {
+                ...existingEdit,
+                position: edit.position
+              };
+            }
+            return existingEdit;
+          });
+          
+          return { ...prev, edits: updatedEdits };
+        });
+        return;
+      }
+
+      // Handle switchTool type
+      if (edit.type === 'switchTool') {
+        setEditorState(prev => ({ ...prev, selectedTool: edit.tool as EditorState['selectedTool'] }));
+        return;
+      }
+
+      // Handle addShape operations
+      if (edit.type === 'addShape') {
+        console.log('Adding shape:', edit.shapeType);
+        
+        // Don't add pen drawings to shapes array - they're handled differently
+        if (edit.shapeType !== 'pen') {
+          const shapeId = `shape-${Date.now()}`;
+          const newShape = {
+            id: shapeId,
+            type: edit.shapeType,
+            pageNumber: edit.pageNumber,
+            position: edit.position,
+            style: edit.style
+          };
+          setShapes(prev => [...prev, newShape]);
+          
+          // Add shapeId to the edit operation
+          const editWithShapeId = {
+            ...edit,
+            shapeId: shapeId
+          };
+          
+          setEditorState(prev => {
+            const newEdits = [...prev.edits, editWithShapeId];
+            // Add to history
+            const newHistory = editHistory.slice(0, historyIndex + 1);
+            newHistory.push(editWithShapeId);
+            setEditHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+            return { ...prev, edits: newEdits };
+          });
+        } else {
+          // For pen drawings, just add to edits without adding to shapes array
+          setEditorState(prev => {
+            const newEdits = [...prev.edits, edit];
+            // Add to history
+            const newHistory = editHistory.slice(0, historyIndex + 1);
+            newHistory.push(edit);
+            setEditHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+            return { ...prev, edits: newEdits };
+          });
+        }
+        return;
+      }
+
+      // Handle updateShapes operations
+      if (edit.type === 'updateShapes') {
+        console.log('Updating shapes:', edit.shapes.length, 'shapes');
+        setShapes(edit.shapes);
+        
+        // Also update the corresponding addShape operations in edits array
+        setEditorState(prev => {
+          const updatedEdits = prev.edits.map(existingEdit => {
+            if (existingEdit.type === 'addShape' && existingEdit.shapeId) {
+              // Find the corresponding shape in the updated shapes array
+              const updatedShape = edit.shapes.find((shape: any) => shape.id === existingEdit.shapeId);
+              
+              if (updatedShape) {
+                console.log('Updating edit for shape:', existingEdit.shapeId, 'new position:', updatedShape.position);
+                return {
+                  ...existingEdit,
+                  position: updatedShape.position,
+                  style: updatedShape.style
+                };
+              }
+            }
+            return existingEdit;
+          });
+          
+          return { ...prev, edits: updatedEdits };
+        });
         return;
       }
 
@@ -191,10 +307,21 @@ const AdvancedPDFEditor: React.FC = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
-      setEditorState(prev => ({
-        ...prev,
-        edits: editHistory.slice(0, newIndex + 1)
-      }));
+      
+      // Get the current state from history
+      const currentEdit = editHistory[newIndex];
+      
+      if (currentEdit.type === 'updateTextBlocks') {
+        setEditorState(prev => ({
+          ...prev,
+          textBlocks: currentEdit.textBlocks || []
+        }));
+      } else {
+        setEditorState(prev => ({
+          ...prev,
+          edits: editHistory.slice(0, newIndex + 1)
+        }));
+      }
     }
   };
 
@@ -202,16 +329,70 @@ const AdvancedPDFEditor: React.FC = () => {
     if (historyIndex < editHistory.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
-      setEditorState(prev => ({
-        ...prev,
-        edits: editHistory.slice(0, newIndex + 1)
-      }));
+      
+      // Get the current state from history
+      const currentEdit = editHistory[newIndex];
+      
+      if (currentEdit.type === 'updateTextBlocks') {
+        setEditorState(prev => ({
+          ...prev,
+          textBlocks: currentEdit.textBlocks || []
+        }));
+      } else {
+        setEditorState(prev => ({
+          ...prev,
+          edits: editHistory.slice(0, newIndex + 1)
+        }));
+      }
     }
   };
 
   // Tool selection handlers
   const handleToolSelect = (tool: string) => {
     editorActions.setSelectedTool(tool as EditorState['selectedTool']);
+  };
+
+  // Shape selection handler
+  const handleShapeSelect = (shape: string) => {
+    setSelectedShape(shape);
+  };
+
+  // Shape element selection handler
+  const handleShapeElementSelect = (shape: any) => {
+    setSelectedShapeElement(shape);
+  };
+
+  // Shape color change handler
+  const handleShapeColorChange = (color: string) => {
+    if (selectedShapeElement) {
+      // Update the shape's color in the shapes array
+      const updatedShapes = shapes.map(shape => 
+        shape.id === selectedShapeElement.id 
+          ? { ...shape, style: { ...shape.style, color } }
+          : shape
+      );
+      setShapes(updatedShapes);
+      
+      // Update the corresponding addShape operation in edits array
+      setEditorState(prev => {
+        const updatedEdits = prev.edits.map(edit => {
+          if (edit.type === 'addShape' && edit.shapeId === selectedShapeElement.id) {
+            return {
+              ...edit,
+              style: { ...edit.style, color }
+            };
+          }
+          return edit;
+        });
+        return { ...prev, edits: updatedEdits };
+      });
+      
+      // Update the selected shape element
+      setSelectedShapeElement({
+        ...selectedShapeElement,
+        style: { ...selectedShapeElement.style, color }
+      });
+    }
   };
 
   // Save function
@@ -226,6 +407,10 @@ const AdvancedPDFEditor: React.FC = () => {
     setIsDownloadReady(false);
 
     try {
+      console.log('Sending edits to backend:', editorState.edits);
+      console.log('Number of edits:', editorState.edits.length);
+      console.log('Edit types:', editorState.edits.map(edit => edit.type));
+      
       const result = await advancedPdfEditorService.applyEdits(
         editorState.fileName,
         editorState.edits
@@ -269,49 +454,9 @@ const AdvancedPDFEditor: React.FC = () => {
   // Download function
   const handleDownload = () => {
     if (downloadUrl) {
-      window.open(downloadUrl, '_blank');
+      window.open(downloadUrl);
     }
-  };
-
-  // Render tool content
-  const renderToolContent = () => {
-    switch (editorState.selectedTool) {
-      case 'text':
-        return (
-          <TextEditor
-            currentPage={editorState.currentPage}
-            onAddEdit={editorActions.addEdit}
-            selectedElement={editorState.selectedElement}
-            onElementSelect={editorActions.setSelectedElement}
-          />
-        );
-      case 'pen':
-      case 'shape':
-        return (
-          <DrawingTool
-            currentPage={editorState.currentPage}
-            tool={editorState.selectedTool}
-            onAddEdit={editorActions.addEdit}
-          />
-        );
-      case 'image':
-        return (
-          <ImageUploader
-            currentPage={editorState.currentPage}
-            onAddEdit={editorActions.addEdit}
-          />
-        );
-      case 'highlight':
-        return (
-          <HighlightTool
-            currentPage={editorState.currentPage}
-            onAddEdit={editorActions.addEdit}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  };  
 
   if (!editorState.pdfInfo) {
     return (
@@ -480,12 +625,15 @@ const AdvancedPDFEditor: React.FC = () => {
           <Toolbar
             selectedTool={editorState.selectedTool}
             onToolSelect={handleToolSelect}
+            selectedShape={selectedShape}
+            onShapeSelect={handleShapeSelect}
+            selectedShapeElement={selectedShapeElement}
+            onShapeColorChange={handleShapeColorChange}
+            highlightColor={highlightColor}
+            onHighlightColorChange={setHighlightColor}
           />
 
-          {/* Tool Content */}
-          <div className="flex-1 p-4">
-            {renderToolContent()}
-          </div>
+          
 
           {/* Edit History */}
           <div className="border-t border-gray-200 p-4">
@@ -526,6 +674,11 @@ const AdvancedPDFEditor: React.FC = () => {
               onElementSelect={editorActions.setSelectedElement}
               onAddEdit={editorActions.addEdit}
               selectedTool={editorState.selectedTool}
+              selectedShape={selectedShape}
+              shapes={shapes.filter(shape => shape.pageNumber === editorState.currentPage)}
+              selectedShapeElement={selectedShapeElement}
+              onShapeSelect={handleShapeElementSelect}
+              edits={editorState.edits}
             />
           </div>
         </div>
