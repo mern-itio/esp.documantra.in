@@ -31,6 +31,43 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isEditingFilename, setIsEditingFilename] = useState(false);
+  const [customFilename, setCustomFilename] = useState<string>('');
+  const [stepProgress, setStepProgress] = useState<Array<{id: string, name: string, status: 'pending' | 'running' | 'completed' | 'failed', toolId: string}>>([]);
+
+  // Determine the correct file extension based on the workflow steps
+  const getOutputExtension = (workflow: WorkflowTemplate | null) => {
+    if (!workflow || !workflow.steps || workflow.steps.length === 0) {
+      return 'pdf'; // Default fallback
+    }
+    
+    // Get the last step (final output format)
+    const lastStep = workflow.steps[workflow.steps.length - 1];
+    
+    switch (lastStep.toolId) {
+      case 'pdf-to-word':
+      case 'excel-to-doc':
+      case 'doc-to-excel':
+        return 'docx';
+      case 'pdf-to-excel':
+      case 'excel-to-pdf':
+        return 'xlsx';
+      case 'pdf-to-ppt':
+      case 'ppt-to-pdf':
+        return 'pptx';
+      case 'pdf-to-text':
+      case 'text-to-pdf':
+        return 'txt';
+      case 'pdf-to-html':
+        return 'html';
+      case 'pdf-to-image':
+        return 'png';
+      case 'pdf-to-epub':
+        return 'epub';
+      default:
+        return 'pdf';
+    }
+  };
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -41,12 +78,18 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
       setProcessingStatus('');
       setError(null);
       setLoading(false);
+      setIsEditingFilename(false);
+      setCustomFilename('');
+      setStepProgress([]);
     }
   }, [isOpen]);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
     setCurrentStep('upload');
+    // Initialize custom filename with the original filename (without extension)
+    const baseName = file.name.replace(/\.[^/.]+$/, '');
+    setCustomFilename(`${baseName}_processed`);
   };
 
   const handleStartProcessing = async () => {
@@ -56,9 +99,18 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
       setLoading(true);
       setError(null);
       setCurrentStep('processing');
+      
+      // Initialize step progress
+      const initialStepProgress = workflow.steps.map(step => ({
+        id: step.id,
+        name: step.name,
+        status: 'pending' as const,
+        toolId: step.toolId
+      }));
+      setStepProgress(initialStepProgress);
 
       const response = await workflowExecutionAPI.executeWorkflow(workflow._id, selectedFile, {
-        customName: workflow.name,
+        customName: customFilename || workflow.name,
         customDescription: workflow.description,
         steps: workflow.steps
       });
@@ -87,6 +139,17 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
         if (response.success) {
           const execution = response.data;
           setProcessingStatus(execution.status);
+
+          // Update step progress based on execution steps
+          if (execution.steps && Array.isArray(execution.steps)) {
+            const updatedStepProgress = execution.steps.map((execStep: any) => ({
+              id: execStep.stepId || execStep.id,
+              name: execStep.name,
+              status: execStep.status || 'pending',
+              toolId: execStep.toolId
+            }));
+            setStepProgress(updatedStepProgress);
+          }
 
           if (execution.status === 'completed') {
             clearInterval(pollInterval);
@@ -126,7 +189,8 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'document'}_processed.pdf`;
+      const outputExtension = getOutputExtension(workflow);
+      link.download = `${customFilename || selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'document'}_processed.${outputExtension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -142,11 +206,20 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
     }
   };
 
-  const getStepIcon = (_step: WorkflowStep, _index: number) => {
-    if (currentStep === 'processing' || currentStep === 'completed') {
+  const getStepIcon = (step: WorkflowStep, _index: number) => {
+    // Find the step progress for this step
+    const stepProgressItem = stepProgress.find(sp => sp.id === step.id);
+    const status = stepProgressItem?.status || 'pending';
+    
+    if (status === 'completed') {
       return <CheckCircle className="w-4 h-4 text-green-500" />;
+    } else if (status === 'running') {
+      return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+    } else if (status === 'failed') {
+      return <X className="w-4 h-4 text-red-500" />;
+    } else {
+      return <div className="w-4 h-4 rounded-full border-2 border-gray-300" />;
     }
-    return <div className="w-4 h-4 rounded-full border-2 border-gray-300" />;
   };
 
   if (!isOpen || !workflow) return null;
@@ -167,7 +240,15 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={currentStep === 'processing'}
+            className={`p-2 rounded-lg transition-colors ${
+              currentStep === 'processing' 
+                ? 'opacity-50' 
+                : 'hover:bg-gray-100'
+            }`}
+            style={{
+              cursor: currentStep === 'processing' ? 'not-allowed' : 'pointer'
+            }}
           >
             <X className="w-5 h-5" />
           </button>
@@ -286,14 +367,29 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
               <div className="flex items-center justify-center space-x-4">
                 <button
                   onClick={() => setCurrentStep('select')}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  disabled={loading}
+                  className={`px-4 py-2 transition-colors ${
+                    loading 
+                      ? 'text-gray-400' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  style={{
+                    cursor: loading ? 'not-allowed' : 'pointer'
+                  }}
                 >
                   Back
                 </button>
                 <button
                   onClick={handleStartProcessing}
                   disabled={!selectedFile || loading}
-                  className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  className={`py-3 px-6 rounded-lg transition-colors flex items-center space-x-2 ${
+                    !selectedFile || loading
+                      ? 'bg-gray-400 text-gray-200'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
+                  style={{
+                    cursor: (!selectedFile || loading) ? 'not-allowed' : 'pointer'
+                  }}
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -341,6 +437,7 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
                 <p className="text-xs text-gray-500 mt-1">
                   Status: {processingStatus || 'Starting...'}
                 </p>
+               
               </div>
             </div>
           )}
@@ -379,14 +476,49 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
                 <div className="flex items-center space-x-3">
                   <FileText className="w-8 h-8 text-blue-600" />
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-gray-900">
-                      {selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'document'}_processed.pdf
-                    </p>
+                    {isEditingFilename ? (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={customFilename}
+                          onChange={(e) => setCustomFilename(e.target.value)}
+                          className="font-medium text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter filename"
+                          autoFocus
+                        />
+                        <span className="text-gray-500">.{getOutputExtension(workflow)}</span>
+                        <button
+                          onClick={() => setIsEditingFilename(false)}
+                          className="text-green-600 hover:text-green-800 text-sm font-medium"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={() => {
+                            const baseName = selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'document';
+                            setCustomFilename(`${baseName}_processed`);
+                            setIsEditingFilename(false);
+                          }}
+                          className="text-gray-500 hover:text-gray-700 text-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium text-gray-900">
+                          {customFilename || selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'document'}.{getOutputExtension(workflow)}
+                        </p>
+                        <button
+                          onClick={() => setIsEditingFilename(true)}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                     <p className="text-sm text-gray-600">Ready for download</p>
                   </div>
-                  <button className="p-1 text-gray-400 hover:text-gray-600">
-                    <Edit3 className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
 

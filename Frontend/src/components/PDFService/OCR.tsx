@@ -92,6 +92,9 @@ const OCR: React.FC = () => {
 
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    // Clear results when files are removed
+    setResult(null);
+    setError(null);
   };
 
   const clearAllFiles = () => {

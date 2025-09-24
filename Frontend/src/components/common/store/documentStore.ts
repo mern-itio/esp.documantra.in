@@ -621,7 +621,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
               doc.id === documentId
                 ? { ...doc, isDeleted: true, deletedAt: new Date().toISOString() }
                 : doc
-            )
+            ),
+            // Remove the deleted document from selected documents
+            selectedDocuments: state.selectedDocuments.filter((id: string) => id !== documentId)
           }));
         }
       }
@@ -654,7 +656,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
       if (response.success) {
         set((state: any) => ({
-          documents: state.documents.filter((doc: any) => doc.id !== documentId)
+          documents: state.documents.filter((doc: any) => doc.id !== documentId),
+          // Remove the deleted document from selected documents
+          selectedDocuments: state.selectedDocuments.filter((id: string) => id !== documentId)
         }));
       }
     } catch (error: any) {
