@@ -11,7 +11,9 @@ import {
   Eye,
   Check,
   Shield,
-  Award
+  Award,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type{ Document, Recipient } from '../../types';
@@ -27,6 +29,7 @@ type SignatureField = {
   docId: string;
   documentId?: string; // for backward compatibility
   recipientId?: string;
+  slotId?: string; // NEW: for power-form slot association
   page: number;
   x: number;
   y: number;
@@ -39,6 +42,15 @@ type SignatureField = {
   label?: string; // new: field label
   type: FieldType; // <--- required property
 };
+// --- add this type near the other types at the top of the file ---
+type Party = {
+  id: string;                 // e.g. "slot_1"
+  name: string;               // display label, e.g. "Party A"
+  slot: number;               // 1-based index
+  role?: 'signer' | 'approver' | 'carbon_copy' | string;
+  authMethod?: 'email' | 'sms' | 'access_code' | 'none' | string;
+  required?: boolean;
+};
 
 const EnvelopeCreator: React.FC = () => {
   const location = useLocation();
@@ -50,6 +62,19 @@ const EnvelopeCreator: React.FC = () => {
   const [powerForms, setPowerForms] = useState<any[]>([]);
   const [selectedForm, setSelectedForm] = useState<string>("");
   const [powerFormData, setPowerFormData] = useState<any>(null);
+  const [slots, setSlots] = useState<any[]>([]);
+
+  // Parties & related state
+  const [parties, setParties] = useState<Party[]>(
+    [{ id: 'slot_1', name: 'Party A', slot: 1, role: 'signer', authMethod: 'email', required: true }]
+  );
+  const [numberOfParties, setNumberOfParties] = useState<number>(parties.length || 1);
+  const [maxParties] = useState<number>(10);
+
+  // Selected/first party ids (creator choices)
+  const [selectedPartyId, setSelectedPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
+  const [firstSigningPartyId, setFirstSigningPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
+
 
   const [currentStep, setCurrentStep] = useState(1);
   const [envelopeData, setEnvelopeData] = useState({
@@ -186,22 +211,23 @@ const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 //Step 3: Save Signature fields 
 const saveSignatureFields = async () => {
   if (!envelopeId || signatureFields.length === 0) return;
-
-  const fieldsData = signatureFields.map(field => ({
-    _id: field._id, 
-    documentId: field.docId ?? field.documentId, // for backward compatibility
-    recipientId: field.isPowerForm ? null : field.recipientId || null, // PF placeholders may not have recipient
-    page: field.page,
-    x: field.x,
-    y: field.y,
-    width: field.width,
-    height: field.height,
-    type: "signature", // Assuming all fields are signature fields
-    status: 'pending',
-    isPowerForm: !!field.isPowerForm,
-    signerIndex: field.isPowerForm ? (field.signerIndex ?? null) : null,
-    label: (field.fieldType === 'signature' && !field.label) ? 'Signature' : field.label ?? undefined
+  console.log('Preparing to save signature fields:', signatureFields);
+    const fieldsData = signatureFields.map(field => ({
+      _id: field._id,
+      documentId: field.docId ?? field.documentId, // backward compatibility
+      recipientId: mode === "normal" ? field.recipientId || null : null,
+      slotId:field?.slotId || null,
+      page: field.page,
+      x: field.x,
+      y: field.y,
+      width: field.width,
+      height: field.height,
+      type: field.type || "signature",
+      status: "pending",
+      signerIndex: mode === "power" ? (field.signerIndex ?? null) : null,
+      label: field.label ?? (field.type === "signature" ? "Signature" : undefined),
   }));
+
   try {
     const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
       envelopeId,
@@ -220,7 +246,9 @@ const getEnvelopeDetail = async (envelopeId: string) => {
     const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
     if (response.status === 200) {
       setDocuments(response.data.data.documents);
+      console.log('Fetched documents:', response.data.data.documents);
       setRecipients(response.data.data.recipients);
+      console.log('Fetched recipients:', response.data.data.recipients);
       setEnvelopeId(envelopeId);
     }
   } catch (error) {
@@ -263,7 +291,31 @@ const handleNext = async () => {
           await insertRecipient();
         }else {
           // power form: ensure totalSigners is set
-          navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${envelopeId}`);
+          if (parties.length === 0) {
+              alert('Please add at least one party for the Power Form.');
+              setNextLoading(false);
+              return;
+            }
+            if (!selectedPartyId) {
+              alert('Please choose which party you are.');
+              setNextLoading(false);
+              return;
+            }
+            if (!firstSigningPartyId) {
+              alert('Please choose which party signs first.');
+              setNextLoading(false);
+              return;
+            }
+            // persist slots/config
+            await getEnvelopeDetail(envelopeId || "");
+            const savedId = await savePowerFormSlots();
+            if (!savedId) {
+              alert('Failed to save power form configuration. Try again.');
+              setNextLoading(false);
+              return;
+            }
+            // navigate to next step with returned envelope/template id
+            navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${savedId}`);
         }
       }
       if (currentStep === 3) {
@@ -423,6 +475,7 @@ const getSteps = async () => {
               case 2:
                 setCurrentStep(2);
                 setEnvelopeId(envelopeId)
+                await getEnvelopeDetail(envelopeId);
                 break;
               case 3:
                 console.log('Current step', step);
@@ -449,6 +502,42 @@ const getSteps = async () => {
           }
     }
 }
+const syncPartiesToNumber = (count: number) => {
+  if (!count || count < 1) count = 1;
+  if (count > maxParties) count = maxParties;
+
+  // Build new parties array deterministically
+    const newParties: Party[] = [];
+    for (let i = 1; i <= count; i++) {
+      const letter = String.fromCharCode(64 + i); // 1 -> 'A'
+      newParties.push({
+        id: `slot_${i}`,
+        name: `Party ${letter}`,
+        slot: i,
+        role: 'signer',
+        authMethod: 'email',
+        required: true
+      });
+    }
+
+    // Commit updates in order
+    setParties(newParties);
+    setNumberOfParties(count);
+
+    // Ensure selectedPartyId remains valid, otherwise pick slot_1 or last slot
+    setSelectedPartyId(prevSelected => {
+      const exists = newParties.find(p => p.id === prevSelected);
+      return exists ? prevSelected : newParties[0]?.id ?? `slot_1`;
+    });
+
+    // Ensure firstSigningPartyId remains valid
+    setFirstSigningPartyId(prevFirst => {
+      const exists = newParties.find(p => p.id === prevFirst);
+      return exists ? prevFirst : newParties[0]?.id ?? `slot_1`;
+    });
+    console.log(parties)
+  };
+
 const getSignatureFields = async (envelopeId: string) => {
   try {
     const response = await eSignApi.get(`/api/e-sign/envelope/get-signature-fields/${envelopeId}`);
@@ -460,6 +549,45 @@ const getSignatureFields = async (envelopeId: string) => {
     console.error('Error fetching signature fields:', error);
   }
 };
+// Step 2B: persist power-form slots / config (minimal)
+const savePowerFormSlots = async (): Promise<string | null> => {
+  // prepare slots payload
+  const slotsPayload = parties.map(p => ({
+    slotId: p.id,
+    index: p.slot,
+    label: p.name,
+    role: p.role || 'signer',
+    authMethod: p.authMethod || 'email',
+    required: p.required ?? true
+  }));
+  setSlots(slotsPayload);
+  try {
+    // adjust endpoint as per your backend. This is example /api/powerforms or reuse envelopes endpoint.
+    const payload = {
+      envelopeId, // may be null for new
+      slots: slotsPayload,
+      creatorSlotId: selectedPartyId,
+      firstSigningSlotId: firstSigningPartyId,
+      numberOfParties,
+      powerFormId: selectedForm || null,
+    };
+    const response = await eSignApi.post('/api/e-sign/envelope/connect/powerform', payload);
+    if (response?.status === 200 || response?.status === 201) {
+      // backend should return envelopeId or templateId
+      const id = response.data?.envelope?._id;
+      console.log('Power Form slots saved, envelopeId:', id);
+      if (id) setEnvelopeId(id);
+      return id;
+    } else {
+      console.error('savePowerFormSlots: unexpected response', response);
+      return null;
+    }
+  } catch (err) {
+    console.error('savePowerFormSlots error', err);
+    return null;
+  }
+};
+
  const [isEditable, setIsEditable] = useState(false);
   const [date, setDate] = useState(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -665,6 +793,72 @@ const getSignatureFields = async (envelopeId: string) => {
                         </div>
                       </div>
                     )}
+                    {/* Step 1C: Number of parties control */}
+                    <div className="mb-4 flex items-center gap-4">
+                      <label className="text-sm font-medium text-gray-700">Number of parties</label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="px-2 py-1 rounded border"
+                          onClick={() => syncPartiesToNumber(Math.max(1, numberOfParties - 1))}
+                          type="button"
+                        >
+                          <ArrowDown className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="number"
+                          min={1}
+                          max={maxParties}
+                          value={numberOfParties}
+                          onChange={(e) => {
+                            const val = Number(e.target.value || 1);
+                            syncPartiesToNumber(val);
+                          }}
+                          className="w-20 px-2 py-1 border rounded text-center"
+                        />
+                        <button
+                          className="px-2 py-1 rounded border"
+                          onClick={() => syncPartiesToNumber(Math.min(maxParties, numberOfParties + 1))}
+                          type="button"
+                        >
+                          <ArrowUp className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 ml-4">Min 1 — Max {maxParties}</p>
+                    </div>
+                    {/* ===== First signer selector ===== */}
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Which party signs first?</label>
+                      <select
+                        value={firstSigningPartyId}
+                        onChange={(e) => setFirstSigningPartyId(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 p-2"
+                      >
+                        {parties.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} {p.slot ? `(${p.slot})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* ===== Which party are you (creator) ===== */}
+                    <div className="mt-4">
+                      <h6 className="text-sm font-medium text-gray-900 mb-2">Choose which party you are</h6>
+                      <div className="space-y-2">
+                        {parties.map((party) => (
+                          <label key={party.id} className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="creatorParty"
+                              checked={selectedPartyId === party.id}
+                              onChange={() => setSelectedPartyId(party.id)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">{party.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
               </div>
             )}
           </div>
@@ -679,6 +873,7 @@ const getSignatureFields = async (envelopeId: string) => {
             setSignatureFields={setSignatureFields}
             mode={mode} 
             powerFormData={powerFormData}
+            slots={slots} 
           />
         );
 
@@ -976,6 +1171,7 @@ const getSignatureFields = async (envelopeId: string) => {
                   <Save className="w-4 h-4" />
                   Save Draft
                 </button>
+                { mode === 'normal' &&
                 <button
                   onClick={handleSendEnvelope}
                   disabled={sending}
@@ -993,6 +1189,7 @@ const getSignatureFields = async (envelopeId: string) => {
                   )}
                   {sending ? 'Sending...' : 'Send Envelope'}
                 </button>
+                }
               </>
             )}
           </div>
