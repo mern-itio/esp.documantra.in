@@ -11,12 +11,22 @@ const CompletionCertificateSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { _id: false }); // embed only, no separate id
 
+// --- NEW: Party Slot schema ---
+const PartySlotSchema = new mongoose.Schema({
+  slotId: { type: String, required: true },       // e.g. "slot_1"
+  index: { type: Number, required: true },        // signing order index
+  label: { type: String },                        // display label ("Party A")
+  role: { type: String, default: "signer" },      // role of the slot
+  authMethod: { type: String, default: "email" }, // email, sms, etc.
+  required: { type: Boolean, default: true }      // is this slot mandatory
+}, { _id: false });
+
 const EnvelopeSchema = new mongoose.Schema({
   subject: { type: String },
   message: { type: String },
   sender: { type: mongoose.Schema.Types.ObjectId, required: true },
   priority: { type: String, enum: ["low", "normal", "high", "urgent"], default: "normal" },
-  signingOrder: { type: String, enum: ["In-Order", "Parallel","sequential"], default: "In-Order" },
+  signingOrder: { type: String, enum: ["In-Order", "Parallel", "sequential"], default: "In-Order" },
   expirationDate: { type: Date },
   isReminder: { type: Boolean, default: false },
   reminderInterval: { type: Number }, // in days
@@ -26,7 +36,14 @@ const EnvelopeSchema = new mongoose.Schema({
   recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipient" }],
   signatureType: { type: String, enum: ["standard", "advanced", "qualified"], default: "standard" },
   status: { type: String, enum: ["draft", "in-progress", "completed", "archived"], default: "draft" },
-
+  // NEW FLAG
+  isPowerForm: { type: Boolean, default: false },   // <--- mark if this is a PowerForm
+  // NEW FIELDS for PowerForm slots
+  slots: { type: [PartySlotSchema], default: [] },   // slot definitions
+  creatorSlotId: { type: String },                   // which slot creator is
+  firstSigningSlotId: { type: String },              // which slot signs first
+  numberOfParties: { type: Number, default: 1 },
+  powerFormId: { type: String, default: null },               // if linked to a PowerForm template
   // NEW FIELD: completion certificate metadata
   completionCertificate: { type: CompletionCertificateSchema, default: null }
 

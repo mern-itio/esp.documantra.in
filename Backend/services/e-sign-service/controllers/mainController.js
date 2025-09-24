@@ -674,6 +674,30 @@ const removeDocSignField = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   } 
 }
+const connectPowerForm = async (req, res) => {
+  try {
+    const { powerFormId, envelopeId, creatorSlotId, firstSigningSlotId, numberOfParties, slots  } = req.body;
+    if (!powerFormId || !envelopeId) {
+      return res.status(400).json({ message: "PowerForm ID and Envelope ID are required." });
+    }
+    const envelope = await Envelope.findById(envelopeId);
+    if (!envelope) {
+      return res.status(404).json({ message: "Envelope not found." });
+    }
+    envelope.powerFormId = powerFormId;
+    envelope.isPowerForm = true;
+    envelope.creatorSlotId = creatorSlotId;
+    envelope.firstSigningSlotId = firstSigningSlotId;
+    envelope.numberOfParties = numberOfParties;
+    envelope.slots = slots; // Array of slot objects with details
+    await envelope.save();
+    return res.status(200).json({ message: "PowerForm connected to envelope successfully.", envelope });
+  }
+  catch (error) {
+    console.error("Error connecting PowerForm to envelope:", error);
+    return res.status(500).json({ message: "Server error", error });
+  }
+}
 // Export functions
 module.exports = {
   envelopesData,
@@ -692,5 +716,6 @@ module.exports = {
   removeRecFromEnvelope,
   removeDocFromEnvelope,
   getEnvSignFields,
-  removeDocSignField
+  removeDocSignField,
+  connectPowerForm
 };
