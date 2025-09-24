@@ -289,7 +289,11 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                   <span>{analyzing ? 'Analyzing...' : 'Analyze Current'}</span>
                 </button>
                 <button
-                  onClick={() => setSelectedFile(null)}
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setResult(null);
+                    setCurrentPermissions(null);
+                  }}
                   className="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center space-x-2"
                 >
                   <FiX className="w-4 h-4" />

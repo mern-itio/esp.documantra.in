@@ -17,6 +17,9 @@ numpy==1.24.3
 Flask==3.0.0
 Flask-CORS==4.0.0
 
+# PDF Generation
+WeasyPrint==61.2
+
 # Utilities
 python-dotenv==1.0.0
 requests==2.31.0

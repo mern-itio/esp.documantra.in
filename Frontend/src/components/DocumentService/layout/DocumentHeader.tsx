@@ -88,9 +88,13 @@ export function DocumentHeader() {
 
       } else {
         console.error('❌ DocumentHeader: Folder creation failed:', response.message);
+        // Throw error to be caught by the modal
+        throw new Error(response.message || 'Failed to create folder');
       }
     } catch (error) {
       console.error('❌ DocumentHeader: Failed to create folder:', error);
+      // Re-throw the error so the modal can display it
+      throw error;
     }
   };
 

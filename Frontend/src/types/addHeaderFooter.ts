@@ -24,9 +24,12 @@ export interface HeaderFooterPreviewRequest {
   footerPosition?: string;
   fontSize?: number;
   fontColor?: string;
+  startPage?: number;
+  endPage?: string;
   margin?: number;
   customHeaderText?: string;
   customFooterText?: string;
+  excludePages?: string;
   headerEnabled?: boolean;
   footerEnabled?: boolean;
 }

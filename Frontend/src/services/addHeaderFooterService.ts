@@ -99,6 +99,12 @@ class AddHeaderFooterService {
     if (request.fontColor) {
       formData.append('fontColor', request.fontColor);
     }
+    if (request.startPage) {
+      formData.append('startPage', request.startPage.toString());
+    }
+    if (request.endPage) {
+      formData.append('endPage', request.endPage.toString());
+    }
     if (request.margin) {
       formData.append('margin', request.margin.toString());
     }
@@ -107,6 +113,9 @@ class AddHeaderFooterService {
     }
     if (request.customFooterText) {
       formData.append('customFooterText', request.customFooterText);
+    }
+    if (request.excludePages) {
+      formData.append('excludePages', request.excludePages);
     }
     if (request.headerEnabled !== undefined) {
       formData.append('headerEnabled', request.headerEnabled.toString());

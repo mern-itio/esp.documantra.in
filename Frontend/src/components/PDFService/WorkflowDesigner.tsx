@@ -31,6 +31,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showExecutionModal, setShowExecutionModal] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Only show tools that are actually implemented in the backend
   const supportedTools = [
@@ -113,6 +114,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
     setWorkflows(prev => [newWorkflow, ...prev]);
     setSelectedWorkflow(newWorkflow);
     setIsEditing(true);
+    setHasUnsavedChanges(false); // New workflow starts with no unsaved changes
   };
 
   const addStepToWorkflow = (toolId: string) => {
@@ -135,6 +137,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
 
     setSelectedWorkflow(updatedWorkflow);
     setWorkflows(prev => prev.map(wf => wf._id === selectedWorkflow._id ? updatedWorkflow : wf));
+    setHasUnsavedChanges(true);
   };
 
   const removeStep = (stepId: string) => {
@@ -151,6 +154,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
 
     setSelectedWorkflow(updatedWorkflow);
     setWorkflows(prev => prev.map(wf => wf._id === selectedWorkflow._id ? updatedWorkflow : wf));
+    setHasUnsavedChanges(true);
   };
 
   const duplicateWorkflow = async (workflow: WorkflowTemplate) => {
@@ -225,6 +229,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
         setWorkflows(prev => prev.map(wf => wf._id === selectedWorkflow._id ? response.data : wf));
         setSelectedWorkflow(response.data);
         setIsEditing(false);
+        setHasUnsavedChanges(false);
       } else {
         setError('Failed to save workflow');
       }
@@ -307,6 +312,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                   onClick={() => {
                     setSelectedWorkflow(workflow);
                     setIsEditing(false);
+                    setHasUnsavedChanges(false); // Reset unsaved changes when switching workflows
                   }}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -387,6 +393,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                             const updated = { ...selectedWorkflow, name: e.target.value };
                             setSelectedWorkflow(updated);
                             setWorkflows(prev => prev.map(wf => wf._id === updated._id ? updated : wf));
+                            setHasUnsavedChanges(true);
                           }}
                           className="text-xl font-bold text-gray-900 border-b border-gray-300 bg-transparent focus:outline-none focus:border-blue-500"
                         />
@@ -400,6 +407,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                             const updated = { ...selectedWorkflow, description: e.target.value };
                             setSelectedWorkflow(updated);
                             setWorkflows(prev => prev.map(wf => wf._id === updated._id ? updated : wf));
+                            setHasUnsavedChanges(true);
                           }}
                           className="text-gray-600 mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm"
                           rows={2}
@@ -419,22 +427,30 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                       <Edit3 className="w-4 h-4" />
                       <span>{isEditing ? 'Done' : 'Edit'}</span>
                     </button>
-                    <button 
-                      onClick={handleRunWorkflow}
-                      disabled={loading || !selectedWorkflow.steps.length}
-                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>Run Workflow</span>
-                    </button>
-                    <button 
-                      onClick={saveWorkflow}
-                      disabled={loading}
-                      className="flex items-center space-x-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
-                    >
-                      <Save className="w-4 h-4" />
-                      <span>Save</span>
-                    </button>
+                    {/* Only show Run Workflow button if workflow is saved (not a new unsaved workflow) */}
+                    {!selectedWorkflow._id.startsWith('wf_') ? (
+                      <button 
+                        onClick={handleRunWorkflow}
+                        disabled={loading || !selectedWorkflow.steps.length}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        <Play className="w-4 h-4" />
+                        <span>Run Workflow</span>
+                      </button>
+                    ) : (
+                     ''
+                    )}
+                    {/* Only show Save button when there are unsaved changes */}
+                    {hasUnsavedChanges && (
+                      <button 
+                        onClick={saveWorkflow}
+                        disabled={loading}
+                        className="flex items-center space-x-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>Save</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

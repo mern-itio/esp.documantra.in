@@ -17,12 +17,14 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
   const [folderColor, setFolderColor] = useState('#3b82f6');
   const [folderIcon, setFolderIcon] = useState('Folder');
   const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!folderName.trim()) return;
 
     setIsCreating(true);
+    setError(null);
     try {
       await onSubmit({
         name: folderName.trim(),
@@ -34,7 +36,11 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
       setFolderDescription('');
       setFolderColor('#3b82f6');
       setFolderIcon('Folder');
+      setError(null);
       onClose();
+    } catch (error: any) {
+      console.error('Error creating folder:', error);
+      setError(error.message || 'Failed to create folder. Please try again.');
     } finally {
       setIsCreating(false);
     }
@@ -45,6 +51,7 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
     setFolderDescription('');
     setFolderColor('#3b82f6');
     setFolderIcon('Folder');
+    setError(null);
     onClose();
   };
 
@@ -79,6 +86,12 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
                 </p>
               </div>
             )}
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
             
             <div>
               <label htmlFor="folder-name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -89,7 +102,10 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
                 type="text"
                 placeholder="Enter folder name..."
                 value={folderName}
-                onChange={(e) => setFolderName(e.target.value)}
+                onChange={(e) => {
+                  setFolderName(e.target.value);
+                  if (error) setError(null); // Clear error when user starts typing
+                }}
                 autoFocus
                 required
               />

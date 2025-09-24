@@ -432,7 +432,36 @@ class WorkflowController {
   // Execute individual tool (using actual PDF controllers)
   static async executeTool(toolId, inputFile, settings, outputsDir) {
     const timestamp = Date.now();
-    const outputFileName = `workflow_${timestamp}_${toolId}.pdf`;
+    
+    // Determine the correct file extension based on the tool
+    const getOutputExtension = (toolId) => {
+      switch (toolId) {
+        case 'pdf-to-word':
+        case 'excel-to-doc':
+        case 'doc-to-excel':
+          return 'docx';
+        case 'pdf-to-excel':
+        case 'excel-to-pdf':
+          return 'xlsx';
+        case 'pdf-to-ppt':
+        case 'ppt-to-pdf':
+          return 'pptx';
+        case 'pdf-to-text':
+        case 'text-to-pdf':
+          return 'txt';
+        case 'pdf-to-html':
+          return 'html';
+        case 'pdf-to-image':
+          return 'png';
+        case 'pdf-to-epub':
+          return 'epub';
+        default:
+          return 'pdf';
+      }
+    };
+    
+    const extension = getOutputExtension(toolId);
+    const outputFileName = `workflow_${timestamp}_${toolId}.${extension}`;
     const outputPath = path.join(outputsDir, outputFileName);
 
     try {
@@ -486,6 +515,16 @@ class WorkflowController {
         case 'pdf-to-html':
           controller = require('./pdfController');
           methodName = 'convertPdfToHtml';
+          break;
+        
+        case 'excel-to-doc':
+          controller = require('./pdfController');
+          methodName = 'convertExcelToDoc';
+          break;
+        
+        case 'doc-to-excel':
+          controller = require('./pdfController');
+          methodName = 'convertDocToExcel';
           break;
         
         case 'pdf-to-epub':
@@ -570,10 +609,70 @@ class WorkflowController {
           throw new Error(`Input file does not exist: ${inputFile}`);
         }
 
-        // Special handling for pdfController functions that don't use Express
-        if (toolId === 'pdf-to-word' || toolId === 'word-to-pdf' || toolId === 'pdf-to-image') {
-          // Call the function directly
-          const result = await controller[methodName](inputFile, 0, outputPath);
+        // Special handling for all conversion tools that have direct function calls
+        if (toolId === 'pdf-to-word' || toolId === 'word-to-pdf' || toolId === 'pdf-to-excel' || 
+            toolId === 'excel-to-pdf' || toolId === 'pdf-to-ppt' || toolId === 'ppt-to-pdf' ||
+            toolId === 'pdf-to-text' || toolId === 'text-to-pdf' || toolId === 'pdf-to-html' ||
+            toolId === 'excel-to-doc' || toolId === 'doc-to-excel' || toolId === 'pdf-to-image' ||
+            toolId === 'compress-pdf' || toolId === 'optimize-image' || toolId === 'optimize-font' ||
+            toolId === 'remove-unused-objects' || toolId === 'linearize-pdf' || toolId === 'color-optimization' ||
+            toolId === 'remove-metadata' || toolId === 'ocr' || toolId === 'make-searchable' ||
+            toolId === 'pdf-statistics') {
+          
+          console.log(`[WorkflowController] Calling ${methodName} directly for ${toolId}`);
+          console.log(`[WorkflowController] Input file: ${inputFile}`);
+          console.log(`[WorkflowController] Output path: ${outputPath}`);
+          
+          // Call the function directly with proper parameters
+          let result;
+          if (toolId === 'pdf-to-image') {
+            // PDF to image needs page number as second parameter
+            result = await controller[methodName](inputFile, 0, outputPath);
+          } else if (toolId === 'compress-pdf' || toolId === 'optimize-image' || toolId === 'optimize-font' ||
+                     toolId === 'remove-unused-objects' || toolId === 'linearize-pdf' || toolId === 'color-optimization' ||
+                     toolId === 'remove-metadata' || toolId === 'ocr' || toolId === 'make-searchable' ||
+                     toolId === 'pdf-statistics') {
+            // These tools need mock request/response objects
+            const mockReq = {
+              file: { 
+                path: inputFile,
+                originalname: `input_${toolId}.pdf`,
+                filename: `input_${toolId}.pdf`,
+                size: 1024,
+                mimetype: 'application/pdf'
+              },
+              body: settings || {},
+              get: (header) => {
+                const headers = {
+                  'User-Agent': 'Workflow-Execution/1.0',
+                  'Content-Type': 'application/pdf'
+                };
+                return headers[header] || '';
+              },
+              ip: '127.0.0.1',
+              user: {
+                data: {
+                  email: 'workflow@system.com',
+                  name: 'Workflow System'
+                }
+              }
+            };
+            
+            let mockResult = null;
+            const mockRes = {
+              json: (data) => { mockResult = data; },
+              status: (code) => ({ json: (data) => { mockResult = data; } })
+            };
+
+            await controller[methodName](mockReq, mockRes);
+            result = mockResult;
+          } else {
+            // Most conversion functions take inputPath and outputPath
+            result = await controller[methodName](inputFile, outputPath);
+          }
+          
+          console.log(`[WorkflowController] ${methodName} result:`, result);
+          console.log(`[WorkflowController] Output file exists: ${await fs.pathExists(outputPath)}`);
           
           // Ensure the output file exists
           if (!await fs.pathExists(outputPath)) {
@@ -588,166 +687,9 @@ class WorkflowController {
           };
         }
 
-        // Create a mock request object for the controller
-        const mockReq = {
-          file: { 
-            path: inputFile,
-            originalname: `input_${toolId}.pdf`,
-            filename: `input_${toolId}.pdf`,
-            size: 1024,
-            mimetype: 'application/pdf'
-          },
-          body: settings || {},
-          get: (header) => {
-            const headers = {
-              'User-Agent': 'Workflow-Execution/1.0',
-              'Content-Type': 'application/pdf'
-            };
-            return headers[header] || '';
-          },
-          ip: '127.0.0.1',
-          user: {
-            data: {
-              email: 'workflow@system.com',
-              name: 'Workflow System'
-            }
-          }
-        };
-        
-        // Create a mock response object
-        let result = null;
-        const mockRes = {
-          json: (data) => { result = data; },
-          status: (code) => ({ json: (data) => { result = data; } })
-        };
-
-        // Execute the tool
-        await controller[methodName](mockReq, mockRes);
-        
-        if (result && result.success) {
-          
-          // Handle different types of file paths returned by controllers
-          let actualOutputFile = result.outputFile || result.downloadUrl || outputPath;
-          
-          console.log(`[WorkflowController] Tool ${toolId} result:`, {
-            outputFile: result.outputFile,
-            downloadUrl: result.downloadUrl,
-            filename: result.filename
-          });
-          
-          // If the controller returns a relative path, convert it to absolute
-          if (actualOutputFile && actualOutputFile.startsWith('/outputs/')) {
-            actualOutputFile = path.join(__dirname, '..', actualOutputFile);
-            console.log(`[WorkflowController] Converted relative path to absolute: ${actualOutputFile}`);
-          }
-          
-          // If the controller returns just a filename, look for it in the outputs directory
-          if (result.filename && !actualOutputFile.includes('/')) {
-            const filenamePath = path.join(outputsDir, result.filename);
-            if (await fs.pathExists(filenamePath)) {
-              actualOutputFile = filenamePath;
-              console.log(`[WorkflowController] Found file by filename: ${actualOutputFile}`);
-            }
-          }
-          
-          // If the controller returns a download URL, extract the filename and find the actual file
-          if (result.downloadUrl && (result.downloadUrl.startsWith('/pdf-compress/download/') || result.downloadUrl.startsWith('/pdf-linearize/download/'))) {
-            const filename = result.downloadUrl.split('/').pop();
-            console.log(`[WorkflowController] Looking for file with filename: ${filename}`);
-            
-            // Look for the actual file in the outputs directory
-            const possiblePaths = [
-              path.join(outputsDir, `compressed-${Date.now()}.pdf`),
-              path.join(outputsDir, `gs-compressed-${Date.now()}.pdf`),
-              path.join(outputsDir, `linearized-${Date.now()}.pdf`),
-              path.join(outputsDir, filename)
-            ];
-            
-            console.log(`[WorkflowController] Checking possible paths:`, possiblePaths);
-            
-            for (const possiblePath of possiblePaths) {
-              if (await fs.pathExists(possiblePath)) {
-                actualOutputFile = possiblePath;
-                console.log(`[WorkflowController] Found file at: ${actualOutputFile}`);
-                break;
-              }
-            }
-            
-            // If we still can't find the file, look for any recently created PDF files
-            if (!await fs.pathExists(actualOutputFile)) {
-              const files = await fs.readdir(outputsDir);
-              const pdfFiles = files.filter(f => f.endsWith('.pdf') && (f.includes('compressed') || f.includes('linearized') || f.includes('optimized')));
-              console.log(`[WorkflowController] Found PDF files:`, pdfFiles);
-              
-              if (pdfFiles.length > 0) {
-                // Get the most recent file
-                const latestFile = pdfFiles.sort().pop();
-                actualOutputFile = path.join(outputsDir, latestFile);
-                console.log(`[WorkflowController] Using latest file: ${actualOutputFile}`);
-              }
-            }
-          }
-          
-          // Final fallback: if we still can't find the file, look for any recently created PDF files
-          if (!await fs.pathExists(actualOutputFile)) {
-            console.log(`[WorkflowController] File not found, searching for recent PDF files...`);
-            const files = await fs.readdir(outputsDir);
-            const recentFiles = files
-              .filter(f => f.endsWith('.pdf') && f.startsWith('workflow_'))
-              .sort()
-              .slice(-5); // Get last 5 files
-            
-            console.log(`[WorkflowController] Recent workflow files:`, recentFiles);
-            
-            if (recentFiles.length > 0) {
-              const latestFile = recentFiles[recentFiles.length - 1];
-              actualOutputFile = path.join(outputsDir, latestFile);
-              console.log(`[WorkflowController] Using most recent workflow file: ${actualOutputFile}`);
-            }
-          }
-          
-          
-          // If the actual output file is different from our path, copy it
-          if (actualOutputFile !== outputPath && await fs.pathExists(actualOutputFile)) {
-            await fs.copy(actualOutputFile, outputPath);
-          } else if (actualOutputFile === outputPath) {
-            console.log(`[WorkflowController] File already at target path`);
-          } else {
-            console.log(`[WorkflowController] WARNING: actualOutputFile does not exist: ${actualOutputFile}`);
-          }
-          
-          // Verify the final output file exists and is valid
-          if (await fs.pathExists(outputPath)) {
-            const stats = await fs.stat(outputPath);
-          
-            
-            // Check if it's a valid PDF by reading the first few bytes
-            try {
-              const buffer = await fs.readFile(outputPath, { start: 0, end: 4 });
-              const header = buffer.toString('ascii');
-              console.log(`[WorkflowController] File header: ${header}`);
-              
-              if (header.startsWith('%PDF')) {
-                console.log(`[WorkflowController] ✅ Valid PDF file detected`);
-              } else {
-                console.log(`[WorkflowController] ❌ Invalid PDF file - header: ${header}`);
-              }
-            } catch (headerError) {
-              console.log(`[WorkflowController] ❌ Error reading file header: ${headerError.message}`);
-            }
-          } else {
-            console.log(`[WorkflowController] ERROR: Final output file does not exist: ${outputPath}`);
-          }
-          
-          return { 
-            outputFile: outputPath, 
-            message: result.message || `${toolId} executed successfully`,
-            toolId: toolId,
-            result: result
-          };
-        } else {
-          throw new Error(result?.message || `Tool ${toolId} execution failed`);
-        }
+        // This section is now handled above in the direct call section
+        console.log(`[WorkflowController] Tool ${toolId} not handled in direct call section`);
+        throw new Error(`Tool ${toolId} execution method not implemented`);
       } else {
         throw new Error(`Tool ${toolId} method not found`);
       }
@@ -797,15 +739,45 @@ class WorkflowController {
       // Get file stats for debugging
       const fileStats = await fs.stat(execution.outputFile);
     
-      // Create a more descriptive filename
+      // Create a more descriptive filename using custom name if provided
       const originalFileName = execution.metadata?.originalFileName || 'document';
       const baseName = originalFileName.replace(/\.[^/.]+$/, ''); // Remove extension
-      const downloadFileName = `${baseName}_processed.pdf`;
       
+      // Use custom name from execution if available, otherwise use original filename
+      const customName = execution.name && execution.name !== 'Custom Workflow' ? execution.name : baseName;
+      
+      // Get the actual file extension from the output file
+      const actualFileExtension = path.extname(execution.outputFile).toLowerCase();
+      const downloadFileName = `${customName}${actualFileExtension}`;
+      
+      // Determine content type based on file extension
+      const getContentType = (extension) => {
+        switch (extension) {
+          case '.docx':
+            return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          case '.xlsx':
+            return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          case '.pptx':
+            return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+          case '.txt':
+            return 'text/plain';
+          case '.html':
+            return 'text/html';
+          case '.png':
+            return 'image/png';
+          case '.epub':
+            return 'application/epub+zip';
+          case '.pdf':
+          default:
+            return 'application/pdf';
+        }
+      };
+      
+      const contentType = getContentType(actualFileExtension);
       
       // Set appropriate headers for file download
       res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
-      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Type', contentType);
       
       // Stream the file
       const fileStream = fs.createReadStream(execution.outputFile);

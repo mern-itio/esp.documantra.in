@@ -230,8 +230,8 @@ async function convertPdfToExcel(inputPath, outputPath) {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
 
-    // Write to file
-    XLSX.writeFile(workbook, outputPath);
+    // Write to file with correct format
+    XLSX.writeFile(workbook, outputPath, { bookType: 'xlsx' });
 
     console.log('✅ PDF to Excel conversion completed.');
     return {
@@ -1452,7 +1452,7 @@ async function convertDocToExcel(inputPath, outputPath) {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
     
     // Write the XLSX file
-    XLSX.writeFile(workbook, outputPath);
+    XLSX.writeFile(workbook, outputPath, { bookType: 'xlsx' });
     
     const stats = await fs.stat(outputPath);
     

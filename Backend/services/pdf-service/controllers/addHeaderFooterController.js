@@ -198,12 +198,14 @@ const addHeaderFooterController = {
         actualEndPage = totalPages;
       }
 
-      // Add headers and footers to all pages for preview
-      for (let i = 0; i < totalPages; i++) {
+      // Add headers and footers to specified pages for preview (same logic as main function)
+      let pagesModified = 0;
+      for (let i = actualStartPage - 1; i < actualEndPage; i++) {
         const pageNum = i + 1;
         
         // Skip excluded pages
         if (excludePagesArray.includes(pageNum)) {
+          // console.log(`Skipping excluded page ${pageNum} in preview`);
           continue;
         }
 
@@ -247,6 +249,8 @@ const addHeaderFooterController = {
             textAlign: textAlign
           });
         }
+
+        pagesModified++;
       }
 
       // Save the preview PDF
@@ -269,7 +273,10 @@ const addHeaderFooterController = {
         filename: previewFilename,
         previewUrl: `/pdf-header-footer/preview/${previewFilename}`,
         totalPages,
-        sampleText: `Headers and footers added to all ${totalPages} pages`
+        pagesModified,
+        startPage: actualStartPage,
+        endPage: actualEndPage,
+        sampleText: `Headers and footers added to ${pagesModified} pages (${actualStartPage}-${actualEndPage})`
       });
 
     } catch (error) {

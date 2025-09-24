@@ -72,7 +72,6 @@ const FoldersPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [viewMode] = useState<'list' | 'grid'>('grid');
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for forcing re-renders
@@ -85,9 +84,11 @@ const FoldersPage: React.FC = () => {
   // Get folders and functions from the document store
   const { 
     folders: storeFolders,
-    documents: storeDocuments,
     fetchDocuments,
-    fetchFolders
+    fetchFolders,
+    getFilteredDocuments,
+    selectedDocuments: storeSelectedDocuments,
+    setSelectedDocuments: setStoreSelectedDocuments
   } = useDocumentStore();
 
   // Load user folders
@@ -217,7 +218,7 @@ const FoldersPage: React.FC = () => {
 
   const handleBackToRoot = async () => {
     setCurrentFolder(null);
-    setSelectedDocuments([]);
+    setStoreSelectedDocuments([]);
     
     // Load root documents into the document store
     await fetchDocuments({ 
@@ -283,12 +284,12 @@ const FoldersPage: React.FC = () => {
 
   const handleMoveDocuments = async (targetFolderId: string | null) => {
     try {
-      if (selectedDocuments.length === 0) return;
+      if (storeSelectedDocuments.length === 0) return;
 
-      const response = await documentAPI.moveMultipleDocuments(selectedDocuments, targetFolderId);
+      const response = await documentAPI.moveMultipleDocuments(storeSelectedDocuments, targetFolderId);
       if (response.success) {
         setShowMoveModal(false);
-        setSelectedDocuments([]);
+        setStoreSelectedDocuments([]);
         // Refresh current folder
         if (currentFolder) {
           await loadFolderDetails(currentFolder.folder._id);
@@ -302,28 +303,32 @@ const FoldersPage: React.FC = () => {
   const handleDocumentSelect = (documentId: string, isSelected?: boolean) => {
     if (isSelected !== undefined) {
       // Called from DocumentCard with boolean
-      setSelectedDocuments(prev =>
-        isSelected
-          ? [...prev, documentId]
-          : prev.filter(id => id !== documentId)
-      );
+      if (isSelected) {
+        const newSelection = [...storeSelectedDocuments, documentId];
+        setStoreSelectedDocuments(newSelection);
+      } else {
+        const newSelection = storeSelectedDocuments.filter(id => id !== documentId);
+        setStoreSelectedDocuments(newSelection);
+      }
     } else {
       // Called from checkbox onChange
-      setSelectedDocuments(prev =>
-        prev.includes(documentId)
-          ? prev.filter(id => id !== documentId)
-          : [...prev, documentId]
-      );
+      if (storeSelectedDocuments.includes(documentId)) {
+        const newSelection = storeSelectedDocuments.filter(id => id !== documentId);
+        setStoreSelectedDocuments(newSelection);
+      } else {
+        const newSelection = [...storeSelectedDocuments, documentId];
+        setStoreSelectedDocuments(newSelection);
+      }
     }
   };
 
   const handleSelectAll = () => {
     const folderDocuments = getFilteredAndSortedDocuments();
     if (folderDocuments.length > 0) {
-      if (selectedDocuments.length === folderDocuments.length) {
-        setSelectedDocuments([]);
+      if (storeSelectedDocuments.length === folderDocuments.length) {
+        setStoreSelectedDocuments([]);
       } else {
-        setSelectedDocuments(folderDocuments.map(doc => doc.id));
+        setStoreSelectedDocuments(folderDocuments.map(doc => doc.id));
       }
     }
   };
@@ -387,15 +392,17 @@ const FoldersPage: React.FC = () => {
   const getFilteredAndSortedDocuments = () => {
     if (!currentFolder) return [];
 
-    // Use documents from the store instead of local folder documents for real-time updates
-    const folderDocuments = storeDocuments.filter(doc => 
+    // Use the store's getFilteredDocuments which handles real-time updates
+    const allFilteredDocuments = getFilteredDocuments();
+    
+    // Filter by current folder
+    const folderDocuments = allFilteredDocuments.filter(doc => 
       doc.folderId === currentFolder.folder._id || 
       (currentFolder.folder._id === null && !doc.folderId)
     );
 
+    // Apply additional search filter if needed
     let filtered = [...folderDocuments];
-
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(doc =>
         doc.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -543,17 +550,17 @@ const FoldersPage: React.FC = () => {
                         size="sm"
                         onClick={handleSelectAll}
                       >
-{selectedDocuments.length === getFilteredAndSortedDocuments().length && getFilteredAndSortedDocuments().length > 0 ? 'Deselect All' : 'Select All'}
+{storeSelectedDocuments.length === getFilteredAndSortedDocuments().length && getFilteredAndSortedDocuments().length > 0 ? 'Deselect All' : 'Select All'}
                       </Button>
 
-                      {selectedDocuments.length > 0 && (
+                      {storeSelectedDocuments.length > 0 && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setShowMoveModal(true)}
                           className="flex items-center space-x-2"
                         >
-                          <span>Move {selectedDocuments.length} Document{selectedDocuments.length !== 1 ? 's' : ''}</span>
+                          <span>Move {storeSelectedDocuments.length} Document{storeSelectedDocuments.length !== 1 ? 's' : ''}</span>
                         </Button>
                       )}
                     </div>
@@ -567,7 +574,7 @@ const FoldersPage: React.FC = () => {
                         <div key={document.id} className="relative">
                           <DocumentCard
                             document={document}
-                            isSelected={selectedDocuments.includes(document.id)}
+                            isSelected={storeSelectedDocuments.includes(document.id)}
                             onSelect={(isSelected) => handleDocumentSelect(document.id, isSelected)}
                             onClick={handleDocumentClick}
                           />
@@ -583,7 +590,7 @@ const FoldersPage: React.FC = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <input
                               type="checkbox"
-                              checked={selectedDocuments.length === getFilteredAndSortedDocuments().length && getFilteredAndSortedDocuments().length > 0}
+                              checked={storeSelectedDocuments.length === getFilteredAndSortedDocuments().length && getFilteredAndSortedDocuments().length > 0}
                               onChange={handleSelectAll}
                               className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             />
@@ -608,7 +615,7 @@ const FoldersPage: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <input
                                 type="checkbox"
-                                checked={selectedDocuments.includes(document.id)}
+                                checked={storeSelectedDocuments.includes(document.id)}
                                 onChange={() => handleDocumentSelect(document.id)}
                                 className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                               />
@@ -649,7 +656,7 @@ const FoldersPage: React.FC = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    setSelectedDocuments([document.id]);
+                                    setStoreSelectedDocuments([document.id]);
                                     setShowMoveModal(true);
                                   }}
                                 >
@@ -783,7 +790,7 @@ const FoldersPage: React.FC = () => {
         isOpen={showMoveModal}
         onClose={() => setShowMoveModal(false)}
         onSubmit={handleMoveDocuments}
-        selectedCount={selectedDocuments.length}
+        selectedCount={storeSelectedDocuments.length}
         availableFolders={folders}
       />
 

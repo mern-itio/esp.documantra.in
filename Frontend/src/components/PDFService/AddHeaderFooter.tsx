@@ -117,9 +117,12 @@ const AddHeaderFooter: React.FC = () => {
         footerPosition: formData.footerPosition,
         fontSize: formData.fontSize,
         fontColor: formData.fontColor,
+        startPage: formData.startPage,
+        endPage: formData.endPage,
         margin: formData.margin,
         customHeaderText: formData.customHeaderText,
         customFooterText: formData.customFooterText,
+        excludePages: formData.excludePages,
         headerEnabled: formData.headerEnabled,
         footerEnabled: formData.footerEnabled
       };

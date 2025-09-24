@@ -1,0 +1,67 @@
+{
+  "formName": "Contact Form",
+  "formFields": [
+    {
+      "name": "fullName",
+      "type": "text",
+      "label": "Full Name",
+      "placeholder": "Enter your full name",
+      "required": true,
+      "description": "Please provide your complete name as it appears on official documents",
+      "id": "17586997923898ep9xb6ie"
+    },
+    {
+      "name": "email",
+      "type": "email",
+      "label": "Email Address",
+      "placeholder": "your.email@example.com",
+      "required": true,
+      "description": "We will use this to contact you",
+      "id": "175869979238951ngyqjmz"
+    },
+    {
+      "name": "phone",
+      "type": "tel",
+      "label": "Phone Number",
+      "placeholder": "+1 (555) 123-4567",
+      "required": false,
+      "description": "Optional - for urgent matters only",
+      "id": "1758699792389ch1jfg143"
+    },
+    {
+      "name": "subject",
+      "type": "select",
+      "label": "Subject",
+      "options": [
+        "General Inquiry",
+        "Support Request",
+        "Sales Question",
+        "Partnership",
+        "Other"
+      ],
+      "required": true,
+      "id": "1758699792389mnh3kn7b8"
+    },
+    {
+      "name": "message",
+      "type": "textarea",
+      "label": "Message",
+      "placeholder": "Please describe your inquiry in detail...",
+      "required": true,
+      "description": "The more details you provide, the better we can assist you",
+      "id": "17586997923894l1tfflg2"
+    }
+  ],
+  "pageSize": "A4",
+  "orientation": "portrait",
+  "margins": {
+    "top": 50,
+    "bottom": 50,
+    "left": 50,
+    "right": 50
+  },
+  "styling": {
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#6b7280"
+  }
+}

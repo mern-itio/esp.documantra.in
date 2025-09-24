@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '../DocumentService/ui/button';
 import { Card } from '../DocumentService/ui/card';
-import { Select } from '../DocumentService/ui/select';
+// import { Select } from '../DocumentService/ui/select';
 import Badge from '../DocumentService/ui/badge';
 import { Alert } from '../DocumentService/ui/alert';
 import { qualityAnalysisService, qualityAnalysisHelpers } from '../../services/qualityAnalysisService';
 import type {
   QualityAnalysisResponse,
   // QualityAnalysisT,
-  QualityAnalysisPreset,
+  // QualityAnalysisPreset,
 } from '../../types/qualityAnalysis';
 import {
   FileText,
@@ -32,25 +32,25 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<QualityAnalysisResponse | null>(null);
-  const [presets, setPresets] = useState<QualityAnalysisPreset[]>([]);
-  const [selectedPreset, setSelectedPreset] = useState<string>('comprehensive');
+  // const [presets, setPresets] = useState<QualityAnalysisPreset[]>([]);
+  // const [selectedPreset, setSelectedPreset] = useState<string>('comprehensive');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadPresets();
-  }, []);
+  // useEffect(() => {
+  //   loadPresets();
+  // }, []);
 
-  const loadPresets = async () => {
-    try {
-      const response = await qualityAnalysisService.getPresets();
-      setPresets(response.presets);
-    } catch (error) {
-      console.error('Failed to load presets:', error);
-    }
-  };
+  // const loadPresets = async () => {
+  //   try {
+  //     const response = await qualityAnalysisService.getPresets();
+  //     // setPresets(response.presets);
+  //   } catch (error) {
+  //     console.error('Failed to load presets:', error);
+  //   }
+  // };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -76,7 +76,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
     try {
       const response = await qualityAnalysisService.analyzeQuality({
         file: selectedFile,
-        preset: selectedPreset
+        // preset: selectedPreset
       });
 
       setResult(response);
@@ -194,7 +194,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
       {/* Preset Selection */}
       {selectedFile && (
         <Card className="p-6">
-          <div className="mb-4">
+          {/* <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Analysis Preset
             </label>
@@ -212,7 +212,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
             <p className="text-sm text-gray-500 mt-1">
               {qualityAnalysisHelpers.getPresetDescription(selectedPreset)}
             </p>
-          </div>
+          </div> */}
 
           <div className="text-center">
             <Button

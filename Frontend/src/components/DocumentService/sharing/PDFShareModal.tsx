@@ -408,11 +408,17 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
     setShareData(null);
     onClose();
   };
+  const [copied, setCopied] = useState(false);
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // reset after 2s
+    } catch (err) {
+      console.error("Failed to copy: ", err);
+    }
   };
-
   if (!isOpen) return null;
 
   return (
@@ -434,8 +440,8 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
           {(existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === stepName ? 'bg-blue-600 text-white' :
-                  (existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).indexOf(step) > index ? 'bg-green-600 text-white' :
-                    'bg-gray-300 text-gray-600'
+                (existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).indexOf(step) > index ? 'bg-green-600 text-white' :
+                  'bg-gray-300 text-gray-600'
                 }`}>
                 {existingDocument ? index + 1 : index + 1}
               </div>
@@ -854,11 +860,12 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                     className="flex-1"
                   />
                   <Button
-                    onClick={() => copyToClipboard(shareData.shareUrl)}
+                    onClick={() => copyToClipboard(shareData?.shareUrl || "")}
                     variant="outline"
                   >
-                    Copy
+                    {copied ? "Copied" : "Copy"}
                   </Button>
+
                 </div>
                 <p className="text-sm text-gray-600 mt-2">
                   Share this link with anyone you want to give access to the document
@@ -873,8 +880,8 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                       <span className="font-medium">{recipient.email}</span>
                       {recipient.type && (
                         <span className={`px-2 py-1 text-xs rounded ${recipient.type === 'TO' ? 'bg-blue-100 text-blue-800' :
-                            recipient.type === 'CC' ? 'bg-gray-100 text-gray-800' :
-                              'bg-gray-100 text-gray-800'
+                          recipient.type === 'CC' ? 'bg-gray-100 text-gray-800' :
+                            'bg-gray-100 text-gray-800'
                           }`}>
                           {recipient.type}
                         </span>
