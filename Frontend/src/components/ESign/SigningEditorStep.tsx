@@ -69,7 +69,7 @@ export default function SigningEditorStep({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [numPages, setNumPages] = useState<number>(0);
   const [dragging, setDragging] = useState(false);
-  const [draggedField, setDraggedField] = useState<null | { type: FieldType; label?: string }>(null);
+  const [draggedField, setDraggedField] = useState<null | { type: FieldType; label?: string; id?:string }>(null);
   const [dropPreview, setDropPreview] = useState<{ x: number; y: number } | null>(null);
   const [movingFieldId, setMovingFieldId] = useState<string | null>(null);
   const [moveOffset, setMoveOffset] = useState<{ x: number; y: number } | null>(null);
@@ -102,7 +102,8 @@ export default function SigningEditorStep({
     }
   }, [recipients, mode]);
 
-  const handleDragStart = (e: React.DragEvent, field: { type: FieldType; label?: string }) => {
+  const handleDragStart = (e: React.DragEvent, field: { type: FieldType; label?: string; id?:string }) => {
+    console.log(field.id);
     setDraggedField(field);
     setDragging(true);
     e.dataTransfer.effectAllowed = "move";
@@ -164,6 +165,7 @@ export default function SigningEditorStep({
         height,
         type: draggedField.type,
         label: draggedField.label,
+        fieldId: draggedField.id
       },
     ]);
 
@@ -451,7 +453,7 @@ export default function SigningEditorStep({
                     <div
                       key={field._id}
                       draggable
-                      onDragStart={e => handleDragStart(e, { type: field.type, label: field.label })}
+                      onDragStart={e => handleDragStart(e, { type: field.type, label: field.label, id: field._id })}
                       onDragEnd={handleDragEnd}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gray-50 cursor-grab"
                     >

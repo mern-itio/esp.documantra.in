@@ -23,6 +23,7 @@ interface SignPadProps {
   envelopeID?: string;
   defaultSign?: string | null;
   onSaveSign?: (fieldId: string, signatureUrl: string) => void;
+  selfValue?: string;
 }
 
 function SignPad({
@@ -33,7 +34,8 @@ function SignPad({
   documentId,
   envelopeID,
   defaultSign = null,
-  onSaveSign
+  onSaveSign,
+  selfValue
 }: SignPadProps) {
   const [penColor, setPenColor] = useState("blue");
   const [isTab, setIsTab] = useState<"draw" | "upload" | "typed">("draw");
@@ -110,7 +112,8 @@ function SignPad({
     }
 
     // Issue Certificate
-    const certificateId = await issueCertificate(currentUserId, envelopeID);
+
+    const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
     console.log(certificateId);
     const payload = {
       fieldId: activeField?._id,
@@ -119,7 +122,8 @@ function SignPad({
       documentId,
       recipientId: currentUserId,
       certificateId,
-      signerName: 'John Doe' 
+      signerName: 'John Doe' ,
+      selfValue:selfValue || ''
     };
 
     const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
@@ -132,10 +136,11 @@ function SignPad({
       alert("Failed to submit signature. Please try again.");
     }
   };
-const issueCertificate = async(recipientId:any, envelopeId:any) =>{
+const issueCertificate = async(recipientId:any, envelopeId:any, selfValue:any) =>{
   const payload = {
     recipientId:recipientId,
-    envelopeId:envelopeId
+    envelopeId:envelopeId,
+    selfValue:selfValue
   }
   try{
     const issueCertificate = await eSignApi.post('/api/e-sign/certificates/issue',payload);

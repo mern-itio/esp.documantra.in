@@ -223,6 +223,7 @@ import EsignAnalytics from '../pages/eSign/Analytics';
 import EsignSettings from '../pages/eSign/Settings';
 import EsignEnterpriseSettings from '../pages/eSign/EnterpriseSettings';
 import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
+import {PowerFormEmbed} from '../pages/eSign/PowerFormEmbed';
 // E-Signature Pages Ended
 
 // Template Pages Started
@@ -288,6 +289,7 @@ import PublicSignerPage from '../pages/eSign/PublicSignerPage';
 import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
 import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
+import { PowerForm } from '../pages/eSign/PowerForm';
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -762,6 +764,7 @@ const authRoutes = [
   { path: '/e-sign/settings', element: <EsignSettings /> },
   { path: '/e-sign/enterprise', element: <EsignEnterpriseSettings /> },
   { path: '/e-sign/admin', element: <EsignESignatureAdmin /> },
+  { path: '/e-sign/power-form-embed/:formId/:envelopeId', element: <PowerFormEmbed/>},
 
   // Template Routes
   { path: '/template/dashboard', element: <TemplateDashboard /> },
@@ -887,7 +890,8 @@ const router = createBrowserRouter([
     element: <PublicSignerLayout />,
     children: [
       { path: 'e-sign/signer/:id/:recipientId', element: <PublicSignerPage /> },
-      { path: '/template/form-view/:id', element:<FormView/>}
+      { path: '/template/form-view/:id', element:<FormView/>},
+      { path: '/e-sign/power-form/:formId/:envelopeId', element:<PowerForm/>}
     ],
   },
   {

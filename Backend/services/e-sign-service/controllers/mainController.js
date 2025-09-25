@@ -15,6 +15,8 @@ const Document = require('../models/Document');
 const { issueCertificate } = require('../services/pkiService');
 const { generateAndStoreCompletionCertificate } = require('../services/certificateGenerator');
 const fs = require('fs');
+const selfSigner = require('../models/selfSigner');
+const { sign } = require('crypto');
 
 const envelopesData = async (req, res) => {
     const userId = req.user.data.id;
@@ -140,6 +142,8 @@ const envelopesDetail = async (req, res) => {
             createdAt: envelope.createdAt,
             sentAt: envelope.updatedAt,
             expiresAt: envelope.expirationDate,
+            isPowerForm: envelope.isPowerForm,
+            powerFormId:envelope.powerFormId,
             sender: {
                 id: senderDetails?.data?._id,
                 name: senderDetails?.data?.fullname,
@@ -698,6 +702,83 @@ const connectPowerForm = async (req, res) => {
     return res.status(500).json({ message: "Server error", error });
   }
 }
+const getEnvelopePower = async (req, res) => {
+  try{
+    const { powerFormId, envelopeId } = req.params;
+    const envelope = await Envelope.findOne({powerFormId:powerFormId, _id:envelopeId});
+    if (!envelope) {
+      return res.status(404).json({ message: "Envelope not found." });
+    }
+      return res.status(200).json({ message: "Power form envelope found", envelope });
+  }catch (err){
+    console.log(err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+const signerInitiate = async (req, res) =>{
+  try{
+    const { envelopeId, formId, data } = req.body;
+    let signerSlotId;
+    console.log(`Envelope Id: ${envelopeId} Form ID: ${formId}, Data ${JSON.stringify(data)}`)
+    const envelope = await Envelope.findById(envelopeId);
+    if (!envelope) {
+      return res.status(404).json({ message: "Envelope not found." });
+    }
+    const allSlots = envelope.slots || [];
+    // Check if first signer is creator
+    const isCreatorFirst = envelope.firstSigningSlotId === envelope.creatorSlotId;
+
+    if (isCreatorFirst) {
+        // Only if creator is first, find next signer
+        const higherIndexSlots = allSlots
+            .filter(s => s.index.$numberInt > firstSigner.index.$numberInt)
+            .sort((a, b) => a.index.$numberInt - b.index.$numberInt);
+
+        const nextSigner = higherIndexSlots.length
+            ? higherIndexSlots[0]
+            : allSlots
+                .filter(s => s.slotId !== firstSigner.slotId)
+                .sort((a, b) => a.index.$numberInt - b.index.$numberInt)[0];
+        signerSlotId = nextSigner ? nextSigner.slotId : null;
+        console.log("Next Signer after creator:", nextSigner.slotId);
+    } else {
+      signerSlotId = envelope.firstSigningSlotId;
+        console.log("First signer is not creator, no need to find next signer");
+    }
+
+    //prepare slot for signer
+    const signerInitiate = new selfSigner({
+      envelopeId:envelopeId,
+      formId:formId,
+      data,
+      signerSlotId:signerSlotId,
+      status:"initiated"
+    });
+    await signerInitiate.save();
+    return res.status(201).json({message:'Signer Initiated', signerInitiate});
+  }catch (err){
+    console.log(err);
+    return res.status(500).json({message: "Server error", error: err.message});
+  }
+}
+const getSelfSigner = async (req, res) => {
+  try {
+    const { id } = req.params;  // get the id from URL params
+    const selfsigner = await selfSigner.findById(id);
+
+    if (!selfsigner) {
+      return res.status(404).json({ message: "Self signer not found" });
+    }
+
+    // Successfully found
+    return res.status(200).json(selfsigner);
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 // Export functions
 module.exports = {
   envelopesData,
@@ -717,5 +798,8 @@ module.exports = {
   removeDocFromEnvelope,
   getEnvSignFields,
   removeDocSignField,
-  connectPowerForm
+  connectPowerForm,
+  getEnvelopePower,
+  signerInitiate,
+  getSelfSigner
 };

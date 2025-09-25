@@ -45,6 +45,10 @@ const SignatureFields = new mongoose.Schema({
     type: String, 
     default: "" 
   },
+  fieldId:{
+    type: String,
+    default:""
+  },
 
   // Status
   status: { 

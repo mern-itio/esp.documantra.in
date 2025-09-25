@@ -2,6 +2,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import React, { useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import SignPad from './SignPad';
+import { eSignApi } from '../../services/apiHelper';
 
 interface Props {
   document: any;
@@ -15,10 +16,19 @@ interface Props {
 Modal.setAppElement('#root');
 
 const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUserId, onClose,envelopeID,onSignatureSave}) => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const selfValue = urlParams.get('self'); 
   const [activeField, setActiveField] = useState<any>(null);
+  const [selfSigner, setSelfSigner] = useState<any>(null);
   console.log(`Envelope ID in DocumentViewer: ${envelopeID}`);
     // --- PDF.js worker setup ---
   useEffect(() => {
+    console.log(selfValue); // "1"
+    if(selfValue==="1"){
+      getSelfSigner();
+    }else{
+      console.log("Regular Signer Mode Enabled");
+    }
     if (typeof window !== "undefined") {
       try {
         // Point to the worker file in your public folder
@@ -37,6 +47,19 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
     setActiveField(field);
   };
   console.log(`Document: ${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`)
+  const getSelfSigner = async () => {
+    try {
+      const response = await eSignApi.get(`/api/e-sign/public/envelope/self-signer/${currentUserId}`);
+      if (response && response.data) {
+        setSelfSigner(response.data);
+        console.log("Self Signer Data:", response.data);
+      } else {
+        console.warn("No self-signer data found in response");
+      }
+    } catch (err) {
+      console.error('Failed to load self-signer data:', err);
+    }
+  };
 
   return (
     <div className="relative flex flex-col items-center mt-4">
@@ -58,44 +81,92 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
         {/* Signature Fields */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
           {signatureFields
-            .filter(field => (field.page.$numberInt || field.page) === currentPage) // page filter
+            .filter(field => (field.page.$numberInt || field.page) === currentPage)
             .map(field => {
-              const isCurrentUser = field.recipientId === currentUserId;
+              const isSignatureType = field.type === "signature";
+              let isCurrentUser;
+                if (selfValue === "1") { 
+                    isCurrentUser = field.slotId === selfSigner.signerSlotId;                   // treat as current user for further logic if needed
+                } else {
+                    isCurrentUser = field.recipientId === currentUserId; // normal condition
+                }
               const isSigned = !!field.signature;
-              const signedImage = field.signature; // this should be the base64 or image URL
+              const signedImage = field.signature;
 
-              return (
-                <div
-                  key={field._id.$oid || field._id}
-                  style={{
-                    position: 'absolute',
-                    top: field.y.$numberDouble || field.y,
-                    left: field.x.$numberDouble || field.x,
-                    width: field.width.$numberInt || field.width,
-                    height: field.height.$numberInt || field.height,
-                    zIndex: 10,
-                    pointerEvents: isCurrentUser && !isSigned ? 'auto' : 'none',
-                  }}
-                  className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${
-                    isSigned
-                      ? ' border-green-500 '
-                      : isCurrentUser
-                      ? 'bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200'
-                      : 'bg-gray-100 border-gray-300 text-gray-500 opacity-50'
-                  }`}
-                  onClick={() => isCurrentUser && !isSigned && handleFieldClick(field)}
-                >
-                  {isSigned ? (
-                    <img
-                      src={signedImage}
-                      alt="Signed"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    isCurrentUser ? 'Sign Here' : 'Signature'
-                  )}
-                </div>
-              );
+              if (isSignatureType) {
+                return (
+                  <div
+                    key={field._id.$oid || field._id}
+                    style={{
+                      position: 'absolute',
+                      top: field.y.$numberDouble || field.y,
+                      left: field.x.$numberDouble || field.x,
+                      width: field.width.$numberInt || field.width,
+                      height: field.height.$numberInt || field.height,
+                      zIndex: 10,
+                      pointerEvents: isCurrentUser && !isSigned ? 'auto' : 'none',
+                    }}
+                    className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${
+                      isSigned
+                        ? 'border-green-500'
+                        : isCurrentUser
+                        ? 'bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200'
+                        : 'bg-gray-100 border-gray-300 text-gray-500 opacity-50'
+                    }`}
+                    onClick={() =>
+                      isCurrentUser && !isSigned && handleFieldClick(field)
+                    }
+                  >
+                    {isSigned ? (
+                      <img
+                        src={signedImage}
+                        alt="Signed"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      isCurrentUser ? 'Sign Here' : 'Signature'
+                    )}
+                  </div>
+                );
+              } else {
+                        const fieldId = field.fieldId || field._id.$oid || field._id;
+                        let displayValue = field.label || field.value || '';
+
+                        // Check if selfValue is "1" and selfSigner has data for this fieldId
+                        if (selfValue === "1" && selfSigner?.data) {
+                            // Loop through selfSigner.data keys and find a match with field.fieldId
+                            for (const key in selfSigner.data) {
+                                if (key === fieldId) {
+                                    displayValue = selfSigner.data[key]; // use the matched value
+                                    break;
+                                }
+                            }
+                        }
+
+                        return (
+                            <div
+                                key={fieldId}
+                                style={{
+                                    position: 'absolute',
+                                    top: field.y.$numberDouble || field.y,
+                                    left: field.x.$numberDouble || field.x,
+                                    width: field.width.$numberInt || field.width,
+                                    height: field.height.$numberInt || field.height,
+                                    zIndex: 10,
+                                    background: 'transparent',
+                                    border: 'none',
+                                    padding: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    pointerEvents: 'none',
+                                }}
+                            >
+                                <span className="text-sm text-gray-700">{displayValue}</span>
+                            </div>
+                        );
+                     }
+
             })}
         </div>
       </div>
@@ -133,6 +204,7 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
             documentId={document.id}
             envelopeID={envelopeID}
             defaultSign={null} // if you have a default saved signature
+            selfValue={selfValue || ''}
             onSaveSign={(fieldId: string, signatureUrl: string) => {
                           // Forward event to parent
                           onSignatureSave?.(fieldId, signatureUrl);
