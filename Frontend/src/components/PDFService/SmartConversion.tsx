@@ -307,17 +307,8 @@ const SmartConversion: React.FC = () => {
                     />
                   </div>
                 </div>
-
               )}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFileSelect}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.svg,.eps,.ai"
-            />
+            </div>           
           </Card>
         )}
 

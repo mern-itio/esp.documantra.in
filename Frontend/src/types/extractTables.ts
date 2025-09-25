@@ -1,12 +1,12 @@
 export interface ExtractTablesRequest {
   files: File[];
-  detectionMethod: 'auto' | 'manual' | 'all';
+  // detectionMethod: 'auto' | 'manual' | 'all';
   outputFormat: 'xlsx' | 'csv' | 'xls';
   preserveFormatting: boolean;
   extractHeaders: boolean;
   mergeTables: boolean;
   pageRange?: string;
-  language: string;
+  // language: string;
 }
 
 export interface ExtractTablesResponse {
@@ -17,7 +17,7 @@ export interface ExtractTablesResponse {
     totalFiles: number;
     successfulFiles: number;
     failedFiles: number;
-    detectionMethod: string;
+    // detectionMethod: string;
     outputFormat: string;
     preserveFormatting: boolean;
     extractHeaders: boolean;
@@ -35,13 +35,13 @@ export interface ExtractTablesResult {
   totalRows: number;
   totalColumns: number;
   pagesProcessed?: number;
-  detectionMethod: string;
+  // detectionMethod: string;
   outputFormat: string;
   preserveFormatting: boolean;
   extractHeaders: boolean;
   mergeTables: boolean;
   processingTime: number;
-  language: string;
+  // language: string;
 }
 
 export interface ExtractTablesError {

@@ -251,13 +251,18 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   // Toggle page selection
   const togglePageSelection = useCallback((pageNumber: number) => {
     setSelectedPages(prev => {
-      if (prev.includes(pageNumber)) {
-        return prev.filter(p => p !== pageNumber);
-      } else {
-        return [...prev, pageNumber].sort((a, b) => a - b);
+      const newSelection = prev.includes(pageNumber)
+        ? prev.filter(p => p !== pageNumber)
+        : [...prev, pageNumber].sort((a, b) => a - b);
+      
+      // Auto-activate custom range mode when pages are deselected
+      if (newSelection.length !== pdfPages.length) {
+        setSplitMode('custom');
       }
+      
+      return newSelection;
     });
-  }, []);
+  }, [pdfPages.length]);
 
   // Select all pages
   const selectAllPages = useCallback(() => {
@@ -269,8 +274,47 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
     setSelectedPages([]);
   }, []);
 
+  // Generate custom ranges from selected pages
+  const generateCustomRangesFromSelection = useCallback(() => {
+    if (selectedPages.length === 0) return [];
+    
+    const sortedPages = [...selectedPages].sort((a, b) => a - b);
+    const ranges = [];
+    let currentRange = { start: sortedPages[0], end: sortedPages[0] };
+    
+    for (let i = 1; i < sortedPages.length; i++) {
+      if (sortedPages[i] === sortedPages[i - 1] + 1) {
+        // Consecutive page, extend current range
+        currentRange.end = sortedPages[i];
+      } else {
+        // Gap found, save current range and start new one
+        ranges.push({
+          id: `range-${ranges.length + 1}`,
+          start: currentRange.start,
+          end: currentRange.end,
+          name: `Range ${ranges.length + 1}`
+        });
+        currentRange = { start: sortedPages[i], end: sortedPages[i] };
+      }
+    }
+    
+    // Add the last range
+    ranges.push({
+      id: `range-${ranges.length + 1}`,
+      start: currentRange.start,
+      end: currentRange.end,
+      name: `Range ${ranges.length + 1}`
+    });
+    
+    return ranges;
+  }, [selectedPages]);
+
   // Calculate split visualization
   const getSplitVisualization = useCallback(() => {
+    if (splitMode === 'custom') {
+      return generateCustomRangesFromSelection();
+    }
+    
     if (splitMode !== 'pages' || !pagesPerSplit || selectedPages.length === 0) {
       return [];
     }
@@ -289,7 +333,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
     }
     
     return splits;
-  }, [splitMode, pagesPerSplit, selectedPages]);
+  }, [splitMode, pagesPerSplit, selectedPages, generateCustomRangesFromSelection]);
 
   const addCustomRange = useCallback(() => {
     const newRange: CustomRange = {
@@ -329,7 +373,9 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
       } else if (splitMode === 'size') {
         request.maxSizeMB = maxSizeMB;
       } else if (splitMode === 'custom') {
-        request.customRanges = customRanges;
+        // Use generated ranges from selected pages if no manual ranges exist
+        const rangesToUse = customRanges.length > 0 ? customRanges : generateCustomRangesFromSelection();
+        request.customRanges = rangesToUse;
       }
 
       // Start progress simulation
@@ -359,14 +405,24 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   };
 
   const downloadAll = async () => {
-    if (!splitResult?.files) return;
+    console.log('Download button clicked');
+    console.log('splitResult:', splitResult);
+    console.log('zipFile:', (splitResult as any)?.zipFile);
+    
+    if (!(splitResult as any)?.zipFile) {
+      console.error('No ZIP file found in split result');
+      alert('No ZIP file available for download');
+      return;
+    }
     
     try {
-      // Download all files as a zip
-      await splitPDFService.downloadAllSplitPDFs(splitResult.files);
+      console.log('Starting ZIP download...');
+      // Download ZIP file
+      await splitPDFService.downloadZipFile((splitResult as any).zipFile);
+      console.log('ZIP download completed successfully');
     } catch (error) {
-      console.error('Download all error:', error);
-      alert('Failed to download zip file');
+      console.error('Download ZIP error:', error);
+      alert('Failed to download ZIP file: ' + (error as Error).message);
     }
   };
 
@@ -376,7 +432,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
   const canSplit = document && !document.error && !document.isProcessing && 
     selectedPages.length > 0 &&
-    (splitMode !== 'custom' || customRanges.length > 0) &&
+    (splitMode !== 'custom' || customRanges.length > 0 || generateCustomRangesFromSelection().length > 0) &&
     (splitMode !== 'pages' || (pagesPerSplit && pagesPerSplit > 0));
 
   return (
@@ -705,7 +761,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
           )}
 
             {/* Split Visualization */}
-            {splitMode === 'pages' && pagesPerSplit && selectedPages.length > 0 && (
+            {selectedPages.length > 0 && (
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
                   <Eye className="w-4 h-4 mr-2" />
@@ -722,7 +778,10 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                           PDF {index + 1}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Pages {split.startPage}-{split.endPage} ({split.pages.length} page{split.pages.length !== 1 ? 's' : ''})
+                          {splitMode === 'custom' 
+                            ? `Pages ${(split as any).start}-${(split as any).end} (${(split as any).end - (split as any).start + 1} page${(split as any).end - (split as any).start !== 0 ? 's' : ''})`
+                            : `Pages ${(split as any).startPage}-${(split as any).endPage} (${(split as any).pages.length} page${(split as any).pages.length !== 1 ? 's' : ''})`
+                          }
                         </div>
                       </div>
                     </div>
@@ -776,34 +835,38 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Split Results</h3>
-            <button
-              onClick={downloadAll}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-            >
-              <Download className="w-5 h-5" />
-              <span>Download as ZIP</span>
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={downloadAll}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                disabled={!splitResult?.zipFile}
+              >
+                <Download className="w-5 h-5" />
+                <span>Download ZIP</span>
+              </button>
+              
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {splitResult.files?.map((file, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-10 bg-gray-200 rounded flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-gray-600" />
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Part {index + 1}
-                  </div>
+          {/* ZIP File Info */}
+          {(splitResult as any).zipFile && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Download className="w-5 h-5 text-green-600" />
                 </div>
-                <h4 className="font-medium text-gray-900 text-sm truncate">{file.filename}</h4>
-                <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
+                <div className="flex-1">
+                  <h4 className="font-medium text-green-900">{(splitResult as any).zipFile.filename}</h4>
+                  <p className="text-sm text-green-700">
+                    {formatFileSize((splitResult as any).zipFile.size)} • Contains {splitResult.totalFiles} PDF file{splitResult.totalFiles !== 1 ? 's' : ''}
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
           <div className="mt-4 text-center text-sm text-gray-600">
-            Successfully created {splitResult.totalFiles} file{splitResult.totalFiles !== 1 ? 's' : ''} - Download as ZIP to get all files
+            Successfully created {splitResult.totalFiles} file{splitResult.totalFiles !== 1 ? 's' : ''} - All files are packaged in the ZIP download
           </div>
         </div>
       )}

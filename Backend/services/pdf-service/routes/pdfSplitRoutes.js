@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const fs = require('fs-extra');
 const path = require('path');
+const archiver = require('archiver');
 const {
   splitByPages,
   splitByCustomRanges,
@@ -80,19 +81,70 @@ router.post('/split', upload.single('file'), async (req, res) => {
 
     console.log(`PDF split successfully by ${mode}. Created ${resultFiles.length} files.`);
 
-    // Clean up uploaded file
-    await fs.remove(filePath);
-
-    res.json({
-      success: true,
-      message: `PDF split successfully by ${mode}`,
-      splitInfo,
-      files: resultFiles.map(f => ({
-        filename: path.basename(f),
-        path: f,
-        size: fs.statSync(f).size
-      })),
-      totalFiles: resultFiles.length
+    // Create ZIP file
+    const zipFileName = `split_${Date.now()}.zip`;
+    const zipPath = path.join(__dirname, '../outputs', zipFileName);
+    
+    // Ensure outputs directory exists
+    await fs.ensureDir(path.dirname(zipPath));
+    
+    // Create ZIP archive
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    
+    return new Promise((resolve, reject) => {
+      output.on('close', async () => {
+        console.log(`ZIP file created: ${zipPath} (${archive.pointer()} bytes)`);
+        
+        // Clean up individual PDF files
+        for (const file of resultFiles) {
+          await fs.remove(file).catch(console.error);
+        }
+        
+        // Clean up uploaded file
+        await fs.remove(filePath);
+        
+        res.json({
+          success: true,
+          message: `PDF split successfully by ${mode}`,
+          splitInfo,
+          zipFile: {
+            filename: zipFileName,
+            path: zipPath,
+            size: archive.pointer(),
+            downloadUrl: `/pdf-split/download/${zipFileName}`
+          },
+          totalFiles: resultFiles.length
+        });
+        resolve();
+      });
+      
+      archive.on('error', async (err) => {
+        console.error('Archive error:', err);
+        
+        // Clean up files on error
+        for (const file of resultFiles) {
+          await fs.remove(file).catch(console.error);
+        }
+        await fs.remove(filePath).catch(console.error);
+        
+        res.status(500).json({ 
+          success: false, 
+          error: 'Failed to create ZIP file',
+          message: err.message 
+        });
+        reject(err);
+      });
+      
+      archive.pipe(output);
+      
+      // Add each PDF file to the archive
+      resultFiles.forEach((file, index) => {
+        const fileName = path.basename(file);
+        archive.file(file, { name: fileName });
+      });
+      
+      archive.finalize();
     });
 
   } catch (err) {
@@ -156,6 +208,41 @@ router.post('/info', upload.single('file'), async (req, res) => {
   }
 });
 
+// Download ZIP file endpoint
+router.get('/download/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, '../outputs', filename);
+  
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ 
+      success: false, 
+      error: 'File not found' 
+    });
+  }
+  
+  // Set headers for file download
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  
+  // Stream the file
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
+  
+  // Clean up file after download
+  fileStream.on('end', () => {
+    fs.remove(filePath).catch(console.error);
+  });
+  
+  fileStream.on('error', (err) => {
+    console.error('File stream error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to download file' 
+    });
+  });
+});
+
 // Test endpoint
 router.get('/test', (req, res) => {
   res.json({
@@ -163,7 +250,8 @@ router.get('/test', (req, res) => {
     message: 'Split PDF service is running',
     endpoints: {
       split: 'POST /pdf-service/split',
-      info: 'POST /pdf-service/info'
+      info: 'POST /pdf-service/info',
+      download: 'GET /pdf-service/download/:filename'
     },
     timestamp: new Date().toISOString()
   });

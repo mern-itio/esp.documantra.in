@@ -8,17 +8,22 @@ import { FiDownload, FiX } from 'react-icons/fi';
 const ExtractPDFPage: React.FC = () => {
   const [extractResult, setExtractResult] = useState<ExtractPDFResponse | null>(null);
 //  const location = useLocation();
+
+  const handleExtractComplete = (result: ExtractPDFResponse) => {
+    setExtractResult(result);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">   
 
       {/* Main Content */}
       <div className="">
-        <ExtractPDF />
+        <ExtractPDF onExtractComplete={handleExtractComplete} />
       </div>
 
       {/* Success/Error Modal */}
       {extractResult && (
-        <div className="fixed inset-0 bg-black backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             {extractResult.success ? (
               <>
@@ -58,8 +63,15 @@ const ExtractPDFPage: React.FC = () => {
                   </button>
                   {extractResult.file && (
                     <button
-                      onClick={() => {
-                        // Handle download here
+                      onClick={async () => {
+                        try {
+                          // Import the service dynamically to avoid circular dependencies
+                          const { extractPDFService } = await import('../../services/extractPDFService');
+                          await extractPDFService.downloadExtractedPDF(extractResult.file!.filename);
+                        } catch (error) {
+                          console.error('Download error:', error);
+                          alert('Failed to download file');
+                        }
                         setExtractResult(null);
                       }}
                       className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"

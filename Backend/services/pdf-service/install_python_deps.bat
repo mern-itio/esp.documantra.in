@@ -1,58 +1,49 @@
 @echo off
-REM PDF Editor Python Dependencies Installation Script for Windows
+REM Install Python dependencies for PDF table extraction
+REM This script installs the required Python packages for the table extraction functionality
 
-echo Installing Python dependencies for PDF Editor...
+echo 🐍 Installing Python dependencies for PDF table extraction...
+echo ==============================================================
 
-REM Check if Python is installed
+REM Check if Python 3 is available
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo Python is not installed. Please install Python first.
+    echo ❌ Python is not installed. Please install Python 3 first.
     pause
     exit /b 1
 )
 
-REM Check if pip is installed
+REM Check if pip is available
 pip --version >nul 2>&1
 if errorlevel 1 (
-    echo pip is not installed. Please install pip first.
+    echo ❌ pip is not installed. Please install pip first.
     pause
     exit /b 1
 )
 
-REM Install PyMuPDF (fitz) - Main PDF processing library
-echo Installing PyMuPDF...
-pip install PyMuPDF==1.23.14
+echo ✅ Python and pip are available
 
-REM Install other PDF processing libraries
-echo Installing PDF processing libraries...
-pip install pdf2pic==3.2.0
-pip install pdf-parse==1.1.1
+REM Install dependencies from requirements.txt
+echo 📦 Installing dependencies from requirements.txt...
+pip install -r requirements.txt
 
-REM Install image processing libraries
-echo Installing image processing libraries...
-pip install Pillow==10.1.0
-pip install opencv-python==4.8.1.78
+if errorlevel 1 (
+    echo ❌ Failed to install dependencies
+    pause
+    exit /b 1
+)
 
-REM Install text processing libraries
-echo Installing text processing libraries...
-pip install pytesseract==0.3.10
-pip install nltk==3.8.1
+echo ✅ Dependencies installed successfully
 
-REM Install data processing libraries
-echo Installing data processing libraries...
-pip install pandas==2.1.4
-pip install numpy==1.24.3
+REM Test the installation
+echo 🧪 Testing installation...
+python scripts/test_python_deps.py
 
-REM Install web framework libraries
-echo Installing web framework libraries...
-pip install Flask==3.0.0
-pip install Flask-CORS==4.0.0
+if errorlevel 1 (
+    echo ❌ Installation test failed. Please check the error messages above.
+    pause
+    exit /b 1
+)
 
-REM Install utility libraries
-echo Installing utility libraries...
-pip install python-dotenv==1.0.0
-pip install requests==2.31.0
-
-echo All Python dependencies installed successfully!
-echo You can now run the PDF Editor service.
+echo 🎉 Python environment is ready for PDF table extraction!
 pause

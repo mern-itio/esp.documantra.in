@@ -4,8 +4,21 @@ FROM node:20
 RUN apt-get update && apt-get install -y \
     qpdf \
     exiftool \
+    libimage-exiftool-perl \
     ghostscript \
     tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-fra \
+    tesseract-ocr-deu \
+    tesseract-ocr-spa \
+    tesseract-ocr-ita \
+    tesseract-ocr-por \
+    tesseract-ocr-rus \
+    tesseract-ocr-jpn \
+    tesseract-ocr-kor \
+    tesseract-ocr-chi-sim \
+    tesseract-ocr-chi-tra \
+    tesseract-ocr-ara \
     imagemagick \
     pdftk \
     enscript \
@@ -13,6 +26,15 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     python3-full \
     python3-venv \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3 /usr/bin/python
 
@@ -23,10 +45,14 @@ COPY services/pdf-service/requirements.txt ./services/pdf-service/
 
 # Create venv + install Python deps inside it
 RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
     && /opt/venv/bin/pip install --no-cache-dir -r ./services/pdf-service/requirements.txt
 
 # Add venv to PATH
 ENV PATH="/opt/venv/bin:$PATH"
+
+# Test Python installation
+RUN python -c "import pdfplumber, pandas, openpyxl, numpy, cv2; print('Python dependencies installed successfully')"
 
 # Copy Node package manifests
 COPY packages/auth-lib/package*.json ./packages/auth-lib/
@@ -40,6 +66,9 @@ COPY services/pdf-service ./services/pdf-service
 
 # Make Python scripts executable
 RUN chmod +x ./services/pdf-service/scripts/*.py
+
+# Test Python scripts
+RUN python ./services/pdf-service/scripts/test_python_deps.py
 
 # Install local Node deps
 WORKDIR /app/packages/auth-lib

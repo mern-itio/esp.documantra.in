@@ -412,11 +412,130 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // reset after 2s
+      // Try modern clipboard API first (requires HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+      
+      // Fallback for HTTP or older browsers
+      fallbackCopyToClipboard(text);
     } catch (err) {
       console.error("Failed to copy: ", err);
+      // Try fallback method
+      fallbackCopyToClipboard(text);
+    }
+  };
+
+  const fallbackCopyToClipboard = (text: string) => {
+    try {
+      // Method 1: Try with a temporary textarea (most reliable)
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      
+      // Make it invisible but still selectable
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.style.opacity = '0';
+      textArea.style.pointerEvents = 'none';
+      textArea.setAttribute('readonly', '');
+      
+      document.body.appendChild(textArea);
+      
+      // Select the text
+      textArea.select();
+      textArea.setSelectionRange(0, 99999); // For mobile devices
+      
+      // Try to copy
+      let successful = false;
+      try {
+        successful = document.execCommand('copy');
+      } catch (execErr) {
+        console.log('execCommand failed, trying alternative method');
+      }
+      
+      // Clean up
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+      
+      // Method 2: Try with a temporary input element
+      const input = document.createElement('input');
+      input.value = text;
+      input.style.position = 'fixed';
+      input.style.left = '-999999px';
+      input.style.top = '-999999px';
+      input.style.opacity = '0';
+      input.style.pointerEvents = 'none';
+      
+      document.body.appendChild(input);
+      input.select();
+      input.setSelectionRange(0, 99999);
+      
+      try {
+        successful = document.execCommand('copy');
+      } catch (execErr) {
+        console.log('Input execCommand also failed');
+      }
+      
+      document.body.removeChild(input);
+      
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+      
+      // Method 3: Try with window.getSelection (for text selection)
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const textNode = document.createTextNode(text);
+      document.body.appendChild(textNode);
+      range.selectNodeContents(textNode);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      
+      try {
+        successful = document.execCommand('copy');
+        selection?.removeAllRanges();
+      } catch (execErr) {
+        console.log('Selection method failed');
+      }
+      
+      document.body.removeChild(textNode);
+      
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+      
+      // If all methods fail, show the text in a prompt for manual copy
+      console.error('All copy methods failed');
+      const userConfirmed = window.confirm(
+        `Copy failed automatically. The link is: ${text}\n\nClick OK to open a dialog where you can manually copy the link.`
+      );
+      
+      if (userConfirmed) {
+        // Show the text in a prompt for manual copying
+        const manualCopy = window.prompt('Copy this link manually:', text);
+        if (manualCopy !== null) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }
+      }
+      
+    } catch (err) {
+      console.error('All fallback copy methods failed:', err);
+      // Last resort: show the text in an alert
+      alert(`Copy failed. Please manually copy this link: ${text}`);
     }
   };
   if (!isOpen) return null;
@@ -524,7 +643,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
               {/* TO Recipients */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <label className="text-sm font-medium text-gray-700 w-8">To</label>
+                  <label className="text-sm font-medium text-gray-700 w-12">To</label>
                   <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
                     {/* Email chips */}
                     {toRecipients.map((recipient, index) => (
@@ -558,21 +677,25 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
               {/* CC Recipients */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 flex items-center">
-                    {!showCc ? (
-                      <button
-                        onClick={() => setShowCc(true)}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Cc
-                      </button>
-                    ) : (
+                  <div className="flex items-center gap-8">
+                    <div>
                       <label className="text-sm font-medium text-gray-700">Cc</label>
-                    )}
+                    </div>
+                    <div>
+                      {!showCc && (
+                        <button
+                          onClick={() => setShowCc(true)}
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Add CC
+                        </button>
+                      )}
+                    </div>
                   </div>
+
                   {showCc && (
                     <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
-                      {/* Email chips */}
+             
                       {ccRecipients.map((recipient, index) => (
                         <div
                           key={`cc-chip-${index}`}
@@ -604,18 +727,21 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
               {/* BCC Recipients */}
               <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 flex items-center">
-                    {!showBcc ? (
-                      <button
-                        onClick={() => setShowBcc(true)}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Bcc
-                      </button>
-                    ) : (
+                <div className="flex items-center space-x-3">                 
+                  <div className="flex items-center gap-6">
+                    <div>
                       <label className="text-sm font-medium text-gray-700">Bcc</label>
-                    )}
+                    </div>
+                    <div>
+                      {!showBcc && (
+                        <button
+                          onClick={() => setShowBcc(true)}
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Add BCC
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {showBcc && (
                     <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
