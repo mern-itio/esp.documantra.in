@@ -4,6 +4,7 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
 const XLSX = require('xlsx');
+const TableExtractionErrorHandler = require('./errorHandler');
 
 const extractTablesController = {
   async extractTables(req, res) {
@@ -82,7 +83,9 @@ const extractTablesController = {
       const tools = {
         tesseract: { installed: false, version: null, message: '' },
         ghostscript: { installed: false, version: null, message: '' },
-        pdftk: { installed: false, version: null, message: '' }
+        pdftk: { installed: false, version: null, message: '' },
+        python: { installed: false, version: null, message: '' },
+        pythonScript: { available: false, path: '', message: '' }
       };
 
       // Check Tesseract
@@ -115,6 +118,34 @@ const extractTablesController = {
         tools.pdftk.message = 'PDFtk not found. Install for advanced PDF operations.';
       }
 
+      // Check Python
+      try {
+        const { stdout } = await execAsync('python3 --version');
+        tools.python.installed = true;
+        tools.python.version = stdout.trim();
+        tools.python.message = 'Python 3 is available for advanced table extraction';
+      } catch (error) {
+        try {
+          const { stdout } = await execAsync('python --version');
+          tools.python.installed = true;
+          tools.python.version = stdout.trim();
+          tools.python.message = 'Python is available for advanced table extraction';
+        } catch (error2) {
+          tools.python.message = 'Python not found. Install Python 3.7+ for better table extraction.';
+        }
+      }
+
+      // Check Python script
+      const scriptPath = path.join(__dirname, '../scripts/extract_tables_pdfplumber.py');
+      try {
+        const exists = await fs.pathExists(scriptPath);
+        tools.pythonScript.available = exists;
+        tools.pythonScript.path = scriptPath;
+        tools.pythonScript.message = exists ? 'Python table extraction script is available' : 'Python table extraction script not found';
+      } catch (error) {
+        tools.pythonScript.message = 'Error checking Python script availability';
+      }
+
       res.json(tools);
     } catch (error) {
       console.error('Error checking tools:', error);
@@ -123,10 +154,204 @@ const extractTablesController = {
         error: 'Error checking tool availability'
       });
     }
+  },
+
+  async diagnoseErrors(req, res) {
+    try {
+      console.log('Running diagnostic...');
+      
+      // Run Python diagnostic script
+      const diagnosticScript = path.join(__dirname, '../scripts/diagnose_errors.py');
+      
+      if (!await fs.pathExists(diagnosticScript)) {
+        return res.status(404).json({
+          success: false,
+          error: 'Diagnostic script not found'
+        });
+      }
+
+      const { stdout, stderr } = await execAsync(`python3 "${diagnosticScript}"`);
+      
+      res.json({
+        success: true,
+        diagnostic: stdout,
+        warnings: stderr
+      });
+      
+    } catch (error) {
+      console.error('Diagnostic failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        details: error.stack
+      });
+    }
   }
 };
 
 async function processFileExtractTables(
+  file,
+  detectionMethod,
+  outputFormat,
+  preserveFormatting,
+  extractHeaders,
+  mergeTables,
+  pageRange,
+  language
+) {
+  const startTime = Date.now();
+  const timestamp = Date.now();
+  const randomSuffix = Math.round(Math.random() * 1E9);
+  const outputDir = path.join(__dirname, '../outputs');
+  await fs.ensureDir(outputDir);
+
+  try {
+    // Check if Python script exists
+    const pythonScript = path.join(__dirname, '../scripts/extract_tables_pdfplumber.py');
+    
+    if (!await fs.pathExists(pythonScript)) {
+      console.warn('Python script not found, falling back to OCR method');
+      throw new Error('Python script not found');
+    }
+
+    // Check if Python is available
+    let pythonCmd = 'python3';
+    try {
+      await execAsync('python3 --version');
+    } catch (error) {
+      try {
+        await execAsync('python --version');
+        pythonCmd = 'python';
+      } catch (error2) {
+        throw new Error('Python not found. Please install Python 3.7+');
+      }
+    }
+
+    // Build Python command with proper escaping
+    const args = [
+      pythonScript,
+      `"${file.path}"`,
+      '--output-dir', `"${outputDir}"`,
+      '--detection-method', detectionMethod,
+      '--output-format', outputFormat,
+      '--json'
+    ];
+
+    if (preserveFormatting) {
+      args.push('--preserve-formatting');
+    }
+
+    if (extractHeaders) {
+      args.push('--extract-headers');
+    }
+
+    if (mergeTables) {
+      args.push('--merge-tables');
+    }
+
+    if (pageRange) {
+      args.push('--page-range', pageRange);
+    }
+
+    if (language !== 'eng') {
+      args.push('--language', language);
+    }
+
+    const fullCommand = `${pythonCmd} ${args.join(' ')}`;
+    console.log('Running Python table extraction:', fullCommand);
+    
+    // Execute with timeout and proper error handling
+    const { stdout, stderr } = await execAsync(fullCommand, {
+      timeout: 300000, // 5 minutes timeout
+      maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+    });
+    
+    // Log warnings but don't fail on them
+    if (stderr && !stderr.includes('INFO') && !stderr.includes('WARNING')) {
+      console.warn('Python script stderr:', stderr);
+    }
+
+    // Validate stdout
+    if (!stdout || stdout.trim() === '') {
+      throw new Error('Python script returned empty output');
+    }
+
+    let result;
+    try {
+      result = JSON.parse(stdout);
+    } catch (parseError) {
+      console.error('Failed to parse Python script output:', stdout);
+      throw new Error('Invalid JSON output from Python script');
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Python script failed');
+    }
+
+    // Validate output file exists
+    if (!result.output_file || !await fs.pathExists(result.output_file)) {
+      throw new Error('Python script did not create output file');
+    }
+
+    const processingTime = Date.now() - startTime;
+
+    return {
+      filename: file.originalname,
+      outputFilename: path.basename(result.output_file),
+      downloadUrl: `/pdf-extract-tables/download/${path.basename(result.output_file)}`,
+      originalSize: file.size,
+      processedSize: await fs.stat(result.output_file).then(stats => stats.size).catch(() => 0),
+      tablesDetected: result.tables_found || 0,
+      totalRows: result.tables ? result.tables.reduce((sum, table) => sum + (table.rows ? table.rows.length : 0), 0) : 0,
+      totalColumns: result.tables ? result.tables.reduce((sum, table) => Math.max(sum, table.columns || 0), 0) : 0,
+      pagesProcessed: result.stats?.total_pages || 1,
+      detectionMethod,
+      outputFormat,
+      preserveFormatting,
+      extractHeaders,
+      mergeTables,
+      processingTime,
+      language,
+      confidence: result.tables && result.tables.length > 0 ? 
+        result.tables.reduce((sum, table) => sum + (table.confidence || 0), 0) / result.tables.length : 0
+    };
+
+  } catch (pythonError) {
+    // Get detailed error information
+    const detailedErrorInfo = await TableExtractionErrorHandler.getDetailedErrorInfo(
+      pythonError, 
+      { 
+        file: file.originalname,
+        detectionMethod,
+        outputFormat,
+        preserveFormatting,
+        extractHeaders,
+        mergeTables,
+        pageRange,
+        language
+      }
+    );
+    
+    // Log detailed error
+    TableExtractionErrorHandler.logError(pythonError, detailedErrorInfo);
+    
+    console.error('Python script failed, falling back to OCR method:', pythonError.message);
+    
+    // Fallback to original OCR-based method
+    return await processFileExtractTablesOCR(
+      file,
+      detectionMethod,
+      outputFormat,
+      preserveFormatting,
+      extractHeaders,
+      mergeTables,
+      pageRange,
+      language
+    );
+  }
+}
+
+async function processFileExtractTablesOCR(
   file,
   detectionMethod,
   outputFormat,
@@ -165,7 +390,6 @@ async function processFileExtractTables(
     
     allTables.push(...pageTables);
   }
-
 
   // Generate output file
   const outputFilename = `tables_${path.parse(file.originalname).name}_${timestamp}_${randomSuffix}`;

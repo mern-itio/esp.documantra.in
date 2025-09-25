@@ -9,7 +9,7 @@ export const extractTablesService = {
       formData.append('files', file);
     });
     
-    formData.append('detectionMethod', request.detectionMethod);
+    // formData.append('detectionMethod', request.detectionMethod);
     formData.append('outputFormat', request.outputFormat);
     formData.append('preserveFormatting', request.preserveFormatting.toString());
     formData.append('extractHeaders', request.extractHeaders.toString());
@@ -19,7 +19,7 @@ export const extractTablesService = {
       formData.append('pageRange', request.pageRange);
     }
     
-    formData.append('language', request.language);
+    // formData.append('language', request.language);
 
     const response = await pdfApi.post('/pdf-extract-tables/process', formData, {
       headers: {
@@ -61,14 +61,14 @@ export const extractTablesService = {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   },
 
-  getDetectionMethodLabel(method: string): string {
-    const labels = {
-      auto: 'Auto-detect tables',
-      manual: 'Manual selection',
-      all: 'Convert all content'
-    };
-    return labels[method as keyof typeof labels] || method;
-  },
+  // getDetectionMethodLabel(method: string): string {
+  //   const labels = {
+  //     auto: 'Auto-detect tables',
+  //     manual: 'Manual selection',
+  //     all: 'Convert all content'
+  //   };
+  //   return labels[method as keyof typeof labels] || method;
+  // },
 
   getOutputFormatLabel(format: string): string {
     const labels = {
@@ -79,23 +79,23 @@ export const extractTablesService = {
     return labels[format as keyof typeof labels] || format;
   },
 
-  getLanguageName(code: string): string {
-    const languages: { [key: string]: string } = {
-      eng: 'English',
-      jpn: 'Japanese',
-      chi_sim: 'Chinese (Simplified)',
-      chi_tra: 'Chinese (Traditional)',
-      kor: 'Korean',
-      ara: 'Arabic',
-      rus: 'Russian',
-      deu: 'German',
-      fra: 'French',
-      spa: 'Spanish',
-      ita: 'Italian',
-      por: 'Portuguese'
-    };
-    return languages[code] || code;
-  },
+  // getLanguageName(code: string): string {
+  //   const languages: { [key: string]: string } = {
+  //     eng: 'English',
+  //     jpn: 'Japanese',
+  //     chi_sim: 'Chinese (Simplified)',
+  //     chi_tra: 'Chinese (Traditional)',
+  //     kor: 'Korean',
+  //     ara: 'Arabic',
+  //     rus: 'Russian',
+  //     deu: 'German',
+  //     fra: 'French',
+  //     spa: 'Spanish',
+  //     ita: 'Italian',
+  //     por: 'Portuguese'
+  //   };
+  //   return languages[code] || code;
+  // },
 
   validatePageRange(pageRange: string): boolean {
     if (!pageRange) return true;

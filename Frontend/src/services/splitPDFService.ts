@@ -92,7 +92,51 @@ export const splitPDFService = {
   },
 
   /**
-   * Download all split PDF files as a zip
+   * Download ZIP file containing all split PDFs
+   */
+  async downloadZipFile(zipFile: { filename: string; downloadUrl: string }): Promise<void> {
+    try {
+      console.log('Downloading ZIP file:', zipFile);
+      console.log('Download URL:', zipFile.downloadUrl);
+      
+      const response = await pdfApi.get(zipFile.downloadUrl, {
+        responseType: 'blob',
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data size:', response.data?.size);
+
+      if (response.status === 200) {
+        const blob = new Blob([response.data], { type: 'application/zip' });
+        console.log('Created blob:', blob.size, 'bytes');
+        
+        const url = URL.createObjectURL(blob);
+        console.log('Created object URL:', url);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = zipFile.filename;
+        console.log('Created download link:', a.href, 'filename:', a.download);
+        
+        document.body.appendChild(a);
+        console.log('Triggering download...');
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log('Download triggered successfully');
+      } else {
+        console.error('Unexpected response status:', response.status);
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error downloading ZIP file:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Download all split PDF files as a zip (legacy method for backward compatibility)
    */
   async downloadAllSplitPDFs(files: Array<{ filename: string; path: string }>): Promise<void> {
     try {

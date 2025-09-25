@@ -24,7 +24,7 @@ import { MoveDocumentsModal } from '../modals/MoveDocumentsModal';
 import PDFShareButton from '../sharing/PDFShareButton';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { folderAPI, documentAPI } from '../../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 export function DocumentHeader() {
   const {
     searchQuery,
@@ -51,6 +51,7 @@ export function DocumentHeader() {
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const hasSelection = selectedDocuments.length > 0;
 
 
@@ -316,8 +317,8 @@ export function DocumentHeader() {
             </Button>
           )}
 
-          {/* PDF Share */}
-          <PDFShareButton />
+          {/* PDF Share - Only show on /documents/shared-pdf route */}
+          {location.pathname === '/documents/shared-pdf' && <PDFShareButton />}
 
           {/* More Actions */}
           <div className="relative" ref={moreMenuRef}>

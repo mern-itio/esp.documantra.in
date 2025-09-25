@@ -9,15 +9,14 @@ import type {
 } from '../../types/spellCheck';
 import { Button } from '../DocumentService/ui/button';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Upload, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  Upload,
+  CheckCircle,
   AlertTriangle,
-  FileText, 
-  Settings, 
-  RotateCcw, 
-  Info, 
+  FileText,
+  RotateCcw,
+  Info,
   Globe,
   BookOpen,
   Zap,
@@ -31,7 +30,7 @@ import {
 } from 'lucide-react';
 
 const SpellCheck: React.FC = () => {
-   const location = useLocation();
+  const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<SpellCheckResponse | null>(null);
@@ -124,6 +123,17 @@ const SpellCheck: React.FC = () => {
   //   }
   // };
 
+  const removeFile = () => {
+    setSelectedFile(null);
+    setResult(null);
+    setError(null);
+    setSuccess(null);
+    setActiveTab('options');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const resetForm = () => {
     setSelectedFile(null);
     setResult(null);
@@ -163,7 +173,7 @@ const SpellCheck: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-                to={`/pdf-tools${location.search}`}
+              to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -197,85 +207,75 @@ const SpellCheck: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${selectedFile ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
         {/* Left Panel - File Upload and Configuration */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* File Upload Section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              Upload PDF File
-            </h2>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
-              >
-                <Upload className="w-12 h-12" />
-                <span className="text-lg font-medium">
-                  {selectedFile ? selectedFile.name : 'Click to upload PDF'}
-                </span>
-                {selectedFile && (
-                  <span className="text-sm text-gray-500">
-                    Size: {spellCheckService.formatFileSize(selectedFile.size)}
-                  </span>
-                )}
-              </button>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Upload PDF File
+              </h2>
             </div>
-          </div>
 
+            {!selectedFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                >
+                  <Upload className="w-12 h-12" />
+                  <span className="text-lg font-medium">Click to upload PDF</span>
+                  <span className="text-sm text-gray-500">Maximum file size: 2MB</span>
+                </button>
+              </div>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-green-900">{selectedFile.name}</h4>
+                      <p className="text-sm text-green-700">
+                        Size: {spellCheckService.formatFileSize(selectedFile.size)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={removeFile}
+                    className="text-red-600 hover:text-red-800 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          {!selectedFile && (
+            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-400">
+              <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
+                <Languages className="w-5 h-5 mr-2" />
+                Multilingual Support
+              </h3>
+              <p className="text-sm text-blue-700">
+                Our spell checker supports over 20 languages with native dictionaries and grammar rules
+                for accurate text analysis across different languages and writing styles.
+              </p>
+            </div>
+          )}
           {/* Configuration Options */}
           {selectedFile && (
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-center mb-6">
-                <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm border">
-                  <button
-                    onClick={() => setActiveTab('options')}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                      activeTab === 'options'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Options</span>
-                  </button>
-                  {result && (
-                    <>
-                      <button
-                        onClick={() => setActiveTab('results')}
-                        className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                          activeTab === 'results'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                        }`}
-                      >
-                        <BarChart3 className="w-4 h-4" />
-                        <span>Results</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('text')}
-                        className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                          activeTab === 'text'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                        }`}
-                      >
-                        <FileSearch className="w-4 h-4" />
-                        <span>Text</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
 
               {/* Options Tab */}
               {activeTab === 'options' && (
@@ -292,7 +292,7 @@ const SpellCheck: React.FC = () => {
                       <Globe className="w-4 h-4 mr-2" />
                       Language Settings
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -319,7 +319,7 @@ const SpellCheck: React.FC = () => {
                       <CheckSquare className="w-4 h-4 mr-2" />
                       Checking Options
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="flex items-center space-x-3">
                         <input
@@ -330,7 +330,7 @@ const SpellCheck: React.FC = () => {
                         />
                         <span className="text-sm text-gray-700">Check Grammar</span>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -340,7 +340,7 @@ const SpellCheck: React.FC = () => {
                         />
                         <span className="text-sm text-gray-700">Show Suggestions</span>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -350,7 +350,7 @@ const SpellCheck: React.FC = () => {
                         />
                         <span className="text-sm text-gray-700">Ignore Numbers</span>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -360,7 +360,7 @@ const SpellCheck: React.FC = () => {
                         />
                         <span className="text-sm text-gray-700">Ignore URLs</span>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -379,17 +379,16 @@ const SpellCheck: React.FC = () => {
                       <BookOpen className="w-4 h-4 mr-2" />
                       Custom Dictionaries
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {dictionaries.map((dictionary) => (
                         <button
                           key={dictionary.id}
                           onClick={() => handleDictionarySelect(dictionary)}
-                          className={`p-4 border-2 rounded-lg text-left transition-all hover:shadow-md ${
-                            selectedDictionary?.id === dictionary.id
+                          className={`p-4 border-2 rounded-lg text-left transition-all hover:shadow-md ${selectedDictionary?.id === dictionary.id
                               ? 'border-blue-500 bg-blue-50'
                               : 'border-gray-200 hover:border-blue-300'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center space-x-3 mb-2">
                             <BookOpen className="w-5 h-5 text-blue-600" />
@@ -469,7 +468,7 @@ const SpellCheck: React.FC = () => {
                         <XCircle className="w-4 h-4 mr-2 text-red-500" />
                         Misspelled Words ({result.spellCheckResults.misspelledWords.length})
                       </h4>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {result.spellCheckResults.misspelledWords.map((word, index) => (
                           <div key={index} className="border border-red-200 rounded-lg p-3">
@@ -502,7 +501,7 @@ const SpellCheck: React.FC = () => {
                         <AlertTriangle className="w-4 h-4 mr-2 text-yellow-500" />
                         Grammar Issues ({result.spellCheckResults.grammarIssues.length})
                       </h4>
-                      
+
                       <div className="space-y-3">
                         {result.spellCheckResults.grammarIssues.map((issue, index) => (
                           <div key={index} className="border border-yellow-200 rounded-lg p-3">
@@ -539,7 +538,7 @@ const SpellCheck: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900">Extracted Text</h3>
                     <p className="text-sm text-gray-600">Text content extracted from your PDF</p>
                   </div>
-                  
+
                   <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                     <pre className="text-sm text-gray-700 whitespace-pre-wrap">
                       {spellCheckService.formatExtractedText(result.extractedText, 2000)}
@@ -551,93 +550,77 @@ const SpellCheck: React.FC = () => {
           )}
         </div>
 
-        {/* Right Panel - Results and Information */}
-        <div className="space-y-6">
-          {/* Results Section */}
-          {result && (
+        {/* Right Panel - Information and Help - Only show when no file is selected */}
+        {!selectedFile && (
+          <div className="space-y-6">
+            {/* Help Information */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <CheckCircle className="w-6 h-6 text-green-500" />
-                <h3 className="text-lg font-semibold text-green-800">Spell Check Complete!</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Info className="w-5 h-5 mr-2" />
+                How It Works
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p><strong>1. Upload:</strong> Select your PDF file for spell checking</p>
+                <p><strong>2. Configure:</strong> Choose language and checking options</p>
+                <p><strong>3. Process:</strong> Extract text and check spelling/grammar</p>
+                <p><strong>4. Review:</strong> View results and suggestions</p>
+                <p><strong>5. Download:</strong> Get your analyzed PDF</p>
               </div>
-              
-              <div className="space-y-3 mb-4">
+            </div>
+
+            {/* Features */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Zap className="w-5 h-5 mr-2" />
+                Features
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>• Multilingual spell checking support</p>
+                <p>• Grammar and style checking</p>
+                <p>• Custom dictionary support</p>
+                <p>• Intelligent suggestions</p>
+                <p>• Context-aware analysis</p>
+              </div>
+            </div>
+
+
+          </div>
+        )}
+
+        {/* Results Section - Show when file is selected and spell check is complete */}
+        {selectedFile && result && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h3 className="text-lg font-semibold text-green-800">Spell Check Complete!</h3>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">File:</span>
+                <span className="text-sm text-gray-600">{result.filename}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Pages:</span>
+                <span className="text-sm text-gray-600">{result.totalPages}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Language:</span>
+                <span className="text-sm text-gray-600 flex items-center">
+                  {getLanguageFlag(result.spellCheckResults.language)} {getLanguageName(result.spellCheckResults.language)}
+                </span>
+              </div>
+              {stats && (
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">File:</span>
-                  <span className="text-sm text-gray-600">{result.filename}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Pages:</span>
-                  <span className="text-sm text-gray-600">{result.totalPages}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Language:</span>
-                  <span className="text-sm text-gray-600 flex items-center">
-                    {getLanguageFlag(result.spellCheckResults.language)} {getLanguageName(result.spellCheckResults.language)}
+                  <span className="text-sm font-medium text-gray-700">Accuracy:</span>
+                  <span className={`text-sm font-medium ${spellCheckService.getAccuracyColor(stats.accuracy)}`}>
+                    {stats.accuracy}% ({spellCheckService.getAccuracyLabel(stats.accuracy)})
                   </span>
                 </div>
-                {stats && (
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Accuracy:</span>
-                    <span className={`text-sm font-medium ${spellCheckService.getAccuracyColor(stats.accuracy)}`}>
-                      {stats.accuracy}% ({spellCheckService.getAccuracyLabel(stats.accuracy)})
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* <Button
-                onClick={handleDownload}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button> */}
-            </div>
-          )}
-
-          {/* Help Information */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Info className="w-5 h-5 mr-2" />
-              How It Works
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p><strong>1. Upload:</strong> Select your PDF file for spell checking</p>
-              <p><strong>2. Configure:</strong> Choose language and checking options</p>
-              <p><strong>3. Process:</strong> Extract text and check spelling/grammar</p>
-              <p><strong>4. Review:</strong> View results and suggestions</p>
-              <p><strong>5. Download:</strong> Get your analyzed PDF</p>
+              )}
             </div>
           </div>
-
-          {/* Features */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Zap className="w-5 h-5 mr-2" />
-              Features
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>• Multilingual spell checking support</p>
-              <p>• Grammar and style checking</p>
-              <p>• Custom dictionary support</p>
-              <p>• Intelligent suggestions</p>
-              <p>• Context-aware analysis</p>
-            </div>
-          </div>
-
-          {/* Language Support */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-400">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
-              <Languages className="w-5 h-5 mr-2" />
-              Multilingual Support
-            </h3>
-            <p className="text-sm text-blue-700">
-              Our spell checker supports over 20 languages with native dictionaries and grammar rules 
-              for accurate text analysis across different languages and writing styles.
-            </p>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Processing Overlay */}

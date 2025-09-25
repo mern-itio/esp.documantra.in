@@ -9,21 +9,19 @@ import type {
 } from '../../types/findReplace';
 import { Button } from '../DocumentService/ui/button';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Upload, 
-  CheckCircle, 
-  FileText, 
-  Settings, 
-  RotateCcw, 
-  Info, 
+import {
+  ArrowLeft,
+  Upload,
+  CheckCircle,
+  FileText,
+  RotateCcw,
+  Info,
   Search,
   Replace,
   Regex,
   CaseSensitive,
   WholeWord,
   FileSearch,
-  BarChart3,
   AlertCircle,
   CheckSquare,
   XCircle,
@@ -32,10 +30,10 @@ import {
   Eye,
   Zap,
 } from 'lucide-react';
-import FindReplaceToolbar from './FindReplaceToolbar';
+// import FindReplaceToolbar from './FindReplaceToolbar';
 
 const FindReplace: React.FC = () => {
-   const location = useLocation();
+  const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<FindReplaceResponse | null>(null);
@@ -79,7 +77,7 @@ const FindReplace: React.FC = () => {
   const handleMatchSelection = (matchIndex: number, isSelected: boolean) => {
     setOptions(prev => {
       const currentMatches = prev.selectedMatches || [];
-      const newSelectedMatches = isSelected 
+      const newSelectedMatches = isSelected
         ? [...currentMatches, matchIndex]
         : currentMatches.filter(index => index !== matchIndex);
       return { ...prev, selectedMatches: newSelectedMatches };
@@ -189,6 +187,18 @@ const FindReplace: React.FC = () => {
     }
   };
 
+  const removeFile = () => {
+    setSelectedFile(null);
+    setResult(null);
+    setPreview(null);
+    setError(null);
+    setSuccess(null);
+    setActiveTab('options');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const resetForm = () => {
     setSelectedFile(null);
     setResult(null);
@@ -214,26 +224,26 @@ const FindReplace: React.FC = () => {
     setShowToolbar(!showToolbar);
   };
 
-  const handleToolbarFind = (toolbarOptions: FindReplaceOptions) => {
-    setOptions(toolbarOptions);
-    if (selectedFile) {
-      handlePreview();
-    }
-  };
+  // const handleToolbarFind = (toolbarOptions: FindReplaceOptions) => {
+  //   setOptions(toolbarOptions);
+  //   if (selectedFile) {
+  //     handlePreview();
+  //   }
+  // };
 
-  const handleToolbarReplace = (toolbarOptions: FindReplaceOptions) => {
-    setOptions(toolbarOptions);
-    if (selectedFile) {
-      handleFindReplace();
-    }
-  };
+  // const handleToolbarReplace = (toolbarOptions: FindReplaceOptions) => {
+  //   setOptions(toolbarOptions);
+  //   if (selectedFile) {
+  //     handleFindReplace();
+  //   }
+  // };
 
-  const handleToolbarReplaceAll = (toolbarOptions: FindReplaceOptions) => {
-    setOptions({ ...toolbarOptions, replaceAll: true });
-    if (selectedFile) {
-      handleFindReplace();
-    }
-  };
+  // const handleToolbarReplaceAll = (toolbarOptions: FindReplaceOptions) => {
+  //   setOptions({ ...toolbarOptions, replaceAll: true });
+  //   if (selectedFile) {
+  //     handleFindReplace();
+  //   }
+  // };
 
   const stats = result ? findReplaceService.calculateStats(result.findReplaceResults) : null;
 
@@ -245,7 +255,7 @@ const FindReplace: React.FC = () => {
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center">
               <Link
-                   to={`/pdf-tools${location.search}`}
+                to={`/pdf-tools${location.search}`}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -272,7 +282,7 @@ const FindReplace: React.FC = () => {
       </div>
 
       {/* Floating Toolbar */}
-      <FindReplaceToolbar
+      {/* <FindReplaceToolbar
         isVisible={showToolbar}
         onClose={() => setShowToolbar(false)}
         onFind={handleToolbarFind}
@@ -283,7 +293,7 @@ const FindReplace: React.FC = () => {
         totalMatches={preview?.totalMatches || 0}
         isProcessing={isProcessing}
         error={error || undefined}
-      />
+      /> */}
 
       {/* Success/Error Messages */}
       {success && (
@@ -304,98 +314,80 @@ const FindReplace: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${selectedFile ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
         {/* Left Panel - File Upload and Configuration */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* File Upload Section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              Upload PDF File
-            </h2>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
-              >
-                <Upload className="w-12 h-12" />
-                <span className="text-lg font-medium">
-                  {selectedFile ? selectedFile.name : 'Click to upload PDF'}
-                </span>
-                {selectedFile && (
-                  <span className="text-sm text-gray-500">
-                    Size: {findReplaceService.formatFileSize(selectedFile.size)}
-                  </span>
-                )}
-              </button>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Upload PDF File
+              </h2>            
             </div>
-          </div>
 
-          {/* Configuration Options */}
-          {selectedFile && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-center mb-6">
-                <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm border">
+            {!selectedFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                >
+                  <Upload className="w-12 h-12" />
+                  <span className="text-lg font-medium">Click to upload PDF</span>
+                  <span className="text-sm text-gray-500">Maximum file size: 2MB</span>
+                </button>
+              </div>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-green-900">{selectedFile.name}</h4>
+                      <p className="text-sm text-green-700">
+                        Size: {findReplaceService.formatFileSize(selectedFile.size)}
+                      </p>
+                    </div>
+                  </div>
                   <button
-                    onClick={() => setActiveTab('options')}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                      activeTab === 'options'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    onClick={removeFile}
+                    className="text-red-600 hover:text-red-800 p-1 rounded-lg hover:bg-red-50 transition-colors"
                   >
-                    <Settings className="w-4 h-4" />
-                    <span>Options</span>
+                    <XCircle className="w-5 h-5" />
                   </button>
-                  {preview && (
-                    <button
-                      onClick={() => setActiveTab('matches')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                        activeTab === 'matches'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <FileSearch className="w-4 h-4" />
-                      <span>Matches ({preview.matches.length})</span>
-                    </button>
-                  )}
-                  {preview && (
-                    <button
-                      onClick={() => setActiveTab('preview')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                        activeTab === 'preview'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Preview</span>
-                    </button>
-                  )}
-                  {result && (
-                    <button
-                      onClick={() => setActiveTab('results')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                        activeTab === 'results'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      <span>Results</span>
-                    </button>
-                  )}
                 </div>
               </div>
+            )}
+            {/* Keyboard Shortcuts */}
+
+          </div>
+            {!selectedFile && (
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-400">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
+              <Search className="w-5 h-5 mr-2" />
+              Keyboard Shortcuts
+            </h3>
+            <div className="space-y-1 text-sm text-blue-700">
+              <p><strong>Ctrl+F:</strong> Open find toolbar</p>
+              <p><strong>Ctrl+H:</strong> Toggle replace mode</p>
+              <p><strong>F3:</strong> Find next match</p>
+              <p><strong>Shift+F3:</strong> Find previous match</p>
+              <p><strong>Escape:</strong> Close toolbar</p>
+            </div>
+          </div>
+            )}
+          {/* Configuration Options */}
+          {selectedFile && (
+            <div className="bg-white rounded-xl shadow-lg p-6">           
 
               {/* Options Tab */}
               {activeTab === 'options' && (
@@ -412,7 +404,7 @@ const FindReplace: React.FC = () => {
                       <Search className="w-4 h-4 mr-2" />
                       Search & Replace
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -426,7 +418,7 @@ const FindReplace: React.FC = () => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Replace With
@@ -448,7 +440,7 @@ const FindReplace: React.FC = () => {
                       <CheckSquare className="w-4 h-4 mr-2" />
                       Search Options
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="flex items-center space-x-3">
                         <input
@@ -460,7 +452,7 @@ const FindReplace: React.FC = () => {
                         <Regex className="w-4 h-4 text-gray-600" />
                         <span className="text-sm text-gray-700">Use Regex</span>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -471,7 +463,7 @@ const FindReplace: React.FC = () => {
                         <CaseSensitive className="w-4 h-4 text-gray-600" />
                         <span className="text-sm text-gray-700">Case Sensitive</span>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -482,7 +474,7 @@ const FindReplace: React.FC = () => {
                         <WholeWord className="w-4 h-4 text-gray-600" />
                         <span className="text-sm text-gray-700">Whole Word</span>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -494,7 +486,7 @@ const FindReplace: React.FC = () => {
                         <span className="text-sm text-gray-700">Replace All</span>
                       </label>
                     </div>
-                    
+
                     {/* Help text for Replace All */}
                     <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-start space-x-2">
@@ -528,10 +520,10 @@ const FindReplace: React.FC = () => {
                     >
                       <Replace className="w-4 h-4" />
                       <span>
-                        {isProcessing 
-                          ? 'Processing...' 
-                          : options.replaceAll 
-                            ? 'Replace All' 
+                        {isProcessing
+                          ? 'Processing...'
+                          : options.replaceAll
+                            ? 'Replace All'
                             : 'Replace First'
                         }
                       </span>
@@ -592,11 +584,10 @@ const FindReplace: React.FC = () => {
                     {preview.matches.map((match, index) => (
                       <div
                         key={index}
-                        className={`p-4 border rounded-lg transition-colors ${
-                          (options.selectedMatches || []).includes(index)
+                        className={`p-4 border rounded-lg transition-colors ${(options.selectedMatches || []).includes(index)
                             ? 'border-green-500 bg-green-50'
                             : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-start space-x-3">
                           <input
@@ -632,16 +623,15 @@ const FindReplace: React.FC = () => {
                       <Button
                         onClick={handleFindReplace}
                         disabled={isProcessing || !options.replaceText.trim()}
-                        className={`px-8 py-3 ${
-                          isProcessing || !options.replaceText.trim()
+                        className={`px-8 py-3 ${isProcessing || !options.replaceText.trim()
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-green-600 hover:bg-green-700'
-                        } text-white`}
+                          } text-white`}
                       >
                         <Replace className="w-4 h-4 mr-2" />
                         Replace {(options.selectedMatches || []).length} Selected Match{(options.selectedMatches || []).length > 1 ? 'es' : ''}
                       </Button>
-                      
+
                       {!options.replaceText.trim() && (
                         <div className="text-sm text-red-600">
                           Please enter replacement text in the Options tab
@@ -684,7 +674,7 @@ const FindReplace: React.FC = () => {
                         <FileSearch className="w-4 h-4 mr-2" />
                         Matches ({preview.matches.length})
                       </h4>
-                      
+
                       <div className="max-h-96 overflow-y-auto space-y-3">
                         {preview.matches.map((match, index) => (
                           <div key={index} className="border border-gray-200 rounded-lg p-3">
@@ -780,82 +770,71 @@ const FindReplace: React.FC = () => {
           )}
         </div>
 
-        {/* Right Panel - Results and Information */}
-        <div className="space-y-6">
-          {/* Results Section */}
-          {result && (
+        {/* Right Panel - Information and Help - Only show when no file is selected */}
+        {!selectedFile && (
+          <div className="space-y-6">
+            {/* Help Information */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <CheckCircle className="w-6 h-6 text-green-500" />
-                <h3 className="text-lg font-semibold text-green-800">Find & Replace Complete!</h3>
-              </div>
-              
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">File:</span>
-                  <span className="text-sm text-gray-600">{result.filename}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Pages:</span>
-                  <span className="text-sm text-gray-600">{result.totalPages}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Search:</span>
-                  <span className="text-sm text-gray-600 font-mono">{result.findReplaceResults.searchText}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Replace:</span>
-                  <span className="text-sm text-gray-600 font-mono">{result.findReplaceResults.replaceText}</span>
-                </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Info className="w-5 h-5 mr-2" />
+                How It Works
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p><strong>1. Upload:</strong> Select your PDF file</p>
+                <p><strong>2. Configure:</strong> Set search and replace options</p>
+                <p><strong>3. Preview:</strong> See matches before replacing</p>
+                <p><strong>4. Process:</strong> Perform find & replace operation</p>
+                <p><strong>5. Download:</strong> Get your processed PDF</p>
               </div>
             </div>
-          )}
 
-          {/* Help Information */}
+            {/* Features */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Zap className="w-5 h-5 mr-2" />
+                Features
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>• Regular expression support</p>
+                <p>• Case-sensitive matching</p>
+                <p>• Whole word matching</p>
+                <p>• Preview before replacing</p>
+                <p>• Batch operations</p>
+              </div>
+            </div>
+
+
+          </div>
+        )}
+
+        {/* Results Section - Show when file is selected and operation is complete */}
+        {selectedFile && result && (
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Info className="w-5 h-5 mr-2" />
-              How It Works
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p><strong>1. Upload:</strong> Select your PDF file</p>
-              <p><strong>2. Configure:</strong> Set search and replace options</p>
-              <p><strong>3. Preview:</strong> See matches before replacing</p>
-              <p><strong>4. Process:</strong> Perform find & replace operation</p>
-              <p><strong>5. Download:</strong> Get your processed PDF</p>
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h3 className="text-lg font-semibold text-green-800">Find & Replace Complete!</h3>
             </div>
-          </div>
 
-          {/* Features */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Zap className="w-5 h-5 mr-2" />
-              Features
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>• Regular expression support</p>
-              <p>• Case-sensitive matching</p>
-              <p>• Whole word matching</p>
-              <p>• Preview before replacing</p>
-              <p>• Batch operations</p>
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">File:</span>
+                <span className="text-sm text-gray-600">{result.filename}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Pages:</span>
+                <span className="text-sm text-gray-600">{result.totalPages}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Search:</span>
+                <span className="text-sm text-gray-600 font-mono">{result.findReplaceResults.searchText}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Replace:</span>
+                <span className="text-sm text-gray-600 font-mono">{result.findReplaceResults.replaceText}</span>
+              </div>
             </div>
           </div>
-
-          {/* Keyboard Shortcuts */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-400">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
-              <Search className="w-5 h-5 mr-2" />
-              Keyboard Shortcuts
-            </h3>
-            <div className="space-y-1 text-sm text-blue-700">
-              <p><strong>Ctrl+F:</strong> Open find toolbar</p>
-              <p><strong>Ctrl+H:</strong> Toggle replace mode</p>
-              <p><strong>F3:</strong> Find next match</p>
-              <p><strong>Shift+F3:</strong> Find previous match</p>
-              <p><strong>Escape:</strong> Close toolbar</p>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Processing Overlay */}

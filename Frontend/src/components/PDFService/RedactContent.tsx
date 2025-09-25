@@ -11,20 +11,19 @@ import type {
 } from '../../types/redact';
 import { Button } from '../DocumentService/ui/button';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Upload, 
-  CheckCircle, 
-  FileText, 
-  Settings, 
-  RotateCcw, 
-  Info, 
+import {
+  ArrowLeft,
+  Upload,
+  CheckCircle,
+  FileText,
+  Settings,
+  RotateCcw,
+  Info,
   Eye,
   Shield,
   AlertTriangle,
   Download,
   FileSearch,
-  BarChart3,
   XCircle,
   Palette,
   ShieldCheck,
@@ -153,6 +152,18 @@ const RedactContent: React.FC = () => {
     }
   };
 
+  const removeFile = () => {
+    setSelectedFile(null);
+    setResult(null);
+    setPreview(null);
+    setError(null);
+    setSuccess(null);
+    setActiveTab('options');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const resetForm = () => {
     setSelectedFile(null);
     setResult(null);
@@ -207,7 +218,7 @@ const RedactContent: React.FC = () => {
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center">
               <Link
-                  to={`/pdf-tools${location.search}`}
+                to={`/pdf-tools${location.search}`}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -248,87 +259,89 @@ const RedactContent: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${selectedFile ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
         {/* Left Panel - File Upload and Configuration */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* File Upload Section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              Upload PDF File
-            </h2>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
-              >
-                <Upload className="w-12 h-12" />
-                <span className="text-lg font-medium">
-                  {selectedFile ? selectedFile.name : 'Click to upload PDF'}
-                </span>
-                {selectedFile && (
-                  <span className="text-sm text-gray-500">
-                    Size: {redactService.formatFileSize(selectedFile.size)}
-                  </span>
-                )}
-              </button>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Upload PDF File
+              </h2>
+              {selectedFile && (
+                <button
+                  onClick={removeFile}
+                  className="text-red-600 hover:text-red-800 font-medium text-sm flex items-center space-x-1"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Remove File</span>
+                </button>
+              )}
+            </div>
+
+            {!selectedFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                >
+                  <Upload className="w-12 h-12" />
+                  <span className="text-lg font-medium">Click to upload PDF</span>
+                  <span className="text-sm text-gray-500">Maximum file size: 2MB</span>
+                </button>
+              </div>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-green-900">{selectedFile.name}</h4>
+                      <p className="text-sm text-green-700">
+                        Size: {redactService.formatFileSize(selectedFile.size)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={removeFile}
+                    className="text-red-600 hover:text-red-800 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+            {!selectedFile && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-red-800 mb-2 flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Privacy Notice
+            </h3>
+            <div className="space-y-2 text-sm text-red-700">
+              <p><strong>Permanent:</strong> Redacted content cannot be recovered</p>
+              <p><strong>Secure:</strong> Files are processed securely</p>
+              <p><strong>Compliant:</strong> Meets privacy regulations</p>
+              <p><strong>Audit:</strong> Optional compliance tracking</p>
             </div>
           </div>
-
+            )}
           {/* Configuration Options */}
           {selectedFile && (
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-center mb-6">
-                <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm border">
-                  <button
-                    onClick={() => setActiveTab('options')}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                      activeTab === 'options'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Options</span>
-                  </button>
-                  {preview && (
-                    <button
-                      onClick={() => setActiveTab('preview')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                        activeTab === 'preview'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Preview ({preview.matches.length})</span>
-                    </button>
-                  )}
-                  {result && (
-                    <button
-                      onClick={() => setActiveTab('results')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                        activeTab === 'results'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      <span>Results</span>
-                    </button>
-                  )}
-                </div>
-              </div>
 
-              {/* Options Tab */}
+
+
               {activeTab === 'options' && (
                 <div className="space-y-6">
                   <div className="text-center mb-4">
@@ -343,16 +356,15 @@ const RedactContent: React.FC = () => {
                       <Target className="w-4 h-4 mr-2" />
                       Redaction Type
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {redactionTypes.map((type) => (
                         <label
                           key={type.value}
-                          className={`flex items-start space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                            options.redactionType === type.value
+                          className={`flex items-start space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${options.redactionType === type.value
                               ? 'border-blue-500 bg-blue-50'
                               : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                            }`}
                         >
                           <input
                             type="radio"
@@ -381,7 +393,7 @@ const RedactContent: React.FC = () => {
                         <Filter className="w-4 h-4 mr-2" />
                         Custom Pattern
                       </h4>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Regular Expression Pattern *
@@ -406,7 +418,7 @@ const RedactContent: React.FC = () => {
                       <Palette className="w-4 h-4 mr-2" />
                       Redaction Appearance
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -417,17 +429,16 @@ const RedactContent: React.FC = () => {
                             <button
                               key={color.value}
                               onClick={() => handleOptionChange('redactionColor', color.value)}
-                              className={`w-8 h-8 rounded border-2 ${
-                                options.redactionColor === color.value
+                              className={`w-8 h-8 rounded border-2 ${options.redactionColor === color.value
                                   ? 'border-blue-500 ring-2 ring-blue-200'
                                   : 'border-gray-300'
-                              } ${color.color}`}
+                                } ${color.color}`}
                               title={color.label}
                             />
                           ))}
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Redaction Method
@@ -460,7 +471,7 @@ const RedactContent: React.FC = () => {
                       <Settings className="w-4 h-4 mr-2" />
                       Advanced Options
                     </h4>
-                    
+
                     <div className="space-y-3">
                       <label className="flex items-center space-x-3">
                         <input
@@ -474,7 +485,7 @@ const RedactContent: React.FC = () => {
                           <p className="text-xs text-gray-500">Maintain original document formatting</p>
                         </div>
                       </label>
-                      
+
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
@@ -522,7 +533,7 @@ const RedactContent: React.FC = () => {
                 </div>
               )}
 
-              {/* Preview Tab */}
+
               {activeTab === 'preview' && preview && (
                 <div className="space-y-6">
                   <div className="text-center mb-4">
@@ -548,7 +559,7 @@ const RedactContent: React.FC = () => {
                         <FileSearch className="w-4 h-4 mr-2" />
                         Items to Redact ({preview.matches.length})
                       </h4>
-                      
+
                       <div className="max-h-96 overflow-y-auto space-y-3">
                         {preview.matches.map((match, index) => (
                           <div key={index} className="border border-gray-200 rounded-lg p-3">
@@ -633,83 +644,73 @@ const RedactContent: React.FC = () => {
           )}
         </div>
 
-        {/* Right Panel - Information and Help */}
-        <div className="space-y-6">
-          {/* Results Section */}
-          {result && (
+        {/* Right Panel - Information and Help - Only show when no file is selected */}
+        {!selectedFile && (
+          <div className="space-y-6">
+            {/* Help Information */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <CheckCircle className="w-6 h-6 text-green-500" />
-                <h3 className="text-lg font-semibold text-green-800">Redaction Complete!</h3>
-              </div>
-              
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">File:</span>
-                  <span className="text-sm text-gray-600">{result.filename}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Original Size:</span>
-                  <span className="text-sm text-gray-600">{redactService.formatFileSize(result.originalFileSize)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">New Size:</span>
-                  <span className="text-sm text-gray-600">{redactService.formatFileSize(result.fileSize)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Items Redacted:</span>
-                  <span className="text-sm text-gray-600">{result.redactionDetails.totalRedactions}</span>
-                </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Info className="w-5 h-5 mr-2" />
+                How It Works
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p><strong>1. Upload:</strong> Select your PDF file</p>
+                <p><strong>2. Configure:</strong> Choose what to redact</p>
+                <p><strong>3. Preview:</strong> See what will be redacted</p>
+                <p><strong>4. Redact:</strong> Permanently remove content</p>
+                <p><strong>5. Download:</strong> Get your redacted PDF</p>
               </div>
             </div>
-          )}
 
-          {/* Help Information */}
+            {/* Features */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Shield className="w-5 h-5 mr-2" />
+                Features
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>• Pattern-based redaction</p>
+                <p>• Custom regex patterns</p>
+                <p>• Multiple redaction types</p>
+                <p>• Privacy compliance</p>
+                <p>• Audit trail generation</p>
+              </div>
+            </div>
+
+            {/* Privacy Notice */}
+
+          </div>
+        )}
+
+        {/* Results Section - Show when file is selected and redaction is complete */}
+        {selectedFile && result && (
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Info className="w-5 h-5 mr-2" />
-              How It Works
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p><strong>1. Upload:</strong> Select your PDF file</p>
-              <p><strong>2. Configure:</strong> Choose what to redact</p>
-              <p><strong>3. Preview:</strong> See what will be redacted</p>
-              <p><strong>4. Redact:</strong> Permanently remove content</p>
-              <p><strong>5. Download:</strong> Get your redacted PDF</p>
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h3 className="text-lg font-semibold text-green-800">Redaction Complete!</h3>
             </div>
-          </div>
 
-          {/* Features */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Shield className="w-5 h-5 mr-2" />
-              Features
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>• Pattern-based redaction</p>
-              <p>• Custom regex patterns</p>
-              <p>• Multiple redaction types</p>
-              <p>• Privacy compliance</p>
-              <p>• Audit trail generation</p>
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">File:</span>
+                <span className="text-sm text-gray-600">{result.filename}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Original Size:</span>
+                <span className="text-sm text-gray-600">{redactService.formatFileSize(result.originalFileSize)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">New Size:</span>
+                <span className="text-sm text-gray-600">{redactService.formatFileSize(result.fileSize)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Items Redacted:</span>
+                <span className="text-sm text-gray-600">{result.redactionDetails.totalRedactions}</span>
+              </div>
             </div>
           </div>
-
-          {/* Privacy Notice */}
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-red-800 mb-2 flex items-center">
-              <AlertTriangle className="w-5 h-5 mr-2" />
-              Privacy Notice
-            </h3>
-            <div className="space-y-2 text-sm text-red-700">
-              <p><strong>Permanent:</strong> Redacted content cannot be recovered</p>
-              <p><strong>Secure:</strong> Files are processed securely</p>
-              <p><strong>Compliant:</strong> Meets privacy regulations</p>
-              <p><strong>Audit:</strong> Optional compliance tracking</p>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-
       {/* Processing Overlay */}
       {isProcessing && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">

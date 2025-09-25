@@ -21,6 +21,12 @@ services:
     volumes:
     - ./services/pdf-service:/app/services/pdf-service:cached
     - /app/services/pdf-service/node_modules
+    - ./services/pdf-service/uploads:/app/services/pdf-service/uploads
+    - ./services/pdf-service/outputs:/app/services/pdf-service/outputs
+    environment:
+      - NODE_ENV=development
+      - DEBUG=pdf-extract-tables
+      - PYTHON_PATH=/opt/venv/bin/python
     command: npm run dev
   document-service:
     build:

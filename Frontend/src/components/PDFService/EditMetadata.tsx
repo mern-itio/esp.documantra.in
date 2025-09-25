@@ -8,16 +8,16 @@ import type {
 } from '../../types/editMetadata';
 import { Button } from '../DocumentService/ui/button';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Upload, 
-  Download, 
-  Edit3, 
-  FileText, 
-  Settings, 
-  RotateCcw, 
-  CheckCircle, 
-  Info, 
+import {
+  ArrowLeft,
+  Upload,
+  Download,
+  Edit3,
+  FileText,
+  Settings,
+  RotateCcw,
+  CheckCircle,
+  Info,
   Save,
   Database,
   FileSearch,
@@ -32,11 +32,12 @@ import {
   User,
   Tag,
   Wrench,
-  Shield
+  Shield,
+  XCircle
 } from 'lucide-react';
 
 const EditMetadata: React.FC = () => {
-   const location = useLocation();
+  const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCheckingMetadata, setIsCheckingMetadata] = useState(false);
@@ -72,11 +73,11 @@ const EditMetadata: React.FC = () => {
   const checkMetadata = async (file: File) => {
     setIsCheckingMetadata(true);
     setError(null);
-    
+
     try {
       const check = await editMetadataService.getCurrentMetadata(file);
       setMetadataCheck(check);
-      
+
       // Pre-populate fields with current metadata
       if (check.metadataInfo.currentMetadata) {
         setMetadataFields(check.metadataInfo.currentMetadata);
@@ -167,6 +168,18 @@ const EditMetadata: React.FC = () => {
     }
   };
 
+  const removeFile = () => {
+    setSelectedFile(null);
+    setResult(null);
+    setError(null);
+    setSuccess(null);
+    setMetadataCheck(null);
+    setActiveTab('templates');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const resetForm = () => {
     setSelectedFile(null);
     setResult(null);
@@ -247,7 +260,7 @@ const EditMetadata: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
-                 to={`/pdf-tools${location.search}`}
+              to={`/pdf-tools${location.search}`}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -281,40 +294,81 @@ const EditMetadata: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${selectedFile ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
         {/* Left Panel - File Upload and Configuration */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* File Upload Section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              Upload PDF File
-            </h2>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
-              >
-                <Upload className="w-12 h-12" />
-                <span className="text-lg font-medium">
-                  {selectedFile ? selectedFile.name : 'Click to upload PDF'}
-                </span>
-                {selectedFile && (
-                  <span className="text-sm text-gray-500">
-                    Size: {editMetadataService.formatFileSize(selectedFile.size)}
-                  </span>
-                )}
-              </button>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Upload PDF File
+              </h2>
+              {selectedFile && (
+                <button
+                  onClick={removeFile}
+                  className="text-red-600 hover:text-red-800 font-medium text-sm flex items-center space-x-1"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Remove File</span>
+                </button>
+              )}
             </div>
+
+            {!selectedFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                >
+                  <Upload className="w-12 h-12" />
+                  <span className="text-lg font-medium">Click to upload PDF</span>
+                  <span className="text-sm text-gray-500">Maximum file size: 2MB</span>
+                </button>
+              </div>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-green-900">{selectedFile.name}</h4>
+                      <p className="text-sm text-green-700">
+                        Size: {editMetadataService.formatFileSize(selectedFile.size)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={removeFile}
+                    className="text-red-600 hover:text-red-800 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+          {!selectedFile && (
+            <div className="bg-white rounded-xl shadow-lg p-10 border-l-4 border-blue-400">
+              <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
+                <Target className="w-5 h-5 mr-2" />
+                Template System
+              </h3>
+              <p className="text-sm text-blue-700">
+                Use our predefined templates to quickly apply professional metadata standards, or create custom templates
+                for your specific needs. Templates ensure consistency across your document collection.
+              </p>
+            </div>
+          )}
 
           {/* Metadata Check Result */}
           {isCheckingMetadata && (
@@ -332,7 +386,7 @@ const EditMetadata: React.FC = () => {
                 <FileSearch className="w-5 h-5 mr-2" />
                 Current Metadata
               </h3>
-              
+
               <div className="space-y-3">
                 {editMetadataService.getMetadataSummary(metadataCheck.metadataInfo).map((summary, index) => (
                   <div key={index} className="flex items-center space-x-2 text-sm">
@@ -351,33 +405,30 @@ const EditMetadata: React.FC = () => {
                 <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm border">
                   <button
                     onClick={() => setActiveTab('templates')}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                      activeTab === 'templates'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${activeTab === 'templates'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
                   >
                     <Target className="w-4 h-4" />
                     <span>Templates</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('custom')}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                      activeTab === 'custom'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${activeTab === 'custom'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
                   >
                     <Settings className="w-4 h-4" />
                     <span>Custom</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('bulk')}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${
-                      activeTab === 'bulk'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center space-x-2 ${activeTab === 'bulk'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
                   >
                     <Zap className="w-4 h-4" />
                     <span>Bulk Edit</span>
@@ -393,16 +444,14 @@ const EditMetadata: React.FC = () => {
                       <button
                         key={template.id}
                         onClick={() => handleTemplateSelect(template)}
-                        className={`p-4 border-2 rounded-lg text-left transition-all hover:shadow-md ${
-                          selectedTemplate?.id === template.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-blue-300'
-                        }`}
+                        className={`p-4 border-2 rounded-lg text-left transition-all hover:shadow-md ${selectedTemplate?.id === template.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
+                          }`}
                       >
                         <div className="flex items-center space-x-3 mb-2">
-                          <div className={`p-2 rounded-lg ${
-                            selectedTemplate?.id === template.id ? 'bg-blue-100' : 'bg-gray-100'
-                          }`}>
+                          <div className={`p-2 rounded-lg ${selectedTemplate?.id === template.id ? 'bg-blue-100' : 'bg-gray-100'
+                            }`}>
                             {getTemplateIcon(template)}
                           </div>
                           <div>
@@ -427,7 +476,7 @@ const EditMetadata: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900">Custom Metadata Fields</h3>
                     <p className="text-sm text-gray-600">Edit individual metadata fields for your document</p>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {fields.map((field) => (
                       <div key={field.key} className="space-y-2">
@@ -474,7 +523,7 @@ const EditMetadata: React.FC = () => {
                   {/* Custom Properties */}
                   <div className="space-y-4">
                     <h4 className="text-md font-semibold text-gray-800 border-b pb-2">Custom Properties</h4>
-                    
+
                     <div className="space-y-3">
                       {Object.entries(customProperties).map(([key, value]) => (
                         <div key={key} className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg">
@@ -525,7 +574,7 @@ const EditMetadata: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900">Bulk Metadata Editing</h3>
                     <p className="text-sm text-gray-600">Apply metadata changes to multiple fields at once</p>
                   </div>
-                  
+
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-yellow-800">
                       <Info className="w-5 h-5" />
@@ -562,95 +611,89 @@ const EditMetadata: React.FC = () => {
           )}
         </div>
 
-        {/* Right Panel - Results and Information */}
-        <div className="space-y-6">
-          {/* Results Section */}
-          {result && (
+        {/* Right Panel - Information and Help - Only show when no file is selected */}
+        {!selectedFile && (
+          <div className="space-y-6">
+            {/* Help Information */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <CheckCircle className="w-6 h-6 text-green-500" />
-                <h3 className="text-lg font-semibold text-green-800">Metadata Edited Successfully!</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Info className="w-5 h-5 mr-2" />
+                How It Works
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p><strong>1. Upload:</strong> Select your PDF file for metadata editing</p>
+                <p><strong>2. Analyze:</strong> We'll read the current metadata</p>
+                <p><strong>3. Configure:</strong> Choose templates or customize fields</p>
+                <p><strong>4. Process:</strong> Apply your metadata changes</p>
+                <p><strong>5. Download:</strong> Get your updated PDF</p>
               </div>
-              
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">File:</span>
-                  <span className="text-sm text-gray-600">{result.filename}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Pages:</span>
-                  <span className="text-sm text-gray-600">{result.totalPages}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-700">Size:</span>
-                  <span className="text-sm text-gray-600">{editMetadataService.formatFileSize(result.fileSize)}</span>
-                </div>
+            </div>
+
+            {/* Metadata Benefits */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Database className="w-5 h-5 mr-2" />
+                Metadata Benefits
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>• Improve document organization and searchability</p>
+                <p>• Add professional branding and information</p>
+                <p>• Enhance document compliance and tracking</p>
+                <p>• Customize properties for specific workflows</p>
+                <p>• Maintain consistent document standards</p>
               </div>
-
-              <Button
-                onClick={handleDownload}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Updated PDF
-              </Button>
             </div>
-          )}
 
-          {/* Help Information */}
+
+          </div>
+        )}
+
+        {/* Results Section - Show when file is selected and metadata editing is complete */}
+        {selectedFile && result && (
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Info className="w-5 h-5 mr-2" />
-              How It Works
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p><strong>1. Upload:</strong> Select your PDF file for metadata editing</p>
-              <p><strong>2. Analyze:</strong> We'll read the current metadata</p>
-              <p><strong>3. Configure:</strong> Choose templates or customize fields</p>
-              <p><strong>4. Process:</strong> Apply your metadata changes</p>
-              <p><strong>5. Download:</strong> Get your updated PDF</p>
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h3 className="text-lg font-semibold text-green-800">Metadata Edited Successfully!</h3>
             </div>
-          </div>
 
-          {/* Metadata Benefits */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Database className="w-5 h-5 mr-2" />
-              Metadata Benefits
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>• Improve document organization and searchability</p>
-              <p>• Add professional branding and information</p>
-              <p>• Enhance document compliance and tracking</p>
-              <p>• Customize properties for specific workflows</p>
-              <p>• Maintain consistent document standards</p>
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">File:</span>
+                <span className="text-sm text-gray-600">{result.filename}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Pages:</span>
+                <span className="text-sm text-gray-600">{result.totalPages}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Size:</span>
+                <span className="text-sm text-gray-600">{editMetadataService.formatFileSize(result.fileSize)}</span>
+              </div>
             </div>
-          </div>
 
-          {/* Template Information */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-400">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
-              <Target className="w-5 h-5 mr-2" />
-              Template System
-            </h3>
-            <p className="text-sm text-blue-700">
-              Use our predefined templates to quickly apply professional metadata standards, or create custom templates 
-              for your specific needs. Templates ensure consistency across your document collection.
-            </p>
+            <Button
+              onClick={handleDownload}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download Updated PDF
+            </Button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Processing Overlay */}
-      {isProcessing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="text-gray-700">Editing metadata...</span>
+      {
+        isProcessing && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="text-gray-700">Editing metadata...</span>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

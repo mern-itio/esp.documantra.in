@@ -40,5 +40,6 @@ const upload = multer({
 // API Routes
 router.post('/process', upload.array('files', 5), extractTablesController.extractTables);
 router.get('/tools', extractTablesController.checkTools);
+router.get('/diagnose', extractTablesController.diagnoseErrors);
 
 module.exports = router;

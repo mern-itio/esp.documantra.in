@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   FiUpload,
   FiFile,
-  FiDownload,
+  // FiDownload,
   FiScissors,
   FiX,
   FiCheck,
@@ -21,7 +21,11 @@ declare global {
   }
 }
 
-const ExtractPDF: React.FC = () => {
+interface ExtractPDFProps {
+  onExtractComplete?: (result: ExtractPDFResponse) => void;
+}
+
+const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
   const [document, setDocument] = useState<File | null>(null);
   const [pdfInfo, setPdfInfo] = useState<PDFInfo | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -29,7 +33,7 @@ const ExtractPDF: React.FC = () => {
   const [pageNumbers, setPageNumbers] = useState<string>('');
   const [startPage, setStartPage] = useState<number>(1);
   const [endPage, setEndPage] = useState<number>(1);
-  const [extractResult, setExtractResult] = useState<ExtractPDFResponse | null>(null);
+  // const [extractResult, setExtractResult] = useState<ExtractPDFResponse | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [pageThumbnails, setPageThumbnails] = useState<string[]>([]);
@@ -138,7 +142,7 @@ const ExtractPDF: React.FC = () => {
     }
 
     setDocument(file);
-    setExtractResult(null);
+    // setExtractResult(null);
     setSelectedPages(new Set());
     setPageThumbnails([]);
 
@@ -216,7 +220,7 @@ const ExtractPDF: React.FC = () => {
   const removeDocument = () => {
     setDocument(null);
     setPdfInfo(null);
-    setExtractResult(null);
+    // setExtractResult(null);
     setPageNumbers('');
     setStartPage(1);
     setEndPage(1);
@@ -295,40 +299,43 @@ const ExtractPDF: React.FC = () => {
         throw new Error('Invalid extract mode');
       }
 
-      setExtractResult(result);
+      // setExtractResult(result);
+      onExtractComplete?.(result);
     } catch (error) {
       console.error('Error extracting PDF:', error);
-      setExtractResult({
+      const errorResult = {
         success: false,
         error: 'Failed to extract PDF'
-      });
+      };
+      // setExtractResult(errorResult);
+      onExtractComplete?.(errorResult);
     } finally {
       setExtracting(false);
     }
   };
 
   // Download extracted PDF
-  const handleDownload = async () => {
-    if (!extractResult?.file) return;
+  // const handleDownload = async () => {
+  //   if (!extractResult?.file) return;
 
-    try {
-      await extractPDFService.downloadExtractedPDF(
-        extractResult.file.filename
-      );
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      alert('Failed to download file');
-    }
-  };
+  //   try {
+  //     await extractPDFService.downloadExtractedPDF(
+  //       extractResult.file.filename
+  //     );
+  //   } catch (error) {
+  //     console.error('Error downloading file:', error);
+  //     alert('Failed to download file');
+  //   }
+  // };
 
   // Format file size
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  // const formatFileSize = (bytes: number) => {
+  //   if (bytes === 0) return '0 Bytes';
+  //   const k = 1024;
+  //   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  //   const i = Math.floor(Math.log(bytes) / Math.log(k));
+  //   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  // };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -627,58 +634,7 @@ const ExtractPDF: React.FC = () => {
           </div>
         )}
 
-        {/* Results Section */}
-        {extractResult && (
-          <div className="mt-8">
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Extraction Results</h2>
-
-              {extractResult.success ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <FiScissors className="h-6 w-6 text-green-600" />
-                    <h3 className="text-lg font-medium text-green-800">
-                      {extractResult.message}
-                    </h3>
-                  </div>
-
-                  {extractResult.file && (
-                    <div className="bg-white rounded-lg p-4 border border-green-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <FiFile className="h-8 w-8 text-red-500" />
-                          <div>
-                            <h4 className="font-medium text-gray-900">{extractResult.file.filename}</h4>
-                            <p className="text-sm text-gray-500">
-                              {formatFileSize(extractResult.file.size)}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={handleDownload}
-                          className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <FiDownload className="h-4 w-4 mr-2" />
-                          Download
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                  <div className="flex items-center space-x-3">
-                    <FiX className="h-6 w-6 text-red-600" />
-                    <h3 className="text-lg font-medium text-red-800">
-                      Extraction Failed
-                    </h3>
-                  </div>
-                  <p className="text-red-700 mt-2">{extractResult.error}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Results are now handled by the modal in ExtractPDFPage */}
       </div>
     </div>
   );

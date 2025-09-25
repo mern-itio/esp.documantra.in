@@ -30,6 +30,12 @@ export interface SplitPDFResponse {
     path: string;
     size: number;
   }>;
+  zipFile?: {
+    filename: string;
+    path: string;
+    size: number;
+    downloadUrl: string;
+  };
   totalFiles?: number;
   error?: string;
 }
