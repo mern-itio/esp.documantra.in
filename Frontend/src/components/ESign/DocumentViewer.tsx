@@ -86,7 +86,7 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
               const isSignatureType = field.type === "signature";
               let isCurrentUser;
                 if (selfValue === "1") { 
-                    isCurrentUser = field.slotId === selfSigner.signerSlotId;                   // treat as current user for further logic if needed
+                    isCurrentUser = field.slotId === selfSigner?.signerSlotId;                   // treat as current user for further logic if needed
                 } else {
                     isCurrentUser = field.recipientId === currentUserId; // normal condition
                 }

@@ -181,6 +181,7 @@ const saveSignatureFields = async (req, res) => {
             height: sf.height,
             type: sf.type,
             status: sf.status || 'pending',
+            fieldId: sf.fieldId || null, // for power form linkage
           },
           { new: true }  // Return the updated document
         );
@@ -209,6 +210,7 @@ const saveSignatureFields = async (req, res) => {
           height: sf.height,
           type: sf.type,
           status: sf.status || 'pending',
+          fieldId: sf.fieldId || null, // for power form linkage
         });
 
         await newField.save();

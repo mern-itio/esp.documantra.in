@@ -36,6 +36,7 @@ export type SignatureField = {
   type: FieldType;
   label?: string;
   locked?: boolean;
+  fieldId?: string; // link back to power form field
 };
 
 export type PowerFormSlot = {
@@ -145,6 +146,7 @@ export default function SigningEditorStep({
 
   // drag handlers
   const handleDragStart = (e: React.DragEvent, field: { type: FieldType; label?: string; id?: string }) => {
+    console.log(`Field ID : ${field.id}`);
     setDraggedField(field);
     setDragging(true);
     e.dataTransfer.effectAllowed = "move";
@@ -191,7 +193,9 @@ export default function SigningEditorStep({
       height,
       type: draggedField.type,
       label: draggedField.label,
+      fieldId: draggedField.id
     };
+    console.log(`New Field ID : ${JSON.stringify(newField)}`);
 
     setSignatureFields(prev => [...prev, newField]);
    

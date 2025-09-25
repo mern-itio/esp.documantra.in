@@ -41,6 +41,7 @@ type SignatureField = {
   locked?: boolean; // new: when true field is fixed (not movable)
   label?: string; // new: field label
   type: FieldType; // <--- required property
+  fieldId?: string; // link back to power form field
 };
 // --- add this type near the other types at the top of the file ---
 type Party = {
@@ -226,7 +227,9 @@ const saveSignatureFields = async () => {
       status: "pending",
       signerIndex: mode === "power" ? (field.signerIndex ?? null) : null,
       label: field.label ?? (field.type === "signature" ? "Signature" : undefined),
+      fieldId: field.fieldId ?? null, // <-- add this line
   }));
+  console.log('Transformed fields data for saving:', fieldsData);
 
   try {
     const response = await eSignApi.post('/api/e-sign/save-signature-fields', {

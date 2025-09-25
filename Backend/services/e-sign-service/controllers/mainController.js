@@ -727,7 +727,7 @@ const signerInitiate = async (req, res) =>{
     const allSlots = envelope.slots || [];
     // Check if first signer is creator
     const isCreatorFirst = envelope.firstSigningSlotId === envelope.creatorSlotId;
-
+    const firstSigner = allSlots.find(s => s.slotId === envelope.firstSigningSlotId);
     if (isCreatorFirst) {
         // Only if creator is first, find next signer
         const higherIndexSlots = allSlots
