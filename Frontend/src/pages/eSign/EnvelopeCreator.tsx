@@ -21,7 +21,7 @@ import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/Adv
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector'; 
 import {eSignApi, templateServiceApi} from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
-type FieldType = "signature" | "text" | "email" | "number";
+type FieldType = "signature" | "text" | "email" | "number" | "id";
 
 type SignatureField = {
   id: string;

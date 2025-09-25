@@ -195,7 +195,9 @@ const handleDuplicate = async () =>{
     setDuplicating(false);
   }
 }
-
+const handleEmbed = () =>{
+navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
+}
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -287,7 +289,7 @@ const handleDuplicate = async () =>{
               >
               Duplicate
               </ActionButton>
-          {envelope?.status === 'draft' && (
+          {envelope?.status === 'draft' && envelope?.isPowerForm !== true &&  (
             <ActionButton
               onClick={handleSendEnvelope}
               loading={sending}
@@ -295,6 +297,16 @@ const handleDuplicate = async () =>{
               variant="primary"
             >
               Send Envelope
+            </ActionButton>
+          )}
+          {envelope?.isPowerForm === true &&  (
+            <ActionButton
+              onClick={handleEmbed}
+              loading={sending}
+              icon={<Send className="w-4 h-4 text-white" />}
+              variant="primary"
+            >
+              Power Form Embed
             </ActionButton>
           )}
          {envelope?.status != 'completed' && (
