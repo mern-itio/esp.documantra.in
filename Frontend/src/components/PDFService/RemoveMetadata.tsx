@@ -27,7 +27,9 @@ import {
   FileSearch,
   Zap,
   Target,
+  X,
 } from 'lucide-react';
+import SuccessBox from '../common/SuccessBox';
 
 const RemoveMetadata: React.FC = () => {
   const location = useLocation();
@@ -38,6 +40,7 @@ const RemoveMetadata: React.FC = () => {
   const [result, setResult] = useState<RemoveMetadataResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [removeMetadataResult, setRemoveMetadataResult] = useState<RemoveMetadataResponse | null>(null);
   const [activeTab, setActiveTab] = useState<'presets' | 'custom' | 'advanced'>('presets');
   const [selectedPreset, setSelectedPreset] = useState<MetadataCleaningPreset | null>(null);
   const [customOptions, setCustomOptions] = useState<Record<string, boolean>>({});
@@ -168,6 +171,7 @@ const RemoveMetadata: React.FC = () => {
     try {
       const response = await removeMetadataService.removeMetadata(request);
       setResult(response);
+      setRemoveMetadataResult(response);
       // console.log(response);
       setSuccess('Metadata removed successfully!');
     } catch (err: any) {
@@ -192,6 +196,7 @@ const RemoveMetadata: React.FC = () => {
   const resetForm = () => {
     setSelectedFile(null);
     setResult(null);
+    setRemoveMetadataResult(null);
     setError(null);
     setSuccess(null);
     setMetadataCheck(null);
@@ -236,6 +241,71 @@ const RemoveMetadata: React.FC = () => {
     }
   };
 
+  // Success Box UI
+  if (removeMetadataResult && removeMetadataResult.success) {
+    return (
+      <div className="mx-auto p-2 space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Remove Metadata</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Clean metadata and hidden information from your PDF documents for enhanced privacy and security
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          <SuccessBox
+            title="Metadata Removed Successfully!"
+            subtitle="Your PDF has been cleaned and is ready for download"
+            message="All metadata and hidden information has been removed from your document for enhanced privacy and security."
+            fileInfo={{
+              filename: removeMetadataResult.filename,
+              size: selectedFile?.size || 0
+            }}
+            actions={{
+              primary: {
+                label: 'Download Cleaned PDF',
+                onClick: () => removeMetadataService.downloadFile(removeMetadataResult.downloadUrl || '', removeMetadataResult.filename)
+              },
+              secondary: {
+                label: 'Back to Configuration',
+                onClick: () => setRemoveMetadataResult(null)
+              },
+              tertiary: {
+                label: 'Start New',
+                onClick: () => {
+                  setRemoveMetadataResult(null);
+                  setResult(null);
+                  setSelectedFile(null);
+                  setMetadataCheck(null);
+                  setSelectedPreset(null);
+                  setCustomOptions({});
+                  setAdvancedOptions({});
+                  setError(null);
+                  setSuccess(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto p-2 space-y-6">
       {/* Header */}
@@ -277,40 +347,84 @@ const RemoveMetadata: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 ${selectedFile ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
         {/* Left Panel - File Upload and Configuration */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* File Upload Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              Upload PDF File
-            </h2>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
-              >
-                <Upload className="w-12 h-12" />
-                <span className="text-lg font-medium">
-                  {selectedFile ? selectedFile.name : 'Click to upload PDF'}
-                </span>
-                {selectedFile && (
-                  <span className="text-sm text-gray-500">
-                    Size: {removeMetadataService.formatFileSize(selectedFile.size)}
-                  </span>
-                )}
-              </button>
+        <div className={`${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'} space-y-6`}>
+          {/* File Upload Section - Only show when no file selected */}
+          {!selectedFile && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Upload PDF File
+              </h2>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                >
+                  <Upload className="w-12 h-12" />
+                  <span className="text-lg font-medium">Click to upload PDF</span>
+                </button>
+              </div>
             </div>
+          )}
+    {!selectedFile && (
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-400">
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2 flex items-center">
+              <Shield className="w-5 h-5 mr-2" />
+              Security Note
+            </h3>
+            <p className="text-sm text-yellow-700">
+              Metadata removal helps protect your privacy by eliminating hidden information that could reveal document origins, 
+              creation details, or other sensitive data. This is especially important for documents shared publicly or with third parties.
+            </p>
           </div>
+    )}
+          {/* Selected File Info - Show after file upload */}
+          {selectedFile && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
+                    <p className="text-sm text-gray-600">
+                      {(selectedFile as File).name} • {removeMetadataService.formatFileSize((selectedFile as File).size)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setResult(null);
+                    setRemoveMetadataResult(null);
+                    setError(null);
+                    setSuccess(null);
+                    setMetadataCheck(null);
+                    setSelectedPreset(null);
+                    setCustomOptions({});
+                    setAdvancedOptions({});
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Metadata Check Result */}
           {isCheckingMetadata && (
@@ -550,8 +664,9 @@ const RemoveMetadata: React.FC = () => {
           )}
         </div>
 
-        {/* Right Panel - Results and Information */}
-        <div className="space-y-6">
+        {/* Right Panel - Results and Information - Only show when no file selected */}
+        {!selectedFile && (
+          <div className="space-y-6">
           {/* Results Section */}
           {result && (
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -611,17 +726,7 @@ const RemoveMetadata: React.FC = () => {
             </div>
           </div>
 
-          {/* Security Note */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-400">
-            <h3 className="text-lg font-semibold text-yellow-800 mb-2 flex items-center">
-              <Shield className="w-5 h-5 mr-2" />
-              Security Note
-            </h3>
-            <p className="text-sm text-yellow-700">
-              Metadata removal helps protect your privacy by eliminating hidden information that could reveal document origins, 
-              creation details, or other sensitive data. This is especially important for documents shared publicly or with third parties.
-            </p>
-          </div>
+         
 
           {/* Privacy Benefits */}
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -638,6 +743,7 @@ const RemoveMetadata: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Processing Overlay */}

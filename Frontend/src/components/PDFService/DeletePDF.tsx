@@ -3,6 +3,7 @@ import { FiUpload, FiFile, FiTrash2, FiEye, FiX } from 'react-icons/fi';
 import { deletePDFService } from '../../services/deletePDFService';
 import type { DeletePDFResponse, DeletePageItem } from '../../types/deletePDF';
 import type { PDFInfo } from '../../types/common';
+import SuccessBox from '../common/SuccessBox';
 
 // Type declarations for PDF.js
 declare global {
@@ -27,6 +28,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
   const [dragActive, setDragActive] = useState(false);
   const [showPagePreview, setShowPagePreview] = useState(true); // Default to true
   const [pdfThumbnails, setPdfThumbnails] = useState<string[]>([]);
+  const [deleteResult, setDeleteResult] = useState<DeletePDFResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize PDF.js
@@ -175,10 +177,21 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
     setSelectedPages([]);
     setPageNumbers('');
     setPdfThumbnails([]);
+    setDeleteResult(null);
     onDeleteComplete?.({
       success: false,
       message: 'Document removed'
     });
+  };
+
+  const resetToStart = () => {
+    setDocument(null);
+    setPdfInfo(null);
+    setSelectedPages([]);
+    setPageNumbers('');
+    setPdfThumbnails([]);
+    setDeleteResult(null);
+    setDeleting(false);
   };
 
   // Toggle page selection
@@ -248,13 +261,16 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
         pagesToDelete: pagesToDelete
       });
 
+      setDeleteResult(result);
       onDeleteComplete?.(result);
     } catch (error) {
       console.error('Error deleting PDF pages:', error);
-      onDeleteComplete?.({
+      const errorResult = {
         success: false,
         error: 'Failed to delete PDF pages'
-      });
+      };
+      setDeleteResult(errorResult);
+      onDeleteComplete?.(errorResult);
     } finally {
       setDeleting(false);
     }
@@ -269,6 +285,26 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Download deleted PDF
+  const handleDownload = async () => {
+    if (!deleteResult?.file) {
+      console.error('No deleted file available for download');
+      alert('No deleted file available for download');
+      return;
+    }
+
+    try {
+      // Use the service method for consistent download behavior
+      await deletePDFService.downloadDeletedPDF(
+        deleteResult.downloadUrl || '', 
+        deleteResult.file.filename
+      );
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
+
   // Generate real PDF page preview
   const generatePagePreview = (pageNumber: number) => {
     const thumbnailIndex = pageNumber - 1; // Convert to 0-based index
@@ -276,11 +312,11 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
     
     if (thumbnail) {
       return (
-        <div className="w-full h-32 rounded-lg overflow-hidden border border-gray-200">
+        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-white">
           <img 
             src={thumbnail} 
             alt={`Page ${pageNumber} preview`}
-            className="w-full h-full object-contain bg-white"
+            className="w-full h-full object-contain"
           />
         </div>
       );
@@ -288,7 +324,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
     
     // Fallback to loading state if thumbnail not available
     return (
-      <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
+      <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
         <div className="text-center text-gray-600">
           <div className="text-lg font-semibold mb-1">Page {pageNumber}</div>
           <div className="text-xs">Loading preview...</div>
@@ -299,15 +335,32 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
-      {/* Header */}
-      {/* <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Delete PDF Pages</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Remove unwanted pages from your PDF documents. Choose individual pages or specify ranges for bulk deletion.
-        </p>
-      </div> */}
-
-      {/* File Upload Section */}
+      {/* Show success box only when delete is successful */}
+      {deleteResult && deleteResult.success ? (
+        <SuccessBox
+          title="Delete PDF Pages"
+          subtitle="Remove specific pages from your PDF documents"
+          message="Pages Deleted Successfully!"
+          fileInfo={deleteResult.file ? {
+            filename: deleteResult.file.filename,
+            size: deleteResult.file.size,
+            remainingPages: deleteResult.remainingPages || 0
+          } : undefined}
+          actions={{
+            primary: {
+              label: "Download Updated PDF",
+              onClick: handleDownload,
+              disabled: !deleteResult?.file
+            },
+            secondary: {
+              label: "Delete More Pages",
+              onClick: resetToStart
+            }
+          }}
+        />
+      ) : (
+        <>
+          {/* File Upload Section */}
       <div className="bg-white rounded-xl shadow-lg p-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2>
         
@@ -382,11 +435,11 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
 
           {showPagePreview && (
             <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {selectedPages.map((page) => (
                   <div key={page.id} className="relative">
                     {/* Page Preview Card */}
-                    <div className={`border-2 rounded-lg p-3 transition-all cursor-pointer ${
+                    <div className={`border-2 rounded-lg p-2 transition-all cursor-pointer ${
                       page.isSelected
                         ? 'border-red-500 bg-red-50'
                         : 'border-gray-200 bg-white hover:border-gray-300'
@@ -395,8 +448,8 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
                       {generatePagePreview(page.pageNumber)}
                       
                       {/* Page Number Label */}
-                      <div className="text-center mt-2">
-                        <span className={`text-sm font-medium ${
+                      <div className="text-center mt-1">
+                        <span className={`text-xs font-medium ${
                           page.isSelected ? 'text-red-700' : 'text-gray-700'
                         }`}>
                           Page {page.pageNumber}
@@ -405,8 +458,8 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
                       
                       {/* Selection Indicator */}
                       {page.isSelected && (
-                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                          <FiX className="w-4 h-4 text-white" />
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                          <FiX className="w-3 h-3 text-white" />
                         </div>
                       )}
                     </div>
@@ -529,6 +582,8 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
             )}
           </button>
         </div>
+      )}
+        </>
       )}
     </div>
   );

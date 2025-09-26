@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { FileText, Upload, Settings, CheckCircle, AlertCircle, Info, Zap, FileDown, ArrowLeft } from 'lucide-react';
+import { FileText, Upload, Settings, CheckCircle, AlertCircle, Info, Zap, FileDown, ArrowLeft, X } from 'lucide-react';
 import { Button } from '../DocumentService/ui/button';
 import { Card } from '../DocumentService/ui/card';
 import { compressPDFService } from '../../services/compressPDFService';
@@ -159,6 +159,99 @@ const CompressPDF: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Success Message UI - Show only success message after compression
+  if (result && result.success) {
+    return (
+      <div className=" p-2 space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Compress PDF</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Reduce file size while maintaining quality
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto p-6">
+          {/* Success Message */}
+          <Card className="p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h3 className="text-lg font-semibold text-green-800">PDF Compressed Successfully!</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="text-center p-4 bg-white rounded-lg">
+                <p className="text-sm text-gray-600">Original Size</p>
+                <p className="text-lg font-semibold text-gray-900">{formatFileSize(result.originalFileSize)}</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg">
+                <p className="text-sm text-gray-600">Compressed Size</p>
+                <p className={`text-lg font-semibold ${result.compressedFileSize < result.originalFileSize ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatFileSize(result.compressedFileSize)}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg">
+                <p className="text-sm text-gray-600">Reduction</p>
+                <p className={`text-lg font-semibold ${result.compressedFileSize < result.originalFileSize ? 'text-blue-600' : 'text-red-600'}`}>
+                  {result.compressionRatio}
+                </p>
+              </div>
+            </div>
+
+            {/* Warning for size increase */}
+            {result.compressedFileSize >= result.originalFileSize && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium">File size increased after compression</p>
+                    <p className="mt-1">
+                      This usually happens when the PDF is already well-compressed or very small.
+                      The compressed file may have better structure and compatibility, but the size increased by {Math.abs(parseFloat(result.compressionRatio))}%.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleDownload}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <FileDown className="w-4 h-4 mr-2" />
+                Download Compressed PDF
+              </Button>
+              <Button
+                onClick={() => setResult(null)}
+                variant="outline"
+              >
+                Back to Configuration
+              </Button>
+              <Button
+                onClick={resetForm}
+                variant="outline"
+              >
+                Start New
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className=" p-2 space-y-6">
       <div className="bg-white shadow-sm border-b">
@@ -180,24 +273,24 @@ const CompressPDF: React.FC = () => {
         </div>
       </div>
 
-      {/* File Upload Section */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Upload className="w-5 h-5 text-gray-500" />
-            <h2 className="text-xl font-semibold text-gray-900">Upload PDF</h2>
-          </div>
+      {/* File Upload Section - Only show when no file selected */}
+      {!selectedFile && (
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Upload className="w-5 h-5 text-gray-500" />
+              <h2 className="text-xl font-semibold text-gray-900">Upload PDF</h2>
+            </div>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
 
-            {!selectedFile ? (
               <div className="space-y-4">
                 <FileText className="w-12 h-12 text-gray-400 mx-auto" />
                 <div>
@@ -212,25 +305,65 @@ const CompressPDF: React.FC = () => {
                   Choose File
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
-                <div>
-                  <p className="text-lg font-medium text-gray-900">{selectedFile.name}</p>
-                  <p className="text-gray-500">{formatFileSize(selectedFile.size)}</p>
-                </div>
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  size="sm"
-                >
-                  Change File
-                </Button>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
+
+      {/* Selected File Info - Show after file upload */}
+      {selectedFile && (
+        <Card className="p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
+                  <p className="text-sm text-gray-600">
+                    {(selectedFile as File).name} • {formatFileSize((selectedFile as File).size)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedFile(null);
+                  setResult(null);
+                  setError(null);
+                  setSelectedPreset(null);
+                  setCustomOptions({
+                    compressionLevel: 'medium',
+                    imageQuality: 85,
+                    downscaleImages: true,
+                    maxImageResolution: 150,
+                    removeMetadata: true,
+                    linearize: true,
+                    objectStreams: 'generate',
+                    compressionMethod: 'auto'
+                  });
+                  setAdvancedOptions({
+                    compressionLevel: 'medium',
+                    imageQuality: 85,
+                    downscaleImages: true,
+                    maxImageResolution: 150,
+                    removeMetadata: true,
+                    linearize: true,
+                    objectStreams: 'generate',
+                    compressionMethod: 'auto'
+                  });
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Compression Options */}
       {selectedFile && (

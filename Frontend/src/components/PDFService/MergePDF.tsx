@@ -8,6 +8,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { mergePDFService } from '../../services/mergePDFService';
+import SuccessBox from '../common/SuccessBox';
 
 // Type declarations for PDF.js
 declare global {
@@ -41,6 +42,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
   const [totalPages, setTotalPages] = useState(0);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [showWarning, setShowWarning] = useState(false);
+  const [mergeResult, setMergeResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize PDF.js worker
@@ -267,6 +269,15 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
     setDocuments(prev => prev.filter(doc => doc.id !== id));
   }, []);
 
+  const resetToStart = useCallback(() => {
+    setDocuments([]);
+    setMergeResult(null);
+    setTotalSize(0);
+    setTotalPages(0);
+    setMergeProgress(0);
+    setIsMerging(false);
+  }, []);
+
   const moveDocument = useCallback((fromIndex: number, toIndex: number) => {
     setDocuments(prev => {
       const newDocs = [...prev];
@@ -334,6 +345,14 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
         const blob = await response.blob();
         const mergedFile = new File([blob], result.mergedFile.filename, { type: 'application/pdf' });
 
+        setMergeResult({
+          success: true,
+          mergedFile: result.mergedFile,
+          totalFiles: documents.length,
+          totalPages: totalPages,
+          totalSize: totalSize
+        });
+
         setTimeout(() => {
           setIsMerging(false);
           onMergeComplete?.(mergedFile);
@@ -353,15 +372,59 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
     fileInputRef.current?.click();
   };
 
+  const downloadMergedFile = async () => {
+    if (!mergeResult?.mergedFile?.downloadUrl) {
+      console.error('No merged file available for download');
+      alert('No merged file available for download');
+      return;
+    }
+    
+    try {
+      const response = await fetch(mergeResult.mergedFile.downloadUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = mergeResult.mergedFile.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download merged file: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      {/* <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">Merge PDF Documents</h1>
-        <p className="text-gray-600">Combine multiple PDF files into one document with custom ordering</p>
-      </div> */}
-
-      {/* File Upload Area - Only show when less than 2 documents */}
+      {/* Show success box only when merge is successful */}
+      {mergeResult && mergeResult.success ? (
+        <SuccessBox
+          title="Merge PDF"
+          subtitle="Combine multiple PDF files into one"
+          message="PDFs Merged Successfully!"
+          fileInfo={mergeResult.mergedFile ? {
+            filename: mergeResult.mergedFile.filename,
+            size: mergeResult.totalSize,
+            totalFiles: mergeResult.totalFiles,
+            totalPages: mergeResult.totalPages
+          } : undefined}
+          actions={{
+            primary: {
+              label: "Download Merged PDF",
+              onClick: downloadMergedFile,
+              disabled: !mergeResult?.mergedFile?.downloadUrl
+            },
+            secondary: {
+              label: "Merge More PDFs",
+              onClick: resetToStart
+            }
+          }}
+        />
+      ) : (
+        <>
+          {/* File Upload Area - Only show when less than 2 documents */}
       {documents.length < 2 && (
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDragging
@@ -620,16 +683,18 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
         </div>
       )}
 
-      {/* Error Summary */}
-      {documents.some(doc => doc.error) && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-red-800 mb-2">Some files have errors:</h4>
-          <ul className="text-sm text-red-700 space-y-1">
-            {documents.filter(doc => doc.error).map(doc => (
-              <li key={doc.id}>• {doc.name}: {doc.error}</li>
-            ))}
-          </ul>
-        </div>
+          {/* Error Summary */}
+          {documents.some(doc => doc.error) && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-red-800 mb-2">Some files have errors:</h4>
+              <ul className="text-sm text-red-700 space-y-1">
+                {documents.filter(doc => doc.error).map(doc => (
+                  <li key={doc.id}>• {doc.name}: {doc.error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

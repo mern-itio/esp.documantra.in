@@ -5,7 +5,8 @@ import { Button } from '../DocumentService/ui/button';
 import { Input } from '../DocumentService/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Lock, Shield, Download, FileText, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { ArrowLeft, Lock, Shield, FileText, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import SuccessBox from '../common/SuccessBox';
 const AddPassword: React.FC = () => {
    const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -14,8 +15,8 @@ const AddPassword: React.FC = () => {
   const [permissions, setPermissions] = useState<'all' | 'print' | 'copy' | 'modify' | 'annotate'>('all');
   const [encryptionLevel, setEncryptionLevel] = useState<'AES-256' | 'AES-128'>('AES-256');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [addPasswordResult, setAddPasswordResult] = useState<any>(null);
   // const [totalPages, setTotalPages] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,7 +37,6 @@ const AddPassword: React.FC = () => {
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
       setError(null);
-      setResult(null);
       // Get file info for display
       const reader = new FileReader();
       reader.onload = () => {
@@ -104,7 +104,7 @@ const AddPassword: React.FC = () => {
       };
 
       const response = await addPasswordService.addPassword(request);
-      setResult(response);
+      setAddPasswordResult(response);
       // setTotalPages(response.totalPages || 1);
     } catch (err: any) {
       console.error('Password protection error:', err);
@@ -114,18 +114,6 @@ const AddPassword: React.FC = () => {
     }
   };
 
-  const handleDownload = async () => {
-    if (result?.downloadUrl) {
-      try {
-        await addPasswordService.downloadFile(result.downloadUrl, result.filename);
-      } catch (err: any) {
-        console.error('Download error:', err);
-        setError(`Failed to download file: ${err.message}`);
-      }
-    } else {
-      setError('No download URL available');
-    }
-  };
 
   const resetForm = () => {
     setSelectedFile(null);
@@ -133,9 +121,22 @@ const AddPassword: React.FC = () => {
     setUserPassword('');
     setPermissions('all');
     setEncryptionLevel('AES-256');
-    setResult(null);
     setError(null);
+    setAddPasswordResult(null);
     // setTotalPages(1);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const resetToStart = () => {
+    setSelectedFile(null);
+    setOwnerPassword('');
+    setUserPassword('');
+    setPermissions('all');
+    setEncryptionLevel('AES-256');
+    setError(null);
+    setAddPasswordResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -153,6 +154,57 @@ const AddPassword: React.FC = () => {
     return 'text-green-500';
   };
 
+  // Success message UI
+  if (addPasswordResult && addPasswordResult.success) {
+    return (
+      <div className="mx-auto space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Add Password Protection</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Secure your PDFs with owner and user passwords
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          <SuccessBox
+            title="Password Protection Added Successfully!"
+            subtitle="Your PDF has been secured with password protection"
+            message="The document is now protected and ready for download."
+            fileInfo={{
+              filename: addPasswordResult.filename,
+              size: addPasswordResult.file?.size || selectedFile?.size || 0
+            }}
+            actions={{
+              primary: {
+                label: 'Download Protected PDF',
+                onClick: () => addPasswordService.downloadFile(addPasswordResult.downloadUrl || '', addPasswordResult.filename)
+              },
+              secondary: {
+                label: 'Back to Configuration',
+                onClick: () => setAddPasswordResult(null)
+              },
+              tertiary: {
+                label: 'Start New',
+                onClick: resetToStart
+              }
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto space-y-6">
       {/* Header */}
@@ -169,10 +221,9 @@ const AddPassword: React.FC = () => {
       </div>
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Configuration Panel */}
-        <div className="space-y-6">
-          {/* File Upload */}
+      {/* File Upload - Only show when no file selected */}
+      {!selectedFile && (
+        <div className="max-w-6xl mx-auto">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -195,206 +246,158 @@ const AddPassword: React.FC = () => {
                 {selectedFile && (
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>{selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    <span>{(selectedFile as File).name} ({((selectedFile as File).size / 1024 / 1024).toFixed(2)} MB)</span>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
-
-          {/* Password Settings - Show immediately after file selection */}
-          {selectedFile && (
-            <>
-              {/* Password Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Lock className="h-5 w-5" />
-                    <span>Password Settings</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Configure owner and user passwords for your PDF
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Owner Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Owner Password (Optional)
-                    </label>
-                    <Input
-                      type="password"
-                      placeholder="Enter owner password"
-                      value={ownerPassword}
-                      onChange={(e) => handleInputChange('ownerPassword', e.target.value)}
-                      className="w-full"
-                    />
-                    {ownerPassword && (
-                      <div className="mt-1">
-                        <span className={`text-xs ${getPasswordStrengthColor(getPasswordStrength(ownerPassword).score)}`}>
-                          {getPasswordStrength(ownerPassword).message}
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Owner password provides full access to the PDF
-                    </p>
-                  </div>
-
-                  {/* User Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      User Password <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="password"
-                      placeholder="Enter user password (required)"
-                      value={userPassword}
-                      onChange={(e) => handleInputChange('userPassword', e.target.value)}
-                      className="w-full"
-                      required
-                    />
-                    {userPassword && (
-                      <div className="mt-1">
-                        <span className={`text-xs ${getPasswordStrengthColor(getPasswordStrength(userPassword).score)}`}>
-                          {getPasswordStrength(userPassword).message}
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      User password is required to open the PDF
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Permissions */}
-
-
-              {/* Encryption Level */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Shield className="h-5 w-5" />
-                    <span>Encryption Level</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Choose the security strength for your PDF
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {encryptionOptions.map((option) => (
-                      <label key={option.value} className="flex items-start space-x-3 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="encryptionLevel"
-                          value={option.value}
-                          checked={encryptionLevel === option.value}
-                          onChange={(e) => handleInputChange('encryptionLevel', e.target.value)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">{option.label}</div>
-                          <p className="text-sm text-gray-600">{option.description}</p>
-                          <p className="text-xs text-gray-500">{option.security}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Action Button */}
-              <Button
-                onClick={handleAddPassword}
-                disabled={!selectedFile || isProcessing}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                Add Password Protection
-              </Button>
-
-              <Button
-                onClick={resetForm}
-                variant="outline"
-                className="w-full"
-              >
-                Reset Form
-              </Button>
-            </>
-          )}
-
-
         </div>
+      )}
 
-        {/* Results Panel */}
-        <div className="space-y-6">
-          {/* Results */}
-          {result && (
+      {/* Configuration Panel - Show after file selection */}
+      {selectedFile && (
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Password Settings and Encryption Level - Side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Password Settings */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span>Password Protection Added</span>
+                  <Lock className="h-5 w-5" />
+                  <span>Password Settings</span>
                 </CardTitle>
                 <CardDescription>
-                  Your PDF has been successfully protected
+                  Configure owner and user passwords for your PDF
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Filename:</span>
-                    <p className="text-gray-600">{result.filename}</p>
-                  </div>
-                  {/* <div>
-                    <span className="font-medium text-gray-700">Pages:</span>
-                    <p className="text-gray-600">{result.totalPages}</p>
-                  </div> */}
-                  <div>
-                    <span className="font-medium text-gray-700">Owner Password:</span>
-                    <p className="text-gray-600">{result.protectionInfo?.hasOwnerPassword ? 'Set' : 'Not set'}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">User Password:</span>
-                    <p className="text-gray-600">{result.protectionInfo?.hasUserPassword ? 'Set' : 'Not set'}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Permissions:</span>
-                    <p className="text-gray-600">{result.protectionInfo?.permissions || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Encryption:</span>
-                    <p className="text-gray-600">{result.protectionInfo?.encryptionLevel || 'Not specified'}</p>
-                  </div>
+                {/* Owner Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Owner Password (Optional)
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="Enter owner password"
+                    value={ownerPassword}
+                    onChange={(e) => handleInputChange('ownerPassword', e.target.value)}
+                    className="w-full"
+                  />
+                  {ownerPassword && (
+                    <div className="mt-1">
+                      <span className={`text-xs ${getPasswordStrengthColor(getPasswordStrength(ownerPassword).score)}`}>
+                        {getPasswordStrength(ownerPassword).message}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Owner password provides full access to the PDF
+                  </p>
                 </div>
 
-                <Button
-                  onClick={handleDownload}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Protected PDF
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Error Display */}
-          {error && (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <div className="flex items-center space-x-2 text-red-600">
-                  <AlertCircle className="h-5 w-5" />
-                  <span className="font-medium">Error</span>
+                {/* User Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    User Password <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="Enter user password (required)"
+                    value={userPassword}
+                    onChange={(e) => handleInputChange('userPassword', e.target.value)}
+                    className="w-full"
+                    required
+                  />
+                  {userPassword && (
+                    <div className="mt-1">
+                      <span className={`text-xs ${getPasswordStrengthColor(getPasswordStrength(userPassword).score)}`}>
+                        {getPasswordStrength(userPassword).message}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    User password is required to open the PDF
+                  </p>
                 </div>
-                <p className="text-red-600 mt-2">{error}</p>
               </CardContent>
             </Card>
-          )}
 
-          {/* Help Information */}
+            {/* Encryption Level */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Shield className="h-5 w-5" />
+                  <span>Encryption Level</span>
+                </CardTitle>
+                <CardDescription>
+                  Choose the security strength for your PDF
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {encryptionOptions.map((option) => (
+                    <label key={option.value} className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="encryptionLevel"
+                        value={option.value}
+                        checked={encryptionLevel === option.value}
+                        onChange={(e) => handleInputChange('encryptionLevel', e.target.value)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{option.label}</div>
+                        <p className="text-sm text-gray-600">{option.description}</p>
+                        <p className="text-xs text-gray-500">{option.security}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                
+                {/* Action Buttons inside Encryption Level card */}
+                <div className="mt-6 space-y-3">
+                  <Button
+                    onClick={handleAddPassword}
+                    disabled={!selectedFile || isProcessing}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Add Password Protection
+                  </Button>
+
+                  <Button
+                    onClick={resetForm}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Reset Form
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-2 text-red-600">
+                <AlertCircle className="h-5 w-5" />
+                <span className="font-medium">Error</span>
+              </div>
+              <p className="text-red-600 mt-2">{error}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Help Information - Only show when no file selected */}
+      {!selectedFile && (
+        <div className="max-w-6xl mx-auto">
           <Card className="border-blue-200 bg-blue-50">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-blue-800">
@@ -410,7 +413,7 @@ const AddPassword: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      )}
 
       {/* Processing Overlay */}
       {isProcessing && (

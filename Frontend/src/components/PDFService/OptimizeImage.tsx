@@ -12,6 +12,7 @@ const OptimizeImage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<OptimizeImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [optimizeImageResult, setOptimizeImageResult] = useState<OptimizeImageResponse | null>(null);
   const [activeTab, setActiveTab] = useState<'presets' | 'custom' | 'advanced'>('presets');
   const [selectedPreset, setSelectedPreset] = useState<OptimizationPreset | null>(null);
   const [customOptions, setCustomOptions] = useState<Partial<OptimizeImageRequest>>({
@@ -99,6 +100,7 @@ const OptimizeImage: React.FC = () => {
 
       const response = await optimizeImageService.optimizeImage(request);
       setResult(response);
+      setOptimizeImageResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during image optimization');
     } finally {
@@ -119,6 +121,7 @@ const OptimizeImage: React.FC = () => {
   const resetForm = () => {
     setSelectedFile(null);
     setResult(null);
+    setOptimizeImageResult(null);
     setError(null);
     setSelectedPreset(null);
     setCustomOptions({
@@ -152,6 +155,83 @@ const OptimizeImage: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Success Message UI - Show only success message after optimization
+  if (optimizeImageResult && optimizeImageResult.success) {
+    return (
+      <div className="p-2 space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Optimize Images</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Compress images within PDFs, adjust resolution, and convert formats
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto p-6">
+          {/* Success Message */}
+          <Card className="p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h3 className="text-lg font-semibold text-green-800">Images Optimized Successfully!</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="text-center p-4 bg-white rounded-lg">
+                <p className="text-sm text-gray-600">Original Size</p>
+                <p className="text-lg font-semibold text-gray-900">{formatFileSize(optimizeImageResult.originalFileSize)}</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg">
+                <p className="text-sm text-gray-600">Optimized Size</p>
+                <p className={`text-lg font-semibold ${optimizeImageResult.fileSize < optimizeImageResult.originalFileSize ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatFileSize(optimizeImageResult.fileSize)}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg">
+                <p className="text-sm text-gray-600">Reduction</p>
+                <p className={`text-lg font-semibold ${optimizeImageResult.fileSize < optimizeImageResult.originalFileSize ? 'text-blue-600' : 'text-red-600'}`}>
+                  {optimizeImageResult.optimizationRatio}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleDownload}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <FileDown className="w-4 h-4 mr-2" />
+                Download Optimized PDF
+              </Button>
+              <Button
+                onClick={() => setOptimizeImageResult(null)}
+                variant="outline"
+              >
+                Back to Configuration
+              </Button>
+              <Button
+                onClick={resetForm}
+                variant="outline"
+              >
+                Start New
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-2 space-y-6">
       <div className="bg-white shadow-sm border-b">
@@ -173,24 +253,24 @@ const OptimizeImage: React.FC = () => {
         </div>
       </div>
 
-      {/* File Upload Section */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Upload className="w-5 h-5 text-gray-500" />
-            <h2 className="text-xl font-semibold text-gray-900">Upload PDF</h2>
-          </div>
-          
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
+      {/* File Upload Section - Only show when no file selected */}
+      {!selectedFile && (
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Upload className="w-5 h-5 text-gray-500" />
+              <h2 className="text-xl font-semibold text-gray-900">Upload PDF</h2>
+            </div>
             
-            {!selectedFile ? (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
               <div className="space-y-4">
                 <Image className="w-12 h-12 text-gray-400 mx-auto" />
                 <div>
@@ -205,25 +285,64 @@ const OptimizeImage: React.FC = () => {
                   Choose File
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
-                <div>
-                  <p className="text-lg font-medium text-gray-900">{selectedFile.name}</p>
-                  <p className="text-gray-500">{formatFileSize(selectedFile.size)}</p>
-                </div>
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  size="sm"
-                >
-                  Change File
-                </Button>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
+
+      {/* Selected File Info - Show after file upload */}
+      {selectedFile && (
+        <Card className="p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Image className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
+                  <p className="text-sm text-gray-600">
+                    {(selectedFile as File).name} • {formatFileSize((selectedFile as File).size)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedFile(null);
+                  setResult(null);
+                  setOptimizeImageResult(null);
+                  setError(null);
+                  setSelectedPreset(null);
+                  setCustomOptions({
+                    imageQuality: 85,
+                    maxResolution: 150,
+                    compressionLevel: 'medium',
+                    formatConversion: 'auto',
+                    downscaleImages: true,
+                    removeMetadata: true,
+                    optimizeForWeb: false
+                  });
+                  setAdvancedOptions({
+                    imageQuality: 85,
+                    maxResolution: 150,
+                    compressionLevel: 'medium',
+                    formatConversion: 'auto',
+                    downscaleImages: true,
+                    removeMetadata: true,
+                    optimizeForWeb: false
+                  });
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Optimization Options */}
       {selectedFile && (
@@ -560,45 +679,6 @@ const OptimizeImage: React.FC = () => {
         </Card>
       )}
 
-      {/* Results Display */}
-      {result && (
-        <Card className="p-6 border-green-200 bg-green-50">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <h3 className="text-xl font-semibold text-green-800">Image Optimization Complete!</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg">
-                <p className="text-sm text-gray-600">Original Size</p>
-                <p className="text-lg font-semibold text-gray-900">{formatFileSize(result.originalFileSize)}</p>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg">
-                <p className="text-sm text-gray-600">Optimized Size</p>
-                <p className="text-lg font-semibold text-green-600">{formatFileSize(result.fileSize)}</p>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg">
-                <p className="text-sm text-gray-600">Reduction</p>
-                <p className="text-lg font-semibold text-blue-600">{result.optimizationRatio}</p>
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <Button
-                onClick={handleDownload}
-                size="lg"
-                className="min-w-[200px]"
-              >
-                <div className="flex items-center space-x-2">
-                  <FileDown className="w-4 h-4" />
-                  <span>Download Optimized PDF</span>
-                </div>
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 };

@@ -2,6 +2,92 @@
 @import 'react-pdf/dist/Page/TextLayer.css';
 @import 'react-pdf/dist/Page/AnnotationLayer.css';
 
+/* CKEditor Styles */
+.ck-editor__editable {
+  min-height: 120px;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ck-editor__editable:focus {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ck.ck-editor__main > .ck-editor__editable {
+  border-radius: 0 0 0.5rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-top: none;
+}
+
+.ck.ck-toolbar {
+  border-radius: 0.5rem 0.5rem 0 0;
+  border: 1px solid #d1d5db;
+  background-color: #1f2937 !important; /* Dark gray/black background */
+  min-height: 36px !important; /* Slightly reduced height */
+  padding: 6px 12px !important; /* Slightly reduced padding */
+}
+
+.ck.ck-toolbar .ck-button {
+  color: #ffffff !important; /* White text/icons */
+}
+
+.ck.ck-toolbar .ck-button:hover {
+  background-color: #374151 !important; /* Darker gray on hover */
+}
+
+.ck.ck-toolbar .ck-button.ck-on {
+  background-color: #4b5563 !important; /* Active state */
+}
+
+.ck.ck-toolbar .ck-dropdown__button {
+  color: #ffffff !important;
+}
+
+.ck.ck-toolbar .ck-dropdown__button:hover {
+  background-color: #374151 !important;
+}
+
+/* Reduce font size slightly */
+.ck.ck-toolbar .ck-button__label {
+  font-size: 12px !important;
+}
+
+/* Hide only the 3-dot overflow menu, not all dropdowns */
+.ck.ck-toolbar .ck-toolbar__separator:last-child {
+  display: none !important;
+}
+
+/* Ensure dropdown content is visible */
+.ck.ck-dropdown__panel {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.ck.ck-dropdown__panel .ck-button {
+  color: #000000 !important;
+}
+
+.ck.ck-dropdown__panel .ck-button:hover {
+  background-color: #f3f4f6 !important;
+}
+
+/* Ensure dropdown content is properly visible */
+.ck.ck-dropdown__panel .ck-list {
+  background-color: #ffffff !important;
+}
+
+.ck.ck-dropdown__panel .ck-list__item {
+  color: #000000 !important;
+}
+
+.ck.ck-dropdown__panel .ck-list__item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+
 /* index.css or global.css */
 
 

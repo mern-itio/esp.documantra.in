@@ -17,6 +17,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
   const [dragActive, setDragActive] = useState(false);
   const [result, setResult] = useState<SetPermissionsResponse | null>(null);
   const [currentPermissions, setCurrentPermissions] = useState<CurrentPermissionsResponse | null>(null);
+  const [showSuccessArea, setShowSuccessArea] = useState(false);
   // const [showAdvanced, setShowAdvanced] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +99,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
     try {
       const response = await setPermissionsService.setPermissions(selectedFile, permissions);
       setResult(response);
+      setShowSuccessArea(true);
       if (onPermissionsResult) {
         onPermissionsResult(response);
       }
@@ -207,6 +209,108 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
         break;
     }
   }, [permissions]);
+
+  // Custom Success Area
+  if (showSuccessArea && result) {
+    return (
+      <div className="mx-auto p-2 space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Set Permissions</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Control document permissions and access
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Success Area */}
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 p-8">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FiCheck className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-3xl font-bold text-green-800 mb-3">
+                Permissions Set Successfully!
+              </h3>
+              <p className="text-lg text-green-700 mb-8">
+                Your PDF permissions have been configured and the document is ready for download.
+              </p>
+              
+              {/* File Info Card */}
+              <div className="bg-white border border-green-200 rounded-lg p-6 mb-8 shadow-sm">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <FiLock className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h4 className="font-semibold text-gray-900 text-lg">{result.filename}</h4>
+                    <p className="text-sm text-gray-600">
+                      {result.fileSize} • {result.permissions.isPasswordProtected ? 'Password Protected' : 'Not Password Protected'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={handleOpenSecurePDF}
+                  disabled={!viewEnabled}
+                  className={`px-6 py-3 rounded-lg flex items-center justify-center space-x-2 text-base font-medium shadow-md transition-colors ${
+                    viewEnabled
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  }`}
+                >
+                  {!viewEnabled && (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  )}
+                  <FiEye className="w-5 h-5" />
+                  <span>
+                    {viewEnabled
+                      ? 'View Secure PDF'
+                      : `Your file is getting ready... (${countdown}s)`}
+                  </span>
+                </button>
+                
+                <button
+                  onClick={() => setShowSuccessArea(false)}
+                  className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
+                >
+                  <FiX className="w-5 h-5" />
+                  <span>Back to Configuration</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowSuccessArea(false);
+                    setResult(null);
+                    setSelectedFile(null);
+                    setCurrentPermissions(null);
+                  }}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
+                >
+                  <FiUpload className="w-5 h-5" />
+                  <span>Start New</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto p-2 space-y-6">
