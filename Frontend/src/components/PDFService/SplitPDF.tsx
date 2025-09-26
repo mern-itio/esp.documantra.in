@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { 
-  Download, 
+import {  
   Scissors, 
   FileText, 
   Settings, 
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import { splitPDFService } from '../../services/splitPDFService';
 import type { SplitPDFRequest, SplitPDFResponse } from '../../types/splitPDF';
+import SuccessBox from '../common/SuccessBox';
 
 // Type declarations for PDF.js
 declare global {
@@ -248,6 +248,16 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
     setSelectedPages([]);
   }, []);
 
+  const resetToStart = useCallback(() => {
+    setDocument(null);
+    setSplitResult(null);
+    setPdfPages([]);
+    setSelectedPages([]);
+    setCustomRanges([]);
+    setPagesPerSplit('');
+    setSplitMode('pages');
+  }, []);
+
   // Toggle page selection
   const togglePageSelection = useCallback((pageNumber: number) => {
     setSelectedPages(prev => {
@@ -405,9 +415,9 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
   };
 
   const downloadAll = async () => {
-    console.log('Download button clicked');
-    console.log('splitResult:', splitResult);
-    console.log('zipFile:', (splitResult as any)?.zipFile);
+    // console.log('Download button clicked');
+    // console.log('splitResult:', splitResult);
+    // console.log('zipFile:', (splitResult as any)?.zipFile);
     
     if (!(splitResult as any)?.zipFile) {
       console.error('No ZIP file found in split result');
@@ -416,10 +426,10 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
     }
     
     try {
-      console.log('Starting ZIP download...');
+      // console.log('Starting ZIP download...');
       // Download ZIP file
       await splitPDFService.downloadZipFile((splitResult as any).zipFile);
-      console.log('ZIP download completed successfully');
+      // console.log('ZIP download completed successfully');
     } catch (error) {
       console.error('Download ZIP error:', error);
       alert('Failed to download ZIP file: ' + (error as Error).message);
@@ -437,14 +447,32 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      {/* <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">Split PDF Documents</h1>
-        <p className="text-gray-600">Divide your PDF into multiple files with precision</p>
-      </div> */}
-
-      {/* File Upload Area */}
-      {!document && (
+      {/* Show success box only when split is successful */}
+      {splitResult && splitResult.success ? (
+        <SuccessBox
+          title="Split PDF"
+          subtitle="Split your PDF into multiple files"
+          message="PDF Split Successfully!"
+          fileInfo={(splitResult as any).zipFile ? {
+            filename: (splitResult as any).zipFile.filename,
+            size: (splitResult as any).zipFile.size,
+            totalFiles: splitResult.totalFiles
+          } : undefined}
+          actions={{
+            primary: {
+              label: "Download ZIP File",
+              onClick: downloadAll,
+              disabled: !splitResult?.zipFile
+            },
+            secondary: {
+              label: "Split Another File",
+              onClick: resetToStart
+            }
+          }}
+        />
+      ) : (
+        <>
+          {!document && (
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
             isDragging 
@@ -505,7 +533,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                     <div className="text-2xl text-gray-200 font-bold">D</div>
                   </div>
                   <div className="absolute top-1 right-1 bg-orange-500 text-white text-xs px-1 py-0.5 rounded-full font-medium">
-                    Oltio
+                    D&S
                   </div>
                 </>
               )}
@@ -830,57 +858,18 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
         </div>
       )}
 
-      {/* Split Results */}
-      {splitResult && splitResult.success && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Split Results</h3>
-            <div className="flex space-x-2">
-              <button
-                onClick={downloadAll}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-                disabled={!splitResult?.zipFile}
-              >
-                <Download className="w-5 h-5" />
-                <span>Download ZIP</span>
-              </button>
-              
-            </div>
-          </div>
-
-          {/* ZIP File Info */}
-          {(splitResult as any).zipFile && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Download className="w-5 h-5 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-green-900">{(splitResult as any).zipFile.filename}</h4>
-                  <p className="text-sm text-green-700">
-                    {formatFileSize((splitResult as any).zipFile.size)} • Contains {splitResult.totalFiles} PDF file{splitResult.totalFiles !== 1 ? 's' : ''}
-                  </p>
-                </div>
+          {/* Instructions */}
+          {!document && (
+            <div className="text-center text-gray-500">
+              <p>Upload a PDF file to get started</p>
+              <div className="mt-4 text-xs text-gray-400">
+                <p>• Maximum file size: 1MB</p>
+                <p>• Only PDF files are supported</p>
+                <p>• Choose from multiple split modes</p>
               </div>
             </div>
           )}
-
-          <div className="mt-4 text-center text-sm text-gray-600">
-            Successfully created {splitResult.totalFiles} file{splitResult.totalFiles !== 1 ? 's' : ''} - All files are packaged in the ZIP download
-          </div>
-        </div>
-      )}
-
-      {/* Instructions */}
-      {!document && (
-        <div className="text-center text-gray-500">
-          <p>Upload a PDF file to get started</p>
-          <div className="mt-4 text-xs text-gray-400">
-            <p>• Maximum file size: 1MB</p>
-            <p>• Only PDF files are supported</p>
-            <p>• Choose from multiple split modes</p>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

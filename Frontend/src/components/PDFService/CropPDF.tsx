@@ -3,6 +3,7 @@ import { FiUpload, FiFile, FiTrash2, FiCrop } from 'react-icons/fi';
 import { cropPDFService } from '../../services/cropPDFService';
 import type { CropPDFResponse, CropData } from '../../types/cropPDF';
 import type { PDFInfo } from '../../types/common';
+import SuccessBox from '../common/SuccessBox';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Type declarations for PDF.js
@@ -58,6 +59,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfPages, setPdfPages] = useState<PDFPage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cropResult, setCropResult] = useState<CropPDFResponse | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -260,11 +262,23 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
     setCropSelection(null);
     setCurrentPage(1);
     setPdfPages([]);
+    setCropResult(null);
     onCropResult({
       success: false,
       message: 'Document removed'
     });
   }, [onCropResult]);
+
+  const resetToStart = useCallback(() => {
+    setPdfDocument(null);
+    setPdfInfo(null);
+    setCropAreas([]);
+    setCropSelection(null);
+    setCurrentPage(1);
+    setPdfPages([]);
+    setCropResult(null);
+    setCropping(false);
+  }, []);
 
   // Navigation functions
   const goToPage = useCallback((page: number) => {
@@ -284,6 +298,9 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
   // Handle mouse events for cropping
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!pdfContainerRef.current) return;
+    
+    // Only start selection on left mouse button
+    if (e.button !== 0) return;
 
     const rect = pdfContainerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -301,6 +318,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // Only handle mouse move when actively selecting
     if (!isSelecting || !cropSelection || !pdfContainerRef.current) return;
 
     const rect = pdfContainerRef.current.getBoundingClientRect();
@@ -337,7 +355,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
       const cropData: CropData = {
         page: currentPage,
         cropArea: {
-          x: Math.min(cropSelection.startX, cropSelection.endY) * scaleX,
+          x: Math.min(cropSelection.startX, cropSelection.endX) * scaleX,
           y: Math.min(cropSelection.startY, cropSelection.endY) * scaleY,
           width: cropSelection.width * scaleX,
           height: cropSelection.height * scaleY
@@ -348,6 +366,14 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
       setCropSelection(null);
     }
   }, [isSelecting, cropSelection, currentPage, pdfPages]);
+
+  // Handle mouse leave to clear selection
+  const handleMouseLeave = useCallback(() => {
+    if (isSelecting) {
+      setIsSelecting(false);
+      setCropSelection(null);
+    }
+  }, [isSelecting]);
 
   // Remove crop area
   const removeCropArea = useCallback((index: number) => {
@@ -371,14 +397,17 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
         crops: cropAreas
       });
 
+      setCropResult(result);
       onCropResult(result);
     } catch (error) {
       console.error('Error cropping PDF:', error);
-      onCropResult({
+      const errorResult = {
         success: false,
         error: 'Failed to crop PDF',
         message: (error as Error).message,
-      });
+      };
+      setCropResult(errorResult);
+      onCropResult(errorResult);
     } finally {
       setCropping(false);
     }
@@ -391,6 +420,22 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Download cropped PDF
+  const handleDownload = async () => {
+    if (!cropResult?.file || !cropResult.downloadUrl) {
+      console.error('No cropped file or download URL available');
+      alert('No cropped file available for download');
+      return;
+    }
+
+    try {
+      await cropPDFService.downloadCroppedPDF(cropResult.downloadUrl, cropResult.file.filename);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
   };
 
   // Render current page
@@ -442,11 +487,37 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
     }
   };
 
+  if (cropResult && cropResult.success) {
+    return (
+      <SuccessBox
+        title="Crop PDF"
+        subtitle="Crop specific areas from your PDF documents"
+        message="PDF Cropped Successfully!"
+        fileInfo={cropResult.file ? {
+          filename: cropResult.file.filename,
+          size: cropResult.file.size,
+          crops: cropResult.crops?.length || 0
+        } : undefined}
+        actions={{
+          primary: {
+            label: "Download Cropped PDF",
+            onClick: handleDownload,
+            disabled: !cropResult?.file
+          },
+          secondary: {
+            label: "Crop More PDFs",
+            onClick: resetToStart
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* File Upload Area */}
       {!pdfDocument && (
-        <div
+            <div
           className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${dragActive
               ? 'border-blue-500 bg-blue-50'
               : 'border-gray-300 hover:border-gray-400'
@@ -481,9 +552,9 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
         </div>
       )}
 
-      {pdfDocument && pdfInfo && (
-        <>
-          {/* Document Info */}
+        {pdfDocument && pdfInfo && (
+          <div>
+            {/* Document Info */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -572,7 +643,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
+                  onMouseLeave={handleMouseLeave}
                   style={{ maxWidth: '500px', maxHeight: '100vh', border: '1px solid #ddd' }}
                 >
                   {renderCurrentPage()}
@@ -651,20 +722,20 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                 style={{ cursor: 'pointer' }}
               >
                 {cropping ? (
-                  <>
+                  <div className="flex items-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                     Cropping Pages...
-                  </>
+                  </div>
                 ) : (
-                  <>
+                  <div className="flex items-center">
                     <FiCrop className="w-5 h-5 mr-2" />
                     Crop Pages ({cropAreas.length})
-                  </>
+                  </div>
                 )}
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

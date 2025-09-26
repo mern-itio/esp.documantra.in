@@ -55,7 +55,7 @@ const SplitPDFPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="py-8">
+      <div className="">
         <SplitPDF onSplitComplete={handleSplitComplete} />
       </div>
 

@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   FiUpload,
   FiFile,
-  // FiDownload,
   FiScissors,
   FiX,
   FiCheck,
@@ -13,6 +12,7 @@ import type { ExtractPDFResponse } from '../../types/extractPDF';
 import type { PDFInfo } from '../../types/common';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import SuccessBox from '../common/SuccessBox';
 
 // Extend window interface for PDF.js
 declare global {
@@ -38,6 +38,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [pageThumbnails, setPageThumbnails] = useState<string[]>([]);
   const [loadingThumbnails, setLoadingThumbnails] = useState(false);
+  const [extractResult, setExtractResult] = useState<ExtractPDFResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize PDF.js worker
@@ -220,13 +221,26 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
   const removeDocument = () => {
     setDocument(null);
     setPdfInfo(null);
-    // setExtractResult(null);
+    setExtractResult(null);
     setPageNumbers('');
     setStartPage(1);
     setEndPage(1);
     setSelectedPages(new Set());
     setPageThumbnails([]);
     setLoadingThumbnails(false);
+  };
+
+  const resetToStart = () => {
+    setDocument(null);
+    setPdfInfo(null);
+    setExtractResult(null);
+    setPageNumbers('');
+    setStartPage(1);
+    setEndPage(1);
+    setSelectedPages(new Set());
+    setPageThumbnails([]);
+    setLoadingThumbnails(false);
+    setExtracting(false);
   };
 
 
@@ -299,7 +313,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
         throw new Error('Invalid extract mode');
       }
 
-      // setExtractResult(result);
+      setExtractResult(result);
       onExtractComplete?.(result);
     } catch (error) {
       console.error('Error extracting PDF:', error);
@@ -307,7 +321,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
         success: false,
         error: 'Failed to extract PDF'
       };
-      // setExtractResult(errorResult);
+      setExtractResult(errorResult);
       onExtractComplete?.(errorResult);
     } finally {
       setExtracting(false);
@@ -315,53 +329,76 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
   };
 
   // Download extracted PDF
-  // const handleDownload = async () => {
-  //   if (!extractResult?.file) return;
+  const handleDownload = async () => {
+    if (!extractResult?.file) {
+      console.error('No extracted file available for download');
+      alert('No extracted file available for download');
+      return;
+    }
 
-  //   try {
-  //     await extractPDFService.downloadExtractedPDF(
-  //       extractResult.file.filename
-  //     );
-  //   } catch (error) {
-  //     console.error('Error downloading file:', error);
-  //     alert('Failed to download file');
-  //   }
-  // };
+    try {
+      await extractPDFService.downloadExtractedPDF(
+        extractResult.file.filename
+      );
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
 
-  // Format file size
-  // const formatFileSize = (bytes: number) => {
-  //   if (bytes === 0) return '0 Bytes';
-  //   const k = 1024;
-  //   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  //   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  //   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  // };
+ 
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8 bg-gray">
-          <div className="flex items-center space-x-4 mb-4">
-            <Link
-              to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg">
-                <FiScissors className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Extract PDF</h1>
-                <p className="text-gray-600">Extract specific pages from your PDF documents</p>
+        {/* Show success box only when extract is successful */}
+        {extractResult && extractResult.success ? (
+          <SuccessBox
+            title="Extract PDF"
+            subtitle="Extract specific pages from your PDF documents"
+            message="PDF Extracted Successfully!"
+            fileInfo={extractResult.file ? {
+              filename: extractResult.file.filename,
+              size: extractResult.file.size,
+              extractedPages: extractResult.extractedPages?.length || 0
+            } : undefined}
+            actions={{
+              primary: {
+                label: "Download Extracted PDF",
+                onClick: handleDownload,
+                disabled: !extractResult?.file
+              },
+              secondary: {
+                label: "Extract Another PDF",
+                onClick: resetToStart
+              }
+            }}
+            backUrl={`/pdf-tools${location.search}`}
+          />
+        ) : (
+          <>
+            {/* Header */}
+            <div className="mb-8 bg-gray">
+              <div className="flex items-center space-x-4 mb-4">
+                <Link
+                  to={`/pdf-tools${location.search}`}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg">
+                    <FiScissors className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Extract PDF</h1>
+                    <p className="text-gray-600">Extract specific pages from your PDF documents</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Upload Section - Full Width Initially */}
+            {/* Upload Section - Full Width Initially */}
         {!document && (
           <div className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2>
@@ -634,7 +671,9 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
           </div>
         )}
 
-        {/* Results are now handled by the modal in ExtractPDFPage */}
+            {/* Results are now handled by the modal in ExtractPDFPage */}
+          </>
+        )}
       </div>
     </div>
   );

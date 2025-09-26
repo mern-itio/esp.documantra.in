@@ -13,13 +13,9 @@ interface SearchModalProps {
 const FILE_TYPES = [
   { value: 'pdf', label: 'PDF Documents' },
   { value: 'doc', label: 'Word Documents' },
-  { value: 'docx', label: 'Word Documents' },
   { value: 'xls', label: 'Excel Spreadsheets' },
-  { value: 'xlsx', label: 'Excel Spreadsheets' },
   { value: 'ppt', label: 'PowerPoint' },
-  { value: 'pptx', label: 'PowerPoint' },
   { value: 'jpg', label: 'Images' },
-  { value: 'png', label: 'Images' },
   { value: 'txt', label: 'Text Files' }
 ];
 

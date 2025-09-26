@@ -120,6 +120,10 @@ const compressPDFController = {
         throw new Error('Output file was not created by qpdf');
       }
 
+      // Get original file size for comparison
+      const originalStats = await fs.stat(req.file.path);
+      const originalFileSize = originalStats.size;
+
       // Use Ghostscript for advanced image compression if available
       try {
         const { stdout: gsVersion } = await execAsync('gs --version');
@@ -171,7 +175,11 @@ const compressPDFController = {
         gsCommand += ` -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${gsOutputPath}" "${req.file.path}"`;
 
         console.log('Executing Ghostscript command:', gsCommand);
-        await execAsync(gsCommand);
+        const gsResult = await execAsync(gsCommand);
+        console.log('Ghostscript execution result:', {
+          stdout: gsResult.stdout,
+          stderr: gsResult.stderr
+        });
 
         // Check if Ghostscript output was created and compare sizes
         if (await fs.pathExists(gsOutputPath)) {
@@ -195,8 +203,10 @@ const compressPDFController = {
         }
 
       } catch (gsError) {
-        console.log('Ghostscript not available, using qpdf only');
-        console.log('Note: Advanced image compression requires Ghostscript');
+        console.log('Ghostscript error:', gsError.message);
+        console.log('Ghostscript stderr:', gsError.stderr);
+        console.log('Ghostscript stdout:', gsError.stdout);
+        console.log('Using qpdf only - Ghostscript failed');
       }
 
       // Verify the final output file was created
@@ -209,8 +219,6 @@ const compressPDFController = {
       // Get file size
       const stats = await fs.stat(outputPath);
       const fileSize = stats.size;
-      const originalStats = await fs.stat(req.file.path);
-      const originalFileSize = originalStats.size;
       const sizeReduction = originalFileSize - fileSize;
       const compressionRatio = ((sizeReduction / originalFileSize) * 100).toFixed(2);
 
@@ -219,6 +227,17 @@ const compressPDFController = {
         compressedFileSize: fileSize,
         sizeReduction,
         compressionRatio: `${compressionRatio}%`
+      });
+
+      console.log('Compression settings applied:', {
+        compressionLevel,
+        imageQuality,
+        maxImageResolution,
+        downscaleImages,
+        removeMetadata,
+        linearize,
+        objectStreams,
+        compressionMethod
       });
 
       // Check if compression actually reduced file size

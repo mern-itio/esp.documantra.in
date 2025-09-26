@@ -3,6 +3,7 @@ import { FiUpload, FiFile, FiTrash2, FiDownload, FiMove, FiPlus, FiX } from 'rea
 import { reorderPDFService } from '../../services/reorderPDFService';
 import type { ReorderPDFResponse, ReorderPageItem } from '../../types/reorderPDF';
 import type { PDFInfo } from '../../types/common';
+import SuccessBox from '../common/SuccessBox';
 
 // Type declarations for PDF.js
 declare global {
@@ -25,6 +26,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [pdfThumbnails, setPdfThumbnails] = useState<string[]>([]);
+  const [reorderResult, setReorderResult] = useState<ReorderPDFResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize PDF.js
@@ -172,11 +174,21 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     setPdfInfo(null);
     setPageItems([]);
     setPdfThumbnails([]);
+    setReorderResult(null);
     onReorderResult({
       success: false,
       message: 'Document removed'
     });
   }, [onReorderResult]);
+
+  const resetToStart = useCallback(() => {
+    setDocument(null);
+    setPdfInfo(null);
+    setPageItems([]);
+    setPdfThumbnails([]);
+    setReorderResult(null);
+    setReordering(false);
+  }, []);
 
   // Drag and drop for page reordering
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -224,14 +236,17 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
         order: order
       });
 
+      setReorderResult(result);
       onReorderResult(result);
     } catch (error) {
       console.error('Error reordering PDF:', error);
-      onReorderResult({
+      const errorResult = {
         success: false,
         error: 'Failed to reorder PDF',
         message: (error as Error).message,
-      });
+      };
+      setReorderResult(errorResult);
+      onReorderResult(errorResult);
     } finally {
       setReordering(false);
     }
@@ -256,7 +271,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     
     if (thumbnail) {
       return (
-        <div className="w-full h-32 rounded-lg overflow-hidden border border-gray-200 bg-white">
+        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-white">
           <img 
             src={thumbnail} 
             alt={`Page ${pageNumber} preview`}
@@ -268,7 +283,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     
     // Fallback to loading state if thumbnail not available
     return (
-      <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
+      <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
         <div className="text-center text-gray-600">
           <div className="text-lg font-semibold mb-1">Page {pageNumber}</div>
           <div className="text-xs">Loading preview...</div>
@@ -286,17 +301,54 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Download reordered PDF
+  const handleDownload = async () => {
+    if (!reorderResult?.file) {
+      console.error('No reordered file available for download');
+      alert('No reordered file available for download');
+      return;
+    }
+
+    try {
+      // Use the service method for consistent download behavior
+      await reorderPDFService.downloadReorderedPDF(
+        reorderResult.downloadUrl || '', 
+        reorderResult.file.filename
+      );
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
-      {/* Header */}
-      {/* <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Reorder PDF Pages</h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Drag and drop pages to reorder them. Create the perfect sequence for your document.
-        </p>
-      </div> */}
-
-      {/* File Upload Area */}
+      {/* Show success box only when reorder is successful */}
+      {reorderResult && reorderResult.success ? (
+        <SuccessBox
+          title="Reorder PDF Pages"
+          subtitle="Rearrange the order of pages in your PDF documents"
+          message="Pages Reordered Successfully!"
+          fileInfo={reorderResult.file ? {
+            filename: reorderResult.file.filename,
+            size: reorderResult.file.size,
+            totalPages: reorderResult.totalPages || 0
+          } : undefined}
+          actions={{
+            primary: {
+              label: "Download Reordered PDF",
+              onClick: handleDownload,
+              disabled: !reorderResult?.file
+            },
+            secondary: {
+              label: "Reorder More Pages",
+              onClick: resetToStart
+            }
+          }}
+        />
+      ) : (
+        <>
+          {/* File Upload Area */}
       {!document && (
         <div
           className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
@@ -382,7 +434,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
 
           {showPagePreview && (
             <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {pageItems.map((page, index) => (
                   <div
                     key={page.id}
@@ -396,25 +448,25 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
                     onDrop={(e) => handleDropPage(e, index)}
                   >
                     {/* Page Preview Card */}
-                    <div className="border-2 rounded-lg p-3 transition-all cursor-move hover:border-blue-300 border-gray-200 bg-white">
+                    <div className="border-2 rounded-lg p-2 transition-all cursor-move hover:border-blue-300 border-gray-200 bg-white">
                       {/* Page Preview */}
                       {generatePagePreview(page.pageNumber)}
                       
                       {/* Page Number Label */}
-                      <div className="text-center mt-2">
-                        <span className="text-sm font-medium text-gray-700">
+                      <div className="text-center mt-1">
+                        <span className="text-xs font-medium text-gray-700">
                           Page {page.pageNumber}
                         </span>
                       </div>
                       
                       {/* Position Indicator */}
-                      <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="absolute -top-1 -left-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                         <span className="text-xs font-bold text-white">{index + 1}</span>
                       </div>
                       
                       {/* Drag Handle */}
-                      <div className="absolute top-2 left-2 text-gray-400">
-                        <FiMove className="w-4 h-4" />
+                      <div className="absolute top-1 left-1 text-gray-400">
+                        <FiMove className="w-3 h-3" />
                       </div>
                     </div>
                   </div>
@@ -463,6 +515,8 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
             )}
           </button>
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -5,6 +5,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Alert } from '../ui/alert';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 interface PDFShareModalProps {
   isOpen: boolean;
@@ -644,7 +646,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <label className="text-sm font-medium text-gray-700 w-12">To</label>
-                  <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
+                  <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white relative">
                     {/* Email chips */}
                     {toRecipients.map((recipient, index) => (
                       <div
@@ -670,32 +672,35 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                       placeholder={toRecipients.length === 0 ? "Enter email addresses..." : ""}
                       className="flex-1 min-w-[200px] border-none outline-none bg-transparent text-sm"
                     />
-                  </div>
-                </div>
-              </div>
-
-              {/* CC Recipients */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center gap-8">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Cc</label>
-                    </div>
-                    <div>
+                    {/* CC and BCC buttons positioned in top-right corner */}
+                    <div className="absolute top-2 right-2 flex space-x-2">
                       {!showCc && (
                         <button
                           onClick={() => setShowCc(true)}
-                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50"
                         >
-                          Add CC
+                          Cc
+                        </button>
+                      )}
+                      {!showBcc && (
+                        <button
+                          onClick={() => setShowBcc(true)}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50"
+                        >
+                          Bcc
                         </button>
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  {showCc && (
-                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
-             
+              {/* CC Recipients - Only show when CC is enabled */}
+              {showCc && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <label className="text-sm font-medium text-gray-700 w-12">Cc</label>
+                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white relative">
                       {ccRecipients.map((recipient, index) => (
                         <div
                           key={`cc-chip-${index}`}
@@ -710,7 +715,6 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                           </button>
                         </div>
                       ))}
-                      {/* Input field */}
                       <input
                         type="text"
                         value={ccInput}
@@ -720,32 +724,29 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                         placeholder={ccRecipients.length === 0 ? "Enter email addresses..." : ""}
                         className="flex-1 min-w-[200px] border-none outline-none bg-transparent text-sm"
                       />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* BCC Recipients */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">                 
-                  <div className="flex items-center gap-6">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Bcc</label>
-                    </div>
-                    <div>
-                      {!showBcc && (
-                        <button
-                          onClick={() => setShowBcc(true)}
-                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          Add BCC
-                        </button>
-                      )}
+                      {/* Remove CC field button */}
+                      <button
+                        onClick={() => {
+                          setShowCc(false);
+                          setCcRecipients([]);
+                          setCcInput('');
+                        }}
+                        className="absolute top-1 right-1 text-gray-400 hover:text-gray-600 p-1"
+                        title="Remove CC field"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
                   </div>
-                  {showBcc && (
-                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white">
-                      {/* Email chips */}
+                </div>
+              )}
+
+              {/* BCC Recipients - Only show when BCC is enabled */}
+              {showBcc && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <label className="text-sm font-medium text-gray-700 w-12">Bcc</label>
+                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white relative">
                       {bccRecipients.map((recipient, index) => (
                         <div
                           key={`bcc-chip-${index}`}
@@ -760,7 +761,6 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                           </button>
                         </div>
                       ))}
-                      {/* Input field */}
                       <input
                         type="text"
                         value={bccInput}
@@ -770,10 +770,22 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                         placeholder={bccRecipients.length === 0 ? "Enter email addresses..." : ""}
                         className="flex-1 min-w-[200px] border-none outline-none bg-transparent text-sm"
                       />
+                      {/* Remove BCC field button */}
+                      <button
+                        onClick={() => {
+                          setShowBcc(false);
+                          setBccRecipients([]);
+                          setBccInput('');
+                        }}
+                        className="absolute top-1 right-1 text-gray-400 hover:text-gray-600 p-1"
+                        title="Remove BCC field"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-4">
                 <div>
@@ -786,13 +798,31 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Message (optional)</label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Add a personal message..."
-                    className="w-full p-3 border rounded-lg resize-none"
-                    rows={3}
-                  />
+                  <div className="border rounded-lg overflow-hidden">
+                    <CKEditor
+                      editor={ClassicEditor as any}
+                      data={message}
+                      onChange={(_event, editor) => {
+                        const data = editor.getData();
+                        setMessage(data);
+                      }}
+                       config={{
+                         toolbar: {
+                           items: [
+                             'heading', '|',
+                             'bold', 'italic', 'underline', '|',
+                             'bulletedList', 'numberedList', '|',
+                             'outdent', 'indent', '|',
+                             'link', '|',
+                             'undo', 'redo'
+                           ],
+                           shouldNotGroupWhenFull: true
+                         },
+                         placeholder: 'Add a personal message...',
+                         removePlugins: ['ToolbarMenuButton']
+                       }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -939,6 +969,19 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                   )}
                 </div>
               </div>
+
+              {/* Message Preview */}
+              {message && (
+                <div>
+                  <h4 className="font-medium mb-3">Message Preview</h4>
+                  <Card className="p-4">
+                    <div 
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: message }}
+                    />
+                  </Card>
+                </div>
+              )}
             </div>
           )}
 

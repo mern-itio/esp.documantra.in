@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { insertPDFService } from '../../services/insertPDFService';
 import type { InsertPDFResponse } from '../../types/insertPDF';
 import { PAGE_SIZE_OPTIONS } from '../../types/insertPDF';
+import SuccessBox from '../common/SuccessBox';
 import { FiUpload, FiPlus, FiX } from 'react-icons/fi';
 
 // Type declarations for PDF.js
@@ -30,6 +31,7 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
   const [processing, setProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [draggedPage, setDraggedPage] = useState<PDFPage | null>(null);
+  const [insertResult, setInsertResult] = useState<InsertPDFResponse | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -226,6 +228,39 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
     setPdfPages(prev => [...prev, newBlankPage]);
   }, [pdfPages.length]);
 
+  // Reset to start
+  const resetToStart = useCallback(() => {
+    setPdfPages([]);
+    setDocuments([]);
+    setProcessing(false);
+    setDragActive(false);
+    setDraggedPage(null);
+    setInsertResult(null);
+  }, []);
+
+  
+
+  // Download processed PDF
+  const handleDownload = async () => {
+    if (!insertResult?.file) {
+      console.error('No processed file available for download');
+      alert('No processed file available for download');
+      return;
+    }
+
+    try {
+      if (insertResult.downloadUrl) {
+        await insertPDFService.downloadInsertedPDF(insertResult.downloadUrl, insertResult.file.filename);
+      } else {
+        console.log('Download URL not available');
+        alert('Download URL not available');
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
+
   // Process final document
   const handleProcess = useCallback(async () => {
     if (pdfPages.length === 0) return;
@@ -328,18 +363,48 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
         }
       }
       
+      setInsertResult(result);
       onInsertResult(result);
     } catch (error) {
       console.error('Error processing document:', error);
-      onInsertResult({
+      const errorResult = {
         success: false,
         error: 'Failed to process document',
         message: (error as Error).message,
-      });
+      };
+      setInsertResult(errorResult);
+      onInsertResult(errorResult);
     } finally {
       setProcessing(false);
     }
   }, [pdfPages, documents, onInsertResult]);
+
+  // Show success message if processing was successful
+  if (insertResult && insertResult.success) {
+    return (
+      <SuccessBox
+        title="Insert PDF"
+        subtitle="Insert pages from other PDFs into your document"
+        message="PDF Processed Successfully!"
+        fileInfo={insertResult.file ? {
+          filename: insertResult.file.filename,
+          size: insertResult.file.size,
+          insertions: insertResult.insertions?.length || 0
+        } : undefined}
+        actions={{
+          primary: {
+            label: "Download Processed PDF",
+            onClick: handleDownload,
+            disabled: !insertResult?.file
+          },
+          secondary: {
+            label: "Process More PDFs",
+            onClick: resetToStart
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">

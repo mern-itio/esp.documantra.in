@@ -10,7 +10,8 @@ import type {
 import { Button } from '../DocumentService/ui/button';
 import { Input } from '../DocumentService/ui/input';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Upload, Download, Eye, Type, Image, Settings, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Upload, Download, Eye, Type, Image, Settings, RotateCcw, X } from 'lucide-react';
+import SuccessBox from '../common/SuccessBox';
 
 const AddWatermark: React.FC = () => {
    const location = useLocation();
@@ -23,6 +24,7 @@ const AddWatermark: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
+  const [addWatermarkResult, setAddWatermarkResult] = useState<WatermarkResponse | null>(null);
 
   const pdfFileInputRef = useRef<HTMLInputElement>(null);
   const imageFileInputRef = useRef<HTMLInputElement>(null);
@@ -189,6 +191,7 @@ const AddWatermark: React.FC = () => {
 
       const response = await addWatermarkService.addTextWatermark(request);
       setResult(response);
+      setAddWatermarkResult(response);
       setSuccess('Text watermark added successfully!');
     } catch (error: any) {
       setError(error.message || 'Failed to add watermark');
@@ -228,6 +231,7 @@ const AddWatermark: React.FC = () => {
 
       const response = await addWatermarkService.addImageWatermark(request);
       setResult(response);
+      setAddWatermarkResult(response);
       setSuccess('Image watermark added successfully!');
     } catch (error: any) {
       setError(error.message || 'Failed to add watermark');
@@ -248,6 +252,7 @@ const AddWatermark: React.FC = () => {
 
   const clearResults = () => {
     setResult(null);
+    setAddWatermarkResult(null);
     setSelectedPdfFile(null);
     setSelectedImageFile(null);
     setError('');
@@ -256,6 +261,68 @@ const AddWatermark: React.FC = () => {
     if (pdfFileInputRef.current) pdfFileInputRef.current.value = '';
     if (imageFileInputRef.current) imageFileInputRef.current.value = '';
   };
+
+  // Success Box UI
+  if (addWatermarkResult && addWatermarkResult.success) {
+    return (
+      <div className="mx-auto p-2 space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Add Watermark</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Add text or image watermarks to your PDF documents with customizable positioning and styling
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          <SuccessBox
+            title="Watermark Added Successfully!"
+            subtitle="Your PDF has been processed with watermarks and is ready for download"
+            message="The document now contains your custom watermarks and is ready for use."
+            fileInfo={{
+              filename: addWatermarkResult.filename,
+              size: selectedPdfFile?.size || 0
+            }}
+            actions={{
+              primary: {
+                label: 'Download Watermarked PDF',
+                onClick: () => addWatermarkService.downloadFile(addWatermarkResult.downloadUrl || '', addWatermarkResult.filename)
+              },
+              secondary: {
+                label: 'Back to Configuration',
+                onClick: () => setAddWatermarkResult(null)
+              },
+              tertiary: {
+                label: 'Start New',
+                onClick: () => {
+                  setAddWatermarkResult(null);
+                  setResult(null);
+                  setSelectedPdfFile(null);
+                  setSelectedImageFile(null);
+                  setError('');
+                  setSuccess('');
+                  setPreviewUrl('');
+                  if (pdfFileInputRef.current) pdfFileInputRef.current.value = '';
+                  if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto p-2 space-y-6">
@@ -328,9 +395,10 @@ const AddWatermark: React.FC = () => {
 
       {/* Main Content */}
       <div className="bg-white rounded-xl shadow-lg p-8">
-        {/* File Upload Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Files</h2>
+        {/* File Upload Section - Only show when no PDF file selected */}
+        {!selectedPdfFile && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Files</h2>
           
           {/* PDF File Upload */}
           <div className="mb-6">
@@ -351,11 +419,11 @@ const AddWatermark: React.FC = () => {
               >
                 <Upload className="w-12 h-12" />
                 <span className="text-lg font-medium">
-                  {selectedPdfFile ? selectedPdfFile.name : 'Click to upload PDF'}
+                  {selectedPdfFile ? (selectedPdfFile as File).name : 'Click to upload PDF'}
                 </span>
                 {selectedPdfFile && (
                   <span className="text-sm text-gray-500">
-                    Size: {addWatermarkService.formatFileSize(selectedPdfFile.size)}
+                    Size: {addWatermarkService.formatFileSize((selectedPdfFile as File).size)}
                   </span>
                 )}
               </button>
@@ -394,6 +462,42 @@ const AddWatermark: React.FC = () => {
             </div>
           )}
         </div>
+        )}
+
+        {/* Selected File Info - Show after file upload */}
+        {selectedPdfFile && (
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
+                  <p className="text-sm text-gray-600">
+                    {(selectedPdfFile as File).name} • {addWatermarkService.formatFileSize((selectedPdfFile as File).size)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedPdfFile(null);
+                  setSelectedImageFile(null);
+                  setResult(null);
+                  setAddWatermarkResult(null);
+                  setError('');
+                  setSuccess('');
+                  setPreviewUrl('');
+                  if (pdfFileInputRef.current) pdfFileInputRef.current.value = '';
+                  if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Watermark Configuration */}
         {activeTab === 'text' ? (

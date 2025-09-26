@@ -4,6 +4,7 @@ import type { AddPageNumbersRequest, PageNumberPreviewRequest } from '../../type
 import { Button } from '../DocumentService/ui/button';
 import { Input } from '../DocumentService/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
+import SuccessBox from '../common/SuccessBox';
 
 // PDF.js imports
 import * as pdfjsLib from 'pdfjs-dist';
@@ -24,6 +25,8 @@ const AddPageNumbers: React.FC = () => {
   const [pdfDocument, setPdfDocument] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const [addPageNumbersResult, setAddPageNumbersResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -123,12 +126,24 @@ const AddPageNumbers: React.FC = () => {
 
       // Load PDF with PDF.js for preview
       await loadPdfPreview(response.previewUrl);
+      
+      // Expand preview after successful generation
+      setIsPreviewExpanded(true);
     } catch (err: any) {
       console.error('Preview generation error:', err);
       setError(err.message || 'Failed to generate preview');
     } finally {
       setIsPreviewing(false);
     }
+  };
+
+  const handleCollapsePreview = () => {
+    setIsPreviewExpanded(false);
+    setPreviewUrl('');
+    setResult(null);
+    setPdfDocument(null);
+    setCurrentPage(1);
+    setTotalPages(0);
   };
 
   const loadPdfPreview = async (url: string) => {
@@ -225,6 +240,14 @@ const AddPageNumbers: React.FC = () => {
 
       const response = await addPageNumbersService.addPageNumbers(request);
       setResult(response);
+      setAddPageNumbersResult(response);
+      
+      // Clear preview data after successful processing
+      setPreviewUrl('');
+      setPdfDocument(null);
+      setCurrentPage(1);
+      setTotalPages(0);
+      setIsPreviewExpanded(false);
     } catch (err: any) {
       setError(err.message || 'Failed to add page numbers');
     } finally {
@@ -271,10 +294,182 @@ const AddPageNumbers: React.FC = () => {
     setResult(null);
     setPreviewUrl('');
     setError('');
+    setIsPreviewExpanded(false);
+    setAddPageNumbersResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
+  // Reset to start
+  const resetToStart = () => {
+    setSelectedFile(null);
+    setFormData({
+      position: 'bottom-center',
+      fontSize: 12,
+      fontColor: '#000000',
+      startPage: 1,
+      endPage: '',
+      format: 'Page {page} of {total}',
+      margin: 20,
+      customText: '',
+      excludePages: ''
+    });
+    setResult(null);
+    setPreviewUrl('');
+    setError('');
+    setIsPreviewExpanded(false);
+    setAddPageNumbersResult(null);
+    setIsProcessing(false);
+    setIsPreviewing(false);
+    setPdfDocument(null);
+    setCurrentPage(1);
+    setTotalPages(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+ 
+  // Download processed PDF
+  const handleDownloadSuccess = async () => {
+    if (!addPageNumbersResult?.downloadUrl) {
+      console.error('No download URL available');
+      alert('No download URL available');
+      return;
+    }
+
+    try {
+      await addPageNumbersService.downloadFile(addPageNumbersResult.downloadUrl, addPageNumbersResult.filename);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
+
+  // Show success message if processing was successful
+  if (addPageNumbersResult && addPageNumbersResult.success) {
+    return (
+      <SuccessBox
+        title="Add Page Numbers to PDF"
+        subtitle="Customize page numbers with advanced formatting and positioning options"
+        message="Page Numbers Added Successfully!"
+        fileInfo={addPageNumbersResult.file ? {
+          filename: addPageNumbersResult.filename,
+          size: addPageNumbersResult.file.size,
+          pagesModified: addPageNumbersResult.pagesModified
+        } : undefined}
+        actions={{
+          primary: {
+            label: "Download PDF",
+            onClick: handleDownloadSuccess,
+            disabled: !addPageNumbersResult?.downloadUrl
+          },
+          secondary: {
+            label: "Back to Configuration",
+            onClick: () => setAddPageNumbersResult(null)
+          },
+          tertiary: {
+            label: "Start New",
+            onClick: resetToStart
+          }
+        }}
+        backUrl={`/pdf-tools${location.search}`}
+      />
+    );
+  }
+
+  // Show expanded preview if preview is expanded
+  if (isPreviewExpanded && previewUrl) {
+    return (
+      <div className="mx-auto space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                   to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Add Page Numbers to PDF</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Customize page numbers with advanced formatting and positioning options
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Expanded Preview Section */}
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="relative">
+            {/* Collapse Button */}
+            <div className="absolute top-4 right-4 z-10">
+              <button
+                onClick={handleCollapsePreview}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-lg"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>Collapse</span>
+              </button>
+            </div>
+
+            {/* PDF Navigation Controls */}
+            {totalPages > 1 && pdfDocument && (
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <Button
+                  onClick={() => changePage(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  onClick={() => changePage(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+
+            {/* PDF Viewer */}
+            <div className="flex justify-center">
+              {pdfDocument ? (
+                <canvas
+                  ref={canvasRef}
+                  className="border border-gray-300 rounded-lg shadow-lg"
+                  style={{ maxWidth: '100%', height: 'auto' }}
+                />
+              ) : (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-[800px] border border-gray-300 rounded-lg shadow-lg"
+                  title="Page Numbers Preview"
+                  onLoad={() => console.log('Preview iframe loaded successfully')}
+                  onError={(e) => console.error('Preview iframe error:', e)}
+                />
+              )}
+            </div>
+
+            <div className="text-sm text-gray-600 text-center mt-4">
+              <p>Total pages: {result?.totalPages}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto space-y-6">
@@ -296,56 +491,48 @@ const AddPageNumbers: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* File Upload Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload PDF</CardTitle>
-          <CardDescription>Select a PDF file to add page numbers</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="file-upload"
-              />
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Choose PDF File
-              </label>
-              {selectedFile && (
-                <span className="text-sm text-gray-600">
-                  Selected: {selectedFile.name}
-                </span>
+      {/* File Upload Section - Hide after file upload */}
+      {!selectedFile && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload PDF</CardTitle>
+            <CardDescription>Select a PDF file to add page numbers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Choose PDF File
+                </label>
+              </div>
+              {error && (
+                <div className="text-sm text-red-600">{error}</div>
               )}
             </div>
-            {selectedFile && (
-              <div className="text-sm text-gray-500">
-                File size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </div>
-            )}
-            {error && (
-              <div className="text-sm text-red-600">{error}</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Configuration Section */}
-      {selectedFile && (
+      {selectedFile && !addPageNumbersResult && (
         <Card>
           <CardHeader>
             <CardTitle>Page Number Configuration</CardTitle>
             <CardDescription>Customize the appearance and position of page numbers</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Position Selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Position</label>
@@ -461,7 +648,7 @@ const AddPageNumbers: React.FC = () => {
               </div>
 
               {/* Exclude Pages */}
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Exclude Pages (optional)</label>
                 <Input
                   type="text"
@@ -507,8 +694,8 @@ const AddPageNumbers: React.FC = () => {
         </div>
       )}
 
-      {/* Preview Section */}
-      {previewUrl && (
+      {/* Preview Section - Hide when expanded */}
+      {previewUrl && !isPreviewExpanded && (
         <Card>
           <CardHeader>
             <CardTitle>Preview</CardTitle>
@@ -615,8 +802,9 @@ const AddPageNumbers: React.FC = () => {
         </Card>
       )}
 
-      {/* Help Section */}
-      <Card>
+      {/* Help Section - Hide after file upload */}
+      {!selectedFile && (
+        <Card>
         <CardHeader>
           <CardTitle>How to Use</CardTitle>
         </CardHeader>
@@ -633,6 +821,7 @@ const AddPageNumbers: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 };

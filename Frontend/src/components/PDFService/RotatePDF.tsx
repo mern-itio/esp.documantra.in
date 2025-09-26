@@ -3,6 +3,7 @@ import { FiUpload, FiFile, FiTrash2, FiDownload, FiRotateCw, FiPlus, FiX } from 
 import { rotatePDFService } from '../../services/rotatePDFService';
 import type { RotatePDFResponse, RotatePageItem, RotationData } from '../../types/rotatePDF';
 import type { PDFInfo } from '../../types/common';
+import SuccessBox from '../common/SuccessBox';
 
 // Type declarations for PDF.js
 declare global {
@@ -26,6 +27,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
   const [batchRotation, setBatchRotation] = useState<90 | 180 | 270>(90);
   const [batchPages, setBatchPages] = useState<string>('');
   const [pdfThumbnails, setPdfThumbnails] = useState<string[]>([]);
+  const [rotateResult, setRotateResult] = useState<RotatePDFResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize PDF.js
@@ -174,11 +176,21 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
     setPdfInfo(null);
     setPageItems([]);
     setPdfThumbnails([]);
+    setRotateResult(null);
     onRotateResult({
       success: false,
       message: 'Document removed'
     });
   }, [onRotateResult]);
+
+  const resetToStart = useCallback(() => {
+    setDocument(null);
+    setPdfInfo(null);
+    setPageItems([]);
+    setPdfThumbnails([]);
+    setRotateResult(null);
+    setRotating(false);
+  }, []);
 
   // Handle individual page rotation
   const handlePageRotation = useCallback((pageId: string, angle: 90 | 180 | 270) => {
@@ -261,14 +273,17 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
         rotations: rotations
       });
 
+      setRotateResult(result);
       onRotateResult(result);
     } catch (error) {
       console.error('Error rotating PDF:', error);
-      onRotateResult({
+      const errorResult = {
         success: false,
         error: 'Failed to rotate PDF',
         message: (error as Error).message,
-      });
+      };
+      setRotateResult(errorResult);
+      onRotateResult(errorResult);
     } finally {
       setRotating(false);
     }
@@ -281,7 +296,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
     
     if (thumbnail) {
       return (
-        <div className="w-full h-32 rounded-lg overflow-hidden border border-gray-200 bg-white relative">
+        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-white relative">
           <div 
             className="w-full h-full flex items-center justify-center"
             style={{ 
@@ -306,7 +321,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
     
     // Fallback to loading state if thumbnail not available
     return (
-      <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
+      <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
         <div className="text-center text-gray-600">
           <div className="text-lg font-semibold mb-1">Page {pageNumber}</div>
           <div className="text-xs">Loading preview...</div>
@@ -322,6 +337,26 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Download rotated PDF
+  const handleDownload = async () => {
+    if (!rotateResult?.file) {
+      console.error('No rotated file available for download');
+      alert('No rotated file available for download');
+      return;
+    }
+
+    try {
+      // Use the service method for consistent download behavior
+      await rotatePDFService.downloadRotatedPDF(
+        rotateResult.downloadUrl || '', 
+        rotateResult.file.filename
+      );
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
   };
 
   // Get rotation summary
@@ -340,15 +375,32 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
-      {/* Header */}
-      {/* <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Rotate PDF Pages</h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Rotate individual pages or apply batch rotations to your PDF documents
-        </p>
-      </div> */}
-
-      {/* File Upload Area */}
+      {/* Show success box only when rotate is successful */}
+      {rotateResult && rotateResult.success ? (
+        <SuccessBox
+          title="Rotate PDF Pages"
+          subtitle="Rotate pages in your PDF documents to the desired orientation"
+          message="Pages Rotated Successfully!"
+          fileInfo={rotateResult.file ? {
+            filename: rotateResult.file.filename,
+            size: rotateResult.file.size,
+            rotations: rotateResult.rotations?.length || 0
+          } : undefined}
+          actions={{
+            primary: {
+              label: "Download Rotated PDF",
+              onClick: handleDownload,
+              disabled: !rotateResult?.file
+            },
+            secondary: {
+              label: "Rotate More Pages",
+              onClick: resetToStart
+            }
+          }}
+        />
+      ) : (
+        <>
+          {/* File Upload Area */}
       {!document && (
         <div
           className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
@@ -510,37 +562,37 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
 
           {showPagePreview && (
             <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {pageItems.map((page) => (
                   <div key={page.id} className="relative">
                     {/* Page Preview Card */}
-                    <div className="border-2 rounded-lg p-3 transition-all border-gray-200 bg-white relative min-h-[200px]">
+                    <div className="border-2 rounded-lg p-2 transition-all border-gray-200 bg-white relative min-h-[180px]">
                       {/* Rotation Button in Top Right Corner */}
                       <button
                         onClick={() => handlePageRotation(page.id, 90)}
-                        className="absolute top-2 right-2 z-10 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg"
+                        className="absolute top-1 right-1 z-10 p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg"
                         title="Click to rotate: 0° → 90° → 180° → 270° → 0°"  style={{cursor: 'pointer'}}
                       >
-                        <FiRotateCw className="w-4 h-4" />
+                        <FiRotateCw className="w-3 h-3" />
                       </button>
                       
                       {/* Page Preview Container - Fixed size to prevent overflow */}
-                      <div className="w-full h-32 mb-2 flex items-center justify-center overflow-hidden">
+                      <div className="w-full h-40 mb-1 flex items-center justify-center overflow-hidden">
                         {generatePagePreview(page.pageNumber, page.selectedRotation)}
                       </div>
                       
                       {/* Page Number Label */}
-                      <div className="text-center mt-2">
-                        <span className="text-sm font-medium text-gray-700">
+                      <div className="text-center mt-1">
+                        <span className="text-xs font-medium text-gray-700">
                           Page {page.pageNumber}
                         </span>
                       </div>
                       
                       {/* Current Rotation Display */}
                       {page.selectedRotation !== 0 && (
-                        <div className="text-center mt-2">
+                        <div className="text-center mt-1">
                           <span className="text-xs font-medium text-blue-600">
-                            Rotation: {page.selectedRotation}°
+                            {page.selectedRotation}°
                           </span>
                         </div>
                       )}
@@ -596,6 +648,8 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
             )}
           </button>
         </div>
+      )}
+        </>
       )}
     </div>
   );

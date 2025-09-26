@@ -189,6 +189,7 @@ const LinearizePDF: React.FC = () => {
 
   const resetForm = () => {
     setSelectedFile(null);
+    setResult(null);
     setFormData({
       file: null as any,
       webOptimization: true,
@@ -210,6 +211,157 @@ const LinearizePDF: React.FC = () => {
       fileInputRef.current.value = '';
     }
   };
+
+
+  // Show only result when linearization is successful - hide everything else
+  if (result && result.success) {
+    return (
+      <div className="mx-auto p-2 space-y-6">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Linearize PDF</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Optimize PDFs for fast web viewing.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Show only the result - everything else is hidden */}
+        <div className="max-w-7xl mx-auto p-6">
+          <Card className="p-6">
+            <div className="text-center mb-6">
+              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Linearization Complete!</h3>
+              <p className="text-gray-600">Your PDF has been optimized for web viewing</p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {linearizePDFHelpers.formatFileSize(result.originalSize)}
+                </p>
+                <p className="text-sm text-gray-600">Original Size</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {linearizePDFHelpers.formatFileSize(result.linearizedSize)}
+                </p>
+                <p className="text-sm text-gray-600">Optimized Size</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {result.sizeChangePercent}%
+                </p>
+                <p className="text-sm text-gray-600">Size Change</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {linearizePDFHelpers.formatProcessingTime(result.processingTime)}
+                </p>
+                <p className="text-sm text-gray-600">Processing Time</p>
+              </div>
+            </div>
+
+            {/* Optimization Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h4 className="font-medium mb-3 flex items-center">
+                  <Globe className="w-4 h-4 mr-2 text-blue-600" />
+                  Web Optimization
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Linearized</span>
+                    <Badge variant="success">Yes</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Progressive Loading</span>
+                    <Badge variant={result.webOptimization.progressiveLoading ? 'success' : 'secondary'}>
+                      {result.webOptimization.progressiveLoading ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Object Streams</span>
+                    <Badge variant={result.webOptimization.objectStreams ? 'success' : 'secondary'}>
+                      {result.webOptimization.objectStreams ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Estimated Load Time</span>
+                    <span className="text-sm font-medium">{result.webOptimization.estimatedLoadTime}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-3 flex items-center">
+                  <Zap className="w-4 h-4 mr-2 text-green-600" />
+                  Performance Improvements
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Web Optimized</span>
+                    <Badge variant="success">Yes</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Streaming Ready</span>
+                    <Badge variant={result.analysis.improvements.streamingReady ? 'success' : 'secondary'}>
+                      {result.analysis.improvements.streamingReady ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Fast Loading</span>
+                    <Badge variant={result.analysis.improvements.fastLoading ? 'success' : 'secondary'}>
+                      {result.analysis.improvements.fastLoading ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Optimization Ratio</span>
+                    <span className="text-sm font-medium">{result.analysis.improvements.optimizationRatio}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={handleDownload}
+                className="bg-green-600 hover:bg-green-700 flex items-center"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Linearized PDF
+              </Button>
+              <Button
+                onClick={() => setResult(null)}
+                variant="outline"
+              >
+                Back to Configuration
+              </Button>
+              <Button
+                onClick={resetForm}
+                variant="outline"
+              >
+                Start New
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
   <div className="mx-auto p-2 space-y-6">
@@ -233,51 +385,79 @@ const LinearizePDF: React.FC = () => {
           </div>
         </div>
 
-      {/* File Upload Section */}
-      <Card className="p-6">
-        <div className="flex items-center justify-center w-full">
-          <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Upload className="w-8 h-8 mb-4 text-gray-500" />
-              <p className="mb-2 text-sm text-gray-500">
-                <span className="font-semibold">Click to upload</span> or drag and drop
-              </p>
-              <p className="text-xs text-gray-500">PDF files only (MAX. 100MB)</p>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf"
-              onChange={handleFileSelect}
-            />
-          </label>
-        </div>
-        
-        {selectedFile && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+      {/* File Upload Section - Only show when no file selected */}
+      {!selectedFile && (
+        <Card className="p-6">
+          <div className="flex items-center justify-center w-full">
+            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <Upload className="w-8 h-8 mb-4 text-gray-500" />
+                <p className="mb-2 text-sm text-gray-500">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-gray-500">PDF files only (MAX. 100MB)</p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf"
+                onChange={handleFileSelect}
+              />
+            </label>
+          </div>
+        </Card>
+      )}
+
+      {/* Selected File Info - Show after file upload */}
+      {selectedFile && (
+        <Card className="p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-blue-600" />
+                </div>
                 <div>
-                  <p className="font-medium text-blue-900">{selectedFile.name}</p>
-                  <p className="text-sm text-blue-700">
-                    {linearizePDFHelpers.formatFileSize(selectedFile.size)}
+                  <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
+                  <p className="text-sm text-gray-600">
+                    {(selectedFile as File).name} • {linearizePDFHelpers.formatFileSize((selectedFile as File).size)}
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetForm}
-                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+              <button
+                onClick={() => {
+                  setSelectedFile(null);
+                  setResult(null);
+                  setAnalysis(null);
+                  setRecommendations([]);
+                  setError(null);
+                  setSuccess(null);
+                  setFormData({
+                    file: null as any,
+                    webOptimization: true,
+                    fastLoading: true,
+                    streamingSupport: true,
+                    compressionLevel: 'medium',
+                    objectStreams: 'generate',
+                    preserveMetadata: true,
+                    preserveAnnotations: true,
+                    preserveBookmarks: true,
+                    outputFormat: 'pdf',
+                    quality: 'medium'
+                  });
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
               >
-                Remove
-              </Button>
+                <ArrowLeft className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
 
       {/* Analysis Section */}
       {selectedFile && !analysis && (
@@ -597,116 +777,6 @@ const LinearizePDF: React.FC = () => {
         </Card>
       )}
 
-      {/* Results Section */}
-      {result && (
-        <Card className="p-6">
-          <div className="text-center mb-6">
-            <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Linearization Complete!</h3>
-            <p className="text-gray-600">Your PDF has been optimized for web viewing</p>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {linearizePDFHelpers.formatFileSize(result.originalSize)}
-              </p>
-              <p className="text-sm text-gray-600">Original Size</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {linearizePDFHelpers.formatFileSize(result.linearizedSize)}
-              </p>
-              <p className="text-sm text-gray-600">Optimized Size</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {result.sizeChangePercent}%
-              </p>
-              <p className="text-sm text-gray-600">Size Change</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {linearizePDFHelpers.formatProcessingTime(result.processingTime)}
-              </p>
-              <p className="text-sm text-gray-600">Processing Time</p>
-            </div>
-          </div>
-
-          {/* Optimization Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h4 className="font-medium mb-3 flex items-center">
-                <Globe className="w-4 h-4 mr-2 text-blue-600" />
-                Web Optimization
-              </h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Linearized</span>
-                  <Badge variant="success">Yes</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Progressive Loading</span>
-                  <Badge variant={result.webOptimization.progressiveLoading ? 'success' : 'secondary'}>
-                    {result.webOptimization.progressiveLoading ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Object Streams</span>
-                  <Badge variant={result.webOptimization.objectStreams ? 'success' : 'secondary'}>
-                    {result.webOptimization.objectStreams ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Estimated Load Time</span>
-                  <span className="text-sm font-medium">{result.webOptimization.estimatedLoadTime}</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-3 flex items-center">
-                <Zap className="w-4 h-4 mr-2 text-green-600" />
-                Performance Improvements
-              </h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Web Optimized</span>
-                  <Badge variant="success">Yes</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Streaming Ready</span>
-                  <Badge variant={result.analysis.improvements.streamingReady ? 'success' : 'secondary'}>
-                    {result.analysis.improvements.streamingReady ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Fast Loading</span>
-                  <Badge variant={result.analysis.improvements.fastLoading ? 'success' : 'secondary'}>
-                    {result.analysis.improvements.fastLoading ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Optimization Ratio</span>
-                  <span className="text-sm font-medium">{result.analysis.improvements.optimizationRatio}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Download Button */}
-          <div className="text-center">
-            <Button
-              onClick={handleDownload}
-              className="bg-blue-600 hover:bg-blue-700 flex items-center mx-auto"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download Linearized PDF
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {/* Error Alert */}
       {error && (
