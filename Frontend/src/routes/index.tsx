@@ -316,6 +316,9 @@ const PDFToolsLayout = () => {
       setSelectedCategory('all');
       // console.log('Category set to: all');
     }
+    
+    // Reset currentView to 'tools' when navigating to different pages
+    setCurrentView('tools');
   }, [location.search]); // Watch for location search changes
 
   // Monitor selectedCategory changes
