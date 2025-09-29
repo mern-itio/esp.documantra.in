@@ -22,7 +22,8 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowLeft,
-  Zap
+  Zap,
+  X
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -185,6 +186,158 @@ const ColorOptimization: React.FC = () => {
     }
   };
 
+  // Show only result when optimization is successful - hide everything else
+  if (result && result.success) {
+    return (
+      <div className="mx-auto p-2 space-y-6">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Color Optimization</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Optimize color spaces and profiles for better compatibility and file size.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Show only the result - everything else is hidden */}
+        <div className="max-w-7xl mx-auto p-6">
+          <Card className="p-6">
+            <div className="text-center mb-6">
+              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Color Optimization Complete!</h3>
+              <p className="text-gray-600">Your PDF colors have been optimized successfully</p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {colorOptimizationHelpers.formatFileSize(result.originalSize)}
+                </p>
+                <p className="text-sm text-gray-600">Original Size</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {colorOptimizationHelpers.formatFileSize(result.optimizedSize)}
+                </p>
+                <p className="text-sm text-gray-600">Optimized Size</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {result.sizeChangePercent}%
+                </p>
+                <p className="text-sm text-gray-600">Size Change</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {colorOptimizationHelpers.formatProcessingTime(result.processingTime)}
+                </p>
+                <p className="text-sm text-gray-600">Processing Time</p>
+              </div>
+            </div>
+
+            {/* Optimization Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h4 className="font-medium mb-3 flex items-center">
+                  <Palette className="w-4 h-4 mr-2 text-blue-600" />
+                  Color Settings Applied
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Color Conversion</span>
+                    <Badge variant={result.settings.colorConversion ? 'success' : 'secondary'}>
+                      {result.settings.colorConversion ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Profile Optimization</span>
+                    <Badge variant={result.settings.profileOptimization ? 'success' : 'secondary'}>
+                      {result.settings.profileOptimization ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Gamut Mapping</span>
+                    <Badge variant={result.settings.gamutMapping ? 'success' : 'secondary'}>
+                      {result.settings.gamutMapping ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Target Color Space</span>
+                    <span className="text-sm font-medium">{result.settings.targetColorSpace}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-3 flex items-center">
+                  <Zap className="w-4 h-4 mr-2 text-green-600" />
+                  Optimization Results
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Quality Level</span>
+                    <Badge variant="success">{result.settings.quality}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Transparency Preserved</span>
+                    <Badge variant={result.settings.preserveTransparency ? 'success' : 'secondary'}>
+                      {result.settings.preserveTransparency ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Dithering Applied</span>
+                    <Badge variant={result.settings.dithering ? 'success' : 'secondary'}>
+                      {result.settings.dithering ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Output Format</span>
+                    <span className="text-sm font-medium">{result.settings.outputFormat}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={handleDownload}
+                className="bg-green-600 hover:bg-green-700 flex items-center"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Color Optimized PDF
+              </Button>
+              <Button
+                onClick={() => setResult(null)}
+                variant="outline"
+              >
+                Back to Configuration
+              </Button>
+              <Button
+                onClick={resetForm}
+                variant="outline"
+              >
+                Start New
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto p-2 space-y-6">
       {/* Header */}
@@ -207,51 +360,77 @@ const ColorOptimization: React.FC = () => {
         </div>
       </div>
 
-      {/* File Upload Section */}
-      <Card className="p-6">
-        <div className="flex items-center justify-center w-full">
-          <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Palette className="w-8 h-8 mb-4 text-gray-500" />
-              <p className="mb-2 text-sm text-gray-500">
-                <span className="font-semibold">Click to upload</span> or drag and drop
-              </p>
-              <p className="text-xs text-gray-500">PDF files only (MAX. 100MB)</p>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf"
-              onChange={handleFileSelect}
-            />
-          </label>
-        </div>
-        
-        {selectedFile && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+      {/* File Upload Section - Only show when no file selected */}
+      {!selectedFile && (
+        <Card className="p-6">
+          <div className="flex items-center justify-center w-full">
+            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <Palette className="w-8 h-8 mb-4 text-gray-500" />
+                <p className="mb-2 text-sm text-gray-500">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-gray-500">PDF files only (MAX. 2MB)</p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf"
+                onChange={handleFileSelect}
+              />
+            </label>
+          </div>
+        </Card>
+      )}
+
+      {/* Selected File Info - Show after file upload */}
+      {selectedFile && (
+        <Card className="p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-blue-600" />
+                </div>
                 <div>
-                  <p className="font-medium text-blue-900">{selectedFile.name}</p>
-                  <p className="text-sm text-blue-700">
-                    {colorOptimizationHelpers.formatFileSize(selectedFile.size)}
+                  <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
+                  <p className="text-sm text-gray-600">
+                    {(selectedFile as File).name} • {colorOptimizationHelpers.formatFileSize((selectedFile as File).size)}
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetForm}
-                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+              <button
+                onClick={() => {
+                  setSelectedFile(null);
+                  setResult(null);
+                  setAnalysis(null);
+                  setRecommendations([]);
+                  setError(null);
+                  setSuccess(null);
+                  setFormData({
+                    file: null as any,
+                    colorConversion: true,
+                    profileOptimization: true,
+                    gamutMapping: true,
+                    targetColorSpace: 'auto',
+                    preserveTransparency: true,
+                    dithering: false,
+                    quality: 'medium',
+                    outputFormat: 'pdf'
+                  });
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
               >
-                Remove
-              </Button>
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
 
       {/* Analysis Section */}
       {selectedFile && !analysis && (
@@ -278,115 +457,120 @@ const ColorOptimization: React.FC = () => {
         </Card>
       )}
 
-      {/* Analysis Results */}
-      {analysis && (
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4 flex items-center">
-            <Palette className="w-5 h-5 mr-2 text-blue-600" />
-            Color Analysis Results
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.totalPages}</p>
-              <p className="text-sm text-gray-600">Pages</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.colorObjects}</p>
-              <p className="text-sm text-gray-600">Color Objects</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.imageObjects}</p>
-              <p className="text-sm text-gray-600">Images</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.fontObjects}</p>
-              <p className="text-sm text-gray-600">Fonts</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium mb-3">Color Information</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Color Space</span>
-                  <Badge variant="secondary">{analysis.colorSpace}</Badge>
+      {/* Analysis Results and Recommendations - Side by Side */}
+      {(analysis || recommendations.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Analysis Results */}
+          {analysis && (
+            <Card className="p-6">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
+                <Palette className="w-5 h-5 mr-2 text-blue-600" />
+                Color Analysis Results
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900">{analysis.totalPages}</p>
+                  <p className="text-sm text-gray-600">Pages</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Color Profile</span>
-                  <Badge variant="secondary">{analysis.colorProfile}</Badge>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900">{analysis.colorObjects}</p>
+                  <p className="text-sm text-gray-600">Color Objects</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Transparency</span>
-                  <Badge variant={analysis.hasTransparency ? 'success' : 'secondary'}>
-                    {analysis.hasTransparency ? 'Yes' : 'No'}
-                  </Badge>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900">{analysis.imageObjects}</p>
+                  <p className="text-sm text-gray-600">Images</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900">{analysis.fontObjects}</p>
+                  <p className="text-sm text-gray-600">Fonts</p>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <h4 className="font-medium mb-3">Optimization Potential</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Color Conversion</span>
-                  <Badge variant={analysis.optimizationPotential.canConvertColors ? 'success' : 'warning'}>
-                    {analysis.optimizationPotential.canConvertColors ? 'Available' : 'Limited'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Profile Optimization</span>
-                  <Badge variant={analysis.optimizationPotential.canOptimizeProfiles ? 'success' : 'warning'}>
-                    {analysis.optimizationPotential.canOptimizeProfiles ? 'Available' : 'Limited'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Estimated Savings</span>
-                  <span className="text-sm font-medium text-green-600">
-                    {analysis.optimizationPotential.estimatedSavings}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Recommendations */}
-      {recommendations.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4 flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-            Optimization Recommendations
-          </h3>
-          
-          <div className="space-y-3">
-            {recommendations.map((rec, index) => (
-              <div key={index} className="p-4 border rounded-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Badge 
-                        variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'secondary' : 'default'}
-                      >
-                        {rec.priority}
-                      </Badge>
-                      <h4 className="font-medium">{rec.title}</h4>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-3">Color Information</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Color Space</span>
+                      <Badge variant="secondary">{analysis.colorSpace}</Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
-                    <div className="flex items-center space-x-4 text-sm">
-                      <span className="text-green-600 font-medium">
-                        {rec.estimatedSavings}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Color Profile</span>
+                      <Badge variant="secondary">{analysis.colorProfile}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Transparency</span>
+                      <Badge variant={analysis.hasTransparency ? 'success' : 'secondary'}>
+                        {analysis.hasTransparency ? 'Yes' : 'No'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium mb-3">Optimization Potential</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Color Conversion</span>
+                      <Badge variant={analysis.optimizationPotential.canConvertColors ? 'success' : 'warning'}>
+                        {analysis.optimizationPotential.canConvertColors ? 'Available' : 'Limited'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Profile Optimization</span>
+                      <Badge variant={analysis.optimizationPotential.canOptimizeProfiles ? 'success' : 'warning'}>
+                        {analysis.optimizationPotential.canOptimizeProfiles ? 'Available' : 'Limited'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Estimated Savings</span>
+                      <span className="text-sm font-medium text-green-600">
+                        {analysis.optimizationPotential.estimatedSavings}
                       </span>
-                      <span className="text-blue-600">{rec.action}</span>
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </Card>
+            </Card>
+          )}
+
+          {/* Recommendations */}
+          {recommendations.length > 0 && (
+            <Card className="p-6">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
+                <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
+                Optimization Recommendations
+              </h3>
+              
+              <div className="space-y-3">
+                {recommendations.map((rec, index) => (
+                  <div key={index} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Badge 
+                            variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'secondary' : 'default'}
+                          >
+                            {rec.priority}
+                          </Badge>
+                          <h4 className="font-medium">{rec.title}</h4>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
+                        <div className="flex items-center space-x-4 text-sm">
+                          <span className="text-green-600 font-medium">
+                            {rec.estimatedSavings}
+                          </span>
+                          <span className="text-blue-600">{rec.action}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Settings Section */}
@@ -562,118 +746,6 @@ const ColorOptimization: React.FC = () => {
         </Card>
       )}
 
-      {/* Results Section */}
-      {result && (
-        <Card className="p-6">
-          <div className="text-center mb-6">
-            <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Color Optimization Complete!</h3>
-            <p className="text-gray-600">Your PDF colors have been optimized successfully</p>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {colorOptimizationHelpers.formatFileSize(result.originalSize)}
-              </p>
-              <p className="text-sm text-gray-600">Original Size</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {colorOptimizationHelpers.formatFileSize(result.optimizedSize)}
-              </p>
-              <p className="text-sm text-gray-600">Optimized Size</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {result.sizeChangePercent}%
-              </p>
-              <p className="text-sm text-gray-600">Size Change</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">
-                {colorOptimizationHelpers.formatProcessingTime(result.processingTime)}
-              </p>
-              <p className="text-sm text-gray-600">Processing Time</p>
-            </div>
-          </div>
-
-          {/* Optimization Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h4 className="font-medium mb-3 flex items-center">
-                <Palette className="w-4 h-4 mr-2 text-blue-600" />
-                Color Settings Applied
-              </h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Color Conversion</span>
-                  <Badge variant={result.settings.colorConversion ? 'success' : 'secondary'}>
-                    {result.settings.colorConversion ? 'Enabled' : 'Disabled'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Profile Optimization</span>
-                  <Badge variant={result.settings.profileOptimization ? 'success' : 'secondary'}>
-                    {result.settings.profileOptimization ? 'Enabled' : 'Disabled'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Gamut Mapping</span>
-                  <Badge variant={result.settings.gamutMapping ? 'success' : 'secondary'}>
-                    {result.settings.gamutMapping ? 'Enabled' : 'Disabled'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Target Color Space</span>
-                  <span className="text-sm font-medium">{result.settings.targetColorSpace}</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-3 flex items-center">
-                <Zap className="w-4 h-4 mr-2 text-green-600" />
-                Optimization Results
-              </h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Quality Level</span>
-                  <Badge variant="success">{result.settings.quality}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Transparency Preserved</span>
-                  <Badge variant={result.settings.preserveTransparency ? 'success' : 'secondary'}>
-                    {result.settings.preserveTransparency ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Dithering Applied</span>
-                  <Badge variant={result.settings.dithering ? 'success' : 'secondary'}>
-                    {result.settings.dithering ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Output Format</span>
-                  <span className="text-sm font-medium">{result.settings.outputFormat}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Download Button */}
-          <div className="text-center">
-            <Button
-              onClick={handleDownload}
-              className="bg-blue-600 hover:bg-blue-700 flex items-center mx-auto"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download Color Optimized PDF
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {/* Error Alert */}
       {error && (

@@ -188,7 +188,7 @@ const ExtractTables: React.FC = () => {
 
       {/* File Upload Section - Only show when no files selected */}
       {selectedFiles.length === 0 && (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4">Upload PDFs</h3>
             <div
@@ -314,7 +314,7 @@ const ExtractTables: React.FC = () => {
       {/* Settings Section - Only show when no results */}
       {selectedFiles.length > 0 && !isProcessing && results.length === 0 && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div >
             {/* Left Column - Extraction Settings */}
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow p-6">
@@ -420,35 +420,6 @@ const ExtractTables: React.FC = () => {
                     </>
                   )}
                 </button>
-              </div>
-            </div>
-
-            {/* Right Column - Placeholder */}
-            <div className="space-y-6">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <div className="text-center">
-                  <Table className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    Ready to Extract Tables
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Your extraction results will appear here once processing is complete.
-                  </p>
-                  <div className="space-y-2 text-xs text-gray-500">
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>Advanced AI-powered table detection</span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>Multiple output formats (Excel, CSV)</span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>Preserve original formatting</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

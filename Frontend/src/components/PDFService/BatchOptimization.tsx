@@ -12,7 +12,7 @@ import {
   Play,
   Loader2,
   BarChart3,
-  Sparkles
+  X
 } from 'lucide-react';
 import { Button } from '../DocumentService/ui/button';
 import { Card } from '../DocumentService/ui/card';
@@ -119,11 +119,6 @@ const BatchOptimization: React.FC = () => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const clearAllFiles = () => {
-    setSelectedFiles([]);
-    setResult(null);
-    setError(null);
-  };
 
   const handleBatchOptimize = async () => {
     if (selectedFiles.length === 0) {
@@ -190,8 +185,145 @@ const BatchOptimization: React.FC = () => {
     return batchOptimizationService.formatFileSize(bytes);
   };
 
-  return (
+  // Show only result when batch optimization is successful - hide everything else
+  if (result && result.success) {
+    return (
       <div className="mx-auto space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Batch Optimization</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Optimize multiple PDFs simultaneously with custom profiles
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Show only the result - everything else is hidden */}
+        <div className="max-w-7xl mx-auto p-6">
+          <Card className="p-6">
+            <div className="text-center mb-6">
+              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Batch Optimization Complete!</h3>
+              <p className="text-gray-600">Your PDFs have been optimized successfully</p>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">{result.summary.totalFiles}</p>
+                <p className="text-sm text-gray-600">Total Files</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-green-600">{result.summary.successfulFiles}</p>
+                <p className="text-sm text-gray-600">Successful</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-red-600">{result.summary.failedFiles}</p>
+                <p className="text-sm text-gray-600">Failed</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">{result.summary.averageCompressionRatio}</p>
+                <p className="text-sm text-gray-600">Avg. Reduction</p>
+              </div>
+            </div>
+
+            {/* Individual Results */}
+            <div className="space-y-4 mb-6">
+              <h4 className="font-medium text-gray-900">File Results:</h4>
+              {result.results.map((fileResult, index) => (
+                <div key={index} className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-green-900">{fileResult.filename}</span>
+                    <Button
+                      onClick={() => handleDownload(fileResult.outputFilename)}
+                      size="sm"
+                      variant="outline"
+                      className="text-green-700 border-green-300 hover:bg-green-100"
+                    >
+                      <FileDown className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
+                    <div>
+                      <span className="text-green-600">Original:</span> {formatFileSize(fileResult.originalSize)}
+                    </div>
+                    <div>
+                      <span className="text-green-600">Optimized:</span> {formatFileSize(fileResult.optimizedSize)}
+                    </div>
+                    <div>
+                      <span className="text-green-600">Reduction:</span> {fileResult.compressionRatio}
+                    </div>
+                    <div>
+                      <span className="text-green-600">Size Saved:</span> {formatFileSize(fileResult.sizeReduction)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Errors */}
+            {result.errors.length > 0 && (
+              <div className="space-y-2 mb-6">
+                <h4 className="font-medium text-gray-900 text-red-600">Failed Files:</h4>
+                {result.errors.map((error, index) => (
+                  <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="font-medium text-red-900">{error.filename}</p>
+                    <p className="text-sm text-red-700">{error.error}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {result.batchDownloadUrl && (
+                <Button
+                  onClick={handleBatchDownload}
+                  className="bg-green-600 hover:bg-green-700 flex items-center"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download All Files
+                </Button>
+              )}
+              <Button
+                onClick={() => setResult(null)}
+                variant="outline"
+              >
+                Back to Configuration
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedFiles([]);
+                  setResult(null);
+                  setError(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                variant="outline"
+              >
+                Start New Batch
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto space-y-6">
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
@@ -211,90 +343,105 @@ const BatchOptimization: React.FC = () => {
         </div>
       </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - File Upload and Settings */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* File Upload */}
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Upload PDF Files</h2>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    {selectedFiles.length}/10 files
-                  </span>
-                  {selectedFiles.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={clearAllFiles}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Clear All
-                    </Button>
-                  )}
+        <div className="space-y-6">
+          {/* File Upload and Settings - Full Width */}
+          <div className="space-y-6">
+            {/* File Upload - Only show when no files selected */}
+            {selectedFiles.length === 0 && (
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">Upload PDF Files</h2>
+                  <span className="text-sm text-gray-500">0/10 files</span>
                 </div>
-              </div>
 
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <div className="space-y-2">
-                  <p className="text-lg font-medium text-gray-900">
-                    {selectedFiles.length === 0 ? 'Select PDF files' : `${selectedFiles.length} file(s) selected`}
-                  </p>
-                  <p className="text-gray-500">
-                    Drag and drop PDF files here, or click to browse
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Maximum 10 files, 100MB each
-                  </p>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium text-gray-900">Select PDF files</p>
+                    <p className="text-gray-500">
+                      Drag and drop PDF files here, or click to browse
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      Maximum 10 files, 2MB each
+                    </p>
+                  </div>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-4"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose Files
+                  </Button>
                 </div>
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt-4"
-                  disabled={selectedFiles.length >= 10}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Choose Files
-                </Button>
-              </div>
+              </Card>
+            )}
 
-              {/* Selected Files List */}
-              {selectedFiles.length > 0 && (
-                <div className="mt-6 space-y-2">
-                  <h3 className="font-medium text-gray-900">Selected Files:</h3>
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <p className="font-medium text-gray-900">{file.name}</p>
-                          <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
-                        </div>
+            {/* Selected Files Info - Show after file selection */}
+            {selectedFiles.length > 0 && (
+              <Card className="p-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-blue-600" />
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Selected PDF Files</h3>
+                        <p className="text-sm text-gray-600">
+                          {selectedFiles.length} file(s) selected
+                        </p>
+                      </div>
                     </div>
-                  ))}
+                    <button
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setResult(null);
+                        setError(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Selected Files List */}
+                  <div className="space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="font-medium text-gray-900">{file.name}</p>
+                            <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </Card>
+              </Card>
+            )}
 
             {/* Optimization Settings */}
             <Card className="p-6">
@@ -485,132 +632,6 @@ const BatchOptimization: React.FC = () => {
                       ? `Processing: ${selectedFiles[progress.current - 1]?.name}`
                       : 'Preparing files...'}
                   </p>
-                </div>
-              </Card>
-            )}
-          </div>
-
-          {/* Right Column - Results and Info */}
-          <div className="space-y-6">
-            {/* Tool Info */}
-            <Card className="p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Sparkles className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Batch Optimization</h3>
-                  <p className="text-sm text-gray-600">Professional PDF optimization</p>
-                </div>
-              </div>
-              
-              <div className="space-y-3 text-sm text-gray-600">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Up to 10 files simultaneously</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Custom optimization profiles</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Progress tracking</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Batch download support</span>
-                </div>
-              </div>
-            </Card>
-
-            {/* Results */}
-            {result && (
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">Optimization Results</h3>
-                  {result.batchDownloadUrl && (
-                    <Button
-                      onClick={handleBatchDownload}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download All
-                    </Button>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {/* Summary */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">Total Files</p>
-                        <p className="font-semibold">{result.summary.totalFiles}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Successful</p>
-                        <p className="font-semibold text-green-600">{result.summary.successfulFiles}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Failed</p>
-                        <p className="font-semibold text-red-600">{result.summary.failedFiles}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Avg. Reduction</p>
-                        <p className="font-semibold text-blue-600">{result.summary.averageCompressionRatio}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Individual Results */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900">File Results:</h4>
-                    {result.results.map((fileResult, index) => (
-                      <div key={index} className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-green-900">{fileResult.filename}</span>
-                          <Button
-                            onClick={() => handleDownload(fileResult.outputFilename)}
-                            size="sm"
-                            variant="outline"
-                            className="text-green-700 border-green-300 hover:bg-green-100"
-                          >
-                            <FileDown className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
-                          <div>
-                            <span className="text-green-600">Original:</span> {formatFileSize(fileResult.originalSize)}
-                          </div>
-                          <div>
-                            <span className="text-green-600">Optimized:</span> {formatFileSize(fileResult.optimizedSize)}
-                          </div>
-                          <div>
-                            <span className="text-green-600">Reduction:</span> {fileResult.compressionRatio}
-                          </div>
-                          <div>
-                            <span className="text-green-600">Size Saved:</span> {formatFileSize(fileResult.sizeReduction)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Errors */}
-                  {result.errors.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-gray-900 text-red-600">Failed Files:</h4>
-                      {result.errors.map((error, index) => (
-                        <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="font-medium text-red-900">{error.filename}</p>
-                          <p className="text-sm text-red-700">{error.error}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </Card>
             )}

@@ -94,6 +94,9 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     setProcessingProgress(0);
     setResults([]);
 
+    // Progress simulation interval
+    let progressInterval: NodeJS.Timeout | undefined;
+    
     try {
       // Check if backend service is available
       try {
@@ -102,12 +105,18 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         throw new Error('Backend service is not available. Please check if the PDF service is running.');
       }
 
+      // Start progress simulation
+      let currentProgress = 0;
+      progressInterval = setInterval(() => {
+        if (currentProgress < 90) {
+          currentProgress += Math.random() * 8;
+          setProcessingProgress(Math.floor(Math.min(currentProgress, 90)));
+        }
+      }, 300);
+
       // Process each file individually
       for (let i = 0; i < uploadedFiles.length; i++) {
         const file = uploadedFiles[i];
-        
-        // Update progress
-        setProcessingProgress(Math.round(((i + 1) / uploadedFiles.length) * 100));
         
         try {
           console.log(`Converting ${file.name} to PDF file...`);
@@ -151,8 +160,15 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         message: error instanceof Error ? error.message : 'Service unavailable'
       }]);
     } finally {
+      // Clear interval if it exists
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setIsProcessing(false);
-      setProcessingProgress(100);
+      // Only set to 100% if not already set
+      if (processingProgress < 100) {
+        setProcessingProgress(100);
+      }
     }
   };
 

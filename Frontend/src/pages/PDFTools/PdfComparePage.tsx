@@ -307,9 +307,9 @@ const PdfComparePage: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={selectedFile1 && selectedFile2 ? "space-y-6" : "grid grid-cols-1 lg:grid-cols-3 gap-8"}>
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={selectedFile1 && selectedFile2 ? "space-y-6" : "lg:col-span-2 space-y-6"}>
           {/* File Upload Section */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload PDFs for Comparison</h2>
@@ -728,8 +728,9 @@ const PdfComparePage: React.FC = () => {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
+        {/* Sidebar - Only show when no files are uploaded */}
+        {!selectedFile1 && !selectedFile2 && (
+          <div className="space-y-6">
           {/* Features */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
@@ -787,6 +788,7 @@ const PdfComparePage: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

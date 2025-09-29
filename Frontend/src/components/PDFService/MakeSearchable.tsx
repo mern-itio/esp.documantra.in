@@ -7,13 +7,15 @@ import {
   Settings,
   CheckCircle,
   AlertCircle,
-  Loader2,
   Eye,
   EyeOff,
   Image as ImageIcon,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from 'lucide-react';
+import { Button } from '../DocumentService/ui/button';
+import { Card } from '../DocumentService/ui/card';
 import { makeSearchableService } from '../../services/makeSearchableService';
 import type { MakeSearchableRequest, MakeSearchableResponse, MakeSearchableResult } from '../../types/makeSearchable';
 import { Link, useLocation } from 'react-router-dom';
@@ -28,6 +30,7 @@ const MakeSearchable: React.FC = () => {
   const [enhanceImage, setEnhanceImage] = useState(true);
   const [removeNoise, setRemoveNoise] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0, percentage: 0 });
   const [results, setResults] = useState<MakeSearchableResult[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +99,9 @@ const MakeSearchable: React.FC = () => {
     setIsProcessing(true);
     setError(null);
     setResults([]);
+    setProgress({ current: 0, total: selectedFiles.length, percentage: 0 });
+
+    let progressInterval: NodeJS.Timeout | null = null;
 
     try {
       const request: MakeSearchableRequest = {
@@ -108,9 +114,37 @@ const MakeSearchable: React.FC = () => {
         removeNoise
       };
 
+      // Start progress simulation during API call
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev.percentage < 90) {
+            const increment = Math.random() * 15 + 5; // Random increment between 5-20%
+            return {
+              ...prev,
+              percentage: Math.min(prev.percentage + increment, 90)
+            };
+          }
+          return prev;
+        });
+      }, 1000);
+
       const response: MakeSearchableResponse = await makeSearchableService.makeSearchable(request);
+      
+      // Clear interval and set to 100% when done
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      setProgress({ 
+        current: selectedFiles.length, 
+        total: selectedFiles.length, 
+        percentage: 100 
+      });
+      
       setResults(response.results);
     } catch (error) {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setError(error instanceof Error ? error.message : 'An error occurred during processing');
     } finally {
       setIsProcessing(false);
@@ -129,11 +163,6 @@ const MakeSearchable: React.FC = () => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const clearAll = () => {
-    setSelectedFiles([]);
-    setResults([]);
-    setError(null);
-  };
 
   const getLanguageName = (code: string): string => {
     return languages.find(l => l.code === code)?.name || code;
@@ -142,6 +171,124 @@ const MakeSearchable: React.FC = () => {
   const getAccuracyLabel = (value: string): string => {
     return accuracyLevels.find(a => a.value === value)?.label || value;
   };
+
+  // Show only result when processing is successful - hide everything else
+  if (results.length > 0 && !isProcessing) {
+    return (
+      <div className="mx-auto space-y-6">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Link
+                to={`/pdf-tools${location.search}`}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Make Searchable</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Convert scanned PDFs to searchable documents with preserved layout
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Show only the result - everything else is hidden */}
+        <div className="max-w-7xl mx-auto p-6">
+          <Card className="p-6">
+            <div className="text-center mb-6">
+              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Processing Complete!</h3>
+              <p className="text-gray-600">Your PDFs have been made searchable successfully</p>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">{results.length}</p>
+                <p className="text-sm text-gray-600">Files Processed</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">{getLanguageName(results[0]?.language)}</p>
+                <p className="text-sm text-gray-600">Language</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-green-600">{getAccuracyLabel(results[0]?.accuracy)}</p>
+                <p className="text-sm text-gray-600">Accuracy</p>
+              </div>
+            </div>
+
+            {/* Individual Results */}
+            <div className="space-y-4 mb-6">
+              <h4 className="font-medium text-gray-900">File Results:</h4>
+              {results.map((result, index) => (
+                <div key={index} className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-green-900">{result.filename}</span>
+                    <Button
+                      onClick={() => handleDownload(result.outputFilename)}
+                      size="sm"
+                      variant="outline"
+                      className="text-green-700 border-green-300 hover:bg-green-100"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
+                    <div>
+                      <span className="text-green-600">Language:</span> {getLanguageName(result.language)}
+                    </div>
+                    <div>
+                      <span className="text-green-600">Accuracy:</span> {getAccuracyLabel(result.accuracy)}
+                    </div>
+                    <div>
+                      <span className="text-green-600">Original:</span> {makeSearchableService.formatFileSize(result.originalSize)}
+                    </div>
+                    <div>
+                      <span className="text-green-600">Processed:</span> {makeSearchableService.formatFileSize(result.processedSize)}
+                    </div>
+                    <div>
+                      <span className="text-green-600">Text Length:</span> {result.textLength} chars
+                    </div>
+                    <div>
+                      <span className="text-green-600">Confidence:</span> {result.confidence}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={() => setResults([])}
+                variant="outline"
+              >
+                Back to Configuration
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedFiles([]);
+                  setResults([]);
+                  setError(null);
+                  setProgress({ current: 0, total: 0, percentage: 0 });
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                variant="outline"
+              >
+                Start New Processing
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto space-y-6">
@@ -158,314 +305,256 @@ const MakeSearchable: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900">Make Searchable</h1>
               <p className="mt-2 text-sm text-gray-600">
                 Convert scanned PDFs to searchable documents with preserved layout
-
               </p>
             </div>
           </div>
         </div>
       </div>
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Upload a PDF that contains scanned images of text (not a PDF with selectable text)</h3>
-
-        <div
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-        >
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-2">
-            Drop PDF files here or <span className="text-blue-600 font-medium">click to browse</span>
-          </p>
-          <p className="text-sm text-gray-500">Supports up to 5 PDF files, 100MB each</p>
-        </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".pdf"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-
-        {selectedFiles.length > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                Selected Files ({selectedFiles.length})
-              </span>
-              <button
-                onClick={clearAll}
-                className="text-sm text-red-600 hover:text-red-800"
-              >
-                Clear All
-              </button>
+      <div className="space-y-6">
+        {/* File Upload - Only show when no files selected */}
+        {selectedFiles.length === 0 && (
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Upload a PDF that contains scanned images of text (not a PDF with selectable text)</h3>
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+            >
+              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 mb-2">
+                Drop PDF files here or <span className="text-blue-600 font-medium">click to browse</span>
+              </p>
+              <p className="text-sm text-gray-500">Supports up to 5 PDF files, 2MB each</p>
             </div>
-            <div className="space-y-2">
-              {selectedFiles.map((file, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">{file.name}</span>
-                    <span className="text-xs text-gray-500">
-                      ({makeSearchableService.formatFileSize(file.size)})
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removeFile(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </Card>
         )}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - File Upload and Settings */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* File Upload */}
 
-
-          {/* Settings */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center">
-              <Settings className="h-5 w-5 mr-2" />
-              Processing Settings
-            </h3>
-
-            <div className="space-y-4">
-              {/* Language Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Language
-                </label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  {languages.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name} ({(lang.confidence * 100).toFixed(0)}% accuracy)
-                    </option>
-                  ))}
-                </select>
+        {/* Selected Files Info - Show after file selection */}
+        {selectedFiles.length > 0 && (
+          <Card className="p-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-blue-900">Selected PDF Files ({selectedFiles.length})</h3>
+               
               </div>
-
-              {/* Accuracy Level */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Accuracy Level
-                </label>
-                <select
-                  value={accuracy}
-                  onChange={(e) => setAccuracy(e.target.value as 'fast' | 'balanced' | 'accurate')}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  {accuracyLevels.map((level) => (
-                    <option key={level.value} value={level.value}>
-                      {level.label} - {level.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Processing Options */}
-              <div className="space-y-3">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={preserveLayout}
-                    onChange={(e) => setPreserveLayout(e.target.checked)}
-                    className="text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    <Eye className="h-4 w-4 inline mr-2" />
-                    Preserve Layout
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500 ml-6">
-                  Maintain original document formatting and structure
-                </p>
-
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={createInvisibleLayer}
-                    onChange={(e) => setCreateInvisibleLayer(e.target.checked)}
-                    className="text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    <EyeOff className="h-4 w-4 inline mr-2" />
-                    Create Invisible Text Layer
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500 ml-6">
-                  Add searchable text without visual changes
-                </p>
-
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={enhanceImage}
-                    onChange={(e) => setEnhanceImage(e.target.checked)}
-                    className="text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    <ImageIcon className="h-4 w-4 inline mr-2" />
-                    Enhance Image Quality
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500 ml-6">
-                  Improve image clarity for better OCR results
-                </p>
-
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={removeNoise}
-                    onChange={(e) => setRemoveNoise(e.target.checked)}
-                    className="text-blue-600 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    <Sparkles className="h-4 w-4 inline mr-2" />
-                    Remove Noise
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500 ml-6">
-                  Clean up image artifacts and improve text clarity
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Process Button */}
-          <button
-            onClick={handleMakeSearchable}
-            disabled={isProcessing || selectedFiles.length === 0}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <Search className="h-5 w-5" />
-                <span>Make Searchable</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Right Column - Results */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Error Display */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                <span className="text-red-700">{error}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Results */}
-          {results.length > 0 && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Processing Results ({results.length} files)  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Success
-                          </span>  
-                </h3>
-              </div>
-              <div className="divide-y divide-gray-200">
-                {results.map((result, index) => (
-                  <div key={index} className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <FileText className="h-5 w-5 text-gray-500" />
-                          <h4 className="font-medium text-gray-900">{result.filename}</h4>
-                         
-                        </div>
-
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex items-center space-x-2">
-                            <span>•</span>
-                            <span>Language: {getLanguageName(result.language)}</span>                            
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span>•</span>
-                            <span>Accuracy: {getAccuracyLabel(result.accuracy)}</span>                            
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span>•</span>
-                            <span>Original Size: {makeSearchableService.formatFileSize(result.originalSize)}</span>                            
-                          </div>
-                          <div className="flex items-center space-x-2">                            
-                            <span>•</span>
-                            <span>Output Size: {makeSearchableService.formatFileSize(result.processedSize)}</span>                            
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span>•</span>
-                            <span>Text Length: {result.textLength} characters</span>                          
-                          </div>
-                          <div className="flex items-center space-x-2">
-                           
-                             <span>•</span>
-                            <span>Confidence: {result.confidence}</span>                          
-                          </div>                           
-                        </div>
+              <div className="space-y-2">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">{file.name}</p>
+                        <p className="text-sm text-gray-500">{makeSearchableService.formatFileSize(file.size)}</p>
                       </div>
-
-                      <button
-                        onClick={() => handleDownload(result.outputFilename)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                      >
-                        <Download className="h-4 w-4" />
-                        <span>Download</span>
-                      </button>
                     </div>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>
             </div>
-          )}
+          </Card>
+        )}
 
-          {/* Tool Info */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">How It Works</h3>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Convert PDF pages to high-quality images</span>
+        {/* Settings */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <Settings className="h-5 w-5 mr-2" />
+            Processing Settings
+          </h3>
+
+          <div className="space-y-4">
+            {/* Language Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Language
+              </label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name} ({(lang.confidence * 100).toFixed(0)}% accuracy)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Accuracy Level */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Accuracy Level
+              </label>
+              <select
+                value={accuracy}
+                onChange={(e) => setAccuracy(e.target.value as 'fast' | 'balanced' | 'accurate')}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                {accuracyLevels.map((level) => (
+                  <option key={level.value} value={level.value}>
+                    {level.label} - {level.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Processing Options */}
+            <div className="space-y-3">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={preserveLayout}
+                  onChange={(e) => setPreserveLayout(e.target.checked)}
+                  className="text-blue-600 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  <Eye className="h-4 w-4 inline mr-2" />
+                  Preserve Layout
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 ml-6">
+                Maintain original document formatting and structure
+              </p>
+
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={createInvisibleLayer}
+                  onChange={(e) => setCreateInvisibleLayer(e.target.checked)}
+                  className="text-blue-600 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  <EyeOff className="h-4 w-4 inline mr-2" />
+                  Create Invisible Text Layer
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 ml-6">
+                Add searchable text without visual changes
+              </p>
+
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={enhanceImage}
+                  onChange={(e) => setEnhanceImage(e.target.checked)}
+                  className="text-blue-600 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  <ImageIcon className="h-4 w-4 inline mr-2" />
+                  Enhance Image Quality
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 ml-6">
+                Improve image clarity for better OCR results
+              </p>
+
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={removeNoise}
+                  onChange={(e) => setRemoveNoise(e.target.checked)}
+                  className="text-blue-600 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  <Sparkles className="h-4 w-4 inline mr-2" />
+                  Remove Noise
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 ml-6">
+                Clean up image artifacts and improve text clarity
+              </p>
+            </div>
+
+            {/* Process Button - Integrated with settings */}
+            {!isProcessing && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">Ready to Process</h4>
+                    <span className="text-sm text-blue-600 font-medium">
+                      {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Your PDFs will be converted to searchable documents with the settings above.
+                  </p>
+                  <Button
+                    onClick={handleMakeSearchable}
+                    disabled={selectedFiles.length === 0}
+                    size="lg"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  >
+                    <Search className="h-5 w-5 mr-2" />
+                    {selectedFiles.length > 0 ? 'Make Searchable' : 'Select Files First'}
+                  </Button>
+                </div>
+                {selectedFiles.length === 0 && (
+                  <p className="text-sm text-gray-500 text-center">
+                    Upload PDF files above to get started
+                  </p>
+                )}
               </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Apply OCR with layout preservation (HOCR)</span>
+            )}
+          </div>
+        </Card>
+
+        {/* Progress Bar - Only show when processing */}
+        {isProcessing && (
+          <Card className="p-6">
+            <div className="text-center mb-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-3">
+                <Search className="h-6 w-6 text-blue-600 animate-pulse" />
               </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Create invisible text layer for searchability</span>
+              <h3 className="text-lg font-semibold text-gray-900">Processing Your PDFs</h3>
+              <p className="text-sm text-gray-600">Converting scanned PDFs to searchable documents...</p>
+            </div>
+            <div className="space-y-3">
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${progress.percentage}%` }}
+                />
               </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Maintain original visual appearance</span>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Processing {progress.total} file{progress.total !== 1 ? 's' : ''}</span>
+                <span>{Math.round(progress.percentage)}% complete</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Support for multiple languages</span>
+              <p className="text-sm text-gray-500 text-center">
+                {progress.percentage < 100 
+                  ? 'Converting scanned PDFs to searchable documents...' 
+                  : 'Finalizing results...'}
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <Card className="p-6 border-red-200 bg-red-50">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+              <div>
+                <h3 className="font-medium text-red-900">Error</h3>
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             </div>
-          </div>
-        </div>
+          </Card>
+        )}
       </div>
     </div>
   );
