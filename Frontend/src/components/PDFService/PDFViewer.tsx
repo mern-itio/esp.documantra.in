@@ -340,7 +340,8 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
         }
 
         // Load the PDF file directly from the backend
-        const response = await fetch(`/api/pdf-service/advanced-editor/file/${fileName}`);
+        const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
+        const response = await fetch(`${baseUrl}/advanced-editor/file/${fileName}`);
         
         if (response.ok) {
           const arrayBuffer = await response.arrayBuffer();
@@ -385,7 +386,8 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
 
     const extractTextBlocks = async () => {
       try {
-        const textResponse = await fetch(`/api/pdf-service/advanced-editor/extract-text-blocks/${fileName}/${currentPage}`);
+        const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
+        const textResponse = await fetch(`${baseUrl}/advanced-editor/extract-text-blocks/${fileName}/${currentPage}`);
         if (textResponse.ok) {
           const textData = await textResponse.json();
           console.log('Text extraction result:', textData);
