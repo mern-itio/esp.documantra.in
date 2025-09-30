@@ -262,13 +262,18 @@ const Dashboard: React.FC = () => {
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[envelope.status as keyof typeof statusIcons]}`}>
                             {envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1)}
                           </span>
+                          { envelope.isPowerForm &&(
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#8B008B] text-white">
+                              {"Power-Form"}
+                            </span>
+                          )}
                           {envelope.priority === 'high' || envelope.priority === 'urgent' ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               {envelope.priority === 'urgent' ? 'Urgent' : 'High'}
                             </span>
                           ) : null}
                         </div>
-                        
+                        {envelope.isPowerForm === false && (
                         <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                           <div className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
@@ -283,6 +288,7 @@ const Dashboard: React.FC = () => {
                             <span>Created {formatDistanceToNow(new Date(envelope.createdAt), { addSuffix: true })}</span>
                           </div>
                         </div>
+                        )}
                         
                         {envelope.message && (
                           <p className="text-sm text-gray-600 line-clamp-2">{envelope.message}</p>

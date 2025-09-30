@@ -62,6 +62,7 @@ const envelopesData = async (req, res) => {
         createdAt: envelope.createdAt,
         sentAt: envelope.updatedAt,
         expiresAt: envelope.expirationDate,
+        isPowerForm: envelope.isPowerForm,
         sender:{
             id: senderDetails?.data?._id,
             name: senderDetails?.data?.fullname,
@@ -361,7 +362,7 @@ const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuf
 }
 
 const addSignature = async (req, res) => {
-  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName } = req.body;
+  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue } = req.body;
 
   if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
     return res.status(400).json({ message: 'All parameters are required' });
@@ -376,7 +377,7 @@ const addSignature = async (req, res) => {
     });
   }
   // Call the initiateRecipientSignature
-  const initiateSign = await initiateRecipientSignature({ envelopeId, documentId, recipientId, signatureImageBase64 });
+  const initiateSign = await initiateRecipientSignature({fieldId, envelopeId, documentId, recipientId, signatureImageBase64,selfValue });
   if (!initiateSign) {
     console.log('Failed to initiate recipient signature');
     return res.status(500).json({ message: 'Failed to initiate signature' });
@@ -458,6 +459,8 @@ const addSignature = async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 };
+const addPowerFormSignerSignature = async (req, res) => {
+}
 
 const getRecipientByEmail  = async (req, res)=>{
  const {email} = req.params;
@@ -718,44 +721,41 @@ const getEnvelopePower = async (req, res) => {
 const signerInitiate = async (req, res) =>{
   try{
     const { envelopeId, formId, data } = req.body;
-    let signerSlotId;
-    console.log(`Envelope Id: ${envelopeId} Form ID: ${formId}, Data ${JSON.stringify(data)}`)
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found." });
     }
+    // create cycleId server-side
+    const cycleId = new mongoose.Types.ObjectId();
     const allSlots = envelope.slots || [];
-    // Check if first signer is creator
-    const isCreatorFirst = envelope.firstSigningSlotId === envelope.creatorSlotId;
-    const firstSigner = allSlots.find(s => s.slotId === envelope.firstSigningSlotId);
-    if (isCreatorFirst) {
-        // Only if creator is first, find next signer
-        const higherIndexSlots = allSlots
-            .filter(s => s.index.$numberInt > firstSigner.index.$numberInt)
-            .sort((a, b) => a.index.$numberInt - b.index.$numberInt);
-
-        const nextSigner = higherIndexSlots.length
-            ? higherIndexSlots[0]
-            : allSlots
-                .filter(s => s.slotId !== firstSigner.slotId)
-                .sort((a, b) => a.index.$numberInt - b.index.$numberInt)[0];
-        signerSlotId = nextSigner ? nextSigner.slotId : null;
-        console.log("Next Signer after creator:", nextSigner.slotId);
-    } else {
-      signerSlotId = envelope.firstSigningSlotId;
-        console.log("First signer is not creator, no need to find next signer");
-    }
-
-    //prepare slot for signer
-    const signerInitiate = new selfSigner({
-      envelopeId:envelopeId,
-      formId:formId,
-      data,
-      signerSlotId:signerSlotId,
-      status:"initiated"
-    });
-    await signerInitiate.save();
-    return res.status(201).json({message:'Signer Initiated', signerInitiate});
+    const creatorSlot = allSlots.find(s => s.slotId === envelope.creatorSlotId);
+    const firstSlot = allSlots.find(s => s.slotId === envelope.firstSigningSlotId);
+    let slotRecords = [];
+    allSlots.forEach(slot => {
+      let role = "other";
+      if (slot.slotId === creatorSlot.slotId) {
+        role = "creator";
+      }
+      if (slot.slotId === firstSlot.slotId) {
+        role = "firstSigner";
+      }
+      slotRecords.push({
+        envelopeId: envelope._id,
+        cycleId: cycleId,
+        formId: formId,
+        signerSlotId: slot.slotId,
+        role: role,
+        status: role === "firstSigner" ? "initiated" : "pending",
+        signingOrder:slot.index,
+        data: role === "firstSigner" ? data : {}, // attach only for first signer
+      });
+  });
+      // Insert all slot records
+      const createdSigners = await selfSigner.insertMany(slotRecords);
+      // Find the one with role === "firstSigner"
+      const initiatedSigner = createdSigners.find(s => s.role === "firstSigner");
+    
+    return res.status(201).json({message:'Signer Initiated', cycleId:cycleId, signerInitiate: initiatedSigner });
   }catch (err){
     console.log(err);
     return res.status(500).json({message: "Server error", error: err.message});
@@ -778,6 +778,75 @@ const getSelfSigner = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+const getSigners = async (req, res) => {
+  try {
+    const { envelopeId } = req.params;
+    const token = req.headers.authorization;
+
+    // 1. Fetch signers for the envelope
+    const signers = await selfSigner.find({ envelopeId });
+
+    if (!signers || signers.length === 0) {
+      return res.status(404).json({ message: 'No signers found' });
+    }
+    console.log("Fetched Signers:", signers);
+
+    // 2. Map each signer to human-readable data
+    const formattedSigners = await Promise.all(signers.map(async (signer) => {
+      // Fetch fields for this form
+      const response = await axios.get(
+        `${process.env.TEMPLATE_URL}/api/template/get-form-details/${signer.formId}`,
+        { headers: { Authorization: token } }
+      );
+      const form = response.data;
+
+      // Map signer.data keys to field labels
+      const mappedData = {};
+      for (const field of form.fields) {
+        const value = signer.data.get(field._id);
+        if (value !== undefined) {
+          mappedData[field.label.trim()] = value;
+        }
+      }
+
+      return {
+        signerId: signer._id,
+        envelopeId: signer.envelopeId,
+        cycleId: signer.cycleId,
+        formId: signer.formId,
+        data: mappedData,
+        status: signer.status,
+        signature: signer.signature,
+        role: signer.role,
+        authentication: signer.authentication,
+        createdAt: signer.createdAt,
+        updatedAt: signer.updatedAt
+      };
+    }));
+
+    // 3. Group signers by cycle
+    const cyclesMap = {};
+    for (const signer of formattedSigners) {
+      if (!cyclesMap[signer.cycleId]) {
+        cyclesMap[signer.cycleId] = {
+          cycleId: signer.cycleId,
+          signers: []
+        };
+      }
+      cyclesMap[signer.cycleId].signers.push(signer);
+    }
+
+    const cycles = Object.values(cyclesMap);
+
+    return res.status(200).json({ cycles });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+
 
 // Export functions
 module.exports = {
@@ -801,5 +870,6 @@ module.exports = {
   connectPowerForm,
   getEnvelopePower,
   signerInitiate,
-  getSelfSigner
+  getSelfSigner,
+  getSigners
 };

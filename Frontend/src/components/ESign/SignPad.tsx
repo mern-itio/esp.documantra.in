@@ -113,7 +113,7 @@ function SignPad({
 
     // Issue Certificate
 
-    const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
+    const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue); 
     console.log(certificateId);
     const payload = {
       fieldId: activeField?._id,
