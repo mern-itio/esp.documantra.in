@@ -102,7 +102,7 @@ const addPageNumbersController = {
         
         // Calculate position coordinates
         let x, y;
-        console.log(`Adding page number to page ${i + 1}`);
+        // console.log(`Adding page number to page ${i + 1}`);
         const pageNumber = i + 1;
         
         switch (position) {

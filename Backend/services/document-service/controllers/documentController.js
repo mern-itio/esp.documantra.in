@@ -284,6 +284,7 @@ class DocumentController {
     try {
       const { id } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
 
       const document = await Document.findOne({
         _id: id,
@@ -292,6 +293,8 @@ class DocumentController {
             $or: [
               { ownerId: userId },
               { 'sharedWith.userId': userId },
+              { 'sharedWith.userId': userEmail }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail },  // Match email field
               { isPublic: true }
             ]
           },
@@ -331,6 +334,7 @@ class DocumentController {
     try {
       const { id } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
 
       const document = await Document.findOne({
         _id: id,
@@ -339,6 +343,8 @@ class DocumentController {
             $or: [
               { ownerId: userId },
               { 'sharedWith.userId': userId },
+              { 'sharedWith.userId': userEmail }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail },  // Match email field
               { isPublic: true }
             ]
           },
@@ -388,6 +394,7 @@ class DocumentController {
     try {
       const { id } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
       const { name, description, tags, isFavorite, isArchived, content } = req.body;
 
       const document = await Document.findOne({
@@ -396,7 +403,9 @@ class DocumentController {
           {
             $or: [
               { ownerId: userId },
-              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'full'] } }
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'full'] } },
+              { 'sharedWith.userId': userEmail, 'sharedWith.permission': { $in: ['edit', 'full'] } }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail, 'sharedWith.permission': { $in: ['edit', 'full'] } }  // Match email field
             ]
           },
           { isDeleted: { $ne: true } } // Exclude deleted documents
@@ -855,7 +864,9 @@ class DocumentController {
           {
             $or: [
               { ownerId: userId },
-              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } },
+              { 'sharedWith.userId': req.user.data.email, 'sharedWith.permission': { $in: ['edit', 'admin'] } }, // Match email stored in userId field
+              { 'sharedWith.email': req.user.data.email, 'sharedWith.permission': { $in: ['edit', 'admin'] } }  // Match email field
             ]
           },
           { isDeleted: { $ne: true } } // Exclude deleted documents
@@ -952,7 +963,9 @@ class DocumentController {
           {
             $or: [
               { ownerId: userId },
-              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } }
+              { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'admin'] } },
+              { 'sharedWith.userId': req.user.data.email, 'sharedWith.permission': { $in: ['edit', 'admin'] } }, // Match email stored in userId field
+              { 'sharedWith.email': req.user.data.email, 'sharedWith.permission': { $in: ['edit', 'admin'] } }  // Match email field
             ]
           },
           { isDeleted: { $ne: true } } // Exclude deleted documents

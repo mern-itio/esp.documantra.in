@@ -25,13 +25,13 @@ const colorOptimizationController = {
         outputFormat
       } = req.body;
 
-      console.log('Color optimization request received:', {
-        originalname: req.file.originalname,
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      });
+      // console.log('Color optimization request received:', {
+      //   originalname: req.file.originalname,
+      //   filename: req.file.filename,
+      //   path: req.file.path,
+      //   size: req.file.size,
+      //   mimetype: req.file.mimetype
+      // });
 
       // Ensure outputs directory exists
       const outputsDir = path.join(__dirname, '..', 'outputs');
@@ -74,7 +74,7 @@ const colorOptimizationController = {
         command += ' --recompress-flate';
       }
 
-      console.log('Executing color optimization command:', command);
+      // console.log('Executing color optimization command:', command);
 
       const startTime = Date.now();
       const { stdout, stderr } = await execAsync(command);
@@ -117,7 +117,7 @@ const colorOptimizationController = {
         }
       };
 
-      console.log('Color optimization completed successfully');
+      // console.log('Color optimization completed successfully');
       res.json(result);
 
     } catch (error) {
@@ -396,7 +396,7 @@ const colorOptimizationController = {
         command += ' --linearize';
       }
 
-      console.log('Generating color optimization preview:', command);
+      // console.log('Generating color optimization preview:', command);
 
       const { stdout, stderr } = await execAsync(command);
 
@@ -461,11 +461,11 @@ const colorOptimizationController = {
         quality
       } = req.body;
 
-      console.log('Batch color optimization request received:', {
-        fileCount: req.files.length,
-        preset,
-        settings: { colorConversion, profileOptimization, gamutMapping, targetColorSpace, quality }
-      });
+      // console.log('Batch color optimization request received:', {
+      //   fileCount: req.files.length,
+      //   preset,
+      //   settings: { colorConversion, profileOptimization, gamutMapping, targetColorSpace, quality }
+      // });
 
       const results = [];
       const errors = [];

@@ -28,7 +28,6 @@ const spellCheckRoutes = require('./routes/spellCheckRoute');
 const findReplaceRoutes = require('./routes/findReplaceRoute');
 const redactRoutes = require('./routes/redactRoute');
 const stampRoutes = require('./routes/stampRoute');
-const commentRoutes = require('./routes/commentRoute');
 const dbCommentRoutes = require('./routes/dbCommentRoute');
 const highlightRoutes = require('./routes/highlightRoute');
 const compressPDFRoutes = require('./routes/compressPDFRoute');
@@ -169,7 +168,7 @@ setInterval(async () => {
       
       if (now - stats.mtime.getTime() > maxAge) {
         await fs.remove(filePath);
-        console.log(`Cleaned up old file: ${file}`);
+        // console.log(`Cleaned up old file: ${file}`);
       }
     }
   } catch (error) {
@@ -933,7 +932,6 @@ app.use('/pdf-spell-check', trackPdfOperation, spellCheckRoutes);
 app.use('/pdf-find-replace', trackPdfOperation, findReplaceRoutes);
 app.use('/pdf-redact', trackPdfOperation, redactRoutes);
 app.use('/pdf-stamps', trackPdfOperation, stampRoutes);
-app.use('/pdf-comments', trackPdfOperation, commentRoutes);
 app.use('/pdf-comments-db', trackPdfOperation, dbCommentRoutes);
 app.use('/pdf-highlight', trackPdfOperation, highlightRoutes);
 app.use('/pdf-compress', trackPdfOperation, compressPDFRoutes);

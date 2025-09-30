@@ -13,13 +13,13 @@ const linearizePDFController = {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      console.log('Linearize PDF request received:', {
-        originalname: req.file.originalname,
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      });
+      // console.log('Linearize PDF request received:', {
+      //   originalname: req.file.originalname,
+      //   filename: req.file.filename,
+      //   path: req.file.path,
+      //   size: req.file.size,
+      //   mimetype: req.file.mimetype
+      // });
 
       // Verify uploaded file exists
       if (!await fs.pathExists(req.file.path)) {
@@ -29,7 +29,7 @@ const linearizePDFController = {
       // Ensure uploads directory exists
       const uploadsDir = path.dirname(req.file.path);
       await fs.ensureDir(uploadsDir);
-      console.log('Uploads directory ensured at:', uploadsDir);
+      // console.log('Uploads directory ensured at:', uploadsDir);
 
       // Parse optimization options
       const {
@@ -45,18 +45,18 @@ const linearizePDFController = {
         quality = 'medium'
       } = req.body;
 
-      console.log('Linearize PDF options:', {
-        webOptimization,
-        fastLoading,
-        streamingSupport,
-        compressionLevel,
-        objectStreams,
-        preserveMetadata,
-        preserveAnnotations,
-        preserveBookmarks,
-        outputFormat,
-        quality
-      });
+      // console.log('Linearize PDF options:', {
+      //   webOptimization,
+      //   fastLoading,
+      //   streamingSupport,
+      //   compressionLevel,
+      //   objectStreams,
+      //   preserveMetadata,
+      //   preserveAnnotations,
+      //   preserveBookmarks,
+      //   outputFormat,
+      //   quality
+      // });
 
       const startTime = Date.now();
 
@@ -120,7 +120,7 @@ const linearizePDFController = {
         // Bookmarks are preserved by default
       }
 
-      console.log('Executing linearization command:', linearizeCommand);
+      // console.log('Executing linearization command:', linearizeCommand);
 
       // Execute the linearization command
       const { stdout, stderr } = await execAsync(linearizeCommand);
@@ -183,12 +183,12 @@ const linearizePDFController = {
         }
       };
 
-      console.log('PDF linearization completed successfully:', {
-        originalSize: originalStats.size,
-        linearizedSize: outputStats.size,
-        sizeChange: sizeChange,
-        processingTime: processingTime
-      });
+      // console.log('PDF linearization completed successfully:', {
+      //   originalSize: originalStats.size,
+      //   linearizedSize: outputStats.size,
+      //   sizeChange: sizeChange,
+      //   processingTime: processingTime
+      // });
 
       res.json(result);
 
@@ -249,7 +249,7 @@ const linearizePDFController = {
         // Estimate total objects based on file size and pages
         totalObjects = Math.max(totalPages * 50, Math.floor(stats.size / 1000));
       } catch (error) {
-        console.log('Pages analysis failed, using fallback:', error.message);
+        // console.log('Pages analysis failed, using fallback:', error.message);
         // Fallback: estimate based on file size
         totalPages = Math.max(1, Math.floor(stats.size / 50000));
         totalObjects = Math.floor(stats.size / 1000);

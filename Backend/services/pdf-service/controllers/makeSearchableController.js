@@ -328,7 +328,7 @@ async function createSearchablePDFWithTextLayer(
       const txtPath = outputPath.replace(/\.[^/.]+$/, '.txt');
       await fs.writeFile(txtPath, `Searchable Text Result:\n\n${ocrResult.text}`);
       
-      console.log(`Created text file instead of PDF: ${txtPath}`);
+      // console.log(`Created text file instead of PDF: ${txtPath}`);
       return txtPath;
     } catch (fallbackError) {
       console.error('Fallback text creation also failed:', fallbackError);

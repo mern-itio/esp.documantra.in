@@ -19,7 +19,7 @@ const fsSync = require('fs');
  */
 async function convertDocToPdf(inputPath, outputPath) {
   try {
-    console.log('Starting DOC to PDF conversion using simple text extraction method...');
+    // console.log('Starting DOC to PDF conversion using simple text extraction method...');
     
     // Use the simple text extraction method that doesn't require Puppeteer
     return await convertDocToPdfSimple(inputPath, outputPath);
@@ -38,7 +38,7 @@ async function convertDocToPdf(inputPath, outputPath) {
  */
 async function convertDocToPdfSimple(inputPath, outputPath) {
   try {
-    console.log('Starting simple DOC to PDF conversion using text extraction...');
+    // console.log('Starting simple DOC to PDF conversion using text extraction...');
     
     // Read the document
     const buffer = await fs.readFile(inputPath);
@@ -47,7 +47,7 @@ async function convertDocToPdfSimple(inputPath, outputPath) {
     const result = await mammoth.extractRawText({ buffer });
     const textContent = result.value;
     
-    console.log(`Extracted ${textContent.length} characters of text`);
+    // console.log(`Extracted ${textContent.length} characters of text`);
     
     // Create PDF using PDFKit (no Puppeteer required)
     const doc = new PDFDocument({ 
@@ -98,7 +98,7 @@ async function convertDocToPdfSimple(inputPath, outputPath) {
     
     const stats = await fs.stat(outputPath);
     
-    console.log('Simple DOC to PDF conversion completed successfully');
+    // console.log('Simple DOC to PDF conversion completed successfully');
     
     return {
       success: true,
@@ -121,7 +121,7 @@ async function convertDocToPdfSimple(inputPath, outputPath) {
  */
 async function convertPdfToDoc(inputPath, outputPath) {
   try {
-    console.log('Starting PDF to DOCX conversion using npm packages...');
+    // console.log('Starting PDF to DOCX conversion using npm packages...');
 
     // Read PDF as buffer
     const pdfBuffer = await fs.readFile(inputPath);
@@ -129,7 +129,7 @@ async function convertPdfToDoc(inputPath, outputPath) {
     const textContent = pdfData.text;
     const pageCount = pdfData.numpages;
 
-    console.log(`Extracted ${pageCount} pages with ${textContent.length} characters`);
+    // console.log(`Extracted ${pageCount} pages with ${textContent.length} characters`);
 
     // Split text into paragraphs
     const paragraphs = textContent
@@ -150,7 +150,7 @@ async function convertPdfToDoc(inputPath, outputPath) {
 
     const stats = await fs.stat(outputPath);
 
-    console.log('PDF to DOCX conversion completed successfully.');
+    // console.log('PDF to DOCX conversion completed successfully.');
 
     return {
       success: true,
@@ -175,7 +175,7 @@ async function convertPdfToDoc(inputPath, outputPath) {
  */
 async function convertDocToPdfAlternative(inputPath, outputPath) {
   try {
-    console.log('Starting DOC to PDF conversion using docx-pdf...');
+    // console.log('Starting DOC to PDF conversion using docx-pdf...');
     
     // Read the input file
     const inputBuffer = await fs.readFile(inputPath);
@@ -194,7 +194,7 @@ async function convertDocToPdfAlternative(inputPath, outputPath) {
     
     const stats = await fs.stat(outputPath);
     
-    console.log('DOC to PDF conversion completed successfully');
+    // console.log('DOC to PDF conversion completed successfully');
     
     return {
       success: true,
@@ -215,7 +215,7 @@ async function convertDocToPdfAlternative(inputPath, outputPath) {
  */
 async function convertPdfToExcel(inputPath, outputPath) {
   try {
-    console.log('🔍 Reading PDF...');
+    // console.log('🔍 Reading PDF...');
     const pdfBuffer = await fs.readFile(inputPath);
     const pdfData = await pdfParse(pdfBuffer);
 
@@ -233,7 +233,7 @@ async function convertPdfToExcel(inputPath, outputPath) {
     // Write to file with correct format
     XLSX.writeFile(workbook, outputPath, { bookType: 'xlsx' });
 
-    console.log('✅ PDF to Excel conversion completed.');
+    // console.log('✅ PDF to Excel conversion completed.');
     return {
       success: true,
       rowsExtracted: rows.length,
@@ -253,7 +253,7 @@ async function convertPdfToExcel(inputPath, outputPath) {
  */
 async function convertExcelToPdf(inputPath, outputPath) {
   try {
-    console.log('📖 Reading Excel file...');
+    // console.log('📖 Reading Excel file...');
     const workbook = XLSX.readFile(inputPath);
     const sheetName = workbook.SheetNames[0];
     const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
@@ -318,7 +318,7 @@ async function convertExcelToPdf(inputPath, outputPath) {
     doc.end();
     await new Promise(resolve => stream.on('finish', resolve));
 
-    console.log('✅ Excel to PDF conversion completed.');
+    // console.log('✅ Excel to PDF conversion completed.');
     const stats = await fs.stat(outputPath);
 
     return {
@@ -343,7 +343,7 @@ async function convertExcelToPdf(inputPath, outputPath) {
  */
 async function convertPdfToPpt(inputPath, outputPath) {
   try {
-    console.log('🔍 Extracting text from PDF...');
+    // console.log('🔍 Extracting text from PDF...');
     const pdfBuffer = await fs.readFile(inputPath);
     const pdfData = await pdfParse(pdfBuffer);
 
@@ -374,7 +374,7 @@ async function convertPdfToPpt(inputPath, outputPath) {
 
     const stats = await fs.stat(outputPath);
 
-    console.log('✅ PDF to PPT conversion completed.');
+    // console.log('✅ PDF to PPT conversion completed.');
     return {
       success: true,
       outputFile: path.basename(outputPath),
@@ -396,7 +396,7 @@ async function convertPdfToPpt(inputPath, outputPath) {
  */
 async function convertPptToPdf(inputPath, outputPath) {
   try {
-    console.log('Starting PPT to PDF conversion...');
+    // console.log('Starting PPT to PDF conversion...');
     
     // Read the PPT file
     const pptBuffer = await fs.readFile(inputPath);
@@ -426,7 +426,7 @@ async function convertPptToPdf(inputPath, outputPath) {
       await pptx.load(pptBuffer);
       
       const slideCount = pptx.getSlides().length;
-      console.log(`Found ${slideCount} slides in presentation`);
+      // console.log(`Found ${slideCount} slides in presentation`);
       
       // Add slide count info
       // doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
@@ -471,10 +471,10 @@ async function convertPptToPdf(inputPath, outputPath) {
         doc.moveDown(1);
       }
       
-      console.log(`Successfully processed ${slideCount} slides`);
+      // console.log(`Successfully processed ${slideCount} slides`);
       
     } catch (extractionError) {
-      console.log('Could not extract detailed content, creating basic PDF...');
+      // console.log('Could not extract detailed content, creating basic PDF...');
       
       // Fallback: Create a basic PDF with file info
       // doc.fontSize(14).font('Helvetica').text('Content extraction was limited, but the file has been converted.');
@@ -493,7 +493,7 @@ async function convertPptToPdf(inputPath, outputPath) {
     
     const stats = await fs.stat(outputPath);
     
-    console.log('PPT to PDF conversion completed successfully.');
+    // console.log('PPT to PDF conversion completed successfully.');
     
     return {
       success: true,
@@ -516,7 +516,7 @@ async function convertPptToPdf(inputPath, outputPath) {
  */
 async function convertPptToPdfAdvanced(inputPath, outputPath) {
   try {
-    console.log('Starting advanced PPT to PDF conversion...');
+    // console.log('Starting advanced PPT to PDF conversion...');
     
     // Read the PPT file
     const pptBuffer = await fs.readFile(inputPath);
@@ -544,7 +544,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
     
       // Method 1: Try using pptxgenjs for .pptx files
       if (fileExtension === '.pptx') {
-        console.log('Attempting to extract content using pptxgenjs...');
+        // console.log('Attempting to extract content using pptxgenjs...');
         
         try {
           const PptxGenJS = require('pptxgenjs');
@@ -555,7 +555,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
           const slides = pptx.getSlides();
           slideCount = slides.length;
           
-          console.log(`Found ${slideCount} slides using pptxgenjs`);
+          // console.log(`Found ${slideCount} slides using pptxgenjs`);
           
           if (slideCount > 0) {
             // Add slide count info
@@ -619,14 +619,14 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
             });
             
             contentExtracted = true;
-            console.log(`Successfully processed ${slideCount} slides with content`);
+            // console.log(`Successfully processed ${slideCount} slides with content`);
           }
         } catch (pptxError) {
         console.log('pptxgenjs failed, trying manual extraction...', pptxError.message);
         
         // Method 2: Manual text extraction from PPTX file
             try {
-              console.log('Attempting manual PPTX content extraction...');
+              // console.log('Attempting manual PPTX content extraction...');
               
               // Try to extract text using a different approach
               const extractedText = await extractTextFromPptx(pptBuffer);
@@ -636,7 +636,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
                 const slides = extractedText.split(/\n\s*\n/).filter(slide => slide.trim().length > 0);
                 slideCount = slides.length;
                 
-                console.log(`Manually extracted ${slideCount} slides`);
+                // console.log(`Manually extracted ${slideCount} slides`);
                 
                 // Add slide count info
                 // doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
@@ -662,7 +662,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
                 });
                 
                 contentExtracted = true;
-                console.log(`Successfully processed ${slideCount} slides manually`);
+                // console.log(`Successfully processed ${slideCount} slides manually`);
               }
             } catch (manualError) {
               console.log('Manual extraction failed:', manualError.message);
@@ -709,7 +709,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
     
     const stats = await fs.stat(outputPath);
     
-    console.log('Advanced PPT to PDF conversion completed successfully.');
+    // console.log('Advanced PPT to PDF conversion completed successfully.');
     
     return {
       success: true,
@@ -733,7 +733,7 @@ async function convertPptToPdfAdvanced(inputPath, outputPath) {
  */
 async function extractTextFromPptx(pptxBuffer) {
   try {
-    console.log('Starting manual PPTX content extraction...');
+    // console.log('Starting manual PPTX content extraction...');
     
     const unzipper = require('unzipper');
     const xml2js = require('xml2js');
@@ -759,7 +759,7 @@ async function extractTextFromPptx(pptxBuffer) {
         file.path.includes('ppt/slides/slide') && file.path.endsWith('.xml')
       );
       
-      console.log(`Found ${slideFiles.length} slide XML files`);
+      // console.log(`Found ${slideFiles.length} slide XML files`);
       
       // Process each slide file
       for (const slideFile of slideFiles) {
@@ -843,7 +843,7 @@ async function extractTextFromPptx(pptxBuffer) {
       console.log('Error cleaning up temp files:', cleanupError.message);
     }
     
-    console.log(`Extracted ${extractedText.length} characters of text`);
+    // console.log(`Extracted ${extractedText.length} characters of text`);
     return extractedText;
     
   } catch (error) {
@@ -953,7 +953,7 @@ async function convertPptImagesToPdf(slideImagePaths, outputPath) {
   const pdfBytes = await pdfDoc.save();
   await fs.writeFile(outputPath, pdfBytes);
 
-  console.log(`✅ PDF created: ${outputPath}`);
+  // console.log(`✅ PDF created: ${outputPath}`);
   return outputPath;
 }
 
@@ -965,7 +965,7 @@ async function convertPptImagesToPdf(slideImagePaths, outputPath) {
  */
 async function convertPdfToTxt(inputPath, outputPath) {
   try {
-    console.log('Starting PDF to TXT conversion...');
+    // console.log('Starting PDF to TXT conversion...');
 
     const pdfBuffer = await fs.readFile(inputPath);
     const pdfData = await pdfParse(pdfBuffer);
@@ -975,7 +975,7 @@ async function convertPdfToTxt(inputPath, outputPath) {
     await fs.writeFile(outputPath, textContent, 'utf8');
     const stats = await fs.stat(outputPath);
 
-    console.log('PDF to TXT conversion completed.');
+    // console.log('PDF to TXT conversion completed.');
 
     return {
       success: true,
@@ -999,7 +999,7 @@ async function convertPdfToTxt(inputPath, outputPath) {
  */
 async function convertTxtToPdf(inputPath, outputPath) {
   try {
-    console.log('Starting TXT to PDF conversion...');
+    // console.log('Starting TXT to PDF conversion...');
 
     const text = await fs.readFile(inputPath, 'utf8');
     const doc = new PDFDocument();
@@ -1019,7 +1019,7 @@ async function convertTxtToPdf(inputPath, outputPath) {
 
     const stats = await fs.stat(outputPath);
 
-    console.log('TXT to PDF conversion completed.');
+    // console.log('TXT to PDF conversion completed.');
 
     return {
       success: true,
@@ -1042,7 +1042,7 @@ async function convertTxtToPdf(inputPath, outputPath) {
  */
 async function convertPdfToHtml(inputPath, outputPath) {
   try {
-    console.log('Starting PDF to HTML conversion...');
+    // console.log('Starting PDF to HTML conversion...');
 
     // Read PDF and extract text with error handling
     const pdfBuffer = await fs.readFile(inputPath);
@@ -1051,7 +1051,7 @@ async function convertPdfToHtml(inputPath, outputPath) {
     try {
       pdfData = await pdfParse(pdfBuffer);
     } catch (parseError) {
-      console.log('PDF parsing failed, creating fallback HTML...');
+      // console.log('PDF parsing failed, creating fallback HTML...');
       // Create a fallback HTML if PDF parsing fails
       const fallbackHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -1154,7 +1154,7 @@ async function convertPdfToHtml(inputPath, outputPath) {
     await fs.writeFile(outputPath, htmlContent, 'utf8');
     const stats = await fs.stat(outputPath);
 
-    console.log('PDF to HTML conversion completed.');
+    // console.log('PDF to HTML conversion completed.');
 
     return {
       success: true,
@@ -1178,11 +1178,11 @@ async function convertPdfToHtml(inputPath, outputPath) {
  */
 async function convertHtmlToPdf(inputPath, outputPath) {
   try {
-    console.log('Starting HTML to PDF conversion using simple text extraction...');
+    // console.log('Starting HTML to PDF conversion using simple text extraction...');
 
     // Read the HTML file
     let htmlContent = await fs.readFile(inputPath, 'utf8');
-    console.log(`HTML content length: ${htmlContent.length} characters`);
+    // console.log(`HTML content length: ${htmlContent.length} characters`);
     
     // Check if HTML content is valid
     if (!htmlContent || htmlContent.trim().length === 0) {
@@ -1197,7 +1197,7 @@ async function convertHtmlToPdf(inputPath, outputPath) {
       .replace(/\s+/g, ' ')                              // Normalize whitespace
       .trim();
     
-    console.log(`Extracted ${textContent.length} characters of text`);
+    // console.log(`Extracted ${textContent.length} characters of text`);
     
     // Create PDF using PDFKit (no Puppeteer required)
     const doc = new PDFDocument({ 
@@ -1249,7 +1249,7 @@ async function convertHtmlToPdf(inputPath, outputPath) {
     
     const stats = await fs.stat(outputPath);
     
-    console.log('HTML to PDF conversion completed successfully using text extraction.');
+    // console.log('HTML to PDF conversion completed successfully using text extraction.');
     
     return {
       success: true,
@@ -1413,13 +1413,13 @@ async function convertExcelToDoc(inputPath, outputPath) {
  */
 async function convertDocToExcel(inputPath, outputPath) {
   try {
-    console.log('Starting DOCX to XLSX conversion...');
+    // console.log('Starting DOCX to XLSX conversion...');
     
     // Read the DOCX file and extract text
     const result = await mammoth.extractRawText({ path: inputPath });
     const textContent = result.value;
     
-    console.log(`Extracted ${textContent.length} characters from DOCX`);
+    // console.log(`Extracted ${textContent.length} characters from DOCX`);
     
     // Split text into lines and then into cells
     const lines = textContent.split(/\r?\n/).filter(line => line.trim().length > 0);
@@ -1456,7 +1456,7 @@ async function convertDocToExcel(inputPath, outputPath) {
     
     const stats = await fs.stat(outputPath);
     
-    console.log('DOCX to XLSX conversion completed successfully.');
+    // console.log('DOCX to XLSX conversion completed successfully.');
     
     return {
       success: true,
@@ -1490,7 +1490,7 @@ async function cleanupOldFiles(directory, maxAge = 24) {
       
       if (now - stats.mtime.getTime() > maxAgeMs) {
         await fs.remove(filePath);
-        console.log(`Cleaned up old file: ${file}`);
+        // console.log(`Cleaned up old file: ${file}`);
       }
     }
   } catch (error) {

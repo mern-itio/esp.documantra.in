@@ -165,6 +165,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
 
   const { dailyUsage, performanceMetrics, qualityMetrics, usageTrend, categoryUsage, recentActivity, topDocuments } = analyticsData;
 
+  // Transform category names for better display
+  const transformedCategoryUsage = categoryUsage.map(category => ({
+    ...category,
+    category: category.category === 'Internal' ? 'Internal Operations' : 
+             category.category === 'Unknown' ? 'Internal Operations' :
+             category.category
+  }));
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -327,7 +335,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
           </div>
           
           <div className="space-y-3">
-            {categoryUsage.map((category) => (
+            {transformedCategoryUsage.map((category) => (
               <div key={category.category} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${category.color}`} />
@@ -337,11 +345,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
                   <div className="w-24 bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${category.color}`}
-                      style={{ width: `${category.usage}%` }}
+                      style={{ width: `${Math.min(100, Math.max(0, category.usage))}%` }}
                     />
                   </div>
                   <span className="text-sm font-medium text-gray-600 w-8 text-right">
-                    {category.usage}%
+                    {Math.min(100, Math.max(0, category.usage))}%
                   </span>
                 </div>
               </div>
@@ -367,7 +375,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-gray-900">{tool.name}</span>
+                    <span className="font-medium text-gray-900">
+                      {tool.name === 'Unknown Tool' ? 'Internal Operations' : tool.name}
+                    </span>
                     <span className="text-sm text-gray-600">{formatNumber(tool.usage)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -469,7 +479,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {activity.action} - {activity.documentName}
+                      {activity.action === 'Unknown Operation' ? 'Internal Operations' : activity.action} - {activity.documentName === 'Unknown Tool Operation' ? 'Internal Operations' : activity.documentName}
                     </p>
                     <p className="text-xs text-gray-500">
                       {new Date(activity.timestamp).toLocaleString()}
@@ -502,7 +512,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {doc.documentName}
+                      {doc.documentName === 'Unknown Tool' ? 'Internal Operations' : doc.documentName}
                     </p>
                     <p className="text-xs text-gray-500">
                       {doc.actionCount} actions • Last: {new Date(doc.lastAction).toLocaleDateString()}

@@ -13,14 +13,14 @@ const mergePDFs = async (files, orderedFilenames) => {
       fileMap[file.originalname] = file;
     });
 
-    console.log('Files to merge:', orderedFilenames);
-    console.log('Available files:', Object.keys(fileMap));
+    // console.log('Files to merge:', orderedFilenames);
+    // console.log('Available files:', Object.keys(fileMap));
 
     // Add files to merger in the specified order
     for (const name of orderedFilenames) {
       const file = fileMap[name];
       if (file) {
-        console.log(`Adding file: ${name} (${file.path})`);
+        // console.log(`Adding file: ${name} (${file.path})`);
         await merger.add(file.path);
       } else {
         throw new Error(`File ${name} not found in upload. Available: ${Object.keys(fileMap).join(', ')}`);
@@ -35,7 +35,7 @@ const mergePDFs = async (files, orderedFilenames) => {
     const timestamp = Date.now();
     const outputPath = path.join(outputsDir, `merged-${timestamp}.pdf`);
     
-    console.log(`Saving merged PDF to: ${outputPath}`);
+    // console.log(`Saving merged PDF to: ${outputPath}`);
 
     // Save the merged PDF
     await merger.save(outputPath);
@@ -47,7 +47,7 @@ const mergePDFs = async (files, orderedFilenames) => {
     }
 
     const stats = await fs.stat(outputPath);
-    console.log(`Merged PDF created successfully. Size: ${stats.size} bytes`);
+    // console.log(`Merged PDF created successfully. Size: ${stats.size} bytes`);
 
     return outputPath;
 

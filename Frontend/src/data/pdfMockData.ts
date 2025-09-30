@@ -201,7 +201,7 @@ export const mockPDFTools = {
     description: "Edit, annotate, and modify PDF content directly",
     tools: [
       {
-        id: "edit-pdf",
+        id: "pdf-editor",
         name: "Edit PDF Text",
         description: "Edit text directly in PDF documents with font matching",
         category: "editing",
@@ -210,7 +210,8 @@ export const mockPDFTools = {
         features: ["font_matching", "formatting_preservation", "spell_check"],
         complexity: "medium" as const,
         popularity: 76,
-        icon: "Edit3"
+        icon: "Edit3",
+        route: "/pdf-tools/pdf-editor"
       },
       {
         id: "add-text",
@@ -222,7 +223,8 @@ export const mockPDFTools = {
         features: ["custom_fonts", "text_styling", "positioning_controls"],
         complexity: "easy" as const,
         popularity: 68,
-        icon: "Plus"
+        icon: "Plus",
+        route: "/pdf-tools/add-text"
       },
       {
         id: "add-images",
@@ -234,7 +236,8 @@ export const mockPDFTools = {
         features: ["image_positioning", "resize_controls", "transparency_options"],
         complexity: "easy" as const,
         popularity: 72,
-        icon: "ImagePlus"
+        icon: "ImagePlus",
+        route: "/pdf-tools/add-images"
       },
       {
         id: "add-shapes",
@@ -246,7 +249,8 @@ export const mockPDFTools = {
         features: ["shape_library", "custom_colors", "line_styles"],
         complexity: "easy" as const,
         popularity: 54,
-        icon: "Square"
+        icon: "Square",
+        route: "/pdf-tools/add-shapes"
       },
       {
         id: "highlight-text",
@@ -263,21 +267,8 @@ export const mockPDFTools = {
 
       },
       {
-        id: "add-comments-db",
-        name: "Add Comments",
-        description: "Add sticky notes and comments with threading",
-        category: "editing",
-        inputFormats: ["pdf"],
-        outputFormats: ["pdf"],
-        features: ["comment_threading", "user_tracking", "reply_system"],
-        complexity: "easy" as const,
-        popularity: 78,
-        icon: "MessageCircle",
-        route: "/pdf-tools/add-comments-db"
-      },
-      {
         id: "add-comments",
-        name: "Add Comments (Shared)",
+        name: "Add Comments",
         description: "Create shareable PDF documents with collaborative commenting",
         category: "editing",
         inputFormats: ["pdf"],
@@ -285,7 +276,7 @@ export const mockPDFTools = {
         features: ["shareable_links", "user_authentication", "real_time_collaboration"],
         complexity: "medium" as const,
         popularity: 85,
-        icon: "Share2",
+        icon: "MessageCircle",
         route: "/pdf-tools/add-comments",
         badge: "New"
       },
@@ -299,7 +290,8 @@ export const mockPDFTools = {
         features: ["pen_tools", "brush_sizes", "pressure_sensitivity"],
         complexity: "medium" as const,
         popularity: 65,
-        icon: "PenTool"
+        icon: "PenTool",
+        route: "/pdf-tools/draw-annotations"
       },
    
       {

@@ -173,49 +173,49 @@ const advancedPdfEditorController = {
       // Add the final versions of text edits
       optimizedEdits.push(...editMap.values());
       
-      console.log(`Optimized ${edits.length} edits to ${optimizedEdits.length} edits`);
-      console.log('Optimized edits:', JSON.stringify(optimizedEdits, null, 2));
+      // console.log(`Optimized ${edits.length} edits to ${optimizedEdits.length} edits`);
+      // console.log('Optimized edits:', JSON.stringify(optimizedEdits, null, 2));
 
       const inputPath = path.join(__dirname, '..', 'uploads', fileName);
       const outputFileName = `edited-${Date.now()}-${fileName}`;
       const outputPath = path.join(__dirname, '..', 'outputs', outputFileName);
 
-      console.log('File paths:', { inputPath, outputPath, outputFileName });
+      // console.log('File paths:', { inputPath, outputPath, outputFileName });
 
       // Ensure output directory exists
-      console.log('Ensuring output directory exists...');
+      // console.log('Ensuring output directory exists...');
       await fs.ensureDir(path.dirname(outputPath));
 
-      console.log('Checking if input file exists...');
+      // console.log('Checking if input file exists...');
       if (!await fs.pathExists(inputPath)) {
-        console.log('Input file not found:', inputPath);
+        // console.log('Input file not found:', inputPath);
         return res.status(404).json({ error: 'PDF file not found' });
       }
-      console.log('Input file exists:', inputPath);
+      // console.log('Input file exists:', inputPath);
 
       // Use enhanced PDF editor script that supports shapes
       const scriptPath = path.join(__dirname, '..', 'scripts', 'enhanced_pdf_editor.py');
       
-      console.log('Checking if Python script exists...');
+      // console.log('Checking if Python script exists...');
       // Check if script exists
       if (!await fs.pathExists(scriptPath)) {
-        console.log('Python script not found:', scriptPath);
+        // console.log('Python script not found:', scriptPath);
         return res.status(500).json({ error: 'Python script not found' });
       }
-      console.log('Python script exists:', scriptPath);
+      // console.log('Python script exists:', scriptPath);
       
       // Write edits to a temporary file to avoid command line argument issues
       const tempDir = os.tmpdir();
       const tempEditsFile = path.join(tempDir, `pdf-edits-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.json`);
-      console.log('Creating temporary edits file:', tempEditsFile);
+      // console.log('Creating temporary edits file:', tempEditsFile);
       await fs.writeFile(tempEditsFile, JSON.stringify(optimizedEdits, null, 2));
-      console.log('Temporary edits file created successfully');
+      // console.log('Temporary edits file created successfully');
       
       let stdout, result;
       try {
-        console.log('Executing Python script...');
+        // console.log('Executing Python script...');
         const command = `python "${scriptPath}" "${inputPath}" "${tempEditsFile}" "${outputPath}"`;
-        console.log('Command:', command);
+        // console.log('Command:', command);
         
         // Add timeout to prevent hanging
         const execResult = await Promise.race([
@@ -225,18 +225,18 @@ const advancedPdfEditorController = {
           )
         ]);
         stdout = execResult.stdout;
-        console.log('Python script stdout:', stdout);
+        // console.log('Python script stdout:', stdout);
         
         // Clean up temporary file
-        console.log('Cleaning up temporary file...');
+        // console.log('Cleaning up temporary file...');
         await fs.remove(tempEditsFile);
-        console.log('Temporary file cleaned up');
+        // console.log('Temporary file cleaned up');
         
         // Parse JSON output
-        console.log('Parsing JSON output...');
+        // console.log('Parsing JSON output...');
         try {
           result = JSON.parse(stdout);
-          console.log('JSON parsed successfully:', result);
+          // console.log('JSON parsed successfully:', result);
         } catch (parseError) {
           console.error('Failed to parse Python script output:', parseError);
           console.error('Raw output:', stdout);
@@ -248,7 +248,7 @@ const advancedPdfEditorController = {
         try {
           if (tempEditsFile) {
             await fs.remove(tempEditsFile);
-            console.log('Temporary file cleaned up after error');
+            // console.log('Temporary file cleaned up after error');
           }
         } catch (cleanupError) {
           console.warn('Failed to clean up temp file:', cleanupError.message);
@@ -257,9 +257,9 @@ const advancedPdfEditorController = {
         throw new Error(`Python script failed: ${execError.message}`);
       }
 
-      console.log('Processing result...');
+      // console.log('Processing result...');
       if (result.success) {
-        console.log('Success! Sending response...');
+        // console.log('Success! Sending response...');
         const response = {
           success: true,
           data: {
@@ -268,11 +268,11 @@ const advancedPdfEditorController = {
             fileSize: result.fileSize
           }
         };
-        console.log('Response:', response);
+        // console.log('Response:', response);
         res.json(response);
-        console.log('Response sent successfully');
+        // console.log('Response sent successfully');
       } else {
-        console.log('Failed result:', result);
+        // console.log('Failed result:', result);
         res.status(500).json({
           success: false,
           error: result.error
@@ -287,9 +287,9 @@ const advancedPdfEditorController = {
       // Clean up temporary file if it exists
       if (tempEditsFile && await fs.pathExists(tempEditsFile)) {
         try {
-          console.log('Cleaning up temporary file in error handler...');
+          // console.log('Cleaning up temporary file in error handler...');
           await fs.remove(tempEditsFile);
-          console.log('Temporary file cleaned up in error handler');
+          // console.log('Temporary file cleaned up in error handler');
         } catch (cleanupError) {
           console.warn('Failed to clean up temp file in error handler:', cleanupError.message);
         }
@@ -298,18 +298,18 @@ const advancedPdfEditorController = {
       
       // Ensure response is sent even if there's an error
       if (!res.headersSent) {
-        console.log('Sending error response...');
+        // console.log('Sending error response...');
         res.status(500).json({
           success: false,
           error: 'Failed to apply edits',
           details: error.message
         });
-        console.log('Error response sent');
+        // console.log('Error response sent');
       } else {
         console.log('Headers already sent, cannot send error response');
       }
     }
-    console.log('=== APPLY EDITS END ===');
+    // console.log('=== APPLY EDITS END ===');
   },
 
   // Download edited PDF
@@ -409,8 +409,8 @@ const advancedPdfEditorController = {
       const { fileName } = req.params;
       const filePath = path.join(__dirname, '..', 'uploads', fileName);
       
-      console.log('Serving file:', fileName);
-      console.log('File path:', filePath);
+      // console.log('Serving file:', fileName);
+      // console.log('File path:', filePath);
 
       if (!await fs.pathExists(filePath)) {
         return res.status(404).json({ error: 'PDF file not found' });

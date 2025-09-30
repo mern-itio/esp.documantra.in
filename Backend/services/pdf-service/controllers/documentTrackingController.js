@@ -159,8 +159,8 @@ const documentTrackingController = {
     try {
       const { linkToken } = req.params;
       
-      console.log('Accessing shared document with token:', linkToken);
-      console.log('Request method:', req.method);
+      // console.log('Accessing shared document with token:', linkToken);
+      // console.log('Request method:', req.method);
       
       const trackingRecord = await DocumentTracking.findOne({ 
         linkToken, 
@@ -168,10 +168,10 @@ const documentTrackingController = {
         expiresAt: { $gt: new Date() }
       });
 
-      console.log('Found tracking record:', trackingRecord ? 'Yes' : 'No');
+      // console.log('Found tracking record:', trackingRecord ? 'Yes' : 'No');
       
       if (!trackingRecord) {
-        console.log('Document not found or expired for token:', linkToken);
+        // console.log('Document not found or expired for token:', linkToken);
         return res.status(404).json({ error: 'Document not found or link expired' });
       }
 
@@ -216,7 +216,7 @@ const documentTrackingController = {
           message: 'Document access logged successfully'
         };
         
-        console.log('Returning document info:', responseData);
+        // console.log('Returning document info:', responseData);
         res.json(responseData);
       }
     } catch (error) {

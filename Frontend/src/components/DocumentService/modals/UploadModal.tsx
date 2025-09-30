@@ -211,7 +211,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-2">
           {/* Upload Limits Info */}
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-2">
@@ -260,7 +260,6 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             <p className="text-gray-500 mb-4">
               Select multiple files to upload them all at once
             </p>
-
             <input
               type="file"
               multiple

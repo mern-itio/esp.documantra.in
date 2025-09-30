@@ -15,13 +15,13 @@ const optimizeFontController = {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      console.log('Font optimization request received:', {
-        originalname: req.file.originalname,
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      });
+      // console.log('Font optimization request received:', {
+      //   originalname: req.file.originalname,
+      //   filename: req.file.filename,
+      //   path: req.file.path,
+      //   size: req.file.size,
+      //   mimetype: req.file.mimetype
+      // });
 
       // Verify uploaded file exists
       if (!await fs.pathExists(req.file.path)) {
@@ -31,7 +31,7 @@ const optimizeFontController = {
       // Ensure uploads directory exists
       const uploadsDir = path.dirname(req.file.path);
       await fs.ensureDir(uploadsDir);
-      console.log('Uploads directory ensured at:', uploadsDir);
+      // console.log('Uploads directory ensured at:', uploadsDir);
 
       // Parse optimization options
       const {
@@ -45,16 +45,16 @@ const optimizeFontController = {
         quality = 'medium'
       } = req.body;
 
-      console.log('Font optimization options:', {
-        fontSubsetting,
-        fontOptimization,
-        embeddingControl,
-        fontSubsettingOptions,
-        fontOptimizationOptions,
-        embeddingControlOptions,
-        outputFormat,
-        quality
-      });
+      // console.log('Font optimization options:', {
+      //   fontSubsetting,
+      //   fontOptimization,
+      //   embeddingControl,
+      //   fontSubsettingOptions,
+      //   fontOptimizationOptions,
+      //   embeddingControlOptions,
+      //   outputFormat,
+      //   quality
+      // });
 
       const startTime = Date.now();
 
@@ -113,7 +113,7 @@ const optimizeFontController = {
           break;
       }
 
-      console.log('Executing optimization command:', optimizationCommand);
+      // console.log('Executing optimization command:', optimizationCommand);
 
       // Execute optimization
       try {
@@ -152,7 +152,7 @@ const optimizeFontController = {
         console.warn('Output file does not appear to be a valid PDF, copying original...');
         await fs.copy(req.file.path, outputPath);
         const restoredStats = await fs.stat(outputPath);
-        console.log('Original file restored, new size:', restoredStats.size);
+        // console.log('Original file restored, new size:', restoredStats.size);
       }
 
       // Check if optimization actually improved the file size
@@ -164,12 +164,12 @@ const optimizeFontController = {
         
         // If the file got significantly larger, try to restore from original
         if (sizeIncreasePercentage > 50) {
-          console.log('File size increased too much, restoring from original...');
+          // console.log('File size increased too much, restoring from original...');
           await fs.copy(req.file.path, outputPath);
           
           // Update output stats
           const restoredStats = await fs.stat(outputPath);
-          console.log('File restored, new size:', restoredStats.size);
+          // console.log('File restored, new size:', restoredStats.size);
         }
       }
 
@@ -231,17 +231,17 @@ const optimizeFontController = {
         errors: []
       };
 
-      console.log('Font optimization completed successfully:', {
-        originalSize: originalStats.size,
-        outputSize: outputStats.size,
-        sizeReduction,
-        processingTime
-      });
+      // console.log('Font optimization completed successfully:', {
+      //   originalSize: originalStats.size,
+      //   outputSize: outputStats.size,
+      //   sizeReduction,
+      //   processingTime
+      // });
 
       // Clean up uploaded file after successful processing
       try {
         await fs.remove(req.file.path);
-        console.log('Uploaded file cleaned up:', req.file.path);
+        // console.log('Uploaded file cleaned up:', req.file.path);
       } catch (cleanupError) {
         console.warn('Failed to clean up uploaded file:', cleanupError.message);
       }
@@ -255,7 +255,7 @@ const optimizeFontController = {
       if (req.file && req.file.path) {
         try {
           await fs.remove(req.file.path);
-          console.log('Uploaded file cleaned up after error:', req.file.path);
+          // console.log('Uploaded file cleaned up after error:', req.file.path);
         } catch (cleanupError) {
           console.warn('Failed to clean up uploaded file after error:', cleanupError.message);
         }
@@ -651,12 +651,12 @@ const optimizeFontController = {
       // Use pdffonts command to analyze fonts
       const { stdout } = await execAsync(`pdffonts "${filePath}"`);
       
-      console.log('pdffonts raw output:', stdout);
+      // console.log('pdffonts raw output:', stdout);
       
       const lines = stdout.trim().split('\n');
-      console.log('Total lines from pdffonts:', lines.length);
-      console.log('Line 0 (header):', lines[0]);
-      console.log('Line 1 (separator):', lines[1]);
+      // console.log('Total lines from pdffonts:', lines.length);
+      // console.log('Line 0 (header):', lines[0]);
+      // console.log('Line 1 (separator):', lines[1]);
       
       const fontDetails = [];
       let totalFontSize = 0;
@@ -665,9 +665,9 @@ const optimizeFontController = {
       for (let i = 2; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line) {
-          console.log(`Parsing line ${i}:`, line);
+          // console.log(`Parsing line ${i}:`, line);
           const parts = line.split(/\s+/);
-          console.log(`Line ${i} parts:`, parts);
+          // console.log(`Line ${i} parts:`, parts);
           if (parts.length >= 6 && parts[0] !== '---') {
             // The font size is typically in the last column (e.g., "7", "10", "12")
             // Let's find the numeric value that represents the font size
@@ -689,31 +689,31 @@ const optimizeFontController = {
               encoding: parts[5],
               subset: parts[6] || 'Unknown'
             };
-            console.log(`Font info for line ${i}:`, fontInfo);
+            // console.log(`Font info for line ${i}:`, fontInfo);
             fontDetails.push(fontInfo);
             totalFontSize += fontInfo.size;
           }
         }
       }
 
-      console.log('Total font size calculated:', totalFontSize);
-      console.log('Font details:', fontDetails);
-      console.log('Total fonts found:', fontDetails.length);
-      console.log('Fonts with size > 0:', fontDetails.filter(f => f.size > 0).length);
+      // console.log('Total font size calculated:', totalFontSize);
+      // console.log('Font details:', fontDetails);
+      // console.log('Total fonts found:', fontDetails.length);
+      // console.log('Fonts with size > 0:', fontDetails.filter(f => f.size > 0).length);
 
       // If no font sizes were found, try Node.js fallback
       if (totalFontSize === 0 && fontDetails.length > 0) {
-        console.log('No font sizes found in pdffonts output, trying Node.js fallback...');
+        // console.log('No font sizes found in pdffonts output, trying Node.js fallback...');
         try {
           const nodeAnalysis = await optimizeFontController.analyzeFontsWithNode(filePath);
           if (nodeAnalysis.totalFontSize > 0) {
-            console.log('Node.js fallback provided font sizes:', nodeAnalysis.totalFontSize);
+            // console.log('Node.js fallback provided font sizes:', nodeAnalysis.totalFontSize);
             // Only use Node.js fallback if we didn't detect any fonts with pdffonts
             if (fontDetails.length === 0) {
               return nodeAnalysis;
             } else {
               // We have fonts from pdffonts, just estimate their sizes
-              console.log('Using pdffonts font count with estimated sizes');
+              // console.log('Using pdffonts font count with estimated sizes');
               const estimatedFontSize = Math.round(nodeAnalysis.totalFontSize / fontDetails.length);
               fontDetails.forEach(font => {
                 font.size = estimatedFontSize;
@@ -773,7 +773,7 @@ const optimizeFontController = {
 
   async optimizeWithPdfLib(inputPath, outputPath, options) {
     try {
-      console.log('Starting PDF-lib fallback optimization...');
+      // console.log('Starting PDF-lib fallback optimization...');
       
       // Read the PDF document
       const pdfBytes = await fs.readFile(inputPath);
@@ -781,7 +781,7 @@ const optimizeFontController = {
 
       // Get all pages
       const pages = pdfDoc.getPages();
-      console.log(`Processing ${pages.length} pages with PDF-lib`);
+      // console.log(`Processing ${pages.length} pages with PDF-lib`);
 
       // Create a new document with very conservative settings
       const newPdfDoc = await PDFDocument.create();
@@ -793,7 +793,7 @@ const optimizeFontController = {
           const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [i]);
           newPdfDoc.addPage(copiedPage);
           successfulPages++;
-          console.log(`Successfully copied page ${i + 1}/${pages.length}`);
+          // console.log(`Successfully copied page ${i + 1}/${pages.length}`);
         } catch (pageError) {
           console.log(`Failed to copy page ${i + 1}, skipping:`, pageError.message);
           // Continue with other pages instead of failing completely
@@ -804,7 +804,7 @@ const optimizeFontController = {
         throw new Error('Failed to copy any pages from the original PDF');
       }
 
-      console.log(`Successfully copied ${successfulPages} out of ${pages.length} pages`);
+      // console.log(`Successfully copied ${successfulPages} out of ${pages.length} pages`);
 
       // Save the optimized document with very conservative settings
       const optimizedPdfBytes = await newPdfDoc.save({
@@ -818,7 +818,7 @@ const optimizeFontController = {
       
       await fs.writeFile(outputPath, optimizedPdfBytes);
       
-      console.log('PDF-lib optimization completed successfully');
+      // console.log('PDF-lib optimization completed successfully');
       
       // Verify the output file is valid
       const outputStats = await fs.stat(outputPath);
@@ -826,16 +826,16 @@ const optimizeFontController = {
         throw new Error('Output file is empty');
       }
       
-      console.log(`Output file size: ${outputStats.size} bytes`);
+      // console.log(`Output file size: ${outputStats.size} bytes`);
 
     } catch (error) {
       console.error('PDF-lib optimization failed:', error);
       
       // If PDF-lib fails, just copy the original file
-      console.log('PDF-lib failed, copying original file as fallback...');
+      // console.log('PDF-lib failed, copying original file as fallback...');
       try {
         await fs.copy(inputPath, outputPath);
-        console.log('Original file copied as fallback');
+        // console.log('Original file copied as fallback');
       } catch (copyError) {
         console.error('Failed to copy original file:', copyError);
         throw new Error('All optimization methods failed');
@@ -884,7 +884,7 @@ const optimizeFontController = {
       try {
         pdfData = await pdfParse(pdfBuffer);
       } catch (parseError) {
-        console.log('PDF parse failed, continuing with basic analysis:', parseError.message);
+        // console.log('PDF parse failed, continuing with basic analysis:', parseError.message);
         pdfData = { info: {}, pages: [] };
       }
       
@@ -893,7 +893,7 @@ const optimizeFontController = {
       try {
         pdfDoc = await PDFDocument.load(pdfBuffer);
       } catch (loadError) {
-        console.log('PDF load failed, using basic file analysis:', loadError.message);
+        // console.log('PDF load failed, using basic file analysis:', loadError.message);
         // Fallback to basic file analysis
         return optimizeFontController.analyzeFontsBasic(filePath, pdfBuffer);
       }

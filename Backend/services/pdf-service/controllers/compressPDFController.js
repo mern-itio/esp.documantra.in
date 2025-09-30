@@ -13,13 +13,13 @@ const compressPDFController = {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      console.log('File upload received:', {
-        originalname: req.file.originalname,
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      });
+      // console.log('File upload received:', {
+      //   originalname: req.file.originalname,
+      //   filename: req.file.filename,
+      //   path: req.file.path,
+      //   size: req.file.size,
+      //   mimetype: req.file.mimetype
+      // });
 
       // Verify uploaded file exists
       if (!await fs.pathExists(req.file.path)) {
@@ -29,7 +29,7 @@ const compressPDFController = {
       // Ensure uploads directory exists
       const uploadsDir = path.dirname(req.file.path);
       await fs.ensureDir(uploadsDir);
-      console.log('Uploads directory ensured at:', uploadsDir);
+      // console.log('Uploads directory ensured at:', uploadsDir);
 
       // Parse compression options
       const {
@@ -44,16 +44,16 @@ const compressPDFController = {
         customSettings = {}
       } = req.body;
 
-      console.log('Compression options:', {
-        compressionLevel,
-        imageQuality,
-        downscaleImages,
-        maxImageResolution,
-        removeMetadata,
-        linearize,
-        objectStreams,
-        compressionMethod
-      });
+      // console.log('Compression options:', {
+      //   compressionLevel,
+      //   imageQuality,
+      //   downscaleImages,
+      //   maxImageResolution,
+      //   removeMetadata,
+      //   linearize,
+      //   objectStreams,
+      //   compressionMethod
+      // });
 
       // Create output filename
       const outputFilename = `compressed-${Date.now()}.pdf`;
@@ -100,7 +100,7 @@ const compressPDFController = {
         qpdfCommand += ' --linearize';
       }
 
-      console.log('Executing qpdf compression command:', qpdfCommand);
+      // console.log('Executing qpdf compression command:', qpdfCommand);
 
       try {
         const { stdout, stderr } = await execAsync(qpdfCommand);
@@ -127,7 +127,7 @@ const compressPDFController = {
       // Use Ghostscript for advanced image compression if available
       try {
         const { stdout: gsVersion } = await execAsync('gs --version');
-        console.log('Ghostscript version:', gsVersion.trim());
+        // console.log('Ghostscript version:', gsVersion.trim());
 
         // Create Ghostscript command for advanced compression
         const gsOutputPath = path.join(__dirname, '..', 'outputs', `gs-${outputFilename}`);
@@ -174,31 +174,31 @@ const compressPDFController = {
 
         gsCommand += ` -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${gsOutputPath}" "${req.file.path}"`;
 
-        console.log('Executing Ghostscript command:', gsCommand);
+        // console.log('Executing Ghostscript command:', gsCommand);
         const gsResult = await execAsync(gsCommand);
-        console.log('Ghostscript execution result:', {
-          stdout: gsResult.stdout,
-          stderr: gsResult.stderr
-        });
+        // console.log('Ghostscript execution result:', {
+        //   stdout: gsResult.stdout,
+        //   stderr: gsResult.stderr
+        // });
 
         // Check if Ghostscript output was created and compare sizes
         if (await fs.pathExists(gsOutputPath)) {
           const gsStats = await fs.stat(gsOutputPath);
           const qpdfStats = await fs.stat(outputPath);
           
-          console.log('File size comparison:', {
-            original: originalFileSize,
-            qpdf: qpdfStats.size,
-            ghostscript: gsStats.size
-          });
+          // console.log('File size comparison:', {
+          //   original: originalFileSize,
+          //   qpdf: qpdfStats.size,
+          //   ghostscript: gsStats.size
+          // });
           
           // Use the smaller file
           if (gsStats.size < qpdfStats.size) {
             await fs.move(gsOutputPath, outputPath, { overwrite: true });
-            console.log('Using Ghostscript output (smaller file)');
+            // console.log('Using Ghostscript output (smaller file)');
           } else {
             await fs.unlink(gsOutputPath);
-            console.log('Using qpdf output (smaller file)');
+            // console.log('Using qpdf output (smaller file)');
           }
         }
 
@@ -214,7 +214,7 @@ const compressPDFController = {
         throw new Error(`Output file was not created at path: ${outputPath}`);
       }
 
-      console.log(`Output file created successfully at: ${outputPath}`);
+      // console.log(`Output file created successfully at: ${outputPath}`);
 
       // Get file size
       const stats = await fs.stat(outputPath);
@@ -222,23 +222,23 @@ const compressPDFController = {
       const sizeReduction = originalFileSize - fileSize;
       const compressionRatio = ((sizeReduction / originalFileSize) * 100).toFixed(2);
 
-      console.log('File size calculation:', {
-        originalFileSize,
-        compressedFileSize: fileSize,
-        sizeReduction,
-        compressionRatio: `${compressionRatio}%`
-      });
+      // console.log('File size calculation:', {
+      //   originalFileSize,
+      //   compressedFileSize: fileSize,
+      //   sizeReduction,
+      //   compressionRatio: `${compressionRatio}%`
+      // });
 
-      console.log('Compression settings applied:', {
-        compressionLevel,
-        imageQuality,
-        maxImageResolution,
-        downscaleImages,
-        removeMetadata,
-        linearize,
-        objectStreams,
-        compressionMethod
-      });
+      // console.log('Compression settings applied:', {
+      //   compressionLevel,
+      //   imageQuality,
+      //   maxImageResolution,
+      //   downscaleImages,
+      //   removeMetadata,
+      //   linearize,
+      //   objectStreams,
+      //   compressionMethod
+      // });
 
       // Check if compression actually reduced file size
       if (fileSize >= originalFileSize) {
@@ -284,7 +284,7 @@ const compressPDFController = {
         });
 
         await trackingRecord.save();
-        console.log('Document tracking event logged for PDF compression');
+        // console.log('Document tracking event logged for PDF compression');
       } catch (trackingError) {
         console.error('Failed to log document tracking event:', trackingError);
         // Don't fail the main operation if tracking fails
