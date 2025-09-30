@@ -34,19 +34,7 @@ const stampController = {
         opacity = '0.8'
       } = req.body;
 
-      console.log('Stamp request received:', {
-        stampType,
-        customText: customText || '[EMPTY]',
-        customTextLength: customText ? customText.length : 0,
-        customImage: customImageFile ? '[PROVIDED]' : '[EMPTY]',
-        position,
-        pageNumber,
-        stampColor,
-        stampSize,
-        includeDate,
-        dateFormat,
-        opacity
-      });
+  
 
       // Validate input
       if (stampType === 'custom' && !customText.trim()) {
@@ -196,7 +184,7 @@ def add_stamps(input_path, output_path, stamp_type, custom_text, custom_image_pa
             'top-center': (300, 50),
             'top-right': (550, 50),
             'center-left': (50, 400),
-            'center': (300, 400),
+            'center': (200, 300),
             'center-right': (550, 400),
             'bottom-left': (50, 750),
             'bottom-center': (300, 750),

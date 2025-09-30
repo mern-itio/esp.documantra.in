@@ -182,12 +182,15 @@ PdfOperationTrackingSchema.statics.getAnalyticsData = async function(userId, sta
     users: day.users.length
   }));
 
-  // Process category usage
-  const categoryUsage = operationsByCategory.map(cat => ({
-    category: cat._id,
-    usage: cat.count,
-    color: getCategoryColor(cat._id)
-  }));
+  // Process category usage - convert to percentages with safeguard
+  const categoryUsage = operationsByCategory.map(cat => {
+    const percentage = totalOperations > 0 ? Math.round((cat.count / totalOperations) * 100) : 0;
+    return {
+      category: cat._id,
+      usage: Math.min(100, Math.max(0, percentage)), // Ensure percentage is between 0 and 100
+      color: getCategoryColor(cat._id)
+    };
+  });
 
   // Process popular tools
   const popularTools = operationsByTool.map(tool => ({
@@ -219,6 +222,7 @@ function getCategoryColor(category) {
     'Optimization': 'bg-purple-500',
     'OCR': 'bg-pink-500',
     'Forms': 'bg-indigo-500',
+    'Internal': 'bg-orange-500',
     'Other': 'bg-gray-500'
   };
   return colors[category] || 'bg-gray-500';

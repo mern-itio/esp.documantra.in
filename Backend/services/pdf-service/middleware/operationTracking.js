@@ -1,6 +1,7 @@
 const PdfOperationTracking = require('../models/pdfOperationTracking');
 
 const operationMap = {
+  // PDF Routes
   '/pdf/doc-to-pdf': { operation: 'Word to PDF', toolName: 'Word to PDF', category: 'Conversion' },
   '/pdf/pdf-to-doc': { operation: 'PDF to Word', toolName: 'PDF to Word', category: 'Conversion' },
   '/pdf/pdf-to-excel': { operation: 'PDF to Excel', toolName: 'PDF to Excel', category: 'Conversion' },
@@ -15,7 +16,7 @@ const operationMap = {
   '/pdf/test-pptx-extraction': { operation: 'Test PPTX Extraction', toolName: 'Test PPTX Extraction', category: 'Conversion' },
   '/pdf/test-html-to-pdf': { operation: 'Test HTML to PDF', toolName: 'Test HTML to PDF', category: 'Conversion' },
 
-  // Conversion operations - Convert routes
+  // Convert Routes
   '/convert/pdf-to-image': { operation: 'PDF to Image', toolName: 'PDF to Image', category: 'Conversion' },
   '/convert/image-to-pdf': { operation: 'Image to PDF', toolName: 'Image to PDF', category: 'Conversion' },
   '/convert/pdf-to-word': { operation: 'PDF to Word', toolName: 'PDF to Word', category: 'Conversion' },
@@ -24,6 +25,14 @@ const operationMap = {
 
   // Page operations
   '/pdf-service/merge': { operation: 'Merge PDF', toolName: 'Merge PDF', category: 'Pages' },
+  
+  // Internal validation routes (should be tracked as sub operations)
+  '/pdf-service/info': { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' },
+  '/pdf-service/validate': { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' },
+  '/pdf-service/check': { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' },
+  '/pdf-service/status': { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' },
+  '/pdf-service/health': { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' },
+  '/pdf-service/ping': { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' },
   '/pdf-split/split': { operation: 'Split PDF', toolName: 'Split PDF', category: 'Pages' },
   '/pdf-extract/extract': { operation: 'Extract Pages', toolName: 'Extract Pages', category: 'Pages' },
   '/pdf-delete/delete': { operation: 'Delete Pages', toolName: 'Delete Pages', category: 'Pages' },
@@ -43,7 +52,7 @@ const operationMap = {
   '/pdf-find-replace/find-replace': { operation: 'Find and Replace', toolName: 'Find and Replace', category: 'Editing' },
   '/pdf-redact/redact': { operation: 'Redact Content', toolName: 'Redact Content', category: 'Editing' },
   '/pdf-stamps/add-stamps': { operation: 'Add Stamps', toolName: 'Add Stamps', category: 'Editing' },
-  '/pdf-comments/add-comments': { operation: 'Add Comments', toolName: 'Add Comments', category: 'Editing' },
+  '/pdf-comments-db/create-document': { operation: 'Add Comments', toolName: 'Add Comments', category: 'Editing' },
   '/pdf-highlight/highlight-text': { operation: 'Highlight Text', toolName: 'Highlight Text', category: 'Editing' },
 
   // Security operations
@@ -64,6 +73,7 @@ const operationMap = {
 
   // OCR operations
   '/pdf-ocr/process': { operation: 'OCR Processing', toolName: 'OCR Processing', category: 'OCR' },
+  '/pdf-ocr/download': { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' },
   '/pdf-make-searchable/process': { operation: 'Make Searchable', toolName: 'Make Searchable', category: 'OCR' },
   '/pdf-extract-tables/process': { operation: 'Extract Tables', toolName: 'Extract Tables', category: 'OCR' },
   '/pdf-handwriting-recognition/recognize': { operation: 'Handwriting Recognition', toolName: 'Handwriting Recognition', category: 'OCR' },
@@ -96,6 +106,10 @@ function trackPdfOperation(req, res, next) {
   }
   req._trackingStarted = true;
   
+  // Add request ID for better tracking
+  const requestId = `${req.method}-${req.originalUrl}-${Date.now()}`;
+  req._requestId = requestId;
+  
   const startTime = Date.now();
   const originalSend = res.send;
   const originalJson = res.json;
@@ -104,32 +118,97 @@ function trackPdfOperation(req, res, next) {
   const route = req.baseUrl + req.path;
   const originalUrl = req.originalUrl;
   
+  // Debug logging
+  console.log('🔍 Tracking request:', { 
+    requestId,
+    method: req.method, 
+    route, 
+    originalUrl, 
+    baseUrl: req.baseUrl, 
+    path: req.path 
+  });
+  
   // Try multiple route matching strategies
   let operationDetails = operationMap[route] || operationMap[originalUrl];
- 
   
-  // If no exact match, try pattern matching
+  // If no exact match, try pattern matching with more specific patterns
   if (!operationDetails) {
+    console.log('🔍 Route not found in operationMap:', { route, originalUrl });
+    
+    // More specific pattern matching
     if (route.includes('pdf-to-word') || route.includes('pdf-to-doc')) {
       operationDetails = { operation: 'PDF to Word', toolName: 'PDF to Word', category: 'Conversion' };
+    } else if (route.includes('word-to-pdf')) {
+      operationDetails = { operation: 'Word to PDF', toolName: 'Word to PDF', category: 'Conversion' };
+    } else if (route.includes('pdf-to-excel')) {
+      operationDetails = { operation: 'PDF to Excel', toolName: 'PDF to Excel', category: 'Conversion' };
+    } else if (route.includes('excel-to-pdf')) {
+      operationDetails = { operation: 'Excel to PDF', toolName: 'Excel to PDF', category: 'Conversion' };
+    } else if (route.includes('pdf-to-ppt')) {
+      operationDetails = { operation: 'PDF to PowerPoint', toolName: 'PDF to PowerPoint', category: 'Conversion' };
+    } else if (route.includes('ppt-to-pdf')) {
+      operationDetails = { operation: 'PowerPoint to PDF', toolName: 'PowerPoint to PDF', category: 'Conversion' };
+    } else if (route.includes('pdf-to-txt')) {
+      operationDetails = { operation: 'PDF to Text', toolName: 'PDF to Text', category: 'Conversion' };
+    } else if (route.includes('txt-to-pdf')) {
+      operationDetails = { operation: 'Text to PDF', toolName: 'Text to PDF', category: 'Conversion' };
+    } else if (route.includes('pdf-to-html')) {
+      operationDetails = { operation: 'PDF to HTML', toolName: 'PDF to HTML', category: 'Conversion' };
+    } else if (route.includes('html-to-pdf')) {
+      operationDetails = { operation: 'HTML to PDF', toolName: 'HTML to PDF', category: 'Conversion' };
     } else if (route.includes('pdf-to-image')) {
       operationDetails = { operation: 'PDF to Image', toolName: 'PDF to Image', category: 'Conversion' };
     } else if (route.includes('image-to-pdf')) {
       operationDetails = { operation: 'Image to PDF', toolName: 'Image to PDF', category: 'Conversion' };
+    } else if (route.includes('pdf-to-epub')) {
+      operationDetails = { operation: 'PDF to EPUB', toolName: 'PDF to EPUB', category: 'Conversion' };
     } else if (route.includes('merge')) {
       operationDetails = { operation: 'Merge PDF', toolName: 'Merge PDF', category: 'Pages' };
     } else if (route.includes('split')) {
       operationDetails = { operation: 'Split PDF', toolName: 'Split PDF', category: 'Pages' };
+    } else if (route.includes('extract')) {
+      operationDetails = { operation: 'Extract Pages', toolName: 'Extract Pages', category: 'Pages' };
+    } else if (route.includes('delete')) {
+      operationDetails = { operation: 'Delete Pages', toolName: 'Delete Pages', category: 'Pages' };
+    } else if (route.includes('reorder')) {
+      operationDetails = { operation: 'Reorder Pages', toolName: 'Reorder Pages', category: 'Pages' };
+    } else if (route.includes('rotate')) {
+      operationDetails = { operation: 'Rotate Pages', toolName: 'Rotate Pages', category: 'Pages' };
+    } else if (route.includes('crop')) {
+      operationDetails = { operation: 'Crop Pages', toolName: 'Crop Pages', category: 'Pages' };
+    } else if (route.includes('insert')) {
+      operationDetails = { operation: 'Insert Pages', toolName: 'Insert Pages', category: 'Pages' };
     } else if (route.includes('compress')) {
       operationDetails = { operation: 'Compress PDF', toolName: 'Compress PDF', category: 'Optimization' };
+    } else if (route.includes('optimize')) {
+      operationDetails = { operation: 'Optimize PDF', toolName: 'Optimize PDF', category: 'Optimization' };
+    } else if (route.includes('ocr')) {
+      operationDetails = { operation: 'OCR Processing', toolName: 'OCR Processing', category: 'OCR' };
+    } else if (route.includes('find-replace')) {
+      operationDetails = { operation: 'Find and Replace', toolName: 'Find and Replace', category: 'Editing' };
+    } else if (route.includes('spell-check')) {
+      operationDetails = { operation: 'Spell Check', toolName: 'Spell Check', category: 'Other' };
+    } else if (route.includes('compare')) {
+      operationDetails = { operation: 'PDF Compare', toolName: 'PDF Compare', category: 'Other' };
+    } else if (route.includes('statistics')) {
+      operationDetails = { operation: 'PDF Statistics', toolName: 'PDF Statistics', category: 'Other' };
+    } else if (route.includes('quality-analysis')) {
+      operationDetails = { operation: 'Quality Analysis', toolName: 'Quality Analysis', category: 'Other' };
+    } else if (route.includes('/download') || route.includes('/info') || route.includes('/validate') || 
+               route.includes('/check') || route.includes('/status') || route.includes('/health') || 
+               route.includes('/ping')) {
+      // Track download and status routes as sub operations
+      operationDetails = { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' };
     } else {
-      operationDetails = {
-        operation: 'Unknown Operation',
-        toolName: 'Unknown Tool',
-        category: 'Other'
-      };
+      // Mark any other unknown routes as Internal sub operations instead of skipping
+      console.log('⚠️ Unknown route, marking as Internal sub operation:', { route, originalUrl });
+      operationDetails = { operation: 'Sub Operation', toolName: 'Sub Operation', category: 'Internal' };
     }
-    
+  }
+
+  // Log successful operation detection
+  if (operationDetails) {
+    console.log('✅ Operation detected:', operationDetails.operation, 'for route:', route);
   }
 
   // Extract file information if available
@@ -166,6 +245,7 @@ function trackPdfOperation(req, res, next) {
     ipAddress: req.ip || req.connection.remoteAddress,
     userAgent: req.get('User-Agent'),
     metadata: {
+      requestId,
       route,
       method: req.method,
       query: req.query,
@@ -179,7 +259,6 @@ function trackPdfOperation(req, res, next) {
 
   // Override res.send to track completion
   res.send = function(data) {
-    
     const processingTime = Date.now() - startTime;
     trackingData.processingTime = processingTime;
     trackingData.status = res.statusCode >= 200 && res.statusCode < 300 ? 'success' : 'error';
@@ -193,7 +272,7 @@ function trackPdfOperation(req, res, next) {
       trackingSaved = true;
       
       PdfOperationTracking.create(trackingData).then(() => {
-        console.log('✅ PDF Operation Tracked (send):', trackingData.operation, 'by user:', trackingData.userId);
+        console.log('✅ PDF Operation Tracked (send):', trackingData.operation, 'by user:', trackingData.userId, 'requestId:', requestId);
       }).catch(err => {
         console.error('❌ Error saving PDF operation tracking (send):', err);
       });
@@ -281,7 +360,7 @@ function trackPdfOperation(req, res, next) {
      
       
       PdfOperationTracking.create(trackingData).then(() => {
-        console.log('✅ PDF Operation Tracked (json):', trackingData.operation, 'by user:', trackingData.userId);
+        console.log('✅ PDF Operation Tracked (json):', trackingData.operation, 'by user:', trackingData.userId, 'requestId:', requestId);
       }).catch(err => {
         console.error('❌ Error saving PDF operation tracking (json):', err);
       });

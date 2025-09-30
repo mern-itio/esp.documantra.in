@@ -184,11 +184,11 @@ const digitalSignatureController = {
     const formattedTime = formatTimestamp(currentTime);
     
     // Log timezone information for debugging
-    console.log('Digital Signature Timezone Info:', {
-      utcTime: currentTime.toISOString(),
-      indianTime: formattedTime,
-      timezone: 'Asia/Kolkata (IST)'
-    });
+    // console.log('Digital Signature Timezone Info:', {
+    //   utcTime: currentTime.toISOString(),
+    //   indianTime: formattedTime,
+    //   timezone: 'Asia/Kolkata (IST)'
+    // });
     
     const signatureLines = [
       `Digitally Signed by: ${certificate.subject.getField('CN')?.value || 'Unknown'}`,
@@ -345,7 +345,7 @@ const digitalSignatureController = {
 
       // Always check if the PDF has been modified (indicating signature was added)
       const title = pdfDoc.getTitle();
-      console.log('PDF title during verification:', title);
+      // console.log('PDF title during verification:', title);
 
       if (title && title.includes('Digitally Signed')) {
         return res.json({

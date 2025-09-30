@@ -138,7 +138,7 @@ const editMetadataController = {
         // Verify the metadata was applied
         try {
           const { stdout: verificationOutput } = await execAsync(`${exifCommand} -a -u -g1 "${outputPath}"`);
-          console.log('Metadata verification completed');
+          // console.log('Metadata verification completed');
         } catch (verificationError) {
           console.warn('Metadata verification failed:', verificationError.message);
         }
@@ -186,19 +186,19 @@ const editMetadataController = {
 
       // Log document tracking event
       try {
-        console.log('Attempting to log document tracking event...');
+        // console.log('Attempting to log document tracking event...');
         const DocumentTracking = require('../models/documentTracking');
-        console.log('DocumentTracking model loaded successfully');
+        // console.log('DocumentTracking model loaded successfully');
         
         const documentId = crypto.randomBytes(16).toString('hex');
         const userId = req.user?.id || 'anonymous';
         
-        console.log('Creating tracking record with:', {
-          documentId,
-          documentName: req.file.originalname,
-          userId,
-          action: 'metadata_edited'
-        });
+        // console.log('Creating tracking record with:', {
+        //   documentId,
+        //   documentName: req.file.originalname,
+        //   userId,
+        //   action: 'metadata_edited'
+        // });
         
         const trackingRecord = new DocumentTracking({
           documentId,
@@ -230,9 +230,9 @@ const editMetadataController = {
           }
         });
 
-        console.log('Tracking record created, attempting to save...');
+        // console.log('Tracking record created, attempting to save...');
         await trackingRecord.save();
-        console.log('Document tracking event logged successfully for metadata editing');
+        // console.log('Document tracking event logged successfully for metadata editing');
       } catch (trackingError) {
         console.error('Failed to log document tracking event:', trackingError);
         // Don't fail the main operation if tracking fails

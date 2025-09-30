@@ -13,13 +13,13 @@ const optimizeImageController = {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      console.log('File upload received:', {
-        originalname: req.file.originalname,
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      });
+      // console.log('File upload received:', {
+      //   originalname: req.file.originalname,
+      //   filename: req.file.filename,
+      //   path: req.file.path,
+      //   size: req.file.size,
+      //   mimetype: req.file.mimetype
+      // });
 
       // Ensure uploads and outputs directories exist
       const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -28,8 +28,8 @@ const optimizeImageController = {
       await fs.ensureDir(uploadsDir);
       await fs.ensureDir(outputsDir);
       
-      console.log('Uploads directory ensured at:', uploadsDir);
-      console.log('Outputs directory ensured at:', outputsDir);
+      // console.log('Uploads directory ensured at:', uploadsDir);
+      // console.log('Outputs directory ensured at:', outputsDir);
 
       // Check if input file exists
       if (!await fs.pathExists(req.file.path)) {
@@ -48,17 +48,17 @@ const optimizeImageController = {
         customSettings = {}
       } = req.body;
 
-      console.log('Full req.body received:', req.body);
-      console.log('Processing image optimization with options:', {
-        imageQuality,
-        maxResolution,
-        compressionLevel,
-        formatConversion,
-        downscaleImages,
-        removeMetadata,
-        optimizeForWeb,
-        customSettings
-      });
+      // console.log('Full req.body received:', req.body);
+      // console.log('Processing image optimization with options:', {
+      //   imageQuality,
+      //   maxResolution,
+      //   compressionLevel,
+      //   formatConversion,
+      //   downscaleImages,
+      //   removeMetadata,
+      //   optimizeForWeb,
+      //   customSettings
+      // });
 
       // Generate output filename
       const timestamp = Date.now();
@@ -69,7 +69,7 @@ const optimizeImageController = {
       let gsAvailable = false;
       try {
         const { stdout: gsVersion } = await execAsync('gs --version');
-        console.log('Ghostscript version:', gsVersion.trim());
+        // console.log('Ghostscript version:', gsVersion.trim());
         gsAvailable = true;
       } catch (gsError) {
         console.log('Ghostscript not available, using qpdf only');
@@ -79,7 +79,7 @@ const optimizeImageController = {
       let imagemagickAvailable = false;
       try {
         const { stdout: convertVersion } = await execAsync('convert --version');
-        console.log('ImageMagick version:', convertVersion.split('\n')[0]);
+        // console.log('ImageMagick version:', convertVersion.split('\n')[0]);
         imagemagickAvailable = true;
       } catch (convertError) {
         console.log('ImageMagick not available');
@@ -135,7 +135,7 @@ const optimizeImageController = {
         optimizationCommand = gsCommand;
       } else {
         // Fallback to qpdf for basic optimization
-        console.log('Using qpdf fallback for image optimization');
+        // console.log('Using qpdf fallback for image optimization');
         let qpdfCommand = `qpdf "${req.file.path}" "${outputPath}"`;
         
         if (compressionLevel === 'high') {
@@ -149,7 +149,7 @@ const optimizeImageController = {
         optimizationCommand = qpdfCommand;
       }
 
-      console.log('Executing optimization command:', optimizationCommand);
+      // console.log('Executing optimization command:', optimizationCommand);
 
       // Execute the optimization command
       const { stdout, stderr } = await execAsync(optimizationCommand);
@@ -206,7 +206,7 @@ const optimizeImageController = {
         });
 
         await trackingRecord.save();
-        console.log('Document tracking event logged for image optimization');
+        // console.log('Document tracking event logged for image optimization');
       } catch (trackingError) {
         console.error('Failed to log document tracking event:', trackingError);
         // Don't fail the main operation if tracking fails
