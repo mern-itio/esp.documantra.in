@@ -99,7 +99,7 @@ const EncryptPDFPage = () => {
       toolIcon={Lock}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="10-20 seconds"
       features={[
         "256-bit AES encryption",

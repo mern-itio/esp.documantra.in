@@ -96,7 +96,7 @@ const PDFPasswordRemoverPage = () => {
       toolIcon={Unlock}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="5-15 seconds"
       features={[
         "Remove password protection",

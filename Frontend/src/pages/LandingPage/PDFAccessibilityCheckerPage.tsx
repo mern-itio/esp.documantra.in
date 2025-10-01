@@ -131,7 +131,7 @@ const PDFAccessibilityCheckerPage = () => {
       toolIcon={Accessibility}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf', 'html']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="30-90 seconds"
       features={[
         "WCAG 2.1 compliance checking",

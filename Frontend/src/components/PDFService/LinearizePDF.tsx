@@ -395,7 +395,7 @@ const LinearizePDF: React.FC = () => {
                 <p className="mb-2 text-sm text-gray-500">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-gray-500">PDF files only (MAX. 100MB)</p>
+                <p className="text-xs text-gray-500">PDF files only (MAX. 2MB)</p>
               </div>
               <input
                 ref={fileInputRef}

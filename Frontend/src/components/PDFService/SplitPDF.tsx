@@ -173,9 +173,9 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
       return;
     }
 
-    // Check file size (100MB limit)
-    if (file.size > 100 * 1024 * 1024) {
-      alert('File size must be less than 100MB');
+    // Check file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size must be less than 2MB');
       return;
     }
 

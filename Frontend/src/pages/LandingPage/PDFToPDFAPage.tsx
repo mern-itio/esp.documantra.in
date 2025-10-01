@@ -102,7 +102,7 @@ const PDFToPDFAPage = () => {
       toolIcon={Archive}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="30-90 seconds"
       features={[
         "Multiple PDF/A versions",
@@ -179,7 +179,7 @@ const PDFToPDFAPage = () => {
         },
         {
           question: "What's the maximum file size I can convert?",
-          answer: "Free users can convert files up to 100MB. Premium users have higher limits and can process larger files without restrictions."
+          answer: "Free users can convert files up to 2MB. Premium users have higher limits and can process larger files without restrictions."
         }
       ]}
       relatedTools={[

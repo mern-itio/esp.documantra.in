@@ -63,7 +63,7 @@ const MergePDFPage = () => {
       toolIcon={Merge}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB per file"
+      maxFileSize="2MB per file"
       processingTime="15-30 seconds"
       features={[
         "Merge unlimited PDF files",

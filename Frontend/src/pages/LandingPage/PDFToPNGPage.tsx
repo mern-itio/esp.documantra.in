@@ -112,7 +112,7 @@ const PDFToPNGPage = () => {
       toolIcon={Image}
       acceptedFormats={['.pdf']}
       outputFormats={['png']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="20-45 seconds"
       features={[
         "High-quality PNG conversion",
@@ -189,7 +189,7 @@ const PDFToPNGPage = () => {
         },
         {
           question: "What's the maximum file size I can convert?",
-          answer: "Free users can convert files up to 100MB. Premium users have higher limits and can process larger files without restrictions."
+          answer: "Free users can convert files up to 2MB. Premium users have higher limits and can process larger files without restrictions."
         }
       ]}
       relatedTools={[

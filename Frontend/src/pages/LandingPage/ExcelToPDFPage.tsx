@@ -91,7 +91,7 @@ const ExcelToPDFPage = () => {
       toolIcon={FileSpreadsheet}
       acceptedFormats={['.xlsx', '.xls', '.csv', '.ods']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="20-45 seconds"
       features={[
         "Convert all or selected worksheets",
@@ -168,7 +168,7 @@ const ExcelToPDFPage = () => {
         },
         {
           question: "What's the maximum file size I can convert?",
-          answer: "Free users can convert files up to 100MB. Premium users have higher limits and can process larger files without restrictions."
+          answer: "Free users can convert files up to 2MB. Premium users have higher limits and can process larger files without restrictions."
         }
       ]}
       relatedTools={[

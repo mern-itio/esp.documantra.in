@@ -74,7 +74,7 @@ const PDFToExcelPage = () => {
       toolIcon={FileSpreadsheet}
       acceptedFormats={['.pdf']}
       outputFormats={['xlsx', 'xls', 'csv', 'ods']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="30-90 seconds"
       features={[
         "Smart table detection and extraction",
