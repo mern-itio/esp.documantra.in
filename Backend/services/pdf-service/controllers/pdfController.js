@@ -127,7 +127,32 @@ async function convertDocToPdfSimple(inputPath, outputPath) {
  */
 async function convertPdfToDoc(inputPath, outputPath) {
   try {
-    // Prefer exact layout via Python (PyMuPDF + python-docx) if available
+    // 1) Try editable, layout-preserving conversion via Python (pdf2docx)
+    try {
+      const { execFile } = require('child_process');
+      const util = require('util');
+      const execFileAsync = util.promisify(execFile);
+      const scriptEditable = path.join(__dirname, '..', 'scripts', 'pdf_to_docx_editable.py');
+      const pythonBin = process.env.PYTHON_BIN || 'python';
+      try { await fs.access(scriptEditable); } catch {}
+      const { stdout } = await execFileAsync(pythonBin, [scriptEditable, inputPath, outputPath], { timeout: 10 * 60 * 1000 });
+      try {
+        const parsed = JSON.parse(stdout || '{}');
+        if (parsed && parsed.success) {
+          const stats = await fs.stat(outputPath);
+          return {
+            success: true,
+            fileSize: stats.size,
+            message: 'PDF converted to editable DOCX (layout preserved) via pdf2docx',
+            outputFile: path.basename(outputPath)
+          };
+        }
+      } catch {}
+    } catch (e1) {
+      // continue to next strategy
+    }
+
+    // 2) Prefer exact layout via Python (PyMuPDF + python-docx) if pdf2docx not available
     try {
       const { execFile } = require('child_process');
       const util = require('util');
