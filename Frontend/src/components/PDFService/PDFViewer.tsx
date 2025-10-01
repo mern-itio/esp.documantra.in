@@ -1,6 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useState, useCallback } from 'react';
 import type { TextBlock } from '../../types/advancedPdfEditor';
-import { TextSelectionToolbar } from './TextSelectionToolbar';
 
 // Type declarations for PDF.js
 declare global {
@@ -23,6 +22,8 @@ interface PDFViewerProps {
   selectedShapeElement?: any;
   onShapeSelect?: (shape: any) => void;
   edits?: any[];
+  isEditingText?: boolean;
+  highlightColor?: string;
 }
 
 const PDFViewer = forwardRef<any, PDFViewerProps>(({
@@ -38,8 +39,10 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
   shapes = [],
   selectedShapeElement,
   onShapeSelect,
-  edits = []
-}) => {
+  edits = [],
+  isEditingText = false,
+  highlightColor
+},ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfDocument, setPdfDocument] = useState<any>(null);
@@ -49,8 +52,6 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
   // Text selection state for highlighting
   const [selectedText, setSelectedText] = useState<string>('');
   const [selectionRange, setSelectionRange] = useState<{startX: number, startY: number, endX: number, endY: number} | null>(null);
-  const [showContextToolbar, setShowContextToolbar] = useState(false);
-  const [toolbarPosition, setToolbarPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
   
   // Image state
   const [images, setImages] = useState<any[]>([]);
@@ -67,7 +68,49 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
   const debounceTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const textBoxRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const createdAddTextOperations = useRef<Set<string>>(new Set());
+
+  /**
+ * Merge original text blocks with pending edits for display
+ * Applies replaceText edits to existing blocks and includes addText blocks
+ * This ensures the preview shows all changes in real-time before saving
+ */
+  const getDisplayTextBlocks = useCallback(() => {
+  let displayBlocks = [...textBlocks];
   
+  // Apply replaceText edits for current page
+  edits
+    .filter(edit => edit.type === 'replaceText' && edit.pageNumber === currentPage)
+    .forEach(edit => {
+      displayBlocks = displayBlocks.map(block => {
+        // Match by position
+        if (Math.abs(edit.position.x - block.x) < 5 &&
+            Math.abs(edit.position.y - block.y) < 5) {
+          return { ...block, text: edit.newText };
+        }
+        return block;
+      });
+    });
+  
+  // Add new text blocks for current page
+  const newTextBlocks = edits
+    .filter(edit => edit.type === 'addText' && edit.pageNumber === currentPage)
+    .map(edit => ({
+      id: edit.textBlockId || `new-text-${Date.now()}`,
+      text: edit.text,
+      pageNumber: edit.pageNumber,
+      x: edit.position.x,
+      y: edit.position.y,
+      width: edit.position.width,
+      height: edit.position.height,
+      fontSize: edit.style?.fontSize || 12,
+      fontFamily: edit.style?.fontFamily || 'helv',
+      color: edit.style?.color || '#000000',
+      flags: 0
+    }));
+  
+  return [...displayBlocks, ...newTextBlocks];
+  }, [textBlocks, edits, currentPage]);
+
   // Keep the ref updated
   useEffect(() => {
     onAddEditRef.current = onAddEdit;
@@ -80,23 +123,27 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
     }
   }, [selectedTool]);
 
-  // Add text selection listeners
+
+  // Add text selection listeners - only when highlight tool is active
   useEffect(() => {
     const handleSelectionChange = () => {
+    // Only handle selection when highlight tool is selected
+    if (selectedTool === 'highlight') {
       handleTextSelection();
-    };
+    }
+  };
 
     const handleClickOutside = (event: MouseEvent) => {
-      // Close toolbar if clicking outside
-      if (showContextToolbar) {
-        const target = event.target as Element;
-        if (!target.closest('.text-selection-toolbar')) {
-          setShowContextToolbar(false);
-          setSelectedText('');
-          setSelectionRange(null);
-        }
-      }
-    };
+  // Clear selection if clicking outside while in highlight mode
+  if (selectedTool === 'highlight' && selectedText) {
+    const target = event.target as Element;
+    if (!target.closest('canvas')) {
+      setSelectedText('');
+      setSelectionRange(null);
+      window.getSelection()?.removeAllRanges();
+    }
+  }
+};
 
     document.addEventListener('selectionchange', handleSelectionChange);
     document.addEventListener('click', handleClickOutside);
@@ -105,7 +152,60 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
       document.removeEventListener('selectionchange', handleSelectionChange);
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [zoom, showContextToolbar]);
+  }, [zoom,selectedTool,selectedText]);
+
+  // Apply highlight with selected color (called from parent)
+  const applyHighlight = useCallback((color: string) => {
+  // Check if a color is actually selected
+  if (!color) {
+    return;
+  }
+  if (selectedText && selectionRange) {
+    onAddEdit({
+      type: 'highlight',
+      pageNumber: currentPage,
+      position: {
+        x: selectionRange.startX,
+        y: selectionRange.startY,
+        width: selectionRange.endX - selectionRange.startX,
+        height: selectionRange.endY - selectionRange.startY
+      },
+      style: { color, opacity: 0.3 },
+      content: selectedText
+    });
+    
+    // Clear selection after highlighting
+    setSelectedText('');
+    setSelectionRange(null);
+    window.getSelection()?.removeAllRanges();
+  }
+}, [selectedText, selectionRange, currentPage, onAddEdit]);
+
+
+// Auto-apply highlight when text is selected and color is already chosen
+useEffect(() => {
+  // Only auto-highlight when:
+  // 1. Highlight tool is active
+  // 2. A color is selected
+  // 3. Text is selected
+  if (selectedTool === 'highlight' && highlightColor && selectedText && selectionRange) {
+    // Small delay to ensure selection is stable
+    const timer = setTimeout(() => {
+      applyHighlight(highlightColor);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }
+}, [selectedText, selectionRange, selectedTool, highlightColor, applyHighlight]);
+
+// Expose methods to parent component
+// This hook allows the parent component to call the applyHighlight method
+// directly on the PDFViewer component instance via a ref.
+// The parent can trigger highlighting programmatically (e.g., when a color
+// button is clicked) without needing to pass the action through props.
+React.useImperativeHandle(ref, () => ({
+  applyHighlight
+}));
 
   // Handle image tool selection - open file browser immediately
   useEffect(() => {
@@ -160,6 +260,15 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
       }
     }
   }, [selectedElement]);
+
+  // Cleanup: Clear text selection state when switching away from highlight tool
+  useEffect(() => {
+    if (selectedTool !== 'highlight') {
+      setSelectedText('');
+      setSelectionRange(null);
+      window.getSelection()?.removeAllRanges();
+    }
+  }, [selectedTool]);
 
   // Handle shape resizing
   const handleResize = (e: React.MouseEvent, direction: string, shape: any) => {
@@ -543,8 +652,13 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
     };
   }, [onShapeSelect, onElementSelect]);
 
-  // Handle text selection
+  // Handle text selection - only when highlight tool is active
   const handleTextSelection = () => {
+    // Only process selection if highlight tool is active
+    if (selectedTool !== 'highlight') {
+      return;
+    }
+  
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
       const selectedText = selection.toString().trim();
@@ -567,65 +681,14 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
           endX,
           endY
         });
-
-        // Show context toolbar - position relative to canvas
-        const centerX = (rect.left + rect.right) / 2;
-        const relativeX = centerX - canvasRect.left;
-        const relativeY = rect.top - canvasRect.top;
-        
-        console.log('Toolbar positioning:', {
-          selectionRect: rect,
-          canvasRect: canvasRect,
-          centerX,
-          relativeX,
-          relativeY,
-          selectedText
-        });
-        
-        setToolbarPosition({
-          x: relativeX,
-          y: relativeY - 50 // Position 50px above the selection for better margin
-        });
-        setShowContextToolbar(true);
+        // DON'T show toolbar - user will click color button instead
       }
     } else {
-      // Only clear if no selection at all
       setSelectedText('');
       setSelectionRange(null);
-      setShowContextToolbar(false);
     }
   };
-
-  // Handle highlight from context toolbar
-  const handleContextHighlight = (color: string) => {
-    if (selectedText && selectionRange) {
-      onAddEdit({
-        type: 'highlight',
-        pageNumber: currentPage,
-        position: {
-          x: selectionRange.startX,
-          y: selectionRange.startY,
-          width: selectionRange.endX - selectionRange.startX,
-          height: selectionRange.endY - selectionRange.startY
-        },
-        style: { color, opacity: 0.3 },
-        content: selectedText
-      });
-      
-      // Hide toolbar but keep selection for multiple highlights
-      setShowContextToolbar(false);
-      // Don't clear selection - allow multiple highlights
-    }
-  };
-
-  // Handle context toolbar close
-  const handleContextToolbarClose = () => {
-    setShowContextToolbar(false);
-    setSelectedText('');
-    setSelectionRange(null);
-    window.getSelection()?.removeAllRanges();
-  };
-
+  
   // Handle image operations
   const handleImageAdd = (imageData: string, position: {x: number, y: number, width: number, height: number}) => {
     const imageId = `image-${Date.now()}`;
@@ -944,7 +1007,10 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
       case 'highlight':
         // Highlight tool now works through context toolbar
         // Just show a message to select text
-        alert('Select text to see highlight options');
+        //alert('Select text to see highlight options');
+        if (!selectedText) {
+        alert('Please select text to highlight it');
+        }
         break;
     }
   };
@@ -1065,30 +1131,6 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
             />
           )}
 
-          {/* Context Toolbar for Text Selection */}
-          {showContextToolbar && selectedText && (
-            <TextSelectionToolbar
-              selectedText={selectedText}
-              position={toolbarPosition}
-              onHighlight={handleContextHighlight}
-              onClose={handleContextToolbarClose}
-            />
-          )}
-
-          {/* Show highlight button when text is selected but toolbar is hidden */}
-          {selectedText && !showContextToolbar && (
-            <div
-              className="absolute bg-blue-600 text-white px-3 py-1 rounded-lg shadow-lg cursor-pointer z-40 hover:bg-blue-700 transition-colors"
-              style={{
-                left: toolbarPosition.x,
-                top: toolbarPosition.y,
-                transform: 'translateX(-50%)'
-              }}
-              onClick={() => setShowContextToolbar(true)}
-            >
-              Highlight
-            </div>
-          )}
 
           {/* Shape Overlays - Render before text blocks */}
           {(shapes || []).filter(shape => shape && shape.id).map((shape) => {
@@ -1354,10 +1396,16 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
           )}
 
           {/* Text Block Background Covers - Hide original text */}
-          {textBlocks.map((textBlock) => (
+          {getDisplayTextBlocks().map((textBlock) => (
             <div
               key={`bg-${textBlock.id}`}
-              className="absolute"
+              className={`absolute transition-all duration-200 ${
+              selectedElement?.id === textBlock.id
+             ? 'border-2 border-blue-500'
+             : isEditingText 
+             ? 'border border-transparent hover:border-blue-300 hover:bg-blue-50'
+             : 'border-none'
+               }`}
               style={{
                 left: textBlock.x * zoom,
                 top: textBlock.y * zoom,
@@ -1370,7 +1418,7 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
           ))}
 
           {/* Editable Text Overlays */}
-          {textBlocks.map((textBlock) => (
+          {getDisplayTextBlocks().map((textBlock) => (
             <div
               key={textBlock.id}
               className={`absolute transition-all duration-200 ${
@@ -1467,7 +1515,7 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
                   document.addEventListener('mouseup', handleMouseUp);
                 }
               }}
-              contentEditable
+              contentEditable={true}
               suppressContentEditableWarning={true}
               onInput={(e) => {
                 const newText = e.currentTarget.textContent || '';

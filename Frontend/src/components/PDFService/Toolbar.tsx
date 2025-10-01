@@ -21,6 +21,7 @@ interface ToolbarProps {
   onShapeColorChange?: (color: string) => void;
   highlightColor?: string;
   onHighlightColorChange?: (color: string) => void;
+  onHighlightApply?: (color: string) => void;
 }
 
 const tools = [
@@ -64,8 +65,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onShapeSelect, 
   selectedShapeElement, 
   onShapeColorChange,
-  highlightColor = '#ffff00',
-  onHighlightColorChange
+  highlightColor,
+  onHighlightColorChange,
+  onHighlightApply 
 }) => {
   return (
     <div className="border-b border-gray-200 p-4">
@@ -129,7 +131,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       {/* Highlight Color Picker - Show when highlight tool is selected */}
       {selectedTool === 'highlight' && (
         <div className="mt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Highlight Color</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Highlight Color</h4> 
           <div className="grid grid-cols-3 gap-2">
             {highlightColors.map((color) => {
               const isSelected = highlightColor === color.hex;
@@ -139,7 +141,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   key={color.id}
                   variant={isSelected ? "default" : "outline"}
                   size="sm"
-                  onClick={() => onHighlightColorChange?.(color.hex)}
+                  onClick={() => {
+                  onHighlightColorChange?.(color.hex);
+                  onHighlightApply?.(color.hex);
+                }}
                   className={`h-auto p-2 flex flex-col items-center space-y-1 ${
                     isSelected 
                       ? 'bg-blue-600 text-white border-blue-600' 

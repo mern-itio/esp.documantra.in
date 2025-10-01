@@ -71,7 +71,7 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
   const [selectedShapeElement, setSelectedShapeElement] = useState<any>(null);
 
   const [selectedShape, setSelectedShape] = useState<string>('square');
-  const [highlightColor, setHighlightColor] = useState<string>('#ffff00');
+  const [highlightColor, setHighlightColor] = useState<string>('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,6 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfViewerRef = useRef<any>(null);
-
   // Editor actions
   const editorActions: EditorActions = useMemo(() => ({
     setCurrentPage: (page: number) => {
@@ -268,21 +267,65 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
     }
   }), [editHistory, historyIndex]);
 
-  // Load text blocks for current page
+  /**
+ * Load text blocks for the current page and overlay pending edits
+ * - Fetches original text layout from backend
+ * - Applies replaceText edits to modified text blocks
+ * - Adds new text blocks created by user
+ * - Updates the preview to show changes before they're saved
+ */
   const loadTextBlocks = useCallback(async (pageNumber: number) => {
-    if (!editorState.fileName) return;
+  if (!editorState.fileName) return;
 
-    try {
-      const response = await advancedPdfEditorService.extractTextBlocks(editorState.fileName, pageNumber);
-      if (response.success) {
-        editorActions.setTextBlocks(response.data.textBlocks);
-      }
-    } catch (error) {
-      console.error('Failed to load text blocks:', error);
-      // Clear text blocks if extraction fails
-      editorActions.setTextBlocks([]);
+  try {
+    const response = await advancedPdfEditorService.extractTextBlocks(editorState.fileName, pageNumber);
+    if (response.success) {
+      // Apply any pending text edits to the loaded blocks
+      let textBlocks = response.data.textBlocks;
+      
+      // Apply replaceText edits for this page
+      const pageEdits = editorState.edits.filter(
+        edit => edit.type === 'replaceText' && edit.pageNumber === pageNumber
+      );
+      
+      textBlocks = textBlocks.map(block => {
+        const edit = pageEdits.find(e => {
+          // Match by position and old text
+          return Math.abs(e.position.x - block.x) < 5 &&
+                 Math.abs(e.position.y - block.y) < 5 &&
+                 e.oldText === block.text;
+        });
+        
+        if (edit) {
+          return { ...block, text: edit.newText };
+        }
+        return block;
+      });
+      
+      // Add any new text blocks for this page
+      const newTextBlocks = editorState.edits.filter(
+        edit => edit.type === 'addText' && edit.pageNumber === pageNumber
+      ).map(edit => ({
+        id: edit.textBlockId || `new-text-${Date.now()}`,
+        text: edit.text,
+        pageNumber: edit.pageNumber,
+        x: edit.position.x,
+        y: edit.position.y,
+        width: edit.position.width,
+        height: edit.position.height,
+        fontSize: edit.style.fontSize,
+        fontFamily: edit.style.fontFamily,
+        color: edit.style.color,
+        flags: 0
+      }));
+      
+      editorActions.setTextBlocks([...textBlocks, ...newTextBlocks]);
     }
-  }, [editorState.fileName]);
+  } catch (error) {
+    console.error('Failed to load text blocks:', error);
+    editorActions.setTextBlocks([]);
+  }
+  }, [editorState.fileName, editorState.edits, editorActions]);
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -484,6 +527,20 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
       window.open(downloadUrl);
     }
   };
+
+  
+  /**
+  * Handle highlight color click
+  * Handles immediate highlight application when user clicks a color button.
+  * This enables the "Text First" workflow: user selects text → clicks color → highlights immediately.
+  * Works in conjunction with the auto-highlight useEffect which handles the "Color First" workflow.
+  */
+  const handleHighlightApply = (color: string) => {
+    // This will be called from Toolbar when user clicks a color
+    // Pass it to PDFViewer through a ref or callback
+    if (pdfViewerRef.current) {
+      pdfViewerRef.current.applyHighlight(color);
+  }};
 
   if (!editorState.pdfInfo) {
     return (
@@ -693,47 +750,23 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
 
       <div className="flex-1 flex">
         {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-sm">
-          {/* Text Blocks Toggle */}
-          <div className="p-6 border-b border-gray-200 bg-gray-50">
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Editor Mode</h3>
-              <Button
-                variant={showTextBlocks ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowTextBlocks(!showTextBlocks)}
-                className="w-full justify-start"
-                style={{ cursor: showTextBlocks ? "not-allowed" : "pointer" }}
-              >
-                {showTextBlocks ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-3 text-gray-500" />
-                    <span className="text-gray-600">Exit Edit Mode</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-3" />
-                    <span>Enter Edit Mode</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
 
           {/* Toolbar */}
-          <div className="p-6">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Tools</h3>
-            <Toolbar
-              selectedTool={editorState.selectedTool}
-              onToolSelect={handleToolSelect}
-              selectedShape={selectedShape}
-              onShapeSelect={handleShapeSelect}
-              selectedShapeElement={selectedShapeElement}
-              onShapeColorChange={handleShapeColorChange}
-              highlightColor={highlightColor}
-              onHighlightColorChange={setHighlightColor}
-            />
-          </div>
+          <Toolbar
+            selectedTool={editorState.selectedTool}
+            onToolSelect={handleToolSelect}
+            selectedShape={selectedShape}
+            onShapeSelect={handleShapeSelect}
+            selectedShapeElement={selectedShapeElement}
+            onShapeColorChange={handleShapeColorChange}
+            highlightColor={highlightColor}
+            onHighlightColorChange={setHighlightColor}
+            onHighlightApply={handleHighlightApply}
+          />
+
+          
+
 
           {/* Edit History */}
           <div className="border-t border-gray-200 p-6 bg-gray-50 flex-1">
@@ -769,24 +802,26 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
 
           {/* PDF Viewer */}
           <div className="flex-1 overflow-auto bg-gray-100">
-            <div className="h-full">
-              <PDFViewer
-                ref={pdfViewerRef}
-                fileName={editorState.fileName!}
-                currentPage={editorState.currentPage}
-                zoom={editorState.zoom}
-                textBlocks={showTextBlocks ? editorState.textBlocks : []}
-                selectedElement={editorState.selectedElement}
-                onElementSelect={editorActions.setSelectedElement}
-                onAddEdit={editorActions.addEdit}
-                selectedTool={editorState.selectedTool}
-                selectedShape={selectedShape}
-                shapes={shapes.filter(shape => shape.pageNumber === editorState.currentPage)}
-                selectedShapeElement={selectedShapeElement}
-                onShapeSelect={handleShapeElementSelect}
-                edits={editorState.edits}
-              />
-            </div>
+
+            <PDFViewer
+              ref={pdfViewerRef}
+              fileName={editorState.fileName!}
+              currentPage={editorState.currentPage}
+              zoom={editorState.zoom}
+              textBlocks={editorState.textBlocks}
+              isEditingText={showTextBlocks}
+              selectedElement={editorState.selectedElement}
+              onElementSelect={editorActions.setSelectedElement}
+              onAddEdit={editorActions.addEdit}
+              selectedTool={editorState.selectedTool}
+              selectedShape={selectedShape}
+              shapes={shapes.filter(shape => shape.pageNumber === editorState.currentPage)}
+              selectedShapeElement={selectedShapeElement}
+              onShapeSelect={handleShapeElementSelect}
+              edits={editorState.edits}
+              highlightColor={highlightColor} 
+            />
+
           </div>
         </div>
       </div>
