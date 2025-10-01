@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Eye, Download, Lock, AlertCircle, FileText, User, Calendar, MessageSquare } from 'lucide-react';
+import { Eye, Download, Lock, AlertCircle, FileText, User, Calendar, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pdfShareService } from '../../../services/pdfShareService';
 import type { Comment } from '../../../services/pdfShareService';
 import { Button } from '../ui/button';
@@ -57,7 +57,8 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
       try {
         const user = JSON.parse(userInfo);
         return {
-          name: user.name || user.email || 'Anonymous',
+          name: user.fullname || user.email || 'Anonymous',
+          fullname: user.fullname || user.email || 'Anonymous',
           email: user.email || 'anonymous@example.com'
         };
       } catch (e) {
@@ -66,6 +67,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
     }
     return {
       name: 'Anonymous',
+      fullname: 'Anonymous',
       email: 'anonymous@example.com'
     };
   };
@@ -179,10 +181,27 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
       setTotalPages(pdf.numPages);
       setPdfPages(Array.from({ length: pdf.numPages }, (_, i) => ({ pageNumber: i + 1 })));
 
-      // Use requestAnimationFrame for better timing
-      requestAnimationFrame(() => {
-        renderPage(1);
-      });
+      // Use multiple attempts to ensure proper rendering on initial load
+      const attemptRender = (attempts = 0) => {
+        if (attempts >= 3) {
+          console.error('Failed to render PDF after 3 attempts');
+          return;
+        }
+
+        console.log(`Attempting to render PDF (attempt ${attempts + 1})`);
+
+        // Wait for canvas to be ready
+        setTimeout(() => {
+          if (canvasRef.current && pdfDocument) {
+            renderPage(1);
+          } else {
+            console.log('Canvas or PDF not ready, retrying...');
+            attemptRender(attempts + 1);
+          }
+        }, 100 * (attempts + 1)); // Increasing delay
+      };
+
+      attemptRender();
     } catch (error) {
       console.error('Error loading PDF:', error);
       // Fallback to mock data for demo
@@ -207,7 +226,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
     // Check if user is logged in
     const isLoggedIn = localStorage.getItem('userData') !== null;
-    
+
     // If not logged in, validate that name and email are provided
     if (!isLoggedIn && (!commentAuthor.trim() || !commentEmail.trim())) {
       setError('Please enter your name and email to add a comment');
@@ -221,7 +240,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
       const response = await pdfShareService.addSharedDocumentComment(shareToken, {
         content: newComment,
         position: { page: currentPage, x: 0, y: 0 },
-        authorName: isLoggedIn ? userInfo.name : commentAuthor.trim(),
+        authorName: isLoggedIn ? userInfo.fullname : commentAuthor.trim(),
         authorEmail: isLoggedIn ? userInfo.email : commentEmail.trim()
       });
 
@@ -253,19 +272,35 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
         return;
       }
 
-      // Clear canvas
-      context.clearRect(0, 0, canvas.width, canvas.height);
-
       const page = await pdfDocument.getPage(pageNumber);
       const viewport = page.getViewport({ scale: scale });
 
-      // Set canvas dimensions
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+      // Get device pixel ratio for crisp rendering on high-DPI displays
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      
+      // Set canvas dimensions with device pixel ratio for crisp rendering
+      canvas.width = viewport.width * devicePixelRatio;
+      canvas.height = viewport.height * devicePixelRatio;
+      
+      // Set canvas CSS size to the viewport size
+      canvas.style.width = viewport.width + 'px';
+      canvas.style.height = viewport.height + 'px';
+
+      // Scale the context to match the device pixel ratio
+      context.scale(devicePixelRatio, devicePixelRatio);
+
+      // Clear canvas
+      context.clearRect(0, 0, viewport.width, viewport.height);
 
       const renderContext = {
         canvasContext: context,
-        viewport: viewport
+        viewport: viewport,
+        // Enable high-quality rendering
+        enableWebGL: false,
+        renderInteractiveForms: false,
+        // Improve text rendering
+        textLayer: false,
+        annotationLayer: false
       };
 
       await page.render(renderContext).promise;
@@ -472,7 +507,10 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                 <MessageSquare size={16} className="text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-600">Message from sender:</p>
-                  <p className="text-sm font-medium">{documentData.share.message}</p>
+                  <p
+                    className="text-sm font-medium"
+                    dangerouslySetInnerHTML={{ __html: documentData.share.message }}
+                  ></p>
                 </div>
               </div>
             </div>
@@ -505,7 +543,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                     size="sm"
                     variant="outline"
                   >
-                    Previous
+                    <ChevronLeft size={16} className="mr-1" />
                   </Button>
                   <span className="text-sm text-gray-600">
                     Page {currentPage} of {totalPages}
@@ -516,7 +554,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                     size="sm"
                     variant="outline"
                   >
-                    Next
+                    <ChevronRight size={16} className="ml-1" />
                   </Button>
                 </div>
 
@@ -542,11 +580,10 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
               </div>
             </div>
 
-            <div className="w-full m-auto border rounded-lg overflow-hidden bg-white">
+            <div className="w-full border rounded-lg overflow-hidden bg-white flex justify-center">
               <canvas
                 ref={canvasRef}
-                className="w-full h-auto"
-                style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
+                className="h-auto pdf-canvas"
               />
             </div>
           </Card>
@@ -569,7 +606,10 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
                           <span className={`font-medium text-sm ${comment.isAdminComment ? 'text-blue-900' : 'text-gray-900'}`}>
-                            {comment.authorName}
+                            {comment.authorName.includes('@') ? 
+                              getUserInfo().fullname : 
+                              comment.authorName
+                            }
                             {comment.isAdminComment && (
                               <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
                                 Admin
@@ -626,7 +666,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
                       return isLoggedIn ? (
                         <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                          <p>Commenting as: <strong>{userInfo.name}</strong></p>
+                          <p>Commenting as: <strong>{userInfo.fullname}</strong></p>
                         </div>
                       ) : (
                         <div className="flex space-x-2">
@@ -662,7 +702,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                     >
                       Add Comment
                     </Button>
-                    
+
                     {error && (
                       <Alert className="mt-2 bg-red-50 border-red-200 text-red-800">
                         {error}
@@ -699,7 +739,10 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
                         <span className={`font-medium text-sm ${comment.isAdminComment ? 'text-blue-900' : 'text-gray-900'}`}>
-                          {comment.authorName}
+                          {comment.authorName.includes('@') ? 
+                            getUserInfo().fullname : 
+                            comment.authorName
+                          }
                           {comment.isAdminComment && (
                             <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
                               Admin
@@ -755,7 +798,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
                   return isLoggedIn ? (
                     <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                      <p>Commenting as: <strong>{userInfo.name}</strong> ({userInfo.email})</p>
+                      <p>Commenting as: <strong>{userInfo.fullname}</strong> ({userInfo.email})</p>
                     </div>
                   ) : (
                     <div className="flex space-x-2">

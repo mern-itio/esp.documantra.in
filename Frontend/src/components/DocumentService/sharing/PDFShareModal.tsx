@@ -544,7 +544,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold">Share PDF Document</h2>
@@ -586,41 +586,44 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
           {/* Step 1: Upload (only for new documents) */}
           {step === 'upload' && !existingDocument && (
             <div className="space-y-6">
-              <div className="text-center">
-                <h3 className="text-lg font-medium mb-2">Upload PDF Document</h3>
-                <p className="text-gray-600">Select a PDF file to share with others</p>
-              </div>
-
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload size={48} className="mx-auto text-gray-400 mb-4" />
-                <p className="text-lg font-medium mb-2">Drop your PDF here or click to browse</p>
-                <p className="text-gray-600">Maximum file size: 50MB</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </div>
-
-              {loading && (
-                <div className="text-center">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <p className="mt-2 text-gray-600">Uploading PDF...</p>
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                  <h3 className="text-lg font-medium mb-2">Uploading PDF...</h3>
+                  <p className="text-gray-600">Please wait while we process your document</p>
                 </div>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <h3 className="text-lg font-medium">Upload PDF Document</h3>
+                    <p className="text-sm text-gray-600">Select a PDF file to share with others</p>
+                  </div>
+
+                  <div
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={48} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-lg font-medium mb-2">Drop your PDF here or click to browse</p>
+                    <p className="text-gray-600">Maximum file size: 5MB</p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                  </div>
+                </>
               )}
             </div>
           )}
 
           {/* Existing Document Info (when sharing existing document) */}
           {existingDocument && step === 'recipients' && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mb-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center space-x-3">
                 <FileText size={24} className="text-blue-600" />
                 <div>
@@ -638,8 +641,8 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
           {step === 'recipients' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium mb-2">Add Recipients</h3>
-                <p className="text-gray-600">Enter email addresses separated by commas or press Enter</p>
+                <h3 className="text-lg font-medium mb-1">Add Recipients</h3>
+                <p className="text-sm text-gray-600">Enter email addresses separated by commas or press Enter</p>
               </div>
 
               {/* TO Recipients */}
@@ -796,32 +799,54 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                     placeholder="Email subject"
                   />
                 </div>
-                <div>
+                <div >
                   <label className="block text-sm font-medium mb-2">Message (optional)</label>
-                  <div className="border rounded-lg overflow-hidden">
-                    <CKEditor
-                      editor={ClassicEditor as any}
-                      data={message}
-                      onChange={(_event, editor) => {
-                        const data = editor.getData();
-                        setMessage(data);
-                      }}
-                       config={{
+                  <div className="space-y-3">
+                    <div className="border rounded-lg overflow-hidden h-70 ck-editor-content">
+                      <CKEditor
+                        editor={ClassicEditor as any}
+                        data={message}
+                        onChange={(_event, editor) => {
+                          const data = editor.getData();
+                          setMessage(data);
+                        }}
+                         config={{
                          toolbar: {
                            items: [
                              'heading', '|',
-                             'bold', 'italic', 'underline', '|',
+                             'bold', 'italic', '|',
                              'bulletedList', 'numberedList', '|',
-                             'outdent', 'indent', '|',
-                             'link', '|',
                              'undo', 'redo'
                            ],
                            shouldNotGroupWhenFull: true
                          },
-                         placeholder: 'Add a personal message...',
-                         removePlugins: ['ToolbarMenuButton']
-                       }}
-                    />
+                           heading: {
+                             options: [
+                               { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                               { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                               { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                               { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
+                               { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' },
+                               { model: 'heading5', view: 'h5', title: 'Heading 5', class: 'ck-heading_heading5' },
+                               { model: 'heading6', view: 'h6', title: 'Heading 6', class: 'ck-heading_heading6' }
+                             ]
+                         },
+                         link: {
+                           addTargetToExternalLinks: true,
+                           defaultProtocol: 'https://'
+                         },
+                         list: {
+                             properties: {
+                               styles: true,
+                               startIndex: true,
+                               reversed: true
+                             }
+                           },
+                           placeholder: 'Enter your message...',
+                           removePlugins: ['ToolbarMenuButton', 'PoweredBy']
+                         }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

@@ -310,7 +310,7 @@ class EmailService {
   }
 
   // Send PDF share notification
-  async sendPDFShareNotification(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null, cc = [], bcc = [], recipientType = 'TO') {
+  async sendPDFShareNotification(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null, cc = [], bcc = [], recipientType = 'TO', shareTime = null) {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping PDF share notification to ${email}`);
@@ -328,7 +328,7 @@ class EmailService {
             <h3 style="color: #2c3e50; margin-bottom: 15px;">${documentName}</h3>
             <p style="color: #555; margin-bottom: 10px;"><strong>Shared by:</strong> ${sharerName}</p>
             ${message ? `<p style="color: #555; margin-bottom: 10px;"><strong>Message:</strong> ${message}</p>` : ''}
-            <p style="color: #555; margin-bottom: 10px;"><strong>Shared at:</strong> ${new Date().toLocaleString()}</p>
+            <p style="color: #555; margin-bottom: 10px;"><strong>Shared at:</strong> ${shareTime ? new Date(shareTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
           </div>
           
           <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60; margin-bottom: 20px;">
@@ -424,7 +424,7 @@ class EmailService {
   }
 
   // Send PDF share notification specifically for BCC recipients
-  async sendPDFShareNotificationBCC(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null) {
+  async sendPDFShareNotificationBCC(email, documentName, shareToken, sharerName, subject, message, shareUrl, senderEmail = null, shareTime = null) {
     // Check if email service is configured
     if (!this.isConfigured()) {
       console.log(`⚠️ Email service not configured, skipping PDF share notification to BCC ${email}`);
@@ -442,7 +442,7 @@ class EmailService {
             <h3 style="color: #2c3e50; margin-bottom: 15px;">${documentName}</h3>
             <p style="color: #555; margin-bottom: 10px;"><strong>Shared by:</strong> ${sharerName}</p>
             ${message ? `<p style="color: #555; margin-bottom: 10px;"><strong>Message:</strong> ${message}</p>` : ''}
-            <p style="color: #555; margin-bottom: 10px;"><strong>Shared at:</strong> ${new Date().toLocaleString()}</p>
+            <p style="color: #555; margin-bottom: 10px;"><strong>Shared at:</strong> ${shareTime ? new Date(shareTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
           </div>
           
           <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60; margin-bottom: 20px;">

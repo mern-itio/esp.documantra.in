@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Avatar } from '../../common/Avatar';
 import type { CommentReply, DocumentComment } from '../../common/types/collaboration';
 import { formatDate } from '../../common/lib/utils';
 import { commentAPI } from '../../../services/api';
@@ -62,7 +63,7 @@ export function CommentSystem({
       documentId,
       author: 'current-user@example.com',
       authorName: 'Current User',
-      authorAvatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&fit=crop',
+      authorAvatar: '', // We'll use Avatar component instead
       content: newComment,
       position: { page: 1, x: 100, y: 100 },
       replies: [],
@@ -175,7 +176,7 @@ export function CommentSystem({
     const reply: Omit<CommentReply, 'id' | 'timestamp'> = {
       author: 'current-user@example.com',
       authorName: 'Current User',
-      authorAvatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&fit=crop',
+      authorAvatar: '', // We'll use Avatar component instead
       content: replyText,
       mentions: extractMentions(replyText)
     };
@@ -378,10 +379,10 @@ export function CommentSystem({
               {/* Comment Header */}
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <img
-                    src={comment.authorAvatar}
-                    alt={comment.authorName}
-                    className="w-6 h-6 rounded-full"
+                  <Avatar
+                    name={comment.authorName}
+                    email={comment.author}
+                    size="md"
                   />
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-gray-900">
@@ -534,10 +535,10 @@ export function CommentSystem({
                   {comment.replies.map((reply) => (
                     <div key={reply.id} className="bg-gray-50 rounded p-2">
                       <div className="flex items-center space-x-2 mb-1">
-                        <img
-                          src={reply.authorAvatar}
-                          alt={reply.authorName}
-                          className="w-4 h-4 rounded-full"
+                        <Avatar
+                          name={reply.authorName}
+                          email={reply.author}
+                          size="sm"
                         />
                         <span className="text-xs font-medium text-gray-900">
                           {reply.authorName}

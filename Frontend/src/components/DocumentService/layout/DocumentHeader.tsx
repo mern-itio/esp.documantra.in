@@ -285,7 +285,7 @@ export function DocumentHeader() {
             Sort
           </Button>
 
-          {/* View Toggle */}
+          { location.pathname !== "/documents/shared-pdf" && (
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <Button
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -304,9 +304,9 @@ export function DocumentHeader() {
               <List className="w-4 h-4" />
             </Button>
           </div>
-
+       )}
           {/* Upload */}
-          {userPermissions.upload && (
+          {userPermissions.upload && location.pathname !== "/documents/shared-pdf" && (
             <Button
               onClick={() => setShowUpload(true)}
               disabled={isLoading}
@@ -316,6 +316,7 @@ export function DocumentHeader() {
               Upload
             </Button>
           )}
+
 
           {/* PDF Share - Only show on /documents/shared-pdf route */}
           {location.pathname === '/documents/shared-pdf' && <PDFShareButton />}

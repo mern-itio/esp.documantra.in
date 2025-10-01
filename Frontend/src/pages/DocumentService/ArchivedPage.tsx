@@ -43,9 +43,8 @@ const ArchivedPage: React.FC = () => {
     loadArchivedDocuments();
   }, [currentFolderId, fetchDocuments, fetchFolders]);
 
-  // Get filtered documents from store and filter for archived ones
-  const allFilteredDocuments = getFilteredDocuments();
-  const filteredDocuments = allFilteredDocuments.filter((doc: any) => doc.isArchived);
+  // Get filtered documents from store - only archived ones
+  const filteredDocuments = getFilteredDocuments({ archivedOnly: true });
 
   const handleDocumentSelect = (documentId: string, isSelected: boolean) => {
     if (isSelected) {

@@ -183,7 +183,8 @@ class PDFShareController {
           userEmail,
           ccRecipients || [],
           [], // Don't include BCC recipients in this email
-          'TO_CC'
+          'TO_CC',
+          sharedDocument.createdAt // Pass the actual share time
         );
 
         // Update TO and CC recipient email statuses
@@ -249,7 +250,8 @@ class PDFShareController {
             userEmail,
             ccRecipients || [], // CC recipients (what BCC recipient sees as CC)
             recipient.email, // BCC recipient (what BCC recipient sees as BCC)
-            'BCC'
+            'BCC',
+            sharedDocument.createdAt // Pass the actual share time
           );
 
           // Update BCC recipient email status
