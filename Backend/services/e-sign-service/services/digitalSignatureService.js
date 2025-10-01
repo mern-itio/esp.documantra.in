@@ -40,6 +40,7 @@ const { requestTimestamp } = require('./tsaService');
 const { decrypt } = require('../utils/keyEncryption');
 const RecipientPermission = require('../models/RecipientPermission');
 const { logActivity } = require('./activityLogService');
+const selfSigner = require('../models/selfSigner');
 
 const signer = new SignPdf();
 
@@ -92,23 +93,33 @@ async function signPdfWithCert(pdfBuffer, privateKeyPem, certPem, envelopeId, re
   }
 }
 
-async function initiateRecipientSignature({ envelopeId, documentId, recipientId, signatureImageBase64 }) {
-  let sField = await SignatureFields.findOne({ documentId, recipientId, type: 'signature' });
+async function initiateRecipientSignature({fieldId, envelopeId, documentId, recipientId, signatureImageBase64, selfValue }) {
+  let sField = await SignatureFields.findOne({ _id: fieldId });
   if (!sField) {
     sField = await SignatureFields.create({ envelopeId, documentId, recipientId, page: 1, x: 50, y: 50, width: 150, height: 40, type: 'signature', status: 'pending' });
   }
-
-  if (signatureImageBase64) {
-    sField.signature = signatureImageBase64;
-    sField.status = 'completed';
-    await sField.save();
-    await AuditTrail.create({ envelopeId, recipientId, action: 'VISUAL_SIGNATURE_SAVED', details: { signaturePresent: true } }).catch(() => {});
-  }
-
-  const rp = await RecipientPermission.findOne({ envelopeId, recipientId });
-  if (rp) {
-    rp.status = 'completed';
-    await rp.save();
+  if(selfValue !== "1"){ 
+    if (signatureImageBase64) {
+      sField.signature = signatureImageBase64;
+      sField.status = 'completed';
+      await sField.save();
+      await AuditTrail.create({ envelopeId, recipientId, action: 'VISUAL_SIGNATURE_SAVED', details: { signaturePresent: true } }).catch(() => {});
+    }
+    const rp = await RecipientPermission.findOne({ envelopeId, recipientId });
+    if (rp) {
+      rp.status = 'completed';
+      await rp.save();
+    }
+  }else{
+    if (signatureImageBase64) {
+        const rp = await selfSigner.findOne({ _id:recipientId });
+        if (rp) {
+          rp.signature = signatureImageBase64;
+          rp.status = 'submitted';
+          await rp.save();
+          await AuditTrail.create({ envelopeId, recipientId, action: 'VISUAL_SIGNATURE_SAVED', details: { signaturePresent: true } }).catch(() => {});
+        }
+    }
   }
 
   try {

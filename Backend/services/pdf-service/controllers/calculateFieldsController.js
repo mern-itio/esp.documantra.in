@@ -6,8 +6,8 @@ const calculateFieldsController = {
   // Add calculations to form fields
   async addCalculations(req, res) {
     try {
-      console.log('Received request body:', req.body);
-      console.log('Received file:', req.file);
+      // console.log('Received request body:', req.body);
+      // console.log('Received file:', req.file);
       
       if (!req.file) {
         return res.status(400).json({
@@ -27,7 +27,7 @@ const calculateFieldsController = {
         }
         
         calculations = JSON.parse(req.body.calculations);
-        console.log('Parsed calculations:', calculations);
+        // console.log('Parsed calculations:', calculations);
       } catch (error) {
         console.error('Error parsing calculations:', error);
         return res.status(400).json({

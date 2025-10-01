@@ -7,6 +7,7 @@ class VersionController {
     try {
       const { documentId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
 
       // Check if user has access to this document
       const document = await Document.findOne({
@@ -22,7 +23,11 @@ class VersionController {
 
       // Check if user owns the document or if it's shared with them
       const isOwner = document.ownerId === userId;
-      const isShared = document.sharedWith.some(share => share.userId === userId);
+      const isShared = document.sharedWith.some(share => 
+        share.userId === userId || 
+        share.userId === userEmail || 
+        share.email === userEmail
+      );
       
       if (!isOwner && !isShared) {
         return res.status(403).json({ 
@@ -54,6 +59,7 @@ class VersionController {
     try {
       const { documentId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
       const { content, description, changes } = req.body;
 
       // Check if user has access to this document
@@ -70,7 +76,11 @@ class VersionController {
 
       // Check if user owns the document or if it's shared with them
       const isOwner = document.ownerId === userId;
-      const isShared = document.sharedWith.some(share => share.userId === userId);
+      const isShared = document.sharedWith.some(share => 
+        share.userId === userId || 
+        share.userId === userEmail || 
+        share.email === userEmail
+      );
       
       if (!isOwner && !isShared) {
         return res.status(403).json({ 
@@ -131,6 +141,7 @@ class VersionController {
     try {
       const { versionId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
 
       const version = await Version.findById(versionId);
       if (!version) {
@@ -153,7 +164,11 @@ class VersionController {
       }
 
       const isOwner = document.ownerId === userId;
-      const isShared = document.sharedWith.some(share => share.userId === userId);
+      const isShared = document.sharedWith.some(share => 
+        share.userId === userId || 
+        share.userId === userEmail || 
+        share.email === userEmail
+      );
       
       if (!isOwner && !isShared) {
         return res.status(403).json({ 
@@ -181,6 +196,7 @@ class VersionController {
     try {
       const { versionId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
       const updates = req.body;
 
       const version = await Version.findById(versionId);
@@ -204,7 +220,11 @@ class VersionController {
       }
 
       const isOwner = document.ownerId === userId;
-      const isShared = document.sharedWith.some(share => share.userId === userId);
+      const isShared = document.sharedWith.some(share => 
+        share.userId === userId || 
+        share.userId === userEmail || 
+        share.email === userEmail
+      );
       
       if (!isOwner && !isShared) {
         return res.status(403).json({ 
@@ -298,6 +318,7 @@ class VersionController {
     try {
       const { fromVersionId, toVersionId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
 
       const [fromVersion, toVersion] = await Promise.all([
         Version.findById(fromVersionId),
@@ -324,7 +345,11 @@ class VersionController {
       }
 
       const isOwner = document.ownerId === userId;
-      const isShared = document.sharedWith.some(share => share.userId === userId);
+      const isShared = document.sharedWith.some(share => 
+        share.userId === userId || 
+        share.userId === userEmail || 
+        share.email === userEmail
+      );
       
       if (!isOwner && !isShared) {
         return res.status(403).json({ 

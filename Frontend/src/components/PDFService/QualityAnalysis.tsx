@@ -37,6 +37,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
   // const [selectedPreset, setSelectedPreset] = useState<string>('comprehensive');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +57,34 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.type !== 'application/pdf') {
+        setError('Please select a PDF file');
+        return;
+      }
+
+      setSelectedFile(file);
+      setError(null);
+      setResult(null);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
       if (file.type !== 'application/pdf') {
         setError('Please select a PDF file');
         return;
@@ -419,10 +448,20 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
       {!selectedFile && (
         <Card className="p-6">
           <div className="flex items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+            <div
+              className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                isDragOver
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <BarChart3 className="w-8 h-8 mb-4 text-gray-500" />
-                <p className="mb-2 text-sm text-gray-500">
+                <BarChart3 className={`w-8 h-8 mb-4 ${isDragOver ? 'text-blue-500' : 'text-gray-500'}`} />
+                <p className={`mb-2 text-sm ${isDragOver ? 'text-blue-600' : 'text-gray-500'}`}>
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">PDF files only (MAX. 2MB)</p>
@@ -434,7 +473,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
                 accept=".pdf"
                 onChange={handleFileSelect}
               />
-            </label>
+            </div>
           </div>
         </Card>
       )}

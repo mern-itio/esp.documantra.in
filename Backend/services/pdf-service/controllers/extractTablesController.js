@@ -158,7 +158,7 @@ const extractTablesController = {
 
   async diagnoseErrors(req, res) {
     try {
-      console.log('Running diagnostic...');
+      // console.log('Running diagnostic...');
       
       // Run Python diagnostic script
       const diagnosticScript = path.join(__dirname, '../scripts/diagnose_errors.py');
@@ -258,7 +258,7 @@ async function processFileExtractTables(
     }
 
     const fullCommand = `${pythonCmd} ${args.join(' ')}`;
-    console.log('Running Python table extraction:', fullCommand);
+    // console.log('Running Python table extraction:', fullCommand);
     
     // Execute with timeout and proper error handling
     const { stdout, stderr } = await execAsync(fullCommand, {
@@ -453,13 +453,13 @@ async function convertPDFToImages(pdfPath, pageRange) {
           break;
         }
       } catch (methodError) {
-        console.log(`Method failed: ${method.split(' ')[0]}`);
+        // console.log(`Method failed: ${method.split(' ')[0]}`);
         continue;
       }
     }
     
     if (totalPages === 1) {
-      console.log('Could not determine page count, defaulting to 1 page');
+      // console.log('Could not determine page count, defaulting to 1 page');
     }
   } catch (error) {
     console.log('Could not determine page count, defaulting to 1 page');
@@ -642,7 +642,7 @@ async function reconstructTableFromPartialData(lines, preserveFormatting, extrac
   const tables = [];
   
   try {
-    console.log('Attempting table reconstruction from partial data...');
+    // console.log('Attempting table reconstruction from partial data...');
     
     // Look for lines that could be table data based on structure
     const tableData = [];

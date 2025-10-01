@@ -18,7 +18,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { eSignApi } from '../../services/apiHelper';
 import DocumentViewer from '../../components/ESign/DocumentViewer';
 
-const EnvelopeDetails: React.FC = () => { 
+const EnvelopeDetails: React.FC = () => {  
   const { id } = useParams<{ id: string }>();
   const { recipientId } = useParams<{ recipientId: string }>();
   const [activeTab, setActiveTab] = useState('overview');

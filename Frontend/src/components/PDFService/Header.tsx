@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* View Toggle */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
-                onClick={() => onViewChange('editor')}
+                onClick={() => navigate('/pdf-tools/pdf-editor')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'editor'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'

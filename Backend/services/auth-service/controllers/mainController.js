@@ -18,5 +18,5 @@ const userDetails = async (req, res) => {
     }
 };
 
-// ✅ Correct export
+// Correct export
 module.exports = { userDetails };

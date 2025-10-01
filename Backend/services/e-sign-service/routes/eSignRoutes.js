@@ -1,6 +1,24 @@
 const express = require('express');
 const { Upload, insertRecipient,updateEnvelope,saveSignatureFields } = require('../controllers/eSignController');
-const { envelopesData,envelopesDetail, getEnvelopeStats,envelopExists,sendEnvelope,addSignature,getRecipientByEmail,envelopeArchive,envelopeDelete,envelopeReminder,duplicateEnvelope,activityLogs,removeRecFromEnvelope,removeDocFromEnvelope,getEnvSignFields,removeDocSignField,connectPowerForm  } = require('../controllers/mainController');
+const { 
+         envelopesData,
+         envelopesDetail, 
+         getEnvelopeStats,
+         envelopExists,
+         sendEnvelope,
+         addSignature,
+         getRecipientByEmail,
+         envelopeArchive,
+         envelopeDelete,
+         envelopeReminder,
+         duplicateEnvelope,
+         activityLogs,
+         removeRecFromEnvelope,
+         removeDocFromEnvelope,
+         getEnvSignFields,
+         removeDocSignField,
+         connectPowerForm,
+         getSigners  } = require('../controllers/mainController');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
@@ -38,5 +56,6 @@ router.post('/envelope/remove-document/:documentId/:envelopeId',removeDocFromEnv
 router.get('/envelope/get-signature-fields/:envelopeId',getEnvSignFields);
 router.post('/envelope/remove-signature-field/:fieldId', removeDocSignField);
 router.post('/envelope/connect/powerform', connectPowerForm);
+router.get('/envelope/signers/:envelopeId', getSigners);
 
 module.exports = router;

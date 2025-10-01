@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import SignPad from './SignPad';
 import { eSignApi } from '../../services/apiHelper';
+import { useParams } from 'react-router-dom';
 
 interface Props {
   document: any;
@@ -10,13 +11,15 @@ interface Props {
   currentUserId: string;
   envelopeID?:string;
   onClose?: () => void;
-  onSignatureSave?: (fieldId: string, signatureUrl: string) => void; //
+  onSignatureSave?: (fieldId: string, signatureUrl: string) => void;
 }
 
 Modal.setAppElement('#root');
 
 const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUserId, onClose,envelopeID,onSignatureSave}) => {
   const urlParams = new URLSearchParams(window.location.search);
+  const { cycleId } = useParams<{ cycleId: string }>();
+  console.log("Cycle ID:", cycleId);
   const selfValue = urlParams.get('self'); 
   const [activeField, setActiveField] = useState<any>(null);
   const [selfSigner, setSelfSigner] = useState<any>(null);
@@ -44,12 +47,13 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const handleFieldClick = (field: any) => {
+    console.log("Field clicked:", field);
     setActiveField(field);
   };
   console.log(`Document: ${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`)
   const getSelfSigner = async () => {
     try {
-      const response = await eSignApi.get(`/api/e-sign/public/envelope/self-signer/${currentUserId}`);
+      const response = await eSignApi.get(`/api/e-sign/public/envelope/self-signer/${cycleId}`);
       if (response && response.data) {
         setSelfSigner(response.data);
         console.log("Self Signer Data:", response.data);
@@ -90,8 +94,16 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
                 } else {
                     isCurrentUser = field.recipientId === currentUserId; // normal condition
                 }
-              const isSigned = !!field.signature;
-              const signedImage = field.signature;
+              let isSigned = false;
+              let signedImage = null;
+               if (selfValue === "1" && isCurrentUser) { 
+                 isSigned = selfSigner?.signature;
+                 signedImage = selfSigner?.signature;
+               }else{
+              // If selfSigner check already signed using selfSigner data otherwise use field.signature
+                 isSigned = !!field.signature;
+                 signedImage = field.signature;
+            }
 
               if (isSignatureType) {
                 return (
@@ -136,13 +148,12 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
                         if (selfValue === "1" && selfSigner?.data) {
                             // Loop through selfSigner.data keys and find a match with field.fieldId
                             for (const key in selfSigner.data) {
-                                if (key === fieldId) {
+                                if (key === fieldId && field.slotId === selfSigner?.signerSlotId) {
                                     displayValue = selfSigner.data[key]; // use the matched value
                                     break;
                                 }
                             }
                         }
-
                         return (
                             <div
                                 key={fieldId}
@@ -166,7 +177,6 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
                             </div>
                         );
                      }
-
             })}
         </div>
       </div>

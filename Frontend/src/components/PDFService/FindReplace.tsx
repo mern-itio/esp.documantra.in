@@ -50,7 +50,7 @@ const FindReplace: React.FC = () => {
     replaceAll: false,
     selectedMatches: []
   });
-  const [showToolbar, setShowToolbar] = useState(false);
+  // const [showToolbar, setShowToolbar] = useState(false);
   // const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -220,9 +220,9 @@ const FindReplace: React.FC = () => {
     }
   };
 
-  const toggleToolbar = () => {
-    setShowToolbar(!showToolbar);
-  };
+  // const toggleToolbar = () => {
+  //   setShowToolbar(!showToolbar);
+  // };
 
   // const handleToolbarFind = (toolbarOptions: FindReplaceOptions) => {
   //   setOptions(toolbarOptions);
@@ -267,7 +267,7 @@ const FindReplace: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <Button
                 onClick={toggleToolbar}
                 variant="outline"
@@ -276,7 +276,7 @@ const FindReplace: React.FC = () => {
                 <Search className="w-4 h-4" />
                 <span>Quick Find</span>
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -387,7 +387,63 @@ const FindReplace: React.FC = () => {
             )}
           {/* Configuration Options */}
           {selectedFile && (
-            <div className="bg-white rounded-xl shadow-lg p-6">           
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              {/* Tab Navigation */}
+              <div className="flex border-b border-gray-200 mb-6">
+                <button
+                  onClick={() => setActiveTab('options')}
+                  className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'options'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Options</span>
+                </button>
+                
+                {preview && (
+                  <>
+                    <button
+                      onClick={() => setActiveTab('preview')}
+                      className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'preview'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Preview</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setActiveTab('matches')}
+                      className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'matches'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <FileSearch className="w-4 h-4" />
+                      <span>Select Matches</span>
+                    </button>
+                  </>
+                )}
+                
+                {result && (
+                  <button
+                    onClick={() => setActiveTab('results')}
+                    className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === 'results'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Results</span>
+                  </button>
+                )}
+              </div>
 
               {/* Options Tab */}
               {activeTab === 'options' && (
@@ -552,30 +608,51 @@ const FindReplace: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Selection Controls */}
+                  {/* Navigation and Selection Controls */}
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={() => setActiveTab('options')}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-2"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to Options</span>
+                      </Button>
+                      <Button
+                        onClick={() => setActiveTab('preview')}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>Preview</span>
+                      </Button>
+                    </div>
+                    
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-600">
                         {(options.selectedMatches || []).length} of {preview.matches.length} selected
                       </span>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={handleSelectAllMatches}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        Select All
-                      </Button>
-                      <Button
-                        onClick={handleDeselectAllMatches}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        Deselect All
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={handleSelectAllMatches}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          Select All
+                        </Button>
+                        <Button
+                          onClick={handleDeselectAllMatches}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          Deselect All
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -651,6 +728,63 @@ const FindReplace: React.FC = () => {
                     <p className="text-sm text-gray-600">Found {preview.totalMatches} matches</p>
                   </div>
 
+                  {/* Navigation and Action Buttons */}
+                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={() => setActiveTab('options')}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-2"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to Options</span>
+                      </Button>
+                      <Button
+                        onClick={() => setActiveTab('matches')}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-2"
+                      >
+                        <FileSearch className="w-4 h-4" />
+                        <span>Select Matches</span>
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {options.replaceText.trim() ? (
+                        <>
+                          <Button
+                            onClick={() => {
+                              setOptions(prev => ({ ...prev, replaceAll: true }));
+                              handleFindReplace();
+                            }}
+                            disabled={isProcessing}
+                            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                          >
+                            <Replace className="w-4 h-4" />
+                            <span>Replace All</span>
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setOptions(prev => ({ ...prev, replaceAll: false }));
+                              handleFindReplace();
+                            }}
+                            disabled={isProcessing}
+                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Replace className="w-4 h-4" />
+                            <span>Replace First</span>
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                          Enter replacement text to proceed
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Visual Legend */}
                   {options.replaceText.trim() && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
@@ -715,7 +849,15 @@ const FindReplace: React.FC = () => {
                     <div className="text-center py-8">
                       <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-800 mb-2">No Matches Found</h3>
-                      <p className="text-gray-600">Try adjusting your search criteria or check the spelling.</p>
+                      <p className="text-gray-600 mb-4">Try adjusting your search criteria or check the spelling.</p>
+                      <Button
+                        onClick={() => setActiveTab('options')}
+                        variant="outline"
+                        className="flex items-center space-x-2"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to Options</span>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -822,7 +964,28 @@ const FindReplace: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">Pages:</span>
-                <span className="text-sm text-gray-600">{result.totalPages}</span>
+                <span className="text-sm text-gray-600">
+                  {(() => {
+                    // Try to get page count from backend result
+                    if (result.totalPages && result.totalPages > 0) {
+                      return `${result.totalPages}`;
+                    }
+                    
+                    // Fallback: Calculate from matches if available
+                    if (result.findReplaceResults?.pages && result.findReplaceResults.pages.length > 0) {
+                      const maxPage = Math.max(...result.findReplaceResults.pages.map(p => p.page));
+                      return `${maxPage}`;
+                    }
+                    
+                    // Fallback: Calculate from matches array
+                    if (result.findReplaceResults?.matches && result.findReplaceResults.matches.length > 0) {
+                      const maxPage = Math.max(...result.findReplaceResults.matches.map(m => m.page));
+                      return `${maxPage}`;
+                    }
+                    
+                    return 'Unknown';
+                  })()}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">Search:</span>

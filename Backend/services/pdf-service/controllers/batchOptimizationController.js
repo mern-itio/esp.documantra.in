@@ -116,12 +116,12 @@ const batchOptimizationController = {
         optimizationProfile = 'balanced'
       } = req.body;
 
-      console.log('Batch optimization request received:', {
-        files: req.files.length,
-        preset,
-        optimizationProfile,
-        customSettings
-      });
+      // console.log('Batch optimization request received:', {
+      //   files: req.files.length,
+      //   preset,
+      //   optimizationProfile,
+      //   customSettings
+      // });
 
       // Get preset settings
       const presets = await batchOptimizationController.getOptimizationPresetsInternal();
@@ -137,7 +137,7 @@ const batchOptimizationController = {
         const file = req.files[i];
         
         try {
-          console.log(`Processing file ${i + 1}/${totalFiles}: ${file.originalname}`);
+          // console.log(`Processing file ${i + 1}/${totalFiles}: ${file.originalname}`);
           
           // Create output filename
           const outputFilename = `batch-optimized-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${file.originalname}`;

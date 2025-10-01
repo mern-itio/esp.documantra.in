@@ -49,7 +49,6 @@ import PDFToolsSpellCheckPage from '../pages/PDFTools/SpellCheckPage';
 import PDFToolsFindReplacePage from '../pages/PDFTools/FindReplacePage';
 import PDFToolsRedactContentPage from '../pages/PDFTools/RedactContentPage';
 import PDFToolsAddStampsPage from '../pages/PDFTools/AddStampsPage';
-import PDFToolsAddCommentsPage from '../pages/PDFTools/AddCommentsPage';
 import PDFToolsDBAddCommentsPage from '../pages/PDFTools/DBAddCommentsPage';
 import PDFToolsSharedDocumentPage from '../pages/PDFTools/SharedDocumentPage';
 import PDFToolsCompressPDFPage from '../pages/PDFTools/CompressPDFPage';
@@ -290,6 +289,7 @@ import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
 import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 import { PowerForm } from '../pages/eSign/PowerForm';
+import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -317,14 +317,8 @@ const PDFToolsLayout = () => {
       // console.log('Category set to: all');
     }
     
-    // Reset currentView to 'tools' when navigating to different pages
     setCurrentView('tools');
-  }, [location.search]); // Watch for location search changes
-
-  // Monitor selectedCategory changes
-  // useEffect(() => {
-  //   console.log('selectedCategory state changed to:', selectedCategory);
-  // }, [selectedCategory]);
+  }, [location.search]); 
 
   const getFilteredTools = () => {
     let allTools: any[] = [];
@@ -821,6 +815,12 @@ const authRoutes = [
   { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf /> },
   { path: '/pdf-tools/pdf-to-epub', element: <PdfToEpub /> },
   { path: '/pdf-tools/batch-conversion', element: <BatchConversion /> },
+  { path: '/pdf-tools/pdf-editor', element: <AdvancedPDFEditor /> },
+  { path: '/pdf-tools/add-text', element: <AdvancedPDFEditor /> },
+  { path: '/pdf-tools/add-images', element: <AdvancedPDFEditor /> },
+  { path: '/pdf-tools/add-shapes', element: <AdvancedPDFEditor /> },
+  { path: '/pdf-tools/highlight-text', element: <AdvancedPDFEditor /> },
+  { path: '/pdf-tools/draw-annotations', element: <AdvancedPDFEditor /> },
   { path: '/pdf-tools/merge-pdf', element: <PDFToolsMergePDFPage /> },
   { path: '/pdf-tools/split-pdf', element: <PDFToolsSplitPDFPage /> },
   { path: '/pdf-tools/extract-pdf', element: <PDFToolsExtractPDFPage /> },
@@ -842,7 +842,6 @@ const authRoutes = [
   { path: '/pdf-tools/find-replace', element: <PDFToolsFindReplacePage /> },
   { path: '/pdf-tools/redact-content', element: <PDFToolsRedactContentPage /> },
   { path: '/pdf-tools/add-stamps', element: <PDFToolsAddStampsPage /> },
-  { path: '/pdf-tools/add-comments-db', element: <PDFToolsAddCommentsPage /> },
   { path: '/pdf-tools/add-comments', element: <PDFToolsDBAddCommentsPage /> },
   { path: '/pdf-comments/shared/:linkToken', element: <PDFToolsSharedDocumentPage /> },
   { path: '/pdf-tools/compress-pdf', element: <PDFToolsCompressPDFPage /> },

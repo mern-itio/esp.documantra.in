@@ -8,6 +8,7 @@ class CommentController {
       const { documentId } = req.params;
       const { versionId } = req.query; // Add version filtering
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
 
       // Check if user has access to the document
       const document = await Document.findOne({
@@ -17,6 +18,8 @@ class CommentController {
             $or: [
               { ownerId: userId },
               { 'sharedWith.userId': userId },
+              { 'sharedWith.userId': userEmail }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail },  // Match email field
               { isPublic: true }
             ]
           },
@@ -62,6 +65,7 @@ class CommentController {
     try {
       const { documentId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
       const { content, position, mentions, attachments, versionId } = req.body;
 
       // Check if user has access to the document
@@ -72,6 +76,8 @@ class CommentController {
             $or: [
               { ownerId: userId },
               { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },
+              { 'sharedWith.userId': userEmail, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },  // Match email field
               { isPublic: true }
             ]
           },
@@ -87,7 +93,6 @@ class CommentController {
       }
 
       // Get user info from auth token
-      const userEmail = req.user.data.email;
       const userName = req.user.data.name || userEmail;
 
       // Get current version information if not provided
@@ -157,6 +162,7 @@ class CommentController {
     try {
       const { documentId, versionId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
 
       // Check if user has access to the document
       const document = await Document.findOne({
@@ -166,6 +172,8 @@ class CommentController {
             $or: [
               { ownerId: userId },
               { 'sharedWith.userId': userId },
+              { 'sharedWith.userId': userEmail }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail },  // Match email field
               { isPublic: true }
             ]
           },
@@ -320,6 +328,7 @@ class CommentController {
     try {
       const { commentId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
       const { resolved } = req.body;
 
       const comment = await Comment.findById(commentId);
@@ -338,6 +347,8 @@ class CommentController {
             $or: [
               { ownerId: userId },
               { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['edit', 'full'] } },
+              { 'sharedWith.userId': userEmail, 'sharedWith.permission': { $in: ['edit', 'full'] } }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail, 'sharedWith.permission': { $in: ['edit', 'full'] } },  // Match email field
               { isPublic: true }
             ]
           },
@@ -386,6 +397,7 @@ class CommentController {
     try {
       const { commentId } = req.params;
       const userId = req.user.data.id;
+      const userEmail = req.user.data.email;
       const { content, mentions } = req.body;
 
       const comment = await Comment.findById(commentId);
@@ -404,6 +416,8 @@ class CommentController {
             $or: [
               { ownerId: userId },
               { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },
+              { 'sharedWith.userId': userEmail, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } }, // Match email stored in userId field
+              { 'sharedWith.email': userEmail, 'sharedWith.permission': { $in: ['comment', 'edit', 'full'] } },  // Match email field
               { isPublic: true }
             ]
           },
@@ -419,7 +433,6 @@ class CommentController {
       }
 
       // Get user info from auth token
-      const userEmail = req.user.data.email;
       const userName = req.user.data.name || userEmail;
 
       const reply = {

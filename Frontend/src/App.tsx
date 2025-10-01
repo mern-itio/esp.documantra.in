@@ -8,8 +8,6 @@ import { AppProvider } from "./context/AppContext";
 import { APIProvider } from '../src/context/ApiContext';
 import { Toaster } from "react-hot-toast"; 
 
-
-
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 

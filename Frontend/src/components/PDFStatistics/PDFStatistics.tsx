@@ -50,6 +50,7 @@ const PDFStatistics: React.FC = () => {
     try {
       const result = await pdfStatisticsService.analyzePdf(selectedFile);
       setAnalysisResult(result);
+      setActiveTab('overview'); // Set to overview tab for single analysis
       toast.success('PDF analysis completed successfully');
     } catch (err: any) {
       setError(err.message);
@@ -69,6 +70,7 @@ const PDFStatistics: React.FC = () => {
     try {
       const result = await pdfStatisticsService.comparePdfs(selectedFiles);
       setComparisonResults({ results: result.comparisonResults, summary: result.comparisonSummary });
+      setActiveTab('comparison'); // Set to comparison tab for comparison mode
       toast.success('PDF comparison completed successfully');
     } catch (err: any) {
       setError(err.message);
@@ -84,6 +86,7 @@ const PDFStatistics: React.FC = () => {
     setSelectedFile(null);
     setSelectedFiles([]);
     setError(null);
+    setActiveTab('overview'); // Reset to default tab
     toast.success('Results cleared');
   };
 
@@ -182,7 +185,7 @@ const PDFStatistics: React.FC = () => {
             </div>
           ) : (
             /* Main Working Area */
-            <div className="flex flex-col h-[600px]">
+            <div className="flex flex-col h-full">
               {/* File Selection Header */}
               <div className="p-4 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
@@ -281,33 +284,40 @@ const PDFStatistics: React.FC = () => {
                 <div className="flex-1 flex flex-col">
                   {/* Tabs */}
                   <div className="flex border-b border-gray-200">
-                    <button
-                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 ${
-                        activeTab === 'overview'
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                      onClick={() => setActiveTab('overview')}
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      Overview
-                    </button>
-                    <button
-                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 ${
-                        activeTab === 'comparison'
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                      onClick={() => setActiveTab('comparison')}
-                    >
-                      <GitCompare className="w-4 h-4" />
-                      Comparison
-                    </button>
+                    {/* Show Overview tab only for single analysis */}
+                    {analysisType === 'single' && analysisResult && (
+                      <button
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 ${
+                          activeTab === 'overview'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                        onClick={() => setActiveTab('overview')}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Overview
+                      </button>
+                    )}
+                    {/* Show Comparison tab only for comparison mode */}
+                    {analysisType === 'compare' && comparisonResults && (
+                      <button
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 ${
+                          activeTab === 'comparison'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                        onClick={() => setActiveTab('comparison')}
+                      >
+                        <GitCompare className="w-4 h-4" />
+                        Comparison
+                      </button>
+                    )}
                   </div>
 
                   {/* Tab Content */}
                   <div className="flex-1 p-6 overflow-auto">
-                    {activeTab === 'overview' && analysisResult && (
+                    {/* Single Analysis Overview */}
+                    {activeTab === 'overview' && analysisType === 'single' && analysisResult && (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* Document Overview */}
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -411,7 +421,8 @@ const PDFStatistics: React.FC = () => {
                       </div>
                     )}
 
-                    {activeTab === 'comparison' && comparisonResults && (
+                    {/* Comparison Results */}
+                    {activeTab === 'comparison' && analysisType === 'compare' && comparisonResults && (
                       <div className="space-y-6">
                         {/* Comparison Summary */}
                         <div>

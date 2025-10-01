@@ -29,6 +29,8 @@ const EnvelopeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [sending, setSending] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
+  const [cycles , setCycles] = useState<any[]>([]);
+  const [openCycle, setOpenCycle] = useState<string | null>(null);
   const [duplicating, setDuplicating] = useState(false);
   const navigate = useNavigate();
   const {addAuditEntry } = useApp();
@@ -57,6 +59,19 @@ const EnvelopeDetails: React.FC = () => {
         console.error('Error fetching envelopes:', error);
       }
     };
+  useEffect(() => {
+    if(activeTab === 'signersCycle' && envelope?.isPowerForm == true){
+      // setSigners
+      const response = eSignApi.get(`/api/e-sign/envelope/signers/${id}`);
+      response.then((res) => {
+        if(res.status == 200){
+           setCycles(res.data.cycles || []);
+        }
+      }).catch((err) => {
+        console.log(err);
+      })
+    }
+  },[activeTab, envelope]);
 
   if (!envelope) {
     return (
@@ -86,7 +101,9 @@ const EnvelopeDetails: React.FC = () => {
     voided: 'bg-gray-100 text-gray-600',
     declined: 'bg-red-100 text-red-800',
     "in-progress": 'bg-yellow-100 text-yellow-800', // Added
-    "archived":'bg-red-100 text-red-800'//Added
+    "archived":'bg-red-100 text-red-800',//Added
+    "active":"bg-green-100 text-green-800",
+    "inactive":"bg-red-100 text-red-800"
   };
 
   const statusIcons = {
@@ -98,7 +115,9 @@ const EnvelopeDetails: React.FC = () => {
     voided: AlertCircle,
     declined: AlertCircle,
     "in-progress": Clock, // added
-    "archived": AlertCircle
+    "archived": AlertCircle,
+    "active":CheckCircle,
+    "inactive":AlertCircle
   };
 
   const completedRecipients = envelope.recipients.filter((r: any) => r.status === 'completed' || r.status === 'signed').length;
@@ -106,7 +125,11 @@ const EnvelopeDetails: React.FC = () => {
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: Eye },
-    { id: 'recipients', name: 'Recipients', icon: Users },
+    {
+      id: envelope.isPowerForm ? 'signersCycle' : 'recipients',
+      name: envelope.isPowerForm ? 'Signer Cycle' : 'Recipients',
+      icon: Users, // same icon for both
+    },
     { id: 'documents', name: 'Documents', icon: FileText },
     { id: 'activity', name: 'Activity', icon: Activity },
   ];
@@ -196,8 +219,13 @@ const handleDuplicate = async () =>{
   }
 }
 const handleEmbed = () =>{
-navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
+ navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
 }
+
+const handleAddSignature = (signerId: any) => {
+  const url = `/e-sign/signer/${envelope.id}/${signerId}?self=1`;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -214,6 +242,8 @@ navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
               </span>
             </div>
           </div>
+          {/* Progress Bar */}
+          {envelope?.isPowerForm !== true && (
           <div>
             <p className="text-sm font-medium text-gray-700 mb-1">Progress</p>
             <div className="flex items-center gap-2">
@@ -225,13 +255,19 @@ navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
               <span className="text-sm text-gray-600">{completedRecipients}/{envelope.recipients.length}</span>
             </div>
           </div>
+          )}
+          {/* Progress Bar Ends */}
           <div>
             <p className="text-sm font-medium text-gray-700 mb-1">Priority</p>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${
-              envelope.priority === 'high' || envelope.priority === 'urgent' 
-                ? 'bg-red-100 text-red-800' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${
+                envelope.priority === 'power-form'
+                  ? 'bg-magenta-800 text-white'       // Dark magenta for power-form
+                  : envelope.priority === 'high' || envelope.priority === 'urgent'
+                  ? 'bg-red-100 text-red-800'        // Red for high/urgent
+                  : 'bg-gray-100 text-gray-800'      // Gray for everything else
+              }`}
+            >
               {envelope.priority.charAt(0).toUpperCase() + envelope.priority.slice(1)}
             </span>
           </div>
@@ -239,7 +275,7 @@ navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
             <p className="text-sm font-medium text-gray-700 mb-1">Created</p>
             <p className="text-gray-900">{format(new Date(envelope.createdAt), 'MMM d, yyyy')}</p>
           </div>
-          {envelope.sentAt && (
+          {envelope.sentAt && envelope?.isPowerForm !== true && (
             <div>
               <p className="text-sm font-medium text-gray-700 mb-1">Sent</p>
               <p className="text-gray-900">{format(new Date(envelope.sentAt), 'MMM d, yyyy')}</p>
@@ -393,7 +429,78 @@ navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
       ))}
     </div>
   );
+const renderCycles = () => {
 
+  if (!cycles || cycles.length === 0) {
+    return <div className="text-gray-500">No cycles found.</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {cycles.map((cycle, cycleIndex) => {
+        const isOpen = openCycle === cycle._id;
+
+        return (
+          <div key={cycle._id} className="border border-gray-200 rounded-xl shadow-sm bg-gray-50">
+            {/* Cycle Header */}
+            <button
+              className="w-full flex justify-between items-center px-4 py-3 text-left focus:outline-none hover:bg-gray-100 rounded-t-xl"
+              onClick={() => setOpenCycle(isOpen ? null : cycle._id)}
+            >
+              <span className="font-semibold text-gray-800 text-md">
+                Cycle {cycleIndex + 1} ({cycle.signers.length} Signers)
+              </span>
+              <span className={`transform transition-transform duration-200 ${isOpen ? "rotate-180" : "rotate-0"}`}>
+                ▼
+              </span>
+            </button>
+
+            {/* Signers Content */}
+            {isOpen && (
+              <div className="space-y-4 p-4 border-t border-gray-200">
+                {cycle.signers.map((signer: any, index: number) => (
+                  <div
+                    key={signer.signerId}
+                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-lg font-semibold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            {signer.role === "creator" ? "Me" : signer.data?.Name || "N/A"}
+                          </h4>
+                          <p className="text-sm text-gray-600">{signer.role === "creator" ? "" : signer.data?.Email || "N/A"}</p>
+                          <p className="text-sm text-gray-600 capitalize">{signer.role || "signer"}</p>
+                          <p className="text-sm text-gray-600 capitalize">
+                            {signer.status}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {signer.status !== "completed" && signer.status !== "submitted" && signer.role == "creator" && (
+                          <button
+                            onClick={() => handleAddSignature(signer.signerId)}
+                            className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Send className="w-4 h-4" />
+                            Add Signature
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
   const renderDocuments = () => (
     <div className="space-y-4">
       {envelope.documents.map((document:any) => (
@@ -542,6 +649,7 @@ const renderActivity = () => (
         <div className="max-w-6xl mx-auto">
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'recipients' && renderRecipients()}
+          {activeTab === 'signersCycle' && renderCycles()}
           {activeTab === 'documents' && renderDocuments()}
           {activeTab === 'activity' && renderActivity()}
         </div>

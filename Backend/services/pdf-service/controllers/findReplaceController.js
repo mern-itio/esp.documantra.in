@@ -86,8 +86,23 @@ const findReplaceController = {
         const { stdout: textOutput } = await execAsync(`pdftotext -layout "${req.file.path}" -`);
         extractedText = textOutput;
 
+        // Initialize actualReplacements variable
+        let actualReplacements = [];
+
         if (extractedText.trim()) {
-          // Find matches in the text
+          // Get page count first to improve match accuracy
+          let tempPageCount = 0;
+          try {
+            const { stdout: tempPagesOutput } = await execAsync(`pdfinfo "${req.file.path}"`);
+            const tempInfoMatch = tempPagesOutput.match(/Pages:\s*(\d+)/i);
+            if (tempInfoMatch) {
+              tempPageCount = parseInt(tempInfoMatch[1]);
+            }
+          } catch (error) {
+            console.warn('Could not get page count for match calculation:', error.message);
+          }
+          
+          // Find matches in the text with accurate page calculation
           const matches = findReplaceController.findMatches(
             extractedText,
             searchText,
@@ -95,7 +110,8 @@ const findReplaceController = {
               useRegex: useRegex === 'true',
               caseSensitive: caseSensitive === 'true',
               wholeWord: wholeWord === 'true'
-            }
+            },
+            tempPageCount
           );
 
           findReplaceResults.totalMatches = matches.length;
@@ -141,7 +157,6 @@ const findReplaceController = {
             });
 
             // Track replacements made (only count actual replacements)
-            let actualReplacements;
             if (parsedSelectedMatches && Array.isArray(parsedSelectedMatches) && parsedSelectedMatches.length > 0) {
               // Use selected matches
               actualReplacements = parsedSelectedMatches
@@ -160,8 +175,9 @@ const findReplaceController = {
             }));
           }
 
-          // Analyze page distribution of matches
-          findReplaceResults.pages = findReplaceController.analyzePageDistribution(matches);
+          // Analyze page distribution - only count pages that were actually affected by replacements
+          const affectedPages = findReplaceController.analyzePageDistribution(actualReplacements);
+          findReplaceResults.pages = affectedPages;
         } else {
           findReplaceResults.totalMatches = 0;
           findReplaceResults.matches = [];
@@ -179,21 +195,99 @@ const findReplaceController = {
       const originalStats = await fs.stat(req.file.path);
       const originalFileSize = originalStats.size;
 
-      // Get page count using qpdf
+      // Get page count using simple and reliable methods
       let pageCount = 0;
+      let methodUsed = '';
+      
+      // Method 1: Try pdfinfo first (most reliable and simple)
       try {
-        const { stdout: pagesOutput } = await execAsync(`qpdf --show-pages "${outputPath}"`);
-        const pageMatch = pagesOutput.match(/(\d+)\s+page/);
-        if (pageMatch) {
-          pageCount = parseInt(pageMatch[1]);
+        console.log(`Attempting pdfinfo page count for: ${outputPath}`);
+        const { stdout: pdfInfoOutput } = await execAsync(`pdfinfo "${outputPath}"`);
+        console.log(`pdfinfo output: ${pdfInfoOutput}`);
+        
+        const infoMatch = pdfInfoOutput.match(/Pages:\s*(\d+)/i);
+        if (infoMatch) {
+          pageCount = parseInt(infoMatch[1]);
+          methodUsed = 'pdfinfo';
+          console.log(`pdfinfo found ${pageCount} pages`);
         }
-      } catch (error) {
-        console.warn('Could not determine page count:', error.message);
-        pageCount = 'Unknown';
+      } catch (pdfInfoError) {
+        console.warn('pdfinfo page count failed:', pdfInfoError.message);
       }
+      
+      // Method 2: Try qpdf if pdfinfo didn't work
+      if (pageCount <= 0) {
+        try {
+          console.log(`Attempting qpdf page count for: ${outputPath}`);
+          const { stdout: pagesOutput } = await execAsync(`qpdf --show-pages "${outputPath}"`);
+          console.log(`qpdf output: ${pagesOutput}`);
+          
+          // Simple regex - just look for any number in the output
+          const numberMatch = pagesOutput.match(/(\d+)/);
+          if (numberMatch) {
+            pageCount = parseInt(numberMatch[1]);
+            methodUsed = 'qpdf';
+            console.log(`qpdf found ${pageCount} pages`);
+          }
+        } catch (error) {
+          console.warn('qpdf page count failed:', error.message);
+        }
+      }
+      
+      // Method 3: Try pdftk if previous methods didn't work
+      if (pageCount <= 0) {
+        try {
+          console.log(`Attempting pdftk page count for: ${outputPath}`);
+          const { stdout: pdftkOutput } = await execAsync(`pdftk "${outputPath}" dump_data`);
+          console.log(`pdftk output: ${pdftkOutput}`);
+          
+          const pdftkMatch = pdftkOutput.match(/NumberOfPages:\s*(\d+)/i);
+          if (pdftkMatch) {
+            pageCount = parseInt(pdftkMatch[1]);
+            methodUsed = 'pdftk';
+            console.log(`pdftk found ${pageCount} pages`);
+          }
+        } catch (pdftkError) {
+          console.warn('pdftk page count failed:', pdftkError.message);
+        }
+      }
+      
+      // Method 4: Calculate from matches data (reliable fallback)
+      if (pageCount <= 0 && findReplaceResults.matches && findReplaceResults.matches.length > 0) {
+        const maxPage = Math.max(...findReplaceResults.matches.map(match => match.page));
+        if (maxPage > 0) {
+          pageCount = maxPage;
+          methodUsed = 'matches-data';
+          console.log(`Calculated page count from matches: ${pageCount}`);
+        }
+      }
+      
+      // Method 5: Fallback - estimate from file size
+      if (pageCount <= 0) {
+        const stats = await fs.stat(outputPath);
+        const estimatedPages = Math.max(1, Math.floor(stats.size / 50000)); // Rough estimate: 50KB per page
+        pageCount = estimatedPages;
+        methodUsed = 'file-size-estimate';
+        console.log(`Using estimated page count: ${pageCount} (based on file size: ${stats.size} bytes)`);
+      }
+      
+      // Final validation
+      if (typeof pageCount !== 'number' || isNaN(pageCount) || pageCount <= 0) {
+        pageCount = 1; // Default to 1 page if all methods fail
+        methodUsed = 'default';
+        console.warn('All page count methods failed, defaulting to 1 page');
+      }
+      
+      console.log(`Final page count: ${pageCount} (method: ${methodUsed})`);
 
       // Clean up uploaded file
       await fs.remove(req.file.path);
+
+      // Calculate statistics for frontend
+      const totalMatches = findReplaceResults.totalMatches || 0;
+      const totalReplacements = findReplaceResults.replacements ? findReplaceResults.replacements.length : 0;
+      const pagesAffected = findReplaceResults.pages ? findReplaceResults.pages.length : 0;
+      const searchLength = searchText.length;
 
       res.json({
         success: true,
@@ -201,10 +295,17 @@ const findReplaceController = {
         filename: outputFilename,
         downloadUrl: `/pdf-find-replace/download/${outputFilename}`,
         totalPages: pageCount,
+        pageCountMethod: methodUsed, // Debug info
         fileSize: fileSize,
         originalFileSize: originalFileSize,
         findReplaceResults: findReplaceResults,
-        extractedText: extractedText.substring(0, 1000) + (extractedText.length > 1000 ? '...' : '') // Preview of extracted text
+        extractedText: extractedText.substring(0, 1000) + (extractedText.length > 1000 ? '...' : ''), // Preview of extracted text
+        stats: {
+          totalMatches,
+          totalReplacements,
+          pagesAffected,
+          searchLength
+        }
       });
 
     } catch (error) {
@@ -218,7 +319,7 @@ const findReplaceController = {
   },
 
   // Find matches in text based on search criteria
-  findMatches(text, searchText, options) {
+  findMatches(text, searchText, options, totalPages = null) {
     const matches = [];
     const { useRegex, caseSensitive, wholeWord } = options;
 
@@ -248,8 +349,17 @@ const findReplaceController = {
     let position = 0;
 
     while ((match = searchPattern.exec(text)) !== null) {
-      // Calculate approximate page number (assuming ~500 characters per page)
-      const page = Math.floor(match.index / 500) + 1;
+      // Calculate page number more accurately
+      let page = 1;
+      if (totalPages && totalPages > 0) {
+        // Use actual page count if available
+        const charsPerPage = Math.ceil(text.length / totalPages);
+        page = Math.min(totalPages, Math.floor(match.index / charsPerPage) + 1);
+      } else {
+        // Fallback to character-based estimation (more accurate)
+        const charsPerPage = Math.max(1000, Math.floor(text.length / 6)); // Assume at least 6 pages or use text length
+        page = Math.floor(match.index / charsPerPage) + 1;
+      }
 
       // Get context around the match
       const contextStart = Math.max(0, match.index - 50);
@@ -543,7 +653,19 @@ if __name__ == "__main__":
       const { stdout: textOutput } = await execAsync(`pdftotext -layout "${req.file.path}" -`);
       const extractedText = textOutput;
 
-      // Find matches
+      // Get page count first to improve match accuracy
+      let tempPageCount = 0;
+      try {
+        const { stdout: tempPagesOutput } = await execAsync(`pdfinfo "${req.file.path}"`);
+        const tempInfoMatch = tempPagesOutput.match(/Pages:\s*(\d+)/i);
+        if (tempInfoMatch) {
+          tempPageCount = parseInt(tempInfoMatch[1]);
+        }
+      } catch (error) {
+        console.warn('Could not get page count for match calculation:', error.message);
+      }
+      
+      // Find matches with accurate page calculation
       const matches = findReplaceController.findMatches(
         extractedText,
         searchText,
@@ -551,7 +673,8 @@ if __name__ == "__main__":
           useRegex: useRegex === 'true',
           caseSensitive: caseSensitive === 'true',
           wholeWord: wholeWord === 'true'
-        }
+        },
+        tempPageCount
       );
 
       // Analyze page distribution

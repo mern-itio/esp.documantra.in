@@ -25,7 +25,7 @@ const EnvelopeSchema = new mongoose.Schema({
   subject: { type: String },
   message: { type: String },
   sender: { type: mongoose.Schema.Types.ObjectId, required: true },
-  priority: { type: String, enum: ["low", "normal", "high", "urgent"], default: "normal" },
+  priority: { type: String, enum: ["low", "normal", "high", "urgent","power-form"], default: "normal" },
   signingOrder: { type: String, enum: ["In-Order", "Parallel", "sequential"], default: "In-Order" },
   expirationDate: { type: Date },
   isReminder: { type: Boolean, default: false },
@@ -35,7 +35,7 @@ const EnvelopeSchema = new mongoose.Schema({
   documentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
   recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipient" }],
   signatureType: { type: String, enum: ["standard", "advanced", "qualified"], default: "standard" },
-  status: { type: String, enum: ["draft", "in-progress", "completed", "archived","Power-Form"], default: "draft" },
+  status: { type: String, enum: ["draft", "in-progress", "completed", "archived","active","inactive"], default: "draft" },
   // NEW FLAG
   isPowerForm: { type: Boolean, default: false },   // <--- mark if this is a PowerForm
   // NEW FIELDS for PowerForm slots

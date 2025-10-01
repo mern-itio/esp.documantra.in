@@ -280,7 +280,7 @@ async function processFileOCR(file, language, accuracy, outputFormat) {
   // Ensure output directory exists
   const outputDir = path.dirname(outputPath);
   await fs.ensureDir(outputDir);
-  console.log(`Output directory ensured: ${outputDir}`);
+  // console.log(`Output directory ensured: ${outputDir}`);
 
   // Convert to image if it's a PDF
   let imagePath = file.path;
@@ -297,13 +297,13 @@ async function processFileOCR(file, language, accuracy, outputFormat) {
 
   if (outputFormat === 'txt') {
     finalOutputPath = outputPath.replace(/\.[^/.]+$/, '.txt');
-    console.log(`Creating text file: ${finalOutputPath}`);
+    // console.log(`Creating text file: ${finalOutputPath}`);
     await fs.writeFile(finalOutputPath, ocrResult.text);
     downloadUrl = `/pdf-ocr/download/${path.basename(finalOutputPath)}`;
   } else if (outputFormat === 'pdf') {
-    console.log(`Creating searchable PDF from: ${imagePath}`);
+    // console.log(`Creating searchable PDF from: ${imagePath}`);
     finalOutputPath = await createSearchablePDF(imagePath, ocrResult.text, outputPath);
-    console.log(`Final output path: ${finalOutputPath}`);
+    // console.log(`Final output path: ${finalOutputPath}`);
     downloadUrl = `/pdf-ocr/download/${path.basename(finalOutputPath)}`;
   }
 
@@ -317,7 +317,7 @@ async function processFileOCR(file, language, accuracy, outputFormat) {
   try {
     const stats = await fs.stat(finalOutputPath);
     processedSize = stats.size;
-    console.log(`Final output file exists: ${finalOutputPath}, size: ${processedSize} bytes`);
+    // console.log(`Final output file exists: ${finalOutputPath}, size: ${processedSize} bytes`);
   } catch (error) {
     console.error(`Error getting file stats for ${finalOutputPath}:`, error);
     throw new Error(`Output file was not created successfully: ${finalOutputPath}`);

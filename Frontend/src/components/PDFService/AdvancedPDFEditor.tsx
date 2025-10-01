@@ -6,9 +6,15 @@ import {
   Redo,
   Eye,
   EyeOff,
+  ArrowLeft,
+  FileText,
+  Edit3,
+  Save,
+  Settings
 } from 'lucide-react';
 import { Button } from '../DocumentService/ui/button';
 import { Card } from '../DocumentService/ui/card';
+import { useNavigate } from 'react-router-dom';
 import { advancedPdfEditorService, type TextBlock, type PdfInfo } from '../../services/advancedPdfEditorService';
 import type { EditOperation } from '../../types/advancedPdfEditor';
 import { PDFViewer } from './PDFViewer';
@@ -17,7 +23,9 @@ import { PageNavigator } from './PageNavigator';
 import { ZoomControls } from './ZoomControls';
 import { EditHistory } from './EditHistory';
 import type { EditorState, EditorActions } from '../../types/advancedPdfEditor';
-
+interface AdvancedPDFEditorProps {
+  onBack?: () => void;
+}
 // Type declarations for PDF.js
 declare global {
   interface Window {
@@ -25,7 +33,26 @@ declare global {
   }
 }
 
-const AdvancedPDFEditor: React.FC = () => {
+const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
+  const navigate = useNavigate();
+  
+  // Detect navigation source and handle back navigation
+  const handleBackNavigation = () => {
+    // If onBack prop is provided, we're coming from sidebar
+    if (onBack) {
+      onBack();
+      return;
+    }
+    
+    // For header navigation, try to go back in history first
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // Fallback to navigate to PDF tools if no history
+      navigate('/pdf-tools');
+    }
+  };
+
   // State management
   const [editorState, setEditorState] = useState<EditorState>({
     currentPage: 1,
@@ -82,12 +109,12 @@ const AdvancedPDFEditor: React.FC = () => {
       if (edit.type === 'updateTextBlocks') {
         console.log('Updating text blocks:', edit.textBlocks.length, 'blocks');
         setEditorState(prev => ({ ...prev, textBlocks: edit.textBlocks }));
-        
+
         // Don't add drag operations to history or edits
         if (edit.isDragOperation) {
           return;
         }
-        
+
         // Only add to history for undo/redo functionality if it's a new text block
         if (edit.isNewTextBlock) {
           const newHistory = editHistory.slice(0, historyIndex + 1);
@@ -112,7 +139,7 @@ const AdvancedPDFEditor: React.FC = () => {
             }
             return existingEdit;
           });
-          
+
           return { ...prev, edits: updatedEdits };
         });
         return;
@@ -127,7 +154,7 @@ const AdvancedPDFEditor: React.FC = () => {
       // Handle addShape operations
       if (edit.type === 'addShape') {
         console.log('Adding shape:', edit.shapeType);
-        
+
         // Don't add pen drawings to shapes array - they're handled differently
         if (edit.shapeType !== 'pen') {
           const shapeId = `shape-${Date.now()}`;
@@ -139,13 +166,13 @@ const AdvancedPDFEditor: React.FC = () => {
             style: edit.style
           };
           setShapes(prev => [...prev, newShape]);
-          
+
           // Add shapeId to the edit operation
           const editWithShapeId = {
             ...edit,
             shapeId: shapeId
           };
-          
+
           setEditorState(prev => {
             const newEdits = [...prev.edits, editWithShapeId];
             // Add to history
@@ -174,14 +201,14 @@ const AdvancedPDFEditor: React.FC = () => {
       if (edit.type === 'updateShapes') {
         console.log('Updating shapes:', edit.shapes.length, 'shapes');
         setShapes(edit.shapes);
-        
+
         // Also update the corresponding addShape operations in edits array
         setEditorState(prev => {
           const updatedEdits = prev.edits.map(existingEdit => {
             if (existingEdit.type === 'addShape' && existingEdit.shapeId) {
               // Find the corresponding shape in the updated shapes array
               const updatedShape = edit.shapes.find((shape: any) => shape.id === existingEdit.shapeId);
-              
+
               if (updatedShape) {
                 console.log('Updating edit for shape:', existingEdit.shapeId, 'new position:', updatedShape.position);
                 return {
@@ -193,7 +220,7 @@ const AdvancedPDFEditor: React.FC = () => {
             }
             return existingEdit;
           });
-          
+
           return { ...prev, edits: updatedEdits };
         });
         return;
@@ -350,10 +377,10 @@ const AdvancedPDFEditor: React.FC = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
-      
+
       // Get the current state from history
       const currentEdit = editHistory[newIndex];
-      
+
       if (currentEdit.type === 'updateTextBlocks') {
         setEditorState(prev => ({
           ...prev,
@@ -372,10 +399,10 @@ const AdvancedPDFEditor: React.FC = () => {
     if (historyIndex < editHistory.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
-      
+
       // Get the current state from history
       const currentEdit = editHistory[newIndex];
-      
+
       if (currentEdit.type === 'updateTextBlocks') {
         setEditorState(prev => ({
           ...prev,
@@ -409,13 +436,13 @@ const AdvancedPDFEditor: React.FC = () => {
   const handleShapeColorChange = (color: string) => {
     if (selectedShapeElement) {
       // Update the shape's color in the shapes array
-      const updatedShapes = shapes.map(shape => 
-        shape.id === selectedShapeElement.id 
+      const updatedShapes = shapes.map(shape =>
+        shape.id === selectedShapeElement.id
           ? { ...shape, style: { ...shape.style, color } }
           : shape
       );
       setShapes(updatedShapes);
-      
+
       // Update the corresponding addShape operation in edits array
       setEditorState(prev => {
         const updatedEdits = prev.edits.map(edit => {
@@ -429,7 +456,7 @@ const AdvancedPDFEditor: React.FC = () => {
         });
         return { ...prev, edits: updatedEdits };
       });
-      
+
       // Update the selected shape element
       setSelectedShapeElement({
         ...selectedShapeElement,
@@ -453,7 +480,7 @@ const AdvancedPDFEditor: React.FC = () => {
       console.log('Sending edits to backend:', editorState.edits);
       console.log('Number of edits:', editorState.edits.length);
       console.log('Edit types:', editorState.edits.map(edit => edit.type));
-      
+
       const result = await advancedPdfEditorService.applyEdits(
         editorState.fileName,
         editorState.edits
@@ -499,7 +526,7 @@ const AdvancedPDFEditor: React.FC = () => {
     if (downloadUrl) {
       window.open(downloadUrl);
     }
-  };  
+  };
 
   
   /**
@@ -517,64 +544,105 @@ const AdvancedPDFEditor: React.FC = () => {
 
   if (!editorState.pdfInfo) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <Card className="p-8 w-full mx-4">
-          <div className="text-center">
-            <Upload className="w-10 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-2xl font-bold mb-2">PDF Editor</h2>
-            <p className="text-gray-600 mb-6">
-              Upload a PDF file to start editing with our advanced browser-based editor
-            </p>
-
-            {/* Instructions */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
-              <h3 className="font-semibold text-blue-900 mb-2">Features:</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Click and drag text blocks to move them</li>
-                <li>• Double-click text to edit inline</li>
-                <li>• Use resize handles to adjust text size</li>
-                <li>• Add new text, images, and shapes</li>
-                <li>• Highlight and annotate content</li>
-              </ul>
-            </div>
-
-            <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-600">
-                Drop your PDF here or click to browse
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Maximum file size: 5MB
-              </p>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-
-            {isLoading && (
-              <div className="mt-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-sm text-gray-600 mt-2">Processing PDF...</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header with Back Button */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-4">
+              <button
+                onClick={handleBackNavigation}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Advanced PDF Editor</h1>
+                <p className="text-sm text-gray-600">Professional PDF editing with advanced features</p>
               </div>
-            )}
-
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
+            </div>
           </div>
-        </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card className="p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Edit3 className="w-8 h-8 text-blue-600" />
+              </div>
+
+              <h6 className="text-xl font-bold text-gray-900 mb-4">Advanced PDF Editor</h6>
+              <p className="text-sm text-gray-600 mb-8 max-w-2xl mx-auto">
+                Upload a PDF file to start editing with our professional browser-based editor.
+                Edit text, add annotations, and modify your documents with precision.
+              </p>
+
+              {/* Feature Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <FileText className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-gray-900 mb-1">Text Editing</h3>
+                  <p className="text-sm text-gray-600">Edit and format text directly</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <Settings className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-gray-900 mb-1">Annotations</h3>
+                  <p className="text-sm text-gray-600">Add highlights and comments</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <Save className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-gray-900 mb-1">Save & Download</h3>
+                  <p className="text-sm text-gray-600">Export your edited PDF</p>
+                </div>
+              </div>
+
+              {/* Upload Area */}
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-gray-400 transition-all duration-200 cursor-pointer group"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gray-200 transition-colors">
+                  <Upload className="w-6 h-6 text-gray-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Drop your PDF here or click to browse
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Maximum file size: 5MB • PDF files only
+                </p>
+                <div className="inline-flex items-center px-4 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 group-hover:bg-gray-200 transition-colors">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Choose File
+                </div>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+
+              {isLoading && (
+                <div className="mt-8">
+                  <div className="inline-flex items-center px-6 py-3 bg-blue-50 rounded-lg">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
+                    <span className="text-blue-700 font-medium">Processing PDF...</span>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 font-medium">{error}</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -582,71 +650,100 @@ const AdvancedPDFEditor: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-lg font-semibold">
-              {editorState.pdfInfo.metadata.title || 'PDF Editor'}
-            </h1>
-            <span className="text-sm text-gray-500">
-              {editorState.currentPage} of {editorState.totalPages} pages
-            </span>
-            {saveSuccess && (
-              <span className="text-sm text-green-600 font-medium">
-                ✓ Edits saved successfully!
-              </span>
-            )}
-          </div>
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <button
+                onClick={handleBackNavigation}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
 
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleUndo}
-              disabled={historyIndex <= 0}
-            >
-              <Undo className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRedo}
-              disabled={historyIndex >= editHistory.length - 1}
-            >
-              <Redo className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowTextBlocks(!showTextBlocks)}
-            >
-              {showTextBlocks ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={editorState.edits.length === 0 || isSaving}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Save Edits
-                </>
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">
+                    {editorState.pdfInfo.metadata.title || 'PDF Editor'}
+                  </h1>
+                  <p className="text-sm text-gray-500">
+                    Page {editorState.currentPage} of {editorState.totalPages}
+                  </p>
+                </div>
+              </div>
+
+              {saveSuccess && (
+                <div className="flex items-center px-3 py-1 bg-green-50 text-green-700 rounded-lg text-sm font-medium">
+                  <Save className="w-4 h-4 mr-2" />
+                  Edits saved successfully!
+                </div>
               )}
-            </Button>
-            <Button
-              onClick={handleDownload}
-              disabled={!isDownloadReady || !downloadUrl}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {isDownloadReady ? 'Download PDF' : `Download Ready in ${countdown}s`}
-            </Button>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  className="hover:bg-gray-50"
+                >
+                  <Undo className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRedo}
+                  disabled={historyIndex >= editHistory.length - 1}
+                  className="hover:bg-gray-50"
+                >
+                  <Redo className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTextBlocks(!showTextBlocks)}
+                  className="hover:bg-gray-50"
+                >
+                  {showTextBlocks ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              </div>
+
+              <div className="h-6 w-px bg-gray-300"></div>
+
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={editorState.edits.length === 0 || isSaving}
+                  className="bg-gray-900 hover:bg-gray-800 text-white"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Edits
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleDownload}
+                  disabled={!isDownloadReady || !downloadUrl}
+                  variant="outline"
+                  className="border-gray-300 hover:bg-gray-50"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isDownloadReady ? 'Download PDF' : `Ready in ${countdown}s`}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -670,8 +767,10 @@ const AdvancedPDFEditor: React.FC = () => {
 
           
 
+
           {/* Edit History */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-gray-200 p-6 bg-gray-50 flex-1">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Edit History</h3>
             <EditHistory
               edits={editorState.edits}
               onClear={editorActions.clearEdits}
@@ -682,23 +781,28 @@ const AdvancedPDFEditor: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* PDF Viewer Controls */}
-          <div className="bg-white border-b border-gray-200 px-4 py-2">
+          <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <PageNavigator
-                currentPage={editorState.currentPage}
-                totalPages={editorState.totalPages}
-                onPageChange={editorActions.setCurrentPage}
-              />
+              <div className="flex items-center space-x-6">
+                <PageNavigator
+                  currentPage={editorState.currentPage}
+                  totalPages={editorState.totalPages}
+                  onPageChange={editorActions.setCurrentPage}
+                />
+              </div>
 
-              <ZoomControls
-                zoom={editorState.zoom}
-                onZoomChange={editorActions.setZoom}
-              />
+              <div className="flex items-center space-x-4">
+                <ZoomControls
+                  zoom={editorState.zoom}
+                  onZoomChange={editorActions.setZoom}
+                />
+              </div>
             </div>
           </div>
 
           {/* PDF Viewer */}
           <div className="flex-1 overflow-auto bg-gray-100">
+
             <PDFViewer
               ref={pdfViewerRef}
               fileName={editorState.fileName!}
@@ -717,6 +821,7 @@ const AdvancedPDFEditor: React.FC = () => {
               edits={editorState.edits}
               highlightColor={highlightColor} 
             />
+
           </div>
         </div>
       </div>
