@@ -278,7 +278,7 @@ const OptimizeFont: React.FC = () => {
               </p>
             )}
           </div>
-          <p className="text-sm text-gray-500 mt-2">Supports PDF files up to 100MB</p>
+          <p className="text-sm text-gray-500 mt-2">Supports PDF files up to 2MB</p>
         </div>
       </div>
 

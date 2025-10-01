@@ -131,7 +131,7 @@ const PDFSignatureVerifierPage = () => {
       toolIcon={CheckCircle}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf', 'html']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="15-30 seconds"
       features={[
         "Digital signature verification",

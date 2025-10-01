@@ -81,6 +81,7 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloadReady, setIsDownloadReady] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -281,7 +282,19 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
     const response = await advancedPdfEditorService.extractTextBlocks(editorState.fileName, pageNumber);
     if (response.success) {
       // Apply any pending text edits to the loaded blocks
-      let textBlocks = response.data.textBlocks;
+      let textBlocks: TextBlock[] = (response.data.textBlocks as any[]).map((block: any): TextBlock => ({
+        id: block.id,
+        text: block.text ?? '',
+        pageNumber: block.pageNumber,
+        x: block.x,
+        y: block.y,
+        width: block.width,
+        height: block.height,
+        fontSize: block.fontSize ?? 12,
+        fontFamily: block.fontFamily ?? 'Helvetica',
+        color: block.color ?? '#000000',
+        flags: block.flags ?? 0
+      }));
       
       // Apply replaceText edits for this page
       const pageEdits = editorState.edits.filter(
@@ -297,7 +310,7 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
         });
         
         if (edit) {
-          return { ...block, text: edit.newText };
+          return { ...block, text: edit.newText ?? '' };
         }
         return block;
       });
@@ -307,15 +320,15 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
         edit => edit.type === 'addText' && edit.pageNumber === pageNumber
       ).map(edit => ({
         id: edit.textBlockId || `new-text-${Date.now()}`,
-        text: edit.text,
+        text: edit.text || '',
         pageNumber: edit.pageNumber,
         x: edit.position.x,
         y: edit.position.y,
         width: edit.position.width,
         height: edit.position.height,
-        fontSize: edit.style.fontSize,
-        fontFamily: edit.style.fontFamily,
-        color: edit.style.color,
+        fontSize: edit.style?.fontSize ?? 12,
+        fontFamily: edit.style?.fontFamily ?? 'Helvetica',
+        color: edit.style?.color ?? '#000000',
         flags: 0
       }));
       
@@ -488,6 +501,7 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
 
       if (result.success) {
         setDownloadUrl(result.data.downloadUrl);
+        setDownloadFileName(result.data.fileName);
         setSaveSuccess(true);
 
         // Start countdown
@@ -522,9 +536,19 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
   };
 
   // Download function
-  const handleDownload = () => {
-    if (downloadUrl) {
-      window.open(downloadUrl);
+  const handleDownload = async () => {
+    try {
+      if (downloadFileName) {
+        const blob = await advancedPdfEditorService.downloadPdf(downloadFileName);
+        advancedPdfEditorService.createDownloadLink(blob, downloadFileName);
+        return;
+      }
+      if (downloadUrl) {
+        // Fallback: open URL if filename is unavailable
+        window.open(downloadUrl);
+      }
+    } catch (e) {
+      console.error('Download failed:', e);
     }
   };
 

@@ -126,7 +126,7 @@ const PDFWatermarkRemoverPage = () => {
       toolIcon={FileText}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="30-90 seconds"
       features={[
         "Text watermark removal",

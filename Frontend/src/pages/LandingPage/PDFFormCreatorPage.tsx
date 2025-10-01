@@ -140,7 +140,7 @@ const PDFFormCreatorPage = () => {
       toolIcon={FileText}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="30-60 seconds"
       features={[
         "Auto-detect form fields",

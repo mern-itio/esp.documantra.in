@@ -98,7 +98,7 @@ const ExtractTextPage = () => {
       toolIcon={Type}
       acceptedFormats={['.pdf']}
       outputFormats={['txt', 'docx', 'rtf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="20-45 seconds"
       features={[
         "Full text extraction",
@@ -175,7 +175,7 @@ const ExtractTextPage = () => {
         },
         {
           question: "What's the maximum file size I can process?",
-          answer: "Free users can process files up to 100MB. Premium users have higher limits and can process larger files without restrictions."
+          answer: "Free users can process files up to 2MB. Premium users have higher limits and can process larger files without restrictions."
         }
       ]}
       relatedTools={[

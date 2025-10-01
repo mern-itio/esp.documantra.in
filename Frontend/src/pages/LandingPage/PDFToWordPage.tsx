@@ -65,7 +65,7 @@ const PDFToWordPage = () => {
       toolIcon={FileText}
       acceptedFormats={['.pdf']}
       outputFormats={['docx', 'doc', 'rtf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="30-60 seconds"
       features={[
         "High-accuracy OCR for scanned PDFs",
@@ -106,7 +106,7 @@ const PDFToWordPage = () => {
         },
         {
           question: "What's the maximum file size I can convert?",
-          answer: "Free users can convert files up to 100MB. Premium users have no file size limits."
+          answer: "Free users can convert files up to 2MB. Premium users have no file size limits."
         },
         {
           question: "Do you support batch conversion?",

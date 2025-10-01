@@ -78,7 +78,7 @@ const FlattenPDFPage = () => {
       toolIcon={Layers}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="20-40 seconds"
       features={[
         "Flatten form fields to static text",
@@ -155,7 +155,7 @@ const FlattenPDFPage = () => {
         },
         {
           question: "What's the maximum file size I can convert?",
-          answer: "Free users can convert files up to 100MB. Premium users have higher limits and can process larger files without restrictions."
+          answer: "Free users can convert files up to 2MB. Premium users have higher limits and can process larger files without restrictions."
         }
       ]}
       relatedTools={[

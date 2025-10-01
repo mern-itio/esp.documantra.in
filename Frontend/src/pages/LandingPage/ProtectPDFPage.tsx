@@ -79,7 +79,7 @@ const ProtectPDFPage = () => {
       toolIcon={Lock}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="10-20 seconds"
       features={[
         "Password protection for opening",

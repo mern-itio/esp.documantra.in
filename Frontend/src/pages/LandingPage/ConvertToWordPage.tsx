@@ -100,7 +100,7 @@ const ConvertToWordPage = () => {
       toolIcon={FileText}
       acceptedFormats={['.pdf']}
       outputFormats={['docx', 'doc', 'rtf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="30-60 seconds"
       features={[
         "High-accuracy conversion",

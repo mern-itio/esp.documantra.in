@@ -104,7 +104,7 @@ const RotatePagesPDFPage = () => {
       toolIcon={RotateCw}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="10-20 seconds"
       features={[
         "Rotate pages 90°, 180°, or custom angles",

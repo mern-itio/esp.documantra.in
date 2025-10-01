@@ -11,6 +11,12 @@ const PptxGenJS = require('pptxgenjs');
 const fsSync = require('fs');
 // Remove the problematic pdf2html import
 // const pdf2html = require('pdf2html');
+// Utilities for page image rendering and splitting
+const { convertSinglePageToImage } = require('./pdfToImage');
+const { splitByPages } = require('./pdfSplitService');
+// High-fidelity page rendering
+const pdfjsLib = require('pdfjs-dist');
+const { createCanvas } = require('canvas');
 /**
  * Convert DOC/DOCX to PDF using simple text extraction method
  * @param {string} inputPath - Path to input DOC/DOCX file
@@ -121,9 +127,35 @@ async function convertDocToPdfSimple(inputPath, outputPath) {
  */
 async function convertPdfToDoc(inputPath, outputPath) {
   try {
-    // console.log('Starting PDF to DOCX conversion using npm packages...');
+    // Prefer exact layout via Python (PyMuPDF + python-docx) if available
+    try {
+      const { execFile } = require('child_process');
+      const util = require('util');
+      const execFileAsync = util.promisify(execFile);
+      const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_docx_images.py');
+      const pythonBin = process.env.PYTHON_BIN || 'python';
 
-    // Read PDF as buffer
+      // Ensure script exists (docker builds copy scripts)
+      try { await fs.access(scriptPath); } catch {}
+
+      const { stdout } = await execFileAsync(pythonBin, [scriptPath, inputPath, outputPath, '200'], { timeout: 5 * 60 * 1000 });
+      try {
+        const parsed = JSON.parse(stdout || '{}');
+        if (parsed && parsed.success) {
+          const stats = await fs.stat(outputPath);
+          return {
+            success: true,
+            fileSize: stats.size,
+            message: 'PDF converted to DOCX with preserved layout via PyMuPDF',
+            outputFile: path.basename(outputPath)
+          };
+        }
+      } catch {}
+    } catch (pyErr) {
+      // Continue with Node-based methods below
+    }
+
+    // Node fallback: text extraction only
     const pdfBuffer = await fs.readFile(inputPath);
     const pdfData = await pdfParse(pdfBuffer);
     const textContent = pdfData.text;
@@ -150,7 +182,7 @@ async function convertPdfToDoc(inputPath, outputPath) {
 
     const stats = await fs.stat(outputPath);
 
-    // console.log('PDF to DOCX conversion completed successfully.');
+    // console.log('PDF to DOCX conversion (text fallback) completed successfully.');
 
     return {
       success: true,
@@ -1110,12 +1142,78 @@ async function convertPdfToHtml(inputPath, outputPath) {
     const textContent = pdfData.text;
     const pageCount = pdfData.numpages;
 
-    // Split text into paragraphs
-    const paragraphs = textContent
+    // Prepare outputs directory paths
+    const outputsDir = path.join(__dirname, '..', 'outputs');
+    await fs.ensureDir(outputsDir);
+
+    // Create an images subfolder alongside the HTML output
+    const outputBaseName = path.basename(outputPath, path.extname(outputPath));
+    const imagesFolderName = `${outputBaseName}_images`;
+    const imagesDir = path.join(outputsDir, imagesFolderName);
+    await fs.ensureDir(imagesDir);
+
+    // Render pages to images using pdfjs-dist for exact visual fidelity
+    let imageFiles = [];
+    try {
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+      const pdf = await loadingTask.promise;
+      const numPages = pdf.numPages || pageCount || 0;
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = createCanvas(viewport.width, viewport.height);
+        const context = canvas.getContext('2d');
+        await page.render({ canvasContext: context, viewport }).promise;
+        const buffer = canvas.toBuffer('image/png');
+        const imageFileName = `page_${i}.png`;
+        const imageOutPath = path.join(imagesDir, imageFileName);
+        await fs.writeFile(imageOutPath, buffer);
+        imageFiles.push(imageFileName);
+      }
+    } catch (renderErr) {
+      // Fallback: split + external renderer chain
+      try {
+        const splitPaths = await splitByPages(inputPath, 1);
+        for (let i = 0; i < splitPaths.length; i++) {
+          const singlePagePdfPath = splitPaths[i];
+          const imageFileName = `page_${i + 1}.png`;
+          const imageOutPath = path.join(imagesDir, imageFileName);
+          const ok = await convertSinglePageToImage(singlePagePdfPath, i, imageOutPath);
+          if (ok) {
+            imageFiles.push(imageFileName);
+          }
+          try { await fs.remove(singlePagePdfPath); } catch {}
+        }
+      } catch {}
+    }
+
+    // Split text into paragraphs for inclusion below images
+    const paragraphs = (textContent || '')
       .split(/\r?\n/)
       .filter(line => line.trim().length > 0);
 
-    // Generate HTML content
+    // Build HTML that embeds page images (if any) and extracted text
+    // Prefer embedding images inline (base64) to ensure they display regardless of hosting path
+    let imagesHtml = '';
+    if (imageFiles && imageFiles.length > 0) {
+      const tags = [];
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        try {
+          const imgBuf = await fs.readFile(path.join(imagesDir, file));
+          const dataUri = `data:image/png;base64,${imgBuf.toString('base64')}`;
+          tags.push(`<div class="pdf-page"><img alt="Page ${i + 1}" src="${dataUri}" /></div>`);
+        } catch {
+          const fallbackSrc = `${imagesFolderName}/${file}`;
+          tags.push(`<div class="pdf-page"><img alt="Page ${i + 1}" src="${fallbackSrc}" /></div>`);
+        }
+      }
+      imagesHtml = tags.join('\n');
+    }
+
+    // If we have images, prefer showing only images to preserve layout
+    const textHtml = imageFiles.length > 0 ? '' : paragraphs.map(para => `<div class="paragraph">${para}</div>`).join('\n');
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1127,41 +1225,34 @@ async function convertPdfToHtml(inputPath, outputPath) {
             font-family: Arial, sans-serif;
             line-height: 1.6;
             margin: 40px;
-            max-width: 800px;
+            max-width: 900px;
             margin-left: auto;
             margin-right: auto;
         }
-        .page-break {
-            page-break-before: always;
-        }
-        .paragraph {
-            margin-bottom: 1em;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 2em;
-            color: #333;
-        }
+        .pdf-page { margin: 0 0 24px 0; }
+        .pdf-page img { max-width: 100%; height: auto; display: block; border: 1px solid #e0e0e0; }
+        .paragraph { margin-bottom: 1em; }
+        .header { text-align: center; margin-bottom: 2em; color: #333; }
     </style>
 </head>
 <body>
-    <div class="header">
-    </div>
-    ${paragraphs.map(para => `<div class="paragraph">${para}</div>`).join('\n')}
+    <div class="header"></div>
+    ${imagesHtml}
+    ${textHtml}
 </body>
 </html>`;
 
     await fs.writeFile(outputPath, htmlContent, 'utf8');
     const stats = await fs.stat(outputPath);
 
-    // console.log('PDF to HTML conversion completed.');
-
     return {
       success: true,
       fileSize: stats.size,
-      message: 'PDF text extracted and converted to HTML using pdf-parse',
+      message: imageFiles.length > 0
+        ? 'PDF converted to HTML with page images and extracted text'
+        : 'PDF text extracted and converted to HTML',
       extractedPages: pageCount,
-      extractedCharacters: textContent.length,
+      extractedCharacters: (textContent || '').length,
       outputFile: path.basename(outputPath)
     };
   } catch (error) {

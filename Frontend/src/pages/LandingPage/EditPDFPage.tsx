@@ -83,7 +83,7 @@ const EditPDFPage = () => {
       toolIcon={Edit}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="Instant editing"
       features={[
         "Real-time PDF editing in browser",

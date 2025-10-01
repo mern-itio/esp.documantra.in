@@ -79,7 +79,7 @@ const PDFToJPGPage = () => {
       toolIcon={Image}
       acceptedFormats={['.pdf']}
       outputFormats={['jpg', 'png', 'webp']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="20-40 seconds"
       features={[
         "High-quality image conversion",

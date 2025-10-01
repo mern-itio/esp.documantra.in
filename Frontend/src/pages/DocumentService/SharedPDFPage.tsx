@@ -130,7 +130,7 @@ const SharedPDFPage: React.FC = () => {
 
       // Search query filter
       const matchesSearch = !searchQuery || 
-        doc.document.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (doc.document?.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         doc.recipients.some((recipient: any) => 
           recipient.email.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -152,8 +152,8 @@ const SharedPDFPage: React.FC = () => {
 
       switch (sortBy) {
         case 'name':
-          aValue = a.document.name.toLowerCase();
-          bValue = b.document.name.toLowerCase();
+          aValue = a.document?.name?.toLowerCase() || '';
+          bValue = b.document?.name?.toLowerCase() || '';
           break;
         case 'date':
           aValue = new Date(a.createdAt);
@@ -161,13 +161,13 @@ const SharedPDFPage: React.FC = () => {
           break;
         case 'size':
           // Use document size if available, otherwise use 0
-          aValue = a.document.size || 0;
-          bValue = b.document.size || 0;
+          aValue = a.document?.size || 0;
+          bValue = b.document?.size || 0;
           break;
         case 'type':
           // Shared documents are all PDFs, so sort by name as fallback
-          aValue = a.document.name.toLowerCase();
-          bValue = b.document.name.toLowerCase();
+          aValue = a.document?.name?.toLowerCase() || '';
+          bValue = b.document?.name?.toLowerCase() || '';
           break;
         default:
           return 0;
@@ -474,7 +474,7 @@ const SharedPDFPage: React.FC = () => {
                   <FileText size={20} className="text-blue-600 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <h3 className="font-medium text-gray-900 truncate">
-                      {doc.document.name}
+                      {doc.document?.name || 'Untitled document'}
                     </h3>
                     <p className="text-sm text-gray-500">
                       {formatDate(doc.createdAt)}
@@ -576,7 +576,7 @@ const SharedPDFPage: React.FC = () => {
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
                   <h2 className="text-lg font-semibold text-gray-900 truncate">
-                    {selectedDocument.document.name}
+                    {selectedDocument.document?.name || 'Document'}
                   </h2>
                   <span className="text-sm text-gray-500">
                     Page {currentPage} of {totalPages}

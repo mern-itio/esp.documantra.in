@@ -97,7 +97,7 @@ const WatermarkPDFPage = () => {
       toolIcon={Droplets}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf']}
-      maxFileSize="100MB"
+      maxFileSize="2MB"
       processingTime="15-30 seconds"
       features={[
         "Text and image watermarks",
@@ -174,7 +174,7 @@ const WatermarkPDFPage = () => {
         },
         {
           question: "What's the maximum file size I can convert?",
-          answer: "Free users can convert files up to 100MB. Premium users have higher limits and can process larger files without restrictions."
+          answer: "Free users can convert files up to 2MB. Premium users have higher limits and can process larger files without restrictions."
         }
       ]}
       relatedTools={[

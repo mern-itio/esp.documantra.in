@@ -168,6 +168,10 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                     e.stopPropagation();
                     toggleArchive(document.id);
                     setShowActions(false);
+                    // Clear any selection so header bulk actions disappear
+                    try {
+                      useDocumentStore.getState().setSelectedDocuments([]);
+                    } catch {}
                   }}
                     style={{cursor: 'pointer'}}
                 >
@@ -191,6 +195,10 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                       e.stopPropagation();
                       moveToTrash(document.id);
                       setShowActions(false);
+                      // Clear any selection so header bulk actions disappear
+                      try {
+                        useDocumentStore.getState().setSelectedDocuments([]);
+                      } catch {}
                     }}
                       style={{cursor: 'pointer'}}
                   >

@@ -452,10 +452,20 @@ class DocumentController {
       const { id } = req.params;
       const userId = req.user.data.id;
 
-      // Find document and check ownership
+      // Find document and check authorization
+      // Allow deletion if:
+      // - user is the owner, OR
+      // - user is the uploader, OR
+      // - document is shared with the user with admin/full permissions (by id or email)
       const document = await Document.findOne({
         _id: id,
-        ownerId: userId
+        $or: [
+          { ownerId: userId },
+          { uploadedBy: userId },
+          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['admin', 'full'] } },
+          { 'sharedWith.userId': req.user.data.email, 'sharedWith.permission': { $in: ['admin', 'full'] } },
+          { 'sharedWith.email': req.user.data.email, 'sharedWith.permission': { $in: ['admin', 'full'] } }
+        ]
       });
 
       if (!document) {
@@ -670,11 +680,17 @@ class DocumentController {
         });
       }
 
-      // Get documents that user owns
+      // Get documents the user is authorized to delete (owner, uploader, or admin/full shared)
       const documents = await Document.find({
         _id: { $in: documentIds },
-        ownerId: userId,
-        isDeleted: { $ne: true } // Exclude deleted documents
+        isDeleted: { $ne: true },
+        $or: [
+          { ownerId: userId },
+          { uploadedBy: userId },
+          { 'sharedWith.userId': userId, 'sharedWith.permission': { $in: ['admin', 'full'] } },
+          { 'sharedWith.userId': req.user.data.email, 'sharedWith.permission': { $in: ['admin', 'full'] } },
+          { 'sharedWith.email': req.user.data.email, 'sharedWith.permission': { $in: ['admin', 'full'] } }
+        ]
       });
 
       if (documents.length === 0) {

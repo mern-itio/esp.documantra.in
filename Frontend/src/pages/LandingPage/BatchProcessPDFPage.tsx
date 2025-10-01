@@ -118,7 +118,7 @@ const BatchProcessPDFPage = () => {
       toolIcon={FolderInput}
       acceptedFormats={['.pdf']}
       outputFormats={['pdf', 'docx', 'jpg', 'txt', 'html']}
-      maxFileSize="100MB per file"
+      maxFileSize="2MB per file"
       processingTime="Varies by operation and file count"
       features={[
         "Multiple file processing",
@@ -191,7 +191,7 @@ const BatchProcessPDFPage = () => {
         },
         {
           question: "What's the maximum file size I can process?",
-          answer: "Free users can process files up to 100MB each. Premium users have higher limits and can process larger files without restrictions."
+          answer: "Free users can process files up to 2MB each. Premium users have higher limits and can process larger files without restrictions."
         },
         {
           question: "Can I automate batch processing?",
