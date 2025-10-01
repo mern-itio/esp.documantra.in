@@ -22,7 +22,7 @@ router.post('/add-signature', addSignature);
 router.get('/envelope/activity-log/:envelopeId', activityLogs);
 router.get('/envelope/power/:powerFormId/:envelopeId',getEnvelopePower);
 router.post('/envelope/signer-initiate',signerInitiate);
-router.get('/envelope/self-signer/:id',getSelfSigner);
+router.get('/envelope/self-signer/:cycleId',getSelfSigner);
 
 
 module.exports = router;

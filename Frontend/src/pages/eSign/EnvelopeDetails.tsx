@@ -222,8 +222,8 @@ const handleEmbed = () =>{
  navigate(`/e-sign/power-form-embed/${envelope?.powerFormId}/${envelope.id}`)
 }
 
-const handleAddSignature = (signerId: any) => {
-  const url = `/e-sign/signer/${envelope.id}/${signerId}?self=1`;
+const handleAddSignature = (signerId: any, cycleId: any) => {
+  const url = `/e-sign/signer/${envelope.id}/${signerId}/${cycleId}?self=1`;
   window.open(url, "_blank", "noopener,noreferrer");
 };
 
@@ -470,9 +470,9 @@ const renderCycles = () => {
                         </div>
                         <div className="flex-1 space-y-1">
                           <h4 className="text-lg font-semibold text-gray-900">
-                            {signer.role === "creator" ? "Me" : signer.data?.Name || "N/A"}
+                            {signer.data?.Name || "N/A"}
                           </h4>
-                          <p className="text-sm text-gray-600">{signer.role === "creator" ? "" : signer.data?.Email || "N/A"}</p>
+                          <p className="text-sm text-gray-600">{signer.data?.Email || "N/A"}</p>
                           <p className="text-sm text-gray-600 capitalize">{signer.role || "signer"}</p>
                           <p className="text-sm text-gray-600 capitalize">
                             {signer.status}
@@ -482,7 +482,7 @@ const renderCycles = () => {
                       <div className="flex items-center gap-2">
                         {signer.status !== "completed" && signer.status !== "submitted" && signer.role == "creator" && (
                           <button
-                            onClick={() => handleAddSignature(signer.signerId)}
+                            onClick={() => handleAddSignature(signer.signerId,signer.cycleId)}
                             className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           >
                             <Send className="w-4 h-4" />

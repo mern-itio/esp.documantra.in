@@ -718,27 +718,42 @@ const getEnvelopePower = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 }
-const signerInitiate = async (req, res) =>{
-  try{
+const signerInitiate = async (req, res) => {
+  try {
     const { envelopeId, formId, data } = req.body;
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found." });
     }
+
     // create cycleId server-side
     const cycleId = new mongoose.Types.ObjectId();
     const allSlots = envelope.slots || [];
     const creatorSlot = allSlots.find(s => s.slotId === envelope.creatorSlotId);
     const firstSlot = allSlots.find(s => s.slotId === envelope.firstSigningSlotId);
+
     let slotRecords = [];
-    allSlots.forEach(slot => {
+
+    for (const slot of allSlots) {
       let role = "other";
-      if (slot.slotId === creatorSlot.slotId) {
-        role = "creator";
+      if (slot.slotId === creatorSlot.slotId) role = "creator";
+      if (slot.slotId === firstSlot.slotId) role = "firstSigner";
+
+      let slotData = {};
+
+      // Attach data based on role
+      if (role === "firstSigner") {
+        slotData = data || {};
+      } else if (role === "creator") {
+        // Fetch creator details from your auth service
+        const creatorDetail = await axios.get(`${process.env.AUTH_URL}/api/user-details/${envelope.sender}`);
+        console.log("Creator Details:", creatorDetail.data);
+        slotData = {
+          name: creatorDetail.data.data.fullname,
+          email: creatorDetail.data.data.email,
+        };
       }
-      if (slot.slotId === firstSlot.slotId) {
-        role = "firstSigner";
-      }
+
       slotRecords.push({
         envelopeId: envelope._id,
         cycleId: cycleId,
@@ -746,25 +761,34 @@ const signerInitiate = async (req, res) =>{
         signerSlotId: slot.slotId,
         role: role,
         status: role === "firstSigner" ? "initiated" : "pending",
-        signingOrder:slot.index,
-        data: role === "firstSigner" ? data : {}, // attach only for first signer
+        signingOrder: slot.index,
+        data: slotData,
       });
-  });
-      // Insert all slot records
-      const createdSigners = await selfSigner.insertMany(slotRecords);
-      // Find the one with role === "firstSigner"
-      const initiatedSigner = createdSigners.find(s => s.role === "firstSigner");
-    
-    return res.status(201).json({message:'Signer Initiated', cycleId:cycleId, signerInitiate: initiatedSigner });
-  }catch (err){
+    }
+
+    // Insert all slot records
+    const createdSigners = await selfSigner.insertMany(slotRecords);
+
+    // Find the one with role === "firstSigner"
+    const initiatedSigner = createdSigners.find(s => s.role === "firstSigner");
+
+    return res.status(201).json({
+      message: 'Signer Initiated',
+      cycleId: cycleId,
+      signerInitiate: initiatedSigner,
+    });
+
+  } catch (err) {
     console.log(err);
-    return res.status(500).json({message: "Server error", error: err.message});
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
-}
+};
+
+
 const getSelfSigner = async (req, res) => {
   try {
-    const { id } = req.params;  // get the id from URL params
-    const selfsigner = await selfSigner.findById(id);
+    const { cycleId } = req.params;  // get the id from URL params
+    const selfsigner = await selfSigner.find({cycleId:cycleId});
 
     if (!selfsigner) {
       return res.status(404).json({ message: "Self signer not found" });
@@ -789,7 +813,6 @@ const getSigners = async (req, res) => {
     if (!signers || signers.length === 0) {
       return res.status(404).json({ message: 'No signers found' });
     }
-    console.log("Fetched Signers:", signers);
 
     // 2. Map each signer to human-readable data
     const formattedSigners = await Promise.all(signers.map(async (signer) => {
@@ -801,11 +824,18 @@ const getSigners = async (req, res) => {
       const form = response.data;
 
       // Map signer.data keys to field labels
-      const mappedData = {};
-      for (const field of form.fields) {
-        const value = signer.data.get(field._id);
-        if (value !== undefined) {
-          mappedData[field.label.trim()] = value;
+      let mappedData = {};
+      if (signer.role === "creator") {
+        mappedData = {
+          Name: signer.data.get ? signer.data.get('name') : signer.data.name || "",
+          Email: signer.data.get ? signer.data.get('email') : signer.data.email || "",
+        };
+      } else {
+        for (const field of form.fields) {
+          const value = signer.data.get(field._id);
+          if (value !== undefined) {
+            mappedData[field.label.trim()] = value;
+          }
         }
       }
 

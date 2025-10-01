@@ -21,6 +21,7 @@ import DocumentViewer from '../../components/ESign/DocumentViewer';
 const EnvelopeDetails: React.FC = () => {  
   const { id } = useParams<{ id: string }>();
   const { recipientId } = useParams<{ recipientId: string }>();
+  const { cycleId } = useParams<{ cycleId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
   const [logs, setLogs] = useState<any[]>([]);
   useEffect(() => {
@@ -402,6 +403,7 @@ const renderActivity = () => (
                   envelopeID={id || ''}
                   onClose={() => setActiveDocument(null)} // close viewer
                   onSignatureSave={handleSignatureSave} 
+                  cycleId={cycleId || ''}
                 />
               ) : (
                 renderDocuments()

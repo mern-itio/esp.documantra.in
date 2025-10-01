@@ -40,7 +40,7 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
         if (response?.status === 201 && response.data?.signerInitiate) {
             const selfSignerId = response.data.signerInitiate._id || response.data.signerInitiate.id;
             // build the self-signer URL
-            const url = `/e-sign/signer/${envelopeId}/${selfSignerId}?self=1`;
+            const url = `/e-sign/signer/${envelopeId}/${selfSignerId}/${response?.data?.cycleId}?self=1`;
             // open in a new tab
             window.open(url, '_blank');
             return;
