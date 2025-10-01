@@ -45,7 +45,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+        
+        // If fullname is just the email prefix, try to decode it from JWT
+        if (parsedUser.fullname === parsedUser.email.split('@')[0]) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const jwtFullname = payload.data?.fullname || payload.fullname;
+            if (jwtFullname && jwtFullname !== parsedUser.email.split('@')[0]) {
+              // Update localStorage with correct fullname
+              const updatedUser = { ...parsedUser, fullname: jwtFullname };
+              localStorage.setItem('userData', JSON.stringify(updatedUser));
+              setUser(updatedUser);
+            } else {
+              setUser(parsedUser);
+            }
+          } catch (jwtError) {
+            console.warn('Could not decode JWT token on load:', jwtError);
+            setUser(parsedUser);
+          }
+        } else {
+          setUser(parsedUser);
+        }
+        
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -63,19 +84,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
       
+      // Decode JWT token to get fullname
+      let fullname = email.split('@')[0]; // fallback
+      
+      try {
+        const token = data.token;
+        if (token) {
+          // Decode JWT token (without verification for client-side)
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          fullname = payload.data?.fullname || payload.fullname || fullname;
+        }
+      } catch (jwtError) {
+        console.warn('Could not decode JWT token:', jwtError);
+        // Keep the fallback fullname
+      }
+
       // Store authentication data
       localStorage.setItem('accessToken', data.token);
       localStorage.setItem('userData', JSON.stringify({
         id: data.user_id,
         email: email,
-        fullname: email.split('@')[0], // We'll get this from the token later
+        fullname: fullname,
         type: data.type
       }));
       
       setUser({
         id: data.user_id,
         email: email,
-        fullname: email.split('@')[0],
+        fullname: fullname,
         type: data.type
       });
       setIsAuthenticated(true);

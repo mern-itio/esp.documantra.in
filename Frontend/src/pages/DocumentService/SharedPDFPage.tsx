@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, FileText, Eye, Download, Trash2, ExternalLink, MessageSquare, User, Share } from 'lucide-react';
+import { Share2, FileText, Eye, Download, Trash2, ExternalLink, MessageSquare, User, Share, Copy, Link } from 'lucide-react';
 import { pdfShareService } from '../../services/pdfShareService';
 import type { SharedDocument, Comment } from '../../services/pdfShareService';
 import { Button } from '../../components/DocumentService/ui/button';
@@ -12,11 +12,17 @@ const SharedPDFPage: React.FC = () => {
   const [sharedDocuments, setSharedDocuments] = useState<SharedDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery] = useState('');
   const [filterStatus] = useState<'all' | 'active' | 'expired' | 'revoked'>('all');
 
-  // Get sorting from document store
-  const { sortBy, sortOrder } = useDocumentStore();
+  // Get search and sorting from document store
+  const { 
+    searchQuery, 
+    sortBy, 
+    sortOrder, 
+    viewMode,
+    selectedDocuments,
+    setSelectedDocuments
+  } = useDocumentStore();
   const [selectedDocument, setSelectedDocument] = useState<SharedDocument | null>(null);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,6 +36,7 @@ const SharedPDFPage: React.FC = () => {
   const [commentEmail, setCommentEmail] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [documentToShare, setDocumentToShare] = useState<SharedDocument | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -40,7 +47,8 @@ const SharedPDFPage: React.FC = () => {
       try {
         const user = JSON.parse(userInfo);
         return {
-          name: user.name || user.email || 'Anonymous',
+          name: user.fullname || user.email || 'Anonymous',
+          fullname: user.fullname || user.email || 'Anonymous',
           email: user.email || 'anonymous@example.com'
         };
       } catch (e) {
@@ -49,6 +57,7 @@ const SharedPDFPage: React.FC = () => {
     }
     return {
       name: 'Anonymous',
+      fullname: 'Anonymous',
       email: 'anonymous@example.com'
     };
   };
@@ -111,16 +120,22 @@ const SharedPDFPage: React.FC = () => {
     loadSharedDocuments();
   }, []);
 
-  // Filter and sort documents using document store sorting
+  // Filter and sort documents using document store search and sorting
   const filteredDocuments = sharedDocuments
     .filter(doc => {
-      // Always exclude revoked documents
-      if (!doc.isActive) {
+      // Always exclude revoked documents unless specifically filtering for them
+      if (!doc.isActive && filterStatus !== 'revoked') {
         return false;
       }
 
-      const matchesSearch = doc.document.name.toLowerCase().includes(searchQuery.toLowerCase());
+      // Search query filter
+      const matchesSearch = !searchQuery || 
+        doc.document.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.recipients.some((recipient: any) => 
+          recipient.email.toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
+      // Status filter
       let matchesFilter = true;
       if (filterStatus === 'active') {
         matchesFilter = doc.isActive && (!doc.expiresAt || new Date(doc.expiresAt) > new Date());
@@ -206,6 +221,33 @@ const SharedPDFPage: React.FC = () => {
     setDocumentToShare(null);
   };
 
+  const handleCopyLink = async (shareToken: string) => {
+    try {
+      const shareLink = `${window.location.origin}/shared/${shareToken}`;
+      await navigator.clipboard.writeText(shareLink);
+      setCopiedLink(shareToken);
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedLink(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = `${window.location.origin}/shared/${shareToken}`;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      setCopiedLink(shareToken);
+      setTimeout(() => {
+        setCopiedLink(null);
+      }, 2000);
+    }
+  };
+
   const handleViewDocument = async (doc: SharedDocument) => {
     setSelectedDocument(doc);
     setShowPDFViewer(true);
@@ -247,7 +289,7 @@ const SharedPDFPage: React.FC = () => {
   const loadComments = async (shareToken: string) => {
     try {
       // Check if user is logged in and try authenticated API first
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
 
 
       if (token) {
@@ -280,7 +322,7 @@ const SharedPDFPage: React.FC = () => {
 
       if (isAdmin) {
         // Check if token exists
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) {
           console.error('No token found for admin comment');
           alert('Please log in again to add admin comments');
@@ -305,7 +347,7 @@ const SharedPDFPage: React.FC = () => {
         const response = await pdfShareService.addSharedDocumentComment(selectedDocument.shareToken, {
           content: newComment,
           position: { page: currentPage, x: 0, y: 0 },
-          authorName: userInfo.name,
+          authorName: userInfo.fullname,
           authorEmail: userInfo.email
         });
 
@@ -395,19 +437,38 @@ const SharedPDFPage: React.FC = () => {
   }
 
   return (
-    <div className="p-2">
-
-      {/* Documents Grid */}
+    <div>
       {filteredDocuments.length === 0 ? (
         <div className="text-center py-12">
           <Share2 size={48} className="mx-auto mb-4 text-gray-300" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No shared documents</h3>
-
+          {searchQuery && (
+            <p className="text-sm text-gray-500">
+              No documents found matching "{searchQuery}"
+            </p>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className="p-4 hover:shadow-lg transition-shadow">
+        <div className={`p-4 ${viewMode === 'grid' 
+          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+          : 'space-y-4'
+        }`}>
+          {filteredDocuments.map((doc) => {
+            const isSelected = selectedDocuments.includes(doc.id);
+            return (
+            <Card 
+              key={doc.id} 
+              className={`p-4 hover:shadow-lg transition-shadow cursor-pointer ${
+                isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+              }`}
+              onClick={() => {
+                if (isSelected) {
+                  setSelectedDocuments(selectedDocuments.filter(id => id !== doc.id));
+                } else {
+                  setSelectedDocuments([...selectedDocuments, doc.id]);
+                }
+              }}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2 flex-1 min-w-0">
                   <FileText size={20} className="text-blue-600 flex-shrink-0" />
@@ -468,6 +529,18 @@ const SharedPDFPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant="outline"
+                    onClick={() => handleCopyLink(doc.shareToken)}
+                    title={copiedLink === doc.shareToken ? "Link copied!" : "Copy share link"}
+                    className={copiedLink === doc.shareToken ? "bg-green-50 text-green-600 border-green-200" : ""}
+                  >
+                    {copiedLink === doc.shareToken ? <Copy size={14} className="text-green-600" /> : <Link size={14} />}
+                  </Button>
+                )}
+
+                {doc.isOwner && (
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => handleShareDocument(doc)}
                     title="Share this document"
                   >
@@ -487,7 +560,8 @@ const SharedPDFPage: React.FC = () => {
                 )}
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -604,7 +678,10 @@ const SharedPDFPage: React.FC = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-2">
                                 <span className={`font-medium text-sm ${comment.isAdminComment ? 'text-blue-900' : 'text-gray-900'}`}>
-                                  {comment.authorName}
+                                  {comment.authorName.includes('@') ? 
+                                    getUserInfo().fullname : 
+                                    comment.authorName
+                                  }
                                   {comment.isAdminComment && (
                                     <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
                                       Admin
@@ -662,13 +739,13 @@ const SharedPDFPage: React.FC = () => {
                           if (isAdmin) {
                             return (
                               <div className="text-sm text-blue-700 bg-blue-100 p-2 rounded border border-blue-200">
-                                <p>Commenting as <strong>Admin</strong>: <strong>{userInfo.name}</strong></p>
+                                <p>Commenting as <strong>Admin</strong>: <strong>{userInfo.fullname}</strong></p>
                               </div>
                             );
                           } else if (isLoggedIn) {
                             return (
                               <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                                <p>Commenting as: <strong>{userInfo.name}</strong></p>
+                                <p>Commenting as: <strong>{userInfo.fullname}</strong></p>
                               </div>
                             );
                           } else {

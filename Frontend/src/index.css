@@ -9,6 +9,109 @@
   box-shadow: none !important;
 }
 
+/* CKEditor Content Styles */
+.ck-editor-content .ck-editor__editable {
+  min-height: 200px;
+}
+
+.ck-editor-content .ck-editor__editable h1 {
+  font-size: 2em !important;
+  font-weight: bold !important;
+  margin: 0.67em 0 !important;
+}
+
+.ck-editor-content .ck-editor__editable h2 {
+  font-size: 1.5em !important;
+  font-weight: bold !important;
+  margin: 0.75em 0 !important;
+}
+
+.ck-editor-content .ck-editor__editable h3 {
+  font-size: 1.17em !important;
+  font-weight: bold !important;
+  margin: 0.83em 0 !important;
+}
+
+.ck-editor-content .ck-editor__editable h4 {
+  font-size: 1em !important;
+  font-weight: bold !important;
+  margin: 1.12em 0 !important;
+}
+
+.ck-editor-content .ck-editor__editable h5 {
+  font-size: 0.83em !important;
+  font-weight: bold !important;
+  margin: 1.5em 0 !important;
+}
+
+.ck-editor-content .ck-editor__editable h6 {
+  font-size: 0.75em !important;
+  font-weight: bold !important;
+  margin: 1.67em 0 !important;
+}
+
+/* List styles */
+.ck-editor-content .ck-editor__editable ul {
+  list-style-type: disc !important;
+  margin: 1em 0 !important;
+  padding-left: 2em !important;
+}
+
+.ck-editor-content .ck-editor__editable ol {
+  list-style-type: decimal !important;
+  margin: 1em 0 !important;
+  padding-left: 2em !important;
+}
+
+.ck-editor-content .ck-editor__editable li {
+  margin: 0.5em 0 !important;
+}
+
+/* Link styles */
+.ck-editor-content .ck-editor__editable a {
+  color: #0066cc !important;
+  text-decoration: underline !important;
+}
+
+.ck-editor-content .ck-editor__editable a:hover {
+  color: #004499 !important;
+}
+
+/* Underline styles */
+.ck-editor-content .ck-editor__editable u {
+  text-decoration: underline !important;
+}
+
+.ck-editor-content .ck-editor__editable .underline {
+  text-decoration: underline !important;
+}
+
+/* Indentation styles */
+.ck-editor-content .ck-editor__editable blockquote {
+  margin: 1em 0 !important;
+  padding-left: 1em !important;
+  border-left: 3px solid #ccc !important;
+  font-style: italic !important;
+}
+
+/* Dropdown positioning */
+.ck-editor-content .ck-dropdown__panel {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: auto !important;
+  transform: none !important;
+}
+
+.ck-editor-content .ck-dropdown__panel.ck-dropdown__panel_se {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.ck-editor-content .ck-toolbar__separator {
+  display: none !important;
+}
+
 .ck-editor__editable:focus {
   border: none !important;
   box-shadow: none !important;
@@ -23,13 +126,13 @@
 .ck.ck-toolbar {
   border-radius: 0.5rem 0.5rem 0 0;
   border: 1px solid #d1d5db;
-  background-color: #1f2937 !important; /* Dark gray/black background */
+  background-color: #f7f8f9 !important; /* Dark gray/black background */
   min-height: 36px !important; /* Slightly reduced height */
   padding: 6px 12px !important; /* Slightly reduced padding */
 }
 
 .ck.ck-toolbar .ck-button {
-  color: #ffffff !important; /* White text/icons */
+  color: #000000 !important; /* White text/icons */
 }
 
 .ck.ck-toolbar .ck-button:hover {
@@ -37,15 +140,15 @@
 }
 
 .ck.ck-toolbar .ck-button.ck-on {
-  background-color: #4b5563 !important; /* Active state */
+  background-color: #ecedee !important; /* Active state */
 }
 
 .ck.ck-toolbar .ck-dropdown__button {
-  color: #ffffff !important;
+  color: #000000 !important;
 }
 
 .ck.ck-toolbar .ck-dropdown__button:hover {
-  background-color: #374151 !important;
+  background-color: #e3e3e3 !important;
 }
 
 /* Reduce font size slightly */
@@ -282,4 +385,33 @@
 }
 button {
   cursor: pointer;
+}
+
+/* PDF Canvas rendering optimizations for crisp, high-contrast display */
+canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* Ensure PDF canvas has proper rendering context */
+.pdf-canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide "Powered by CKEditor" text */
+.ck-powered-by {
+  display: none !important;
+}
+
+.ck-powered-by-ckeditor {
+  display: none !important;
+}
+
+.ck-editor__editable .ck-powered-by {
+  display: none !important;
 }

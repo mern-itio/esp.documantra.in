@@ -46,7 +46,7 @@ interface DocumentState {
   setSearchFilters: (filters: SearchFilters) => void;
   setViewMode: (mode: ViewMode) => void;
   setSorting: (sortBy: SortBy, sortOrder: SortOrder) => void;
-  getFilteredDocuments: () => Document[];
+  getFilteredDocuments: (params?: { archivedOnly?: boolean }) => Document[];
   getFolderDocuments: (folderId: string | null) => Document[];
   getBreadcrumbs: () => Folder[];
   getStorageStats: () => { used: number; total: number; percentage: number };
@@ -502,13 +502,22 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     set({ sortBy, sortOrder });
   },
 
-  getFilteredDocuments: () => {
+  getFilteredDocuments: (params = {}) => {
     const { documents, currentFolderId, searchQuery, searchFilters, sortBy, sortOrder } = get();
-
+    const { archivedOnly = false } = params;
 
     let filtered = documents.filter(doc => {
       // Exclude deleted documents
       if (doc.isDeleted) return false;
+
+      // Handle archived documents based on archivedOnly parameter
+      if (archivedOnly) {
+        // Only show archived documents
+        if (!doc.isArchived) return false;
+      } else {
+        // Exclude archived documents from regular document list
+        if (doc.isArchived) return false;
+      }
 
       // Exclude shared PDF documents from regular document list
       if (doc.type === 'pdf' && doc.description === 'PDF uploaded for sharing') {

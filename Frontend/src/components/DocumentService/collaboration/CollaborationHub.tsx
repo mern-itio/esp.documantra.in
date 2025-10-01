@@ -120,7 +120,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
           id: share.userId || share.email,
           email: share.userId || share.email,
           name: share.userId || share.email,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(share.userId || share.email)}&background=10b981&color=ffffff`,
+          avatar: '', // We'll use Avatar component instead
           lastActivity: share.createdAt || new Date().toISOString(),
           isTyping: false,
           color: '#10b981'
@@ -566,7 +566,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
             </div>
           </div>
           
-                      <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
               {/* Permission Badge */}
               <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
                 userPermissions.permission === 'full'
