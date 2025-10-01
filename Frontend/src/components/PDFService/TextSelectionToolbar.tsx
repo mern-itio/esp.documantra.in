@@ -37,7 +37,7 @@ export const TextSelectionToolbar: React.FC<TextSelectionToolbarProps> = ({
     >
       {/* Selected text preview */}
       <div className="text-sm text-gray-700 font-medium max-w-40 truncate mr-3">
-        "{selectedText}"
+        Highlight :-
       </div>
       
       {/* Highlight color buttons */}
