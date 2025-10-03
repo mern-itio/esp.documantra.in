@@ -502,11 +502,9 @@ exports.convertPdfToEpub = async (req, res) => {
     const combinedOCRText = ocrTexts.join('\n');
 
     const htmlContent = `
-      <h2>Extracted PDF Text</h2>
       ${formatTextAsHtml(pdfData.text)}
 
-      <hr/>
-      <h2>Text Extracted from Images (OCR)</h2>
+     
       ${formatTextAsHtml(combinedOCRText)}
     `;
 
@@ -591,11 +589,7 @@ async function convertPdfToEpubForBatch(file) {
     const combinedOCRText = ocrTexts.join('\n');
 
     const htmlContent = `
-      <h2>Extracted PDF Text</h2>
       ${formatTextAsHtml(pdfData.text)}
-
-      <hr/>
-      <h2>Text Extracted from Images (OCR)</h2>
       ${formatTextAsHtml(combinedOCRText)}
     `;
 

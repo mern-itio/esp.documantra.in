@@ -64,6 +64,10 @@ export const DoctoPdf: React.FC = () => {
       file.name.toLowerCase().endsWith('.doc')
   );
   if (docFiles.length > 0) {
+    // Reset previous results/progress when starting a new selection
+    setResults([]);
+    setProcessingProgress(0);
+    setIsProcessing(false);
     const now = new Date();
     setUploadedFiles(prev => [...prev, ...docFiles]);
     setUploadTimes(prev => [...prev, ...docFiles.map(() => now)]);
@@ -84,6 +88,10 @@ export const DoctoPdf: React.FC = () => {
       file.name.toLowerCase().endsWith('.doc')
   );
     if (docFiles.length > 0) {
+      // Reset previous results/progress when starting a new selection
+      setResults([]);
+      setProcessingProgress(0);
+      setIsProcessing(false);
       const now = new Date();
       setUploadedFiles(prev => [...prev, ...docFiles]);
       setUploadTimes(prev => [...prev, ...docFiles.map(() => now)]);
@@ -95,8 +103,16 @@ export const DoctoPdf: React.FC = () => {
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-    setUploadTimes(prev => prev.filter((_, i) => i !== index));
+    const newUploaded = uploadedFiles.filter((_, i) => i !== index);
+    const newUploadTimes = uploadTimes.filter((_, i) => i !== index);
+    setUploadedFiles(newUploaded);
+    setUploadTimes(newUploadTimes);
+    if (newUploaded.length === 0) {
+      // Clear results and progress when no files remain
+      setResults([]);
+      setProcessingProgress(0);
+      setIsProcessing(false);
+    }
   };
 
   const handleAddMoreFiles = () => {

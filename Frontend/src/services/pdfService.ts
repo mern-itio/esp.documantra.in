@@ -258,10 +258,10 @@ export const pdfService = {
     }
   },
 
-convertImgToPdf: async (file: File) => {
+  convertImgsToPdf: async (files: File[]) => {
     try {
       const formData = new FormData();
-      formData.append('images', file);
+      files.forEach((f) => formData.append('images', f));
 
       const response = await pdfApi.post('/convert/images-to-pdf', formData, {
         headers: {

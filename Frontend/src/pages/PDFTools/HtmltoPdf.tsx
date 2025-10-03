@@ -58,6 +58,10 @@ export const HtmlToPdf: React.FC = () => {
     (file) => file.type === "application/html" || file.name.toLowerCase().endsWith(".html")
   );
   if (htmlFiles.length > 0) {
+    // Reset previous results/progress when starting a new selection
+    setResults([]);
+    setProcessingProgress(0);
+    setIsProcessing(false);
     setUploadedFiles((prev) => [...prev, ...htmlFiles]);
   }
 };
@@ -70,6 +74,10 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     (file) => file.type === "application/html" || file.name.toLowerCase().endsWith(".html")
   );
   if (htmlFiles.length > 0) {
+    // Reset previous results/progress when starting a new selection
+    setResults([]);
+    setProcessingProgress(0);
+    setIsProcessing(false);
     setUploadedFiles((prev) => [...prev, ...htmlFiles]);
   }
 };
@@ -80,7 +88,13 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    const newUploaded = uploadedFiles.filter((_, i) => i !== index);
+    setUploadedFiles(newUploaded);
+    if (newUploaded.length === 0) {
+      setResults([]);
+      setProcessingProgress(0);
+      setIsProcessing(false);
+    }
   };
 
   const handleAddMoreFiles = () => {

@@ -4,6 +4,7 @@ const { exec } = require('child_process');
 const util = require('util');
 const execAsync = util.promisify(exec);
 const crypto = require('crypto');
+const memoryMonitor = require('../utils/memoryMonitor');
 
 const setPermissionsController = {
   async setPermissions(req, res) {
@@ -305,16 +306,26 @@ const setPermissionsController = {
       
       if (!await fs.pathExists(permissionsDir)) return;
       
+      // Check available memory before starting cleanup
+      memoryMonitor.logMemoryStatus();
+      
+      // If memory usage is high, skip cleanup to prevent ENOMEM
+      if (!memoryMonitor.isSafeToProceed()) {
+        console.log('High memory usage detected, skipping cleanup to prevent ENOMEM');
+        return;
+      }
+      
       const files = await fs.readdir(permissionsDir);
       const now = new Date();
       let cleanedCount = 0;
       
-      // Process files in batches to prevent memory issues
-      const batchSize = 10;
+      // Process files in smaller batches to prevent memory issues
+      const batchSize = 5; // Reduced from 10 to 5
       for (let i = 0; i < files.length; i += batchSize) {
         const batch = files.slice(i, i + batchSize);
         
-        await Promise.all(batch.map(async (file) => {
+        // Process files sequentially instead of in parallel to reduce memory pressure
+        for (const file of batch) {
           if (file.endsWith('.json')) {
             const token = file.replace('.json', '');
             const permissionsPath = path.join(permissionsDir, file);
@@ -346,12 +357,15 @@ const setPermissionsController = {
               }
             }
           }
-        }));
-        
-        // Small delay between batches to prevent overwhelming the system
-        if (i + batchSize < files.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
         }
+        
+        // Longer delay between batches to allow garbage collection
+        if (i + batchSize < files.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Increased to 1 second
+        }
+        
+        // Force garbage collection if available and safe to do so
+        memoryMonitor.forceGarbageCollection();
       }
       
       if (cleanedCount > 0) {
@@ -359,6 +373,13 @@ const setPermissionsController = {
       }
     } catch (error) {
       console.error('Error during cleanup:', error);
+      
+      // If it's a memory error, try to free up memory
+      if (error.code === 'ENOMEM') {
+        console.log('Memory error during cleanup, attempting to free memory...');
+        memoryMonitor.forceGarbageCollection();
+        memoryMonitor.logMemoryStatus();
+      }
     }
   },
 
@@ -1039,11 +1060,11 @@ setTimeout(() => {
   });
 }, 10000); // Wait 10 seconds after startup
 
-// Run cleanup every hour
+// Run cleanup every 2 hours to reduce memory pressure
 setInterval(() => {
   setPermissionsController.cleanupExpiredTokens().catch(error => {
     console.error('Periodic cleanup error:', error);
   });
-}, 60 * 60 * 1000);
+}, 2 * 60 * 60 * 1000); // Changed from 1 hour to 2 hours
 
 module.exports = setPermissionsController;

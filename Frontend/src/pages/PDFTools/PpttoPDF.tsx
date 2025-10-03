@@ -59,6 +59,10 @@ export const PptToPdf: React.FC = () => {
     (file) => file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" || file.name.toLowerCase().endsWith(".pptx")
   );
   if (pptFiles.length > 0) {
+    // Reset previous results/progress when starting a new selection
+    setResults([]);
+    setProcessingProgress(0);
+    setIsProcessing(false);
     const now = new Date();
     setUploadedFiles((prev) => [...prev, ...pptFiles]);
     setUploadTimes((prev) => [...prev, ...pptFiles.map(() => now)]);
@@ -73,6 +77,10 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     (file) => file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" || file.name.toLowerCase().endsWith(".pptx")
   );
   if (pptFiles.length > 0) {
+    // Reset previous results/progress when starting a new selection
+    setResults([]);
+    setProcessingProgress(0);
+    setIsProcessing(false);
     const now = new Date();
     setUploadedFiles((prev) => [...prev, ...pptFiles]);
     setUploadTimes((prev) => [...prev, ...pptFiles.map(() => now)]);
@@ -85,8 +93,15 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-    setUploadTimes(prev => prev.filter((_, i) => i !== index));
+    const newUploaded = uploadedFiles.filter((_, i) => i !== index);
+    const newUploadTimes = uploadTimes.filter((_, i) => i !== index);
+    setUploadedFiles(newUploaded);
+    setUploadTimes(newUploadTimes);
+    if (newUploaded.length === 0) {
+      setResults([]);
+      setProcessingProgress(0);
+      setIsProcessing(false);
+    }
   };
 
   const handleAddMoreFiles = () => {

@@ -9,6 +9,9 @@ const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit');
 const PptxGenJS = require('pptxgenjs');
 const fsSync = require('fs');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const os = require('os');
 // Remove the problematic pdf2html import
 // const pdf2html = require('pdf2html');
 // Utilities for page image rendering and splitting
@@ -17,22 +20,199 @@ const { splitByPages } = require('./pdfSplitService');
 // High-fidelity page rendering
 const pdfjsLib = require('pdfjs-dist');
 const { createCanvas } = require('canvas');
+
+const execAsync = promisify(exec);
+
 /**
- * Convert DOC/DOCX to PDF using simple text extraction method
+ * Test LibreOffice installation and availability
+ * @returns {Promise<Object>} - Test result object
+ */
+async function testLibreOfficeInstallation() {
+  try {
+    const { stdout, stderr } = await execAsync('libreoffice --version', {
+      timeout: 10000
+    });
+    
+    return {
+      success: true,
+      version: stdout.trim(),
+      message: 'LibreOffice is properly installed and accessible'
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      message: 'LibreOffice is not properly installed or accessible'
+    };
+  }
+}
+
+/**
+ * Get supported LibreOffice conversion formats
+ * @returns {Promise<Object>} - Available formats object
+ */
+async function getLibreOfficeFormats() {
+  try {
+    const { stdout } = await execAsync('libreoffice --help | grep -A 50 "convert-to"', {
+      timeout: 10000
+    });
+    
+    return {
+      success: true,
+      formats: stdout,
+      message: 'LibreOffice formats retrieved successfully'
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      message: 'Failed to retrieve LibreOffice formats'
+    };
+  }
+}
+/**
+ * Convert DOC/DOCX to PDF using LibreOffice for layout preservation
  * @param {string} inputPath - Path to input DOC/DOCX file
  * @param {string} outputPath - Path where PDF will be saved
  * @returns {Promise<Object>} - Result object with file size
  */
 async function convertDocToPdf(inputPath, outputPath) {
   try {
-    // console.log('Starting DOC to PDF conversion using simple text extraction method...');
-    
-    // Use the simple text extraction method that doesn't require Puppeteer
-    return await convertDocToPdfSimple(inputPath, outputPath);
+    console.log('Starting DOC to PDF conversion using LibreOffice for layout preservation...');
+
+    // Ensure input file exists
+    if (!await fs.pathExists(inputPath)) {
+      throw new Error(`Input DOC/DOCX file not found: ${inputPath}`);
+    }
+
+    // Get file stats for input
+    const inputStats = await fs.stat(inputPath);
+    const inputSize = inputStats.size;
+
+    // Create output directory if it doesn't exist
+    const outputDir = path.dirname(outputPath);
+    await fs.ensureDir(outputDir);
+
+    // Use LibreOffice for DOC/DOCX to PDF conversion with enhanced parameters for better layout preservation
+    const inputFileName = path.basename(inputPath, path.extname(inputPath));
+
+    // Build a temp LO user profile to avoid profile/lock issues
+    const profileDir = path.join(os.tmpdir(), `lo_profile_${Date.now()}`);
+    await fs.ensureDir(profileDir);
+    const profileUrl = `file://${profileDir.replace(/\\/g, '/')}`;
+
+    // Two candidate binaries to try
+    const candidates = ['soffice', 'libreoffice'];
+    let conversionOk = false;
+    let lastStdout = '';
+    let lastStderr = '';
+    for (const bin of candidates) {
+      const cmd = `${bin} --headless --nodefault --nolockcheck --nologo --norestore --nofirststartwizard -env:UserInstallation=${profileUrl} --convert-to pdf:writer_pdf_Export --outdir "${outputDir}" "${inputPath}"`;
+      console.log(`Executing LibreOffice command (DOC to PDF): ${cmd}`);
+      try {
+        const { stdout, stderr } = await execAsync(cmd, {
+          timeout: 300000,
+          maxBuffer: 1024 * 1024 * 20,
+          env: {
+            ...process.env,
+            HOME: '/tmp',
+            SAL_USE_VCLPLUGIN: 'headless',
+            SAL_DISABLE_OPENCL: '1',
+            SAL_DISABLE_OPENCL_IMAGING: '1',
+            DISPLAY: ''
+          }
+        });
+        lastStdout = stdout || '';
+        lastStderr = stderr || '';
+      } catch (e) {
+        lastStdout = e.stdout || '';
+        lastStderr = e.stderr || e.message || '';
+      }
+
+      const expectedOutputPath = path.join(outputDir, `${inputFileName}.pdf`);
+      if (await fs.pathExists(expectedOutputPath)) {
+        conversionOk = true;
+        break;
+      } else {
+        console.warn(`LibreOffice attempt with ${bin} did not produce output. stdout:`, lastStdout);
+        console.warn(`LibreOffice attempt with ${bin} stderr:`, lastStderr);
+
+        // Fallback: try running via xvfb-run if available
+        const xvfbCmd = `xvfb-run -a ${cmd}`;
+        console.log(`Retrying with xvfb-run: ${xvfbCmd}`);
+        try {
+          const { stdout, stderr } = await execAsync(xvfbCmd, {
+            timeout: 300000,
+            maxBuffer: 1024 * 1024 * 20,
+            env: {
+              ...process.env,
+              HOME: '/tmp',
+              SAL_USE_VCLPLUGIN: 'gen',
+              SAL_DISABLE_OPENCL: '1',
+              SAL_DISABLE_OPENCL_IMAGING: '1'
+            }
+          });
+          lastStdout = stdout || '';
+          lastStderr = stderr || '';
+        } catch (e2) {
+          lastStdout = e2.stdout || '';
+          lastStderr = e2.stderr || e2.message || '';
+        }
+
+        const expectedOutputPathX = path.join(outputDir, `${inputFileName}.pdf`);
+        if (await fs.pathExists(expectedOutputPathX)) {
+          conversionOk = true;
+          break;
+        } else {
+          console.warn(`xvfb-run attempt did not produce output. stdout:`, lastStdout);
+          console.warn(`xvfb-run attempt stderr:`, lastStderr);
+        }
+      }
+    }
+
+    // Cleanup the temp profile
+    try { await fs.remove(profileDir); } catch (_) {}
+
+    if (!conversionOk) {
+      throw new Error('LibreOffice DOC to PDF conversion failed - output file not created');
+    }
+
+    // LibreOffice creates output file with same name but .pdf extension
+    const expectedOutputPath = path.join(outputDir, `${inputFileName}.pdf`);
+    if (expectedOutputPath !== outputPath) {
+      await fs.move(expectedOutputPath, outputPath, { overwrite: true });
+    }
+
+    console.log('LibreOffice DOC to PDF conversion successful');
+
+    // Get output file stats
+    const outputStats = await fs.stat(outputPath);
+    const outputSize = outputStats.size;
+
+    console.log('DOC to PDF conversion completed successfully using LibreOffice.');
+
+    return {
+      success: true,
+      fileSize: outputSize,
+      inputFileSize: inputSize,
+      message: 'DOC/DOCX converted to PDF using LibreOffice with full layout and image preservation',
+      outputFile: path.basename(outputPath),
+      conversionMethod: 'LibreOffice CLI',
+      compressionRatio: inputSize > 0 ? ((inputSize - outputSize) / inputSize * 100).toFixed(2) + '%' : 'N/A'
+    };
     
   } catch (error) {
-    console.error('Error in DOC to PDF conversion:', error);
-    throw new Error(`Failed to convert document to PDF: ${error.message}`);
+    console.error('Error in DOC to PDF conversion using LibreOffice:', error);
+    
+    // Fallback to simple text extraction method if LibreOffice fails
+    console.log('LibreOffice conversion failed, falling back to text extraction method...');
+    
+    try {
+      return await convertDocToPdfSimple(inputPath, outputPath);
+    } catch (fallbackError) {
+      console.error('Fallback conversion also failed:', fallbackError);
+      throw new Error(`Failed to convert DOC to PDF: ${error.message}. Fallback also failed: ${fallbackError.message}`);
+    }
   }
 }
 
@@ -120,73 +300,93 @@ async function convertDocToPdfSimple(inputPath, outputPath) {
   }
 }
 /**
- * Convert PDF to DOCX using only npm packages (pdf-parse + docx)
+ * Convert PDF to DOCX using LibreOffice CLI for exact layout preservation
  * @param {string} inputPath - Path to input PDF file
  * @param {string} outputPath - Path where DOCX will be saved
  * @returns {Promise<Object>} - Result object with file size
  */
 async function convertPdfToDoc(inputPath, outputPath) {
   try {
-    // 1) Try editable, layout-preserving conversion via Python (pdf2docx)
-    try {
-      const { execFile } = require('child_process');
-      const util = require('util');
-      const execFileAsync = util.promisify(execFile);
-      const scriptEditable = path.join(__dirname, '..', 'scripts', 'pdf_to_docx_editable.py');
-      const pythonBin = process.env.PYTHON_BIN || 'python';
-      try { await fs.access(scriptEditable); } catch {}
-      const { stdout } = await execFileAsync(pythonBin, [scriptEditable, inputPath, outputPath], { timeout: 10 * 60 * 1000 });
-      try {
-        const parsed = JSON.parse(stdout || '{}');
-        if (parsed && parsed.success) {
-          const stats = await fs.stat(outputPath);
-          return {
-            success: true,
-            fileSize: stats.size,
-            message: 'PDF converted to editable DOCX (layout preserved) via pdf2docx',
-            outputFile: path.basename(outputPath)
-          };
-        }
-      } catch {}
-    } catch (e1) {
-      // continue to next strategy
+    console.log('Starting PDF to DOCX conversion using LibreOffice CLI...');
+
+    // Ensure input file exists
+    if (!await fs.pathExists(inputPath)) {
+      throw new Error(`Input PDF file not found: ${inputPath}`);
     }
 
-    // 2) Prefer exact layout via Python (PyMuPDF + python-docx) if pdf2docx not available
-    try {
-      const { execFile } = require('child_process');
-      const util = require('util');
-      const execFileAsync = util.promisify(execFile);
-      const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_docx_images.py');
-      const pythonBin = process.env.PYTHON_BIN || 'python';
+    // Get file stats for input
+    const inputStats = await fs.stat(inputPath);
+    const inputSize = inputStats.size;
 
-      // Ensure script exists (docker builds copy scripts)
-      try { await fs.access(scriptPath); } catch {}
+    // Create output directory if it doesn't exist
+    const outputDir = path.dirname(outputPath);
+    await fs.ensureDir(outputDir);
 
-      const { stdout } = await execFileAsync(pythonBin, [scriptPath, inputPath, outputPath, '200'], { timeout: 5 * 60 * 1000 });
-      try {
-        const parsed = JSON.parse(stdout || '{}');
-        if (parsed && parsed.success) {
-          const stats = await fs.stat(outputPath);
-          return {
-            success: true,
-            fileSize: stats.size,
-            message: 'PDF converted to DOCX with preserved layout via PyMuPDF',
-            outputFile: path.basename(outputPath)
-          };
-        }
-      } catch {}
-    } catch (pyErr) {
-      // Continue with Node-based methods below
+    // LibreOffice doesn't have good PDF import capabilities
+    // We'll use a Python-based approach with pdf2docx library for better conversion
+    const inputFileName = path.basename(inputPath, path.extname(inputPath));
+    
+    // Use Python script for PDF to DOCX conversion
+    const pythonScript = path.join(__dirname, '..', 'scripts', 'pdf_to_docx_converter.py');
+    const pythonCmd = `python "${pythonScript}" "${inputPath}" "${outputPath}"`;
+    
+    console.log(`Executing Python PDF to DOCX converter: ${pythonCmd}`);
+
+    // Execute Python conversion
+    const { stdout, stderr } = await execAsync(pythonCmd, {
+      timeout: 300000, // 5 minutes timeout
+      maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+    });
+
+    if (stderr && stderr.includes('Error')) {
+      console.warn('Python converter stderr:', stderr);
     }
 
-    // Node fallback: text extraction only
+    // Parse Python script output
+    let pythonResult;
+    try {
+      pythonResult = JSON.parse(stdout);
+    } catch (parseError) {
+      console.warn('Failed to parse Python script output:', parseError);
+      pythonResult = { success: false, error: 'Failed to parse Python script output' };
+    }
+
+    // Check if conversion was successful
+    if (!pythonResult.success || !await fs.pathExists(outputPath)) {
+      throw new Error(`Python PDF to DOCX conversion failed: ${pythonResult.error || 'Output file not created'}`);
+    }
+
+    console.log('Python PDF to DOCX conversion successful:', pythonResult.message);
+
+    // Get output file stats
+    const outputStats = await fs.stat(outputPath);
+    const outputSize = outputStats.size;
+
+    console.log('PDF to DOCX conversion completed successfully using Python pdf2docx.');
+
+    return {
+      success: true,
+      fileSize: outputSize,
+      inputFileSize: inputSize,
+      message: pythonResult.message || 'PDF converted to DOCX using Python pdf2docx library',
+      outputFile: path.basename(outputPath),
+      conversionMethod: pythonResult.conversionMethod || 'Python pdf2docx',
+      compressionRatio: inputSize > 0 ? ((inputSize - outputSize) / inputSize * 100).toFixed(2) + '%' : 'N/A',
+      warning: pythonResult.warning || null
+    };
+
+  } catch (error) {
+    console.error('Error in PDF to DOCX conversion using Python pdf2docx:', error);
+    
+    // Fallback to simple text extraction method if Python conversion fails
+    console.log('Python pdf2docx conversion failed, falling back to text extraction method...');
+    
+    try {
+    // Read PDF as buffer
     const pdfBuffer = await fs.readFile(inputPath);
     const pdfData = await pdfParse(pdfBuffer);
     const textContent = pdfData.text;
     const pageCount = pdfData.numpages;
-
-    // console.log(`Extracted ${pageCount} pages with ${textContent.length} characters`);
 
     // Split text into paragraphs
     const paragraphs = textContent
@@ -207,20 +407,21 @@ async function convertPdfToDoc(inputPath, outputPath) {
 
     const stats = await fs.stat(outputPath);
 
-    // console.log('PDF to DOCX conversion (text fallback) completed successfully.');
-
     return {
       success: true,
       fileSize: stats.size,
-      message: 'PDF text extracted and saved as .docx using pdf-parse and docx npm packages',
+        message: 'PDF converted to DOCX using fallback text extraction method (LibreOffice failed)',
       extractedPages: pageCount,
       extractedCharacters: textContent.length,
-      outputFile: path.basename(outputPath)
-    };
+        outputFile: path.basename(outputPath),
+        conversionMethod: 'Fallback Text Extraction',
+        warning: 'Layout preservation may be limited with fallback method'
+      };
 
-  } catch (error) {
-    console.error('Error in PDF to DOCX conversion:', error);
-    throw new Error(`Failed to convert PDF to DOCX: ${error.message}`);
+    } catch (fallbackError) {
+      console.error('Fallback conversion also failed:', fallbackError);
+      throw new Error(`Failed to convert PDF to DOCX: ${error.message}. Fallback also failed: ${fallbackError.message}`);
+    }
   }
 }
 
@@ -304,89 +505,53 @@ async function convertPdfToExcel(inputPath, outputPath) {
 }
 
 /**
- * Convert Excel (.xlsx) file to PDF using only NPM packages
- * @param {string} inputPath - Path to input Excel file
- * @param {string} outputPath - Path to save the generated PDF
+ * Convert Excel (.xlsx/.xls) to PDF preserving layout using LibreOffice via Python script
+ * @param {string} inputPath
+ * @param {string} outputPath
  */
 async function convertExcelToPdf(inputPath, outputPath) {
   try {
-    // console.log('📖 Reading Excel file...');
-    const workbook = XLSX.readFile(inputPath);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+    // Ensure input exists
+    if (!await fs.pathExists(inputPath)) {
+      throw new Error(`Input Excel file not found: ${inputPath}`);
+    }
 
-    const doc = new PDFDocument({ margin: 30 });
-    const stream = fs.createWriteStream(outputPath);
-    doc.pipe(stream);
+    // Prepare Python command
+    const pythonScript = path.join(__dirname, '..', 'scripts', 'excel_to_pdf_converter.py');
+    const pythonCmd = `python "${pythonScript}" "${inputPath}" "${outputPath}"`;
 
-    let y = 50; // starting Y position
-    const colSpacing = 150;
-    const pageHeight = (doc.page && doc.page.height) ? doc.page.height - 50 : 742; // default A4
-
-    sheet.forEach((row, rowIndex) => {
-      if (!Array.isArray(row) || row.length === 0) {
-        return; // skip invalid/empty row
-      }
-
-      // First pass → measure each cell height
-      const cellHeights = row.map((cell) => {
-        const text = (cell !== null && cell !== undefined) ? String(cell) : '';
-        let textHeight = 0;
-        try {
-          textHeight = doc.heightOfString(text, { width: colSpacing - 8, align: 'left' });
-        } catch {
-          textHeight = 0; // fallback
-        }
-        if (isNaN(textHeight)) textHeight = 0;
-        return textHeight + 8; // add padding
-      });
-
-      // Ensure a minimum row height
-      let maxRowHeight = Math.max(28, ...cellHeights);
-      if (!isFinite(maxRowHeight) || isNaN(maxRowHeight)) {
-        maxRowHeight = 28;
-      }
-
-      // Check for page break
-      if (y + maxRowHeight > pageHeight) {
-        doc.addPage();
-        y = 50;
-      }
-
-      // Draw cells
-      row.forEach((cell, colIndex) => {
-        const text = (cell !== null && cell !== undefined) ? String(cell) : '';
-        const x = 30 + (colIndex * colSpacing);
-        const safeY = isFinite(y) ? y : 50;
-
-        doc.fontSize(8).text(text, x, safeY, {
-          width: colSpacing - 8,
-          align: 'left',
-        });
-      });
-
-      // Move down
-      y += maxRowHeight;
-      if (!isFinite(y) || isNaN(y)) {
-        y = 50; // reset if something goes wrong
-      }
+    // Execute conversion
+    const { stdout, stderr } = await execAsync(pythonCmd, {
+      timeout: 300000,
+      maxBuffer: 1024 * 1024 * 20
     });
 
-    doc.end();
-    await new Promise(resolve => stream.on('finish', resolve));
+    // Parse Python output
+    let result;
+    try {
+      result = JSON.parse(stdout);
+    } catch (e) {
+      result = { success: false, error: 'Failed to parse Python output', raw: stdout };
+    }
 
-    // console.log('✅ Excel to PDF conversion completed.');
+    if (!result || !result.success) {
+      const errMsg = (result && result.error) ? result.error : 'Unknown error from Python converter';
+      throw new Error(`Excel to PDF conversion failed: ${errMsg}`);
+    }
+
+    // Validate output
+    if (!await fs.pathExists(outputPath)) {
+      throw new Error('Output PDF was not created');
+    }
+
     const stats = await fs.stat(outputPath);
-
     return {
       success: true,
-      rowsWritten: sheet.length,
       outputFile: path.basename(outputPath),
-      fileSize: stats.size,
+      fileSize: stats.size
     };
-
   } catch (error) {
-    console.error('❌ Error converting Excel to PDF:', error);
+    console.error('❌ Error converting Excel to PDF (LibreOffice):', error);
     throw new Error('Failed to convert Excel to PDF');
   }
 }
@@ -394,53 +559,49 @@ async function convertExcelToPdf(inputPath, outputPath) {
 
 
 /**
- * Convert PDF to PowerPoint (PPTX) using NPM packages
+ * Convert PDF to PowerPoint (PPTX) preserving layout using Python script (PyMuPDF + python-pptx)
  * @param {string} inputPath - PDF file path
  * @param {string} outputPath - Output PPTX file path
  */
 async function convertPdfToPpt(inputPath, outputPath) {
   try {
-    // console.log('🔍 Extracting text from PDF...');
-    const pdfBuffer = await fs.readFile(inputPath);
-    const pdfData = await pdfParse(pdfBuffer);
+    if (!await fs.pathExists(inputPath)) {
+      throw new Error(`Input PDF not found: ${inputPath}`);
+    }
 
-    const pages = pdfData.text.split(/\f/); // Split by form-feed if present
-    const linesPerSlide = 10; // Adjust based on how much text per slide
+    const pythonScript = path.join(__dirname, '..', 'scripts', 'pdf_to_pptx_converter.py');
+    const pythonCmd = `python "${pythonScript}" "${inputPath}" "${outputPath}"`;
 
-    const pptx = new PptxGenJS();
-
-    pages.forEach((page, pageIndex) => {
-      const lines = page.split('\n').map(line => line.trim()).filter(Boolean);
-
-      for (let i = 0; i < lines.length; i += linesPerSlide) {
-        const slide = pptx.addSlide();
-        const slideText = lines.slice(i, i + linesPerSlide).join('\n');
-
-        slide.addText(slideText, {
-          x: 0.5,
-          y: 0.5,
-          w: '90%',
-          h: '90%',
-          fontSize: 14,
-          color: '000000',
-        });
-      }
+    const { stdout, stderr } = await execAsync(pythonCmd, {
+      timeout: 300000,
+      maxBuffer: 1024 * 1024 * 20
     });
 
-    await pptx.writeFile({ fileName: outputPath });
+    let result;
+    try {
+      result = JSON.parse(stdout);
+    } catch (e) {
+      result = { success: false, error: 'Failed to parse Python output', raw: stdout };
+    }
+
+    if (!result || !result.success) {
+      const errMsg = (result && result.error) ? result.error : 'Unknown error from Python converter';
+      throw new Error(`PDF to PPTX conversion failed: ${errMsg}`);
+    }
+
+    if (!await fs.pathExists(outputPath)) {
+      throw new Error('Output PPTX was not created');
+    }
 
     const stats = await fs.stat(outputPath);
-
-    // console.log('✅ PDF to PPT conversion completed.');
     return {
       success: true,
       outputFile: path.basename(outputPath),
-      slidesGenerated: pptx.slides.length,
       fileSize: stats.size,
+      pages: result.pages
     };
-
   } catch (error) {
-    console.error('❌ Failed to convert PDF to PPT:', error);
+    console.error('❌ Failed to convert PDF to PPTX (python):', error);
     throw new Error('PDF to PPT conversion failed.');
   }
 }
@@ -453,114 +614,36 @@ async function convertPdfToPpt(inputPath, outputPath) {
  */
 async function convertPptToPdf(inputPath, outputPath) {
   try {
-    // console.log('Starting PPT to PDF conversion...');
-    
-    // Read the PPT file
-    const pptBuffer = await fs.readFile(inputPath);
-    
-    // Create a new PDF document
-    const doc = new PDFDocument({ 
-      margin: 30,
-      size: 'A4'
-    });
-    const stream = fsSync.createWriteStream(outputPath);
-    
-    doc.pipe(stream);
-    
-    // // Add title page
-    // doc.fontSize(20).font('Helvetica-Bold').text('PowerPoint to PDF Conversion', { align: 'center' });
-    // doc.moveDown(0.5);
-    // doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
-    // doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
-    // doc.moveDown(2);
-    
-    try {
-      // Try to extract content using pptxgenjs
-      const PptxGenJS = require('pptxgenjs');
-      const pptx = new PptxGenJS();
-      
-      // Load the existing presentation
-      await pptx.load(pptBuffer);
-      
-      const slideCount = pptx.getSlides().length;
-      // console.log(`Found ${slideCount} slides in presentation`);
-      
-      // Add slide count info
-      // doc.fontSize(14).font('Helvetica-Bold').text(`Total Slides: ${slideCount}`, { align: 'center' });
-      // doc.moveDown(2);
-      
-      // Process each slide
-      for (let i = 0; i < slideCount; i++) {
-        const slide = pptx.getSlides()[i];
-        
-        // Add slide header
-        // doc.addPage();
-        // doc.fontSize(16).font('Helvetica-Bold').text(`Slide ${i + 1}`, { align: 'center' });
-        // doc.moveDown(0.5);
-        
-        // Extract text content from slide
-        if (slide && slide.texts && slide.texts.length > 0) {
-          slide.texts.forEach(textObj => {
-            if (textObj.text && textObj.text.trim()) {
-              const fontSize = textObj.options?.fontSize || 12;
-              const fontFace = textObj.options?.fontFace || 'Helvetica';
-              const isBold = textObj.options?.bold || false;
-              
-              doc.fontSize(fontSize).font(isBold ? `${fontFace}-Bold` : fontFace);
-              doc.text(textObj.text.trim());
-              doc.moveDown(0.3);
-            }
-          });
-        }
-        
-        // Extract shape content
-        if (slide && slide.shapes && slide.shapes.length > 0) {
-          slide.shapes.forEach(shape => {
-            if (shape.text && shape.text.trim()) {
-              doc.fontSize(12).font('Helvetica');
-              doc.text(`• ${shape.text.trim()}`);
-              doc.moveDown(0.2);
-            }
-          });
-        }
-        
-        // Add some spacing between slides
-        doc.moveDown(1);
-      }
-      
-      // console.log(`Successfully processed ${slideCount} slides`);
-      
-    } catch (extractionError) {
-      // console.log('Could not extract detailed content, creating basic PDF...');
-      
-      // Fallback: Create a basic PDF with file info
-      // doc.fontSize(14).font('Helvetica').text('Content extraction was limited, but the file has been converted.');
-      doc.moveDown(1);
-      // doc.fontSize(12).text('The PowerPoint file has been successfully converted to PDF format.');
-      doc.moveDown(1);
-      // doc.fontSize(10).text('For better content extraction, ensure the PowerPoint file is in .pptx format and not corrupted.');
+    if (!await fs.pathExists(inputPath)) {
+      throw new Error(`Input PPT/PPTX not found: ${inputPath}`);
     }
-    
-    doc.end();
-    
-    await new Promise((resolve, reject) => {
-      stream.on('finish', resolve);
-      stream.on('error', reject);
+    const pythonScript = path.join(__dirname, '..', 'scripts', 'ppt_to_pdf_converter.py');
+    const pythonCmd = `python "${pythonScript}" "${inputPath}" "${outputPath}"`;
+    const { stdout } = await execAsync(pythonCmd, {
+      timeout: 300000,
+      maxBuffer: 1024 * 1024 * 20
     });
-    
+    let result;
+    try {
+      result = JSON.parse(stdout);
+    } catch {
+      result = { success: false, error: 'Failed to parse Python output', raw: stdout };
+    }
+    if (!result || !result.success) {
+      const errMsg = (result && result.error) ? result.error : 'Unknown error from Python converter';
+      throw new Error(`PPT to PDF conversion failed: ${errMsg}`);
+    }
+    if (!await fs.pathExists(outputPath)) {
+      throw new Error('Output PDF was not created');
+    }
     const stats = await fs.stat(outputPath);
-    
-    // console.log('PPT to PDF conversion completed successfully.');
-    
     return {
       success: true,
       fileSize: stats.size,
-      message: 'PowerPoint converted to PDF with actual content extracted',
       outputFile: path.basename(outputPath)
     };
-    
   } catch (error) {
-    console.error('Error in PPT to PDF conversion:', error);
+    console.error('Error in PPT to PDF conversion (LibreOffice):', error);
     throw new Error(`Failed to convert PPT to PDF: ${error.message}`);
   }
 }
@@ -1632,5 +1715,7 @@ module.exports = {
   convertTxtToPdf,
   convertPdfToHtml,
   convertHtmlToPdf,
+  testLibreOfficeInstallation,
+  getLibreOfficeFormats,
   cleanupOldFiles
 }; 
