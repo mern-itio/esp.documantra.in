@@ -101,7 +101,6 @@ const makeDocumentRequest = async (
 
   try {
     const response = await fetch(url, config);
-    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       

@@ -8,18 +8,24 @@ class WorkflowController {
     try {
       const { documentId } = req.params;
       const userId = req.user.data.id;
+      console.log("userId",userId);
 
       // Check if user has access to the document
       const document = await Document.findOne({
         _id: documentId,
         isDeleted: { $ne: true } // Exclude deleted documents
       });
+      console.log("documents -->", document);
+      console.log("documents -->", documentId);
       if (!document) {
         return res.status(404).json({ success: false, message: 'Document not found or access denied' });
       }
 
       const isOwner = document.ownerId === userId || document.uploadedBy === userId;
-      const isShared = document.sharedWith.some(share => share.userId === userId);
+      const userEmail = req.user.data.email; // Get email from user object
+      const isShared = document.sharedWith.some(share => share.email === userEmail);
+      console.log("isOwner", isOwner);
+      console.log("isShared", isShared);
       
       if (!isOwner && !isShared) {
         return res.status(403).json({ success: false, message: 'Access denied' });
@@ -258,38 +264,43 @@ class WorkflowController {
     }
   }
 
-  // Get workflow by ID
+
   async getWorkflow(req, res) {
-    try {
-      const { workflowId } = req.params;
-      const userId = req.user.data.id;
+  try {
+    const { workflowId } = req.params;
+    const userId = req.user.data.id;
+    const userEmail = req.user.data.email;
 
-      const workflow = await Workflow.findById(workflowId);
-      if (!workflow) {
-        return res.status(404).json({ success: false, message: 'Workflow not found' });
-      }
-
-      // Check if user has access to the document
-      const document = await Document.findOne({
-        _id: workflow.documentId,
-        isDeleted: { $ne: true } // Exclude deleted documents
-      });
-      if (!document) {
-        return res.status(404).json({ success: false, message: 'Document not found or access denied' });
-      }
-
-      const isOwner = document.ownerId === userId || document.uploadedBy === userId;
-      const isShared = document.sharedWith.some(share => share.userId === userId);
-      
-      if (!isOwner && !isShared) {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-      }
-
-      res.json({ success: true, data: workflow });
-    } catch (error) {
-      console.error('Error fetching workflow:', error);
-      res.status(500).json({ success: false, message: 'Failed to fetch workflow' });
+    const workflow = await Workflow.findById(workflowId);
+    if (!workflow) {
+      return res.status(404).json({ success: false, message: 'Workflow not found' });
     }
+
+    // Check if user has access to the document
+    const document = await Document.findOne({
+      _id: workflow.documentId,
+      isDeleted: { $ne: true } // Exclude deleted documents
+    });
+    if (!document) {
+      return res.status(404).json({ success: false, message: 'Document not found or access denied' });
+    }
+
+    const isOwner = document.ownerId === userId || document.uploadedBy === userId;
+    const isShared = document.sharedWith.some(share => 
+      share.userId === userId || 
+      share.email === userEmail || 
+      share.userId === userEmail
+    );
+    
+    if (!isOwner && !isShared) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    res.json({ success: true, data: workflow });
+  } catch (error) {
+    console.error('Error fetching workflow:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch workflow' });
+  }
   }
 
   // Helper method to add workflow collaborators
@@ -314,6 +325,15 @@ class WorkflowController {
         document.sharedWith = [];
         console.log(`🔍 Initialized empty sharedWith array`);
       }
+
+
+    //    // ✅ LOOKUP USERS BY EMAIL FIRST
+    // const users = await User.find({ email: { $in: assigneeEmails } });
+    // const emailToUserMap = {};
+    // users.forEach(user => {
+    //   emailToUserMap[user.email] = user._id.toString(); // or user.id depending on your setup
+    // });
+    // console.log(`🔍 Found ${users.length} users from ${assigneeEmails.length} emails`);
 
       // Check for existing collaborators by both userId and email
       const existingCollaborators = document.sharedWith.map(share => share.userId || share.email).filter(Boolean);
