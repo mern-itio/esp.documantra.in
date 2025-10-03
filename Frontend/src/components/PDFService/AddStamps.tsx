@@ -645,7 +645,7 @@ const AddStamps: React.FC = () => {
                   Stamp Size
                 </label>
                 <div className="flex gap-2">
-                  {['small', 'medium', 'large', 'xlarge'].map(size => (
+                  {['small', 'medium', 'large'].map(size => (
                     <button
                       key={size}
                       onClick={() => handleStampSizeChange(size)}

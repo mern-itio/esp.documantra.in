@@ -12,7 +12,7 @@ import {
   FileText as FileTextIcon
 } from 'lucide-react';
 import { pdfService } from '../../services/pdfService';
-import { FileUploadStatus } from '../../components/common/FileUploadStatus';
+// import { FileUploadStatus } from '../../components/common/FileUploadStatus';
 
 export const ImageToPDF: React.FC = () => {
    const location = useLocation();
@@ -32,16 +32,15 @@ export const ImageToPDF: React.FC = () => {
     method?: string; // Added for image results
     pdf?: string; // Added for PDF results
   }>>([]);
-    
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Hardcoded tool information for Image to PDF
   const toolInfo = {
     name: 'Image To PDF',
     description: 'Convert Image files to PDF file with high accuracy',
     icon: FileTextIcon,
     premium: false,
-    // badge: 'Popular',
     complexity: 'easy' as const,
     popularity: 95,
     avgProcessingTime: '2-5 seconds',
@@ -56,36 +55,82 @@ export const ImageToPDF: React.FC = () => {
 
   const Icon = toolInfo.icon;
 
- const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const files = Array.from(event.target.files || []);
-  // Allow only image files
-  const imgFiles = files.filter(
-    (file) => file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".jpg") || file.name.toLowerCase().endsWith(".png")
-  );
-  if (imgFiles.length > 0) {
-    setUploadedFiles((prev) => [...prev, ...imgFiles]);
-  }
-};
+  const updatePreviews = (files: File[]) => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviews((old) => {
+      old.forEach((u) => URL.revokeObjectURL(u));
+      return urls;
+    });
+  };
 
-const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-  event.preventDefault();
-  const files = Array.from(event.dataTransfer.files);
-  // Allow only PDF files
-   const imgFiles = files.filter(
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const imgFiles = files.filter(
       (file) => file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".jpg") || file.name.toLowerCase().endsWith(".png")
-);
-  if (imgFiles.length > 0) {
-    setUploadedFiles((prev) => [...prev, ...imgFiles]);
-  }
-};
+    );
+    if (imgFiles.length > 0) {
+      // Reset previous results/progress when starting a new selection
+      setResults([]);
+      setProcessingProgress(0);
+      setIsProcessing(false);
+      const next = [...uploadedFiles, ...imgFiles];
+      setUploadedFiles(next);
+      updatePreviews(next);
+    }
+  };
 
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const files = Array.from(event.dataTransfer.files);
+    const imgFiles = files.filter(
+      (file) => file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".jpg") || file.name.toLowerCase().endsWith(".png")
+    );
+    if (imgFiles.length > 0) {
+      // Reset previous results/progress when starting a new selection
+      setResults([]);
+      setProcessingProgress(0);
+      setIsProcessing(false);
+      const next = [...uploadedFiles, ...imgFiles];
+      setUploadedFiles(next);
+      updatePreviews(next);
+    }
+  };
 
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
   };
 
+  const onDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    setDragIndex(index);
+    try {
+      e.dataTransfer.setData('text/plain', String(index));
+      e.dataTransfer.effectAllowed = 'move';
+    } catch {}
+  };
+  const onItemDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  const onDragEnter = (index: number) => {
+    if (dragIndex === null || dragIndex === index) return;
+    const next = [...uploadedFiles];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(index, 0, moved);
+    setUploadedFiles(next);
+    updatePreviews(next);
+    setDragIndex(index);
+  };
+  const onDragEnd = () => setDragIndex(null);
+
   const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    const next = uploadedFiles.filter((_, i) => i !== index);
+    setUploadedFiles(next);
+    updatePreviews(next);
+    if (next.length === 0) {
+      setResults([]);
+      setProcessingProgress(0);
+      setIsProcessing(false);
+    }
   };
 
   const handleAddMoreFiles = () => {
@@ -99,18 +144,14 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     setProcessingProgress(0);
     setResults([]);
 
-    // Progress simulation interval
     let progressInterval: NodeJS.Timeout | undefined;
-    
     try {
-      // Check if backend service is available
       try {
         await pdfService.checkHealth();
       } catch (error) {
         throw new Error('Backend service is not available. Please check if the PDF service is running.');
       }
 
-      // Start progress simulation
       let currentProgress = 0;
       progressInterval = setInterval(() => {
         if (currentProgress < 90) {
@@ -119,154 +160,55 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         }
       }, 300);
 
-      // Process each file individually
-      for (let i = 0; i < uploadedFiles.length; i++) {
-        const file = uploadedFiles[i];
-        
-        try {
-          console.log(`Converting ${file.name} to PDF...`);
-          
-          // Call the conversion API using the service
-          const result = await pdfService.convertImgToPdf(file);
-          
-          console.log('Conversion result:', result);
-          
-          // Add successful result
-          setResults(prev => [...prev, {
-            name: file.name,
-            status: 'success',
-            message: result.message,
-            images: result.images || [],
-            outputDir: result.outputDir,
-            fileCount: result.fileCount,
-            method: result.method || 'unknown',
-            pdf: result.pdf // Store the PDF path for download
-          }]);
-          
-        } catch (error) {
-          console.error(`Error converting ${file.name}:`, error);
-          
-          // Add error result
-          setResults(prev => [...prev, {
-            name: file.name,
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Conversion failed'
-          }]);
-        }
-        
-        // Small delay to show progress
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }     
-   
-      
+      // Send images in the user-defined order to get one combined PDF
+      const result = await pdfService.convertImgsToPdf(uploadedFiles);
+
+      setResults(prev => [...prev, {
+        name: `${uploadedFiles.length} images`,
+        status: 'success',
+        message: result.message,
+        pdf: result.pdf,
+      }]);
+
     } catch (error) {
-      console.error('Processing error:', error);
-      // Add general error result
       setResults(prev => [...prev, {
         name: 'Service Error',
         status: 'error',
         message: error instanceof Error ? error.message : 'Service unavailable'
       }]);
     } finally {
-      // Clear interval if it exists
-      if (progressInterval) {
-        clearInterval(progressInterval);
-      }
+      if (progressInterval) clearInterval(progressInterval);
       setIsProcessing(false);
-      // Only set to 100% if not already set
-      if (processingProgress < 100) {
-        setProcessingProgress(100);
-      }
+      if (processingProgress < 100) setProcessingProgress(100);
     }
   };
 
   const downloadResult = async (result: any) => {
     try {
-      if (result.status === 'success') {
-        // Handle Image to PDF download
-        if (result.pdf) {
-          const pdfPath = result.pdf;
-          const filename = `converted_document.pdf`;
-          
-          // Use the download service to get the PDF
-          const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
-          const fullUrl = `${baseUrl}${pdfPath}`;
-          
-          console.log(`Downloading PDF from: ${fullUrl}`);
-          
-          const response = await fetch(fullUrl);
-          
-          if (!response.ok) {
-            throw new Error(`Download failed: ${response.status} ${response.statusText}`);
-          }
-
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          
-          console.log('Successfully downloaded PDF');
-        }
-        
-        // Handle Image downloads (fallback)
-        else if (result.images && result.images.length > 0) {
-          // Download each image
-          for (let i = 0; i < result.images.length; i++) {
-            const imagePath = result.images[i];
-            const filename = `converted_image_${i + 1}.png`;
-            
-            // Use the download service to get the image
-            const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
-            const fullUrl = `${baseUrl}${imagePath}`;
-            
-            console.log(`Downloading image from: ${fullUrl}`);
-            
-            const response = await fetch(fullUrl);
-            
-            if (!response.ok) {
-              throw new Error(`Download failed: ${response.status} ${response.statusText}`);
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-          }
-          
-          console.log(`Successfully downloaded ${result.images.length} images`);
-        }
-        
-        else {
-          console.warn('No downloadable files found in result');
-        }
+      if (result.status === 'success' && result.pdf) {
+        const pdfPath = result.pdf;
+        const filename = `converted_document.pdf`;
+        const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
+        const fullUrl = `${baseUrl}${pdfPath}`;
+        const response = await fetch(fullUrl);
+        if (!response.ok) throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
       }
     } catch (error) {
-      console.error('Download error:', error);
       alert('Failed to download converted files. Please try again.');
     }
   };
 
-  // const formatFileSize = (bytes: number) => {
-  //   if (bytes === 0) return '0 Bytes';
-  //   const k = 1024;
-  //   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  //   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  //   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  // };
-
   return (
     <div className="space-y-6 p-2 bg-white">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
@@ -286,28 +228,18 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                 {toolInfo.premium && (
                   <Crown className="w-5 h-5 text-yellow-500" />
                 )}
-                {/* {toolInfo.badge && (
-                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                    {toolInfo.badge}
-                  </span>
-                )} */}
               </div>
               <p className="text-gray-600">{toolInfo.description}</p>
             </div>
           </div>
         </div>
-
-        
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Processing Area */}
         <div className="lg:col-span-2 space-y-6">
-          {/* File Upload */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Files</h3>
 
-            {/* Show upload area only when no files are uploaded */}
             {uploadedFiles.length === 0 && (
               <div
                 onDrop={handleDrop}
@@ -330,18 +262,35 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
               </div>
             )}
 
-            {/* Show file upload status when files are uploaded */}
             {uploadedFiles.length > 0 && (
-              <FileUploadStatus
-                files={uploadedFiles}
-                onRemoveFile={removeFile}
-                onAddMoreFiles={handleAddMoreFiles}
-                acceptedFormats={['jpg', 'jpeg', 'png']}
-                maxFiles={10}
-              />
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">Drag to reorder pages</div>
+                  <button onClick={handleAddMoreFiles} className="px-3 py-1 bg-gray-100 rounded">Add more</button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {previews.map((src, idx) => (
+                    <div
+                      key={idx}
+                      className={`border rounded-lg p-2 bg-white ${dragIndex === idx ? 'ring-2 ring-blue-400' : ''}`}
+                      draggable
+                      onDragStart={(e) => onDragStart(e, idx)}
+                      onDragOver={onItemDragOver}
+                      onDragEnter={() => onDragEnter(idx)}
+                      onDragEnd={onDragEnd}
+                      onDrop={(e) => { e.preventDefault(); onDragEnd(); }}
+                    >
+                      <img src={src} alt={`preview-${idx}`} className="w-full h-36 object-contain bg-gray-50" />
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-gray-600">Page {idx + 1}</span>
+                        <button onClick={() => removeFile(idx)} className="text-xs text-red-600">Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
-            {/* Single file input for all uploads */}
             <input
               ref={fileInputRef}
               type="file"
@@ -352,7 +301,6 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
             />
           </div>
 
-          {/* Processing */}
           {uploadedFiles.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
@@ -386,15 +334,13 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                 </div>
               )}
 
-              {/* Results */}
               {results.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="font-medium text-gray-900">Conversion Results</h4>
                   {results.map((result, index) => (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-3 rounded-lg ${result.status === 'success' ? 'bg-green-50' : 'bg-red-50'
-                        }`}
+                      className={`flex items-center justify-between p-3 rounded-lg ${result.status === 'success' ? 'bg-green-50' : 'bg-red-50'}`}
                     >
                       <div className="flex items-center space-x-3">
                         {result.status === 'success' ? (
@@ -407,10 +353,6 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                           {result.message && (
                             <p className="text-sm text-gray-600">{result.message}</p>
                           )}
-                          {result.status === 'success' && result.fileCount && (
-                            <p className="text-sm text-gray-500">Images: {result.fileCount}</p>
-                          )}
-                          
                         </div>
                       </div>
                       {result.status === 'success' && (
@@ -419,7 +361,7 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                           className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
                           <Download className="w-4 h-4" />
-                          <span>Download {result.pdf ? 'PDF' : 'Images'}</span>
+                          <span>Download PDF</span>
                         </button>
                       )}
                     </div>
@@ -430,12 +372,9 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Tool Info */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Tool Information</h3>
-
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">Complexity</label>
@@ -446,7 +385,6 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                   {toolInfo.complexity}
                 </span>
               </div>
-
               <div>
                 <label className="text-sm font-medium text-gray-700">Popularity</label>
                 <div className="mt-1 flex items-center">
@@ -459,14 +397,12 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                   <span className="ml-2 text-sm text-gray-600">{toolInfo.popularity}%</span>
                 </div>
               </div>
-
               {toolInfo.avgProcessingTime && (
                 <div>
                   <label className="text-sm font-medium text-gray-700">Avg. Processing Time</label>
                   <p className="text-sm text-gray-600">{toolInfo.avgProcessingTime}</p>
                 </div>
               )}
-
               <div>
                 <label className="text-sm font-medium text-gray-700">Input Formats</label>
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -481,7 +417,6 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                     )}
                 </div>
               </div>
-
               <div>
                 <label className="text-sm font-medium text-gray-700">Output Formats</label>
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -496,7 +431,6 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
                     )}
                 </div>
               </div>
-
               <div>
                 <label className="text-sm font-medium text-gray-700">Features</label>
                 <div className="mt-1 space-y-1">
@@ -509,9 +443,6 @@ const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
               </div>
             </div>
           </div>
-
-          {/* Settings Panel */}
-           
         </div>
       </div>
     </div>

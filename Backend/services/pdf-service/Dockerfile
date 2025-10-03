@@ -1,6 +1,6 @@
 FROM node:20
 
-# Install system packages + Python venv
+# Install system packages + Python venv + LibreOffice
 RUN apt-get update && apt-get install -y \
     qpdf \
     exiftool \
@@ -24,6 +24,12 @@ RUN apt-get update && apt-get install -y \
     enscript \
     aspell aspell-en \
     poppler-utils \
+    libreoffice \
+    libreoffice-writer \
+    libreoffice-calc \
+    libreoffice-impress \
+    libreoffice-draw \
+    libreoffice-math \
     python3-full \
     python3-venv \
     python3-pip \
@@ -35,6 +41,13 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    xvfb \
+    fonts-dejavu \
+    fonts-liberation \
+    fonts-noto-core \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3 /usr/bin/python
 
@@ -46,7 +59,8 @@ COPY services/pdf-service/requirements.txt ./services/pdf-service/
 # Create venv + install Python deps inside it
 RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --upgrade pip \
-    && /opt/venv/bin/pip install --no-cache-dir -r ./services/pdf-service/requirements.txt
+    && /opt/venv/bin/pip install --no-cache-dir -r ./services/pdf-service/requirements.txt \
+    && /opt/venv/bin/pip install --upgrade PyMuPDF==1.23.16
 
 # Add venv to PATH
 ENV PATH="/opt/venv/bin:$PATH"
@@ -67,8 +81,6 @@ COPY services/pdf-service ./services/pdf-service
 # Make Python scripts executable
 RUN chmod +x ./services/pdf-service/scripts/*.py
 
-# Test Python scripts
-RUN python ./services/pdf-service/scripts/test_python_deps.py
 
 # Install local Node deps
 WORKDIR /app/packages/auth-lib
@@ -82,4 +94,4 @@ RUN npm install --legacy-peer-deps && npm install -g nodemon
 
 EXPOSE 2104
 
-CMD ["npm", "run", "dev"]
+CMD ["node", "--expose-gc", "node_modules/nodemon/bin/nodemon.js", "index.js"]
