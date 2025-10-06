@@ -283,8 +283,18 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
       // console.log('🔍 Loading workflows for document:', document.id);
       const response = await workflowAPI.getDocumentWorkflows(document.id);
       if (response.success) {
-        // console.log('🔍 Workflows loaded successfully:', response.data);
-        setWorkflows(response.data);
+        /// ✅ Transform _id to id for frontend use
+      const transformedWorkflows = response.data.map((workflow: any) => ({
+        ...workflow,
+        id: workflow._id, // Add id property from _id
+        steps: workflow.steps.map((step: any) => ({
+          ...step,
+          id: step._id // Add id property from _id for each step
+        }))
+      }));
+      
+      setWorkflows(transformedWorkflows);
+
       } else {
         console.log('❌ Failed to load workflows:', response);
         setWorkflows([]);

@@ -120,6 +120,17 @@ export interface WorkflowStep {
   comments?: string;
   requiredApprovals: number;
   currentApprovals: number;
+  progressPercentage?: number; // Add this field
+  timeTracking?: { 
+    totalTimeSpent: number;
+    isTimerRunning: boolean;
+    lastStartTime?: string;
+    sessions: Array<{
+      startedAt: string;
+      pausedAt: string;
+      duration: number;
+    }>;
+  };
 }
 
 export interface DocumentWorkflow {

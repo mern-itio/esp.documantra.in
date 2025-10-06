@@ -16,9 +16,15 @@ router.get('/workflows/:workflowId', workflowController.getWorkflow);
 router.put('/workflows/:workflowId', workflowController.updateWorkflow);
 
 // Complete a workflow step
-router.put('/workflows/:workflowId/steps/:stepId/complete', workflowController.completeWorkflowStep);
+router.patch('/workflows/:workflowId/steps/:stepId/complete', workflowController.completeWorkflowStep);
 
 // Delete a workflow
 router.delete('/workflows/:workflowId', workflowController.deleteWorkflow);
+
+//Update a Workflow step
+router.patch('/workflows/:workflowId/steps/:stepId', workflowController.updateWorkflowStep);
+
+//update a step progress 
+router.patch('/workflows/:workflowId/steps/:stepId/progress', workflowController.updateWorkflowStepProgress);
 
 module.exports = router;

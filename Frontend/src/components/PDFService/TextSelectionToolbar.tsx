@@ -19,7 +19,7 @@ const defaultHighlightColors = [
 ];
 
 export const TextSelectionToolbar: React.FC<TextSelectionToolbarProps> = ({
-  
+
   position,
   onHighlight,
   onClose,
