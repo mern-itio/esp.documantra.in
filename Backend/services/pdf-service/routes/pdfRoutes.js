@@ -253,7 +253,7 @@ router.post('/pdf-to-ppt', upload.single('document'), async (req, res) => {
 });
 
 
-// PPT to PDF conversion (Advanced)
+// PPT to PDF conversion (LibreOffice - high fidelity)
 router.post('/ppt-to-pdf', upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
@@ -264,22 +264,20 @@ router.post('/ppt-to-pdf', upload.single('document'), async (req, res) => {
     const outputPath = path.join(__dirname, '../outputs', 
       path.basename(req.file.filename, path.extname(req.file.filename)) + '.pdf');
 
-    console.log(`Converting ${req.file.originalname} to PDF using advanced method...`);
+    console.log(`Converting ${req.file.originalname} to PDF (LibreOffice high fidelity)...`);
     
-    const result = await convertPptToPdfAdvanced(inputPath, outputPath);
+    const result = await convertPptToPdf(inputPath, outputPath);
     
     // Clean up uploaded file
     await fs.remove(inputPath);
     
     res.json({
       success: true,
-      message: 'Document converted successfully using advanced method',
+      message: 'Document converted successfully',
       originalFile: req.file.originalname,
       outputFile: path.basename(outputPath),
       downloadUrl: `/outputs/${path.basename(outputPath)}`,
-      fileSize: result.fileSize,
-      slidesProcessed: result.slidesProcessed,
-      format: result.format
+      fileSize: result.fileSize
     });
 
   } catch (error) {

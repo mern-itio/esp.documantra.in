@@ -27,6 +27,12 @@ services:
       - NODE_ENV=development
       - DEBUG=pdf-extract-tables
       - PYTHON_PATH=/opt/venv/bin/python
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
     command: npm run dev
   document-service:
     build:
