@@ -96,7 +96,7 @@ const EnvelopeCreator: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
 
   const [recipients, setRecipients] = useState<Recipient[]>([]);
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [_files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
   const [sending, setSending] = useState(false);
@@ -719,14 +719,14 @@ const savePowerFormSlots = async (): Promise<string | null> => {
               {(!documents || documents.length === 0) ? (
                 <>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</h4>
-                  <p className="text-gray-500">PDF, DOC, DOCX up to 10MB each</p>
+                  <p className="text-gray-500">Only PDF up to 10MB each</p>
                 </>
               ) : (
                 /* Uploaded files shown inside the same dropzone box (UI-only) */
                 <div className="mt-2 text-left">
                   <div className="text-center">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">Uploaded Documents</h4>
+                      <h4 className="text-sm font-medium text-gray-900">Ready to Upload Documents</h4>
                       <p className="text-sm text-gray-500">{documents.length} file{documents.length > 1 ? "s" : ""}</p>
                     </div>
                   </div>

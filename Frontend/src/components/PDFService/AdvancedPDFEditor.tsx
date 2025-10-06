@@ -80,7 +80,7 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloadReady, setIsDownloadReady] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadUrl, _setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [saveSuccess, setSaveSuccess] = useState(false);
