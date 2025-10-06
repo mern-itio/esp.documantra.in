@@ -18,6 +18,9 @@ export interface Document {
   url?: string;
   content?: string;
   file?: File; // Optional: keep original file reference
+    // new optional properties for upload tracking
+  isUploading?: boolean;
+  uploadProgress?: number; // 0–100
 }
 
 export interface SignatureField {

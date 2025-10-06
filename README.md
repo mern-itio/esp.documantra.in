@@ -168,7 +168,9 @@ npm install
 npm run dev # runs on port from .env (e.g., 2101)
 ```
 
-Repeat for `document-service`, `esign-service`, `pdf-service`, `template-service`.
+Repeat for `document-service`, `esign-service`, `pdf-service`, `template-service`, `packages/auth-lib`, `packages/validators`
+
+Change .env for Frontend, All Backend Services and Local Packages.
 
 ---
 

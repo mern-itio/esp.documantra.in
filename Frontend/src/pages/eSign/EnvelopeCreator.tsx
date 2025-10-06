@@ -21,6 +21,7 @@ import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/Adv
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector'; 
 import {eSignApi, templateServiceApi} from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
+import type { AxiosProgressEvent } from 'axios';
 type FieldType = "signature" | "text" | "email" | "number" | "id";
 
 type SignatureField = {
@@ -110,50 +111,136 @@ const EnvelopeCreator: React.FC = () => {
     { id: 6, name: 'Review', description: 'Review and send' }
   ];
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    setFiles(event.target.files);
-    if (!files) return;
+const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const files = event.target.files;
+  setFiles(files);
+  if (!files) return;
 
-    Array.from(files).forEach((file) => {
-      const newDocument: Document = {
-        id: `doc_${Date.now()}_${Math.random()}`,
-        name: file.name,
-        size: file.size,
-        pages: Math.ceil(file.size / 100000), // Mock page calculation
-        type: file.type,
-        url: URL.createObjectURL(file),
-        file:file
-      };
-      setDocuments(prev => [...prev, newDocument]);
-    });
-  };
+  const validDocs: Document[] = [];
+  const invalidFiles: File[] = [];
+
+  Array.from(files).forEach((file) => {
+    // Only accept PDF files
+    if (file.type !== "application/pdf") {
+      invalidFiles.push(file);
+      return; // skip adding invalid file
+    }
+
+    const newDocument: Document = {
+      id: `doc_${Date.now()}_${Math.random()}`,
+      name: file.name,
+      size: file.size,
+      pages: Math.ceil(file.size / 100000), // Mock page calculation
+      type: file.type,
+      url: URL.createObjectURL(file),
+      file: file,
+    };
+    validDocs.push(newDocument);
+  });
+
+  // Show alert if any invalid files
+  if (invalidFiles.length > 0) {
+    alert(
+      `Only PDF files are allowed. The following files are invalid:\n\n${invalidFiles
+        .map((f) => f.name)
+        .join("\n")}`
+    );
+  }
+
+  // Add only valid PDFs to document state
+  if (validDocs.length > 0) {
+    setDocuments((prev) => [...prev, ...validDocs]);
+  }
+};
+
 // Setp 1: Save Document In DB with Empty Envelope
 
-const uploadDocuments = async (currentStep:any) => {
-  if (!files || files?.length === 0) return;
-  const formData = new FormData();
-  Array.from(files).forEach((file) => {
-    formData.append('files', file, file.name);
-  });
-  if (envelopeId) {
-    formData.append('envelopeId', envelopeId);
-  }
-  try {
-      const response = await eSignApi.post('/api/e-sign/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      if (response.status == 200) {
-        setEnvelopeId(response.data.data.envelopeId);
-        navigate(`/e-sign/create?step=${currentStep+1}&envelopeId=${response.data.data.envelopeId}`);
-      }
-  }catch (error) {
-    console.error('Error uploading documents:', error);
+const uploadDocuments = async (currentStep: any) => {
+  if (!documents || documents.length === 0) return;
+
+  // Validate file types before upload
+  const invalidFiles = documents.filter(
+    (doc) => !doc.type || !doc.type.toLowerCase().includes('pdf')
+  );
+
+  if (invalidFiles.length > 0) {
+    alert(
+      `Only PDF files are allowed. The following files are invalid:\n\n${invalidFiles
+        .map((f) => f.name)
+        .join('\n')}`
+    );
+     return false; // failure
   }
 
+  // mark as uploading
+  setDocuments((prev) =>
+    prev.map((doc) => ({ ...doc, isUploading: true, uploadProgress: 0 }))
+  );
+
+  let loopEnvelopeId = envelopeId; // local variable
+
+  for (const doc of documents) {
+    const formData = new FormData();
+    if (doc.file) {
+      formData.append('files', doc.file, doc.name);
+    } else {
+      console.warn('Skipping document with no file:', doc.name);
+      continue;
+    }
+
+    if (loopEnvelopeId) formData.append('envelopeId', loopEnvelopeId);
+
+    try {
+      const response = await eSignApi.post('/api/e-sign/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+          if (progressEvent.total && progressEvent.loaded) {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+
+            setDocuments((prev) =>
+              prev.map((d) =>
+                d.id === doc.id ? { ...d, uploadProgress: percent } : d
+              )
+            );
+          }
+        },
+      });
+
+      if (response.status === 200) {
+        loopEnvelopeId = response.data.data.envelopeId;
+      }
+
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === doc.id
+            ? { ...d, isUploading: false, uploadProgress: 100 }
+            : d
+        )
+      );
+    } catch (err) {
+      console.error('Upload failed for', doc.name, err);
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === doc.id
+            ? { ...d, isUploading: false, uploadProgress: 0 }
+            : d
+        )
+      );
+    }
+  }
+
+  if (loopEnvelopeId ) {
+    setEnvelopeId(loopEnvelopeId);
+    navigate(
+      `/e-sign/create?step=${currentStep + 1}&envelopeId=${loopEnvelopeId}`
+    );
+    return true; // success
+  }
 };
+
+
 // Step 2: Insert Recipients Map them with Envelope
 const insertRecipient = async () => {
   if (recipients?.length === 0) return;
@@ -282,7 +369,11 @@ const handleNext = async () => {
     setNextLoading(true);
     try {
       if (currentStep === 1) {
-        await uploadDocuments(currentStep);
+      const success = await uploadDocuments(currentStep);
+      if (!success) {
+        setNextLoading(false);
+        return; // 🚫 stop here — no next step
+      }
       }
       if (currentStep === 2 ) {
         if (mode === 'normal') {
@@ -607,13 +698,14 @@ const savePowerFormSlots = async (): Promise<string | null> => {
               <p className="text-gray-600 mb-6">Add the documents that need to be signed. Supported formats: PDF, DOC, DOCX.</p>
             </div>
 
+            {/* Dropzone now contains both CTA and uploaded-file list */}
             <div
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
             >
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</h4>
-              <p className="text-gray-500">PDF, DOC, DOCX up to 10MB each</p>
+
+              {/* Hidden file input (unchanged) */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -622,32 +714,77 @@ const savePowerFormSlots = async (): Promise<string | null> => {
                 onChange={handleFileUpload}
                 className="hidden"
               />
-            </div>
 
-            {documents?.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-900">Uploaded Documents</h4>
-                {documents?.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <FileText className="w-8 h-8 text-blue-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">{doc.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {(doc.size / 1024 / 1024).toFixed(2)} MB • {doc.pages} pages
-                        </p>
-                      </div>
+              {/* CTA when no documents */}
+              {(!documents || documents.length === 0) ? (
+                <>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</h4>
+                  <p className="text-gray-500">PDF, DOC, DOCX up to 10MB each</p>
+                </>
+              ) : (
+                /* Uploaded files shown inside the same dropzone box (UI-only) */
+                <div className="mt-2 text-left">
+                  <div className="text-center">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Uploaded Documents</h4>
+                      <p className="text-sm text-gray-500">{documents.length} file{documents.length > 1 ? "s" : ""}</p>
                     </div>
-                    <button
-                      onClick={() => removeDocument(doc.id)}
-                      className="p-1 text-gray-400 hover:text-red-600 rounded"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
                   </div>
-                ))}
-              </div>
+
+<div className="space-y-3">
+  {documents.map((doc) => (
+    <div key={doc.id} className="flex flex-col p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <FileText className="w-8 h-8 text-blue-600" />
+          <div>
+            {!doc.isUploading ? (
+              <>
+                <p className="font-medium text-gray-900">{doc.name}</p>
+                <p className="text-sm text-gray-500">
+                  {(doc.size / 1024 / 1024).toFixed(2)} MB • {doc.pages} pages
+                </p>
+              </>
+            ) : (
+              <p className="font-medium text-gray-900">{doc.name} — Uploading...</p>
             )}
+          </div>
+        </div>
+
+        {!doc.isUploading && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              removeDocument(doc.id);
+            }}
+            className="p-1 text-gray-400 hover:text-red-600 rounded"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {/* Progress bar per document */}
+      {doc.isUploading && (
+        <div className="mt-2">
+          <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
+            <div
+              className="h-full bg-blue-500 transition-all"
+              style={{ width: `${doc.uploadProgress ?? 0}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+
+
+                  <p className="text-xs text-gray-500 mt-3">Tip: click the box to add more files or drag & drop to add.</p>
+                </div>
+              )}
+            </div>
           </div>
         );
 
@@ -1006,7 +1143,7 @@ const savePowerFormSlots = async (): Promise<string | null> => {
                     checked={envelopeData.reminderEnabled}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderEnabled: e.target.checked }))}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
+                  />  
                   <label htmlFor="reminderEnabled" className="text-sm font-medium text-gray-700">
                     Enable automatic reminders
                   </label>

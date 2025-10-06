@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { eSignApi } from "../../services/apiHelper";
@@ -43,6 +43,7 @@ function SignPad({
   const [fontSelect, setFontSelect] = useState("Fasthand");
   const [isSignImg, setIsSignImg] = useState(defaultSign || "");
   const canvasRef = useRef<SignatureCanvas>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const fontOptions = [
     { value: "Fasthand" },
@@ -136,22 +137,43 @@ function SignPad({
       alert("Failed to submit signature. Please try again.");
     }
   };
-const issueCertificate = async(recipientId:any, envelopeId:any, selfValue:any) =>{
-  const payload = {
-    recipientId:recipientId,
-    envelopeId:envelopeId,
-    selfValue:selfValue
-  }
-  try{
-    const issueCertificate = await eSignApi.post('/api/e-sign/certificates/issue',payload);
-    if(issueCertificate){
-      return issueCertificate.data.certificateId;
-    }
-  }catch (err){
-    console.log(err);
-  }
 
- }
+  const issueCertificate = async(recipientId:any, envelopeId:any, selfValue:any) =>{
+    const payload = {
+      recipientId:recipientId,
+      envelopeId:envelopeId,
+      selfValue:selfValue
+    }
+    try{
+      const issueCertificate = await eSignApi.post('/api/e-sign/certificates/issue',payload);
+      if(issueCertificate){
+        return issueCertificate.data.certificateId;
+      }
+    }catch (err){
+      console.log(err);
+    }
+  
+   }
+
+  // --- Auto-focus typed input when the "Typed" tab is active ---
+  // Only run when modal opens or the tab switches to "typed". Do NOT re-run on every
+  // keystroke (typedSignature) because selecting the input on every render causes
+  // each new character to replace the existing text (you'll see only one character).
+  useEffect(() => {
+    if (isSignPad && isTab === "typed") {
+      // small delay to ensure the input is mounted
+      const t = setTimeout(() => {
+        // focus once when entering typed mode
+        inputRef.current?.focus();
+        // select existing text only the first time the typed tab is opened
+        inputRef.current?.select();
+        // generate preview image for current typed value (if any)
+        if (typedSignature) convertToImg(fontSelect, typedSignature, penColor);
+      }, 50);
+      return () => clearTimeout(t);
+    }
+  }, [isTab, isSignPad, fontSelect, penColor]);
+
   return (
     <>
       {isSignPad && (
@@ -171,7 +193,7 @@ const issueCertificate = async(recipientId:any, envelopeId:any, selfValue:any) =
             </div>
 
             <div className="flex gap-4 mb-4">
-              {["draw", "upload", "typed"].map((tab) => (
+              {['draw', 'upload', 'typed'].map((tab) => (
                 <button
                   key={tab}
                   className={`px-2 py-1 border rounded ${
@@ -226,6 +248,7 @@ const issueCertificate = async(recipientId:any, envelopeId:any, selfValue:any) =
               {isTab === "typed" && (
                 <>
                   <input
+                    ref={inputRef}
                     type="text"
                     value={typedSignature}
                     onChange={(e) => {
@@ -298,7 +321,7 @@ const issueCertificate = async(recipientId:any, envelopeId:any, selfValue:any) =
               )}
             </div>
           </div>
-        </div>
+        </div>  
       )}
     </>
   );
