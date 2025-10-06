@@ -140,6 +140,20 @@ const FindReplace: React.FC = () => {
       return;
     }
 
+    if (!options.replaceText || !options.replaceText.trim()) {
+      setError('Please enter replacement text before processing.');
+      // Keep user on Options tab
+      setActiveTab('options');
+      return;
+    }
+
+    // Block processing if we already know there are no matches
+    if (preview && preview.totalMatches === 0) {
+      setError('No matches found. Please adjust your search and try again.');
+      setActiveTab('options');
+      return;
+    }
+
     const request: FindReplaceRequest = {
       file: selectedFile,
       ...options
@@ -166,7 +180,18 @@ const FindReplace: React.FC = () => {
     try {
       const response = await findReplaceService.findReplace(request);
       setResult(response);
-      setSuccess('Find & Replace completed successfully!');
+
+      const totalMatches = response?.findReplaceResults?.totalMatches ?? 0;
+
+      if (totalMatches === 0) {
+        setError('No matches found. Please adjust your search and try again.');
+        setResult(null);
+        // Do not navigate to results when nothing matched
+        setActiveTab('options');
+        return;
+      } else {
+        setSuccess('Find & Replace completed successfully!');
+      }
       setActiveTab('results');
     } catch (err: any) {
       console.error('Find & Replace error:', err);
@@ -249,6 +274,24 @@ const FindReplace: React.FC = () => {
 
   return (
     <div className="mx-auto p-2 space-y-6">
+      {/* Error Modal */}
+      {error && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setError(null)}></div>
+          <div className="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-6 h-6 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-lg font-semibold text-gray-900 mb-1">Action required</h4>
+                <p className="text-sm text-gray-700">{error}</p>
+              </div>
+            </div>
+            <div className="mt-4 text-right">
+              <Button onClick={() => setError(null)} className="bg-blue-600 hover:bg-blue-700">OK</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -430,7 +473,7 @@ const FindReplace: React.FC = () => {
                   </>
                 )}
                 
-                {result && (
+                {result && result.findReplaceResults && result.findReplaceResults.totalMatches > 0 && (
                   <button
                     onClick={() => setActiveTab('results')}
                     className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
@@ -571,7 +614,7 @@ const FindReplace: React.FC = () => {
 
                     <Button
                       onClick={handleFindReplace}
-                      disabled={isProcessing || !selectedFile || !options.searchText.trim()}
+                      disabled={isProcessing || !selectedFile || !options.searchText.trim() || (!!preview && preview.totalMatches === 0)}
                       className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
                     >
                       <Replace className="w-4 h-4" />
@@ -584,6 +627,11 @@ const FindReplace: React.FC = () => {
                         }
                       </span>
                     </Button>
+                    {preview && preview.totalMatches === 0 && (
+                      <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        No matches found to replace
+                      </div>
+                    )}
 
                     <Button
                       onClick={resetForm}
@@ -759,7 +807,7 @@ const FindReplace: React.FC = () => {
                               setOptions(prev => ({ ...prev, replaceAll: true }));
                               handleFindReplace();
                             }}
-                            disabled={isProcessing}
+                            disabled={isProcessing || (preview && preview.totalMatches === 0)}
                             className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
                           >
                             <Replace className="w-4 h-4" />
@@ -770,7 +818,7 @@ const FindReplace: React.FC = () => {
                               setOptions(prev => ({ ...prev, replaceAll: false }));
                               handleFindReplace();
                             }}
-                            disabled={isProcessing}
+                            disabled={isProcessing || (preview && preview.totalMatches === 0)}
                             className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
                           >
                             <Replace className="w-4 h-4" />
@@ -780,6 +828,11 @@ const FindReplace: React.FC = () => {
                       ) : (
                         <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
                           Enter replacement text to proceed
+                        </div>
+                      )}
+                      {preview && preview.totalMatches === 0 && (
+                        <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                          No matches found to replace
                         </div>
                       )}
                     </div>
@@ -866,11 +919,20 @@ const FindReplace: React.FC = () => {
               {/* Results Tab */}
               {activeTab === 'results' && result && (
                 <div className="space-y-6">
-                  <div className="text-center mb-4">
-                    <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Find & Replace Results</h3>
-                    <p className="text-sm text-gray-600">Operation completed successfully</p>
-                  </div>
+                  {(() => {
+                    const totalMatches = result?.findReplaceResults?.totalMatches ?? 0;
+                    return (
+                      <div className="text-center mb-4">
+                        <CheckCircle className={`w-12 h-12 mx-auto mb-2 ${totalMatches === 0 ? 'text-gray-400' : 'text-green-600'}`} />
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {totalMatches === 0 ? 'No Matches Found' : 'Find & Replace Results'}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {totalMatches === 0 ? 'No changes were made' : 'Operation completed successfully'}
+                        </p>
+                      </div>
+                    );
+                  })()}
 
                   {/* Statistics */}
                   {stats && (
@@ -897,15 +959,22 @@ const FindReplace: React.FC = () => {
                   )}
 
                   {/* Download Button */}
-                  <div className="text-center">
-                    <Button
-                      onClick={handleDownload}
-                      className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 mx-auto"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Download Processed PDF</span>
-                    </Button>
-                  </div>
+                  {(() => {
+                    const totalMatches = result?.findReplaceResults?.totalMatches ?? 0;
+                    const disabled = totalMatches === 0;
+                    return (
+                      <div className="text-center">
+                        <Button
+                          onClick={handleDownload}
+                          disabled={disabled}
+                          className={`flex items-center space-x-2 mx-auto ${disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>{disabled ? 'No File to Download' : 'Download Processed PDF'}</span>
+                        </Button>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

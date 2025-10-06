@@ -41,6 +41,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [results, setResults] = useState<ConversionResult[]>([]);
+  const [zipUrl, setZipUrl] = useState<string | null>(null);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Initialize 5 file input refs
@@ -231,6 +232,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
       console.log('Batch conversion result:', result);
       
       setResults(result.results || []);
+      setZipUrl(result.zipUrl || null);
       
     } catch (error) {
       console.error('Batch conversion error:', error);
@@ -284,18 +286,43 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
   };
 
   const downloadAll = async () => {
-    const successfulResults = results.filter(r => r.status === 'success' && r.downloadUrl);
-    
-    if (successfulResults.length === 0) {
-      alert('No successful conversions to download');
-      return;
-    }
+    try {
+      // Prefer backend-provided ZIP if available
+      if (zipUrl) {
+        const baseUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
+        const fullUrl = `${baseUrl}${zipUrl}`;
 
-    // Download each file individually (zip functionality would be handled by backend)
-    for (const result of successfulResults) {
-      if (result.downloadUrl) {
-        await downloadFile(result.downloadUrl, result.fileName, result.outputFormat);
+        console.log(`Downloading ZIP from: ${fullUrl}`);
+        const response = await fetch(fullUrl);
+        if (!response.ok) {
+          throw new Error(`ZIP download failed: ${response.status} ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'batch_conversion.zip';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return;
       }
+
+      // Fallback: download each file individually
+      const successfulResults = results.filter(r => r.status === 'success' && r.downloadUrl);
+      if (successfulResults.length === 0) {
+        alert('No successful conversions to download');
+        return;
+      }
+      for (const result of successfulResults) {
+        if (result.downloadUrl) {
+          await downloadFile(result.downloadUrl, result.fileName, result.outputFormat);
+        }
+      }
+    } catch (error) {
+      console.error('Download all error:', error);
+      alert('Failed to download results.');
     }
   };
 
@@ -492,13 +519,13 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-gray-900">Conversion Results</h4>
-                    {results.some(r => r.status === 'success') && (
+                    {(zipUrl || results.some(r => r.status === 'success')) && (
                       <button
                         onClick={downloadAll}
                         className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       >
                         <Archive className="w-4 h-4" />
-                        <span>Download All</span>
+                        <span>{zipUrl ? 'Download ZIP' : 'Download All'}</span>
                       </button>
                     )}
                   </div>

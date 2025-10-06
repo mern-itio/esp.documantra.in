@@ -2,8 +2,11 @@
 
 export interface RedactRequest {
   file: File;
-  redactionType: RedactionType;
+  // Either a single type or multiple types can be provided
+  redactionType?: RedactionType;
+  redactionTypes?: RedactionType[];
   customPattern?: string;
+  customPatterns?: string[];
   redactionColor: RedactionColor;
   redactionMethod: RedactionMethod;
   preserveLayout?: boolean;
@@ -30,7 +33,7 @@ export interface RedactionDetails {
 
 export interface ComplianceInfo {
   redactionTimestamp: string;
-  redactionType: RedactionType;
+  redactionType: RedactionType | RedactionType[];
   auditTrail: AuditTrailEntry[];
 }
 
@@ -63,7 +66,9 @@ export interface RedactPattern {
 }
 
 export interface RedactOptions {
-  redactionType: RedactionType;
+  // UI options: support multiple selections
+  redactionType?: RedactionType;
+  redactionTypes?: RedactionType[];
   customPattern: string;
   redactionColor: RedactionColor;
   redactionMethod: RedactionMethod;
@@ -89,7 +94,7 @@ export interface RedactHistory {
   id: string;
   timestamp: string;
   filename: string;
-  redactionType: RedactionType;
+  redactionType: RedactionType | RedactionType[];
   totalRedactions: number;
   fileSize: number;
   downloadUrl: string;
@@ -108,7 +113,7 @@ export interface RedactPreset {
   id: string;
   name: string;
   description: string;
-  redactionType: RedactionType;
+  redactionType: RedactionType | 'all_sensitive';
   customPattern?: string;
   redactionColor: RedactionColor;
   redactionMethod: RedactionMethod;
@@ -126,7 +131,7 @@ export interface RedactTemplate {
 }
 
 export interface RedactOperation {
-  redactionType: RedactionType;
+  redactionType: RedactionType | 'all_sensitive';
   customPattern?: string;
   redactionColor: RedactionColor;
   redactionMethod: RedactionMethod;

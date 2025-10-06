@@ -195,7 +195,9 @@ export const PdftoDoc: React.FC = () => {
   const downloadResult = async (result: any) => {
     if (result.status === 'success' && result.downloadUrl && result.outputFile) {
       try {
-        await pdfService.downloadFile(result.downloadUrl, result.outputFile);
+        // Use the original filename with .docx extension for download
+        const originalFileName = result.name.replace(/\.pdf$/i, '.docx');
+        await pdfService.downloadFile(result.downloadUrl, originalFileName);
       } catch (error) {
         console.error('Download error:', error);
         alert('Failed to download converted file. Please try again.');

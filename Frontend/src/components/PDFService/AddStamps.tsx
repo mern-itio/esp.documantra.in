@@ -324,7 +324,6 @@ const AddStamps: React.FC = () => {
       small: 'text-xs',
       medium: 'text-sm',
       large: 'text-base',
-      xlarge: 'text-lg'
     };
     return sizeMap[size] || 'text-sm';
   };

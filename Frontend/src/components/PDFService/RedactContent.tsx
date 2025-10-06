@@ -42,7 +42,7 @@ const RedactContent: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'options' | 'preview' | 'results'>('options');
   const [options, setOptions] = useState<RedactOptions>({
-    redactionType: 'ssn',
+    redactionTypes: ['ssn'],
     customPattern: '',
     redactionColor: 'black',
     redactionMethod: 'solid',
@@ -73,7 +73,7 @@ const RedactContent: React.FC = () => {
   };
 
   const handlePreview = async () => {
-    if (!selectedFile || !options.redactionType) {
+    if (!selectedFile || (!options.redactionType && (!options.redactionTypes || options.redactionTypes.length === 0))) {
       setError('Please select a PDF file and choose a redaction type');
       return;
     }
@@ -81,6 +81,7 @@ const RedactContent: React.FC = () => {
     const request: Omit<RedactRequest, 'redactionColor' | 'redactionMethod' | 'preserveLayout' | 'batchMode' | 'complianceMode'> = {
       file: selectedFile,
       redactionType: options.redactionType,
+      redactionTypes: options.redactionTypes,
       customPattern: options.customPattern
     };
 
@@ -108,7 +109,7 @@ const RedactContent: React.FC = () => {
   };
 
   const handleRedact = async () => {
-    if (!selectedFile || !options.redactionType) {
+    if (!selectedFile || (!options.redactionType && (!options.redactionTypes || options.redactionTypes.length === 0))) {
       setError('Please select a PDF file and choose a redaction type');
       return;
     }
@@ -172,7 +173,7 @@ const RedactContent: React.FC = () => {
     setSuccess(null);
     setActiveTab('options');
     setOptions({
-      redactionType: 'ssn',
+      redactionTypes: ['ssn'],
       customPattern: '',
       redactionColor: 'black',
       redactionMethod: 'solid',
@@ -350,7 +351,7 @@ const RedactContent: React.FC = () => {
                     <p className="text-sm text-gray-600">Configure what content to redact</p>
                   </div>
 
-                  {/* Redaction Type Selection */}
+                  {/* Redaction Type Selection (multi-select) */}
                   <div className="space-y-4">
                     <h4 className="text-md font-semibold text-gray-800 border-b pb-2 flex items-center">
                       <Target className="w-4 h-4 mr-2" />
@@ -358,36 +359,46 @@ const RedactContent: React.FC = () => {
                     </h4>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {redactionTypes.map((type) => (
-                        <label
-                          key={type.value}
-                          className={`flex items-start space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${options.redactionType === type.value
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                        >
-                          <input
-                            type="radio"
-                            name="redactionType"
-                            value={type.value}
-                            checked={options.redactionType === type.value}
-                            onChange={(e) => handleOptionChange('redactionType', e.target.value as RedactionType)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              {type.icon}
-                              <span className="text-sm font-medium text-gray-900">{type.label}</span>
+                      {redactionTypes.map((type) => {
+                        const selected = options.redactionTypes?.includes(type.value);
+                        return (
+                          <label
+                            key={type.value}
+                            className={`flex items-start space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${selected
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                          >
+                            <input
+                              type="checkbox"
+                              name="redactionTypes"
+                              value={type.value}
+                              checked={!!selected}
+                              onChange={(e) => {
+                                const value = e.target.value as RedactionType;
+                                const current = options.redactionTypes || [];
+                                const next = e.target.checked
+                                  ? Array.from(new Set([...current, value]))
+                                  : current.filter(v => v !== value);
+                                handleOptionChange('redactionTypes', next);
+                              }}
+                              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2 mb-1">
+                                {type.icon}
+                                <span className="text-sm font-medium text-gray-900">{type.label}</span>
+                              </div>
+                              <p className="text-xs text-gray-500">{type.description}</p>
                             </div>
-                            <p className="text-xs text-gray-500">{type.description}</p>
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Custom Pattern Input */}
-                  {options.redactionType === 'custom' && (
+                  {(options.redactionType === 'custom' || options.redactionTypes?.includes('custom')) && (
                     <div className="space-y-4">
                       <h4 className="text-md font-semibold text-gray-800 border-b pb-2 flex items-center">
                         <Filter className="w-4 h-4 mr-2" />
@@ -505,7 +516,7 @@ const RedactContent: React.FC = () => {
                   <div className="flex justify-center space-x-4 mt-6">
                     <Button
                       onClick={handlePreview}
-                      disabled={isProcessing || !selectedFile || !options.redactionType}
+                      disabled={isProcessing || !selectedFile || (!options.redactionType && (!options.redactionTypes || options.redactionTypes.length === 0))}
                       className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
                     >
                       <Eye className="w-4 h-4" />
@@ -514,7 +525,7 @@ const RedactContent: React.FC = () => {
 
                     <Button
                       onClick={handleRedact}
-                      disabled={isProcessing || !selectedFile || !options.redactionType}
+                      disabled={isProcessing || !selectedFile || (!options.redactionType && (!options.redactionTypes || options.redactionTypes.length === 0))}
                       className="flex items-center space-x-2 bg-red-600 hover:bg-red-700"
                     >
                       <Shield className="w-4 h-4" />

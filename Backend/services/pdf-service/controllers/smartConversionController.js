@@ -657,8 +657,6 @@ async function performSmartConversion(filePath, targetFormat, settings, baseName
   const outputsDir = path.join(__dirname, '../outputs');
   await fs.ensureDir(outputsDir);
 
-  const timestamp = Date.now();
-  const randomSuffix = Math.round(Math.random() * 1E9);
   // Map target formats to correct file extensions
   const getFileExtension = (format) => {
     switch (format) {
@@ -674,12 +672,9 @@ async function performSmartConversion(filePath, targetFormat, settings, baseName
   };
   
   const fileExtension = getFileExtension(targetFormat);
-  // console.log('🔍 Smart Conversion Debug:');
-  // console.log('  targetFormat:', targetFormat);
-  // console.log('  fileExtension:', fileExtension);
-  // console.log('  baseName:', baseName);
   
-  const outputFilename = `${baseName}_converted_${timestamp}_${randomSuffix}.${fileExtension}`;
+  // Use original base filename with new extension (no unique suffix)
+  const outputFilename = `${baseName}.${fileExtension}`;
   const outputPath = path.join(outputsDir, outputFilename);
 
   try {
