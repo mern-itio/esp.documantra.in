@@ -130,7 +130,9 @@ const SharedPDFPage: React.FC = () => {
 
       // Search query filter
       const matchesSearch = !searchQuery || 
-        (doc.document?.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+
+        doc.document.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+
         doc.recipients.some((recipient: any) => 
           recipient.email.toLowerCase().includes(searchQuery.toLowerCase())
         );

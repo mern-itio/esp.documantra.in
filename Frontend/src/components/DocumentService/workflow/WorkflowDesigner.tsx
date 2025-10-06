@@ -25,7 +25,12 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
       assigneeName: '',
       status: 'pending',
       requiredApprovals: 1,
-      currentApprovals: 0
+      currentApprovals: 0,
+      timeTracking: {
+      totalTimeSpent: 0,
+      isTimerRunning: false,
+      sessions: []
+      }
     }
   ]);
 
@@ -41,7 +46,12 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
         assigneeName: '',
         status: 'pending',
         requiredApprovals: 1,
-        currentApprovals: 0
+        currentApprovals: 0,
+        timeTracking: {
+        totalTimeSpent: 0,
+        isTimerRunning: false,
+        sessions: []
+      }
       }
     ]);
   };

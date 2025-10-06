@@ -309,10 +309,11 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
                  e.oldText === block.text;
         });
         
-        if (edit) {
-          return { ...block, text: edit.newText ?? '' };
+
+      if (edit) {
+          return { ...block, text: edit.newText || '' }; 
         }
-        return block;
+        return { ...block, text: block.text || '' };
       });
       
       // Add any new text blocks for this page
@@ -326,9 +327,11 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
         y: edit.position.y,
         width: edit.position.width,
         height: edit.position.height,
-        fontSize: edit.style?.fontSize ?? 12,
-        fontFamily: edit.style?.fontFamily ?? 'Helvetica',
-        color: edit.style?.color ?? '#000000',
+
+        fontSize: edit.style?.fontSize || 12,
+        fontFamily: edit.style?.fontFamily || 'helv',
+        color: edit.style?.color || '#000000',
+
         flags: 0
       }));
       
@@ -500,8 +503,8 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
       );
 
       if (result.success) {
-        setDownloadUrl(result.data.downloadUrl);
-        setDownloadFileName(result.data.fileName);
+
+        setDownloadFileName(result.data.fileName)
         setSaveSuccess(true);
 
         // Start countdown
@@ -517,8 +520,6 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
           });
         }, 1000);
 
-        // Clear edits after successful save
-        editorActions.clearEdits();
 
         // Hide success message after 3 seconds
         setTimeout(() => {
@@ -548,6 +549,9 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
         window.open(downloadUrl);
       }
     } catch (e) {
+
+      
+
       console.error('Download failed:', e);
     }
   };
@@ -759,7 +763,7 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
                 </Button>
                 <Button
                   onClick={handleDownload}
-                  disabled={!isDownloadReady || !downloadUrl}
+                  disabled={!isDownloadReady || !downloadFileName}
                   variant="outline"
                   className="border-gray-300 hover:bg-gray-50"
                 >

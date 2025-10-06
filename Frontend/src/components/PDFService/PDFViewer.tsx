@@ -913,7 +913,9 @@ React.useImperativeHandle(ref, () => ({
 
     // Check if there's still selected text and show toolbar
     const selection = window.getSelection();
-    if (selection && selection.toString().trim() ) {
+
+    if (selection && selection.toString().trim()) {
+
       handleTextSelection();
       return;
     }
