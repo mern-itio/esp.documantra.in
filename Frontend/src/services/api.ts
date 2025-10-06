@@ -514,20 +514,51 @@ export const workflowAPI = {
   },
 
   // Complete workflow step
-  completeWorkflowStep: async (workflowId: string, stepId: string, data: {
-    status: 'pending' | 'in_progress' | 'completed' | 'rejected';
-    comments?: string;
-  }) => {
-    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/complete`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
+  // completeWorkflowStep: async (workflowId: string, stepId: string, data: {
+  //   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  //   comments?: string;
+  // }) => {
+  //   return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/complete`, {
+  //     method: 'PUT',
+  //     body: JSON.stringify(data),
+  //   });
+  // },
 
   // Delete workflow
   deleteWorkflow: async (workflowId: string) => {
     return makeDocumentRequest(`/api/workflows/${workflowId}`, {
       method: 'DELETE',
+    });
+  },
+
+  // Update workflow step (start/pause timer)
+  updateWorkflowStep: async (workflowId: string, stepId: string, data: {
+    action: 'start' | 'pause';
+  }) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Complete workflow step (completed/rejected)
+  completeWorkflowStep: async (workflowId: string, stepId: string, data: {
+    status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+    comments?: string;
+  }) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/complete`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // In workflowAPI object
+  updateWorkflowStepProgress: async (workflowId: string, stepId: string, data: {
+    progressPercentage?: number;
+  }) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/progress`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   },
 };

@@ -11,10 +11,22 @@ const workflowStepSchema = new mongoose.Schema({
     default: 'pending'
   },
   dueDate: { type: Date },
+  progressPercentage: { type: Number, default: 0, min: 0, max: 100 },
   completedAt: { type: Date },
   comments: { type: String },
   requiredApprovals: { type: Number, default: 1 },
   currentApprovals: { type: Number, default: 0 },
+  // Timer tracking fields
+  timeTracking: {
+    totalTimeSpent: { type: Number, default: 0 }, // in seconds
+    isTimerRunning: { type: Boolean, default: false },
+    lastStartTime: { type: Date }, // When timer was last started
+    sessions: [{
+      startedAt: Date,
+      pausedAt: Date,
+      duration: Number // in seconds
+    }]
+  },
   metadata: {
     startedAt: Date,
     completedBy: String,
@@ -44,8 +56,6 @@ const workflowSchema = new mongoose.Schema({
     description: String,
     tags: [String],
     category: String,
-    estimatedDuration: Number, // in hours
-    actualDuration: Number, // in hours
     cost: Number,
     department: String
   }

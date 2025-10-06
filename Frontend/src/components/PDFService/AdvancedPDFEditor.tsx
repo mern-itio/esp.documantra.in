@@ -84,7 +84,6 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
   const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [saveSuccess, setSaveSuccess] = useState(false);
-    const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfViewerRef = useRef<any>(null);

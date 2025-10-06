@@ -161,71 +161,73 @@ class WorkflowController {
   }
 
   // Complete a workflow step
-  async completeWorkflowStep(req, res) {
-    try {
-      const { workflowId, stepId } = req.params;
-      const userId = req.user.data.id;
-      const { status, comments } = req.body;
+  // async completeWorkflowStep(req, res) {
+  //   try {
+  //     const { workflowId, stepId } = req.params;
+  //     const userId = req.user.data.id;
+  //     const { status, comments } = req.body;
 
-      const workflow = await Workflow.findById(workflowId);
-      if (!workflow) {
-        return res.status(404).json({ success: false, message: 'Workflow not found' });
-      }
+  //     const workflow = await Workflow.findById(workflowId);
+  //     if (!workflow) {
+  //       return res.status(404).json({ success: false, message: 'Workflow not found' });
+  //     }
 
-      // Check if user is assigned to this step
-      const step = workflow.steps.id(stepId);
-      if (!step) {
-        return res.status(404).json({ success: false, message: 'Workflow step not found' });
-      }
+  //     // Check if user is assigned to this step
+  //     const step = workflow.steps.id(stepId);
+  //     if (!step) {
+  //       return res.status(404).json({ success: false, message: 'Workflow step not found' });
+  //     }
 
-      if (step.assignee !== req.user.data.email) {
-        return res.status(403).json({ success: false, message: 'You can only complete steps assigned to you' });
-      }
+  //     if (step.assignee !== req.user.data.email) {
+  //       return res.status(403).json({ success: false, message: 'You can only complete steps assigned to you' });
+  //     }
 
-      // Update step status
-      step.status = status;
-      if (status === 'completed') {
-        step.completedAt = new Date();
-        step.metadata.completedBy = req.user.data.email;
-      }
-      if (comments) {
-        step.comments = comments;
-      }
+  //     // Update step status
+  //     step.status = status;
+  //     if (status === 'completed') {
+  //       step.completedAt = new Date();
+  //       step.metadata.completedBy = req.user.data.email;
+  //     }
+  //     if (comments) {
+  //       step.comments = comments;
+  //     }
 
-      // Check if all steps are completed
-      const allStepsCompleted = workflow.steps.every(s => s.status === 'completed');
-      if (allStepsCompleted) {
-        workflow.status = 'completed';
-        workflow.completedAt = new Date();
+  //     // Check if all steps are completed
+  //     const allStepsCompleted = workflow.steps.every(s => s.status === 'completed');
+  //     if (allStepsCompleted) {
+  //       workflow.status = 'completed';
+  //       workflow.completedAt = new Date();
         
-        // Send completion notification
-        const document = await Document.findOne({
-          _id: workflow.documentId,
-          isDeleted: { $ne: true } // Exclude deleted documents
-        });
-        if (document) {
-          await emailService.sendWorkflowCompletion(
-            workflow.name,
-            document.name,
-            req.user.data.name || req.user.data.email,
-            workflow.steps,
-            req.user.data.email // Pass current user's email as sender
-          );
-        }
-      }
+  //       // Send completion notification
+  //       const document = await Document.findOne({
+  //         _id: workflow.documentId,
+  //         isDeleted: { $ne: true } // Exclude deleted documents
+  //       });
+  //       if (document) {
+  //         await emailService.sendWorkflowCompletion(
+  //           workflow.name,
+  //           document.name,
+  //           req.user.data.name || req.user.data.email,
+  //           workflow.steps,
+  //           req.user.data.email // Pass current user's email as sender
+  //         );
+  //       }
+  //     }
 
-      await workflow.save();
+  //     await workflow.save();
 
-      res.json({ 
-        success: true, 
-        message: 'Workflow step updated successfully', 
-        data: workflow 
-      });
-    } catch (error) {
-      console.error('Error completing workflow step:', error);
-      res.status(500).json({ success: false, message: 'Failed to complete workflow step' });
-    }
-  }
+  //     res.json({ 
+  //       success: true, 
+  //       message: 'Workflow step updated successfully', 
+  //       data: workflow 
+  //     });
+  //   } catch (error) {
+  //     console.error('Error completing workflow step:', error);
+  //     res.status(500).json({ success: false, message: 'Failed to complete workflow step' });
+  //   }
+  // }
+
+
 
   // Delete workflow
   async deleteWorkflow(req, res) {
@@ -264,7 +266,7 @@ class WorkflowController {
     }
   }
 
-
+  // get Workflow by ID
   async getWorkflow(req, res) {
   try {
     const { workflowId } = req.params;
@@ -303,6 +305,371 @@ class WorkflowController {
   }
   }
 
+ // Update workflow step - Handle start/pause timer
+  async updateWorkflowStep(req, res) {
+    try {
+      const { workflowId, stepId } = req.params;
+      const userEmail = req.user.data.email;
+      const { action } = req.body; 
+      // action can be: 'start' or 'pause'
+
+      // Find workflow
+      const workflow = await Workflow.findById(workflowId);
+      if (!workflow) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Workflow not found' 
+        });
+      }
+
+      // Check if workflow is cancelled
+      if (workflow.status === 'cancelled') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Cannot update a cancelled workflow' 
+        });
+      }
+
+      // Find the specific step
+      const step = workflow.steps.id(stepId);
+      if (!step) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Workflow step not found' 
+        });
+      }
+
+      // Verify user is assigned to this step
+      if (step.assignee !== userEmail) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'You can only update steps assigned to you' 
+        });
+      }
+
+      // Check if step is already completed or rejected
+      if (step.status === 'completed' || step.status === 'rejected') {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Cannot update a ${step.status} step` 
+        });
+      }
+
+      const now = new Date();
+
+      // Handle different actions
+      switch (action) {
+        case 'start':
+          if (step.timeTracking.isTimerRunning) {
+            return res.status(400).json({ 
+              success: false, 
+              message: 'Timer is already running' 
+            });
+          }
+
+          // Start timer
+          step.timeTracking.isTimerRunning = true;
+          step.timeTracking.lastStartTime = now;
+          step.status = 'in_progress';
+          
+          // Set startedAt if first time
+          if (!step.metadata.startedAt) {
+            step.metadata.startedAt = now;
+          }
+          break;
+
+        case 'pause':
+          if (!step.timeTracking.isTimerRunning) {
+            return res.status(400).json({ 
+              success: false, 
+              message: 'Timer is not running' 
+            });
+          }
+
+          // Calculate duration for this session
+          const sessionDuration = Math.floor(
+            (now - new Date(step.timeTracking.lastStartTime)) / 1000
+          ); // in seconds
+
+          // Add to total time
+          step.timeTracking.totalTimeSpent += sessionDuration;
+
+          // Save session record
+          step.timeTracking.sessions.push({
+            startedAt: step.timeTracking.lastStartTime,
+            pausedAt: now,
+            duration: sessionDuration
+          });
+
+          // Stop timer
+          step.timeTracking.isTimerRunning = false;
+          step.timeTracking.lastStartTime = null;
+          step.status = 'in_progress'; // Remains in progress but paused
+          break;
+
+        default:
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid action. Use: start or pause' 
+          });
+      }
+
+      await workflow.save();
+
+      // Calculate current total time (including running session if active)
+      let currentTotalTime = step.timeTracking.totalTimeSpent;
+      if (step.timeTracking.isTimerRunning) {
+        const currentSessionTime = Math.floor(
+          (now - new Date(step.timeTracking.lastStartTime)) / 1000
+        );
+        currentTotalTime += currentSessionTime;
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Workflow step ${action}ed successfully`, 
+        data: {
+          workflow,
+          currentStep: step,
+          totalTimeSpent: currentTotalTime, // Total time including current session
+          totalTimeSpentFormatted: WorkflowController.formatTime(currentTotalTime),
+          isTimerRunning: step.timeTracking.isTimerRunning,
+          lastStartTime: step.timeTracking.lastStartTime
+        }
+      });
+
+    } catch (error) {
+      console.error('Error updating workflow step:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to update workflow step' 
+      });
+    }
+  }
+
+  //NEW Complete workflow step - Handle complete/reject status
+  async completeWorkflowStep(req, res) {
+    try {
+      const { workflowId, stepId } = req.params;
+      const userEmail = req.user.data.email;
+      const { status, comments } = req.body; 
+      // status can be: 'completed' or 'rejected'
+
+      // Validate status
+      if (!['completed', 'rejected'].includes(status)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Status must be either completed or rejected' 
+        });
+      }
+
+      // Find workflow
+      const workflow = await Workflow.findById(workflowId);
+      if (!workflow) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Workflow not found' 
+        });
+      }
+
+      // Check if workflow is cancelled
+      if (workflow.status === 'cancelled') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Cannot complete a step in a cancelled workflow' 
+        });
+      }
+
+      // Find the specific step
+      const step = workflow.steps.id(stepId);
+      if (!step) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Workflow step not found' 
+        });
+      }
+
+      // Verify user is assigned to this step
+      if (step.assignee !== userEmail) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'You can only complete steps assigned to you' 
+        });
+      }
+
+      // Check if step is already completed or rejected
+      if (step.status === 'completed' || step.status === 'rejected') {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Step is already ${step.status}` 
+        });
+      }
+
+      const now = new Date();
+
+      // If timer is running, stop it and save final session
+      if (step.timeTracking.isTimerRunning) {
+        const sessionDuration = Math.floor(
+          (now - new Date(step.timeTracking.lastStartTime)) / 1000
+        );
+        step.timeTracking.totalTimeSpent += sessionDuration;
+        step.timeTracking.sessions.push({
+          startedAt: step.timeTracking.lastStartTime,
+          pausedAt: now,
+          duration: sessionDuration
+        });
+        step.timeTracking.isTimerRunning = false;
+        step.timeTracking.lastStartTime = null;
+      }
+
+      // Handle based on status
+      if (status === 'completed') {
+        step.status = 'completed';
+        step.completedAt = now;
+        step.metadata.completedBy = userEmail;
+        
+        // Add comments if provided (optional for completion)
+        if (comments) {
+          step.comments = comments;
+        }
+
+        // Check if all steps are completed
+        const allStepsCompleted = workflow.steps.every(
+          s => s.status === 'completed'
+        );
+        
+        if (allStepsCompleted) {
+          workflow.status = 'completed';
+          workflow.completedAt = now;
+          
+          // Calculate total actual duration in hours
+          const totalDuration = workflow.steps.reduce((sum, s) => 
+            sum + (s.timeTracking.totalTimeSpent || 0), 0
+          );
+          workflow.metadata.actualDuration = totalDuration / 3600;
+          
+          // Send completion notification
+          const document = await Document.findOne({
+            _id: workflow.documentId,
+            isDeleted: { $ne: true }
+          });
+          
+          if (document) {
+            await emailService.sendWorkflowCompletion(
+              workflow.name,
+              document.name,
+              req.user.data.name || userEmail,
+              workflow.steps,
+              userEmail
+            );
+          }
+        }
+      } else if (status === 'rejected') {
+        // Rejection requires comments
+        if (!comments) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Comments are required when rejecting a step' 
+          });
+        }
+
+        step.status = 'rejected';
+        step.comments = comments;
+        step.metadata.rejectionReason = comments;
+      }
+
+      await workflow.save();
+
+      res.json({ 
+        success: true, 
+        message: `Workflow step ${status} successfully`, 
+        data: {
+          workflow,
+          currentStep: step,
+          timeSpent: step.timeTracking.totalTimeSpent,
+          timeSpentFormatted: WorkflowController.formatTime(step.timeTracking.totalTimeSpent)
+        }
+      });
+
+    } catch (error) {
+      console.error('Error completing workflow step:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to complete workflow step' 
+      });
+    }
+  }
+
+  // Update the Step Progress bar
+  async updateWorkflowStepProgress(req, res) {
+  try {
+    const { workflowId, stepId } = req.params;
+    const userEmail = req.user.data.email;
+    const { progressPercentage } = req.body;
+
+    if (progressPercentage !== undefined) {
+      if (typeof progressPercentage !== 'number' || progressPercentage < 0 || progressPercentage > 100) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Progress percentage must be a number between 0 and 100' 
+        });
+      }
+    }
+
+    const workflow = await Workflow.findById(workflowId);
+    if (!workflow) {
+      return res.status(404).json({ success: false, message: 'Workflow not found' });
+    }
+
+    if (workflow.status === 'cancelled') {
+      return res.status(400).json({ success: false, message: 'Cannot update progress in a cancelled workflow' });
+    }
+
+    const step = workflow.steps.id(stepId);
+    if (!step) {
+      return res.status(404).json({ success: false, message: 'Workflow step not found' });
+    }
+
+    if (step.assignee !== userEmail) {
+      return res.status(403).json({ success: false, message: 'You can only update progress for steps assigned to you' });
+    }
+
+    if (step.status === 'completed' || step.status === 'rejected') {
+      return res.status(400).json({ success: false, message: `Cannot update progress for a ${step.status} step` });
+    }
+
+    // Update step progress percentage
+    if (progressPercentage !== undefined) {
+      step.progressPercentage = progressPercentage;
+    }
+
+
+    // Change status if needed
+    if (step.status === 'pending' && progressPercentage > 0) {
+      step.status = 'in_progress';
+      if (!step.metadata.startedAt) {
+        step.metadata.startedAt = new Date();
+      }
+    }
+
+    await workflow.save();
+
+    res.json({ 
+      success: true, 
+      message: 'Progress updated successfully', 
+      data: {
+        workflow,
+        currentStep: step,
+        progressPercentage: step.progressPercentage
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating workflow step progress:', error);
+    res.status(500).json({ success: false, message: 'Failed to update progress' });
+  }
+}
+
   // Helper method to add workflow collaborators
   static async addWorkflowCollaborators(documentId, assigneeEmails, inviterName, senderEmail) {
     try {
@@ -326,14 +693,6 @@ class WorkflowController {
         console.log(`🔍 Initialized empty sharedWith array`);
       }
 
-
-    //    // ✅ LOOKUP USERS BY EMAIL FIRST
-    // const users = await User.find({ email: { $in: assigneeEmails } });
-    // const emailToUserMap = {};
-    // users.forEach(user => {
-    //   emailToUserMap[user.email] = user._id.toString(); // or user.id depending on your setup
-    // });
-    // console.log(`🔍 Found ${users.length} users from ${assigneeEmails.length} emails`);
 
       // Check for existing collaborators by both userId and email
       const existingCollaborators = document.sharedWith.map(share => share.userId || share.email).filter(Boolean);
@@ -381,6 +740,32 @@ class WorkflowController {
       console.error('Error adding workflow collaborators:', error);
     }
   }
+
+  // Helper function to format time in seconds to readable format
+  static formatTime(seconds) {
+    if (!seconds || seconds === 0) {
+      return '0s';
+    }
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    const parts = [];
+    
+    if (hours > 0) {
+      parts.push(`${hours}h`);
+    }
+    if (minutes > 0) {
+      parts.push(`${minutes}m`);
+    }
+    if (secs > 0 || parts.length === 0) {
+      parts.push(`${secs}s`);
+    }
+
+    return parts.join(' ');
+  }
 }
+
 
 module.exports = new WorkflowController();
