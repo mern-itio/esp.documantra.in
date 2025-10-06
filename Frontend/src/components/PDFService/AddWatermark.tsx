@@ -464,7 +464,8 @@ const AddWatermark: React.FC = () => {
         </div>
         )}
 
-        {/* Selected File Info - Show after file upload */}
+        {/* Selected File Info - Show after file upload */
+        }
         {selectedPdfFile && (
           <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
@@ -495,6 +496,41 @@ const AddWatermark: React.FC = () => {
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Image File Upload - Always show on Image tab, even after PDF selected */}
+        {selectedPdfFile && activeTab === 'image' && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Image</h2>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Image File *
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  ref={imageFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => imageFileInputRef.current?.click()}
+                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                >
+                  <Image className="w-12 h-12" />
+                  <span className="text-lg font-medium">
+                    {selectedImageFile ? selectedImageFile.name : 'Click to upload image'}
+                  </span>
+                  {selectedImageFile && (
+                    <span className="text-sm text-gray-500">
+                      Size: {addWatermarkService.formatFileSize(selectedImageFile.size)}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -183,13 +183,13 @@ async function convertDocToPdf(inputPath, outputPath) {
       await fs.move(expectedOutputPath, outputPath, { overwrite: true });
     }
 
-    console.log('LibreOffice DOC to PDF conversion successful');
+    // console.log('LibreOffice DOC to PDF conversion successful');
 
     // Get output file stats
     const outputStats = await fs.stat(outputPath);
     const outputSize = outputStats.size;
 
-    console.log('DOC to PDF conversion completed successfully using LibreOffice.');
+    // console.log('DOC to PDF conversion completed successfully using LibreOffice.');
 
     return {
       success: true,
@@ -205,100 +205,11 @@ async function convertDocToPdf(inputPath, outputPath) {
     console.error('Error in DOC to PDF conversion using LibreOffice:', error);
     
     // Fallback to simple text extraction method if LibreOffice fails
-    console.log('LibreOffice conversion failed, falling back to text extraction method...');
+    console.log('LibreOffice conversion failed, falling back to text extraction method...');   
     
-    try {
-      return await convertDocToPdfSimple(inputPath, outputPath);
-    } catch (fallbackError) {
-      console.error('Fallback conversion also failed:', fallbackError);
-      throw new Error(`Failed to convert DOC to PDF: ${error.message}. Fallback also failed: ${fallbackError.message}`);
-    }
   }
 }
 
-/**
- * Simple DOC to PDF conversion using text extraction and PDFKit (no Puppeteer required)
- * @param {string} inputPath - Path to input DOC/DOCX file
- * @param {string} outputPath - Path where PDF will be saved
- * @returns {Promise<Object>} - Result object with file size
- */
-async function convertDocToPdfSimple(inputPath, outputPath) {
-  try {
-    // console.log('Starting simple DOC to PDF conversion using text extraction...');
-    
-    // Read the document
-    const buffer = await fs.readFile(inputPath);
-    
-    // Extract text content using mammoth (without HTML conversion)
-    const result = await mammoth.extractRawText({ buffer });
-    const textContent = result.value;
-    
-    // console.log(`Extracted ${textContent.length} characters of text`);
-    
-    // Create PDF using PDFKit (no Puppeteer required)
-    const doc = new PDFDocument({ 
-      margin: 30,
-      size: 'A4',
-      font: 'Helvetica'
-    });
-    
-    const stream = fsSync.createWriteStream(outputPath);
-    doc.pipe(stream);
-    
-    // Add title
-    // doc.fontSize(20).font('Helvetica-Bold').text('Document to PDF Conversion', { align: 'center' });
-    // doc.moveDown(0.5);
-    // doc.fontSize(12).font('Helvetica').text(`Original file: ${path.basename(inputPath)}`, { align: 'center' });
-    // doc.fontSize(10).text(`Converted on: ${new Date().toLocaleString()}`, { align: 'center' });
-    // doc.moveDown(2);
-    
-    // Add extracted text content
-    if (textContent && textContent.length > 0) {
-      // doc.fontSize(12).font('Helvetica').text('Document Content:', { underline: true });
-      // doc.moveDown(0.5);
-      
-      // Split text into paragraphs and add to PDF
-      const paragraphs = textContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-      
-      paragraphs.forEach(paragraph => {
-        if (paragraph.trim().length > 0) {
-          doc.fontSize(11).font('Helvetica').text(paragraph.trim(), {
-            width: 500,
-            align: 'left'
-          });
-          doc.moveDown(0.5);
-        }
-      });
-    } else {
-      doc.fontSize(14).font('Helvetica').text('No text content could be extracted from the document.', { align: 'center' });
-      doc.moveDown(1);
-      doc.fontSize(12).text('The document may be empty, corrupted, or contain only non-text elements.', { align: 'center' });
-    }
-    
-    doc.end();
-    
-    await new Promise((resolve, reject) => {
-      stream.on('finish', resolve);
-      stream.on('error', reject);
-    });
-    
-    const stats = await fs.stat(outputPath);
-    
-    // console.log('Simple DOC to PDF conversion completed successfully');
-    
-    return {
-      success: true,
-      fileSize: stats.size,
-      message: 'Document converted successfully using text extraction (no Puppeteer required)',
-      outputFile: path.basename(outputPath),
-      textExtracted: textContent.length
-    };
-    
-  } catch (error) {
-    console.error('Error in simple DOC to PDF conversion:', error);
-    throw new Error(`Failed to convert document to PDF: ${error.message}`);
-  }
-}
 /**
  * Convert PDF to DOCX using LibreOffice CLI for exact layout preservation
  * @param {string} inputPath - Path to input PDF file
@@ -1700,7 +1611,6 @@ async function cleanupOldFiles(directory, maxAge = 24) {
 
 module.exports = {
   convertDocToPdf,
-  convertDocToPdfSimple,
   convertPdfToDoc,
   convertDocToPdfAlternative,
   convertPdfToExcel,

@@ -22,9 +22,17 @@ export const redactService = {
     try {
       const formData = new FormData();
       formData.append('file', request.file);
-      formData.append('redactionType', request.redactionType);
+      if (request.redactionTypes && request.redactionTypes.length > 0) {
+        formData.append('redactionTypes', JSON.stringify(request.redactionTypes));
+      }
+      if (request.redactionType) {
+        formData.append('redactionType', request.redactionType);
+      }
       if (request.customPattern) {
         formData.append('customPattern', request.customPattern);
+      }
+      if (request.customPatterns && request.customPatterns.length > 0) {
+        formData.append('customPatterns', JSON.stringify(request.customPatterns));
       }
       formData.append('redactionColor', request.redactionColor);
       formData.append('redactionMethod', request.redactionMethod);
@@ -51,9 +59,17 @@ export const redactService = {
     try {
       const formData = new FormData();
       formData.append('file', request.file);
-      formData.append('redactionType', request.redactionType);
+      if (request.redactionTypes && request.redactionTypes.length > 0) {
+        formData.append('redactionTypes', JSON.stringify(request.redactionTypes));
+      }
+      if (request.redactionType) {
+        formData.append('redactionType', request.redactionType);
+      }
       if (request.customPattern) {
         formData.append('customPattern', request.customPattern);
+      }
+      if (request.customPatterns && request.customPatterns.length > 0) {
+        formData.append('customPatterns', JSON.stringify(request.customPatterns));
       }
 
       const response = await pdfApi.post('/pdf-redact/preview', formData, {
@@ -153,12 +169,13 @@ export const redactService = {
       errors.push('File is required');
     }
 
-    if (!request.redactionType) {
-      errors.push('Redaction type is required');
+    if (!request.redactionType && (!request.redactionTypes || request.redactionTypes.length === 0)) {
+      errors.push('At least one redaction type is required');
     }
 
-    if (request.redactionType === 'custom' && (!request.customPattern || request.customPattern.trim() === '')) {
-      errors.push('Custom pattern is required when using custom redaction type');
+    const includesCustom = (request.redactionType === 'custom') || (request.redactionTypes?.includes('custom'));
+    if (includesCustom && (!request.customPattern && (!request.customPatterns || request.customPatterns.length === 0))) {
+      errors.push('Custom pattern is required when selecting custom redaction type');
     }
 
     if (request.customPattern && request.customPattern.length > 1000) {
@@ -166,11 +183,22 @@ export const redactService = {
     }
 
     // Validate custom regex if provided
-    if (request.redactionType === 'custom' && request.customPattern) {
+    if (includesCustom && request.customPattern) {
       try {
         new RegExp(request.customPattern);
       } catch (error) {
         errors.push('Invalid regular expression pattern');
+      }
+    }
+    if (includesCustom && request.customPatterns && request.customPatterns.length > 0) {
+      for (const patt of request.customPatterns) {
+        try {
+          // eslint-disable-next-line no-new
+          new RegExp(patt);
+        } catch (error) {
+          errors.push('Invalid regular expression pattern in custom patterns');
+          break;
+        }
       }
     }
 
@@ -517,8 +545,12 @@ export const redactService = {
 
     const patternCounts = new Map<string, number>();
     history.forEach(op => {
-      const count = patternCounts.get(op.redactionType) || 0;
-      patternCounts.set(op.redactionType, count + 1);
+      const types = Array.isArray(op.redactionType) ? op.redactionType : [op.redactionType];
+      types.forEach(t => {
+        const key = String(t);
+        const count = patternCounts.get(key) || 0;
+        patternCounts.set(key, count + 1);
+      });
     });
 
     const mostUsedPatterns = Array.from(patternCounts.entries())

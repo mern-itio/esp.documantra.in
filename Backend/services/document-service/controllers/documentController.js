@@ -22,7 +22,7 @@ const extractFileContent = async (filePath, mimeType) => {
         const pdfParse = require('pdf-parse');
         const dataBuffer = await fs.promises.readFile(filePath);
         const data = await pdfParse(dataBuffer);
-        return `\n\n${data.text}\n\n---\nPages: ${data.numpages}\nFile: ${path.basename(filePath)}`;
+        return `${data.text}\n\n---\nPages: ${data.numpages}\nFile: ${path.basename(filePath)}`;
       } catch (pdfError) {
         console.error('PDF parsing error:', pdfError);
         return `[PDF Document Content]\n\nUnable to extract text from PDF. This might be a scanned document or image-based PDF.\n\nFile: ${path.basename(filePath)}\nError: ${pdfError.message}`;
@@ -34,7 +34,7 @@ const extractFileContent = async (filePath, mimeType) => {
       try {
         const mammoth = require('mammoth');
         const result = await mammoth.extractRawText({ path: filePath });
-        return `[Word Document Content]\n\n${result.value}\n\n---\nFile: ${path.basename(filePath)}`;
+        return `${result.value}`;
       } catch (wordError) {
         console.error('Word document parsing error:', wordError);
         return `[Word Document Content]\n\nUnable to extract text from Word document.\n\nFile: ${path.basename(filePath)}\nError: ${wordError.message}`;
