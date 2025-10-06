@@ -383,7 +383,6 @@ const addSignature = async (req, res) => {
     console.log('Failed to initiate recipient signature');
     return res.status(500).json({ message: 'Failed to initiate signature' });
   }
-  console.log('Signature field updated:', initiateSign.signatureField);
   // Check pending recipients and send email to next recipient
     try {
     const pendingFields = await SignatureField.find({
@@ -399,7 +398,6 @@ const addSignature = async (req, res) => {
               console.log('Failed to prepare document for final signing');
               return res.status(500).json({ message: 'Failed to prepare document for final signing' });
             }
-            console.log('Document prepared for final signing:', prepareDoc);
             // Call the final signing function
             const digiSign = await finalizeSigning(envelopeId, documentId);
             if (!digiSign) {

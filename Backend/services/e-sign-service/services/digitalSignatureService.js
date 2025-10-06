@@ -279,14 +279,14 @@ async function finalizeSigning(envelopeId, documentId) {
 
   const finalSaved = await saveSignedPdf(envelopeId, documentId, pdfBuffer);
   if (finalSaved) {
-    docRecord.filePath = finalSaved.filePath;
-    docRecord.fileName = finalSaved.fileName;
-    docRecord.fileSize = finalSaved.size;
+    docRecord.signedFilePath = finalSaved.filePath;
+    docRecord.signedFileName = finalSaved.fileName;
+    docRecord.signedFileSize = finalSaved.size;
     await docRecord.save();
     await AuditTrail.create({ envelopeId, action: 'FINAL_SIGNED_SAVED', details: { path: finalSaved.filePath } }).catch(() => {});
   }
 
-  return { finalPath: docRecord.filePath };
+  return { finalPath: docRecord.signedFilePath };
 }
 
 module.exports = {

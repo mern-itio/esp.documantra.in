@@ -276,14 +276,15 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
             selfValue={selfValue || ''}
             onSaveSign={(fieldId: string, signatureUrl: string) => {
               // Update selfSigner locally for immediate visual update
+            if(selfValue==="1"){
               setSelfSigner((prev: any) =>
-                prev.map((s: any) =>
+                prev.map((s: any) =>{
                   s.signerSlotId === activeField?.slotId
                     ? { ...s, signature: signatureUrl }
                     : s
-                )
+                  })
               );
-
+            }
               setActiveField(null); // Close the SignPad
               onSignatureSave?.(fieldId, signatureUrl); // Optional: notify parent
             }}
