@@ -10,6 +10,7 @@ export interface AnalyticsData {
       percentage: number;
     }>;
   };
+  performanceTrend?: Array<{ date: string; successRate: number; avgProcessingTimeMs: number }>;
   performanceMetrics: {
     successRate: number;
     averageProcessingTime: string;
@@ -67,7 +68,8 @@ class AnalyticsService {
         params: {
           startDate: dateRange.startDate,
           endDate: dateRange.endDate,
-          timeRange
+          timeRange,
+          includeAllUsers: true
         }
       });
 
@@ -147,7 +149,7 @@ class AnalyticsService {
   // Get real-time analytics updates
   async getRealTimeAnalytics(): Promise<Partial<AnalyticsData>> {
     try {
-      const response = await pdfApi.get('/analytics/real-time');
+      const response = await pdfApi.get('/analytics/real-time', { params: { includeAllUsers: true } });
       if (response.data.success) {
         return response.data.data;
       } else {
@@ -173,6 +175,23 @@ class AnalyticsService {
     } catch (error) {
       console.error(`Error fetching analytics for tool ${toolName}:`, error);
       return null;
+    }
+  }
+
+  // Heartbeat ping to mark user active (call on load and interval)
+  async sendHeartbeat(userId?: string): Promise<void> {
+    try {
+      await pdfApi.post('/analytics/heartbeat', { userId });
+    } catch (error) {
+      // silent fail
+    }
+  }
+
+  async clearHeartbeat(userId?: string): Promise<void> {
+    try {
+      await pdfApi.delete('/analytics/heartbeat', { data: { userId } });
+    } catch (error) {
+      // silent fail
     }
   }
 }
