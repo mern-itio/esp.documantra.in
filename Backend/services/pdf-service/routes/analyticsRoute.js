@@ -9,6 +9,10 @@ router.get('/', analyticsController.getAnalyticsData);
 // Get real-time analytics updates
 router.get('/real-time', analyticsController.getRealTimeAnalytics);
 
+// Heartbeat endpoint to record active sessions
+router.post('/heartbeat', analyticsController.postHeartbeat);
+router.delete('/heartbeat', analyticsController.deleteHeartbeat);
+
 // Get analytics for specific tool
 router.get('/tool/:toolName', analyticsController.getToolAnalytics);
 
