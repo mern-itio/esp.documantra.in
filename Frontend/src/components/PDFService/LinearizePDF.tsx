@@ -13,29 +13,30 @@ import type {
   LinearizationPreset,
   LinearizationRecommendation
 } from '../../types/linearizePDF';
-import { 
-  Upload, 
-  Download, 
+import {
+  Upload,
+  Download,
   Settings,
-  Eye, 
-  FileText, 
-  Zap, 
+  Eye,
+  FileText,
+  Zap,
   Globe,
   CheckCircle,
   AlertCircle,
   ArrowLeft,
+  X,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const LinearizePDF: React.FC = () => {
-   const location = useLocation();
+  const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<LinearizePDFResponse | null>(null);
   const [analysis, setAnalysis] = useState<PDFAnalysis | null>(null);
   const [presets, setPresets] = useState<LinearizationPreset[]>([]);
   const [recommendations, setRecommendations] = useState<LinearizationRecommendation[]>([]);
-  const [selectedPreset, setSelectedPreset] = useState<string>('web_optimized');
+  const [selectedPreset] = useState<string>('web_optimized');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -101,7 +102,7 @@ const LinearizePDF: React.FC = () => {
         setError(validationError);
         return;
       }
-      
+
       setSelectedFile(file);
       setFormData(prev => ({ ...prev, file }));
       setError(null);
@@ -120,11 +121,11 @@ const LinearizePDF: React.FC = () => {
     try {
       const response = await linearizePDFService.analyzePDF(selectedFile);
       setAnalysis(response.analysis);
-      
+
       // Get recommendations
       const recResponse = await linearizePDFService.getRecommendations(selectedFile);
       setRecommendations(recResponse.recommendations);
-      
+
       setSuccess('PDF analyzed successfully');
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to analyze PDF');
@@ -163,7 +164,7 @@ const LinearizePDF: React.FC = () => {
         ...formData,
         file: selectedFile
       });
-      
+
       setResult(response);
       setSuccess('PDF linearized successfully!');
     } catch (error: any) {
@@ -179,9 +180,7 @@ const LinearizePDF: React.FC = () => {
     }
   };
 
-  const handlePresetChange = (presetId: string) => {
-    setSelectedPreset(presetId);
-  };
+
 
   const handleInputChange = (field: keyof LinearizePDFRequest, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -364,26 +363,26 @@ const LinearizePDF: React.FC = () => {
   }
 
   return (
-  <div className="mx-auto p-2 space-y-6">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center py-6">
-              <Link
-                  to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Linearize PDF</h1>
-                <p className="mt-2 text-sm text-gray-600">
-                  Optimize PDFs for fast web viewing.
-                </p>
-              </div>
+    <div className="mx-auto p-2 space-y-6">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center py-6">
+            <Link
+              to={`/pdf-tools${location.search}`}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Linearize PDF</h1>
+              <p className="mt-2 text-sm text-gray-600">
+                Optimize PDFs for fast web viewing.
+              </p>
             </div>
           </div>
         </div>
+      </div>
 
       {/* File Upload Section - Only show when no file selected */}
       {!selectedFile && (
@@ -414,6 +413,7 @@ const LinearizePDF: React.FC = () => {
         <Card className="p-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
+              {/* File Info */}
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <FileText className="w-6 h-6 text-blue-600" />
@@ -425,64 +425,67 @@ const LinearizePDF: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedFile(null);
-                  setResult(null);
-                  setAnalysis(null);
-                  setRecommendations([]);
-                  setError(null);
-                  setSuccess(null);
-                  setFormData({
-                    file: null as any,
-                    webOptimization: true,
-                    fastLoading: true,
-                    streamingSupport: true,
-                    compressionLevel: 'medium',
-                    objectStreams: 'generate',
-                    preserveMetadata: true,
-                    preserveAnnotations: true,
-                    preserveBookmarks: true,
-                    outputFormat: 'pdf',
-                    quality: 'medium'
-                  });
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                  }
-                }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+
+              {/* Buttons: Analyze + Close */}
+              {selectedFile && (
+                <div className="flex items-center space-x-2">
+                  {!analysis && (
+                    <Button
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing}
+                      className="bg-blue-600 hover:bg-blue-700 flex items-center"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Analyze PDF
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setResult(null);
+                      setAnalysis(null);
+                      setRecommendations([]);
+                      setError(null);
+                      setSuccess(null);
+                      setFormData({
+                        file: null as any,
+                        webOptimization: true,
+                        fastLoading: true,
+                        streamingSupport: true,
+                        compressionLevel: 'medium',
+                        objectStreams: 'generate',
+                        preserveMetadata: true,
+                        preserveAnnotations: true,
+                        preserveBookmarks: true,
+                        outputFormat: 'pdf',
+                        quality: 'medium'
+                      });
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    className="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+
         </Card>
       )}
 
-      {/* Analysis Section */}
-      {selectedFile && !analysis && (
-        <Card className="p-6">
-          <div className="text-center">
-            <Button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isAnalyzing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4 mr-2" />
-                  Analyze PDF
-                </>
-              )}
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {/* Analysis Results */}
       {analysis && (
@@ -491,7 +494,7 @@ const LinearizePDF: React.FC = () => {
             <FileText className="w-5 h-5 mr-2 text-blue-600" />
             PDF Analysis
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-gray-900">{analysis.totalPages}</p>
@@ -568,14 +571,14 @@ const LinearizePDF: React.FC = () => {
             <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
             Optimization Recommendations
           </h3>
-          
+
           <div className="space-y-3">
             {recommendations.map((rec, index) => (
               <div key={index} className="p-4 border rounded-lg">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <Badge 
+                      <Badge
                         variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'secondary' : 'default'}
                       >
                         {rec.priority}
@@ -613,28 +616,6 @@ const LinearizePDF: React.FC = () => {
               {showAdvanced ? 'Hide' : 'Show'} Advanced
             </Button>
           </div>
-
-          {/* Preset Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Optimization Preset
-            </label>
-            <Select
-              value={selectedPreset}
-              onChange={(e) => handlePresetChange(e.target.value)}
-              className="w-full"
-            >
-              {presets.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.name}
-                </option>
-              ))}
-            </Select>
-            <p className="text-sm text-gray-500 mt-1">
-              {linearizePDFHelpers.getPresetDescription(selectedPreset)}
-            </p>
-          </div>
-
           {/* Basic Settings */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
@@ -747,38 +728,30 @@ const LinearizePDF: React.FC = () => {
               </div>
             </div>
           )}
+          {selectedFile && (
+            <div className="flex flex-col mt-6 sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={handleLinearize}
+                disabled={isProcessing}
+                className="bg-green-600 hover:bg-green-700 flex items-center"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" />
+                    Linearize PDF
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 
-      {/* Action Buttons */}
-      {selectedFile && (
-        <Card className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-       
-
-            <Button
-              onClick={handleLinearize}
-              disabled={isProcessing}
-              className="bg-green-600 hover:bg-green-700 flex items-center"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 mr-2" />
-                  Linearize PDF
-                </>
-              )}
-            </Button>
-          </div>
-        </Card>
-      )}
-
-
-      {/* Error Alert */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

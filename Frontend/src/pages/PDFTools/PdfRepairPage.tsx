@@ -14,7 +14,8 @@ import {
   Search,
   Zap,
   Shield,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -50,6 +51,18 @@ const PdfRepairPage: React.FC = () => {
     } else {
       toast.error('Please select a valid PDF file');
     }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setRepairResult(null);
+    setAnalysisResult(null);
+    setOptimizationResult(null);
+    setActiveTab('repair');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast.success('File removed');
   };
 
   const handleRepairPdf = async () => {
@@ -366,39 +379,70 @@ const PdfRepairPage: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={`grid grid-cols-1 gap-8 ${selectedFile ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* File Upload Section */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload PDF for {repairMode === 'repair' ? 'Repair' : repairMode === 'analyze' ? 'Analysis' : 'Optimization'}</h2>
             
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="mt-4">
-                <label className="cursor-pointer">
-                  <span className="text-blue-600 hover:text-blue-500 font-medium">
-                    Click to upload PDF
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+            {!selectedFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="mt-4">
+                  <label className="cursor-pointer">
+                    <span className="text-blue-600 hover:text-blue-500 font-medium">
+                      Click to upload PDF
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+                </div>
               </div>
-              {selectedFile && (
-                <p className="text-sm text-gray-600 mt-2">
-                  Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
-                </p>
-              )}
-            </div>
-
+            ) : (
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <File className="w-8 h-8 text-blue-600" />
+                    <div>
+                      <p className="text-lg font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-sm text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Change File
+                    </button>
+                    <button
+                      onClick={handleRemoveFile}
+                      className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                      title="Remove file"
+                    >
+                      <X className="w-5 h-5 text-gray-500 hover:text-red-600" />
+                    </button>
+                  </div>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+            )}
+  
             {selectedFile && (
-              <div className="mt-4 flex space-x-3">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   onClick={handleRepairPdf}
                   disabled={isProcessing}
@@ -411,34 +455,44 @@ const PdfRepairPage: React.FC = () => {
                   )}
                   Repair PDF
                 </button>
-                                 <button
-                   onClick={handleAnalyzePdf}
-                   disabled={isProcessing}
-                   className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                 >
-                   {isProcessing ? (
-                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                   ) : (
-                     <Search className="w-4 h-4 mr-2" />
-                   )}
-                   {repairResult && repairResult.downloadUrl ? 'Analyze Repaired PDF' : 'Analyze PDF'}
-                 </button>
-                                 <button
-                   onClick={handleOptimizePdf}
-                   disabled={isProcessing}
-                   className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                 >
-                   {isProcessing ? (
-                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                   ) : (
-                     <Zap className="w-4 h-4 mr-2" />
-                   )}
-                   {repairResult && repairResult.downloadUrl ? 'Optimize Repaired PDF' : 'Optimize PDF'}
-                 </button>
+                <button
+                  onClick={handleAnalyzePdf}
+                  disabled={isProcessing}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4 mr-2" />
+                  )}
+                  {repairResult && repairResult.downloadUrl ? 'Analyze Repaired PDF' : 'Analyze PDF'}
+                </button>
+                <button
+                  onClick={handleOptimizePdf}
+                  disabled={isProcessing}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 mr-2" />
+                  )}
+                  {repairResult && repairResult.downloadUrl ? 'Optimize Repaired PDF' : 'Optimize PDF'}
+                </button>
               </div>
             )}
           </div>
-
+          {!selectedFile && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">How it works:</p>
+                <p>Upload a corrupted or damaged PDF to repair structural issues, analyze problems, or optimize for fast web viewing. The tool will attempt to recover as much content as possible and provide detailed reports.</p>
+              </div>
+            </div>
+          </div>
+          )}
           {/* Repair Results */}
           {activeTab === 'results' && repairResult && (
             <div className="bg-white rounded-lg shadow">
@@ -762,8 +816,9 @@ const PdfRepairPage: React.FC = () => {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
+        {/* Sidebar - Only show when no file is selected */}
+        {!selectedFile && (
+          <div className="space-y-6">
           {/* Features */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
@@ -813,17 +868,9 @@ const PdfRepairPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">How it works:</p>
-                <p>Upload a corrupted or damaged PDF to repair structural issues, analyze problems, or optimize for fast web viewing. The tool will attempt to recover as much content as possible and provide detailed reports.</p>
-              </div>
-            </div>
+         
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
