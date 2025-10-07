@@ -159,6 +159,23 @@ const PdfInfoPage: React.FC = () => {
     return colors[type as keyof typeof colors] || colors.unknown;
   };
 
+  const getFieldTypeLabel = (type: string) => {
+    switch (type) {
+      case 'text':
+        return 'Text inputs';
+      case 'checkbox':
+        return 'Checkbox';
+      case 'radio':
+        return 'Radio Button';
+      case 'dropdown':
+        return 'Dropdown';
+      case 'signature':
+        return 'Signature';
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+  };
+
   return (
     <div className="mx-auto space-y-6">
       <div className="bg-white shadow-sm border-b">
@@ -455,7 +472,7 @@ const PdfInfoPage: React.FC = () => {
                           <div key={type} className="bg-gray-50 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-2">
                               <span className={`text-xs px-2 py-1 rounded-full ${getFieldTypeColor(type)}`}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                {getFieldTypeLabel(type)}
                               </span>
                               <span className="text-lg font-bold">{count}</span>
                             </div>

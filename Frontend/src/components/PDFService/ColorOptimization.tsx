@@ -13,12 +13,12 @@ import type {
   ColorOptimizationPreset,
   ColorOptimizationRecommendation
 } from '../../types/colorOptimization';
-import { 
-  Download, 
+import {
+  Download,
   Settings,
-  Eye, 
-  FileText, 
-  Palette, 
+  Eye,
+  FileText,
+  Palette,
   CheckCircle,
   AlertCircle,
   ArrowLeft,
@@ -28,7 +28,7 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 
 const ColorOptimization: React.FC = () => {
-   const location = useLocation();
+  const location = useLocation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<ColorOptimizationResponse | null>(null);
@@ -96,7 +96,7 @@ const ColorOptimization: React.FC = () => {
         setError(validationError);
         return;
       }
-      
+
       setSelectedFile(file);
       setFormData(prev => ({ ...prev, file }));
       setError(null);
@@ -115,11 +115,11 @@ const ColorOptimization: React.FC = () => {
     try {
       const response = await colorOptimizationService.analyzeColors(selectedFile);
       setAnalysis(response.analysis);
-      
+
       // Get recommendations
       const recResponse = await colorOptimizationService.getRecommendations(selectedFile);
       setRecommendations(recResponse.recommendations);
-      
+
       setSuccess('PDF color analysis completed successfully');
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to analyze PDF colors');
@@ -140,7 +140,7 @@ const ColorOptimization: React.FC = () => {
         ...formData,
         file: selectedFile
       });
-      
+
       setResult(response);
       setSuccess('Color optimization completed successfully!');
     } catch (error: any) {
@@ -185,7 +185,15 @@ const ColorOptimization: React.FC = () => {
       fileInputRef.current.value = '';
     }
   };
+useEffect(() => {
+  if (success) {
+    const timer = setTimeout(() => {
+      setSuccess(null); // or '' depending on your state type
+    }, 3000);
 
+    return () => clearTimeout(timer); // cleanup if component unmounts early
+  }
+}, [success]);
   // Show only result when optimization is successful - hide everything else
   if (result && result.success) {
     return (
@@ -389,6 +397,7 @@ const ColorOptimization: React.FC = () => {
         <Card className="p-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
+              {/* File Info */}
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <FileText className="w-6 h-6 text-blue-600" />
@@ -400,60 +409,62 @@ const ColorOptimization: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedFile(null);
-                  setResult(null);
-                  setAnalysis(null);
-                  setRecommendations([]);
-                  setError(null);
-                  setSuccess(null);
-                  setFormData({
-                    file: null as any,
-                    colorConversion: true,
-                    profileOptimization: true,
-                    gamutMapping: true,
-                    targetColorSpace: 'auto',
-                    preserveTransparency: true,
-                    dithering: false,
-                    quality: 'medium',
-                    outputFormat: 'pdf'
-                  });
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                  }
-                }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              {/* Buttons: Analyze + Close */}
+              {selectedFile && (
+                <div className="flex items-center space-x-2">
+                  {!analysis && (
+                    <Button
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing}
+                      className="bg-blue-600 hover:bg-blue-700 flex items-center"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Analyzing Colors...
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Analyze PDF Colors
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setResult(null);
+                      setAnalysis(null);
+                      setRecommendations([]);
+                      setError(null);
+                      setSuccess(null);
+                      setFormData({
+                        file: null as any,
+                        colorConversion: true,
+                        profileOptimization: true,
+                        gamutMapping: true,
+                        targetColorSpace: 'auto',
+                        preserveTransparency: true,
+                        dithering: false,
+                        quality: 'medium',
+                        outputFormat: 'pdf'
+                      });
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    className="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        </Card>
-      )}
 
-      {/* Analysis Section */}
-      {selectedFile && !analysis && (
-        <Card className="p-6">
-          <div className="text-center">
-            <Button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isAnalyzing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Analyzing Colors...
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4 mr-2" />
-                  Analyze PDF Colors
-                </>
-              )}
-            </Button>
-          </div>
         </Card>
       )}
 
@@ -467,7 +478,7 @@ const ColorOptimization: React.FC = () => {
                 <Palette className="w-5 h-5 mr-2 text-blue-600" />
                 Color Analysis Results
               </h3>
-              
+
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900">{analysis.totalPages}</p>
@@ -542,14 +553,14 @@ const ColorOptimization: React.FC = () => {
                 <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
                 Optimization Recommendations
               </h3>
-              
+
               <div className="space-y-3">
                 {recommendations.map((rec, index) => (
                   <div key={index} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <Badge 
+                          <Badge
                             variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'secondary' : 'default'}
                           >
                             {rec.priority}
@@ -718,13 +729,7 @@ const ColorOptimization: React.FC = () => {
               </div>
             </div>
           )}
-        </Card>
-      )}
-
-      {/* Action Buttons */}
-      {selectedFile && (
-        <Card className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+           <div className="flex flex-col sm:flex-row mt-6 gap-4 justify-center">
             <Button
               onClick={handleOptimize}
               disabled={isProcessing}
@@ -755,7 +760,6 @@ const ColorOptimization: React.FC = () => {
         </Alert>
       )}
 
-      {/* Success Alert */}
       {success && (
         <Alert>
           <CheckCircle className="h-4 w-4" />
