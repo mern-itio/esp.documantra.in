@@ -110,14 +110,16 @@ export interface VersionChange {
 
 export interface WorkflowStep {
   id: string;
+  _id?:string;
   name: string;
   description: string;
   assignee: string;
   assigneeName: string;
+  actionStatus?: 'approved' | 'rejected' | 'dropped' | null;
   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
   dueDate?: string;
   completedAt?: string;
-  comments?: string;
+  comments?: string[];
   requiredApprovals: number;
   currentApprovals: number;
   progressPercentage?: number; // Add this field

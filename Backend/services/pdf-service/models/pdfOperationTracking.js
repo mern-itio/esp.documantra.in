@@ -19,7 +19,7 @@ const PdfOperationTrackingSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['Conversion', 'Editing', 'Pages', 'Security', 'Optimization', 'OCR', 'Forms', 'Other'],
+    enum: ['Conversion', 'Editing', 'Pages', 'Security', 'Optimization', 'OCR', 'Forms', 'Other','Internal'],
     index: true
   },
   inputFormat: {

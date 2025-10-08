@@ -27,4 +27,13 @@ router.patch('/workflows/:workflowId/steps/:stepId', workflowController.updateWo
 //update a step progress 
 router.patch('/workflows/:workflowId/steps/:stepId/progress', workflowController.updateWorkflowStepProgress);
 
+// Add comment to workflow step
+router.post('/workflows/:workflowId/steps/:stepId/comments',workflowController.addWorkflowStepComment);
+
+// TO update Action on the step by admin
+router.patch(
+  '/workflows/:workflowId/steps/:stepId/action-status',
+  workflowController.updateStepActionStatus
+);
+
 module.exports = router;

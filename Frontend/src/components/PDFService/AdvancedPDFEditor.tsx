@@ -10,7 +10,8 @@ import {
   FileText,
   Edit3,
   Save,
-  Settings
+  Settings,
+  RefreshCw 
 } from 'lucide-react';
 import { Button } from '../DocumentService/ui/button';
 import { Card } from '../DocumentService/ui/card';
@@ -23,6 +24,7 @@ import { PageNavigator } from './PageNavigator';
 import { ZoomControls } from './ZoomControls';
 import { EditHistory } from './EditHistory';
 import type { EditorState, EditorActions } from '../../types/advancedPdfEditor';
+import Loader from "../common/loader";
 interface AdvancedPDFEditorProps {
   onBack?: () => void;
 }
@@ -281,6 +283,8 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
   try {
     const response = await advancedPdfEditorService.extractTextBlocks(editorState.fileName, pageNumber);
     if (response.success) {
+      console.log('=== LOAD TEXT BLOCKS ===');
+      console.log('Raw response:', response.data.textBlocks);
       // Apply any pending text edits to the loaded blocks
       let textBlocks: TextBlock[] = (response.data.textBlocks as any[]).map((block: any): TextBlock => ({
         id: block.id,
@@ -295,6 +299,7 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
         color: block.color ?? '#000000',
         flags: block.flags ?? 0
       }));
+
       
       // Apply replaceText edits for this page
       const pageEdits = editorState.edits.filter(
@@ -311,7 +316,15 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
         
 
       if (edit) {
-          return { ...block, text: edit.newText || '' }; 
+          return { 
+            ...block, 
+            text: edit.newText || '',
+            fontSize: edit.style?.fontSize ?? block.fontSize,
+            fontFamily: edit.style?.fontFamily ?? block.fontFamily,
+            color: edit.style?.color ?? block.color,
+            flags: edit.style?.flags ?? block.flags
+          };
+; 
         }
         return { ...block, text: block.text || '' };
       });
@@ -353,6 +366,31 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
       return;
     }
 
+    // If we already have a PDF loaded, reset all state (this is a replacement)
+    if (editorState.pdfInfo) {
+      setEditorState({
+        currentPage: 1,
+        totalPages: 0,
+        zoom: 1,
+        selectedTool: 'select',
+        selectedElement: null,
+        isEditing: false,
+        edits: [],
+        textBlocks: [],
+        pdfInfo: null,
+        fileName: null
+      });
+      setShapes([]);
+      setSelectedShapeElement(null);
+      setEditHistory([]);
+      setHistoryIndex(-1);
+      setIsDownloadReady(false);
+      setDownloadUrl(null);
+      setDownloadFileName(null);
+      setCountdown(0);
+      setSaveSuccess(false);
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -368,9 +406,12 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
       setError(error.message);
     } finally {
       setIsLoading(false);
+      // Reset file input value to allow selecting the same file again
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
-
   // Handle drag and drop
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -556,7 +597,21 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
     }
   };
 
-  
+  // Replace/Change PDF function
+  const handleReplacePdf = () => {
+    // Confirm before replacing if there are unsaved edits
+    if (editorState.edits.length > 0) {
+      const confirmed = window.confirm(
+        'You have unsaved edits. Are you sure you want to replace the PDF? All edits will be lost.'
+      );
+      if (!confirmed) return;
+    }
+
+    // Directly trigger file input dialog
+    fileInputRef.current?.click();
+  };
+
+
   /**
   * Handle highlight color click
   * Handles immediate highlight application when user clicks a color button.
@@ -570,8 +625,21 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
       pdfViewerRef.current.applyHighlight(color);
   }};
 
-  if (!editorState.pdfInfo) {
+if (!editorState.pdfInfo) {
     return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+
+      {isLoading ? (
+        // Show loader when processing PDF
+        <Loader />
+      ) : (
       <div className="min-h-screen bg-gray-50">
         {/* Header with Back Button */}
         <div className="bg-white border-b border-gray-200">
@@ -672,11 +740,21 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
           </Card>
         </div>
       </div>
+      )}
+    </>
     );
   }
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
+      {/* Hidden file input - always rendered */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="px-6 py-4">
@@ -769,6 +847,16 @@ const AdvancedPDFEditor: React.FC<AdvancedPDFEditorProps> = ({ onBack }) => {
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {isDownloadReady ? 'Download PDF' : `Ready in ${countdown}s`}
+                </Button>
+
+                <Button
+                  onClick={handleReplacePdf}
+                  variant="outline"
+                  className="border-gray-300 hover:bg-gray-50"
+                  title="Replace PDF"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Change PDF
                 </Button>
               </div>
             </div>

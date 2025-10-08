@@ -77,6 +77,11 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
   const getDisplayTextBlocks = useCallback(() => {
   let displayBlocks = [...textBlocks];
   
+    // Log original flags
+    displayBlocks.slice(0, 3).forEach(b => {
+    console.log(`Original block "${b.text.substring(0, 20)}..." - flags: ${b.flags}`);
+   });
+
   // Apply replaceText edits for current page
   edits
     .filter(edit => edit.type === 'replaceText' && edit.pageNumber === currentPage)
@@ -85,7 +90,12 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
         // Match by position
         if (Math.abs(edit.position.x - block.x) < 5 &&
             Math.abs(edit.position.y - block.y) < 5) {
-          return { ...block, text: edit.newText };
+          return { ...block,
+            text: edit.newText,
+            fontSize: edit.style?.fontSize ?? block.fontSize,
+            fontFamily: edit.style?.fontFamily ?? block.fontFamily,
+            color: edit.style?.color ?? block.color,
+            flags: edit.style?.flags ?? block.flags};
         }
         return block;
       });
@@ -105,7 +115,7 @@ const PDFViewer = forwardRef<any, PDFViewerProps>(({
       fontSize: edit.style?.fontSize || 12,
       fontFamily: edit.style?.fontFamily || 'helv',
       color: edit.style?.color || '#000000',
-      flags: 0
+      flags: edit.style?.flags || 0
     }));
   
   return [...displayBlocks, ...newTextBlocks];
@@ -366,6 +376,10 @@ React.useImperativeHandle(ref, () => ({
           const validY = Math.max(0, Math.round(textBlock.y));
           const validWidth = Math.max(10, Math.round(textBlock.width));
           const validHeight = Math.max(10, Math.round(textBlock.height));
+
+          // Find original block to preserve flags
+        const originalBlock = textBlocks.find(b => b.id === textBlock.id);
+        const preservedFlags = originalBlock?.flags ?? textBlock.flags ?? 0;
           
         onAddEditRef.current({
           type: 'replaceText',
@@ -381,7 +395,8 @@ React.useImperativeHandle(ref, () => ({
           style: {
             fontSize: textBlock.fontSize,
             fontFamily: textBlock.fontFamily,
-            color: textBlock.color
+            color: textBlock.color,
+              flags: preservedFlags 
           }
         });
       }
@@ -390,7 +405,7 @@ React.useImperativeHandle(ref, () => ({
     }, 1000); // 1 second debounce
     
     debounceTimeouts.current.set(timeoutKey, timeout);
-  }, []);
+  }, [textBlocks]);
 
   // Load PDF.js
   useEffect(() => {
@@ -943,7 +958,7 @@ React.useImperativeHandle(ref, () => ({
 
     // Add new element based on selected tool
     switch (selectedTool) {
-      case 'text':
+      case 'text':{
         // Create a new text block with unique ID
         // Ensure coordinates are within valid bounds
         const textX = Math.max(0, x - 50); // Ensure x is not negative
@@ -964,7 +979,7 @@ React.useImperativeHandle(ref, () => ({
           color: '#000000',
           flags: 0
         };
-        
+      
         // Add the new text block to the existing text blocks
         onAddEdit({
           type: 'updateTextBlocks',
@@ -983,6 +998,7 @@ React.useImperativeHandle(ref, () => ({
           tool: 'select'
         });
         break;
+      }
       case 'pen':
         // Pen drawing is handled by mouse events, not clicks
         break;
@@ -1442,7 +1458,7 @@ React.useImperativeHandle(ref, () => ({
                 padding: '2px 4px',
                 minWidth: '50px',
                 minHeight: '20px',
-                backgroundColor: selectedElement?.id === textBlock.id ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.8)',
+                backgroundColor: selectedElement?.id === textBlock.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
                 borderRadius: '3px',
                 zIndex: 25,
                 boxShadow: selectedElement?.id === textBlock.id ? '0 0 0 2px rgba(59, 130, 246, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
@@ -1542,12 +1558,16 @@ React.useImperativeHandle(ref, () => ({
                   const validWidth = Math.max(10, Math.round(textBlock.width));
                   const validHeight = Math.max(10, Math.round(textBlock.height));
                   
+
                   // For new text blocks, don't create any save operations during editing
                   if (textBlock.id.startsWith('new-text-')) {
                     // Just update the text block in the UI, no save operation
                     console.log('Text updated for new text block:', textBlock.id);
                   } else {
                     // For existing text blocks, use replaceText
+                    // Find the original text block to get its flags
+                    const originalBlock = textBlocks.find(b => b.id === textBlock.id);
+                    const preservedFlags = originalBlock?.flags ?? textBlock.flags ?? 0;
                   onAddEdit({
                     type: 'replaceText',
                     pageNumber: textBlock.pageNumber,
@@ -1562,7 +1582,8 @@ React.useImperativeHandle(ref, () => ({
                     style: {
                       fontSize: textBlock.fontSize,
                       fontFamily: textBlock.fontFamily,
-                      color: textBlock.color
+                      color: textBlock.color,
+                      flags: preservedFlags   
                     }
                     });
                   }
@@ -1570,6 +1591,11 @@ React.useImperativeHandle(ref, () => ({
                 
                 // For new text blocks, create the addText operation only once when finishing editing
                 if (textBlock.id.startsWith('new-text-')) {
+                    console.log('=== ON BLUR - SAVING TEXT EDIT ===');
+                    console.log('TextBlock ID:', textBlock.id);
+                    console.log('TextBlock flags:', textBlock.flags);
+                    console.log('Old text:', textBlock.text);
+                    console.log('New text:', newText);
                   // Check if we've already created an addText operation for this text block
                   if (!createdAddTextOperations.current.has(textBlock.id)) {
                     // Validate coordinates before sending
@@ -1592,7 +1618,8 @@ React.useImperativeHandle(ref, () => ({
                       style: {
                         fontSize: textBlock.fontSize,
                         fontFamily: textBlock.fontFamily,
-                        color: textBlock.color
+                        color: textBlock.color,
+                        flags: textBlock.flags 
                       },
                       textBlockId: textBlock.id
                     });
@@ -1616,6 +1643,8 @@ React.useImperativeHandle(ref, () => ({
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   e.currentTarget.blur();
+                  window.getSelection()?.removeAllRanges();
+                  onElementSelect(null);
                 }
               }}
             >

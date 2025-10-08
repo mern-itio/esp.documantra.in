@@ -15,6 +15,7 @@ from io import BytesIO
 from PIL import Image
 import tempfile
 
+
 def hex_to_rgb(hex_color):
     """Convert hex color to RGB tuple (0-1 range)"""
     hex_color = hex_color.lstrip('#')
@@ -45,6 +46,7 @@ class EnhancedPDFEditor:
             font_size = style.get('fontSize', 12)
             font_family = style.get('fontFamily', 'helv')
             color = style.get('color', (0, 0, 0))
+            flags = style.get('flags', 0)
             
             # Convert hex color to RGB
             if isinstance(color, str) and color.startswith('#'):
@@ -57,14 +59,91 @@ class EnhancedPDFEditor:
                 # Add white rectangle to cover old text
                 page.draw_rect(rect, color=(1, 1, 1), fill=(1, 1, 1))
             
-            # Font fallback - use standard fonts if custom font fails
-            font_fallback = ['helv', 'times', 'courier', 'symbol', 'zapf']
-            if font_family not in font_fallback:
-                font_family = 'helv'  # Use Helvetica as fallback
+            # Enhanced font mapping with Liberation fonts
+            font_map = {
+                'Helvetica': 'helv',
+                'Helvetica-Bold': 'hebo',
+                'Helvetica-Oblique': 'heit',
+                'Helvetica-BoldOblique': 'hebi',
+                'Times-Roman': 'tiro',
+                'Times-Bold': 'tibo',
+                'Times-Italic': 'tiit',
+                'Times-BoldItalic': 'tibi',
+                'Courier': 'cour',
+                'Courier-Bold': 'cobo',
+                'Courier-Oblique': 'coit',
+                'Courier-BoldOblique': 'cobi',
+                'DejaVuSans': 'helv',
+                'DejaVuSans-Bold': 'hebo',
+                'DejaVuSans-Oblique': 'heit',
+                'DejaVuSans-BoldOblique': 'hebi',
+                # Add Liberation font mappings
+                'LiberationSans': 'helv',
+                'LiberationSans-Bold': 'hebo',
+                'LiberationSans-Italic': 'heit',
+                'LiberationSans-BoldItalic': 'hebi',
+                'LiberationSerif': 'tiro',
+                'LiberationSerif-Bold': 'tibo',
+                'LiberationSerif-Italic': 'tiit',
+                'LiberationSerif-BoldItalic': 'tibi',
+                'LiberationMono': 'cour',
+                'LiberationMono-Bold': 'cobo',
+                'LiberationMono-Italic': 'coit',
+                'LiberationMono-BoldItalic': 'cobi'
+            }
+            
+            # Get mapped font or default to helv
+            mapped_font = font_map.get(font_family, 'helv')
+            
+            # Extract bold and italic from flags if present
+            is_bold = bool(flags & (1 << 18))  # Flag bit 18 = superscript, but often used for bold
+            is_italic = bool(flags & (1 << 6))  # Flag bit 6 = italic
+            
+            # Alternative: Check if flags == 20 (common bold flag)
+            if flags == 20:
+                is_bold = True
+            if flags == 64:
+                is_italic = True
+            
+            print(f"Font processing - Original: {font_family}, Flags: {flags}, Bold: {is_bold}, Italic: {is_italic}, Mapped: {mapped_font}", file=sys.stderr)
+            
+            # Apply flags to determine correct font variant ONLY if not already in font name
+            if mapped_font in ['helv', 'tiro', 'cour']:  # Base fonts only
+                base_font = mapped_font
+                
+                if 'helv' in base_font:
+                    if is_bold and is_italic:
+                        mapped_font = 'hebi'
+                    elif is_bold:
+                        mapped_font = 'hebo'
+                    elif is_italic:
+                        mapped_font = 'heit'
+                    else:
+                        mapped_font = 'helv'
+                elif 'ti' in base_font or 'tiro' in base_font:
+                    if is_bold and is_italic:
+                        mapped_font = 'tibi'
+                    elif is_bold:
+                        mapped_font = 'tibo'
+                    elif is_italic:
+                        mapped_font = 'tiit'
+                    else:
+                        mapped_font = 'tiro'
+                elif 'co' in base_font or 'cour' in base_font:
+                    if is_bold and is_italic:
+                        mapped_font = 'cobi'
+                    elif is_bold:
+                        mapped_font = 'cobo'
+                    elif is_italic:
+                        mapped_font = 'coit'
+                    else:
+                        mapped_font = 'cour'
+            
+            print(f"Final mapped font: {mapped_font}", file=sys.stderr)
             
             # Create text insertion point (adjust for baseline)
-            point = fitz.Point(x, y + font_size * 0.8)  # Adjust for font baseline
-            
+            point = fitz.Point(x, y + font_size * 0.8) 
+
             # Insert text with error handling
             try:
                 page.insert_text(
@@ -72,28 +151,31 @@ class EnhancedPDFEditor:
                     text,
                     fontsize=font_size,
                     color=color,
-                    fontname=font_family
+                    fontname=mapped_font
                 )
                 return True
             except Exception as text_error:
+                print(f"Text insertion failed with {mapped_font}: {text_error}", file=sys.stderr)
                 # Try with fallback font if original font fails
                 try:
+                    fallback = 'hebo' if is_bold else 'helv'
                     page.insert_text(
                         point,
                         text,
                         fontsize=font_size,
                         color=color,
-                        fontname='helv'  # Use Helvetica as fallback
+                        fontname=fallback
                     )
+                    print(f"Successfully inserted with fallback: {fallback}", file=sys.stderr)
                     return True
                 except Exception as fallback_error:
-                    # print(f"Text insertion failed: {text_error}. Fallback also failed: {fallback_error}")
+                    print(f"Fallback also failed: {fallback_error}", file=sys.stderr)
                     return False
             
         except Exception as e:
-            # print(f"Error adding text element: {e}")
+            print(f"Error adding text element: {e}", file=sys.stderr)
             return False
-    
+        
     def add_drawing_element(self, page_num, element_type, points, style):
         """Add drawing element (pen, shapes) to PDF"""
         try:
@@ -322,7 +404,63 @@ class EnhancedPDFEditor:
     def close(self):
         """Close the document"""
         self.doc.close()
-
+    
+    def extract_text_style(self, page_num, x, y, width, height):
+        """Extract text style from a specific region in the PDF"""
+        try:
+            page = self.doc[page_num - 1]
+            
+            # Create rectangle for the text area with some padding for better detection
+            padding = 2
+            rect = fitz.Rect(x - padding, y - padding, x + width + padding, y + height + padding)
+            
+            # Extract text with detailed information
+            text_dict = page.get_text("dict", clip=rect)
+            
+            style = {}
+            
+            # Look through blocks to find text
+            if "blocks" in text_dict:
+                for block in text_dict["blocks"]:
+                    if block.get("type") == 0:  # Text block
+                        for line in block.get("lines", []):
+                            for span in line.get("spans", []):
+                                # Extract font properties
+                                style['fontSize'] = span.get('size', 12)
+                                style['fontFamily'] = span.get('font', 'Helvetica')
+                                
+                                # Extract color (RGB)
+                                color = span.get('color', 0)
+                                if isinstance(color, int):
+                                    # Convert integer color to RGB tuple
+                                    r = ((color >> 16) & 255) / 255.0
+                                    g = ((color >> 8) & 255) / 255.0
+                                    b = (color & 255) / 255.0
+                                    style['color'] = (r, g, b)
+                                
+                                # Extract font flags
+                                style['flags'] = span.get('flags', 0)
+                                
+                                # Return the first span's style found
+                                return style
+            
+            # Return default style if nothing found
+            return {
+                'fontSize': 12,
+                'fontFamily': 'Helvetica',
+                'color': (0, 0, 0),
+                'flags': 0
+            }
+            
+        except Exception as e:
+            print(f"Error extracting text style: {e}", file=sys.stderr)
+            return {
+                'fontSize': 12,
+                'fontFamily': 'Helvetica',
+                'color': (0, 0, 0),
+                'flags': 0
+            }
+        
 def process_pdf_edits(input_path, edits, output_path):
     """Process PDF edits and save result"""
     try:
@@ -356,17 +494,36 @@ def process_pdf_edits(input_path, edits, output_path):
                 )
             
             elif edit_type == 'replaceText':
-                # Handle replaceText operations from frontend
-                # Set flag to indicate this is a replaceText operation
+                position = edit.get('position', {})
+                
+                # Extract original text style from the PDF
+                original_style = editor.extract_text_style(
+                    page_num,
+                    position.get('x', 0),
+                    position.get('y', 0),
+                    position.get('width', 100),
+                    position.get('height', 20)
+                )
+                
+                # Get frontend style (should contain the extracted style)
+                frontend_style = edit.get('style', {})
+                
+                # Frontend style should OVERRIDE original if provided
+                # This ensures we use the style that was sent from frontend
+                final_style = {**original_style, **frontend_style}
+                
+                print(f"Using style: {final_style}", file=sys.stderr)
+
                 editor._is_replace_text = True
+                # Add the new text with the extracted styling
                 editor.add_text_element(
                     page_num,
                     edit.get('newText', ''),
-                    edit.get('position', {}).get('x', 0),
-                    edit.get('position', {}).get('y', 0),
-                    edit.get('position', {}).get('width', 100),
-                    edit.get('position', {}).get('height', 20),
-                    edit.get('style', {})
+                    position.get('x', 0),
+                    position.get('y', 0),
+                    position.get('width', 100),
+                    position.get('height', 20),
+                    final_style  # ✅ Use the extracted and merged style
                 )
                 # Reset flag
                 editor._is_replace_text = False
