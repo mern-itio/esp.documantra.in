@@ -82,30 +82,18 @@ const Header = () => {
     recent: [
       { name: 'Organize', icon: '📁', color: 'text-green-600' },
       createToolLink('PDF to Word*', '/pdf-to-word', '📄', 'text-orange-600'),
-      createToolLink('Edit*', '/edit-pdf', '✏️', 'text-blue-600'),
-      { name: 'Create Forms', icon: '📋', color: 'text-blue-600' },
+    
       createToolLink('Compress*', '/compress-pdf', '🗜️', 'text-blue-600'),
       createToolLink('Extract Pages*', '/extract-pages', '📄', 'text-green-600'),
-      createToolLink('Merge*', '/merge-pdf*', '🔗', 'text-green-600'),
-      createToolLink('Crop*', '/crop-pdf', '✂️', 'text-purple-600')
+      
     ],
-    merge: [
-      { name: 'Alternate & Mix', icon: '🔄', color: 'text-green-600' },
-      createToolLink('Merge*', '/merge-pdf', '🔗', 'text-green-600'),
-      { name: 'Organize', icon: '📁', color: 'text-green-600' }
-    ],
+   
     split: [
       createToolLink('Extract Pages*', '/extract-pages', '📄', 'text-green-600'),
-      createToolLink('Split by pages*', '/split-pdf', '📑', 'text-green-600'),
-      { name: 'Split by bookmarks', icon: '🔖', color: 'text-green-600' },
-      { name: 'Split in half', icon: '✂️', color: 'text-green-600' },
-      { name: 'Split by size', icon: '📏', color: 'text-green-600' },
-      { name: 'Split by text', icon: '📝', color: 'text-green-600' }
+     
     ],
     editSign: [
-      createToolLink('Edit*', '/edit-pdf', '✏️', 'text-blue-600'),
-      { name: 'Fill & Sign', icon: '✍️', color: 'text-blue-600' },
-      { name: 'Create Forms', icon: '📋', color: 'text-blue-600' },
+      
       createToolLink('Delete Pages*', '/delete-pages', '🗑️', 'text-blue-600')
     ],
     compress: [
@@ -115,7 +103,7 @@ const Header = () => {
       createToolLink('Protect*', '/protect-pdf', '🔒', 'text-blue-600'),
       createToolLink('Unlock*', '/unlock-pdf', '🔓', 'text-blue-600'),
       createToolLink('Watermark*', '/watermark-pdf', '💧', 'text-blue-600'),
-      createToolLink('Flatten*', '/flatten-pdf', '📋', 'text-blue-600')
+      
     ],
     convertFromPdf: [
       createToolLink('PDF to Excel*', '/pdf-to-excel', '📊', 'text-orange-600'),
@@ -126,35 +114,8 @@ const Header = () => {
     ],
     convertToPdf: [
       createToolLink('HTML to PDF*', '/html-to-pdf', '🌐', 'text-purple-600'),
-      createToolLink('JPG to PDF*', '/jpg-to-pdf', '🖼️', 'text-purple-600'),
-      createToolLink('Word to PDF*', '/word-to-pdf', '📄', 'text-purple-600')
+     createToolLink('Word to PDF*', '/word-to-pdf', '📄', 'text-purple-600')
     ],
-    other: [
-      createToolLink('Bates Numbering*', '/bates-numbering', '🔢', 'text-purple-600'),
-      createToolLink('Create Bookmarks*', '/create-bookmarks', '🔖', 'text-purple-600'),
-      createToolLink('Crop*', '/crop-pdf', '✂️', 'text-purple-600'),
-      createToolLink('Edit Metadata*', '/edit-metadata', '📋', 'text-purple-600'),
-      createToolLink('Extract Images*', '/extract-images', '🖼️', 'text-purple-600'),
-      createToolLink('Grayscale*', '/grayscale-pdf', '⚫', 'text-purple-600'),
-      createToolLink('Header & Footer*', '/header-footer', '📄', 'text-purple-600'),
-      createToolLink('N-up*', '/n-up', '📑', 'text-purple-600'),
-      createToolLink('Page Numbers*', '/page-numbers', '🔢', 'text-purple-600')
-    ],
-    scans: [
-      createToolLink('Deskew*', '/deskew-pdf', '📐', 'text-red-600'),
-      createToolLink('OCR*', '/ocr-pdf', '👁️', 'text-red-600')
-    ],
-    automate: [
-      { name: 'Workflows', icon: '⚙️', color: 'text-gray-600', badge: 'New' }
-    ],
-    compare: [
-      { name: 'Compare Word', icon: '📄', color: 'text-blue-600' },
-      { name: 'Compare Excel', icon: '📊', color: 'text-green-600' },
-      { name: 'Compare PDF', icon: '📋', color: 'text-red-600' }
-    ],
-    rotate: [
-      createToolLink('Rotate PDF*', '/rotate-pdf', '🔄', 'text-purple-600')
-    ]
   }
 
   const whyDocuSignerMenu = [
@@ -433,9 +394,9 @@ const Header = () => {
                     // ref={(el) => {
                     //   dropdownRefs.current['pdf-tools'] = el;
                     // }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[1050px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+                    className="absolute top-full left-1/2-translate-x-1/2 mt-2 w-[1050px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
                   >
-                    <div className="grid grid-cols-6 gap-6">
+                    <div className="grid grid-cols-4 gap-6">
                       {/* Recent Column */}
                       <div>
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">RECENT</h3>
@@ -445,11 +406,7 @@ const Header = () => {
                       </div>
 
                       {/* Merge Column */}
-                      <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">MERGE</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.merge.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
+                      <div>                      
 
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">SPLIT</h3>
                         <div className="space-y-2">
@@ -488,36 +445,6 @@ const Header = () => {
                         </div>
                       </div>
 
-                      {/* Other & Compare Column */}
-                      <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">OTHER</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.other.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">COMPARE</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.compare.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-                      </div>
-
-                      {/* Scans & Automate Column */}
-                      <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">SCANS</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.scans.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">AUTOMATE</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.automate.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">ROTATE</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.rotate.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-                      </div>
                     </div>
 
                     {/* Bottom CTA */}
@@ -795,7 +722,7 @@ const Header = () => {
                     ref={(el) => {
                       dropdownRefs.current['industries'] = el;
                     }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[800px] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
+                    className="absolute top-full -translate-x-1/2 mt-2 w-[700px] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
                   >
                     <div className="grid grid-cols-3 gap-6">
                       {industriesMenu.map((section, sectionIndex) => (
