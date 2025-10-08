@@ -19,7 +19,7 @@ const App: React.FC = () => {
   if (loading) return <Loader />;
 
   return (
-     <APIProvider>
+    <APIProvider>
     <AuthProvider>
       <AppProvider>
         <ThemeConfig>

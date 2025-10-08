@@ -22,7 +22,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // JWT Middleware (applied to API routes only)
-app.use('/api', verifyJWT(process.env.ACCESS_TOKEN_SECRET));
+app.use('/api', verifyJWT());
 app.use('/api/template',formBuilderRoutes);
 app.use('/public/template',publicRoutes);
 app.get('/health', (req, res) => {

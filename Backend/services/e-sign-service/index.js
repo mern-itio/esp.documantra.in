@@ -37,7 +37,7 @@ app.use('/api/e-sign', tsaRoutes);
 app.use('/api/e-sign',verificationRoutes);
 app.use('/api/e-sign/anchor', anchorRoutes);
 
-app.use('/api/e-sign', verifyJWT(process.env.ACCESS_TOKEN_SECRET), eSignRoutes);
+app.use('/api/e-sign', verifyJWT(), eSignRoutes);
 // Start server
 const PORT = process.env.PORT || 2103;
 app.listen(PORT, () => console.log(`E-Sign Service running on ${PORT}/`));

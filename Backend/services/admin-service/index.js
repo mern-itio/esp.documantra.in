@@ -4,10 +4,8 @@ const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
 const { connectDB } = require('./config/db');
-const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const verifyJWT = require('@draftnsign/auth-lib');
-
 
 const app = express();
 
@@ -18,9 +16,8 @@ app.use(cors({
 connectDB();
 
 app.use(express.json());
-app.use('/api-admin', verifyJWT('admin'));
-app.use('/', authRoutes);
-app.use('/api-admin', adminRoutes);
+app.use('/admin', verifyJWT('admin'));
+app.use('/admin', adminRoutes);
 
-const PORT = process.env.PORT || 2101;
+const PORT = process.env.PORT || 3100;
 app.listen(PORT, () => console.log(`Auth running on ${PORT}/`));
