@@ -291,7 +291,7 @@ const findReplaceController = {
 
       res.json({
         success: true,
-        message: 'Find & Replace completed successfully',
+        message: totalMatches === 0 ? 'No matches found' : 'Find & Replace completed successfully',
         filename: outputFilename,
         downloadUrl: `/pdf-find-replace/download/${outputFilename}`,
         totalPages: pageCount,

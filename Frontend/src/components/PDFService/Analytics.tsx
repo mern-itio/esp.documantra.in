@@ -45,6 +45,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // Heartbeat: ping every 30s to mark session active
+  useEffect(() => {
+    const ping = () => analyticsService.sendHeartbeat();
+    ping();
+    const hb = setInterval(ping, 30000);
+    return () => clearInterval(hb);
+  }, []);
+
   const loadAnalyticsData = async () => {
     try {
       setLoading(true);
@@ -163,7 +171,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
 
   if (!analyticsData) return null;
 
-  const { dailyUsage, performanceMetrics, qualityMetrics, usageTrend, categoryUsage, recentActivity, topDocuments } = analyticsData;
+  const { dailyUsage, performanceMetrics, qualityMetrics, usageTrend, categoryUsage, recentActivity, topDocuments, performanceTrend } = analyticsData;
+
+  // Helpers to compute dynamic deltas based on usageTrend (last two days)
+  const getDeltaPct = (current: number, previous: number | null) => {
+    if (previous === null || previous === 0) return null;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const lastTwo = usageTrend.slice(-2);
+  const opsToday = lastTwo.length > 0 ? lastTwo[lastTwo.length - 1].operations : null;
+  const opsPrev = lastTwo.length > 1 ? lastTwo[0].operations : null;
+  const usersToday = lastTwo.length > 0 ? lastTwo[lastTwo.length - 1].users : null;
+  const usersPrev = lastTwo.length > 1 ? lastTwo[0].users : null;
+
+  const opsDelta = opsToday !== null ? getDeltaPct(opsToday, opsPrev ?? null) : null;
+  const usersDelta = usersToday !== null ? getDeltaPct(usersToday, usersPrev ?? null) : null;
 
   // Transform category names for better display
   const transformedCategoryUsage = categoryUsage.map(category => ({
@@ -227,11 +250,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
               <FileText className="w-6 h-6 text-blue-600" />
             </div>
           </div>
-          <div className="flex items-center mt-4 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600 font-medium">+12.5%</span>
-            <span className="text-gray-500 ml-1">vs yesterday</span>
-          </div>
+          {opsDelta !== null && (
+            <div className="flex items-center mt-4 text-sm">
+              <TrendingUp className={`w-4 h-4 mr-1 ${opsDelta >= 0 ? 'text-red-500' : 'text-green-500'}`} />
+              <span className={`${opsDelta >= 0 ? 'text-red-600' : 'text-green-600'} font-medium`}>
+                {opsDelta >= 0 ? '+' : ''}{formatPercentage(Math.abs(opsDelta))}
+              </span>
+              <span className="text-gray-500 ml-1">vs yesterday</span>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -246,11 +273,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
               <Users className="w-6 h-6 text-green-600" />
             </div>
           </div>
-          <div className="flex items-center mt-4 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600 font-medium">+8.1%</span>
-            <span className="text-gray-500 ml-1">vs yesterday</span>
-          </div>
+          {usersDelta !== null && (
+            <div className="flex items-center mt-4 text-sm">
+              <TrendingUp className={`w-4 h-4 mr-1 ${usersDelta >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+              <span className={`${usersDelta >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                {usersDelta >= 0 ? '+' : ''}{formatPercentage(Math.abs(usersDelta))}
+              </span>
+              <span className="text-gray-500 ml-1">vs yesterday</span>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -265,11 +296,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
               <Target className="w-6 h-6 text-green-600" />
             </div>
           </div>
-          <div className="flex items-center mt-4 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600 font-medium">+0.3%</span>
-            <span className="text-gray-500 ml-1">vs yesterday</span>
-          </div>
+          {performanceTrend && performanceTrend.length >= 2 && (
+            (() => {
+              const last = performanceTrend[performanceTrend.length - 1];
+              const prev = performanceTrend[performanceTrend.length - 2];
+              const delta = prev.successRate === 0 ? null : ((last.successRate - prev.successRate) / prev.successRate) * 100;
+              return delta !== null ? (
+                <div className="flex items-center mt-4 text-sm">
+                  <TrendingUp className={`w-4 h-4 mr-1 ${delta >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                  <span className={`${delta >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                    {delta >= 0 ? '+' : ''}{formatPercentage(Math.abs(delta))}
+                  </span>
+                  <span className="text-gray-500 ml-1">vs yesterday</span>
+                </div>
+              ) : null;
+            })()
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -284,11 +326,24 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
               <Clock className="w-6 h-6 text-yellow-600" />
             </div>
           </div>
-          <div className="flex items-center mt-4 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600 font-medium">-2.1s</span>
-            <span className="text-gray-500 ml-1">vs yesterday</span>
-          </div>
+          {performanceTrend && performanceTrend.length >= 2 && (
+            (() => {
+              const last = performanceTrend[performanceTrend.length - 1];
+              const prev = performanceTrend[performanceTrend.length - 2];
+              const curr = last.avgProcessingTimeMs;
+              const prevVal = prev.avgProcessingTimeMs;
+              const delta = prevVal === 0 ? null : ((prevVal - curr) / prevVal) * 100; // lower is better
+              return delta !== null ? (
+                <div className="flex items-center mt-4 text-sm">
+                  <TrendingUp className={`w-4 h-4 mr-1 ${delta >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                  <span className={`${delta >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                    {delta >= 0 ? '+' : ''}{formatPercentage(Math.abs(delta))}
+                  </span>
+                  <span className="text-gray-500 ml-1">improvement vs yesterday</span>
+                </div>
+              ) : null;
+            })()
+          )}
         </div>
       </div>
 

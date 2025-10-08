@@ -201,7 +201,7 @@ const MakeSearchable: React.FC = () => {
             <div className="text-center mb-6">
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Processing Complete!</h3>
-              <p className="text-gray-600">Your PDFs have been made searchable successfully</p>
+              <p className="text-gray-600">Your PDF is now selectable and searchable</p>
             </div>
 
             {/* Summary Stats */}

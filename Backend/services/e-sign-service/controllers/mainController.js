@@ -12,6 +12,7 @@ const { signAndEmbed, initiateRecipientSignature, finalizeSigning, prepareDocume
 const {logActivity} = require('../services/activityLogService');
 const { ActivityLogs } = require('../models/ActivityLogs');
 const Document = require('../models/Document');
+const Cycle = require('../models/Cycle');
 const { issueCertificate } = require('../services/pkiService');
 const { generateAndStoreCompletionCertificate } = require('../services/certificateGenerator');
 const fs = require('fs');
@@ -382,7 +383,6 @@ const addSignature = async (req, res) => {
     console.log('Failed to initiate recipient signature');
     return res.status(500).json({ message: 'Failed to initiate signature' });
   }
-  console.log('Signature field updated:', initiateSign.signatureField);
   // Check pending recipients and send email to next recipient
     try {
     const pendingFields = await SignatureField.find({
@@ -398,7 +398,6 @@ const addSignature = async (req, res) => {
               console.log('Failed to prepare document for final signing');
               return res.status(500).json({ message: 'Failed to prepare document for final signing' });
             }
-            console.log('Document prepared for final signing:', prepareDoc);
             // Call the final signing function
             const digiSign = await finalizeSigning(envelopeId, documentId);
             if (!digiSign) {
@@ -727,7 +726,6 @@ const signerInitiate = async (req, res) => {
     }
 
     // create cycleId server-side
-    const cycleId = new mongoose.Types.ObjectId();
     const allSlots = envelope.slots || [];
     const creatorSlot = allSlots.find(s => s.slotId === envelope.creatorSlotId);
     const firstSlot = allSlots.find(s => s.slotId === envelope.firstSigningSlotId);
@@ -756,7 +754,6 @@ const signerInitiate = async (req, res) => {
 
       slotRecords.push({
         envelopeId: envelope._id,
-        cycleId: cycleId,
         formId: formId,
         signerSlotId: slot.slotId,
         role: role,
@@ -768,6 +765,14 @@ const signerInitiate = async (req, res) => {
 
     // Insert all slot records
     const createdSigners = await selfSigner.insertMany(slotRecords);
+    // Create a cycle record
+    const cycle = new Cycle({
+      envelopeId: envelope._id,
+      signers: createdSigners.map(s => s._id),
+      status: "pending"
+    });
+    const savedCycle = await cycle.save();
+    const cycleId = savedCycle._id;
 
     // Find the one with role === "firstSigner"
     const initiatedSigner = createdSigners.find(s => s.role === "firstSigner");
@@ -786,93 +791,57 @@ const signerInitiate = async (req, res) => {
 
 
 const getSelfSigner = async (req, res) => {
+
+    try {
+    const { cycleId } = req.params;  // get the id from URL params
+
+    // Find all cycles for the envelope and populate the signers
+    const cycles = await Cycle.findById({ _id:cycleId })
+      .populate({
+        path: 'signers',
+        model: 'SelfSigner',
+      })
+      .lean();
+
+    if (!cycles || cycles.length === 0) {
+      return res.status(404).json({ message: 'No cycles found' });
+    }
+    const selfSigner = cycles.signers;
+    return res.status(200).json({ selfSigner });
+  } catch (err) {
+    console.error('getSigners error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+
+};
+const getCycle = async (req, res) => {
   try {
     const { cycleId } = req.params;  // get the id from URL params
-    const selfsigner = await selfSigner.find({cycleId:cycleId});
-
-    if (!selfsigner) {
-      return res.status(404).json({ message: "Self signer not found" });
-    }
-
-    // Successfully found
-    return res.status(200).json(selfsigner);
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error", error: err.message });
-  }
+  } 
 };
 const getSigners = async (req, res) => {
   try {
     const { envelopeId } = req.params;
-    const token = req.headers.authorization;
 
-    // 1. Fetch signers for the envelope
-    const signers = await selfSigner.find({ envelopeId });
+    // Find all cycles for the envelope and populate the signers
+    const cycles = await Cycle.find({ envelopeId })
+      .populate({
+        path: 'signers',
+        model: 'SelfSigner',
+      })
+      .lean();
 
-    if (!signers || signers.length === 0) {
-      return res.status(404).json({ message: 'No signers found' });
+    if (!cycles || cycles.length === 0) {
+      return res.status(404).json({ message: 'No cycles found' });
     }
-
-    // 2. Map each signer to human-readable data
-    const formattedSigners = await Promise.all(signers.map(async (signer) => {
-      // Fetch fields for this form
-      const response = await axios.get(
-        `${process.env.TEMPLATE_URL}/api/template/get-form-details/${signer.formId}`,
-        { headers: { Authorization: token } }
-      );
-      const form = response.data;
-
-      // Map signer.data keys to field labels
-      let mappedData = {};
-      if (signer.role === "creator") {
-        mappedData = {
-          Name: signer.data.get ? signer.data.get('name') : signer.data.name || "",
-          Email: signer.data.get ? signer.data.get('email') : signer.data.email || "",
-        };
-      } else {
-        for (const field of form.fields) {
-          const value = signer.data.get(field._id);
-          if (value !== undefined) {
-            mappedData[field.label.trim()] = value;
-          }
-        }
-      }
-
-      return {
-        signerId: signer._id,
-        envelopeId: signer.envelopeId,
-        cycleId: signer.cycleId,
-        formId: signer.formId,
-        data: mappedData,
-        status: signer.status,
-        signature: signer.signature,
-        role: signer.role,
-        authentication: signer.authentication,
-        createdAt: signer.createdAt,
-        updatedAt: signer.updatedAt
-      };
-    }));
-
-    // 3. Group signers by cycle
-    const cyclesMap = {};
-    for (const signer of formattedSigners) {
-      if (!cyclesMap[signer.cycleId]) {
-        cyclesMap[signer.cycleId] = {
-          cycleId: signer.cycleId,
-          signers: []
-        };
-      }
-      cyclesMap[signer.cycleId].signers.push(signer);
-    }
-
-    const cycles = Object.values(cyclesMap);
 
     return res.status(200).json({ cycles });
-
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    console.error('getSigners error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 

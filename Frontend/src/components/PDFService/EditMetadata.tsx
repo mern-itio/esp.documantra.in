@@ -276,7 +276,7 @@ const EditMetadata: React.FC = () => {
       </div>
 
       {/* Success/Error Messages */}
-      {success && (
+      {success && !result && (
         <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center">
             <div className="w-5 h-5 text-green-500 mr-2">✓</div>
@@ -294,6 +294,7 @@ const EditMetadata: React.FC = () => {
         </div>
       )}
 
+      {!result && (
       <div className={`grid grid-cols-1 gap-6 ${selectedFile ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
         {/* Left Panel - File Upload and Configuration */}
         <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
@@ -647,9 +648,11 @@ const EditMetadata: React.FC = () => {
 
           </div>
         )}
+      </div>
+      )}
 
-        {/* Results Section - Show when file is selected and metadata editing is complete */}
-        {selectedFile && result && (
+      {/* Results Section - Show when file is selected and metadata editing is complete (success-only view) */}
+      {selectedFile && result && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center space-x-2 mb-4">
               <CheckCircle className="w-6 h-6 text-green-500" />
@@ -680,7 +683,6 @@ const EditMetadata: React.FC = () => {
             </Button>
           </div>
         )}
-      </div>
 
       {/* Processing Overlay */}
       {

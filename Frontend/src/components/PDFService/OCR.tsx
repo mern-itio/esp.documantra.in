@@ -4,7 +4,6 @@ import {
   Upload, 
   CheckCircle, 
   AlertCircle, 
-  Info, 
   FileDown, 
   ArrowLeft, 
   Trash2,
@@ -34,7 +33,7 @@ const OCR: React.FC = () => {
   const [languages, setLanguages] = useState<OCRLanguage[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState<string>('eng');
   const [accuracy, setAccuracy] = useState<'fast' | 'balanced' | 'accurate'>('balanced');
-  const [outputFormat, setOutputFormat] = useState<'pdf' | 'txt'>('pdf');
+  const [outputFormat, setOutputFormat] = useState<'txt'>('txt');
   const [options, setOptions] = useState({
     autoDeskew: true,
     removeNoise: true,
@@ -511,17 +510,6 @@ const OCR: React.FC = () => {
                       <input
                         type="radio"
                         name="outputFormat"
-                        value="pdf"
-                        checked={outputFormat === 'pdf'}
-                        onChange={(e) => setOutputFormat(e.target.value as any)}
-                        className="text-blue-600"
-                      />
-                      <span className="text-sm">Searchable PDF</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        name="outputFormat"
                         value="txt"
                         checked={outputFormat === 'txt'}
                         onChange={(e) => setOutputFormat(e.target.value as any)}
@@ -530,12 +518,6 @@ const OCR: React.FC = () => {
                       <span className="text-sm">Plain Text</span>
                     </label>
                   </div>
-                  {outputFormat === 'pdf' && (
-                    <p className="text-xs text-amber-600 mt-2 bg-amber-50 p-2 rounded">
-                      <Info className="h-3 w-3 inline mr-1" />
-                      Note: If PDF creation fails due to system restrictions, a text file will be created as fallback.
-                    </p>
-                  )}
                 </div>
 
                 {/* Advanced Options */}

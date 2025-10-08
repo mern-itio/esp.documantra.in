@@ -17,7 +17,6 @@ const redactController = {
       }
 
       const {
-        redactionType = 'custom',
         customPattern = '',
         redactionColor = 'black',
         redactionMethod = 'solid',
@@ -25,10 +24,36 @@ const redactController = {
         batchMode = 'false',
         complianceMode = 'false'
       } = req.body;
+      const redactionType = req.body.redactionType || '';
+
+      // Optional arrays via JSON from FormData
+      let redactionTypes = [];
+      if (req.body.redactionTypes) {
+        try {
+          redactionTypes = JSON.parse(req.body.redactionTypes);
+          if (!Array.isArray(redactionTypes)) redactionTypes = [];
+        } catch (e) {
+          console.warn('Failed to parse redactionTypes JSON:', e.message);
+          redactionTypes = [];
+        }
+      }
+
+      let customPatterns = [];
+      if (req.body.customPatterns) {
+        try {
+          customPatterns = JSON.parse(req.body.customPatterns);
+          if (!Array.isArray(customPatterns)) customPatterns = [];
+        } catch (e) {
+          console.warn('Failed to parse customPatterns JSON:', e.message);
+          customPatterns = [];
+        }
+      }
 
       console.log('Redaction request received:', {
         redactionType,
+        redactionTypes,
         customPattern: customPattern ? '[PROVIDED]' : '[EMPTY]',
+        customPatterns: Array.isArray(customPatterns) ? customPatterns.length : 0,
         redactionColor,
         redactionMethod,
         preserveLayout,
@@ -37,10 +62,18 @@ const redactController = {
       });
 
       // Validate input
-      if (!redactionType || (redactionType === 'custom' && !customPattern.trim())) {
+      const hasAnyType = (redactionType && redactionType.length > 0) || (Array.isArray(redactionTypes) && redactionTypes.length > 0);
+      const includesCustom = (redactionType === 'custom') || (Array.isArray(redactionTypes) && redactionTypes.includes('custom'));
+      if (!hasAnyType) {
         return res.status(400).json({
           success: false,
-          message: 'Redaction type and pattern are required'
+          message: 'At least one redaction type is required'
+        });
+      }
+      if (includesCustom && !customPattern.trim() && (!Array.isArray(customPatterns) || customPatterns.length === 0)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Custom pattern is required when selecting custom type'
         });
       }
 
@@ -58,7 +91,9 @@ const redactController = {
         outputPath,
         {
           redactionType,
+          redactionTypes,
           customPattern,
+          customPatterns,
           redactionColor,
           redactionMethod,
           preserveLayout: preserveLayout === 'true',
@@ -103,7 +138,7 @@ const redactController = {
         redactionDetails: redactionResult.details,
         complianceInfo: complianceMode === 'true' ? {
           redactionTimestamp: new Date().toISOString(),
-          redactionType,
+          redactionType: Array.isArray(redactionTypes) && redactionTypes.length > 0 ? redactionTypes : redactionType,
           auditTrail: redactionResult.auditTrail || []
         } : null
       });
@@ -133,15 +168,38 @@ const redactController = {
     try {
       const {
         redactionType,
+        redactionTypes = [],
         customPattern,
+        customPatterns = [],
         redactionColor,
         redactionMethod,
         preserveLayout,
         complianceMode
       } = options;
 
-      // Get redaction patterns
-      const patterns = redactController.getRedactionPatterns(redactionType, customPattern);
+      // Build combined patterns from single/multiple types and custom patterns
+      const allTypes = Array.isArray(redactionTypes) && redactionTypes.length > 0
+        ? redactionTypes
+        : (redactionType ? [redactionType] : []);
+
+      let patterns = [];
+      for (const t of allTypes) {
+        patterns = patterns.concat(redactController.getRedactionPatterns(t, customPattern));
+      }
+      if (Array.isArray(customPatterns) && customPatterns.length > 0) {
+        for (const cp of customPatterns) {
+          try {
+            new RegExp(cp);
+            patterns.push({
+              name: 'Custom Pattern',
+              pattern: cp,
+              description: 'Custom Regular Expression'
+            });
+          } catch (e) {
+            console.warn('Invalid custom pattern skipped:', e.message);
+          }
+        }
+      }
       
       if (patterns.length === 0) {
         return {
@@ -562,15 +620,57 @@ if __name__ == "__main__":
       }
 
       const {
-        redactionType = 'custom',
         customPattern = ''
       } = req.body;
+      const redactionType = req.body.redactionType || '';
+
+      let redactionTypes = [];
+      if (req.body.redactionTypes) {
+        try {
+          redactionTypes = JSON.parse(req.body.redactionTypes);
+          if (!Array.isArray(redactionTypes)) redactionTypes = [];
+        } catch (e) {
+          console.warn('Failed to parse redactionTypes JSON (preview):', e.message);
+          redactionTypes = [];
+        }
+      }
+
+      let customPatterns = [];
+      if (req.body.customPatterns) {
+        try {
+          customPatterns = JSON.parse(req.body.customPatterns);
+          if (!Array.isArray(customPatterns)) customPatterns = [];
+        } catch (e) {
+          console.warn('Failed to parse customPatterns JSON (preview):', e.message);
+          customPatterns = [];
+        }
+      }
 
       // Extract text from PDF
       const { stdout: extractedText } = await execAsync(`pdftotext "${req.file.path}" -`);
       
-      // Get redaction patterns
-      const patterns = redactController.getRedactionPatterns(redactionType, customPattern);
+      // Get redaction patterns (combined)
+      const allTypes = Array.isArray(redactionTypes) && redactionTypes.length > 0
+        ? redactionTypes
+        : (redactionType ? [redactionType] : []);
+      let patterns = [];
+      for (const t of allTypes) {
+        patterns = patterns.concat(redactController.getRedactionPatterns(t, customPattern));
+      }
+      if (Array.isArray(customPatterns) && customPatterns.length > 0) {
+        for (const cp of customPatterns) {
+          try {
+            new RegExp(cp);
+            patterns.push({
+              name: 'Custom Pattern',
+              pattern: cp,
+              description: 'Custom Regular Expression'
+            });
+          } catch (e) {
+            console.warn('Invalid custom pattern skipped (preview):', e.message);
+          }
+        }
+      }
       
       const matches = [];
       patterns.forEach(patternInfo => {

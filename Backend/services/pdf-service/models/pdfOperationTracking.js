@@ -112,7 +112,9 @@ PdfOperationTrackingSchema.statics.getAnalyticsData = async function(userId, sta
     operationsByStatus,
     recentOperations,
     dailyOperations,
-    processingTimes
+    processingTimes,
+    dailyStatus,
+    dailyProcessing
   ] = await Promise.all([
     this.countDocuments(matchQuery),
     
@@ -165,6 +167,37 @@ PdfOperationTrackingSchema.statics.getAnalyticsData = async function(userId, sta
           maxProcessingTime: { $max: '$processingTime' }
         }
       }
+    ]),
+    // Daily success vs total to compute success rate trend
+    this.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          total: { $sum: 1 },
+          success: { $sum: { $cond: [{ $eq: ['$status', 'success'] }, 1, 0] } }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]),
+    // Daily avg processing time trend
+    this.aggregate([
+      { $match: { ...matchQuery, status: 'success', processingTime: { $gt: 0 } } },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          avgProcessingTime: { $avg: '$processingTime' }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
     ])
   ]);
 
@@ -199,6 +232,15 @@ PdfOperationTrackingSchema.statics.getAnalyticsData = async function(userId, sta
     percentage: totalOperations > 0 ? Math.round((tool.count / totalOperations) * 100) : 0
   }));
 
+  // Build performance trend by date
+  const byDateKey = (obj) => new Date(obj._id.year, obj._id.month - 1, obj._id.day).toISOString().split('T')[0];
+  const procMap = new Map(dailyProcessing.map(dp => [byDateKey(dp), dp.avgProcessingTime]));
+  const perfTrend = dailyStatus.map(ds => {
+    const date = byDateKey(ds);
+    const successRate = ds.total > 0 ? (ds.success / ds.total) * 100 : 0;
+    return { date, successRate, avgProcessingTimeMs: procMap.get(date) || 0 };
+  });
+
   return {
     totalOperations,
     successRate,
@@ -208,7 +250,8 @@ PdfOperationTrackingSchema.statics.getAnalyticsData = async function(userId, sta
     usageTrend,
     categoryUsage,
     popularTools,
-    processingTimes: processingTimes[0] || { avgProcessingTime: 0, minProcessingTime: 0, maxProcessingTime: 0 }
+    processingTimes: processingTimes[0] || { avgProcessingTime: 0, minProcessingTime: 0, maxProcessingTime: 0 },
+    performanceTrend: perfTrend
   };
 };
 

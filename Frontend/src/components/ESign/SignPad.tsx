@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
+import  { useRef, useState, useEffect } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { eSignApi } from "../../services/apiHelper";
+import ActionButton from "./ActionButton"; // <-- adjust path as needed
+
 
 interface ActiveField {
   _id: string;
@@ -26,7 +28,7 @@ interface SignPadProps {
   selfValue?: string;
 }
 
-function SignPad({
+export default function SignPad({
   isSignPad,
   setIsSignPad,
   activeField,
@@ -35,14 +37,20 @@ function SignPad({
   envelopeID,
   defaultSign = null,
   onSaveSign,
-  selfValue
+  selfValue,
 }: SignPadProps) {
   const [penColor, setPenColor] = useState("blue");
   const [isTab, setIsTab] = useState<"draw" | "upload" | "typed">("draw");
   const [typedSignature, setTypedSignature] = useState("");
   const [fontSelect, setFontSelect] = useState("Fasthand");
-  const [isSignImg, setIsSignImg] = useState(defaultSign || "");
-  const canvasRef = useRef<SignatureCanvas>(null);
+  const [isSignImg, setIsSignImg] = useState<string>(defaultSign || "");
+  const canvasRef = useRef<SignatureCanvas | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Loading states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
 
   const fontOptions = [
     { value: "Fasthand" },
@@ -53,27 +61,36 @@ function SignPad({
 
   const allColors = ["blue", "red", "black"];
 
+  /**
+   * Convert typed text to an image DataURL.
+   * NOTE: browser must have the font available (webfont or system), otherwise it'll fallback.
+   */
   const convertToImg = (font: string, text: string, color: string) => {
-    if (!text) return;
+    if (!text) {
+      setIsSignImg("");
+      return;
+    }
+    // Create canvas with reasonable scaling for crispness
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const fontSize = 40;
-    ctx.font = `${fontSize}px ${font}`;
-    const width = ctx.measureText(text).width + 20;
-    const height = fontSize + 20;
+    const fontSize = 48; // larger for clarity
+    ctx.font = `${fontSize}px ${font}, sans-serif`;
+    const width = Math.ceil(ctx.measureText(text).width + 40);
+    const height = fontSize + 40;
     canvas.width = width;
     canvas.height = height;
-    ctx.font = `${fontSize}px ${font}`;
+    // need to re-set font after size set (important)
+    ctx.font = `${fontSize}px ${font}, sans-serif`;
     ctx.fillStyle = color;
     ctx.textBaseline = "top";
-    ctx.fillText(text, 10, 10);
+    ctx.fillText(text, 20, 20);
     const dataUrl = canvas.toDataURL("image/png");
     setIsSignImg(dataUrl);
   };
 
   const handleSaveDraw = () => {
-    if (canvasRef.current) {
+    if (canvasRef.current && !canvasRef.current.isEmpty()) {
       const dataUrl = canvasRef.current.toDataURL();
       setIsSignImg(dataUrl);
     }
@@ -81,28 +98,62 @@ function SignPad({
 
   const handleClear = () => {
     if (isTab === "draw" && canvasRef.current) canvasRef.current.clear();
-    if (isTab === "typed") setTypedSignature("");
-    setIsSignImg("");
+    if (isTab === "typed") {
+      setTypedSignature("");
+      setIsSignImg("");
+    } else {
+      setIsSignImg("");
+    }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!isSignImg) return;
-    const link = document.createElement("a");
-    link.href = isSignImg;
-    link.download = "signature.png";
-    link.click();
+    try {
+      setIsUploading(true);
+      const link = document.createElement("a");
+      link.href = isSignImg;
+      link.download = "signature.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Download failed.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!isSignImg) return;
-    fetch(isSignImg)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const item = new ClipboardItem({ "image/png": blob });
-        navigator.clipboard.write([item]);
-        alert("Signature copied to clipboard!");
-      })
-      .catch(() => alert("Failed to copy signature."));
+    try {
+      setIsCopying(true);
+      const res = await fetch(isSignImg);
+      const blob = await res.blob();
+      // ClipboardItem might not be available in all browsers
+      // but it's fine in modern ones; fallback to alert otherwise
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      alert("Signature copied to clipboard!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to copy signature. Try downloading instead.");
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  const issueCertificate = async (recipientId: any, envelopeId: any, selfVal: any) => {
+    const payload = { recipientId, envelopeId, selfValue: selfVal };
+    try {
+      const res = await eSignApi.post("/api/e-sign/certificates/issue", payload);
+      // adjust according to your backend response structure
+      return res?.data?.certificateId;
+    } catch (err) {
+      console.error("issueCertificate error:", err);
+      throw err;
+    }
   };
 
   const handleSubmit = async () => {
@@ -110,198 +161,268 @@ function SignPad({
       alert("Please provide a signature before submitting!");
       return;
     }
+    setIsSubmitting(true);
+    try {
+      // Issue certificate first
+      const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
+      if (!certificateId) {
+        throw new Error("Certificate issuance failed");
+      }
 
-    // Issue Certificate
+      const payload = {
+        fieldId: activeField?._id,
+        signatureImageBase64: isSignImg,
+        envelopeId: envelopeID || "",
+        documentId,
+        recipientId: currentUserId,
+        certificateId,
+        signerName: "John Doe", // adjust dynamically if you have a real name
+        selfValue: selfValue || "",
+      };
 
-    const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue); 
-    console.log(certificateId);
-    const payload = {
-      fieldId: activeField?._id,
-      signatureImageBase64: isSignImg,
-      envelopeId: envelopeID!,
-      documentId,
-      recipientId: currentUserId,
-      certificateId,
-      signerName: 'John Doe' ,
-      selfValue:selfValue || ''
-    };
+      const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
 
-    const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
-
-    if (response.status === 200) {
-      alert("Signature submitted successfully!");
-      onSaveSign?.(activeField?._id || "", isSignImg);
-      setIsSignPad(false);
-    } else {
-      alert("Failed to submit signature. Please try again.");
+      if (response?.status === 200) {
+        alert("Signature submitted successfully!");
+        onSaveSign?.(activeField?._id || "", isSignImg);
+        setIsSignPad(false);
+      } else {
+        console.error("submit response:", response);
+        alert("Failed to submit signature. Please try again.");
+      }
+    } catch (err) {
+      console.error("submit error:", err);
+      alert("An error occurred while submitting the signature.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
-const issueCertificate = async(recipientId:any, envelopeId:any, selfValue:any) =>{
-  const payload = {
-    recipientId:recipientId,
-    envelopeId:envelopeId,
-    selfValue:selfValue
-  }
-  try{
-    const issueCertificate = await eSignApi.post('/api/e-sign/certificates/issue',payload);
-    if(issueCertificate){
-      return issueCertificate.data.certificateId;
+
+  // Focus typed input when we enter typed tab while modal open.
+  useEffect(() => {
+    if (isSignPad && isTab === "typed") {
+      const t = setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        if (typedSignature) convertToImg(fontSelect, typedSignature, penColor);
+      }, 60);
+      return () => clearTimeout(t);
     }
-  }catch (err){
-    console.log(err);
-  }
+  }, [isTab, isSignPad, fontSelect, penColor]); // not depending on typedSignature to avoid focus stealing
 
- }
+  // close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsSignPad(false);
+    };
+    if (isSignPad) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isSignPad, setIsSignPad]);
+
+  // Upload handler with slight UX improvements (upload loader)
+  const onFileChange = (file?: File) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size should not exceed 5MB!");
+      return;
+    }
+    const reader = new FileReader();
+    setIsUploading(true);
+    reader.onload = () => {
+      setIsSignImg(reader.result as string);
+      setIsUploading(false);
+    };
+    reader.onerror = () => {
+      setIsUploading(false);
+      alert("Failed to read file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  if (!isSignPad) return null;
+
   return (
-    <>
-      {isSignPad && (
-        <div className="fixed inset-0 flex justify-center items-center z-50 bg-black/30">
-          <div
-            className="bg-white rounded-xl p-6 w-[550px] max-h-[600px] overflow-y-auto"
-            style={{ boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px" }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <div className="font-bold text-lg">Signature</div>
-              <div
-                className="cursor-pointer text-2xl"
-                onClick={() => setIsSignPad(false)}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-xl w-[600px] max-h-[82vh] overflow-y-auto p-5 shadow-xl">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Add Signature</h3>
+            <p className="text-sm text-gray-500">
+              Select draw, upload, or type. Your signature will be embedded into the document.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (isSubmitting) return; // prevent closing while submitting
+                setIsSignPad(false);
+              }}
+              aria-label="Close"
+              className="text-gray-600 hover:text-gray-900 text-2xl"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mt-4">
+          <div className="flex gap-3">
+            {(["draw", "upload", "typed"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setIsTab(tab)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
+                  isTab === tab
+                    ? "bg-blue-600 text-white border-blue-700"
+                    : "bg-white text-gray-700 border-gray-200"
+                }`}
               >
-                &times;
-              </div>
-            </div>
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
 
-            <div className="flex gap-4 mb-4">
-              {["draw", "upload", "typed"].map((tab) => (
-                <button
-                  key={tab}
-                  className={`px-2 py-1 border rounded ${
-                    isTab === tab ? "bg-blue-500 text-white" : ""
-                  }`}
-                  onClick={() => setIsTab(tab as "draw" | "upload" | "typed")}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex flex-col items-center gap-2">
-              {isTab === "draw" && (
+          {/* Content */}
+          <div className="mt-4 flex flex-col items-center gap-3">
+            {isTab === "draw" && (
+              <>
                 <SignatureCanvas
-                  ref={canvasRef}
-                  penColor={penColor}
-                  canvasProps={{ className: "border w-full h-[150px]" }}
-                  dotSize={1}
-                  onEnd={handleSaveDraw}
-                />
-              )}
+                    ref={(c) => { canvasRef.current = c; }}
+                    penColor={penColor}
+                    canvasProps={{ className: "border rounded-md w-full h-[170px]" }}
+                    dotSize={1}
+                    onEnd={handleSaveDraw}
+                  />
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex gap-2">
+                    {allColors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setPenColor(color)}
+                        className={`w-7 h-7 rounded-full border ${penColor === color ? "ring-2 ring-offset-1 ring-blue-300" : ""}`}
+                        style={{ backgroundColor: color }}
+                        aria-label={`pen-${color}`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    className="ml-2 px-3 py-1 rounded border text-sm"
+                    onClick={() => {
+                      canvasRef.current?.clear();
+                      setIsSignImg("");
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </>
+            )}
 
-              {isTab === "upload" && !isSignImg && (
+            {isTab === "upload" && (
+              <>
                 <label
-                  className="flex flex-col items-center cursor-pointer border-2 border-gray-300 rounded p-4"
-                  style={{ width: "400px", height: "100px" }}
+                  className="flex flex-col items-center justify-center border-2 border-dashed rounded-md w-[420px] h-[120px] cursor-pointer p-3"
                 >
-                  <CloudUploadIcon fontSize="large" />
-                  <span className="mt-1">Upload</span>
+                  <CloudUploadIcon fontSize="large" className="text-gray-500" />
+                  <span className="text-sm text-gray-600 mt-1">Click to upload or drop an image (max 5MB)</span>
                   <input
                     type="file"
                     accept="image/*"
                     hidden
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (file.size > 5 * 1024 * 1024) {
-                        alert("File size should not exceed 5MB!");
-                        return;
-                      }
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        setIsSignImg(reader.result as string);
-                      };
-                      reader.readAsDataURL(file);
-                    }}
+                    onChange={(e) => onFileChange(e.target.files?.[0])}
                   />
                 </label>
-              )}
+                {isUploading && <div className="text-xs text-gray-500 mt-1">Processing file...</div>}
+              </>
+            )}
 
-              {isTab === "typed" && (
-                <>
-                  <input
-                    type="text"
-                    value={typedSignature}
-                    onChange={(e) => {
-                      setTypedSignature(e.target.value);
-                      convertToImg(fontSelect, e.target.value, penColor);
-                    }}
-                    placeholder="Type your signature"
-                    className="border p-1 w-full"
-                  />
-                  <div className="flex gap-2">
-                    {fontOptions.map((f) => (
-                      <button
-                        key={f.value}
-                        style={{
-                          fontFamily: f.value,
-                          backgroundColor: fontSelect === f.value ? "#d0e7ff" : "",
-                        }}
-                        className="px-2 py-1 border rounded"
-                        onClick={() => {
-                          setFontSelect(f.value);
-                          convertToImg(f.value, typedSignature, penColor);
-                        }}
-                      >
-                        {f.value}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {(isTab === "draw" || isTab === "typed") && (
-                <div className="flex gap-2 mt-2">
-                  {allColors.map((color) => (
+            {isTab === "typed" && (
+              <div className="w-full">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={typedSignature}
+                  onChange={(e) => {
+                    setTypedSignature(e.target.value);
+                    convertToImg(fontSelect, e.target.value, penColor);
+                  }}
+                  placeholder="Type your signature here"
+                  className="w-full border p-2 rounded"
+                  disabled={isSubmitting}
+                />
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {fontOptions.map((f) => (
                     <button
-                      key={color}
-                      style={{ backgroundColor: color }}
-                      className="w-6 h-6 rounded"
+                      key={f.value}
                       onClick={() => {
-                        setPenColor(color);
-                        if (isTab === "typed") convertToImg(fontSelect, typedSignature, color);
+                        setFontSelect(f.value);
+                        convertToImg(f.value, typedSignature, penColor);
                       }}
+                      className={`px-2 py-1 border rounded text-sm ${fontSelect === f.value ? "bg-blue-50" : ""}`}
+                      style={{ fontFamily: `${f.value}, sans-serif` }}
+                      disabled={isSubmitting}
+                    >
+                      {f.value}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 mt-2">
+                  {allColors.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => {
+                        setPenColor(c);
+                        convertToImg(fontSelect, typedSignature, c);
+                      }}
+                      className={`w-7 h-7 rounded-full border ${penColor === c ? "ring-2 ring-offset-1 ring-blue-300" : ""}`}
+                      style={{ backgroundColor: c }}
+                      aria-label={`color-${c}`}
+                      disabled={isSubmitting}
                     />
                   ))}
                 </div>
-              )}
-            </div>
-
-            {isSignImg && isTab !== "draw" && (
-              <div className="flex flex-col items-center mt-4">
-                <img src={isSignImg} alt="signature-preview" className="h-32" />
               </div>
             )}
 
-            <div className="flex gap-2 mt-4 justify-center flex-wrap">
-              <button className="px-2 py-1 border rounded" onClick={handleClear}>
-                Clear
-              </button>
-              {isSignImg && (
-                <>
-                  <button className="px-2 py-1 border rounded" onClick={handleDownload}>
-                    Download
-                  </button>
-                  <button className="px-2 py-1 border rounded" onClick={handleCopy}>
-                    Copy
-                  </button>
-                  <button className="px-2 py-1 border rounded" onClick={handleSubmit}>
-                    Sign
-                  </button>
-                </>
-              )}
-            </div>
+            {/* Preview */}
+            {isSignImg && (
+              <div className="mt-4 flex flex-col items-center w-full">
+                <div className="text-xs text-gray-500 mb-2">Preview</div>
+                <img src={isSignImg} alt="signature-preview" className="h-28 object-contain border rounded p-1 bg-white" />
+              </div>
+            )}
+          </div>
+
+          {/* Action Row */}
+          <div className="mt-5 flex flex-wrap gap-3 justify-center">
+            {/* Clear / Download / Copy */}
+            <button
+              className="px-3 py-1 rounded border text-sm"
+              onClick={handleClear}
+              disabled={isSubmitting || isUploading}
+            >
+              Clear
+            </button>
+
+            <ActionButton onClick={handleDownload} loading={isUploading} disabled={!isSignImg || isSubmitting} variant="secondary">
+              Download
+            </ActionButton>
+
+            <ActionButton onClick={handleCopy} loading={isCopying} disabled={!isSignImg || isSubmitting} variant="secondary">
+              Copy
+            </ActionButton>
+
+            {/* Primary Sign button */}
+            <ActionButton onClick={handleSubmit} loading={isSubmitting} disabled={!isSignImg} variant="primary">
+              Sign & Submit
+            </ActionButton>
           </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
-
-export default SignPad;

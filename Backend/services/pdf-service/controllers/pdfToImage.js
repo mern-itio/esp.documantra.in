@@ -9,22 +9,12 @@ const Epub = require('epub-gen');
 const mammoth = require('mammoth');
 const puppeteer = require('puppeteer');
 
-// Import conversion functions from pdfController
-const {
-  convertDocToPdf,
-  convertDocToPdfFallback,
-  convertPdfToDoc,
-  convertPdfToExcel,
-  convertExcelToPdf,
-  convertExcelToDoc,
-  convertDocToExcel,
-  convertPdfToPpt,
-  convertPptToPdf,
-  convertPdfToTxt,
-  convertTxtToPdf,
-  convertPdfToHtml,
-  convertHtmlToPdf
-} = require('./pdfController');
+// Lazy-load conversion functions to avoid circular initialization issues
+function getPdfController() {
+  // Require on demand so module is fully initialized
+  // eslint-disable-next-line global-require
+  return require('./pdfController');
+}
 
 // Import the split PDF functionality
 const { splitByPages } = require('./pdfSplitService');
@@ -680,33 +670,33 @@ exports.batchConvert = async (req, res) => {
               const tempPdfPath = path.join(uploadDir, generateFilename('temp_pdf', 'pdf'));
               const tempDocxPath = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.docx`);
               fs.writeFileSync(tempPdfPath, file.buffer);
-              result = await convertPdfToDoc(tempPdfPath, tempDocxPath);
+              result = await getPdfController().convertPdfToDoc(tempPdfPath, tempDocxPath);
               break;
             case 'xlsx':
               const tempPdfPath2 = path.join(uploadDir, generateFilename('temp_pdf2', 'pdf'));
               const tempXlsxPath = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.xlsx`);
               fs.writeFileSync(tempPdfPath2, file.buffer);
-              result = await convertPdfToExcel(tempPdfPath2, tempXlsxPath);
+              result = await getPdfController().convertPdfToExcel(tempPdfPath2, tempXlsxPath);
               break;
             case 'pptx':
               const tempPdfPath3 = path.join(uploadDir, generateFilename('temp_pdf3', 'pdf'));
               const originalName3 = path.parse(file.originalname).name;
               const finalPptxPath = path.join(__dirname, '..', 'outputs', `${originalName3}.pptx`);
               fs.writeFileSync(tempPdfPath3, file.buffer);
-              result = await convertPdfToPpt(tempPdfPath3, finalPptxPath);
+              result = await getPdfController().convertPdfToPpt(tempPdfPath3, finalPptxPath);
               result.outputFile = path.basename(finalPptxPath); // ensure correct filename
               break;
             case 'txt':
               const tempPdfPath4 = path.join(uploadDir, generateFilename('temp_pdf4', 'pdf'));
               const tempTxtPath = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.txt`);
               fs.writeFileSync(tempPdfPath4, file.buffer);
-              result = await convertPdfToTxt(tempPdfPath4, tempTxtPath);
+              result = await getPdfController().convertPdfToTxt(tempPdfPath4, tempTxtPath);
               break;
             case 'html':
               const tempPdfPath5 = path.join(uploadDir, generateFilename('temp_pdf5', 'pdf'));
               const tempHtmlPath = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.html`);
               fs.writeFileSync(tempPdfPath5, file.buffer);
-              result = await convertPdfToHtml(tempPdfPath5, tempHtmlPath);
+              result = await getPdfController().convertPdfToHtml(tempPdfPath5, tempHtmlPath);
               break;
             case 'epub':
               // For batch conversion, we need to handle this differently since convertPdfToEpub expects req object
@@ -723,13 +713,13 @@ exports.batchConvert = async (req, res) => {
               const tempPdfPath6 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pdf`);
               fs.writeFileSync(tempDocPath, file.buffer);
               // Use the fallback method that doesn't require LibreOffice
-              result = await convertDocToPdf(tempDocPath, tempPdfPath6);
+              result = await getPdfController().convertDocToPdf(tempDocPath, tempPdfPath6);
               break;
             case 'xlsx':
               const tempDocPath2 = path.join(uploadDir, generateFilename('temp_doc2', path.extname(file.originalname)));
               const tempXlsxPath2 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.xlsx`);
               fs.writeFileSync(tempDocPath2, file.buffer);
-              result = await convertDocToExcel(tempDocPath2, tempXlsxPath2);
+              result = await getPdfController().convertDocToExcel(tempDocPath2, tempXlsxPath2);
               break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);
@@ -741,13 +731,13 @@ exports.batchConvert = async (req, res) => {
               const tempExcelPath = path.join(uploadDir, generateFilename('temp_excel', path.extname(file.originalname)));
               const tempPdfPath7 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pdf`);
               fs.writeFileSync(tempExcelPath, file.buffer);
-              result = await convertExcelToPdf(tempExcelPath, tempPdfPath7);
+              result = await getPdfController().convertExcelToPdf(tempExcelPath, tempPdfPath7);
               break;
             case 'docx':
               const tempExcelPath2 = path.join(uploadDir, generateFilename('temp_excel2', path.extname(file.originalname)));
               const tempDocxPath2 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.docx`);
               fs.writeFileSync(tempExcelPath2, file.buffer);
-              result = await convertExcelToDoc(tempExcelPath2, tempDocxPath2);
+              result = await getPdfController().convertExcelToDoc(tempExcelPath2, tempDocxPath2);
               break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);
@@ -759,7 +749,7 @@ exports.batchConvert = async (req, res) => {
               const tempPptPath = path.join(uploadDir, generateFilename('temp_ppt', path.extname(file.originalname)));
               const tempPdfPath8 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pdf`);
               fs.writeFileSync(tempPptPath, file.buffer);
-              result = await convertPptToPdf(tempPptPath, tempPdfPath8);
+              result = await getPdfController().convertPptToPdf(tempPptPath, tempPdfPath8);
               break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);
@@ -771,7 +761,7 @@ exports.batchConvert = async (req, res) => {
               const tempTxtPath2 = path.join(uploadDir, generateFilename('temp_txt', 'txt'));
               const tempPdfPath9 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pdf`);
               fs.writeFileSync(tempTxtPath2, file.buffer);
-              result = await convertTxtToPdf(tempTxtPath2, tempPdfPath9);
+              result = await getPdfController().convertTxtToPdf(tempTxtPath2, tempPdfPath9);
               break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);
@@ -783,7 +773,7 @@ exports.batchConvert = async (req, res) => {
               const tempHtmlPath2 = path.join(uploadDir, generateFilename('temp_html', 'html'));
               const tempPdfPath10 = path.join(__dirname, '..', 'outputs', `converted_${Date.now()}.pdf`);
               fs.writeFileSync(tempHtmlPath2, file.buffer);
-              result = await convertHtmlToPdf(tempHtmlPath2, tempPdfPath10);
+              result = await getPdfController().convertHtmlToPdf(tempHtmlPath2, tempPdfPath10);
               break;
             default:
               throw new Error(`Unsupported output format: ${targetFormat}`);

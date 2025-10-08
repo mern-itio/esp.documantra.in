@@ -42,8 +42,10 @@ router.post('/doc-to-pdf', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.pdf');
+    
+    // Use original filename with .pdf extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.pdf');
 
     console.log(`Converting ${req.file.originalname} to PDF...`);
     
@@ -84,8 +86,10 @@ router.post('/pdf-to-doc', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.docx');
+    
+    // Use original filename with .docx extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.docx');
 
     console.log(`Converting ${req.file.originalname} to DOC...`);
     console.log(`Input path: ${inputPath}`);
@@ -134,8 +138,10 @@ router.post('/pdf-to-excel', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.xlsx');
+    
+    // Use original filename with .xlsx extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.xlsx');
 
     console.log(`Converting ${req.file.originalname} to Excel...`);
     
@@ -176,8 +182,10 @@ router.post('/excel-to-pdf', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.pdf');
+    
+    // Use original filename with .pdf extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.pdf');
 
     console.log(`Converting ${req.file.originalname} to PDF...`);
     
@@ -218,8 +226,10 @@ router.post('/pdf-to-ppt', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.pptx');
+    
+    // Use original filename with .pptx extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.pptx');
 
     console.log(`Converting ${req.file.originalname} to PPT...`);
     
@@ -261,8 +271,10 @@ router.post('/ppt-to-pdf', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.pdf');
+    
+    // Use original filename with .pdf extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.pdf');
 
     console.log(`Converting ${req.file.originalname} to PDF (LibreOffice high fidelity)...`);
     
@@ -303,8 +315,10 @@ router.post('/ppt-to-pdf-basic', upload.single('document'), async (req, res) => 
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '-basic.pdf');
+    
+    // Use original filename with -basic.pdf extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '-basic.pdf');
 
     console.log(`Converting ${req.file.originalname} to PDF using basic method...`);
     
@@ -346,8 +360,10 @@ router.post('/pdf-to-txt', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.txt');
+    
+    // Use original filename with .txt extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.txt');
 
     console.log(`Converting ${req.file.originalname} to TXT...`);
     
@@ -389,8 +405,10 @@ router.post('/txt-to-pdf', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.pdf');
+    
+    // Use original filename with .pdf extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.pdf');
 
     console.log(`Converting ${req.file.originalname} to PDF...`);
     
@@ -432,8 +450,10 @@ router.post('/pdf-to-html', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.html');
+    
+    // Use original filename with .html extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.html');
 
     console.log(`Converting ${req.file.originalname} to HTML...`);
     
@@ -474,8 +494,10 @@ router.post('/html-to-pdf', upload.single('document'), async (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, '../outputs', 
-      path.basename(req.file.filename, path.extname(req.file.filename)) + '.pdf');
+    
+    // Use original filename with .pdf extension instead of generated filename
+    const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const outputPath = path.join(__dirname, '../outputs', originalName + '.pdf');
 
     console.log(`Converting ${req.file.originalname} to PDF...`);
     
@@ -669,8 +691,9 @@ router.post('/test-html-to-pdf', upload.single('document'), async (req, res) => 
     // Test basic conversion
     try {
       console.log('Testing basic HTML to PDF conversion...');
-      const outputPath = path.join(__dirname, '../outputs', 
-        path.basename(req.file.filename, path.extname(req.file.filename)) + '-test.pdf');
+      // Use original filename with -test.pdf extension instead of generated filename
+      const originalName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+      const outputPath = path.join(__dirname, '../outputs', originalName + '-test.pdf');
       
       const result = await convertHtmlToPdf(inputPath, outputPath);
       

@@ -1,25 +1,9 @@
-#!/usr/bin/env python3
-"""
-PDF to DOCX Converter using pdf2docx library
-This script provides high-fidelity PDF to DOCX conversion with layout preservation
-"""
-
 import sys
 import os
 import argparse
 from pathlib import Path
 
 def convert_pdf_to_docx(input_path, output_path):
-    """
-    Convert PDF to DOCX using pdf2docx library
-    
-    Args:
-        input_path (str): Path to input PDF file
-        output_path (str): Path to output DOCX file
-    
-    Returns:
-        dict: Conversion result with success status and details
-    """
     try:
         # Import pdf2docx
         from pdf2docx import Converter
@@ -72,17 +56,7 @@ def convert_pdf_to_docx(input_path, output_path):
             # Try fallback method
             return convert_pdf_to_docx_fallback(input_path, output_path)
 
-def convert_pdf_to_docx_fallback(input_path, output_path):
-    """
-    Fallback PDF to DOCX conversion using basic text extraction
-    
-    Args:
-        input_path (str): Path to input PDF file
-        output_path (str): Path to output DOCX file
-    
-    Returns:
-        dict: Conversion result with success status and details
-    """
+def convert_pdf_to_docx_fallback(input_path, output_path):   
     try:
         # Import required libraries
         import PyPDF2
@@ -132,7 +106,6 @@ def convert_pdf_to_docx_fallback(input_path, output_path):
         }
 
 def main():
-    """Main function to handle command line arguments and execute conversion"""
     parser = argparse.ArgumentParser(description='Convert PDF to DOCX')
     parser.add_argument('input_path', help='Path to input PDF file')
     parser.add_argument('output_path', help='Path to output DOCX file')

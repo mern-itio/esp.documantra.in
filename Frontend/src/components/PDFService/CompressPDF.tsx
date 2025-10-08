@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FileText, Upload, Settings, CheckCircle, AlertCircle, Info, Zap, FileDown, ArrowLeft, X } from 'lucide-react';
 import { Button } from '../DocumentService/ui/button';
 import { Card } from '../DocumentService/ui/card';
@@ -38,6 +38,41 @@ const CompressPDF: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const presets = compressPDFService.getCompressionPresets();
+
+  // Rotating progress messages while processing large files
+  const progressMessages = [
+    'Analyzing document structure…',
+    'Optimizing images…',
+    'Compressing streams…',
+    'Rewriting cross-reference table…',
+    'Removing redundant metadata…',
+    'Finalizing optimized PDF…',
+    'Flattening annotations…',
+    'Embedding fonts…',
+    'Checking for broken links…',
+    'Updating bookmarks…',
+    'Encrypting document…',
+    'Applying watermarks…',
+    'Validating document integrity…',
+    'Generating thumbnails…',
+    'Performing OCR on scanned pages…',
+    'Merging duplicate objects…',
+    'Optimizing color profiles…',
+    'Cleaning up unused objects…',
+    'Updating XMP metadata…',
+    'Saving optimized PDF…'
+  ];
+  
+  const [progressIndex, setProgressIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isProcessing) return;
+    setProgressIndex(0);
+    const interval = setInterval(() => {
+      setProgressIndex((prev) => (prev + 1) % progressMessages.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isProcessing]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -680,7 +715,7 @@ const CompressPDF: React.FC = () => {
             {isProcessing ? (
               <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Compressing...</span>
+                <span>{progressMessages[progressIndex]}</span>
               </div>
             ) : (
               <div className="flex items-center space-x-2">

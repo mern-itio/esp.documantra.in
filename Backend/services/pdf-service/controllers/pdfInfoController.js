@@ -1,4 +1,4 @@
-const { PDFDocument } = require('pdf-lib');
+const { PDFDocument, PDFName, PDFArray, PDFDict, PDFNumber } = require('pdf-lib');
 const fs = require('fs-extra');
 const path = require('path');
 
@@ -38,28 +38,7 @@ const pdfInfoController = {
 
       // Get document statistics
       const pageCount = pdfDoc.getPageCount();
-      const form = pdfDoc.getForm();
-      const formFields = form.getFields();
-      const fieldCount = formFields.length;
-      
-      // Analyze field types
-      const fieldTypes = {
-        text: 0,
-        checkbox: 0,
-        radio: 0,
-        dropdown: 0,
-        signature: 0,
-        unknown: 0
-      };
-
-      formFields.forEach(field => {
-        const fieldType = getFieldType(field);
-        if (fieldTypes.hasOwnProperty(fieldType)) {
-          fieldTypes[fieldType]++;
-        } else {
-          fieldTypes.unknown++;
-        }
-      });
+      const { fieldTypes, fieldCount } = analyzeFormFields(pdfDoc);
 
       // Get security information
       const securityInfo = await getSecurityInfo(pdfDoc);
@@ -399,3 +378,98 @@ function formatFileSize(bytes) {
 }
 
 module.exports = pdfInfoController;
+
+// Analyze form fields using low-level AcroForm structure to improve detection
+function analyzeFormFields(pdfDoc) {
+  const fieldTypes = {
+    text: 0,
+    checkbox: 0,
+    radio: 0,
+    dropdown: 0,
+    signature: 0,
+    unknown: 0,
+  };
+
+  try {
+    const context = pdfDoc.context;
+    const catalog = pdfDoc.catalog;
+    const acroForm = catalog.lookup(PDFName.of('AcroForm'));
+    if (!acroForm || !(acroForm instanceof PDFDict)) {
+      return { fieldTypes, fieldCount: 0 };
+    }
+
+    const fields = acroForm.lookup(PDFName.of('Fields'));
+    if (!fields || !(fields instanceof PDFArray)) {
+      return { fieldTypes, fieldCount: 0 };
+    }
+
+    let total = 0;
+
+    const walkField = (fieldObj) => {
+      if (!fieldObj || !(fieldObj instanceof PDFDict)) return;
+
+      // Field type FT as name
+      const ft = fieldObj.lookup(PDFName.of('FT'));
+      const kids = fieldObj.lookup(PDFName.of('Kids'));
+
+      if (ft) {
+        const ftName = ft.toString(); // e.g. /Tx, /Btn, /Ch, /Sig
+        switch (ftName) {
+          case '/Tx':
+            fieldTypes.text++;
+            total++;
+            break;
+          case '/Btn': {
+            // Button can be checkbox or radio based on flags (Ff bitfield)
+            const flags = fieldObj.lookup(PDFName.of('Ff'));
+            let ff = 0;
+            if (flags && flags instanceof PDFNumber) ff = flags.asNumber();
+            const isRadio = (ff & 1) === 1; // bit 1 indicates Radio
+            if (isRadio) fieldTypes.radio++; else fieldTypes.checkbox++;
+            total++;
+            break;
+          }
+          case '/Ch':
+            fieldTypes.dropdown++;
+            total++;
+            break;
+          case '/Sig':
+            fieldTypes.signature++;
+            total++;
+            break;
+          default:
+            fieldTypes.unknown++;
+            total++;
+        }
+      }
+
+      // Recurse into kids if present (some fields are hierarchical)
+      if (kids && kids instanceof PDFArray) {
+        for (let idx = 0; idx < kids.size(); idx++) {
+          const kid = kids.lookup(idx);
+          if (kid instanceof PDFDict) walkField(kid);
+        }
+      }
+    };
+
+    for (let i = 0; i < fields.size(); i++) {
+      const field = fields.lookup(i);
+      if (field instanceof PDFDict) walkField(field);
+    }
+
+    return { fieldTypes, fieldCount: total };
+  } catch (e) {
+    // Fallback to pdf-lib high-level API if low-level fails
+    try {
+      const form = pdfDoc.getForm();
+      const formFields = form.getFields();
+      formFields.forEach((field) => {
+        const type = getFieldType(field);
+        if (fieldTypes.hasOwnProperty(type)) fieldTypes[type]++; else fieldTypes.unknown++;
+      });
+      return { fieldTypes, fieldCount: formFields.length };
+    } catch {
+      return { fieldTypes, fieldCount: 0 };
+    }
+  }
+}

@@ -13,6 +13,7 @@ import {
   Bookmark,
   BookmarkCheck,
   ArrowLeft,
+  RotateCcw,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -163,6 +164,46 @@ const PdfBookmarksPage: React.FC = () => {
     toast.success('Bookmark added successfully');
   };
 
+  // Navigation functions
+  const handleBackToWorking = async () => {
+    setProcessedResult(null);
+    
+    // Re-render the PDF preview if we have a selected file and PDF document
+    if (selectedFile && pdfDoc) {
+      try {
+        // Add a small delay to ensure the canvas is available after state change
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Ensure PDF.js is loaded
+        const pdfjsLib = await loadPDFJS();
+        if (!pdfjsLib) {
+          throw new Error('PDF.js not available');
+        }
+        
+        await renderPDFPage(pdfDoc, currentPage);
+        toast.success('Returned to bookmark editing');
+      } catch (error) {
+        console.error('Error re-rendering PDF:', error);
+        toast.error('Error loading PDF preview');
+      }
+    } else {
+      toast.success('Returned to bookmark editing');
+    }
+  };
+
+  const handleAddNew = () => {
+    setProcessedResult(null);
+    setSelectedFile(null);
+    setBookmarks([]);
+    setNewBookmarkTitle('');
+    setNewBookmarkPage(1);
+    setCurrentPage(1);
+    setTotalPages(0);
+    setPdfDoc(null);
+    setExpandedBookmarks(new Set());
+    toast.success('Ready to add new PDF');
+  };
+
   const deleteBookmark = (id: string) => {
     setBookmarks(bookmarks.filter(bookmark => bookmark.id !== id));
     toast.success('Bookmark deleted successfully');
@@ -187,8 +228,25 @@ const PdfBookmarksPage: React.FC = () => {
 
   const renderPDFPage = async (pdf: any, pageNum: number) => {
     try {
-      if (!canvasRef.current || !window.pdfjsLib) {
-        console.error('Canvas ref or PDF.js not available');
+      // Wait a bit for the canvas to be available
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (attempts < maxAttempts) {
+        if (canvasRef.current && window.pdfjsLib) {
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 50));
+        attempts++;
+      }
+      
+      if (!canvasRef.current) {
+        console.error('Canvas ref not available after waiting');
+        return;
+      }
+      
+      if (!window.pdfjsLib) {
+        console.error('PDF.js not available after waiting');
         return;
       }
 
@@ -304,11 +362,71 @@ const PdfBookmarksPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          {!selectedFile ? (
+        <div className="bg-white rounded-lg shadow-sm">
+          {processedResult ? (
+            /* Success Section - Only show when bookmarks are successfully created */
+            <div className="p-8">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-green-900 mb-2">PDF with Bookmarks Created Successfully!</h3>
+                <p className="text-lg text-green-700 mb-6">
+                  Your PDF now has {processedResult.bookmarks.length} bookmarks
+                </p>
+                
+                <div className="mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <a
+                    href={`${pdfApi.defaults.baseURL}${processedResult.downloadUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download PDF with Bookmarks
+                  </a>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleBackToWorking}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Editing
+                    </button>
+                    
+                    <button
+                      onClick={handleAddNew}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Add New PDF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bookmark Information */}
+                <div className=" mx-auto text-left">
+                  <div className="p-6 rounded-lg border border-green-200 shadow-sm">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">📖 How to Access Bookmarks:</h4>
+                    <div className="text-sm text-gray-600 space-y-2">
+                      <p>• <strong>In Adobe Reader:</strong> Right-click → Document Properties → Description tab</p>
+                      <p>• <strong>In Chrome:</strong> Right-click → Document Properties → Details tab</p>
+                      <p>• <strong>In Foxit Reader:</strong> File → Document Properties → Description</p>
+                      <p>• <strong>Keywords field</strong> contains: <code className="bg-gray-100 px-2 py-1 rounded text-xs">PDF_BOOKMARKS:{"{...}"}</code></p>
+                    </div>
+                    <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> Bookmarks are stored in PDF metadata. While they won't appear in the traditional bookmark panel,
+                        the bookmark information is preserved and can be extracted programmatically or viewed in document properties.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : !selectedFile ? (
             /* Upload Section */
             <div className="p-8">
               <div className="text-center">
@@ -569,49 +687,6 @@ const PdfBookmarksPage: React.FC = () => {
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Download Section */}
-          {processedResult && (
-            <div className="p-6 border-t border-gray-200 bg-green-50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                  <div>
-                    <h3 className="text-lg font-medium text-green-900">PDF with Bookmarks Created!</h3>
-                    <p className="text-sm text-green-700">
-                      Your PDF now has {processedResult.bookmarks.length} bookmarks
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href={`${pdfApi.defaults.baseURL}${processedResult.downloadUrl}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download PDF
-                </a>
-              </div>
-
-              {/* Bookmark Information */}
-              <div className="mt-4 p-4 bg-white rounded-lg border border-green-200">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">📖 How to Access Bookmarks:</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p>• <strong>In Adobe Reader:</strong> Right-click → Document Properties → Description tab</p>
-                  <p>• <strong>In Chrome:</strong> Right-click → Document Properties → Details tab</p>
-                  <p>• <strong>In Foxit Reader:</strong> File → Document Properties → Description</p>
-                  <p>• <strong>Keywords field</strong> contains: <code className="bg-gray-100 px-1 rounded">PDF_BOOKMARKS:{"{...}"}</code></p>
-                </div>
-                <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
-                  <p className="text-xs text-blue-800">
-                    <strong>Note:</strong> Bookmarks are stored in PDF metadata. While they won't appear in the traditional bookmark panel,
-                    the bookmark information is preserved and can be extracted programmatically or viewed in document properties.
-                  </p>
                 </div>
               </div>
             </div>
