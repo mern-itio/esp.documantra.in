@@ -86,7 +86,7 @@ const AdminESignManagement: React.FC = () => {
       key: 'documentName',
       label: 'Document Name',
       sortable: true,
-      render: (value: string, row: any) => (
+      render: (value: string) => (
         <div className="flex items-center">
           <FileSignature className="w-4 h-4 text-gray-400 mr-2" />
           <span className="font-medium text-gray-900">{value}</span>
@@ -116,7 +116,7 @@ const AdminESignManagement: React.FC = () => {
     {
       key: 'progress',
       label: 'Progress',
-      render: (value: string, row: any) => (
+      render: (value: string) => (
         <div className="flex items-center">
           <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
             <div 
@@ -154,7 +154,7 @@ const AdminESignManagement: React.FC = () => {
     {
       key: 'actions',
       label: 'Actions',
-      render: (value: any, row: any) => (
+      render: (_: any, row: any) => (
         <div className="flex space-x-2">
           <Button
             size="sm"

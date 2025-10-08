@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
+import Toast from '../Toast'
 import { Link } from 'react-router-dom'
 import { Menu, X, ChevronDown, Shield, Users, Code, BookOpen, Building, Heart, Home, Briefcase, DollarSign, Scale, UserCheck, FileCheck,  Calendar, MessageSquare, Award, Globe, FileText, Zap, Database, Settings, TrendingUp, BarChart3, PieChart, Layers, Cloud, Smartphone, Monitor, Headphones, Search, Star } from 'lucide-react'
 import { useAuth } from '../AuthService/AuthContext'
+import { subscriptionApi } from '../../services/apiHelper'
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth()
@@ -9,6 +11,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [freeLimit, setFreeLimit] = useState<number | null>(10)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +20,57 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Fetch free plan limit (public endpoint)
+  useEffect(() => {
+    let mounted = true
+    subscriptionApi.get('/public/plans/free-plan')
+      .then(res => {
+        const data = res.data || {}
+        const limitType = data.limitType || 'number'
+        const limit = limitType === 'number' ? (data.limit ?? 10) : null
+        if (mounted) setFreeLimit(limit)
+      })
+      .catch(() => { if (mounted) setFreeLimit(10) })
+    return () => { mounted = false }
+  }, [])
+
+  // Guest operation counter helpers (24h rolling window local UX only; server enforces actual limit by IP)
+  const getGuestCounter = () => {
+    try {
+      const raw = localStorage.getItem('guest_ops')
+      if (!raw) return { since: Date.now(), count: 0 }
+      const parsed = JSON.parse(raw)
+      const since = typeof parsed.since === 'number' ? parsed.since : Date.now()
+      const count = typeof parsed.count === 'number' ? parsed.count : 0
+      // Reset if older than 24h
+      if (Date.now() - since > 24 * 60 * 60 * 1000) return { since: Date.now(), count: 0 }
+      return { since, count }
+    } catch {
+      return { since: Date.now(), count: 0 }
+    }
+  }
+
+  const setGuestCounter = (since: number, count: number) => {
+    try { localStorage.setItem('guest_ops', JSON.stringify({ since, count })) } catch {}
+  }
+
+  const handleToolClick = (e: React.MouseEvent) => {
+    // Always close dropdown
+    setActiveDropdown(null)
+    if (isAuthenticated) return
+    // Enforce guest limit UX-side
+    const limit = freeLimit ?? 10
+    const { since, count } = getGuestCounter()
+    if (count >= limit) {
+      e.preventDefault()
+      try {
+        window.dispatchEvent(new CustomEvent('app:toast', { detail: { message: `Free plan limit reached. ${limit} operations allowed per 24 hours for guests. Please log in to continue.`, type: 'error' } }))
+      } catch {}
+      return
+    }
+    setGuestCounter(since, count + 1)
+  }
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
@@ -70,7 +124,7 @@ const Header = () => {
       <Link
         to={path}
         className="flex items-center gap-3 w-full text-left p-2 rounded-lg hover:bg-gray-50 transition-colors"
-        onClick={() => setActiveDropdown(null)}
+        onClick={(e) => handleToolClick(e)}
       >
         <span className="text-lg">{icon}</span>
         <span className={`text-sm font-medium ${color}`}>{toolName}.</span>
@@ -339,6 +393,7 @@ const Header = () => {
   return (
     <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
       }`}>
+      <Toast />
       {/* Top Navigation Bar */}
       <div className="bg-primary-600 text-white">
         <div className="container-max">

@@ -35,9 +35,29 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     const storedToken = localStorage.getItem('adminToken');
     const storedUser = localStorage.getItem('adminUser');
     
-    if (storedToken && storedUser) {
-      setAdminToken(storedToken);
-      setAdminUser(JSON.parse(storedUser));
+    if (storedToken && storedUser && storedUser !== 'undefined') {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed && typeof parsed === 'object') {
+          setAdminToken(storedToken);
+          setAdminUser(parsed);
+        } else {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminUser');
+        }
+      } catch {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+      }
+    } else {
+      // Clean up any bad state like 'undefined' string
+      if (storedUser === 'undefined') {
+        localStorage.removeItem('adminUser');
+      }
+      if (storedToken && !storedUser) {
+        // Token without user is not a valid admin session
+        localStorage.removeItem('adminToken');
+      }
     }
     
     setIsLoading(false);
@@ -48,7 +68,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       setIsLoading(true);
       
       // TODO: Replace with actual admin API endpoint
-      const response = await fetch('/api/admin/auth/login', {
+      const response = await fetch('http://localhost:2101/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,15 +78,29 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
 
       if (response.ok) {
         const data = await response.json();
-        const { token, user } = data;
-        
+        const token: string | undefined = (data && (data.token || data.accessToken)) as string | undefined;
+        // Backend returns { status, message, admin_id, token, type }
+        // Build a minimal user object if 'user' is not provided
+        const userFromApi: any = (data && data.user) ? data.user : {
+          id: data?.admin_id || '',
+          fullname: '',
+          email,
+          role: 'admin',
+          permissions: []
+        };
+
+        if (!token) {
+          console.error('Admin login: token missing in response');
+          return false;
+        }
+
         setAdminToken(token);
-        setAdminUser(user);
-        
+        setAdminUser(userFromApi);
+
         // Store in localStorage
         localStorage.setItem('adminToken', token);
-        localStorage.setItem('adminUser', JSON.stringify(user));
-        
+        localStorage.setItem('adminUser', JSON.stringify(userFromApi));
+
         return true;
       } else {
         console.error('Admin login failed');

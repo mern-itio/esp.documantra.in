@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, LogOut, Menu, Search, User, Shield } from 'lucide-react';
+import { Bell, LogOut, Menu, Search, User } from 'lucide-react';
 
 interface AdminHeaderProps {
   sidebarOpen: boolean;
