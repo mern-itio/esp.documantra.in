@@ -80,3 +80,15 @@ services:
       - /app/services/template-service/node_modules
       - ./services/template-service/uploads:/app/services/template-service/uploads  # <-- added
     command: npm run dev
+    
+  admin-service:
+    build:
+      context: .
+      dockerfile: services/admin-service/Dockerfile
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./services/admin-service:/app/services/admin-service:cached
+      - /app/services/admin-service/node_modules
+      - ./services/admin-service/uploads:/app/services/admin-service/uploads  # <-- added
+    command: npm run dev
