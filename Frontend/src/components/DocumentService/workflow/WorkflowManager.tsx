@@ -45,11 +45,7 @@ export function WorkflowManager({
   const [selectedStepWorkflow, setSelectedStepWorkflow] = useState<
     string | null
   >(null);
-  const [actionModalOpen, setActionModalOpen] = useState(false);
-  const [actionType, setActionType] = useState<'approved' | 'rejected' | 'dropped' | null>(null);
-  const [actionComments, setActionComments] = useState("");
-  const [actionWorkflowId, setActionWorkflowId] = useState<string | null>(null);
-  const [actionStepId, setActionStepId] = useState<string | null>(null);
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -313,73 +309,57 @@ export function WorkflowManager({
     }
   };
 
-  const openActionModal = (
-    type: 'approved' | 'rejected' | 'dropped',
-    workflowId: string,
-    stepId: string
-  ) => {
-    setActionType(type);
-    setActionWorkflowId(workflowId);
-    setActionStepId(stepId);
-    setActionComments("");
-    setActionModalOpen(true);
-  };
+  const handleDirectAction = async (
+  type: 'approved' | 'rejected' | 'dropped',
+  workflowId: string,
+  stepId: string
+) => {
+  // Log IDs for debugging
+  console.log('🔹 handleDirectAction called');
+  console.log('Workflow ID:', workflowId);
+  console.log('Step ID:', stepId);
+  console.log('Action type:', type);
 
-  const closeActionModal = () => {
-    setActionModalOpen(false);
-    setActionType(null);
-    setActionWorkflowId(null);
-    setActionStepId(null);
-    setActionComments("");
-  };
-
-  const handleActionStatusUpdate = async () => {
-    if (!actionWorkflowId || !actionStepId || !actionType) {
-      console.error("Missing action parameters");
-      return;
-    }
-
-    // Validate comments for reject and drop
-    if ((actionType === 'rejected' || actionType === 'dropped') && !actionComments.trim()) {
-      alert(`Comments are required when ${actionType === 'rejected' ? 'rejecting' : 'dropping'} a step`);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await workflowAPI.updateStepActionStatus(
-        actionWorkflowId,
-        actionStepId,
-        {
-          actionStatus: actionType,
-          comments: actionComments.trim() || undefined,
-        }
-      );
-
-      if (response.success) {
-        console.log("✅ Action status updated successfully:", response.data);
-        
-        const actionText = actionType === 'approved' ? 'approved' : 
-                          actionType === 'rejected' ? 'rejected' : 'dropped';
-        alert(`Step ${actionText} successfully!`);
-
-        if (onWorkflowsRefresh) {
-          await onWorkflowsRefresh();
-        }
-
-        closeActionModal();
-      } else {
-        console.error("❌ Failed to update action status:", response.message);
-        alert(`Failed to ${actionType} step: ${response.message}`);
-      }
-    } catch (error) {
-      console.error("❌ Error updating action status:", error);
-      alert(`An error occurred while ${actionType}ing the step`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const actionText = type === 'approved' ? 'approve' : 
+                    type === 'rejected' ? 'reject' : 'drop';
   
+  const confirmMessage = `Are you sure you want to ${actionText} this step?`;
+  
+  if (!window.confirm(confirmMessage)) {
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+    const response = await workflowAPI.updateStepActionStatus(
+      workflowId,
+      stepId,
+      {
+        actionStatus: type,
+        comments: undefined, // No comments
+      }
+    );
+
+    if (response.success) {
+      console.log("✅ Action status updated successfully:", response.data);
+      
+      alert(`Step ${actionText}ed successfully!`);
+
+      if (onWorkflowsRefresh) {
+        await onWorkflowsRefresh();
+      }
+    } else {
+      console.error("❌ Failed to update action status:", response.message);
+      alert(`Failed to ${actionText} step: ${response.message}`);
+    }
+  } catch (error) {
+    console.error("❌ Error updating action status:", error);
+    alert(`An error occurred while ${actionText}ing the step`);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   const formatTimeDisplay = (seconds: number): string => {
     if (!seconds || seconds === 0) return "0s";
 
@@ -826,7 +806,7 @@ export function WorkflowManager({
                                       <Button
                                         size="sm"
                                         className="bg-green-600 hover:bg-green-700"
-                                        onClick={() => openActionModal('approved', workflow.id, step.id)}
+                                        onClick={() => handleDirectAction('approved', workflow.id, step.id)}
                                         disabled={isLoading}
                                       >
                                         <CheckCircle className="w-4 h-4 mr-2" />
@@ -836,7 +816,7 @@ export function WorkflowManager({
                                         size="sm"
                                         variant="outline"
                                         className="border-red-600 text-red-600 hover:bg-red-50"
-                                        onClick={() => openActionModal('rejected', workflow.id, step.id)}
+                                        onClick={() => handleDirectAction('rejected', workflow.id, step.id)}
                                         disabled={isLoading}
                                       >
                                         <AlertTriangle className="w-4 h-4 mr-2" />
@@ -849,7 +829,7 @@ export function WorkflowManager({
                                       size="sm"
                                       variant="outline"
                                       className="border-red-600 text-red-600 hover:bg-red-50"
-                                      onClick={() => openActionModal('dropped', workflow.id, step.id)}
+                                      onClick={() => handleDirectAction('dropped', workflow.id, step.id)}
                                       disabled={isLoading}
                                     >
                                       <AlertTriangle className="w-4 h-4 mr-2" />
@@ -913,80 +893,6 @@ export function WorkflowManager({
         )}
       </div>
 
-      {/* Action Modal */}
-      {actionModalOpen && actionType && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {actionType === 'approved' ? 'Approve Step' : 
-                   actionType === 'rejected' ? 'Reject Step' : 'Drop Step'}
-                </h3>
-                <button
-                  onClick={closeActionModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-4">
-                  {actionType === 'approved' 
-                    ? 'Are you sure you want to approve this step? You can optionally add comments.'
-                    : actionType === 'rejected'
-                    ? 'Please provide a reason for rejecting this step.'
-                    : 'Please provide a reason for dropping this step.'}
-                </p>
-
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Comments {(actionType === 'rejected' || actionType === 'dropped') && (
-                    <span className="text-red-500">*</span>
-                  )}
-                </label>
-                <textarea
-                  value={actionComments}
-                  onChange={(e) => setActionComments(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={4}
-                  placeholder={
-                    actionType === 'approved' 
-                      ? 'Add optional comments...'
-                      : actionType === 'rejected'
-                      ? 'Explain why you are rejecting this step...'
-                      : 'Explain why you are dropping this step...'
-                  }
-                />
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <Button
-                  onClick={handleActionStatusUpdate}
-                  disabled={isLoading || ((actionType === 'rejected' || actionType === 'dropped') && !actionComments.trim())}
-                  className={
-                    actionType === 'approved'
-                      ? 'bg-green-600 hover:bg-green-700 flex-1'
-                      : 'bg-red-600 hover:bg-red-700 flex-1'
-                  }
-                >
-                  {isLoading ? 'Processing...' : 
-                   actionType === 'approved' ? 'Approve Step' :
-                   actionType === 'rejected' ? 'Reject Step' : 'Drop Step'}
-                </Button>
-                <Button
-                  onClick={closeActionModal}
-                  variant="outline"
-                  disabled={isLoading}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Workflow Step Modal */}
       {selectedStep &&

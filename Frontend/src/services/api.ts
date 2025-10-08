@@ -576,7 +576,7 @@ export const workflowAPI = {
     actionStatus: 'approved' | 'rejected' | 'dropped';
     comments?: string; // Optional for 'approved', Required for 'rejected' and 'dropped'
   }) => {
-    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/action-status`, {
+    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/action`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
