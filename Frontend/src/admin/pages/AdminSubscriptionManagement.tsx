@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '../common';
+import { subscriptionApi } from '../../services/apiHelper';
 import { 
   Plus,
   Edit,
@@ -23,7 +24,10 @@ interface SubscriptionPlan {
   description?: string;
 }
 
-const STORAGE_KEY = 'admin_subscription_plans';
+// Admin auth header helper (apiHelper uses accessToken; admin uses adminToken)
+const getAdminAuthHeaders = () => ({
+  Authorization: `Bearer ${localStorage.getItem('adminToken') || ''}`
+});
 
 const defaultPlans: SubscriptionPlan[] = [
   {
@@ -67,26 +71,32 @@ const AdminSubscriptionManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditingId, setIsEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SubscriptionPlan | null>(null);
+  const serviceLabels: Record<string, string> = {
+    auth: 'Auth',
+    document: 'Document',
+    esign: 'E‑Sign',
+    pdf: 'PDF',
+    api: 'API Service',
+    template: 'Template'
+  };
 
-  // Initialize from storage
-  useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setPlans(parsed);
-          return;
-        }
-      } catch {}
+// Fetch plans from subscription-service
+useEffect(() => {
+  let mounted = true;
+  const fetchPlans = async () => {
+    try {
+      const res = await subscriptionApi.get('/admin/plans', { headers: getAdminAuthHeaders() });
+      const data = res.data;
+      const list = Array.isArray(data?.data) ? data.data : data;
+      const normalized = list.map((p: any) => ({ ...p, id: p.id || p._id }));
+      if (mounted) setPlans(normalized);
+    } catch {
+      if (mounted) setPlans(defaultPlans);
     }
-    setPlans(defaultPlans);
-  }, []);
-
-  // Persist to storage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(plans));
-  }, [plans]);
+  };
+  fetchPlans();
+  return () => { mounted = false; };
+}, []);
 
   const filteredPlans = useMemo(() => {
     const term = searchTerm.toLowerCase();
@@ -102,7 +112,7 @@ const AdminSubscriptionManagement: React.FC = () => {
     setFormData(null);
   };
 
-  const startCreate = () => {
+const startCreate = () => {
     setIsEditingId('new');
     setFormData({
       id: `plan_${Date.now()}`,
@@ -112,39 +122,86 @@ const AdminSubscriptionManagement: React.FC = () => {
       isActive: true,
       conversionsLimitType: 'number',
       conversionsLimit: 0,
-      description: ''
+    description: ''
     });
   };
 
   const startEdit = (plan: SubscriptionPlan) => {
     setIsEditingId(plan.id);
-    setFormData({ ...plan });
+    // normalize services field for UI (undefined => applies to all)
+    setFormData({ ...(plan as any), services: (plan as any).services });
   };
 
-  const saveForm = () => {
-    if (!formData) return;
-    // Basic validation
-    if (!formData.name.trim()) return;
-    if (formData.conversionsLimitType === 'number' && (formData.conversionsLimit ?? 0) < 0) return;
+const saveForm = async () => {
+  if (!formData) return;
+  if (!formData.name.trim()) return;
+  if (formData.conversionsLimitType === 'number' && (formData.conversionsLimit ?? 0) < 0) return;
 
-    setPlans(prev => {
-      const exists = prev.some(p => p.id === formData.id);
-      if (exists) {
-        return prev.map(p => (p.id === formData.id ? { ...formData } : p));
+  const payload: any = {
+    name: formData.name,
+    type: formData.type,
+    price: formData.price,
+    isActive: formData.isActive,
+    conversionsLimitType: formData.conversionsLimitType,
+    conversionsLimit: formData.conversionsLimit,
+    description: formData.description,
+  };
+    const hasServices = Object.prototype.hasOwnProperty.call((formData as any), 'services');
+    const servicesVal = (formData as any).services;
+    if (isEditingId === 'new') {
+      // Creating: omit services => applies to all; include when non-empty selection
+      if (Array.isArray(servicesVal) && servicesVal.length > 0) {
+        payload.services = servicesVal;
       }
-      return [...prev, { ...formData }];
-    });
+    } else {
+      // Updating: to apply to all, we must send empty array so backend unsets
+      if (Array.isArray(servicesVal)) {
+        payload.services = servicesVal.length > 0 ? servicesVal : [];
+      } else if (hasServices === false || servicesVal === undefined) {
+        // UI in "apply all" state (no services field) -> send [] to clear
+        payload.services = [];
+      }
+    }
+
+  try {
+    if (isEditingId === 'new') {
+      await subscriptionApi.post('/admin/plans', payload, { headers: getAdminAuthHeaders() });
+    } else if (isEditingId) {
+      await subscriptionApi.put(`/admin/plans/${isEditingId}`, payload, { headers: getAdminAuthHeaders() });
+    }
+    const resList = await subscriptionApi.get('/admin/plans', { headers: getAdminAuthHeaders() });
+    const data = resList.data;
+    const list = Array.isArray(data?.data) ? data.data : data;
+    const normalized = list.map((p: any) => ({ ...p, id: p.id || p._id }));
+    setPlans(normalized);
     resetForm();
-  };
+  } catch {}
+};
 
-  const removePlan = (id: string) => {
-    setPlans(prev => prev.filter(p => p.id !== id));
+const removePlan = async (id: string) => {
+  try {
+    await subscriptionApi.delete(`/admin/plans/${id}`, { headers: getAdminAuthHeaders() });
+    const resList = await subscriptionApi.get('/admin/plans', { headers: getAdminAuthHeaders() });
+    const data = resList.data;
+    const list = Array.isArray(data?.data) ? data.data : data;
+    const normalized = list.map((p: any) => ({ ...p, id: p.id || p._id }));
+    setPlans(normalized);
     if (isEditingId === id) resetForm();
-  };
+  } catch {}
+};
 
-  const toggleActive = (id: string) => {
-    setPlans(prev => prev.map(p => (p.id === id ? { ...p, isActive: !p.isActive } : p)));
-  };
+const toggleActive = async (id: string) => {
+  const plan = plans.find(p => p.id === id);
+  if (!plan) return;
+  try {
+    await subscriptionApi.put(`/admin/plans/${id}`, { isActive: !plan.isActive }, { headers: getAdminAuthHeaders() });
+    const resList = await subscriptionApi.get('/admin/plans', { headers: getAdminAuthHeaders() });
+    const data = resList.data;
+    const list = Array.isArray(data?.data) ? data.data : data;
+    const normalized = list.map((p: any) => ({ ...p, id: p.id || p._id }));
+    setPlans(normalized);
+  } catch {}
+};
 
   return (
     <div className="p-6">
@@ -179,6 +236,7 @@ const AdminSubscriptionManagement: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Services</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversions Limit</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3" />
@@ -194,6 +252,11 @@ const AdminSubscriptionManagement: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">{plan.type}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 flex items-center">
                     <DollarSign className="w-4 h-4 mr-1 text-gray-400" />{plan.price}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {Array.isArray((plan as any).services) && (plan as any).services.length > 0
+                      ? ((plan as any).services as string[]).map(s => serviceLabels[s] || s).join(', ')
+                      : 'All services'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     <div className="inline-flex items-center text-gray-700">
@@ -318,6 +381,53 @@ const AdminSubscriptionManagement: React.FC = () => {
                   rows={3}
                   placeholder="Optional description for this plan"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Apply To Services</label>
+                <div className="mb-2">
+                  <label className="inline-flex items-center space-x-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!Array.isArray((formData as any).services) || (formData as any).services?.length === 0}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          const { services, ...rest } = (formData as any);
+                          setFormData({ ...(rest as any) });
+                        } else {
+                          setFormData({ ...(formData as any), services: [] });
+                        }
+                      }}
+                    />
+                    <span>Apply to all services</span>
+                  </label>
+                </div>
+                {Array.isArray((formData as any).services) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[{ id: 'auth', label: 'Auth' }, { id: 'document', label: 'Document' }, { id: 'esign', label: 'E‑Sign' }, { id: 'pdf', label: 'PDF' }, { id: 'api', label: 'API Service' }, { id: 'template', label: 'Template' }].map(svc => {
+                      const selected = ((formData as any).services as string[])?.includes(svc.id);
+                      return (
+                        <label key={svc.id} className="inline-flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={!!selected}
+                            onChange={(e) => {
+                              const current = Array.isArray((formData as any).services) ? ([...(formData as any).services] as string[]) : [];
+                              if (e.target.checked) {
+                                if (!current.includes(svc.id)) current.push(svc.id);
+                              } else {
+                                const idx = current.indexOf(svc.id);
+                                if (idx >= 0) current.splice(idx, 1);
+                              }
+                              setFormData({ ...(formData as any), services: current });
+                            }}
+                          />
+                          <span>{svc.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-2">

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DataTable, Button } from '../common';
-import { 
-  Eye, 
+import {  
   CheckCircle, 
   XCircle, 
   Filter,
@@ -13,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { PDFTool } from '../../types';
 import { mockPDFTools } from '../../data/pdfMockData';
-import { useNavigate } from 'react-router-dom';
+
 
 const AdminDocumentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,7 +20,7 @@ const AdminDocumentManagement: React.FC = () => {
   const [sortColumn, setSortColumn] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [toolStatusMap, setToolStatusMap] = useState<Record<string, boolean>>({});
-  const navigate = useNavigate();
+ 
 
   // Build list of PDF tools from mockPDFTools and routes
   const allTools: Array<PDFTool & { categoryKey: string; routeResolved?: string }> = useMemo(() => {

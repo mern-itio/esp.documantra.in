@@ -33,7 +33,7 @@ const AdminRoutes: React.FC = () => {
       <Route
         path="*"
         element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <AdminLayout>
               <Routes>
                 <Route path="dashboard" element={<AdminDashboard />} />
@@ -43,7 +43,7 @@ const AdminRoutes: React.FC = () => {
                 <Route path="" element={<Navigate to="/admin/dashboard" replace />} />
               </Routes>
             </AdminLayout>
-          // </ProtectedRoute>
+          </ProtectedRoute>
         }
       />
 
