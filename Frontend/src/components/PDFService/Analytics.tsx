@@ -326,24 +326,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
               <Clock className="w-6 h-6 text-yellow-600" />
             </div>
           </div>
-          {performanceTrend && performanceTrend.length >= 2 && (
-            (() => {
-              const last = performanceTrend[performanceTrend.length - 1];
-              const prev = performanceTrend[performanceTrend.length - 2];
-              const curr = last.avgProcessingTimeMs;
-              const prevVal = prev.avgProcessingTimeMs;
-              const delta = prevVal === 0 ? null : ((prevVal - curr) / prevVal) * 100; // lower is better
-              return delta !== null ? (
-                <div className="flex items-center mt-4 text-sm">
-                  <TrendingUp className={`w-4 h-4 mr-1 ${delta >= 0 ? 'text-green-500' : 'text-red-500'}`} />
-                  <span className={`${delta >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
-                    {delta >= 0 ? '+' : ''}{formatPercentage(Math.abs(delta))}
-                  </span>
-                  <span className="text-gray-500 ml-1">improvement vs yesterday</span>
-                </div>
-              ) : null;
-            })()
-          )}
+         
         </div>
       </div>
 
