@@ -30,7 +30,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
   const [errors, setErrors] = useState<ValidationErrors>({ steps: [] });
   const [steps, setSteps] = useState<Omit<WorkflowStep, 'id'>[]>([
     {
-      
+
       name: '',
       description: '',
       assignee: '',
