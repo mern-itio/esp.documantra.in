@@ -1,7 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AdminLayout, AdminLogin, AdminDashboard, AdminDocumentManagement, AdminESignManagement, AdminSubscriptionManagement } from './index';
+import { AdminLayout, AdminLogin, AdminDashboard, AdminDocumentManagement, AdminESignManagement, AdminSubscriptionManagement, AdminUserList } from './index';
 import { useAdminAuth } from './auth';
+import AdminUserDetail from './pages/AdminUserDetailPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -40,6 +41,8 @@ const AdminRoutes: React.FC = () => {
                 <Route path="pdf-tools" element={<AdminDocumentManagement />} />
                 <Route path="e-sign" element={<AdminESignManagement />} />
                 <Route path="subscription" element={<AdminSubscriptionManagement />} />
+                <Route path="users" element={<AdminUserList />} />
+                <Route path="users/:id" element={<AdminUserDetail />} />
                 <Route path="" element={<Navigate to="/admin/dashboard" replace />} />
               </Routes>
             </AdminLayout>

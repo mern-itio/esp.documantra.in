@@ -41,7 +41,7 @@ const setGuestOps = (since: number, count: number) => {
   try { localStorage.setItem('guest_ops', JSON.stringify({ since, count })); } catch {}
 };
 
-const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance => {
+const createApiInstance = (baseURL: string, serviceName: string, tokenKey: string = 'accessToken'): AxiosInstance => {
   const instance = axios.create({
     baseURL,
     timeout: 30000,
@@ -50,7 +50,7 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
 
   // Request Interceptor
   instance.interceptors.request.use(async (config) => {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem(tokenKey);
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
     }
@@ -143,4 +143,9 @@ export const templateServiceApi = createApiInstance(
 export const subscriptionApi = createApiInstance(
   import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110',
   'Subscription-Service'
+);
+export const adminApi = createApiInstance(
+  import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost:3100',
+  'Admin-Service',
+  'adminToken'
 );

@@ -31,4 +31,4 @@ app.get('/health', (req, res) => {
 // API Routes
 
 const PORT = process.env.PORT || 2106;
-app.listen(PORT, () => console.log(`Auth running on ${PORT}/`));
+app.listen(PORT, () => console.log(`Template running on ${PORT}/`));

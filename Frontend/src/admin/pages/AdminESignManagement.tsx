@@ -1,275 +1,339 @@
-import React, { useState } from 'react';
-import { DataTable, Button } from '../common';
-import { 
-  Eye, 
-  Download, 
-  CheckCircle, 
-  XCircle, 
-  Clock,
+import React, { useState, useMemo } from "react";
+import { DataTable, Button } from "../common";
+import {
+  Eye,
+  Download,
   Filter,
   Search,
   FileSignature,
-  User
-} from 'lucide-react';
+  FileText,
+  Users,
+  CheckCircle,
+  Clock,
+  XCircle,
+} from "lucide-react";
 
 const AdminESignManagement: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortColumn, setSortColumn] = useState('');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [viewMode, setViewMode] = useState<"normal" | "powerform">("normal");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortColumn, setSortColumn] = useState("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // Mock data - replace with actual API calls
-  const eSigns = [
+  // ==============================
+  // 🔹 MOCK DATA (replace with API)
+  // ==============================
+  const envelopes = [
     {
-      id: '1',
-      documentName: 'Contract_2024.pdf',
-      initiator: 'john.doe@example.com',
-      signers: ['jane.smith@example.com', 'bob.wilson@example.com'],
-      status: 'pending',
-      createdDate: '2024-01-15',
-      expiryDate: '2024-01-22',
-      progress: '2/3'
+      id: "1",
+      subject: "Sales Contract",
+      message: "Please review and sign",
+      senderName: "John Doe",
+      expirationDate: "2025-10-15",
+      recipients: [
+        { email: "a@b.com", status: "signed" },
+        { email: "c@d.com", status: "pending" },
+      ],
+      status: "in-progress",
+      completionCertificate: null,
+      isPowerForm: false,
     },
     {
-      id: '2',
-      documentName: 'NDA_Agreement.pdf',
-      initiator: 'alice.brown@example.com',
-      signers: ['charlie.davis@example.com'],
-      status: 'completed',
-      createdDate: '2024-01-14',
-      expiryDate: '2024-01-21',
-      progress: '1/1'
+      id: "2",
+      subject: "NDA Agreement",
+      message: "Confidential document",
+      senderName: "Alice Brown",
+      expirationDate: "2025-10-20",
+      recipients: [{ email: "x@y.com", status: "signed" }],
+      status: "completed",
+      completionCertificate: {
+        url: "https://example.com/certificate.pdf",
+      },
+      isPowerForm: false,
     },
     {
-      id: '3',
-      documentName: 'Invoice_001.pdf',
-      initiator: 'david.miller@example.com',
-      signers: ['eve.johnson@example.com'],
-      status: 'expired',
-      createdDate: '2024-01-10',
-      expiryDate: '2024-01-17',
-      progress: '0/1'
+      id: "3",
+      subject: "Partnership Form",
+      message: "Fill out and sign digitally",
+      senderName: "David Miller",
+      status: "active",
+      numberOfParties: 3,
+      isPowerForm: true,
     },
     {
-      id: '4',
-      documentName: 'Report_Q4.pdf',
-      initiator: 'frank.garcia@example.com',
-      signers: ['grace.lee@example.com', 'henry.taylor@example.com'],
-      status: 'pending',
-      createdDate: '2024-01-12',
-      expiryDate: '2024-01-19',
-      progress: '1/2'
-    }
+      id: "4",
+      subject: "Old PowerForm Template",
+      message: "Legacy workflow",
+      senderName: "Jane Smith",
+      status: "inactive",
+      numberOfParties: 2,
+      isPowerForm: true,
+    },
   ];
 
+  // ==============================
+  // 🔹 FILTERED & SORTED DATA
+  // ==============================
+  const filteredData = useMemo(() => {
+    const filtered = envelopes.filter((env) => {
+      const matchesType =
+        viewMode === "powerform" ? env.isPowerForm : !env.isPowerForm;
+      const matchesSearch =
+        env.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        env.senderName?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || env.status === statusFilter;
+      return matchesType && matchesSearch && matchesStatus;
+    });
+
+    if (sortColumn) {
+      filtered.sort((a: any, b: any) => {
+        const valA = a[sortColumn];
+        const valB = b[sortColumn];
+        if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+        if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return filtered;
+  }, [viewMode, searchTerm, statusFilter, sortColumn, sortDirection]);
+
+  // ==============================
+  // 🔹 UTILS
+  // ==============================
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      expired: { color: 'bg-red-100 text-red-800', icon: XCircle },
-      cancelled: { color: 'bg-gray-100 text-gray-800', icon: XCircle }
+    const map: any = {
+      "in-progress": { color: "bg-yellow-100 text-yellow-800", icon: Clock },
+      completed: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+      active: { color: "bg-blue-100 text-blue-800", icon: CheckCircle },
+      draft: { color: "bg-gray-100 text-gray-800", icon: XCircle },
+      inactive: { color: "bg-gray-200 text-gray-700", icon: XCircle },
+      archived: { color: "bg-slate-100 text-slate-700", icon: XCircle },
     };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const config = map[status] || map["draft"];
     const Icon = config.icon;
-
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}
+      >
         <Icon className="w-3 h-3 mr-1" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
-  const columns = [
+  const getProgress = (recipients: any[]) => {
+    if (!recipients?.length) return "0/0";
+    const signed = recipients.filter((r) => r.status === "signed").length;
+    return `${signed}/${recipients.length}`;
+  };
+
+  // ==============================
+  // 🔹 ACTION HANDLERS
+  // ==============================
+  const handleView = (id: string) => console.log("View envelope", id);
+  const handleDownload = (id: string) => console.log("Download", id);
+  const handleSort = (col: string, dir: "asc" | "desc") => {
+    setSortColumn(col);
+    setSortDirection(dir);
+  };
+
+  // ==============================
+  // 🔹 TABLE DEFINITIONS
+  // ==============================
+  const normalColumns = [
     {
-      key: 'documentName',
-      label: 'Document Name',
+      key: "subject",
+      label: "Subject",
       sortable: true,
       render: (value: string) => (
         <div className="flex items-center">
           <FileSignature className="w-4 h-4 text-gray-400 mr-2" />
           <span className="font-medium text-gray-900">{value}</span>
         </div>
-      )
+      ),
     },
+    { key: "message", label: "Message" },
+    { key: "senderName", label: "Sender Name" },
     {
-      key: 'initiator',
-      label: 'Initiator',
+      key: "expirationDate",
+      label: "Expiration",
       sortable: true,
-      render: (value: string) => (
-        <div className="flex items-center">
-          <User className="w-4 h-4 text-gray-400 mr-2" />
-          <span className="text-sm text-gray-900">{value}</span>
-        </div>
-      )
     },
     {
-      key: 'signers',
-      label: 'Signers',
-      render: (value: string[]) => (
-        <div className="text-sm text-gray-900">
-          {value.length > 1 ? `${value.length} signers` : value[0]}
-        </div>
-      )
-    },
-    {
-      key: 'progress',
-      label: 'Progress',
-      render: (value: string) => (
-        <div className="flex items-center">
-          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-            <div 
-              className="bg-primary-600 h-2 rounded-full" 
-              style={{ 
-                width: `${(parseInt(value.split('/')[0]) / parseInt(value.split('/')[1])) * 100}%` 
-              }}
-            ></div>
+      key: "progress",
+      label: "Progress",
+      render: (_: any, row: any) => {
+        const progress = getProgress(row.recipients);
+        const [done, total] = progress.split("/").map(Number);
+        const pct = total ? (done / total) * 100 : 0;
+        return (
+          <div className="flex items-center">
+            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+              <div
+                className="bg-primary-600 h-2 rounded-full"
+                style={{ width: `${pct}%` }}
+              ></div>
+            </div>
+            <span className="text-xs text-gray-600">{progress}</span>
           </div>
-          <span className="text-xs text-gray-600">{value}</span>
-        </div>
-      )
+        );
+      },
     },
     {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      render: (value: string) => getStatusBadge(value)
+      key: "status",
+      label: "Status",
+      render: (value: string) => getStatusBadge(value),
     },
     {
-      key: 'createdDate',
-      label: 'Created',
-      sortable: true
-    },
-    {
-      key: 'expiryDate',
-      label: 'Expires',
-      sortable: true,
-      render: (value: string, row: any) => (
-        <span className={`text-sm ${row.status === 'expired' ? 'text-red-600' : 'text-gray-900'}`}>
-          {value}
-        </span>
-      )
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
+      key: "actions",
+      label: "Actions",
       render: (_: any, row: any) => (
         <div className="flex space-x-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleView(row.id)}
-            icon={<Eye className="w-4 h-4" />}
-          >
-            View
+          <Button size="sm" variant="outline" onClick={() => handleView(row.id)}>
+            <Eye className="w-4 h-4" />
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleDownload(row.id)}
-            icon={<Download className="w-4 h-4" />}
-          >
-            Download
-          </Button>
-          {row.status === 'pending' && (
+          {row.completionCertificate?.url && (
             <Button
               size="sm"
-              variant="danger"
-              onClick={() => handleCancel(row.id)}
-              icon={<XCircle className="w-4 h-4" />}
+              variant="outline"
+              onClick={() => handleDownload(row.id)}
             >
-              Cancel
+              <Download className="w-4 h-4" />
             </Button>
           )}
         </div>
-      )
-    }
+      ),
+    },
   ];
 
-  const handleView = (id: string) => {
-    console.log('View e-sign:', id);
-    // Implement view functionality
-  };
+  const powerFormColumns = [
+    {
+      key: "subject",
+      label: "Envelope Name",
+      render: (value: string) => (
+        <div className="flex items-center">
+          <FileText className="w-4 h-4 text-gray-400 mr-2" />
+          <span className="font-medium text-gray-900">{value}</span>
+        </div>
+      ),
+    },
+    { key: "message", label: "Envelope Details" },
+    { key: "senderName", label: "Sender Name" },
+    {
+      key: "status",
+      label: "Status",
+      render: (value: string) => getStatusBadge(value),
+    },
+    {
+      key: "numberOfParties",
+      label: "Number of Parties",
+      render: (value: number) => (
+        <div className="flex items-center text-gray-900">
+          <Users className="w-4 h-4 mr-1 text-gray-400" /> {value}
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (_: any, row: any) => (
+        <Button size="sm" variant="outline" onClick={() => handleView(row.id)}>
+          <Eye className="w-4 h-4" />
+        </Button>
+      ),
+    },
+  ];
 
-  const handleDownload = (id: string) => {
-    console.log('Download e-sign:', id);
-    // Implement download functionality
-  };
-
-  const handleCancel = (id: string) => {
-    console.log('Cancel e-sign:', id);
-    // Implement cancel functionality
-  };
-
-  const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    setSortColumn(column);
-    setSortDirection(direction);
-    // Implement sorting logic
-  };
-
-  const filteredESigns = eSigns.filter(eSign => {
-    const matchesSearch = eSign.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         eSign.initiator.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || eSign.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
+  // ==============================
+  // 🔹 RENDER
+  // ==============================
   return (
     <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">E-Sign Management</h1>
-        <p className="text-gray-600">Manage and monitor all e-signature processes</p>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search e-signatures..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="expired">Expired</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <Button
-                variant="outline"
-                icon={<Filter className="w-4 h-4" />}
-              >
-                More Filters
-              </Button>
-            </div>
-          </div>
+      {/* Header */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            E-Sign Management
+          </h1>
+          <p className="text-gray-600">
+            Monitor and manage both Normal and PowerForm envelopes
+          </p>
+        </div>
+        <div className="flex space-x-3 mt-4 sm:mt-0">
+          <Button
+            variant={viewMode === "normal" ? "primary" : "outline"}
+            onClick={() => {
+              setViewMode("normal");
+              setStatusFilter("all");
+            }}
+          >
+            Normal Envelopes
+          </Button>
+          <Button
+            variant={viewMode === "powerform" ? "primary" : "outline"}
+            onClick={() => {
+              setViewMode("powerform");
+              setStatusFilter("all");
+            }}
+          >
+            PowerForm Envelopes
+          </Button>
         </div>
       </div>
 
-      {/* E-Signs Table */}
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow mb-6 p-6 flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search envelopes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Status filter */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        >
+          <option value="all">All Status</option>
+          {viewMode === "normal" ? (
+            <>
+              <option value="draft">Draft</option>
+              <option value="in-progress">In-Progress</option>
+              <option value="completed">Completed</option>
+              <option value="archived">Archived</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </>
+          ) : (
+            <>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
+            </>
+          )}
+        </select>
+
+        <Button variant="outline" icon={<Filter className="w-4 h-4" />}>
+          More Filters
+        </Button>
+      </div>
+
+      {/* Table */}
       <div className="bg-white rounded-lg shadow">
         <DataTable
-          data={filteredESigns}
-          columns={columns}
+          data={filteredData}
+          columns={viewMode === "powerform" ? powerFormColumns : normalColumns}
           onSort={handleSort}
           sortColumn={sortColumn}
           sortDirection={sortDirection}
-          emptyMessage="No e-signatures found"
+          emptyMessage="No envelopes found"
         />
       </div>
     </div>

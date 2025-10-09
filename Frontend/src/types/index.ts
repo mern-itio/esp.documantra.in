@@ -9,6 +9,21 @@ export interface User {
   lastActive: string
 }
 
+export interface UserType {
+  id: string;
+  _id:string
+  name: string;
+  fullname:string;
+  phone:string;
+  status:boolean
+  email: string;
+  role: 'admin' | 'user' |'developer';
+  avatar?: string;
+  organization?: string;
+  createdAt: string
+  lastActive: string
+}
+
 export interface Document {
   id: string;
   name: string;
