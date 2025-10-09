@@ -5,7 +5,6 @@ const workflowStepSchema = new mongoose.Schema({
   description: { type: String, required: true },
   assignee: { type: String, required: true }, // Email address
   assigneeName: { type: String, required: true },
-  // ADD THIS NEW FIELD
   actionStatus: {
     type: String,
     enum: ['approved', 'rejected', 'dropped', null],
@@ -16,6 +15,16 @@ const workflowStepSchema = new mongoose.Schema({
     enum: ['pending', 'in_progress', 'completed', 'rejected'],
     default: 'pending'
   },
+  needsRedo: { 
+    type: Boolean, 
+    default: false 
+  },
+  rejectionHistory: [{
+    rejectedAt: Date,
+    rejectedBy: String,
+    reason: String,
+    requestedRedo: Boolean
+  }],
   dueDate: { type: Date },
   progressPercentage: { type: Number, default: 0, min: 0, max: 100 },
   completedAt: { type: Date },

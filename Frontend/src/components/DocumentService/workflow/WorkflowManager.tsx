@@ -10,10 +10,10 @@ import {
   Calendar,
   Plus,
   MessageSquare,
-  X,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { WorkflowDesigner } from "./WorkflowDesigner";
+import { RejectionModal } from "./RejectionModal";
 import type { DocumentWorkflow } from "../../common/types/collaboration";
 import { formatDate } from "../../common/lib/utils";
 import { workflowAPI } from "../../../services/api";
@@ -45,6 +45,14 @@ export function WorkflowManager({
   const [selectedStepWorkflow, setSelectedStepWorkflow] = useState<
     string | null
   >(null);
+  
+  // NEW: Rejection modal state
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionTarget, setRejectionTarget] = useState<{
+    workflowId: string;
+    stepId: string;
+    stepName: string;
+  } | null>(null);
 
 
   const getStatusIcon = (status: string) => {
@@ -310,55 +318,112 @@ export function WorkflowManager({
   };
 
   const handleDirectAction = async (
-  type: 'approved' | 'rejected' | 'dropped',
-  workflowId: string,
-  stepId: string
-) => {
-  // Log IDs for debugging
-  console.log('🔹 handleDirectAction called');
-  console.log('Workflow ID:', workflowId);
-  console.log('Step ID:', stepId);
-  console.log('Action type:', type);
+    type: 'approved' | 'dropped',
+    workflowId: string,
+    stepId: string
+  ) => {
+    console.log('🔹 handleDirectAction called');
+    console.log('Workflow ID:', workflowId);
+    console.log('Step ID:', stepId);
+    console.log('Action type:', type);
 
-  const actionText = type === 'approved' ? 'approve' : 
-                    type === 'rejected' ? 'reject' : 'drop';
-  
-  const confirmMessage = `Are you sure you want to ${actionText} this step?`;
-  
-  if (!window.confirm(confirmMessage)) {
-    return;
-  }
-
-  try {
-    setIsLoading(true);
-    const response = await workflowAPI.updateStepActionStatus(
-      workflowId,
-      stepId,
-      {
-        actionStatus: type,
-        comments: undefined, // No comments
-      }
-    );
-
-    if (response.success) {
-      console.log("✅ Action status updated successfully:", response.data);
-      
-      alert(`Step ${actionText}ed successfully!`);
-
-      if (onWorkflowsRefresh) {
-        await onWorkflowsRefresh();
-      }
-    } else {
-      console.error("❌ Failed to update action status:", response.message);
-      alert(`Failed to ${actionText} step: ${response.message}`);
+    const actionText = type === 'approved' ? 'approve' : 'drop';
+    
+    const confirmMessage = `Are you sure you want to ${actionText} this step?`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
     }
-  } catch (error) {
-    console.error("❌ Error updating action status:", error);
-    alert(`An error occurred while ${actionText}ing the step`);
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    try {
+      setIsLoading(true);
+      const response = await workflowAPI.updateStepActionStatus(
+        workflowId,
+        stepId,
+        {
+          actionStatus: type,
+          comments: undefined,
+        }
+      );
+
+      if (response.success) {
+        console.log("✅ Action status updated successfully:", response.data);
+        
+        alert(`Step ${actionText}ed successfully!`);
+
+        if (onWorkflowsRefresh) {
+          await onWorkflowsRefresh();
+        }
+      } else {
+        console.error("❌ Failed to update action status:", response.message);
+        alert(`Failed to ${actionText} step: ${response.message}`);
+      }
+    } catch (error) {
+      console.error("❌ Error updating action status:", error);
+      alert(`An error occurred while ${actionText}ing the step`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // NEW: Open rejection modal
+  const handleRejectWithOptions = (
+    workflowId: string,
+    stepId: string,
+    stepName: string
+  ) => {
+    setRejectionTarget({ workflowId, stepId, stepName });
+    setShowRejectionModal(true);
+  };
+
+  // NEW: Handle rejection confirmation from modal
+  const handleRejectionConfirm = async (reason: string, requestRedo: boolean) => {
+    if (!rejectionTarget) return;
+
+    try {
+      setIsLoading(true);
+      const response = await workflowAPI.updateStepActionStatus(
+        rejectionTarget.workflowId,
+        rejectionTarget.stepId,
+        {
+          actionStatus: 'rejected',
+          comments: reason || undefined,
+          requestRedo: requestRedo,
+        }
+      );
+
+      if (response.success) {
+        console.log("✅ Step rejected successfully:", response.data);
+        
+        if (onWorkflowsRefresh) {
+          await onWorkflowsRefresh();
+        }
+        
+        setShowRejectionModal(false);
+        setRejectionTarget(null);
+        
+        if (requestRedo) {
+          alert('Step rejected and redo requested. The assignee will be notified to redo the task.');
+        } else {
+          alert('Step rejected successfully!');
+        }
+      } else {
+        console.error("❌ Failed to reject step:", response.message);
+        alert(`Failed to reject step: ${response.message}`);
+      }
+    } catch (error) {
+      console.error("❌ Error rejecting step:", error);
+      alert('An error occurred while rejecting the step');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // NEW: Handle rejection modal cancel
+  const handleRejectionCancel = () => {
+    setShowRejectionModal(false);
+    setRejectionTarget(null);
+  };
 
   const formatTimeDisplay = (seconds: number): string => {
     if (!seconds || seconds === 0) return "0s";
@@ -375,9 +440,7 @@ export function WorkflowManager({
     return parts.join(" ");
   };
 
-  // Helper function to parse comment string
   const parseComment = (comment: string) => {
-    // Parse the comment string format: "userName [time, date] : comment"
     const match = comment.match(/^(.+?)\s*\[(.+?),\s*(.+?)\]\s*:\s*(.+)$/);
     
     if (match) {
@@ -400,7 +463,6 @@ export function WorkflowManager({
     };
   };
 
-  // Helper function to render comment item
   const renderCommentItem = (comment: string, idx: number) => {
     const parsed = parseComment(comment);
     
@@ -430,7 +492,6 @@ export function WorkflowManager({
       );
     }
     
-    // Fallback for comments that don't match the expected format
     return (
       <div
         key={idx}
@@ -585,7 +646,7 @@ export function WorkflowManager({
                   </div>
                 </div>
 
-                {/* Workflow Steps - Show all steps for creators, all assigned steps for users (when expanded) */}
+                {/* Workflow Steps */}
                 {selectedWorkflow === workflow.id && (
                   <div className="mt-4 space-y-3">
                     <h5 className="text-sm font-medium text-gray-900 mb-3">
@@ -663,7 +724,7 @@ export function WorkflowManager({
                               {step.description}
                             </p>
 
-                            {/* Progress Bar for Each Step */}
+                            {/* Progress Bar */}
                             <div>
                               <div className="flex items-center justify-between text-xs mb-1">
                                 <span className="text-gray-600">
@@ -778,7 +839,7 @@ export function WorkflowManager({
                               )}
                             </div>
 
-                            {/* Comments Section - Both Admin and User View */}
+                            {/* Comments Section */}
                             {step.comments && step.comments.length > 0 && (
                               <div className="pt-3 border-t border-gray-200">
                                 <div className="flex items-start space-x-2">
@@ -816,7 +877,7 @@ export function WorkflowManager({
                                         size="sm"
                                         variant="outline"
                                         className="border-red-600 text-red-600 hover:bg-red-50"
-                                        onClick={() => handleDirectAction('rejected', workflow.id, step.id)}
+                                        onClick={() => handleRejectWithOptions(workflow.id, step.id, step.name)}
                                         disabled={isLoading}
                                       >
                                         <AlertTriangle className="w-4 h-4 mr-2" />
@@ -860,23 +921,43 @@ export function WorkflowManager({
                               ) : (
                                 <>
                                   {isAssignedToUser && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        handleStepClick(workflow, step)
-                                      }
-                                      disabled={
-                                        step.status === "completed" ||
-                                        step.status === "rejected" ||
-                                        !!step.actionStatus
-                                      }
-                                    >
-                                      {step.actionStatus || step.status === "completed" ||
-                                      step.status === "rejected"
-                                        ? "View Details"
-                                        : "Manage Step"}
-                                    </Button>
+                                    <>
+                                      {/* Redo Badge for Users */}
+                                      {step.needsRedo && step.status === 'pending' && (
+                                        <div className="w-full mb-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded">
+                                          <div className="flex items-center">
+                                            <AlertTriangle className="w-5 h-5 text-orange-600 mr-2 flex-shrink-0" />
+                                            <div>
+                                              <p className="text-sm font-semibold text-orange-800">
+                                                Redo Required
+                                              </p>
+                                              <p className="text-sm text-orange-700">
+                                                The workflow creator has rejected this task and asked you to redo it.
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleStepClick(workflow, step)}
+                                        disabled={
+                                          (step.status === "completed" && !step.needsRedo) ||
+                                          (step.status === "rejected" && !step.needsRedo) ||
+                                          (!!step.actionStatus && step.actionStatus !== 'rejected') ||
+                                          (step.actionStatus === 'rejected' && !step.needsRedo)
+                                        }
+                                      >
+                                        {step.needsRedo
+                                          ? "Redo Task"
+                                          : step.actionStatus || step.status === "completed" ||
+                                            step.status === "rejected"
+                                          ? "View Details"
+                                          : "Manage Step"}
+                                      </Button>
+                                    </>
                                   )}
                                 </>
                               )}
@@ -892,7 +973,6 @@ export function WorkflowManager({
           })
         )}
       </div>
-
 
       {/* Workflow Step Modal */}
       {selectedStep &&
@@ -930,6 +1010,17 @@ export function WorkflowManager({
           documentId={documentId}
           onClose={() => setShowDesigner(false)}
           onSave={handleWorkflowCreate}
+        />
+      )}
+
+      {/* Rejection Modal */}
+      {showRejectionModal && rejectionTarget && (
+        <RejectionModal
+          isOpen={showRejectionModal}
+          onClose={handleRejectionCancel}
+          onConfirm={handleRejectionConfirm}
+          stepName={rejectionTarget.stepName}
+          isLoading={isLoading}
         />
       )}
     </div>

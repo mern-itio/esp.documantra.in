@@ -640,7 +640,6 @@ export function WorkflowStepModal({
                   </span>
                 </label>
               ))}
-
               {selectedRejectionReason === "Other (specify below)" && (
                 <div className="mt-3">
                   <textarea

@@ -571,10 +571,11 @@ export const workflowAPI = {
     });
   },
 
-   // Update workflow step action status (approve/reject/drop) - Creator only
+  // Update workflow step action status (approve/reject/drop) - Creator only
   updateStepActionStatus: async (workflowId: string, stepId: string, data: {
     actionStatus: 'approved' | 'rejected' | 'dropped';
-    comments?: string; // Optional for 'approved', Required for 'rejected' and 'dropped'
+    comments?: string; 
+    requestRedo?: boolean;// Optional for 'approved', Required for 'rejected' and 'dropped'
   }) => {
     return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/action`, {
       method: 'PATCH',

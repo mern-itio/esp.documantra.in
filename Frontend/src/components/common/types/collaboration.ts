@@ -117,6 +117,13 @@ export interface WorkflowStep {
   assigneeName: string;
   actionStatus?: 'approved' | 'rejected' | 'dropped' | null;
   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  needsRedo?: boolean;
+  rejectionHistory?: Array<{
+    rejectedAt: string;
+    rejectedBy: string;
+    reason: string;
+    requestedRedo: boolean;
+  }>;
   dueDate?: string;
   completedAt?: string;
   comments?: string[];

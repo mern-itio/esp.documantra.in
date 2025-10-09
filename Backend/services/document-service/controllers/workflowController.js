@@ -160,75 +160,6 @@ class WorkflowController {
     }
   }
 
-  // Complete a workflow step
-  // async completeWorkflowStep(req, res) {
-  //   try {
-  //     const { workflowId, stepId } = req.params;
-  //     const userId = req.user.data.id;
-  //     const { status, comments } = req.body;
-
-  //     const workflow = await Workflow.findById(workflowId);
-  //     if (!workflow) {
-  //       return res.status(404).json({ success: false, message: 'Workflow not found' });
-  //     }
-
-  //     // Check if user is assigned to this step
-  //     const step = workflow.steps.id(stepId);
-  //     if (!step) {
-  //       return res.status(404).json({ success: false, message: 'Workflow step not found' });
-  //     }
-
-  //     if (step.assignee !== req.user.data.email) {
-  //       return res.status(403).json({ success: false, message: 'You can only complete steps assigned to you' });
-  //     }
-
-  //     // Update step status
-  //     step.status = status;
-  //     if (status === 'completed') {
-  //       step.completedAt = new Date();
-  //       step.metadata.completedBy = req.user.data.email;
-  //     }
-  //     if (comments) {
-  //       step.comments = comments;
-  //     }
-
-  //     // Check if all steps are completed
-  //     const allStepsCompleted = workflow.steps.every(s => s.status === 'completed');
-  //     if (allStepsCompleted) {
-  //       workflow.status = 'completed';
-  //       workflow.completedAt = new Date();
-        
-  //       // Send completion notification
-  //       const document = await Document.findOne({
-  //         _id: workflow.documentId,
-  //         isDeleted: { $ne: true } // Exclude deleted documents
-  //       });
-  //       if (document) {
-  //         await emailService.sendWorkflowCompletion(
-  //           workflow.name,
-  //           document.name,
-  //           req.user.data.name || req.user.data.email,
-  //           workflow.steps,
-  //           req.user.data.email // Pass current user's email as sender
-  //         );
-  //       }
-  //     }
-
-  //     await workflow.save();
-
-  //     res.json({ 
-  //       success: true, 
-  //       message: 'Workflow step updated successfully', 
-  //       data: workflow 
-  //     });
-  //   } catch (error) {
-  //     console.error('Error completing workflow step:', error);
-  //     res.status(500).json({ success: false, message: 'Failed to complete workflow step' });
-  //   }
-  // }
-
-
-
   // Delete workflow
   async deleteWorkflow(req, res) {
     try {
@@ -801,623 +732,257 @@ class WorkflowController {
     }
   }
 
-  // Update workflow step action status (approve/reject/drop)
-  // ONLY the workflow creator (createdBy) can use these actions
-  // async updateStepActionStatus(req, res) {
-  //   try {
-  //     const { workflowId, stepId } = req.params;
-  //     const userEmail = req.user.data.email;
-  //     const userName = req.user.data.name || userEmail;
-  //     const { actionStatus, comments } = req.body; 
-  //     // actionStatus can be: 'approved', 'rejected', 'dropped'
+  // update step actions by admin completed /reject/ drop
+    async updateStepActionStatus(req, res) {
+    try {
+      const { workflowId, stepId } = req.params;
+      console.log('🔹 Backend: updateStepActionStatus called');
+      console.log('Workflow ID:', workflowId);
+      console.log('Step ID:', stepId);
 
-  //     // Validate action status
-  //     const validStatuses = ['approved', 'rejected', 'dropped'];
-  //     if (!actionStatus || !validStatuses.includes(actionStatus)) {
-  //       return res.status(400).json({ 
-  //         success: false, 
-  //         message: 'Invalid action status. Must be approved, rejected, or dropped' 
-  //       });
-  //     }
+      const userEmail = req.user.data.email;
+      const userName = req.user.data.name || userEmail;
+      console.log('User email:', userEmail, 'User name:', userName);
 
-  //     // Find workflow
-  //     const workflow = await Workflow.findById(workflowId);
-  //     if (!workflow) {
-  //       return res.status(404).json({ 
-  //         success: false, 
-  //         message: 'Workflow not found' 
-  //       });
-  //     }
+      const { actionStatus, comments, requestRedo } = req.body;
+      console.log('Action status from request:', actionStatus);
+      console.log('Comments from request:', comments);
+      console.log('Request redo:', requestRedo);
 
-  //     // Check if workflow is cancelled
-  //     if (workflow.status === 'cancelled') {
-  //       return res.status(400).json({ 
-  //         success: false, 
-  //         message: 'Cannot update action status in a cancelled workflow' 
-  //       });
-  //     }
-
-  //     // AUTHORIZATION CHECK: Only workflow creator can approve/reject/drop steps
-  //     if (workflow.createdBy !== userEmail) {
-  //       return res.status(403).json({ 
-  //         success: false, 
-  //         message: 'Only the workflow creator can approve, reject, or drop steps' 
-  //       });
-  //     }
-
-  //     // Find the specific step
-  //     const step = workflow.steps.id(stepId);
-  //     if (!step) {
-  //       return res.status(404).json({ 
-  //         success: false, 
-  //         message: 'Workflow step not found' 
-  //       });
-  //     }
-
-  //     // Check if step is already completed or rejected
-  //     if (step.status === 'completed' || step.status === 'rejected') {
-  //       return res.status(400).json({ 
-  //         success: false, 
-  //         message: `Cannot update action status of a ${step.status} step` 
-  //       });
-  //     }
-
-  //     const now = new Date();
-
-  //     // If timer is running, stop it and save final session
-  //     if (step.timeTracking.isTimerRunning) {
-  //       const sessionDuration = Math.floor(
-  //         (now - new Date(step.timeTracking.lastStartTime)) / 1000
-  //       );
-  //       step.timeTracking.totalTimeSpent += sessionDuration;
-  //       step.timeTracking.sessions.push({
-  //         startedAt: step.timeTracking.lastStartTime,
-  //         pausedAt: now,
-  //         duration: sessionDuration
-  //       });
-  //       step.timeTracking.isTimerRunning = false;
-  //       step.timeTracking.lastStartTime = null;
-  //     }
-
-  //     // Get document details for email
-  //     const document = await Document.findOne({
-  //       _id: workflow.documentId,
-  //       isDeleted: { $ne: true }
-  //     });
-
-  //     // Get assignee name for notifications
-  //     const assigneeName = step.assignee;
-
-  //     // Handle based on action status
-  //     if (actionStatus === 'approved') {
-  //       step.actionStatus = 'approved';
-  //       step.status = 'completed';
-  //       step.progressPercentage = 100;
-  //       step.completedAt = now;
-  //       step.metadata.completedBy = userEmail;
-        
-  //       // Add approval comment
-  //       const approvalComment = comments?.trim() || 'Step approved and completed';
-  //       step.comments.push(`[APPROVED] ${approvalComment}`);
-
-  //       // Send step approval notification to assignee
-  //       if (document && step.assignee) {
-  //         await emailService.sendStepCompletion(
-  //           workflow.name,
-  //           document.name,
-  //           step.name,
-  //           userName,
-  //           'approved',
-  //           approvalComment,
-  //           step.assignee
-  //         );
-  //       }
-
-  //       // Check if all steps are completed
-  //       const allStepsCompleted = workflow.steps.every(
-  //         s => s.status === 'completed'
-  //       );
-        
-  //       if (allStepsCompleted) {
-  //         workflow.status = 'completed';
-  //         workflow.completedAt = now;
-          
-  //         // Calculate total actual duration in hours
-  //         const totalDuration = workflow.steps.reduce((sum, s) => 
-  //           sum + (s.timeTracking.totalTimeSpent || 0), 0
-  //         );
-  //         workflow.metadata.actualDuration = totalDuration / 3600;
-          
-  //         // Send full workflow completion notification to all assignees
-  //         if (document) {
-  //           const uniqueAssignees = [...new Set(workflow.steps.map(s => s.assignee))];
-  //           for (const assignee of uniqueAssignees) {
-  //             await emailService.sendWorkflowCompletion(
-  //               workflow.name,
-  //               document.name,
-  //               userName,
-  //               workflow.steps,
-  //               assignee
-  //             );
-  //           }
-  //         }
-  //       }
-  //     } 
-  //     else if (actionStatus === 'rejected') {
-  //       // Rejection requires comments
-  //       if (!comments || !comments.trim()) {
-  //         return res.status(400).json({ 
-  //           success: false, 
-  //           message: 'Comments are required when rejecting a step' 
-  //         });
-  //       }
-
-  //       step.actionStatus = 'rejected';
-  //       step.status = 'rejected';
-  //       step.completedAt = now;
-  //       step.metadata.completedBy = userEmail;
-  //       step.metadata.rejectionReason = comments.trim();
-        
-  //       // Add rejection comment
-  //       step.comments.push(`[REJECTED] ${comments.trim()}`);
-
-  //       // Send step rejection notification to assignee
-  //       if (document && step.assignee) {
-  //         await emailService.sendStepCompletion(
-  //           workflow.name,
-  //           document.name,
-  //           step.name,
-  //           userName,
-  //           'rejected',
-  //           comments.trim(),
-  //           step.assignee
-  //         );
-  //       }
-  //     } 
-  //     else if (actionStatus === 'dropped') {
-  //       // Drop requires comments
-  //       if (!comments || !comments.trim()) {
-  //         return res.status(400).json({ 
-  //           success: false, 
-  //           message: 'Comments are required when dropping a step' 
-  //         });
-  //       }
-
-  //       step.actionStatus = 'dropped';
-  //       step.status = 'rejected'; // Dropped steps marked as rejected
-  //       step.completedAt = now;
-  //       step.metadata.completedBy = userEmail;
-  //       step.metadata.rejectionReason = comments.trim();
-        
-  //       // Add drop comment
-  //       step.comments.push(`[DROPPED] ${comments.trim()}`);
-
-  //       // Send step drop notification to assignee
-  //       if (document && step.assignee) {
-  //         await emailService.sendStepCompletion(
-  //           workflow.name,
-  //           document.name,
-  //           step.name,
-  //           userName,
-  //           'dropped',
-  //           comments.trim(),
-  //           step.assignee
-  //         );
-  //       }
-  //     }
-
-  //     await workflow.save();
-
-  //     res.json({ 
-  //       success: true, 
-  //       message: `Workflow step ${actionStatus} successfully`, 
-  //       data: {
-  //         workflow,
-  //         currentStep: step,
-  //         actionStatus: step.actionStatus,
-  //         timeSpent: step.timeTracking.totalTimeSpent,
-  //         timeSpentFormatted: WorkflowController.formatTime(step.timeTracking.totalTimeSpent)
-  //       }
-  //     });
-
-  //   } catch (error) {
-  //     console.error('Error updating step action status:', error);
-  //     res.status(500).json({ 
-  //       success: false, 
-  //       message: 'Failed to update action status' 
-  //     });
-  //   }
-  // }
-
-  // Update workflow step action status (approve/reject/drop)
-// ONLY the workflow creator (createdBy) can use these actions
-  // async updateStepActionStatus(req, res) {
-  //   try {
-  //     const { workflowId, stepId } = req.params;
-  //     console.log("backend workflow",workflowId);
-  //     console.log("step id backend",stepId);
-  //     const userEmail = req.user.data.email;
-  //     const userName = req.user.data.name || userEmail;
-  //     const { actionStatus, comments } = req.body; 
-  //     // actionStatus can be: 'approved', 'rejected', 'dropped'
-
-  //     // Validate action status
-  //     const validStatuses = ['approved', 'rejected', 'dropped'];
-  //     if (!actionStatus || !validStatuses.includes(actionStatus)) {
-  //       return res.status(400).json({ 
-  //         success: false, 
-  //         message: 'Invalid action status. Must be approved, rejected, or dropped' 
-  //       });
-  //     }
-
-  //     // Find workflow
-  //     const workflow = await Workflow.findById(workflowId);
-  //     if (!workflow) {
-  //       return res.status(404).json({ 
-  //         success: false, 
-  //         message: 'Workflow not found' 
-  //       });
-  //     }
-
-  //     // Check if workflow is cancelled
-  //     if (workflow.status === 'cancelled') {
-  //       return res.status(400).json({ 
-  //         success: false, 
-  //         message: 'Cannot update action status in a cancelled workflow' 
-  //       });
-  //     }
-
-  //     // AUTHORIZATION CHECK: Only workflow creator can approve/reject/drop steps
-  //     // if (workflow.createdBy !== userEmail) {
-  //     //   return res.status(403).json({ 
-  //     //     success: false, 
-  //     //     message: 'Only the workflow creator can approve, reject, or drop steps' 
-  //     //   });
-  //     // }
-
-  //     // Find the specific step
-  //     const step = workflow.steps.id(stepId);
-  //     if (!step) {
-  //       return res.status(404).json({ 
-  //         success: false, 
-  //         message: 'Workflow step not found' 
-  //       });
-  //     }
-
-  //     // Check if step is already completed or rejected
-  //     if (step.status === 'completed' || step.status === 'rejected') {
-  //       return res.status(400).json({ 
-  //         success: false, 
-  //         message: `Cannot update action status of a ${step.status} step` 
-  //       });
-  //     }
-
-  //     const now = new Date();
-
-  //     // If timer is running, stop it and save final session
-  //     if (step.timeTracking.isTimerRunning) {
-  //       const sessionDuration = Math.floor(
-  //         (now - new Date(step.timeTracking.lastStartTime)) / 1000
-  //       );
-  //       step.timeTracking.totalTimeSpent += sessionDuration;
-  //       step.timeTracking.sessions.push({
-  //         startedAt: step.timeTracking.lastStartTime,
-  //         pausedAt: now,
-  //         duration: sessionDuration
-  //       });
-  //       step.timeTracking.isTimerRunning = false;
-  //       step.timeTracking.lastStartTime = null;
-  //     }
-
-  //     // Get document details for email
-  //     const document = await Document.findOne({
-  //       _id: workflow.documentId,
-  //       isDeleted: { $ne: true }
-  //     });
-
-  //     // Get assignee name for notifications
-  //     const assigneeName = step.assignee;
-
-  //     // Handle based on action status
-  //     if (actionStatus === 'approved') {
-  //       step.actionStatus = 'approved';
-  //       step.status = 'completed';
-  //       step.progressPercentage = 100;
-  //       step.completedAt = now;
-  //       step.metadata.completedBy = userEmail;
-        
-  //       // Add approval comment
-  //       const approvalComment = comments?.trim() || 'Step approved and completed by workflow creator';
-  //       step.comments.push(`[APPROVED] ${approvalComment}`);
-
-  //       // Send step approval notification to assignee
-  //       if (document && step.assignee) {
-  //         await emailService.sendStepCompletion(
-  //           workflow.name,
-  //           document.name,
-  //           step.name,
-  //           userName,
-  //           'approved',
-  //           approvalComment,
-  //           step.assignee
-  //         );
-  //       }
-
-  //       // Check if all steps are completed
-  //       const allStepsCompleted = workflow.steps.every(
-  //         s => s.status === 'completed'
-  //       );
-        
-  //       if (allStepsCompleted) {
-  //         workflow.status = 'completed';
-  //         workflow.completedAt = now;
-          
-  //         // Calculate total actual duration in hours
-  //         const totalDuration = workflow.steps.reduce((sum, s) => 
-  //           sum + (s.timeTracking.totalTimeSpent || 0), 0
-  //         );
-  //         workflow.metadata.actualDuration = totalDuration / 3600;
-          
-  //         // Send full workflow completion notification to all assignees
-  //         if (document) {
-  //           const uniqueAssignees = [...new Set(workflow.steps.map(s => s.assignee))];
-  //           for (const assignee of uniqueAssignees) {
-  //             await emailService.sendWorkflowCompletion(
-  //               workflow.name,
-  //               document.name,
-  //               userName,
-  //               workflow.steps,
-  //               assignee
-  //             );
-  //           }
-  //         }
-  //       }
-  //     } 
-  //     else if (actionStatus === 'rejected') {
-  //       // Comments are optional for rejection
-  //       step.actionStatus = 'rejected';
-  //       step.status = 'rejected';
-  //       step.completedAt = now;
-  //       step.metadata.completedBy = userEmail;
-        
-  //       // Add rejection comment only if provided
-  //       if (comments && comments.trim()) {
-  //         step.metadata.rejectionReason = comments.trim();
-  //         step.comments.push(`[REJECTED] ${comments.trim()}`);
-  //       } else {
-  //         step.metadata.rejectionReason = 'No reason provided';
-  //         step.comments.push(`[REJECTED] Step rejected by workflow creator`);
-  //       }
-
-  //       // Send step rejection notification to assignee
-  //       if (document && step.assignee) {
-  //         await emailService.sendStepCompletion(
-  //           workflow.name,
-  //           document.name,
-  //           step.name,
-  //           userName,
-  //           'rejected',
-  //           step.metadata.rejectionReason,
-  //           step.assignee
-  //         );
-  //       }
-  //     } 
-  //     else if (actionStatus === 'dropped') {
-  //       // Comments are optional for drop
-  //       step.actionStatus = 'dropped';
-  //       step.status = 'rejected'; // Dropped steps marked as rejected
-  //       step.completedAt = now;
-  //       step.metadata.completedBy = userEmail;
-        
-  //       // Add drop comment only if provided
-  //       if (comments && comments.trim()) {
-  //         step.metadata.rejectionReason = comments.trim();
-  //         step.comments.push(`[DROPPED] ${comments.trim()}`);
-  //       } else {
-  //         step.metadata.rejectionReason = 'No reason provided';
-  //         step.comments.push(`[DROPPED] Step dropped by workflow creator`);
-  //       }
-
-  //       // Send step drop notification to assignee
-  //       if (document && step.assignee) {
-  //         await emailService.sendStepCompletion(
-  //           workflow.name,
-  //           document.name,
-  //           step.name,
-  //           userName,
-  //           'dropped',
-  //           step.metadata.rejectionReason,
-  //           step.assignee
-  //         );
-  //       }
-  //     }
-
-  //     await workflow.save();
-
-  //     res.json({ 
-  //       success: true, 
-  //       message: `Workflow step ${actionStatus} successfully`, 
-  //       data: {
-  //         workflow,
-  //         currentStep: step,
-  //         actionStatus: step.actionStatus,
-  //         timeSpent: step.timeTracking.totalTimeSpent,
-  //         timeSpentFormatted: WorkflowController.formatTime(step.timeTracking.totalTimeSpent)
-  //       }
-  //     });
-
-  //   } catch (error) {
-  //     console.error('Error updating step action status:', error);
-  //     res.status(500).json({ 
-  //       success: false, 
-  //       message: 'Failed to update action status' 
-  //     });
-  //   }
-  // }
-
-  async updateStepActionStatus(req, res) {
-  try {
-    const { workflowId, stepId } = req.params;
-    console.log('🔹 Backend: updateStepActionStatus called');
-    console.log('Workflow ID:', workflowId);
-    console.log('Step ID:', stepId);
-
-    const userEmail = req.user.data.email;
-    const userName = req.user.data.name || userEmail;
-    console.log('User email:', userEmail, 'User name:', userName);
-
-    const { actionStatus, comments } = req.body;
-    console.log('Action status from request:', actionStatus);
-    console.log('Comments from request:', comments);
-
-    // Validate action status
-    const validStatuses = ['approved', 'rejected', 'dropped'];
-    if (!actionStatus || !validStatuses.includes(actionStatus)) {
-      console.log('❌ Invalid action status:', actionStatus);
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid action status. Must be approved, rejected, or dropped' 
-      });
-    }
-
-    // Find workflow
-    const workflow = await Workflow.findById(workflowId);
-    if (!workflow) {
-      console.log('❌ Workflow not found for ID:', workflowId);
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Workflow not found' 
-      });
-    }
-    console.log('Workflow found:', workflow.name, 'Status:', workflow.status);
-
-    // // Check if workflow is cancelled
-    // if (workflow.status === 'cancelled') {
-    //   console.log('❌ Workflow is cancelled, cannot update step');
-    //   return res.status(400).json({ 
-    //     success: false, 
-    //     message: 'Cannot update action status in a cancelled workflow' 
-    //   });
-    // }
-
-    // AUTHORIZATION CHECK (commented out)
-    // if (workflow.createdBy !== userEmail) {
-    //   console.log('❌ Unauthorized user:', userEmail);
-    //   return res.status(403).json({ 
-    //     success: false, 
-    //     message: 'Only the workflow creator can approve, reject, or drop steps' 
-    //   });
-    // }
-
-    // Find the specific step
-    const step = workflow.steps.id(stepId);
-    if (!step) {
-      console.log('❌ Step not found in workflow for stepId:', stepId);
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Workflow step not found' 
-      });
-    }
-    console.log('Step found:', step.name, 'Current status:', step.status);
-
-    // // Check if step is already completed or rejected
-    // if (step.status === 'completed' || step.status === 'rejected') {
-    //   console.log('❌ Step already completed or rejected:', step.status);
-    //   return res.status(400).json({ 
-    //     success: false, 
-    //     message: `Cannot update action status of a ${step.status} step` 
-    //   });
-    // }
-
-    const now = new Date();
-
-    // Timer handling
-    if (step.timeTracking.isTimerRunning) {
-      console.log('Timer running, stopping timer for step');
-      const sessionDuration = Math.floor(
-        (now - new Date(step.timeTracking.lastStartTime)) / 1000
-      );
-      step.timeTracking.totalTimeSpent += sessionDuration;
-      step.timeTracking.sessions.push({
-        startedAt: step.timeTracking.lastStartTime,
-        pausedAt: now,
-        duration: sessionDuration
-      });
-      step.timeTracking.isTimerRunning = false;
-      step.timeTracking.lastStartTime = null;
-    }
-
-    // Get document details
-    const document = await Document.findOne({
-      _id: workflow.documentId,
-      isDeleted: { $ne: true }
-    });
-    console.log('Associated document:', document?.name);
-
-    // Handle action
-    console.log(`Processing action: ${actionStatus} for step: ${step.name}`);
-    
-    if (actionStatus === 'approved') {
-      step.actionStatus = 'approved';
-      step.status = 'completed';
-      step.progressPercentage = 100;
-      step.completedAt = now;
-      step.metadata.completedBy = userEmail;
-      const approvalComment = comments?.trim() || 'Step approved and completed by workflow creator';
-      step.comments.push(`[APPROVED] ${approvalComment}`);
-      console.log('Step approved with comment:', approvalComment);
-    } else if (actionStatus === 'rejected') {
-      step.actionStatus = 'rejected';
-      step.status = 'rejected';
-      step.completedAt = now;
-      step.metadata.completedBy = userEmail;
-      if (comments && comments.trim()) {
-        step.metadata.rejectionReason = comments.trim();
-        step.comments.push(`[REJECTED] ${comments.trim()}`);
-      } else {
-        step.metadata.rejectionReason = 'No reason provided';
-        step.comments.push(`[REJECTED] Step rejected by workflow creator`);
+      // Validate action status
+      const validStatuses = ['approved', 'rejected', 'dropped'];
+      if (!actionStatus || !validStatuses.includes(actionStatus)) {
+        console.log('❌ Invalid action status:', actionStatus);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid action status. Must be approved, rejected, or dropped' 
+        });
       }
-      console.log('Step rejected with comment:', step.metadata.rejectionReason);
-    } else if (actionStatus === 'dropped') {
-      step.actionStatus = 'dropped';
-      step.status = 'rejected';
-      step.completedAt = now;
-      step.metadata.completedBy = userEmail;
-      if (comments && comments.trim()) {
-        step.metadata.rejectionReason = comments.trim();
-        step.comments.push(`[DROPPED] ${comments.trim()}`);
-      } else {
-        step.metadata.rejectionReason = 'No reason provided';
-        step.comments.push(`[DROPPED] Step dropped by workflow creator`);
+
+      // Find workflow
+      const workflow = await Workflow.findById(workflowId);
+      if (!workflow) {
+        console.log('❌ Workflow not found for ID:', workflowId);
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Workflow not found' 
+        });
       }
-      console.log('Step dropped with comment:', step.metadata.rejectionReason);
+      console.log('✅ Workflow found:', workflow.name);
+
+      // Find the specific step
+      const step = workflow.steps.id(stepId);
+      if (!step) {
+        console.log('❌ Step not found in workflow for stepId:', stepId);
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Workflow step not found' 
+        });
+      }
+      console.log('✅ Step found:', step.name, 'Current status:', step.status);
+
+      const now = new Date();
+
+      // Timer handling
+      if (step.timeTracking && step.timeTracking.isTimerRunning) {
+        console.log('⏱️ Timer running, stopping timer for step');
+        const sessionDuration = Math.floor(
+          (now - new Date(step.timeTracking.lastStartTime)) / 1000
+        );
+        step.timeTracking.totalTimeSpent += sessionDuration;
+        step.timeTracking.sessions.push({
+          startedAt: step.timeTracking.lastStartTime,
+          pausedAt: now,
+          duration: sessionDuration
+        });
+        step.timeTracking.isTimerRunning = false;
+        step.timeTracking.lastStartTime = null;
+      }
+
+      // Get document details
+      const document = await Document.findOne({
+        _id: workflow.documentId,
+        isDeleted: { $ne: true }
+      });
+      console.log('📄 Associated document:', document?.name);
+
+      // Handle action
+      console.log(`🔄 Processing action: ${actionStatus} for step: ${step.name}`);
+      
+      if (actionStatus === 'approved') {
+        step.actionStatus = 'approved';
+        step.status = 'completed';
+        step.progressPercentage = 100;
+        step.completedAt = now;
+        if (!step.metadata) step.metadata = {};
+        step.metadata.completedBy = userEmail;
+        step.needsRedo = false;
+        
+        const approvalComment = comments?.trim() || 'Step approved and completed by workflow creator';
+        step.comments.push(`[APPROVED] ${approvalComment}`);
+        console.log('✅ Step approved with comment:', approvalComment);
+
+        // Send approval email
+        if (document && step.assignee) {
+          try {
+            await emailService.sendStepCompletion(
+              workflow.name,
+              document.name,
+              step.name,
+              userName,
+              'approved',
+              approvalComment,
+              step.assignee,
+              false  // isRedo = false
+            );
+            console.log('✅ Approval email sent');
+          } catch (emailError) {
+            console.error('⚠️ Failed to send approval email:', emailError);
+            // Continue despite email failure
+          }
+        }
+      } 
+      else if (actionStatus === 'rejected') {
+        step.actionStatus = 'rejected';
+        
+        // Store rejection in history
+        if (!step.rejectionHistory) {
+          step.rejectionHistory = [];
+        }
+        step.rejectionHistory.push({
+          rejectedAt: now,
+          rejectedBy: userEmail,
+          reason: comments?.trim() || 'No reason provided',
+          requestedRedo: requestRedo || false
+        });
+
+        if (requestRedo) {
+          // Admin wants assignee to redo the task
+          console.log('🔄 Manager requested redo for step:', step.name);
+          step.status = 'pending';
+          step.needsRedo = true;
+          step.progressPercentage = 0;
+          step.completedAt = null;
+          
+          const redoComment = comments?.trim() || 'Please redo this task';
+          step.comments.push(`[REDO REQUESTED] Creator has rejected the task and asked you to redo it. Reason: ${redoComment}`);
+          if (!step.metadata) step.metadata = {};
+          step.metadata.rejectionReason = redoComment;
+
+          // Send redo request email using sendStepCompletion with isRedo flag
+          if (document && step.assignee) {
+            try {
+              await emailService.sendStepCompletion(
+                workflow.name,
+                document.name,
+                step.name,
+                userName,
+                'rejected',
+                redoComment,
+                step.assignee,
+                true  // isRedo = true
+              );
+              console.log('✅ Redo request email sent');
+            } catch (emailError) {
+              console.error('⚠️ Failed to send redo request email:', emailError);
+              // Continue despite email failure
+            }
+          }
+        } else {
+          // Standard rejection - task is done, no redo
+          console.log('❌ Manager rejected step without redo request:', step.name);
+          step.status = 'rejected';
+          step.completedAt = now;
+          step.needsRedo = false;
+          
+          const rejectionComment = comments?.trim() || 'No reason provided';
+          step.comments.push(`[REJECTED] ${rejectionComment}`);
+          if (!step.metadata) step.metadata = {};
+          step.metadata.rejectionReason = rejectionComment;
+
+          // Send standard rejection email
+          if (document && step.assignee) {
+            try {
+              await emailService.sendStepCompletion(
+                workflow.name,
+                document.name,
+                step.name,
+                userName,
+                'rejected',
+                rejectionComment,
+                step.assignee,
+                false  // isRedo = false
+              );
+              console.log('✅ Rejection email sent');
+            } catch (emailError) {
+              console.error('⚠️ Failed to send rejection email:', emailError);
+            }
+          }
+        }
+        
+        if (!step.metadata) step.metadata = {};
+        step.metadata.completedBy = userEmail;
+        console.log(`✅ Step rejected with redo: ${requestRedo}`);
+      } 
+      else if (actionStatus === 'dropped') {
+        step.actionStatus = 'dropped';
+        step.status = 'rejected';
+        step.completedAt = now;
+        if (!step.metadata) step.metadata = {};
+        step.metadata.completedBy = userEmail;
+        step.needsRedo = false;
+        
+        const dropComment = comments?.trim() || 'No reason provided';
+        step.comments.push(`[DROPPED] ${dropComment}`);
+        step.metadata.rejectionReason = dropComment;
+        console.log('🗑️ Step dropped with comment:', dropComment);
+
+        // Send drop email
+        if (document && step.assignee) {
+          try {
+            await emailService.sendStepCompletion(
+              workflow.name,
+              document.name,
+              step.name,
+              userName,
+              'dropped',
+              dropComment,
+              step.assignee,
+              false  // isRedo = false
+            );
+            console.log('✅ Drop email sent');
+          } catch (emailError) {
+            console.error('⚠️ Failed to send drop email:', emailError);
+          }
+        }
+      }
+
+      await workflow.save();
+      console.log('💾 Workflow saved successfully');
+
+      res.json({ 
+        success: true, 
+        message: `Workflow step ${actionStatus} successfully${requestRedo ? ' with redo request' : ''}`, 
+        data: {
+          workflow,
+          currentStep: step,
+          actionStatus: step.actionStatus,
+          needsRedo: step.needsRedo,
+          timeSpent: step.timeTracking?.totalTimeSpent || 0,
+          timeSpentFormatted: WorkflowController.formatTime(step.timeTracking?.totalTimeSpent || 0)
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error updating step action status:', error);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to update action status',
+        error: error.message
+      });
     }
-
-    // Save workflow
-    await workflow.save();
-    console.log('Workflow saved successfully');
-
-    res.json({ 
-      success: true, 
-      message: `Workflow step ${actionStatus} successfully`, 
-      data: {
-        workflow,
-        currentStep: step,
-        actionStatus: step.actionStatus,
-        timeSpent: step.timeTracking.totalTimeSpent,
-        timeSpentFormatted: WorkflowController.formatTime(step.timeTracking.totalTimeSpent)
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error updating step action status:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update action status' 
-    });
   }
-}
 
   // Helper method to add workflow collaborators
   static async addWorkflowCollaborators(documentId, assigneeEmails, inviterName, senderEmail) {

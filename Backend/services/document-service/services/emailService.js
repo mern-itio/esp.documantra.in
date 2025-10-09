@@ -185,11 +185,76 @@ class EmailService {
   }
 
   // Send step completion notification
-  async sendStepCompletion(workflowName, documentName, stepName, completedBy, status, comment = null, senderEmail = null) {
+  // async sendStepCompletion(workflowName, documentName, stepName, completedBy, status, comment = null, senderEmail = null) {
+  //   // Check if email service is configured
+  //   if (!this.isConfigured()) {
+  //     console.log(`⚠️ Email service not configured, skipping step completion email`);
+  //     return false;
+  //   }
+
+  //   const isRejected = status === 'rejected';
+  //   const statusText = isRejected ? 'Rejected' : 'Completed';
+  //   const statusColor = isRejected ? '#e74c3c' : '#27ae60';
+  //   const statusIcon = isRejected ? '❌' : '✅';
+  //   const statusBg = isRejected ? '#fce8e6' : '#e8f5e8';
+
+  //   const subject = `Step ${statusText}: ${stepName} - ${workflowName}`;
+    
+  //   const htmlContent = `
+  //     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  //       <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+  //         <h2 style="color: ${statusColor}; margin-bottom: 20px;">${statusIcon} Step ${statusText}</h2>
+          
+  //         <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+  //           <h3 style="color: #2c3e50; margin-bottom: 15px;">${workflowName}</h3>
+  //           <p style="color: #555; margin-bottom: 10px;"><strong>Document:</strong> ${documentName}</p>
+  //           <p style="color: #555; margin-bottom: 10px;"><strong>Step:</strong> ${stepName}</p>
+  //           <p style="color: #555; margin-bottom: 10px;"><strong>${statusText} by:</strong> ${completedBy}</p>
+  //           <p style="color: #555; margin-bottom: 10px;"><strong>${statusText} at:</strong> ${new Date().toLocaleString()}</p>
+  //           <p style="color: #555; margin-bottom: 10px;"><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
+  //         </div>
+          
+  //         ${comment ? `
+  //         <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db;">
+  //           <p style="margin: 0 0 5px 0; color: #2c3e50; font-weight: bold;">Comment:</p>
+  //           <p style="margin: 0; color: #555;">${comment}</p>
+  //         </div>
+  //         ` : ''}
+          
+  //         <div style="background: ${statusBg}; padding: 15px; border-radius: 8px; border-left: 4px solid ${statusColor};">
+  //           <p style="margin: 0; color: ${statusColor};">
+  //             <strong>${isRejected ? 'This step has been rejected and may require attention.' : 'This step has been completed successfully!'}</strong>
+  //           </p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   `;
+
+  //   try {
+  //     // Send only to workflow creator
+  //     const creatorEmail = senderEmail || process.env.EMAIL_USER;
+      
+  //     await this.transporter.sendMail({
+  //       from: process.env.EMAIL_USER,
+  //       to: creatorEmail,
+  //       subject: subject,
+  //       html: htmlContent
+  //     });
+      
+  //     console.log(`✅ Step ${statusText.toLowerCase()} notification sent to creator: ${creatorEmail}`);
+  //     return true;
+  //   } catch (error) {
+  //     console.error(`❌ Failed to send step ${statusText.toLowerCase()} notification:`, error);
+  //     return false;
+  //   }
+  // }
+
+  // Send step Completion notification --> handles redo email as well
+  async sendStepCompletion(workflowName, documentName, stepName, completedBy, status, comment = null, senderEmail = null, isRedo = false) {
     // Check if email service is configured
     if (!this.isConfigured()) {
-      console.log(`⚠️ Email service not configured, skipping step completion email`);
-      return false;
+        console.log('⚠️ Email service not configured, skipping step completion email');
+        return false;
     }
 
     const isRejected = status === 'rejected';
@@ -197,57 +262,59 @@ class EmailService {
     const statusColor = isRejected ? '#e74c3c' : '#27ae60';
     const statusIcon = isRejected ? '❌' : '✅';
     const statusBg = isRejected ? '#fce8e6' : '#e8f5e8';
-
-    const subject = `Step ${statusText}: ${stepName} - ${workflowName}`;
+    
+    // Add redo headline if applicable
+    const redoHeadline = isRedo ? '🔄 REDO REQUESTED' : '';
+    
+    const subject = `Step ${statusText}: ${stepName} - ${workflowName}${isRedo ? ' [REDO REQUESTED]' : ''}`;
     
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-          <h2 style="color: ${statusColor}; margin-bottom: 20px;">${statusIcon} Step ${statusText}</h2>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h3 style="color: #2c3e50; margin-bottom: 15px;">${workflowName}</h3>
-            <p style="color: #555; margin-bottom: 10px;"><strong>Document:</strong> ${documentName}</p>
-            <p style="color: #555; margin-bottom: 10px;"><strong>Step:</strong> ${stepName}</p>
-            <p style="color: #555; margin-bottom: 10px;"><strong>${statusText} by:</strong> ${completedBy}</p>
-            <p style="color: #555; margin-bottom: 10px;"><strong>${statusText} at:</strong> ${new Date().toLocaleString()}</p>
-            <p style="color: #555; margin-bottom: 10px;"><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
-          </div>
-          
-          ${comment ? `
-          <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db;">
-            <p style="margin: 0 0 5px 0; color: #2c3e50; font-weight: bold;">Comment:</p>
-            <p style="margin: 0; color: #555;">${comment}</p>
-          </div>
-          ` : ''}
-          
-          <div style="background: ${statusBg}; padding: 15px; border-radius: 8px; border-left: 4px solid ${statusColor};">
-            <p style="margin: 0; color: ${statusColor};">
-              <strong>${isRejected ? 'This step has been rejected and may require attention.' : 'This step has been completed successfully!'}</strong>
-            </p>
-          </div>
+        ${redoHeadline ? `<div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: #856404;">${redoHeadline}</h2>
+            <p style="margin: 5px 0 0 0; color: #856404;">The workflow creator has rejected this step and is requesting you to redo the task.</p>
+        </div>` : ''}
+        
+        <div style="background-color: ${statusBg}; padding: 15px; border-radius: 5px;">
+            <h2 style="color: ${statusColor};">${statusIcon} Step ${statusText}</h2>
         </div>
-      </div>
+        
+        <div style="margin-top: 20px;">
+            <p><strong>Workflow:</strong> ${workflowName}</p>
+            <p><strong>Document:</strong> ${documentName}</p>
+            <p><strong>Step:</strong> ${stepName}</p>
+            <p><strong>${statusText} by:</strong> ${completedBy}</p>
+            <p><strong>${statusText} at:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Status:</strong> ${statusText}</p>
+            ${comment ? `<p><strong>${isRedo ? 'Redo Reason' : 'Comment'}:</strong> ${comment}</p>` : ''}
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+            ${isRejected && isRedo 
+                ? '<p style="color: #856404;"><strong>Action Required:</strong> Please review the feedback and redo this step.</p>' 
+                : isRejected 
+                ? '<p>This step has been rejected and may require attention.</p>' 
+                : '<p>This step has been completed successfully!</p>'
+            }
+        </div>
     `;
 
     try {
-      // Send only to workflow creator
-      const creatorEmail = senderEmail || process.env.EMAIL_USER;
-      
-      await this.transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: creatorEmail,
-        subject: subject,
-        html: htmlContent
-      });
-      
-      console.log(`✅ Step ${statusText.toLowerCase()} notification sent to creator: ${creatorEmail}`);
-      return true;
+        // Send only to workflow creator or assignee
+        const recipientEmail = senderEmail || process.env.EMAIL_USER;
+        await this.transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: recipientEmail,
+            subject: subject,
+            html: htmlContent
+        });
+        
+        console.log(`✅ Step ${statusText.toLowerCase()} notification sent to: ${recipientEmail}`);
+        return true;
     } catch (error) {
-      console.error(`❌ Failed to send step ${statusText.toLowerCase()} notification:`, error);
-      return false;
+        console.error(`❌ Failed to send step ${statusText.toLowerCase()} notification:`, error);
+        return false;
     }
-  }
+}
   // Send collaborator invitation
   async sendCollaboratorInvitation(email, documentName, documentId, inviterName, permissions, senderEmail = null) {
     // Check if email service is configured
@@ -555,7 +622,7 @@ class EmailService {
       return false;
     }
   }
-
+  
   // Send test email
   async sendTestEmail(senderEmail = null) {
     // Check if email service is configured
