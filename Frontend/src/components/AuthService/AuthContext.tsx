@@ -7,6 +7,7 @@ interface User {
   email: string;
   fullname: string;
   type: string;
+  plan: string;
 }
 
 interface AuthContextType {
@@ -105,14 +106,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: data.user_id,
         email: email,
         fullname: fullname,
-        type: data.type
+        type: data.type,
+        plan: data.plan || 'free'
       }));
       
       setUser({
         id: data.user_id,
         email: email,
         fullname: fullname,
-        type: data.type
+        type: data.type,
+        plan: data.plan || 'free'
       });
       setIsAuthenticated(true);
     } catch (error) {

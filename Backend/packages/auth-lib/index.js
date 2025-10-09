@@ -6,9 +6,13 @@ const jwt = require('jsonwebtoken');
 const verifyJWT = (type = 'user') => {
   return async (req, res, next) => {
     try {
+      console.log(`[JWT Verification] Type: ${type}, Path: ${req.path}`);
       const authHeader = req.headers?.authorization;
       const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+      console.log(`[JWT Verification] Token present: ${!!token}`);
+      
       if (!token) {
+        console.log(`[JWT Verification] No token found`);
         return res.status(401).json({
           status: 401,
           message: 'Missing or invalid token',
@@ -20,6 +24,8 @@ const verifyJWT = (type = 'user') => {
         type === 'admin'
           ? process.env.ADMIN_ACCESS_TOKEN_SECRET
           : process.env.ACCESS_TOKEN_SECRET;
+      console.log(`[JWT Verification] Secret present: ${!!secret}`);
+      
       if (!secret) {
         console.error(`[verifyToken] Missing JWT secret for ${type}`);
         return res.status(500).json({ message: 'Server misconfiguration: missing JWT secret' });

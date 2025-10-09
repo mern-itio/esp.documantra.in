@@ -9,6 +9,8 @@ const userSchema = new mongoose.Schema({
   gender: { type: String, enum: ['male', 'female', 'other'], required: false, default: null },
   dob: { type: Date, required: false, default: null },
   status: { type: Boolean, default: true },
+  // User subscription plan indicator (null => treated as Free plan)
+  plan: { type: String, enum: ['free', 'pro', 'custom'], default: null },
 }, { timestamps: true });
 
 // 🔐 Hash password before saving

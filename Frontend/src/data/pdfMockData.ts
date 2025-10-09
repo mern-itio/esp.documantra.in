@@ -965,6 +965,26 @@ export const mockPDFTools = {
   }
 };
 
+// Returns a filtered copy of mockPDFTools containing only tools whose ids
+// are included in activeToolIds. If no ids are provided (or the set is empty),
+// the original structure is returned to avoid hiding all tools when the
+// admin service is unreachable.
+export const getActiveMockTools = (activeToolIds?: Set<string> | string[]) => {
+  if (!activeToolIds) return {} as any;
+  const ids = Array.isArray(activeToolIds) ? new Set(activeToolIds) : activeToolIds;
+  if (!ids || ids.size === 0) return {} as any;
+
+  const clone: any = {};
+  for (const [categoryKey, categoryVal] of Object.entries<any>(mockPDFTools)) {
+    const tools = (categoryVal as any).tools || [];
+    const filtered = tools.filter((t: any) => ids.has(t.id));
+    if (filtered.length > 0) {
+      clone[categoryKey] = { ...categoryVal, tools: filtered };
+    }
+  }
+  return clone;
+};
+
 export const mockProcessingStats: ProcessingStats = {
   dailyUsage: {
     totalOperations: 15670,

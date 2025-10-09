@@ -1,5 +1,5 @@
 const express = require('express');
-const { login, register } = require('../controllers/authController');
+const { login, register, getMe } = require('../controllers/authController');
 const {adminLogin} = require('../controllers/adminAuthController');
 const { userDetails } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
@@ -9,4 +9,5 @@ router.post('/login', login);
 router.post('/admin/login', adminLogin);
 router.post('/register', register);
 router.get('/api/user-details/:id', userDetails);
+router.get('/api/auth/me', verifyJWT, getMe);
 module.exports = router;

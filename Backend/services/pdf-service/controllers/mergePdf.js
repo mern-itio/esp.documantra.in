@@ -1,5 +1,6 @@
 // controllers/mergePdf.js
 const PDFMerger = require('pdf-merger-js');
+const { PDFDocument } = require('pdf-lib');
 const fs = require('fs-extra');
 const path = require('path');
 
@@ -19,12 +20,28 @@ const mergePDFs = async (files, orderedFilenames) => {
     // Add files to merger in the specified order
     for (const name of orderedFilenames) {
       const file = fileMap[name];
-      if (file) {
-        // console.log(`Adding file: ${name} (${file.path})`);
-        await merger.add(file.path);
-      } else {
+      if (!file) {
         throw new Error(`File ${name} not found in upload. Available: ${Object.keys(fileMap).join(', ')}`);
       }
+
+      // Validate the PDF before adding (prevents pdf-lib UnexpectedObjectTypeError)
+      const buffer = await fs.readFile(file.path);
+      if (!buffer || buffer.length < 5) {
+        throw new Error(`${name}: Failed to validate PDF file (empty or unreadable).`);
+      }
+      const header = buffer.slice(0, 5).toString();
+      if (!header.startsWith('%PDF-')) {
+        throw new Error(`${name}: Failed to validate PDF file (not a PDF).`);
+      }
+      try {
+        // Deep validation to catch corrupted PDFs
+        await PDFDocument.load(buffer, { ignoreEncryption: true });
+      } catch (e) {
+        throw new Error(`${name}: Failed to validate PDF file`);
+      }
+
+      // Add validated buffer (supported by pdf-merger-js)
+      await merger.add(buffer);
     }
 
     // Ensure outputs directory exists

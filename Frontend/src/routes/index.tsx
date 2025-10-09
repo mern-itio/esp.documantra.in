@@ -138,7 +138,8 @@ import { FormSubmissions } from '../pages/Template/FormSubmissions';
 
 //PDF Tools Started
 import type { PDFTool, ProcessingStats } from '../types';
-import { mockPDFTools, mockProcessingStats } from '../data/pdfMockData';
+import { mockPDFTools, mockProcessingStats, getActiveMockTools } from '../data/pdfMockData';
+import { adminServiceApi } from '../services/apiHelper';
 import { ToolsGrid } from '../components/PDFService/ToolsGrid';
 import { HelpSystem } from '../components/PDFService/HelpSystem';
 import { CloudConnector } from '../components/PDFService/CloudConnector';
@@ -193,6 +194,29 @@ const PDFToolsLayout = () => {
   const [favoriteTools, setFavoriteTools] = useState<Set<string>>(new Set());
   const [recentTools, setRecentTools] = useState<PDFTool[]>([]);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isPro = (user?.plan || '').toLowerCase() === 'pro';
+
+  // Load active tools from admin and filter mock list
+  const [filteredMock, setFilteredMock] = useState<any>(mockPDFTools);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await adminServiceApi.get('/admin/public/tool-activation');
+        if (!mounted) return;
+        const list = Array.isArray((res as any).data?.data) ? (res as any).data.data : [];
+        const activeIds = list.map((a: any) => a.toolId);
+        const activeSet = new Set<string>(activeIds);
+        setFilteredMock(getActiveMockTools(activeSet));
+      } catch (e) {
+        // On failure, show none to avoid exposing inactive tools
+        setFilteredMock({} as any);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Handle URL parameters for category filtering
   useEffect(() => {
@@ -217,10 +241,10 @@ const PDFToolsLayout = () => {
 
     if (selectedCategory === 'all') {
       // @ts-ignore - TypeScript can't infer the complex union type correctly
-      allTools = Object.values(mockPDFTools).flatMap(category => category.tools);
+      allTools = Object.values(filteredMock).flatMap((category: any) => category.tools);
       // console.log('Getting all tools from all categories, total:', allTools.length);
     } else {
-      const categoryData = mockPDFTools[selectedCategory as keyof typeof mockPDFTools];
+      const categoryData = filteredMock[selectedCategory as keyof typeof filteredMock];
       if (categoryData) {
         allTools = categoryData.tools;
         // console.log(`Getting tools from category '${selectedCategory}', found:`, allTools.length);
@@ -336,13 +360,15 @@ const PDFToolsLayout = () => {
 
   return (
     <div className='bg-white p-2'>
-      <Header
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        stats={processingStats}
-      />
+      {isPro && (
+        <Header
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          stats={processingStats}
+        />
+      )}
       {renderCurrentView()}
     </div>
   );

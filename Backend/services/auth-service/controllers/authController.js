@@ -52,7 +52,8 @@ const login = async (req, res) => {
     message: "User is logged in successfully",
     user_id: user._id,
     token: generateToken,
-    type: 'user'
+    type: 'user',
+    plan: user.plan || 'free'
   });
 };
 
@@ -69,7 +70,8 @@ const register = async (req, res) => {
   }
 
   try {
-    const user = await User.create({ fullname, email, phone, password });
+    // Default plan is free on first registration
+    const user = await User.create({ fullname, email, phone, password, plan: 'free' });
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (error) {
     if (error.code === 11000) {
@@ -104,8 +106,53 @@ async function generateAccessTokenUser(user, expireIn) {
   }
 }
 
+// Get current user details
+const getMe = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    if (!userId) {
+      return res.status(401).json({
+        status: 401,
+        message: "User not authenticated",
+        data: null
+      });
+    }
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        status: 404,
+        message: "User not found",
+        data: null
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "User details retrieved successfully",
+      data: {
+        id: user._id,
+        email: user.email,
+        fullname: user.fullname,
+        phone: user.phone,
+        plan: user.plan || 'free',
+        status: user.status,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null
+    });
+  }
+};
+
 // Export functions
 module.exports = {
   login,
-  register
+  register,
+  getMe
 };

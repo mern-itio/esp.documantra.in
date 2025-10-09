@@ -7,6 +7,7 @@ const verifyJWT = require('@draftnsign/auth-lib');
 const plansRoutes = require('./src/routes/plansRoutes');
 const publicPlansRoutes = require('./src/routes/publicPlansRoutes');
 const subscriptionsRoutes = require('./src/routes/subscriptionsRoutes');
+const toolSettingsRoutes = require('./src/routes/toolSettingsRoutes');
 
 const app = express();
 
@@ -17,6 +18,7 @@ connectDB();
 // Admin routes (protected)
 app.use('/admin', verifyJWT('admin'));
 app.use('/admin/plans', plansRoutes);
+app.use('/admin', toolSettingsRoutes);
 // Public plan info (no auth)
 app.use('/public/plans', publicPlansRoutes);
 
