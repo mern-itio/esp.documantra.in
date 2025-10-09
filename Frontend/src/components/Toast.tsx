@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-type ToastData = { message: string; type?: 'success' | 'error' | 'info' | 'warning' }
+type ToastData = { message: string; type?: 'success' | 'error' | 'info' | 'warning'; cta?: { label: string; href: string } }
 
 const bgByType: Record<string, string> = {
   success: 'bg-green-600',
@@ -29,8 +29,13 @@ const Toast: React.FC = () => {
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000]">
-      <div className={`${bg} text-white px-4 py-2 rounded-lg shadow-lg max-w-[90vw] sm:max-w-md text-sm`}>
-        {data.message}
+      <div className={`${bg} text-white px-4 py-3 rounded-lg shadow-lg max-w-[90vw] sm:max-w-lg text-sm flex items-center justify-between gap-4`}>
+        <span>{data.message}</span>
+        {data.cta && (
+          <a href={data.cta.href} className="bg-white/15 hover:bg-white/25 text-white px-3 py-1 rounded-md text-xs font-medium transition-colors" style={{textDecoration:'none'}}>
+            {data.cta.label}
+          </a>
+        )}
       </div>
     </div>
   )

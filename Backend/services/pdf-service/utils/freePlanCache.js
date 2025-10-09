@@ -7,7 +7,7 @@ async function fetchFreePlanLimit() {
   const now = Date.now();
   if (now - cached.fetchedAt < TTL_MS) return cached;
 
-  const baseUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
+  const baseUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://165.22.215.73:2110';
   try {
     const res = await axios.get(`${baseUrl}/admin/plans/public/free-plan`);
     const data = res.data || {};

@@ -1,7 +1,7 @@
 
 
 // Base API configuration
-const API_BASE_URL =  import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL =  import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost:3100';
 const ADMIN_API_BASE = `${API_BASE_URL}/admin`;
 
 // Types for API responses
@@ -63,16 +63,21 @@ class AdminApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${ADMIN_API_BASE}${endpoint}`;
+      console.log('Admin API Request:', { url, options, headers: this.getAuthHeaders() });
+      
       const response = await fetch(url, {
         ...options,
         headers: {
           ...this.getAuthHeaders(),
           ...options.headers,
         },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
 
+      console.log('Admin API Response:', { status: response.status, statusText: response.statusText });
       return await this.handleResponse<T>(response);
     } catch (error) {
+      console.error('Admin API Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
@@ -305,6 +310,60 @@ class AdminApiService {
 
     const endpoint = queryParams.toString() ? `/system/security-logs?${queryParams}` : '/system/security-logs';
     return this.request(endpoint);
+  }
+
+  // ==================== PDF TOOL SETTINGS ====================
+  async getPDFToolSettings(): Promise<ApiResponse<any[]>> {
+    return this.request('/pdf-tool-settings');
+  }
+
+  async getPDFToolSetting(toolId: string): Promise<ApiResponse<any>> {
+    return this.request(`/pdf-tool-settings/${toolId}`);
+  }
+
+  async createPDFToolSetting(setting: any): Promise<ApiResponse<any>> {
+    return this.request('/pdf-tool-settings', {
+      method: 'POST',
+      body: JSON.stringify(setting),
+    });
+  }
+
+  async updatePDFToolSetting(toolId: string, setting: any): Promise<ApiResponse<any>> {
+    return this.request(`/pdf-tool-settings/${toolId}`, {
+      method: 'PUT',
+      body: JSON.stringify(setting),
+    });
+  }
+
+  async deletePDFToolSetting(toolId: string): Promise<ApiResponse> {
+    return this.request(`/pdf-tool-settings/${toolId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async bulkUpdatePDFToolSettings(settings: any[]): Promise<ApiResponse<any>> {
+    return this.request('/pdf-tool-settings/bulk-update', {
+      method: 'POST',
+      body: JSON.stringify({ settings }),
+    });
+  }
+
+  async initializeDefaultToolSettings(): Promise<ApiResponse<any>> {
+    return this.request('/pdf-tool-settings/initialize', {
+      method: 'POST',
+    });
+  }
+
+  // ==================== TOOL ACTIVATION (independent) ====================
+  async getActivation(toolId: string): Promise<ApiResponse<{ toolId: string; isActive: boolean }>> {
+    return this.request(`/tool-activation/${encodeURIComponent(toolId)}`);
+  }
+
+  async setActivation(toolId: string, isActive: boolean): Promise<ApiResponse<{ toolId: string; isActive: boolean }>> {
+    return this.request(`/tool-activation/${encodeURIComponent(toolId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ isActive })
+    });
   }
 
   // ==================== SETTINGS ====================
