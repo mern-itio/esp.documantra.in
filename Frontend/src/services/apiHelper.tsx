@@ -349,7 +349,7 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
 
 // Create service-specific API instances
 export const authApi = createApiInstance(
-  import.meta.env.VITE_AUTH_BASE_URL || 'http://165.22.215.73:2101',
+  import.meta.env.VITE_API_BASE_URL || 'http://165.22.215.73:2101',
   'Auth'
 );
 

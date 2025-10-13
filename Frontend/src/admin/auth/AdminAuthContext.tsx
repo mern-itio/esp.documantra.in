@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { authApi } from '../../services/apiHelper';
 
 interface AdminUser {
   id: string;
@@ -67,45 +68,33 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     try {
       setIsLoading(true);
       
-      // TODO: Replace with actual admin API endpoint
-      const response = await fetch('http://localhost:2101/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await authApi.post('/admin/login', { email, password });
 
-      if (response.ok) {
-        const data = await response.json();
-        const token: string | undefined = (data && (data.token || data.accessToken)) as string | undefined;
-        // Backend returns { status, message, admin_id, token, type }
-        // Build a minimal user object if 'user' is not provided
-        const userFromApi: any = (data && data.user) ? data.user : {
-          id: data?.admin_id || '',
-          fullname: '',
-          email,
-          role: 'admin',
-          permissions: []
-        };
+      const data = response.data;
+      const token: string | undefined = (data && (data.token || data.accessToken)) as string | undefined;
+      // Backend returns { status, message, admin_id, token, type }
+      // Build a minimal user object if 'user' is not provided
+      const userFromApi: any = (data && data.user) ? data.user : {
+        id: data?.admin_id || '',
+        fullname: '',
+        email,
+        role: 'admin',
+        permissions: []
+      };
 
-        if (!token) {
-          console.error('Admin login: token missing in response');
-          return false;
-        }
-
-        setAdminToken(token);
-        setAdminUser(userFromApi);
-
-        // Store in localStorage
-        localStorage.setItem('adminToken', token);
-        localStorage.setItem('adminUser', JSON.stringify(userFromApi));
-
-        return true;
-      } else {
-        console.error('Admin login failed');
+      if (!token) {
+        console.error('Admin login: token missing in response');
         return false;
       }
+
+      setAdminToken(token);
+      setAdminUser(userFromApi);
+
+      // Store in localStorage
+      localStorage.setItem('adminToken', token);
+      localStorage.setItem('adminUser', JSON.stringify(userFromApi));
+
+      return true;
     } catch (error) {
       console.error('Admin login error:', error);
       return false;

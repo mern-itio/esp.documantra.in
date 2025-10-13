@@ -139,6 +139,7 @@ import { FormSubmissions } from '../pages/Template/FormSubmissions';
 //PDF Tools Started
 import type { PDFTool, ProcessingStats } from '../types';
 import { mockPDFTools, mockProcessingStats, getActiveMockTools } from '../data/pdfMockData';
+import { toolCatalogService } from '../services/toolCatalogService';
 import { adminServiceApi } from '../services/apiHelper';
 import { ToolsGrid } from '../components/PDFService/ToolsGrid';
 import { HelpSystem } from '../components/PDFService/HelpSystem';
@@ -199,6 +200,16 @@ const PDFToolsLayout = () => {
 
   // Load active tools from admin and filter mock list
   const [filteredMock, setFilteredMock] = useState<any>(mockPDFTools);
+  const [catalogTools, setCatalogTools] = useState<Array<{ id: string; name: string; description?: string; category?: string; priority?: number }>>([]);
+  const [activeToolIds, setActiveToolIds] = useState<Set<string>>(new Set());
+  const mockDescMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    // @ts-ignore iterate categories
+    Object.values<any>(mockPDFTools).forEach((cat: any) => {
+      (cat?.tools || []).forEach((t: any) => { if (t?.id && t?.description) map.set(t.id, t.description); });
+    });
+    return map;
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -209,11 +220,17 @@ const PDFToolsLayout = () => {
         const list = Array.isArray((res as any).data?.data) ? (res as any).data.data : [];
         const activeIds = list.map((a: any) => a.toolId);
         const activeSet = new Set<string>(activeIds);
+        setActiveToolIds(activeSet);
         setFilteredMock(getActiveMockTools(activeSet));
       } catch (e) {
         // On failure, show none to avoid exposing inactive tools
         setFilteredMock({} as any);
       }
+      try {
+        const tools = await toolCatalogService.listPublic();
+        if (!mounted) return;
+        setCatalogTools(Array.isArray(tools) ? tools : []);
+      } catch {}
     })();
     return () => { mounted = false; };
   }, []);
@@ -237,35 +254,53 @@ const PDFToolsLayout = () => {
   }, [location.search]); 
 
   const getFilteredTools = () => {
-    let allTools: any[] = [];
+    // Prefer backend catalog if available
+    if (catalogTools.length > 0) {
+      let list = catalogTools
+        .filter(t => activeToolIds.size === 0 || activeToolIds.has(t.id))
+        .map(t => ({
+          id: t.id,
+          name: t.name,
+          description: t.description || mockDescMap.get(t.id) || '',
+          category: t.category || 'general',
+          inputFormats: [],
+          outputFormats: [],
+          features: [],
+          complexity: 'medium' as const,
+          popularity: 50,
+          avgProcessingTime: '',
+          icon: 'FileText',
+          route: `/pdf-tools/${t.id}`,
+          priority: typeof t.priority === 'number' ? t.priority : 9999,
+        }))
+        .sort((a, b) => (a.priority! - b.priority!));
+      if (selectedCategory && selectedCategory !== 'all') {
+        list = list.filter(tool => tool.category === selectedCategory);
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return list.filter(tool => tool.name.toLowerCase().includes(q));
+      }
+      return list;
+    }
 
+    // Fallback to existing mock filtering if catalog not loaded
+    let allTools: any[] = [];
     if (selectedCategory === 'all') {
       // @ts-ignore - TypeScript can't infer the complex union type correctly
       allTools = Object.values(filteredMock).flatMap((category: any) => category.tools);
-      // console.log('Getting all tools from all categories, total:', allTools.length);
     } else {
       const categoryData = filteredMock[selectedCategory as keyof typeof filteredMock];
-      if (categoryData) {
-        allTools = categoryData.tools;
-        // console.log(`Getting tools from category '${selectedCategory}', found:`, allTools.length);
-      } else {
-        console.warn(`Category '${selectedCategory}' not found in mockPDFTools`);
-        // console.log('Available categories:', Object.keys(mockPDFTools));
-        allTools = [];
-      }
+      allTools = categoryData ? categoryData.tools : [];
     }
-
     if (searchQuery.trim()) {
-      const searchFiltered = allTools.filter(tool =>
-        tool.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.features?.some((feature: string) => feature.toLowerCase().includes(searchQuery.toLowerCase()))
+      const q = searchQuery.toLowerCase();
+      return allTools.filter((tool: any) =>
+        tool.name?.toLowerCase().includes(q) ||
+        tool.description?.toLowerCase().includes(q) ||
+        tool.features?.some((feature: string) => feature.toLowerCase().includes(q))
       );
-      // console.log(`Search query '${searchQuery}' filtered tools from ${allTools.length} to ${searchFiltered.length}`);
-      return searchFiltered;
     }
-
-    // console.log(`Final filtered tools: Category=${selectedCategory}, Total tools=${allTools.length}`);
     return allTools;
   };
 

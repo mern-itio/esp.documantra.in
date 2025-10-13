@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AdminLayout, AdminLogin, AdminDashboard, AdminDocumentManagement, AdminESignManagement, AdminSubscriptionManagement, AdminUserList } from './index';
+import { AdminLayout, AdminLogin, AdminDashboard, AdminESignManagement, AdminSubscriptionManagement, AdminUserList, AdminPDFToolsList, AdminPDFToolForm } from './index';
 import { useAdminAuth } from './auth';
 import AdminUserDetail from './pages/AdminUserDetailPage';
 
@@ -38,7 +38,9 @@ const AdminRoutes: React.FC = () => {
             <AdminLayout>
               <Routes>
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="pdf-tools" element={<AdminDocumentManagement />} />
+                <Route path="pdf-tools" element={<AdminPDFToolsList />} />
+                <Route path="pdf-tools/new" element={<AdminPDFToolForm />} />
+                <Route path="pdf-tools/:id" element={<AdminPDFToolForm />} />
                 <Route path="e-sign" element={<AdminESignManagement />} />
                 <Route path="subscription" element={<AdminSubscriptionManagement />} />
                 <Route path="users" element={<AdminUserList />} />
