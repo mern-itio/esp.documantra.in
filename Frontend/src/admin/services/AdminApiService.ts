@@ -366,6 +366,35 @@ class AdminApiService {
     });
   }
 
+  // ==================== PDF TOOLS CATALOG (CRUD) ====================
+  async listPDFTools(): Promise<ApiResponse<Array<{ id: string; name: string; description?: string; category?: string; priority?: number }>>> {
+    return this.request('/pdf-tools');
+  }
+
+  async getPDFTool(id: string): Promise<ApiResponse<{ id: string; name: string; description?: string; category?: string; priority?: number }>> {
+    return this.request(`/pdf-tools/${encodeURIComponent(id)}`);
+  }
+
+  async createPDFTool(payload: { id: string; name: string; description?: string; category?: string; priority?: number }): Promise<ApiResponse<any>> {
+    return this.request('/pdf-tools', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updatePDFTool(id: string, payload: { name?: string; description?: string; category?: string; priority?: number }): Promise<ApiResponse<any>> {
+    return this.request(`/pdf-tools/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deletePDFTool(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/pdf-tools/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
   // ==================== SETTINGS ====================
   async getSettings(): Promise<ApiResponse<any>> {
     return this.request('/settings');
