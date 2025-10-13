@@ -6,6 +6,8 @@ export * from './components';
 
 // Page exports
 export * from './pages';
+export { default as AdminPDFToolsList } from './pages/AdminPDFToolsList';
+export { default as AdminPDFToolForm } from './pages/AdminPDFToolForm';
 
 // Auth exports
 export * from './auth';

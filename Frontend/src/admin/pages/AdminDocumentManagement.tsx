@@ -13,7 +13,6 @@ import {
   Save
 } from 'lucide-react';
 import type { PDFTool } from '../../types';
-import { mockPDFTools } from '../../data/pdfMockData';
 import { adminApiService } from '../services/AdminApiService';
 
 
@@ -72,15 +71,37 @@ const AdminDocumentManagement: React.FC = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [saving, setSaving] = useState(false);
  
-  // Build list of PDF tools from mockPDFTools and routes
-  const allTools: Array<PDFTool & { categoryKey: string; routeResolved?: string }> = useMemo(() => {
-    // @ts-ignore iterate categories
-    const entries = Object.entries(mockPDFTools) as Array<[string, { tools: PDFTool[] }]>;
-    const flat = entries.flatMap(([categoryKey, cat]) =>
-      (cat?.tools || []).map(t => ({ ...t, categoryKey, routeResolved: t.route || `/pdf-tools/${t.id}` }))
-    );
-    return flat;
+  // Build list of PDF tools from backend catalog
+  const [catalogTools, setCatalogTools] = useState<Array<{ id: string; name: string }>>([]);
+  useEffect(() => {
+    let mounted = true;
+    import('../../services/toolCatalogService').then(({ toolCatalogService }) => {
+      toolCatalogService.listPublic().then((tools) => {
+        if (!mounted) return;
+        setCatalogTools(Array.isArray(tools) ? tools : []);
+      }).catch(() => {});
+    });
+    return () => { mounted = false; };
   }, []);
+
+  const allTools: Array<PDFTool & { categoryKey: string; routeResolved?: string }> = useMemo(() => {
+    return catalogTools.map(t => ({
+      id: t.id,
+      name: t.name,
+      description: '',
+      category: 'general',
+      inputFormats: [],
+      outputFormats: [],
+      features: [],
+      complexity: 'easy' as const,
+      popularity: 0,
+      avgProcessingTime: '',
+      icon: undefined as any,
+      route: `/pdf-tools/${t.id}`,
+      categoryKey: 'general',
+      routeResolved: `/pdf-tools/${t.id}`
+    }));
+  }, [catalogTools]);
 
   // Load tool settings from API
   useEffect(() => {
