@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { DataTable, Button } from "../common";
 import {
   Eye,
@@ -12,6 +12,7 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
+import { adminApi } from "../../services/apiHelper";
 
 const AdminESignManagement: React.FC = () => {
   const [viewMode, setViewMode] = useState<"normal" | "powerform">("normal");
@@ -19,70 +20,42 @@ const AdminESignManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [envelopes, setEnvelopes] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // ==============================
   // 🔹 MOCK DATA (replace with API)
   // ==============================
-  const envelopes = [
-    {
-      id: "1",
-      subject: "Sales Contract",
-      message: "Please review and sign",
-      senderName: "John Doe",
-      expirationDate: "2025-10-15",
-      recipients: [
-        { email: "a@b.com", status: "signed" },
-        { email: "c@d.com", status: "pending" },
-      ],
-      status: "in-progress",
-      completionCertificate: null,
-      isPowerForm: false,
-    },
-    {
-      id: "2",
-      subject: "NDA Agreement",
-      message: "Confidential document",
-      senderName: "Alice Brown",
-      expirationDate: "2025-10-20",
-      recipients: [{ email: "x@y.com", status: "signed" }],
-      status: "completed",
-      completionCertificate: {
-        url: "https://example.com/certificate.pdf",
-      },
-      isPowerForm: false,
-    },
-    {
-      id: "3",
-      subject: "Partnership Form",
-      message: "Fill out and sign digitally",
-      senderName: "David Miller",
-      status: "active",
-      numberOfParties: 3,
-      isPowerForm: true,
-    },
-    {
-      id: "4",
-      subject: "Old PowerForm Template",
-      message: "Legacy workflow",
-      senderName: "Jane Smith",
-      status: "inactive",
-      numberOfParties: 2,
-      isPowerForm: true,
-    },
-  ];
 
+  // Fetch All Envelopes
+  useEffect(() => {
+    fetchEnvelopes();
+  },[]);
+  const fetchEnvelopes = async () =>{
+    setLoading(true);
+    try{
+      const response = await adminApi.get('admin/fetch/envelopes');
+      if(response.status == 200){
+        setEnvelopes(response.data.data);
+      }
+    } catch (err){
+      console.error('Error fetching envelopes:',err);
+    } finally {
+      setLoading(false);
+    }
+  }
   // ==============================
-  // 🔹 FILTERED & SORTED DATA
+  // FILTERED & SORTED DATA
   // ==============================
   const filteredData = useMemo(() => {
     const filtered = envelopes.filter((env) => {
       const matchesType =
-        viewMode === "powerform" ? env.isPowerForm : !env.isPowerForm;
+        viewMode === "powerform" ? env?.isPowerForm : !env?.isPowerForm;
       const matchesSearch =
-        env.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        env.senderName?.toLowerCase().includes(searchTerm.toLowerCase());
+        env?.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        env?.senderName?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus =
-        statusFilter === "all" || env.status === statusFilter;
+        statusFilter === "all" || env?.status === statusFilter;
       return matchesType && matchesSearch && matchesStatus;
     });
 
@@ -141,71 +114,91 @@ const AdminESignManagement: React.FC = () => {
   // ==============================
   // 🔹 TABLE DEFINITIONS
   // ==============================
-  const normalColumns = [
-    {
-      key: "subject",
-      label: "Subject",
-      sortable: true,
-      render: (value: string) => (
+const normalColumns = [
+  {
+    key: "subject",
+    label: "Subject",
+    sortable: true,
+    render: (value: string) => (
+      <div className="flex items-center">
+        <FileSignature className="w-4 h-4 text-gray-400 mr-2" />
+        <span className="font-medium text-gray-900">{value}</span>
+      </div>
+    ),
+  },
+  {
+    key: "sender.name",
+    label: "Sender",
+    render: (_: any, row: any) => (
+      <div>
+        <span className="font-medium text-gray-900">{row.sender?.name}</span>
+        <p className="text-xs text-gray-500">{row.sender?.email}</p>
+      </div>
+    ),
+  },
+  {
+    key: "createdAt",
+    label: "Created At",
+    sortable: true,
+    render: (value: string) => (
+      <span>{new Date(value).toLocaleDateString()}</span>
+    ),
+  },
+  {
+    key: "sentAt",
+    label: "Sent At",
+    sortable: true,
+    render: (value: string) => (
+      <span>{new Date(value).toLocaleDateString()}</span>
+    ),
+  },
+  {
+    key: "progress",
+    label: "Progress",
+    render: (_: any, row: any) => {
+      const progress = getProgress(row.recipients);
+      const [done, total] = progress.split("/").map(Number);
+      const pct = total ? (done / total) * 100 : 0;
+      return (
         <div className="flex items-center">
-          <FileSignature className="w-4 h-4 text-gray-400 mr-2" />
-          <span className="font-medium text-gray-900">{value}</span>
-        </div>
-      ),
-    },
-    { key: "message", label: "Message" },
-    { key: "senderName", label: "Sender Name" },
-    {
-      key: "expirationDate",
-      label: "Expiration",
-      sortable: true,
-    },
-    {
-      key: "progress",
-      label: "Progress",
-      render: (_: any, row: any) => {
-        const progress = getProgress(row.recipients);
-        const [done, total] = progress.split("/").map(Number);
-        const pct = total ? (done / total) * 100 : 0;
-        return (
-          <div className="flex items-center">
-            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-              <div
-                className="bg-primary-600 h-2 rounded-full"
-                style={{ width: `${pct}%` }}
-              ></div>
-            </div>
-            <span className="text-xs text-gray-600">{progress}</span>
+          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+            <div
+              className="bg-primary-600 h-2 rounded-full"
+              style={{ width: `${pct}%` }}
+            ></div>
           </div>
-        );
-      },
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (value: string) => getStatusBadge(value),
-    },
-    {
-      key: "actions",
-      label: "Actions",
-      render: (_: any, row: any) => (
-        <div className="flex space-x-2">
-          <Button size="sm" variant="outline" onClick={() => handleView(row.id)}>
-            <Eye className="w-4 h-4" />
-          </Button>
-          {row.completionCertificate?.url && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleDownload(row.id)}
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-          )}
+          <span className="text-xs text-gray-600">{progress}</span>
         </div>
-      ),
+      );
     },
-  ];
+  },
+  {
+    key: "status",
+    label: "Status",
+    render: (value: string) => getStatusBadge(value),
+  },
+  {
+    key: "actions",
+    label: "Actions",
+    render: (_: any, row: any) => (
+      <div className="flex space-x-2">
+        <Button size="sm" variant="outline" onClick={() => handleView(row.id)}>
+          <Eye className="w-4 h-4" />
+        </Button>
+        {row.completionCertificate?.path && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleDownload(row.completionCertificate.path)}
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    ),
+  },
+];
+
 
   const powerFormColumns = [
     {

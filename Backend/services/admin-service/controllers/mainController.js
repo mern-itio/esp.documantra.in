@@ -296,10 +296,6 @@ const initializeDefaultToolSettings = async (req, res) => {
   }
 };
 
-module.exports = { 
-  
-};
-
 const userStatusToggle = async (req, res) =>{
   const {id} = req.params;
   const {status} = req.body;

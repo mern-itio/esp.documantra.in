@@ -17,7 +17,7 @@ connectDB();
 
 // Admin routes (protected)
 app.use('/admin', verifyJWT('admin'));
-app.use('/admin/plans', plansRoutes);
+app.use('/admin/plan-templates', plansRoutes);
 app.use('/admin', toolSettingsRoutes);
 // Public plan info (no auth)
 app.use('/public/plans', publicPlansRoutes);

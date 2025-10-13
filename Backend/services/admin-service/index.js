@@ -26,4 +26,4 @@ app.use('/admin', verifyJWT('admin'));
 app.use('/admin', adminRoutes);
 
 const PORT = process.env.PORT || 3100;
-app.listen(PORT, () => console.log(`Auth running on ${PORT}/`));
+app.listen(PORT, () => console.log(`Admin running on ${PORT}/`));

@@ -11,6 +11,7 @@ const digitalSignatureRoutes = require('./routes/digitalSignatureRoutes');
 const tsaRoutes = require('./routes/tsaRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
 const anchorRoutes = require('./routes/anchorRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 dotenv.config();
 const app = express(); 
@@ -38,6 +39,7 @@ app.use('/api/e-sign',verificationRoutes);
 app.use('/api/e-sign/anchor', anchorRoutes);
 
 app.use('/api/e-sign', verifyJWT(), eSignRoutes);
+app.use('/admin', verifyJWT("admin"),adminRoutes );
 // Start server
 const PORT = process.env.PORT || 2103;
 app.listen(PORT, () => console.log(`E-Sign Service running on ${PORT}/`));
