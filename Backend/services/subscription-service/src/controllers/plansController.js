@@ -1,21 +1,20 @@
+const PlanTemplate = require('../models/PlanTemplate');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 
 const createPlan = async (req, res) => {
   try {
     const payload = req.body || {};
-    if (payload.conversionsLimitType === 'unlimited') payload.conversionsLimit = undefined;
-    if (Array.isArray(payload.services) && payload.services.length === 0) payload.services = undefined;
-
-    const plan = await SubscriptionPlan.create({
-      name: payload.name,
-      type: payload.type,
-      price: payload.price,
-      isActive: payload.isActive !== false,
-      conversionsLimitType: payload.conversionsLimitType || 'number',
-      conversionsLimit: payload.conversionsLimit,
-      description: payload.description,
-      services: payload.services,
-      createdBy: req.user?.email || undefined,
+    if(!payload || !payload.name || payload.pricePerPeriod === undefined) {
+      return res.status(400).json({ status: 400, message: 'Missing required fields', data: null });
+    }
+    const plan = await PlanTemplate.create({
+      name: payload?.name,
+      services: payload?.services,
+      toolCosts: payload?.toolCosts,
+      authCosts: payload?.authCosts,
+      monthlyCredits:payload?.monthlyCredits,
+      pricePerPeriod: payload?.pricePerPeriod,
+      period: payload?.period || 'monthly',
     });
     return res.status(201).json({ status: 201, message: 'Plan created', data: plan });
   } catch (error) {

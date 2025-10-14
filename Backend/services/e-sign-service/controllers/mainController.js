@@ -20,42 +20,53 @@ const selfSigner = require('../models/selfSigner');
 const { sign } = require('crypto');
 
 const envelopesData = async (req, res) => {
-    const userId = req.user.data.id;
-    try {
-        // Step 1: Fetch envelopes for the user
-        const envelopes = await Envelope.find({ sender: userId })
-                        .populate("documentIds")       // fetch docs
-                        .populate({
-                                  path: 'recipientIds',           // populate recipients
-                                  select: 'name email UserId',    // only global info
-                                  populate: {
-                                    path: 'permissions',          // populate envelope-specific permissions
-                                    model: 'RecipientPermission',
-                                    match: function() {
-                                      return { envelopeId: this._id };
-                                    },
-                                    select: 'role order status authLevel'
-                                  }
-                                })
-        if (!envelopes || envelopes.length === 0) {
-            return res.status(404).json({ message: 'No envelopes found' });
-        }
-        // Fetch sender details from User service
-        const senderResponse = await axios.get(
-        `${process.env.AUTH_URL}/api/user-details/${userId}`, //
-                {
-                    headers: {
-                    Authorization: req.headers.authorization, // forward toke
-                    },
-                }
-        );
-        const senderDetails = senderResponse.data;
-        if (!senderDetails || !senderDetails.data) {
-            return res.status(404).json({ message: 'Sender not found' });
-        }
+  const userId = req?.user?.data?.id;
+  const userType = req?.userType;
 
-        // Step 2: Format the response
-        const formattedEnvelopes = envelopes.map(envelope => ({
+  try {
+    // Step 1: Build query
+    const query = userType !== 'admin' ? { sender: userId } : {};
+
+    // Step 2: Fetch envelopes with population
+    const envelopes = await Envelope.find(query)
+      .populate("documentIds")
+      .populate({
+        path: 'recipientIds',
+        select: 'name email UserId',
+        populate: {
+          path: 'permissions',
+          model: 'RecipientPermission',
+          select: 'role order status authLevel'
+        }
+      });
+
+    if (!envelopes || envelopes.length === 0) {
+      return res.status(404).json({ message: 'No envelopes found' });
+    }
+
+    // Step 3: Collect unique sender IDs
+    const senderIds = [...new Set(envelopes.map(env => env.sender?.toString()).filter(Boolean))];
+
+    // Step 4: Fetch all sender details in parallel
+    const senderDetailsMap = {};
+
+    await Promise.all(senderIds.map(async (senderId) => {
+      try {
+        const response = await axios.get(`${process.env.AUTH_URL}/api/user-details/${senderId}`, {
+          headers: { Authorization: req.headers.authorization },
+        });
+        if (response.data?.data) {
+          senderDetailsMap[senderId] = response.data.data;
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch sender details for ID ${senderId}:`, err.message);
+      }
+    }));
+
+    // Step 5: Format the response
+    const formattedEnvelopes = envelopes.map((envelope) => {
+      const sender = senderDetailsMap[envelope.sender?.toString()] || {};
+      return {
         id: envelope._id,
         subject: envelope.subject,
         status: envelope.status,
@@ -64,45 +75,47 @@ const envelopesData = async (req, res) => {
         sentAt: envelope.updatedAt,
         expiresAt: envelope.expirationDate,
         isPowerForm: envelope.isPowerForm,
-        sender:{
-            id: senderDetails?.data?._id,
-            name: senderDetails?.data?.fullname,
-            email: senderDetails?.data?.email,
-            role: senderDetails?.data?.role || 'sender',
-            organization: "ITIO",
-            avatar:""
+        completionCertificate:envelope.completionCertificate,
+        sender: {
+          id: sender._id || envelope.sender,
+          name: sender.fullname || 'Unknown',
+          email: sender.email || 'N/A',
+          role: sender.role || 'sender',
+          organization: sender.organization || 'ITIO',
+          avatar: sender.avatar || '',
         },
         signatureType: envelope.signatureType,
-        documents: envelope.documentIds.map(doc => ({
-            id: doc._id,
-            name: doc.fileName,
-            size: doc.fileSize,
-            type: doc.mimeType
+        documents: envelope.documentIds.map((doc) => ({
+          id: doc._id,
+          name: doc.fileName,
+          size: doc.fileSize,
+          type: doc.mimeType,
         })),
-        recipients: envelope.recipientIds.map(recipient => ({
-            id: recipient._id,
-            name: recipient.name,
-            email: recipient.email,
-            role: recipient.role,
-            order: recipient.order,
-            status: recipient.status,
-            authentication: recipient.authLevel
+        recipients: envelope.recipientIds.map((recipient) => ({
+          id: recipient._id,
+          name: recipient.name,
+          email: recipient.email,
+          role: recipient.role,
+          order: recipient.order,
+          status: recipient.status,
+          authentication: recipient.authLevel,
         })),
-        }));
+      };
+    });
 
-        // Step 3: Count the total number of envelopes
-        const envelopeCount = envelopes.length;
-    
-        return res.status(200).json({
-        status: 'success',
-        data: formattedEnvelopes,
-        totalEnvelopes: envelopeCount
-        });
-    } catch (error) {
-        console.error('Error fetching envelopes:', error);
-        return res.status(500).json({ message: 'Internal server error' });
-    }
-}
+    // Step 6: Respond
+    return res.status(200).json({
+      status: 'success',
+      data: formattedEnvelopes,
+      totalEnvelopes: envelopes.length,
+    });
+
+  } catch (error) {
+    console.error('Error fetching envelopes:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const envelopesDetail = async (req, res) => {
     const envelopeId = req.params.id;
 
