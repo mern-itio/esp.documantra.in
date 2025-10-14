@@ -8,6 +8,7 @@ const plansRoutes = require('./src/routes/plansRoutes');
 const publicPlansRoutes = require('./src/routes/publicPlansRoutes');
 const subscriptionsRoutes = require('./src/routes/subscriptionsRoutes');
 const toolSettingsRoutes = require('./src/routes/toolSettingsRoutes');
+const authProviderRoutes = require('./src/routes/authProviderRoutes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ connectDB();
 app.use('/admin', verifyJWT('admin'));
 app.use('/admin/plan-templates', plansRoutes);
 app.use('/admin', toolSettingsRoutes);
+app.use('/admin/auth-providers', authProviderRoutes);
 // Public plan info (no auth)
 app.use('/public/plans', publicPlansRoutes);
 

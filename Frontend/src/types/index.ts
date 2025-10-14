@@ -138,6 +138,8 @@ export interface Envelope {
   complianceLevel?: 'basic' | 'enhanced' | 'qualified';
   workflowId?: string;
   bulkOperationId?: string;
+  isPowerForm?: boolean;
+  senderName?: string;
 }
 
 export interface SigningSession {

@@ -18,6 +18,7 @@ const { getActivation, setActivation } = require('../controllers/activationContr
 const { getPublicToolSettings, getToolSettings } = require('../controllers/toolSettingsController');
 const {getEnvelopes} = require('../controllers/eSignController');
 const {createPlane} = require('../controllers/subscriptionController');
+const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
 // User management routes
 router.get('/user-list', userList);
 router.patch('/user-status/toggle/:id',userStatusToggle);
@@ -55,5 +56,12 @@ router.delete('/pdf-tools/:id', deleteTool);
 
 // Susbscription and Billing routes
 router.post('/plan-templates',createPlane);
+
+// Auth Provider routes
+router.post('/auth-providers', addAuthProvider);
+router.get('/auth-providers', listAuthProviders);
+router.put('/auth-providers/:id', updateAuthProvider);
+router.post('/auth-providers/toggle', toggleAuthProvider);
+router.delete('/auth-providers/:id', deleteAuthProvider);
 
 module.exports = router;

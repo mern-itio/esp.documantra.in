@@ -13,6 +13,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { adminApi } from "../../services/apiHelper";
+import type { Envelope } from "../../types";
 
 const AdminESignManagement: React.FC = () => {
   const [viewMode, setViewMode] = useState<"normal" | "powerform">("normal");
@@ -20,8 +21,8 @@ const AdminESignManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [envelopes, setEnvelopes] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
+  const [_loading, setLoading] = useState(false);
 
   // ==============================
   // 🔹 MOCK DATA (replace with API)

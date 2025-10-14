@@ -10,6 +10,7 @@ const createPlane = async(req, res) =>{
             url: '/admin/plan-templates',
             data: payload
         });
+        console.log(result);
         if(result.status == 201){
             return res.status(201).json({
                 status:201,
