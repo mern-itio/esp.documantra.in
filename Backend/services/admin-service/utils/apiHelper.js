@@ -60,6 +60,13 @@ function createServiceClient(req, serviceName) {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Allow trusted internal admin calls without relying on end-user token
+    if (config.url && config.url.startsWith('/admin')) {
+      const internalKey = process.env.INTERNAL_ADMIN_API_KEY || process.env.ADMIN_ACCESS_TOKEN_SECRET;
+      if (internalKey) {
+        config.headers['x-internal-key'] = internalKey;
+      }
+    }
     // If sending FormData from server-side, let axios set proper headers
     if (config.data && typeof config.data === 'object' && config.data._isFormData) {
       delete config.headers['Content-Type'];

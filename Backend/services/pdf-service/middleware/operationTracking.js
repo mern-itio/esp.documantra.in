@@ -211,10 +211,10 @@ function trackPdfOperation(req, res, next) {
     console.log('✅ Operation detected:', operationDetails.operation, 'for route:', route);
   }
 
-  // Extract file information if available
-  const file = req.file;
-  const fileSize = file ? file.size : 0;
-  const inputFormat = file ? file.mimetype : null;
+  // Extract file information if available (may be undefined before multer runs)
+  let file = req.file;
+  let fileSize = file ? (file.size || 0) : 0;
+  let inputFormat = file ? (file.mimetype || null) : null;
   
   // Determine output format from request body or query
   let outputFormat = null;
@@ -224,10 +224,38 @@ function trackPdfOperation(req, res, next) {
     outputFormat = req.query.outputFormat;
   }
 
-  // Get user ID from JWT token
+  // Get user ID from JWT token or request headers
   let userId = 'anonymous';
   if (req.user) {
     userId = req.user.data?.id || req.user.id || req.user.userId || 'anonymous';
+  } else {
+    try {
+      const authHeader = req.headers.authorization || req.headers.Authorization;
+      if (authHeader && typeof authHeader === 'string') {
+        const tokenPart = authHeader.startsWith('Bearer ')
+          ? authHeader.slice(7)
+          : authHeader;
+        // First try jsonwebtoken.decode
+        try {
+          const jwt = require('jsonwebtoken');
+          const decoded = jwt.decode(tokenPart);
+          if (decoded) {
+            userId = decoded.data?.id || decoded.id || decoded.userId || userId;
+          }
+        } catch {}
+        // Fallback: manual base64 decode (no signature verification)
+        if (userId === 'anonymous' && tokenPart.includes('.')) {
+          try {
+            const middle = tokenPart.split('.')[1] || '';
+            const json = Buffer.from(middle.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+            const payload = JSON.parse(json);
+            userId = payload?.data?.id || payload?.id || payload?.userId || userId;
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.log('Could not decode token for tracking, using anonymous');
+    }
   }
 
   // Create tracking record
@@ -256,12 +284,46 @@ function trackPdfOperation(req, res, next) {
   // Flag to prevent duplicate saves
   let trackingSaved = false;
 
+  // Helper to refresh file info after multer has populated req.file/req.files
+  function refreshFileInfo() {
+    try {
+      if (!req) return;
+      if (req.file) {
+        file = req.file;
+        trackingData.inputFormat = req.file.mimetype || trackingData.inputFormat || null;
+        if (!trackingData.fileSize || trackingData.fileSize === 0) {
+          trackingData.fileSize = typeof req.file.size === 'number' ? req.file.size : trackingData.fileSize;
+        }
+      } else if (Array.isArray(req.files) && req.files.length > 0) {
+        // Single field with multiple files
+        const first = req.files[0];
+        trackingData.inputFormat = first?.mimetype || trackingData.inputFormat || null;
+        if (!trackingData.fileSize || trackingData.fileSize === 0) {
+          const total = req.files.reduce((sum, f) => sum + (typeof f.size === 'number' ? f.size : 0), 0);
+          trackingData.fileSize = total || trackingData.fileSize;
+        }
+      } else if (req.files && typeof req.files === 'object') {
+        // fields upload: { fieldName: [files...] }
+        const all = Object.values(req.files).flat();
+        if (all.length > 0) {
+          const first = all[0];
+          trackingData.inputFormat = first?.mimetype || trackingData.inputFormat || null;
+          if (!trackingData.fileSize || trackingData.fileSize === 0) {
+            const total = all.reduce((sum, f) => sum + (typeof f.size === 'number' ? f.size : 0), 0);
+            trackingData.fileSize = total || trackingData.fileSize;
+          }
+        }
+      }
+    } catch {}
+  }
+
 
   // Override res.send to track completion
   res.send = function(data) {
     const processingTime = Date.now() - startTime;
     trackingData.processingTime = processingTime;
     trackingData.status = res.statusCode >= 200 && res.statusCode < 300 ? 'success' : 'error';
+    refreshFileInfo();
     
     if (res.statusCode >= 400) {
       trackingData.errorMessage = typeof data === 'string' ? data : 'Request failed';
@@ -290,6 +352,7 @@ function trackPdfOperation(req, res, next) {
     const processingTime = Date.now() - startTime;
     trackingData.processingTime = processingTime;
     trackingData.status = 'success';
+    refreshFileInfo();
     trackingData.details = {
       success: true,
       fileDownloaded: true,
@@ -321,6 +384,7 @@ function trackPdfOperation(req, res, next) {
     const processingTime = Date.now() - startTime;
     trackingData.processingTime = processingTime;
     trackingData.status = 'success';
+    refreshFileInfo();
     trackingData.details = {
       success: true,
       fileSent: true,
@@ -349,6 +413,7 @@ function trackPdfOperation(req, res, next) {
     const processingTime = Date.now() - startTime;
     trackingData.processingTime = processingTime;
     trackingData.status = res.statusCode >= 200 && res.statusCode < 300 ? 'success' : 'error';
+    refreshFileInfo();
     
     if (res.statusCode >= 400) {
       trackingData.errorMessage = data?.error || data?.message || 'Request failed';

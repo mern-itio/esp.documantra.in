@@ -58,6 +58,7 @@ const analyticsRoutes = require('./routes/analyticsRoute');
 const cloudConnectorRoutes = require('./routes/cloudConnectorRoutes');
 const workflowRoutes = require('./routes/workflowRoutes');
 const smartConversionRoutes = require('./routes/smartConversionRoute');
+const adminRoutes = require('./routes/adminRoutes');
 const documentTrackingController = require('./controllers/documentTrackingController');
 const { trackPdfOperation, trackBatchOperation } = require('./middleware/operationTracking');
 const { anonymousLimiter } = require('./middleware/anonymousLimiter');
@@ -962,6 +963,17 @@ app.use('/advanced-editor', anonymousLimiter, trackPdfOperation, advancedPdfEdit
 app.use('/workflows', verifyJWT(process.env.ACCESS_TOKEN_SECRET), workflowRoutes);
 app.use('/analytics', verifyJWT(process.env.ACCESS_TOKEN_SECRET), analyticsRoutes);
 app.use('/smart-conversion', trackPdfOperation, smartConversionRoutes);
+
+// Admin routes (allow internal key OR JWT). Uses ADMIN_ACCESS_TOKEN_SECRET if present
+function internalOrJWT(req, res, next) {
+  const internalKey = req.headers['x-internal-key'];
+  const sharedKey = process.env.INTERNAL_ADMIN_API_KEY || process.env.ADMIN_ACCESS_TOKEN_SECRET;
+  if (internalKey && sharedKey && internalKey === sharedKey) {
+    return next();
+  }
+  return verifyJWT(process.env.ACCESS_TOKEN_SECRET)(req, res, next);
+}
+app.use('/admin', internalOrJWT, adminRoutes);
 
 // Cloud connector routes - separate public and protected routes
 // Public routes (no authentication required)

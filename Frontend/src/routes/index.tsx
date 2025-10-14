@@ -7,10 +7,6 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import PublicSignerLayout from '../layouts/PublicSignerLayout';
 import SharedDocumentLayout from '../layouts/SharedDocumentLayout';
-// Admin imports
-import { AdminAuthProvider } from '../admin/auth';
-import AdminRoutes from '../admin/AdminRoutes';
-
 // Landing Page Components
 import Hero from '../components/LandingPage/Hero';
 import ModernDocumentFeatures from '../components/LandingPage/ModernDocumentFeatures';
@@ -743,11 +739,7 @@ const router = createBrowserRouter([
     ),
     children: authRoutes,
   },
-  {
-    // Admin Routes - handled by AdminRoutes component
-    path: '/admin/*',
-    element: <AdminAuthProvider><AdminRoutes /></AdminAuthProvider>,
-  },
+  
   {
     // Public Signer Routes
     element: <PublicSignerLayout />,
