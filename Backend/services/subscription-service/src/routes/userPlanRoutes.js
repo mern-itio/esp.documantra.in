@@ -1,12 +1,11 @@
 const express = require('express');
+const { getMyPlan } = require('../controllers/userPlanController');
+
 const router = express.Router();
-const { getUserPlan, updateUserPlan, createFreeSubscriptionEndpoint } = require('../controllers/userPlanController');
 
-// User plan routes (protected with user token verification)
-router.get('/me', getUserPlan);
-router.put('/update', updateUserPlan);
-
-// Create free subscription (called by auth service - no auth required)
-router.post('/create-free', createFreeSubscriptionEndpoint);
+// Index will attach verifyJWT('user') to this router
+router.get('/me', getMyPlan);
 
 module.exports = router;
+
+

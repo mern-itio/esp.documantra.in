@@ -14,12 +14,12 @@ const adminLogin = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
-    const admin = await AdminUser.findOne({ email });
+    const admin = await AdminUser.findOne({ email }); 
     if (!admin) {
       return res.status(401).json({
-        status: 401,
+        status: 401,     
         message: "Admin not found! Please check your Email Id",
-        data: null
+        data: null                                                 
       });
     }
     console.log(bcrypt.hash(password, 10));
