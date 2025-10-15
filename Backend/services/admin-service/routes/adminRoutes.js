@@ -16,9 +16,13 @@ const {
 } = require('../controllers/mainController');
 const { getActivation, setActivation } = require('../controllers/activationController');
 const {getEnvelopes} = require('../controllers/eSignController');
+
 const {createPlane, getPlan, listPlans, updatePlan, deletePlan} = require('../controllers/subscriptionController');
 const {getUserPdfOperations, getUserServiceStats, getUserOperationHistory} = require('../controllers/userUsageController');
 const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, getPdfOperationById, deletePdfOperation} = require('../controllers/pdfController');
+
+const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
+
 // User management routes
 router.get('/user-list', userList);
 router.patch('/user-status/toggle/:id',userStatusToggle);
@@ -73,5 +77,12 @@ router.get('/pdf/stats/all-users', getAllUsersPdfStats);
 router.get('/pdf/operations/:operationId', getPdfOperationById);
 router.delete('/pdf/operations/:operationId', deletePdfOperation);
 
+
+// Auth Provider routes
+router.post('/auth-providers', addAuthProvider);
+router.get('/auth-providers', listAuthProviders);
+router.put('/auth-providers/:id', updateAuthProvider);
+router.post('/auth-providers/toggle', toggleAuthProvider);
+router.delete('/auth-providers/:id', deleteAuthProvider);
 
 module.exports = router;
