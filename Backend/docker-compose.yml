@@ -23,10 +23,13 @@ services:
     - /app/services/pdf-service/node_modules
     - ./services/pdf-service/uploads:/app/services/pdf-service/uploads
     - ./services/pdf-service/outputs:/app/services/pdf-service/outputs
+    env_file:
+      - ./services/pdf-service/.env
     environment:
       - NODE_ENV=development
       - DEBUG=pdf-extract-tables
       - PYTHON_PATH=/opt/venv/bin/python
+   
     deploy:
       resources:
         limits:
@@ -103,3 +106,5 @@ services:
       - /app/services/admin-service/node_modules
       - ./services/admin-service/uploads:/app/services/admin-service/uploads  # <-- added
     command: npm run dev
+    env_file:
+      - ./services/admin-service/.env

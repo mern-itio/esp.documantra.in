@@ -6,6 +6,7 @@ import { AuthProvider } from "./components/AuthService/AuthContext";
 import Loader from "./components/common/loader";
 import { AppProvider } from "./context/AppContext";
 import { APIProvider } from '../src/context/ApiContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
 import { Toaster } from "react-hot-toast"; 
 
 const App: React.FC = () => {
@@ -21,12 +22,14 @@ const App: React.FC = () => {
   return (
     <APIProvider>
     <AuthProvider>
-      <AppProvider>
-        <ThemeConfig>
-          <RouterProvider router={router} />
-           <Toaster />
-        </ThemeConfig>
-      </AppProvider>
+      <SubscriptionProvider>
+        <AppProvider>
+          <ThemeConfig>
+            <RouterProvider router={router} />
+             <Toaster />
+          </ThemeConfig>
+        </AppProvider>
+      </SubscriptionProvider>
     </AuthProvider>
     </APIProvider>
   );

@@ -24,6 +24,24 @@ export interface UserType {
   lastActive: string
 }
 
+export interface SubscriptionPlan {
+  id?: string;
+  name: string;
+  type: 'free' | 'pro' | 'custom';
+  price: number;
+  conversionsLimitType: 'number' | 'unlimited';
+  conversionsLimit: number;
+  description: string;
+  services: string[];
+  creditsBalance: number;
+  creditReserved?: number;
+  status: 'active' | 'paused' | 'cancelled' | 'trial';
+  periodStart?: string;
+  periodEnd?: string;
+  nextBillingAt?: string;
+  isFree: boolean;
+}
+
 export interface Document {
   id: string;
   name: string;

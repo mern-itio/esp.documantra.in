@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { API_ENDPOINTS, apiRequest } from '../../services/api';
+import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
 
 interface User {
   id: string;
@@ -118,6 +119,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         plan: data.plan || 'free'
       });
       setIsAuthenticated(true);
+
+      // Fetch and store subscription plan data
+      try {
+        const subscriptionPlan = await SubscriptionService.getUserPlan();
+        SubscriptionStorage.savePlan(subscriptionPlan);
+      } catch (error) {
+        console.error('Error fetching subscription plan after login:', error);
+        // Don't fail login if subscription fetch fails
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -128,6 +138,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear authentication data
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userData');
+    
+    // Clear subscription data
+    SubscriptionStorage.clearPlan();
     
     setUser(null);
     setIsAuthenticated(false);

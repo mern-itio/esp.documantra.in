@@ -7,6 +7,7 @@ const verifyJWT = require('@draftnsign/auth-lib');
 const plansRoutes = require('./src/routes/plansRoutes');
 const publicPlansRoutes = require('./src/routes/publicPlansRoutes');
 const subscriptionsRoutes = require('./src/routes/subscriptionsRoutes');
+const userPlanRoutes = require('./src/routes/userPlanRoutes');
 const toolSettingsRoutes = require('./src/routes/toolSettingsRoutes');
 const authProviderRoutes = require('./src/routes/authProviderRoutes');
 
@@ -27,6 +28,13 @@ app.use('/public/plans', publicPlansRoutes);
 // User subscription routes (protected user)
 app.use('/subscriptions', verifyJWT('user'));
 app.use('/subscriptions', subscriptionsRoutes);
+
+// Public user plan routes (no auth required for create-free)
+app.use('/user-plan', userPlanRoutes);
+
+// User plan routes (protected user)
+app.use('/user-plan', verifyJWT('user'));
+app.use('/user-plan', userPlanRoutes);
 
 const PORT = process.env.PORT || 2110;
 app.listen(PORT, () => console.log(`Subscription service running on ${PORT}`));

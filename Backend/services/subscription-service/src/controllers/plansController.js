@@ -22,69 +22,91 @@ const createPlan = async (req, res) => {
   }
 };
 
-const listPlans = async (req, res) => {
+const getPlan = async (req, res) => {
   try {
-    const { active, type, service } = req.query;
-    const filter = {};
-    if (active === 'true') filter.isActive = true;
-    if (active === 'false') filter.isActive = false;
-    if (type) filter.type = type;
-    if (service) filter.$or = [{ services: service }, { services: { $exists: false } }, { services: { $size: 0 } }];
-    const plans = await SubscriptionPlan.find(filter).sort({ createdAt: -1 });
-    return res.status(200).json({ status: 200, message: 'OK', data: plans });
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ status: 400, message: 'Plan ID is required', data: null });
+    }
+
+    const plan = await PlanTemplate.findById(id);
+    
+    if (!plan) {
+      return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
+    }
+
+    return res.status(200).json({ status: 200, message: 'Plan retrieved successfully', data: plan });
   } catch (error) {
-    return res.status(500).json({ status: 500, message: 'Internal Server Error', data: null });
+    return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
   }
 };
 
-const getPlan = async (req, res) => {
+const listPlans = async (req, res) => {
   try {
-    const plan = await SubscriptionPlan.findById(req.params.id);
-    if (!plan) return res.status(404).json({ status: 404, message: 'Not found', data: null });
-    return res.status(200).json({ status: 200, message: 'OK', data: plan });
+    const { page = 1, limit = 10, period, search } = req.query;
+    const skip = (page - 1) * limit;
+    
+    // Build filter object
+    const filter = {};
+    if (period) {
+      filter.period = period;
+    }
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' };
+    }
+
+    const plans = await PlanTemplate.find(filter)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await PlanTemplate.countDocuments(filter);
+
+    return res.status(200).json({ 
+      status: 200, 
+      message: 'Plans retrieved successfully', 
+      data: {
+        plans,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          itemsPerPage: parseInt(limit)
+        }
+      }
+    });
   } catch (error) {
-    return res.status(404).json({ status: 404, message: 'Not found', data: null });
+    return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
   }
 };
 
 const updatePlan = async (req, res) => {
   try {
+    const { id } = req.params;
     const payload = req.body || {};
-    const setDoc = { ...payload };
-
-    if (setDoc.conversionsLimitType === 'unlimited') {
-      setDoc.conversionsLimit = undefined;
+    
+    if (!id) {
+      return res.status(400).json({ status: 400, message: 'Plan ID is required', data: null });
     }
 
-    const updateOps = {};
-    const $set = {};
-    const $unset = {};
-
-    // Handle services: empty array => unset to apply to all services
-    if (Object.prototype.hasOwnProperty.call(setDoc, 'services')) {
-      if (Array.isArray(setDoc.services) && setDoc.services.length === 0) {
-        $unset.services = "";
-      } else if (setDoc.services !== undefined) {
-        $set.services = setDoc.services;
-      }
-      delete setDoc.services;
+    // Check if plan exists
+    const existingPlan = await PlanTemplate.findById(id);
+    if (!existingPlan) {
+      return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
     }
 
-    // Remaining fields go to $set (excluding undefined)
-    for (const [k, v] of Object.entries(setDoc)) {
-      if (v !== undefined) $set[k] = v;
-    }
-
-    if (Object.keys($set).length) updateOps.$set = $set;
-    if (Object.keys($unset).length) updateOps.$unset = $unset;
-
-    const plan = await SubscriptionPlan.findByIdAndUpdate(
-      req.params.id,
-      updateOps,
+    // Update the plan
+    const updatedPlan = await PlanTemplate.findByIdAndUpdate(
+      id,
+      {
+        ...payload,
+        version: existingPlan.version + 1 // Increment version
+      },
       { new: true, runValidators: true }
     );
-    if (!plan) return res.status(404).json({ status: 404, message: 'Not found', data: null });
-    return res.status(200).json({ status: 200, message: 'Updated', data: plan });
+
+    return res.status(200).json({ status: 200, message: 'Plan updated successfully', data: updatedPlan });
   } catch (error) {
     return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
   }
@@ -92,14 +114,27 @@ const updatePlan = async (req, res) => {
 
 const deletePlan = async (req, res) => {
   try {
-    const plan = await SubscriptionPlan.findByIdAndDelete(req.params.id);
-    if (!plan) return res.status(404).json({ status: 404, message: 'Not found', data: null });
-    return res.status(200).json({ status: 200, message: 'Deleted', data: null });
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ status: 400, message: 'Plan ID is required', data: null });
+    }
+
+    // Check if plan exists
+    const existingPlan = await PlanTemplate.findById(id);
+    if (!existingPlan) {
+      return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
+    }
+
+    // Delete the plan
+    await PlanTemplate.findByIdAndDelete(id);
+
+    return res.status(200).json({ status: 200, message: 'Plan deleted successfully', data: null });
   } catch (error) {
     return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
   }
 };
 
-module.exports = { createPlan, listPlans, getPlan, updatePlan, deletePlan };
+module.exports = { createPlan, getPlan, listPlans, updatePlan, deletePlan };
 
 

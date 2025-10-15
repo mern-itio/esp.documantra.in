@@ -3,6 +3,22 @@ const User  = require('../models/User');
 const { isEmailValid } = require('@draftnsign/validators');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
 const bcrypt = require('bcrypt');
+const axios = require('axios');
+
+// Helper function to create free subscription for new user
+const createFreeSubscriptionForUser = async (userId) => {
+  try {
+    const subscriptionServiceUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
+    const response = await axios.post(`${subscriptionServiceUrl}/user-plan/create-free`, {
+      userId: userId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating free subscription:', error.message);
+    // Don't throw error, just log it - user registration should still succeed
+    return null;
+  }
+};
 
 // Login Controller
 const login = async (req, res) => {
@@ -72,6 +88,10 @@ const register = async (req, res) => {
   try {
     // Default plan is free on first registration
     const user = await User.create({ fullname, email, phone, password, plan: 'free' });
+    
+    // Create free subscription for the new user
+    await createFreeSubscriptionForUser(user._id);
+    
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (error) {
     if (error.code === 11000) {
