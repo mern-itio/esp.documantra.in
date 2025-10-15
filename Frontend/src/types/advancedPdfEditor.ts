@@ -61,6 +61,7 @@ export interface EditOperation {
     color?: string;
     strokeWidth?: number;
     rotation?: number;
+    flags?: number;  
   };
 }
 

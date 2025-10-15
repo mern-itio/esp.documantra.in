@@ -552,11 +552,32 @@ export const workflowAPI = {
     });
   },
 
+  // Add comment to workflow step
+  addWorkflowStepComment: async (workflowId: string, stepId: string, data: {
+    comment: string;
+  }) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
   // In workflowAPI object
   updateWorkflowStepProgress: async (workflowId: string, stepId: string, data: {
     progressPercentage?: number;
   }) => {
     return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/progress`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update workflow step action status (approve/reject/drop) - Creator only
+  updateStepActionStatus: async (workflowId: string, stepId: string, data: {
+    actionStatus: 'approved' | 'rejected' | 'dropped';
+    comments?: string; 
+    requestRedo?: boolean;// Optional for 'approved', Required for 'rejected' and 'dropped'
+  }) => {
+    return makeDocumentRequest(`/api/workflows/${workflowId}/steps/${stepId}/action`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });

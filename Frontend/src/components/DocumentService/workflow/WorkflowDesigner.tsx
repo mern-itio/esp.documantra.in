@@ -11,14 +11,26 @@ interface WorkflowDesignerProps {
   onSave: (workflow: Omit<DocumentWorkflow, 'id' | 'createdAt'>) => void;
 }
 
+interface ValidationErrors {
+  workflowName?: string;
+  steps: {
+    name?: string;
+    assignee?: string;
+    assigneeName?: string;
+    description?: string;
+  }[];
+}
+
 export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesignerProps) {
   const { user } = useAuth();
   const [workflowName, setWorkflowName] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [deadline, setDeadline] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<ValidationErrors>({ steps: [] });
   const [steps, setSteps] = useState<Omit<WorkflowStep, 'id'>[]>([
     {
+
       name: '',
       description: '',
       assignee: '',
@@ -27,14 +39,12 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
       requiredApprovals: 1,
       currentApprovals: 0,
       timeTracking: {
-      totalTimeSpent: 0,
-      isTimerRunning: false,
-      sessions: []
+        totalTimeSpent: 0,
+        isTimerRunning: false,
+        sessions: []
       }
     }
   ]);
-
-
 
   const addStep = () => {
     setSteps([
@@ -48,17 +58,25 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
         requiredApprovals: 1,
         currentApprovals: 0,
         timeTracking: {
-        totalTimeSpent: 0,
-        isTimerRunning: false,
-        sessions: []
-      }
+          totalTimeSpent: 0,
+          isTimerRunning: false,
+          sessions: []
+        }
       }
     ]);
+    setErrors(prev => ({
+      ...prev,
+      steps: [...prev.steps, {}]
+    }));
   };
 
   const removeStep = (index: number) => {
     if (steps.length > 1) {
       setSteps(steps.filter((_, i) => i !== index));
+      setErrors(prev => ({
+        ...prev,
+        steps: prev.steps.filter((_, i) => i !== index)
+      }));
     }
   };
 
@@ -68,17 +86,71 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
       updatedSteps[index] = { ...updatedSteps[index], [field]: value };
       return updatedSteps;
     });
+    
+    // Clear error for this field when user starts typing
+    if (value.trim()) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        if (!newErrors.steps[index]) {
+          newErrors.steps[index] = {};
+        }
+        delete newErrors.steps[index][field as keyof typeof newErrors.steps[number]];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateWorkflow = () => {
+    const newErrors: ValidationErrors = { steps: [] };
+    let isValid = true;
+
+    // Validate workflow name
+    if (!workflowName.trim()) {
+      newErrors.workflowName = 'Workflow name is required';
+      isValid = false;
+    }
+
+    // Validate each step
+    steps.forEach((step, index) => {
+      const stepErrors: ValidationErrors['steps'][number] = {};
+
+      if (!step.name.trim()) {
+        stepErrors.name = 'Step name is required';
+        isValid = false;
+      }
+
+      if (!step.assignee.trim()) {
+        stepErrors.assignee = 'Assignee email is required';
+        isValid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(step.assignee)) {
+        stepErrors.assignee = 'Please enter a valid email address';
+        isValid = false;
+      }
+
+      if (!step.assigneeName.trim()) {
+        stepErrors.assigneeName = 'Assignee display name is required';
+        isValid = false;
+      }
+
+      if (!step.description.trim()) {
+        stepErrors.description = 'Step description is required';
+        isValid = false;
+      }
+
+      newErrors.steps[index] = stepErrors;
+    });
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSave = async () => {
-    // Prevent multiple submissions
     if (isSaving) {
       console.log('⚠️ WorkflowDesigner: Save already in progress, skipping...');
       return;
     }
-    
-    if (!workflowName.trim() || steps.some(step => !step.name.trim())) {
-      alert('Please fill in all required fields');
+
+    if (!validateWorkflow()) {
       return;
     }
 
@@ -98,7 +170,6 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
     };
 
     try {
-      // Call onSave and wait for it to complete
       await onSave(workflow);
       onClose();
     } catch (error) {
@@ -133,9 +204,18 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
               </label>
               <Input
                 value={workflowName}
-                onChange={(e) => setWorkflowName(e.target.value)}
+                onChange={(e) => {
+                  setWorkflowName(e.target.value);
+                  if (e.target.value.trim() && errors.workflowName) {
+                    setErrors(prev => ({ ...prev, workflowName: undefined }));
+                  }
+                }}
                 placeholder="Enter workflow name..."
+                className={errors.workflowName ? 'border-red-500 focus:ring-red-500' : ''}
               />
+              {errors.workflowName && (
+                <p className="mt-1 text-sm text-red-600">{errors.workflowName}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -192,13 +272,6 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                      >
-                        <Settings className="w-3 h-3" />
-                      </Button> */}
                       {steps.length > 1 && (
                         <Button
                           variant="ghost"
@@ -221,7 +294,11 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                         value={step.name}
                         onChange={(e) => updateStep(index, 'name', e.target.value)}
                         placeholder="Enter step name..."
+                        className={errors.steps[index]?.name ? 'border-red-500 focus:ring-red-500' : ''}
                       />
+                      {errors.steps[index]?.name && (
+                        <p className="mt-1 text-sm text-red-600">{errors.steps[index].name}</p>
+                      )}
                     </div>
 
                     <div>
@@ -238,45 +315,47 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                         }}
                         placeholder="assignee@example.com"
                         type="email"
+                        className={errors.steps[index]?.assignee ? 'border-red-500 focus:ring-red-500' : ''}
                       />
+                      {errors.steps[index]?.assignee && (
+                        <p className="mt-1 text-sm text-red-600">{errors.steps[index].assignee}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Assignee Display Name
+                      Assignee Display Name *
                     </label>
                     <Input
                       value={step.assigneeName}
                       onChange={(e) => updateStep(index, 'assigneeName', e.target.value)}
-                      placeholder="Enter display name (optional)"
+                      placeholder="Enter display name"
+                      className={errors.steps[index]?.assigneeName ? 'border-red-500 focus:ring-red-500' : ''}
                     />
+                    {errors.steps[index]?.assigneeName && (
+                      <p className="mt-1 text-sm text-red-600">{errors.steps[index].assigneeName}</p>
+                    )}
                   </div>
 
                   <div className="mt-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
+                      Description *
                     </label>
                     <textarea
                       value={step.description}
                       onChange={(e) => updateStep(index, 'description', e.target.value)}
                       placeholder="Describe what needs to be done in this step..."
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full p-2 border rounded-md focus:outline-none focus:ring-2 ${
+                        errors.steps[index]?.description 
+                          ? 'border-red-500 focus:ring-red-500' 
+                          : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                       rows={2}
                     />
-                  </div>
-
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Required Approvals
-                    </label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={step.requiredApprovals}
-                      onChange={(e) => updateStep(index, 'requiredApprovals', parseInt(e.target.value))}
-                      className="w-24"
-                    />
+                    {errors.steps[index]?.description && (
+                      <p className="mt-1 text-sm text-red-600">{errors.steps[index].description}</p>
+                    )}
                   </div>
 
                   {/* Arrow to next step */}

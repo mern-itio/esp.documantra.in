@@ -112,6 +112,9 @@ const advancedPdfEditorController = {
       const { stdout } = await execAsync(`python "${scriptPath}" "${filePath}" ${pageNum}`);
       
       const result = JSON.parse(stdout);
+       console.log('=== EXTRACT TEXT BLOCKS ===');
+        console.log('Text blocks received from Python:', JSON.stringify(result.textBlocks, null, 2));
+        console.log('Sample flags values:', result.textBlocks?.slice(0, 3).map(b => ({ text: b.text, flags: b.flags })));
 
       if (result.success) {
         res.json({
@@ -143,6 +146,18 @@ const advancedPdfEditorController = {
     
     try {
       const { fileName, edits } = req.body;
+      // LOG ALL EDITS WITH FLAGS
+        edits.forEach((edit, index) => {
+          if (edit.type === 'replaceText') {
+            console.log(`Edit ${index}:`, {
+              type: edit.type,
+              oldText: edit.oldText?.substring(0, 20),
+              newText: edit.newText?.substring(0, 20),
+              flags: edit.style?.flags,
+              fullStyle: edit.style
+            });
+          }
+        });
       console.log('Extracted fileName:', fileName);
       console.log('Extracted edits count:', edits ? edits.length : 'undefined');
 
@@ -213,9 +228,9 @@ const advancedPdfEditorController = {
       
       let stdout, result;
       try {
-        // console.log('Executing Python script...');
+        console.log('Executing Python script...');
         const command = `python "${scriptPath}" "${inputPath}" "${tempEditsFile}" "${outputPath}"`;
-        // console.log('Command:', command);
+        console.log('Command:', command);
         
         // Add timeout to prevent hanging
         const execResult = await Promise.race([
@@ -225,7 +240,8 @@ const advancedPdfEditorController = {
           )
         ]);
         stdout = execResult.stdout;
-        // console.log('Python script stdout:', stdout);
+         console.log('Python script stdout:', stdout);
+         
         
         // Clean up temporary file
         // console.log('Cleaning up temporary file...');
