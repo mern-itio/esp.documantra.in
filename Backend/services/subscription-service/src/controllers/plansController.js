@@ -1,5 +1,4 @@
 const PlanTemplate = require('../models/PlanTemplate');
-const SubscriptionPlan = require('../models/SubscriptionPlan');
 
 const createPlan = async (req, res) => {
   try {

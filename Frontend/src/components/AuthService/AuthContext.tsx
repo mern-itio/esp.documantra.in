@@ -120,13 +120,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       setIsAuthenticated(true);
 
-      // Fetch and store subscription plan data
+      // Fetch and store subscription plan data right after login
       try {
         const subscriptionPlan = await SubscriptionService.getUserPlan();
         SubscriptionStorage.savePlan(subscriptionPlan);
       } catch (error) {
         console.error('Error fetching subscription plan after login:', error);
-        // Don't fail login if subscription fetch fails
       }
     } catch (error) {
       console.error('Login error:', error);

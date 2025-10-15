@@ -26,6 +26,13 @@ const verifyJWT = (type = 'user') => {
         return res.status(500).json({ message: 'Server misconfiguration: missing JWT secret' });
       }
 
+      // Optional debug - never log the actual secret, only type and length
+      if (process.env.DEBUG_JWT === '1') {
+        try {
+          console.log(`[verifyToken] using secret for ${type}: length=${String(secret?.length)}`);
+        } catch {}
+      }
+
       const decoded = jwt.verify(token, secret);
       if (!decoded) {
         return res.status(401).json({
