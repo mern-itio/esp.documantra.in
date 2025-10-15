@@ -1,10 +1,14 @@
 const { serviceGet, servicePatch } = require('../utils/apiHelper');
 
 const getEnvelopes = async(req, res) => {
+const filterUserId = req.query.userId; // <-- new query param
   try {
-        console.log("Here In Admin Controller...!")
+    let url = "/admin/fetch/envelopes";
+    if (filterUserId) {
+          url += `?userId=${filterUserId}`;
+        }
     const result = await serviceGet(req, 'esign', {
-                            url: '/admin/fetch/envelopes'
+                            url: url
     });
         if(result.status ==200){
       return res.status(200).json({

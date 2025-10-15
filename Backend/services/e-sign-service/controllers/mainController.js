@@ -22,28 +22,56 @@ const { sign } = require('crypto');
 const envelopesData = async (req, res) => {
   const userId = req?.user?.data?.id;
   const userType = req?.userType;
+  const filterUserId = req.query.userId; // <-- new query param
+  console.log(filterUserId);
 
   try {
     // Step 1: Build query
-    const query = userType !== 'admin' ? { sender: userId } : {};
-
-    // Step 2: Fetch envelopes with population
-    const envelopes = await Envelope.find(query)
-      .populate("documentIds")
-      .populate({
-        path: 'recipientIds',
-        select: 'name email UserId',
-        populate: {
-          path: 'permissions',
-          model: 'RecipientPermission',
-          select: 'role order status authLevel'
+        let query = {};
+        if (userType === 'admin') {
+          // Admin can either see all envelopes or filter by a particular user
+          if (filterUserId) {
+            query.sender = filterUserId; // fetch only this user's envelopes
+          }
+          // else query = {} => fetch all envelopes
+        } else {
+          // Regular user sees only their own envelopes
+          query.sender = userId;
         }
-      });
+
+        // Fetch all envelopes with documents and recipients
+        const envelopes = await Envelope.find(query)
+          .sort({ createdAt: -1 }) // descending by createdAt
+          .populate('documentIds') // documents
+          .populate({
+            path: 'recipientIds',          // recipients
+            model: 'Recipient',            // explicit model
+            select: 'name email UserId',
+          })
+          .lean(); // optional, makes it simple to work with
+
+        // Fetch all envelope-specific permissions in one query
+        const allRecipientIds = envelopes.flatMap(e => e.recipientIds.map(r => r._id));
+        const allEnvelopeIds = envelopes.map(e => e._id);
+
+        const permissions = await RecipientPermission.find({
+          recipientId: { $in: allRecipientIds },
+          envelopeId: { $in: allEnvelopeIds }
+        }).select('recipientId envelopeId role order status authLevel');
+
+        // Attach permissions to the correct recipient in each envelope
+        envelopes.forEach(envelope => {
+          envelope.recipientIds.forEach(recipient => {
+            recipient.permissions = permissions.filter(p =>
+              p.recipientId.toString() === recipient._id.toString() &&
+              p.envelopeId.toString() === envelope._id.toString()
+            );
+          });
+        });
 
     if (!envelopes || envelopes.length === 0) {
       return res.status(404).json({ message: 'No envelopes found' });
     }
-
     // Step 3: Collect unique sender IDs
     const senderIds = [...new Set(envelopes.map(env => env.sender?.toString()).filter(Boolean))];
 
@@ -92,13 +120,14 @@ const envelopesData = async (req, res) => {
           type: doc.mimeType,
         })),
         recipients: envelope.recipientIds.map((recipient) => ({
+
           id: recipient._id,
           name: recipient.name,
           email: recipient.email,
-          role: recipient.role,
-          order: recipient.order,
-          status: recipient.status,
-          authentication: recipient.authLevel,
+          role: recipient.permissions[0].role,
+          order: recipient.permissions[0].order,
+          status: recipient.permissions[0].status,
+          authentication: recipient.permissions[0].authLevel,
         })),
       };
     });
