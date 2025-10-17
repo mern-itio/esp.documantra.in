@@ -78,7 +78,7 @@ const deleteTool = async (req, res) => {
 // Public list of tools (id and name only)
 const listToolsPublic = async (req, res) => {
   try {
-    const tools = await PDFTool.find({}, { _id: 0, id: 1, name: 1, description: 1, category: 1, priority: 1, createdAt: 1, updatedAt: 1 }).sort({ priority: 1, name: 1 });
+    const tools = await PDFTool.find({}, { _id: 1, id: 1, name: 1, description: 1, category: 1, priority: 1, createdAt: 1, updatedAt: 1 }).sort({ priority: 1, name: 1 });
     return res.status(200).json({ status: 200, data: tools });
   } catch (e) {
     return res.status(500).json({ status: 500, message: e.message });

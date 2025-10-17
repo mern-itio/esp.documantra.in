@@ -1,11 +1,18 @@
 import { adminServiceApi } from './apiHelper';
 
-export interface CatalogTool { id: string; name: string; description?: string; category?: string; priority?: number; createdAt?: string; updatedAt?: string }
+export interface CatalogTool { _id?: string; id: string; name: string; description?: string; category?: string; priority?: number; createdAt?: string; updatedAt?: string }
 
 export const toolCatalogService = {
   async listPublic(): Promise<CatalogTool[]> {
     const res = await adminServiceApi.get('/admin/public/pdf-tools');
-    return (res as any).data?.data || [];
+    const list = (res as any).data?.data || [];
+    // Persist id->_id map for interceptors to resolve tool object ids from route slugs
+    try {
+      const map: Record<string, string> = {};
+      list.forEach((t: any) => { if (t?.id && t?._id) map[t.id] = String(t._id); });
+      if (Object.keys(map).length) localStorage.setItem('toolCatalogIdMap', JSON.stringify(map));
+    } catch {}
+    return list;
   },
 };
 

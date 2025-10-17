@@ -196,7 +196,7 @@ const PDFToolsLayout = () => {
 
   // Load active tools from admin and filter mock list
   const [filteredMock, setFilteredMock] = useState<any>(mockPDFTools);
-  const [catalogTools, setCatalogTools] = useState<Array<{ id: string; name: string; description?: string; category?: string; priority?: number }>>([]);
+  const [catalogTools, setCatalogTools] = useState<Array<{ _id?: string; id: string; name: string; description?: string; category?: string; priority?: number }>>([]);
   const [activeToolIds, setActiveToolIds] = useState<Set<string>>(new Set());
   const mockDescMap = React.useMemo(() => {
     const map = new Map<string, string>();
@@ -255,6 +255,7 @@ const PDFToolsLayout = () => {
       let list = catalogTools
         .filter(t => activeToolIds.size === 0 || activeToolIds.has(t.id))
         .map(t => ({
+          _id: (t as any)._id,
           id: t.id,
           name: t.name,
           description: t.description || mockDescMap.get(t.id) || '',
@@ -301,6 +302,8 @@ const PDFToolsLayout = () => {
   };
 
   const handleToolSelect = (tool: PDFTool) => {
+    // Credit gating based on stored subscription plan
+    // Do not block navigation; pass tool Mongo _id for later credit checks during conversion
     // console.log('Tool selected:', tool);
     // console.log('Navigating to:', `/pdf-tools/${tool.id}`);
     // setSelectedTool(tool);
@@ -310,9 +313,11 @@ const PDFToolsLayout = () => {
     const currentCategory = urlParams.get('category') || tool.category;
     
     // Navigate with category parameter to maintain sidebar state
-    const navigateUrl = currentCategory 
-      ? `/pdf-tools/${tool.id}?category=${currentCategory}`
-      : `/pdf-tools/${tool.id}`;
+    const params = new URLSearchParams();
+    if (currentCategory) params.set('category', currentCategory);
+    if (tool._id) params.set('toolObjId', String(tool._id));
+    const qs = params.toString();
+    const navigateUrl = qs ? `/pdf-tools/${tool.id}?${qs}` : `/pdf-tools/${tool.id}`;
     
     navigate(navigateUrl);
 

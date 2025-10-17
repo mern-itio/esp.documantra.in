@@ -2,8 +2,6 @@
 const PDFToolSettings = require('../models/PDFToolSettings');
 
 const { serviceGet, servicePatch } = require('../utils/apiHelper');
-
-
 const userList = async (req, res) => {
   try {
     const result = await serviceGet(req, 'auth', { url: '/api-admin/user-list' });
@@ -20,8 +18,6 @@ const userList = async (req, res) => {
     return res.status(500).json({ status: 500, message: 'Internal Server Error', data: null });
   }
 };
-
-
 // PDF Tool Settings Management
 const getPDFToolSettings = async (req, res) => {
   try {
@@ -47,8 +43,8 @@ const getPDFToolSettings = async (req, res) => {
 
 const createPDFToolSettings = async (req, res) => {
   try {
-    console.log('[createPDFToolSettings] Request received:', req.body);
-    console.log('[createPDFToolSettings] User:', req.user);
+    // console.log('[createPDFToolSettings] Request received:', req.body);
+    // console.log('[createPDFToolSettings] User:', req.user);
     
     const { toolId, toolName, category, accessControl, features, display } = req.body;
     const adminEmail = req.user?.email || 'system';
@@ -190,10 +186,8 @@ const bulkUpdatePDFToolSettings = async (req, res) => {
           } 
         }
       }
-    }));
-    
-    const result = await PDFToolSettings.bulkWrite(bulkOps);
-    
+    }));    
+    const result = await PDFToolSettings.bulkWrite(bulkOps);    
     return res.status(200).json({
       status: 200,
       message: 'Bulk update completed successfully',
@@ -402,5 +396,5 @@ module.exports = { userList,userStatusToggle,getUserDetail,updateUserDetail,upda
   deletePDFToolSettings,
   bulkUpdatePDFToolSettings,
   initializeDefaultToolSettings 
-                 };
+};
 
