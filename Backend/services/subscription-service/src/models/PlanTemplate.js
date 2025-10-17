@@ -4,6 +4,7 @@ const PlanTemplateSchema = new mongoose.Schema({
   name: String,
   // list of allowed tools and their per-use credit cost in this plan
   services: [String], // e.g. ["pdf","esign","auth"]
+  type: { type: String, enum: ['free','paid'], default: 'paid' },
   toolCosts: [{
     toolId: {type: mongoose.Schema.Types.ObjectId },
     credits: Number

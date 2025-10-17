@@ -12,6 +12,7 @@ const getUserIdFromRequest = (req) => {
 // GET /user-plan/me
 const getMyPlan = async (req, res) => {
   try {
+    console.log('getMyPlan called');
     const userId = getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
@@ -20,41 +21,53 @@ const getMyPlan = async (req, res) => {
     let subscription = await Subscription.findOne({ userId }).lean();
 
     if (!subscription) {
-      // Auto-provision a free baseline subscription with 0 credits
-      subscription = await Subscription.create({
-        userId,
-        creditsBalance: 0,
-        creditReserved: 0,
-        status: 'active'
-      });
-      subscription = subscription.toObject();
+      const freePlanTemplate = await PlanTemplate.findOne({
+        $or: [{ type: 'free' }, { pricePerPeriod: 0 }]
+      }).lean();
+
+      if (freePlanTemplate) {
+        const now = new Date();
+        const nextBilling = freePlanTemplate.period === 'monthly'
+          ? new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())
+          : new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
+        subscription = await Subscription.create({
+          userId,
+          planTemplateId: freePlanTemplate._id,
+          creditsBalance: freePlanTemplate.monthlyCredits || 0,
+          status: 'active',
+          periodStart: now,
+          periodEnd: nextBilling,
+          nextBillingAt: nextBilling,
+        });
+      } else {
+        return res.status(404).json({ status: 404, message: 'No free plan template found', data: null });
+      }
     }
 
-    let planTemplate = null;
-    if (subscription.planTemplateId) {
-      planTemplate = await PlanTemplate.findById(subscription.planTemplateId).lean();
-    }
+    const planTemplate = subscription.planTemplateId
+      ? await PlanTemplate.findById(subscription.planTemplateId).lean()
+      : null;
 
-    // Normalize response for frontend consumption
     const response = {
       id: subscription._id,
       userId: subscription.userId,
       planTemplateId: subscription.planTemplateId || null,
+      name: planTemplate?.name || 'Free Plan',
+      description: planTemplate ? `${planTemplate.name} subscription` : 'Free plan with limited access',
+      services: planTemplate?.services || [],
+      type: planTemplate?.type || (planTemplate?.pricePerPeriod > 0 ? 'paid' : 'free'),
+      price: planTemplate?.pricePerPeriod || 0,
+      conversionsLimit: planTemplate?.monthlyCredits ?? 0,
       creditsBalance: subscription.creditsBalance || 0,
-      creditReserved: subscription.creditReserved || 0,
+      toolCosts: planTemplate?.toolCosts || [],
+      authCosts: planTemplate?.authCosts || [],
       status: subscription.status || 'active',
       periodStart: subscription.periodStart || null,
       periodEnd: subscription.periodEnd || null,
       nextBillingAt: subscription.nextBillingAt || null,
-      // Derived fields for UI compatibility
-      name: planTemplate?.name || 'Free Plan',
-      type: planTemplate ? (planTemplate.pricePerPeriod > 0 ? 'paid' : 'free') : 'free',
-      price: planTemplate?.pricePerPeriod || 0,
-      conversionsLimitType: planTemplate?.monthlyCredits === -1 ? 'unlimited' : 'number',
-      conversionsLimit: planTemplate?.monthlyCredits ?? 0,
-      description: planTemplate ? `${planTemplate.name} subscription` : 'Free plan with limited access',
-      services: planTemplate?.services || [],
-      isFree: !planTemplate || (planTemplate?.pricePerPeriod || 0) === 0
+
+      isFree: (planTemplate?.type === 'free') || (planTemplate?.pricePerPeriod === 0),
     };
 
     return res.status(200).json({ status: 200, message: 'User plan fetched', data: response });
@@ -63,6 +76,7 @@ const getMyPlan = async (req, res) => {
     return res.status(500).json({ status: 500, message: error.message || 'Server error', data: null });
   }
 };
+
 
 // POST /user-plan/create-free
 const createFreePlanForUser = async (req, res) => {

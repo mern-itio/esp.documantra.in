@@ -5,15 +5,16 @@ export class SubscriptionService {
   /**
    * Fetch user's current subscription plan
    */
-  static async getUserPlan(): Promise<SubscriptionPlan> {
+  static async  getUserPlan(): Promise<SubscriptionPlan> {
     try {
       const response = await subscriptionApi.get('/user-plan/me');
+      console.log('Fetched user plan:', response.data.data);
       return response.data.data;
     } catch (error) {
       console.error('Error fetching user plan:', error);
       // Return default free plan if error occurs
       return {
-        name: 'Free Plan',
+        name: 'Free Plan .....',
         type: 'free',
         price: 0,
         conversionsLimitType: 'number',

@@ -3,23 +3,39 @@ const PlanTemplate = require('../models/PlanTemplate');
 const createPlan = async (req, res) => {
   try {
     const payload = req.body || {};
-    if(!payload || !payload.name || payload.pricePerPeriod === undefined) {
+
+    if (!payload || !payload.name || payload.pricePerPeriod === undefined) {
       return res.status(400).json({ status: 400, message: 'Missing required fields', data: null });
     }
+
+    // Check if a free plan already exists
+    if (payload.type === 'free') {
+      const existingFreePlan = await PlanTemplate.findOne({ type: 'free' });
+      if (existingFreePlan) {
+        return res.status(400).json({
+          status: 400,
+          message: 'A free plan already exists. You cannot create another.',
+          data: null
+        });
+      }
+    }
+
     const plan = await PlanTemplate.create({
-      name: payload?.name,
-      services: payload?.services,
-      toolCosts: payload?.toolCosts,
-      authCosts: payload?.authCosts,
-      monthlyCredits:payload?.monthlyCredits,
-      pricePerPeriod: payload?.pricePerPeriod,
-      period: payload?.period || 'monthly',
+      name: payload.name,
+      services: payload.services,
+      type: payload.type || 'paid',
+      toolCosts: payload.toolCosts,
+      authCosts: payload.authCosts,
+      monthlyCredits: payload.monthlyCredits,
+      pricePerPeriod: payload.pricePerPeriod,
+      period: payload.period || 'monthly',
     });
     return res.status(201).json({ status: 201, message: 'Plan created', data: plan });
   } catch (error) {
     return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
   }
 };
+
 
 const getPlan = async (req, res) => {
   try {
