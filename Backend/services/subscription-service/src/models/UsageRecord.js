@@ -12,4 +12,4 @@ const UsageRecordSchema = new mongoose.Schema({
   reason: String,
 }, { timestamps: true });
 
-module.exports = mongoose.model('UsagRecord', UsageRecordSchema);
+module.exports = mongoose.model('UsageRecord', UsageRecordSchema);

@@ -97,20 +97,16 @@ pdfApi.interceptors.request.use((config) => {
     const isConversion = method === 'post' && (/^\/pdf\//.test(url) || /^\/convert\//.test(url));
     if (!isConversion) return config;
 
-    // Resolve current tool object id either from URL or from cached slug->_id map
+    // Resolve current tool object id from cached slug->_id map; keep URLs clean
     let toolObjId: string | null = null;
     try {
-      const params = new URLSearchParams(window.location.search);
-      toolObjId = params.get('toolObjId');
-      if (!toolObjId) {
-        const path = window.location.pathname; // e.g., /pdf-tools/pdf-to-excel
-        const slug = path.startsWith('/pdf-tools/') ? path.replace('/pdf-tools/', '').split('/')[0] : null;
-        if (slug) {
-          const raw = localStorage.getItem('toolCatalogIdMap');
-          if (raw) {
-            const map = JSON.parse(raw || '{}');
-            toolObjId = map[slug] || null;
-          }
+      const path = window.location.pathname; // e.g., /pdf-tools/pdf-to-excel
+      const slug = path.startsWith('/pdf-tools/') ? path.replace('/pdf-tools/', '').split('/')[0] : null;
+      if (slug) {
+        const raw = localStorage.getItem('toolCatalogIdMap');
+        if (raw) {
+          const map = JSON.parse(raw || '{}');
+          toolObjId = map[slug] || null;
         }
       }
     } catch {}
@@ -132,6 +128,34 @@ pdfApi.interceptors.request.use((config) => {
   } catch {}
   return config;
 });
+
+// After successful conversion requests, record consumption in subscription service
+pdfApi.interceptors.response.use((response) => {
+  try {
+    const method = (response.config.method || 'get').toLowerCase();
+    const url = String(response.config.url || '');
+    const isConversion = method === 'post' && (/^\/pdf\//.test(url) || /^\/convert\//.test(url) || /^\/smart-conversion\//.test(url));
+    if (!isConversion) return response;
+
+    // Resolve tool object id from slug map
+    let toolObjId: string | null = null;
+    const path = window.location.pathname;
+    const slug = path.startsWith('/pdf-tools/') ? path.replace('/pdf-tools/', '').split('/')[0] : null;
+    if (slug) {
+      const raw = localStorage.getItem('toolCatalogIdMap');
+      if (raw) {
+        const map = JSON.parse(raw || '{}');
+        toolObjId = map[slug] || null;
+      }
+    }
+
+    // Fire and forget; do not block UI
+    if (toolObjId) {
+      try { subscriptionApi.post('/usage/consume', { toolId: toolObjId }); } catch {}
+    }
+  } catch {}
+  return response;
+}, (error) => Promise.reject(error));
 
 export const apiServiceApi = createApiInstance(
   import.meta.env.VITE_API_SERVICE_URL || 'http://165.22.215.73:2105',

@@ -9,6 +9,7 @@ const userPlanRoutes = require('./src/routes/userPlanRoutes');
 const toolSettingsRoutes = require('./src/routes/toolSettingsRoutes');
 const authProviderRoutes = require('./src/routes/authProviderRoutes');
 const { createFreePlanForUser } = require('./src/controllers/userPlanController');
+const usageRoutes = require('./src/routes/usageRoutes');
 
 const app = express();
 
@@ -27,6 +28,10 @@ app.post('/user-plan/create-free', createFreePlanForUser);
 // User plan routes - require user token
 app.use('/user-plan', verifyJWT('user'));
 app.use('/user-plan', userPlanRoutes);
+
+// Usage routes - require user token
+app.use('/usage', verifyJWT('user'));
+app.use('/usage', usageRoutes);
 
 
 

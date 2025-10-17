@@ -1,6 +1,38 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { subscriptionApi } from '../../services/apiHelper';
 
 const DashboardPage: React.FC = () => {
+  const [balance, setBalance] = React.useState<number | null>(null);
+  const [usage, setUsage] = React.useState<Array<{ action: string; creditsDelta: number; balanceAfter: number; createdAt: string; toolId?: string }>>([]);
+  const toolNameByIdRef = React.useRef<Record<string, string>>({});
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const [bRes, uRes] = await Promise.all([
+          subscriptionApi.get('/usage/balance'),
+          subscriptionApi.get('/usage/records?limit=5'),
+        ]);
+        if (!mounted) return;
+        setBalance((bRes as any).data?.data?.creditsBalance ?? null);
+        try {
+          const raw = localStorage.getItem('toolCatalogNameMap');
+          toolNameByIdRef.current = raw ? JSON.parse(raw) : {};
+        } catch { toolNameByIdRef.current = {}; }
+        setUsage(((uRes as any).data?.data?.records || []).map((r: any) => ({ action: r.action, creditsDelta: r.creditsDelta, balanceAfter: r.balanceAfter, createdAt: r.createdAt, toolId: r.toolId })));
+      } catch {
+        if (!mounted) return;
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -44,39 +76,39 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+        <Link to="/credits-usage"> 
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <span className="text-2xl">📊</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Templates</p>
-              <p className="text-2xl font-semibold text-gray-900">56</p>
+              <p className="text-sm font-medium text-gray-600">Credits Balance</p>
+              <p className="text-2xl font-semibold text-gray-900">{loading ? '—' : (balance ?? 0)}</p>
             </div>
           </div>
         </div>
+        </Link>
       </div>
       
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Document "Contract-2024.pdf" was signed by John Doe</span>
-            <span className="text-xs text-gray-400 ml-auto">2 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">New template "Invoice Template" was created</span>
-            <span className="text-xs text-gray-400 ml-auto">4 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Document "Proposal.pdf" is awaiting signature</span>
-            <span className="text-xs text-gray-400 ml-auto">6 hours ago</span>
-          </div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Credit Usage</h2>
+        <div className="space-y-3 mb-6">
+          {usage.length === 0 && !loading && (
+            <p className="text-sm text-gray-600">No recent usage.</p>
+          )}
+          {usage.map((u, idx) => (
+            <div key={idx} className="flex items-center space-x-3">
+              <div className={`w-2 h-2 rounded-full ${u.creditsDelta < 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
+              <span className="text-sm text-gray-700">{u.action || 'usage'} {u.toolId ? `(${toolNameByIdRef.current[u.toolId] || u.toolId})` : ''}</span>
+              <span className={`text-sm ml-auto font-medium ${u.creditsDelta < 0 ? 'text-red-600' : 'text-green-600'}`}>{u.creditsDelta}</span>
+              <span className="text-xs text-gray-400 ml-3">{new Date(u.createdAt).toLocaleString()}</span>
+            </div>
+          ))}
         </div>
+        <div className="mt-2">
+          <Link to="/credits-usage" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View details</Link>
+        </div>    
       </div>
     </div>
   );
