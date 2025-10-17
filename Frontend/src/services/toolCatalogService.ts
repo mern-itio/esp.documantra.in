@@ -9,8 +9,11 @@ export const toolCatalogService = {
     // Persist id->_id map for interceptors to resolve tool object ids from route slugs
     try {
       const map: Record<string, string> = {};
+      const nameMap: Record<string, string> = {};
       list.forEach((t: any) => { if (t?.id && t?._id) map[t.id] = String(t._id); });
+      list.forEach((t: any) => { if (t?._id && t?.name) nameMap[String(t._id)] = t.name; });
       if (Object.keys(map).length) localStorage.setItem('toolCatalogIdMap', JSON.stringify(map));
+      if (Object.keys(nameMap).length) localStorage.setItem('toolCatalogNameMap', JSON.stringify(nameMap));
     } catch {}
     return list;
   },

@@ -83,6 +83,7 @@ import TermsOfServicePage from '../pages/LandingPage/TermsOfServicePage';
 // Dashboard Pages
 import DashboardPage from '../pages/Dashboard/DashboardPage';
 import AuditTrailPage from '../pages/Dashboard/AuditTrailPage';
+import CreditsUsagePage from '../pages/Dashboard/CreditsUsagePage';
 import CompliancePage from '../pages/Dashboard/CompliancePage';
 import RiskManagementPage from '../pages/Dashboard/RiskManagementPage';
 import { useDocumentStore } from '../components/common/store/documentStore';
@@ -315,7 +316,6 @@ const PDFToolsLayout = () => {
     // Navigate with category parameter to maintain sidebar state
     const params = new URLSearchParams();
     if (currentCategory) params.set('category', currentCategory);
-    if (tool._id) params.set('toolObjId', String(tool._id));
     const qs = params.toString();
     const navigateUrl = qs ? `/pdf-tools/${tool.id}?${qs}` : `/pdf-tools/${tool.id}`;
     
@@ -532,6 +532,7 @@ const guestRoutes = [
 // Authenticated User Routes
 const authRoutes = [
   { path: '/dashboard', element: <DashboardPage /> },
+  { path: '/credits-usage', element: <CreditsUsagePage /> },
   { path: '/audit-trail', element: <AuditTrailPage /> },
   { path: '/compliance', element: <CompliancePage /> },
   { path: '/risk-management', element: <RiskManagementPage /> },
