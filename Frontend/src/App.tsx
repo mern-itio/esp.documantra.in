@@ -8,6 +8,7 @@ import { AppProvider } from "./context/AppContext";
 import { APIProvider } from '../src/context/ApiContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { Toaster } from "react-hot-toast"; 
+import SubscriptionPlansModal from './components/common/SubscriptionPlansModal';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,7 @@ const App: React.FC = () => {
           <ThemeConfig>
             <RouterProvider router={router} />
              <Toaster />
+             <GlobalPlansModalPortal />
           </ThemeConfig>
         </AppProvider>
       </SubscriptionProvider>
@@ -36,3 +38,14 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+// Portal to listen to global event and mount the plans modal
+const GlobalPlansModalPortal: React.FC = () => {
+  const [open, setOpen] = React.useState(false);
+  React.useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener('app:open-plans-modal', handler as any);
+    return () => window.removeEventListener('app:open-plans-modal', handler as any);
+  }, []);
+  return <SubscriptionPlansModal open={open} onClose={() => setOpen(false)} />;
+};

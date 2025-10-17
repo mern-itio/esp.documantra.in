@@ -354,6 +354,7 @@ export interface EnterpriseSettings {
 
 //PDF Module
 export interface PDFTool {
+  _id?: string;
   id?: string;
   name?: string;
   description?: string;

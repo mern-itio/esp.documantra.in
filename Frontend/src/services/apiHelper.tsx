@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
+import { SubscriptionStorage } from './subscriptionService';
 
 const createApiInstance = (baseURL: string, serviceName: string, tokenKey: string = 'accessToken'): AxiosInstance => {
 
@@ -87,6 +88,50 @@ export const pdfApi = createApiInstance(
   import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104',
   'PDF'
 );
+
+// Centralized credit gating for PDF conversions
+pdfApi.interceptors.request.use((config) => {
+  try {
+    const method = (config.method || 'get').toLowerCase();
+    const url = String(config.url || '');
+    const isConversion = method === 'post' && (/^\/pdf\//.test(url) || /^\/convert\//.test(url));
+    if (!isConversion) return config;
+
+    // Resolve current tool object id either from URL or from cached slug->_id map
+    let toolObjId: string | null = null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      toolObjId = params.get('toolObjId');
+      if (!toolObjId) {
+        const path = window.location.pathname; // e.g., /pdf-tools/pdf-to-excel
+        const slug = path.startsWith('/pdf-tools/') ? path.replace('/pdf-tools/', '').split('/')[0] : null;
+        if (slug) {
+          const raw = localStorage.getItem('toolCatalogIdMap');
+          if (raw) {
+            const map = JSON.parse(raw || '{}');
+            toolObjId = map[slug] || null;
+          }
+        }
+      }
+    } catch {}
+
+    if (!toolObjId) return config; // if unknown, allow
+
+    const plan: any = SubscriptionStorage.getPlan();
+    const creditsBalance: number = plan?.creditsBalance ?? 0;
+    const toolCosts: Array<{ toolId: string; credits: number }> = plan?.toolCosts ?? [];
+    const required = toolCosts.find(tc => tc.toolId === toolObjId)?.credits ?? 0;
+
+    if (required > 0 && creditsBalance < required) {
+      try { window.dispatchEvent(new CustomEvent('app:toast', { detail: { message: `Credit exhausted for this tool. Requires ${required}, you have ${creditsBalance}.`, type: 'error', cta: { label: 'View Pricing', href: '/#pricing' } } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent('app:open-plans-modal')); } catch {}
+      const rejection: any = new Error('Insufficient credits');
+      rejection.response = { status: 402, data: { message: 'Insufficient credits', required, creditsBalance } };
+      return Promise.reject(rejection);
+    }
+  } catch {}
+  return config;
+});
 
 export const apiServiceApi = createApiInstance(
   import.meta.env.VITE_API_SERVICE_URL || 'http://165.22.215.73:2105',
