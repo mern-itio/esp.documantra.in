@@ -87,8 +87,8 @@ const Dashboard: React.FC = () => {
       color: 'bg-blue-500'
     },
     {
-      name: 'Pending Signatures',
-      value: envelopes.filter(e => e.status === 'sent' || e.status === 'pending').length,
+      name: 'Pending Envelopes',
+      value: envelopes.filter(e => e.status === 'sent' || e.status === 'in-progress').length,
       icon: Clock,
       color: 'bg-yellow-500'
     },

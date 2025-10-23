@@ -22,6 +22,7 @@ app.use('/admin', verifyJWT('admin'));
 app.use('/admin/plan-templates', plansRoutes);
 app.use('/admin', toolSettingsRoutes);
 app.use('/admin/auth-providers', authProviderRoutes);
+const userAuthProviderRoutes = require('./src/routes/userAuthProviderRoutes');
 // Internal route used by auth-service to create free plan (no auth)
 app.post('/user-plan/create-free', createFreePlanForUser);
 
@@ -33,6 +34,9 @@ app.use('/user-plan', userPlanRoutes);
 app.use('/usage', verifyJWT('user'));
 app.use('/usage', usageRoutes);
 
+// User authProvider routes - require user token
+app.use('/user', verifyJWT('user'));
+app.use('/user', userAuthProviderRoutes);
 
 
 const PORT = process.env.PORT || 2110;

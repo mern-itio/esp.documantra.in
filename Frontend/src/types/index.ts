@@ -78,7 +78,7 @@ export interface Recipient {
   role: 'signer' | 'approver' | 'carbon_copy' | 'in_person_signer';
   order: number;
   status: 'waiting' | 'sent' | 'viewed' | 'signed' | 'completed' | 'declined';
-  authentication: 'none' | 'email' | 'sms' | 'access_code' | 'phone' | 'knowledge_based' | 'government_id' | 'biometric' | 'video_id' | 'digital_certificate';
+  authentication?: string;
   authValue?: string;
   signedAt?: string;
   viewedAt?: string;

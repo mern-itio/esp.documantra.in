@@ -15,7 +15,7 @@ const {
   userList
 } = require('../controllers/mainController');
 const { getActivation, setActivation } = require('../controllers/activationController');
-const {getEnvelopes} = require('../controllers/eSignController');
+const {getEnvelopes,getAllEnvelopeStats} = require('../controllers/eSignController');
 
 const {createPlane, getPlan, listPlans, updatePlan, deletePlan} = require('../controllers/subscriptionController');
 const {getUserPdfOperations, getUserServiceStats, getUserOperationHistory} = require('../controllers/userUsageController');
@@ -51,6 +51,7 @@ router.put('/tool-activation/:toolId', setActivation);
 
 // E-Sign Routes
 router.get('/fetch/envelopes',getEnvelopes);
+router.get('/envelope/all-stats', getAllEnvelopeStats);
 // PDF Tools CRUD (Admin)
 router.get('/pdf-tools', listTools);
 router.get('/pdf-tools/:id', getTool);

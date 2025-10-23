@@ -1,13 +1,33 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { subscriptionApi } from '../../services/apiHelper';
+import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 
 const DashboardPage: React.FC = () => {
   const [balance, setBalance] = React.useState<number | null>(null);
   const [usage, setUsage] = React.useState<Array<{ action: string; creditsDelta: number; balanceAfter: number; createdAt: string; toolId?: string }>>([]);
   const toolNameByIdRef = React.useRef<Record<string, string>>({});
   const [loading, setLoading] = React.useState(true);
+  const [envStatesLoading, setEnvStatesLoading] = React.useState(true);
+  const [envelopeStats, setEnvelopeStats] = React.useState<any>(null);
 
+  React.useEffect(() => {
+    // get All envelope stats
+    fetchAllEnvelopeStats();
+  }
+, []);
+ const fetchAllEnvelopeStats = async () => {
+    try {
+      setEnvStatesLoading(true);
+      const response = await eSignApi.get('/api/e-sign/envelope/all-stats/user');
+      const data = response.data;
+      setEnvelopeStats(data);
+      // Process the data as needed
+    } catch (error) {
+      console.error('Error fetching envelope stats:', error);
+    } finally {
+      setEnvStatesLoading(false);
+    }
+  };
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -47,8 +67,8 @@ const DashboardPage: React.FC = () => {
               <span className="text-2xl">📄</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Documents</p>
-              <p className="text-2xl font-semibold text-gray-900">1,234</p>
+              <p className="text-sm font-medium text-gray-600">Total Envelopes</p>
+              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading? 'Loading...' : envelopeStats?.totalEnvelopes}</p>
             </div>
           </div>
         </div>
@@ -59,8 +79,8 @@ const DashboardPage: React.FC = () => {
               <span className="text-2xl">✅</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Signed Documents</p>
-              <p className="text-2xl font-semibold text-gray-900">987</p>
+              <p className="text-sm font-medium text-gray-600">Completed Envelopes</p>
+              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading? 'Loading...' : envelopeStats?.completedEnvelopes}</p>
             </div>
           </div>
         </div>
@@ -72,7 +92,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-semibold text-gray-900">247</p>
+              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading? 'Loading...' : envelopeStats.pendingEnvelopes}</p>
             </div>
           </div>
         </div>

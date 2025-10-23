@@ -27,5 +27,29 @@ const filterUserId = req.query.userId; // <-- new query param
         return res.status(500).json({status: 500, message: 'Internal Server Error', data: null});
   }
 }
+const getAllEnvelopeStats = async(req, res) => {
+  const userType = "admin";
+    try {
+      let url = `/admin/envelope/all-stats/${userType}`;
+      const result = await serviceGet(req, 'esign', {
+                              url: url
+      });
+      if(result.status ==200){
+        return res.status(200).json({
+                  status:200,
+                  message:'Envelope stats fetched successfully',
+                  data:result.data
+              })
+          }else{
+              return res.status(404).json({
+                  status:404,
+                  message:'Envelope stats not found.'
+              })
+      }
+      }catch (err){
+          console.log(err);
+          return res.status(500).json({status: 500, message: 'Internal Server Error', data: null});
+    }
+  }
 
-module.exports = {getEnvelopes};
+module.exports = {getEnvelopes,getAllEnvelopeStats};

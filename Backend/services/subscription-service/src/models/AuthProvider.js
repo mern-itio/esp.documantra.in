@@ -24,6 +24,7 @@ const AuthProviderSchema = new mongoose.Schema({
     estimatedTime: String,    // e.g. "30 sec"
     costInfo: String,         // e.g. "6 credits"
     compliance: [String],     // e.g. ["ESIGN", "UETA"]
+    icon: String,            // e.g. "Shield", "Smartphone"
     extraFields: { type: Map, of: String } // <-- dynamic additional UI fields
   },
 

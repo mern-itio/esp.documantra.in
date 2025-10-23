@@ -7,7 +7,6 @@ const sendEmail = require('../emails/sendEmail');
 const {signRequestTemplate, signReminderTemplate, envelopeCompletedTemplate } = require('../emails/emailTemplates');
 const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
-const ObjectId = mongoose.Types.ObjectId;
 const { signAndEmbed, initiateRecipientSignature, finalizeSigning, prepareDocumentForFinalSigning } = require('../services/digitalSignatureService');
 const {logActivity} = require('../services/activityLogService');
 const { ActivityLogs } = require('../models/ActivityLogs');
@@ -886,6 +885,91 @@ const getSigners = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+const envelopeStats = async (req, res) => {
+  try {
+    const { userId, startDate, endDate } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+
+    // Build query
+    const query = { sender: userId };
+
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    } else if (startDate) {
+      query.createdAt = { $gte: new Date(startDate) };
+    } else if (endDate) {
+      query.createdAt = { $lte: new Date(endDate) };
+    }
+
+    // Count envelopes sent by user
+    const count = await Envelope.countDocuments(query);
+
+    return res.status(200).json({
+      sender: userId,
+      envelopeCount: count
+    });
+
+  } catch (error) {
+    console.error('Error fetching envelope stats:', error);
+    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+};
+const getAllEnvelopeStats = async (req, res) => {
+  try {
+    const { userType } = req.params;
+    const id = req?.user?.data?.id
+    const { startDate, endDate, range } = req.query;
+
+    if (!userType ) {
+      return res.status(400).json({ message: 'userType is required' });
+    }
+    let query = {};
+    if (userType === 'user'){
+      query = { sender: new mongoose.Types.ObjectId(id) };
+    }else if(userType === 'admin'){
+      // Admin can see all envelopes, no additional filter needed
+      query = {};
+    }
+    // Count envelopes based on userType
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+    const totalEnvelopes = await Envelope.countDocuments(query);
+    const completedEnvelopes = await Envelope.countDocuments({ ...query, status: 'completed' });
+    const pendingEnvelopes = await Envelope.countDocuments({ ...query, status: 'in-progress' });
+    const expiredEnvelopes = await Envelope.countDocuments({ ...query, status: 'expired' });
+   //Total Recipients (aggregate from Envelope)
+    const recipientAgg = await Envelope.aggregate([
+      { $match: query },
+      { 
+        $group: { 
+          _id: null, 
+          totalRecipients: { $sum: { $size: { $ifNull: ["$recipientIds", []] } } } 
+        } 
+      }
+    ]);
+    const totalRecipients = recipientAgg.length ? recipientAgg[0].totalRecipients : 0;
+
+    return  res.status(200).json({
+      totalEnvelopes,
+      completedEnvelopes,
+      pendingEnvelopes,
+      expiredEnvelopes,
+      totalRecipients
+    });
+  } catch (error) {
+    console.error('Error fetching envelope stats:', error);
+    throw new Error('Internal Server Error');
+  }
+};
 
 
 
@@ -912,5 +996,7 @@ module.exports = {
   getEnvelopePower,
   signerInitiate,
   getSelfSigner,
-  getSigners
+  getSigners,
+  envelopeStats,
+  getAllEnvelopeStats
 };

@@ -251,7 +251,6 @@ const insertRecipient = async () => {
     role: recipient.role,
     order: recipient.order,
     status: recipient.status,
-    authentication: recipient.authentication
   }));
   try {
     const response = await eSignApi.post('/api/e-sign/add-recipients',
@@ -462,8 +461,7 @@ const handleNext = async () => {
       email: '',
       role: 'signer',
       order: recipients?.length + 1,
-      status: 'waiting',
-      authentication: 'email'
+      status: 'waiting'
     };
     setRecipients(prev => [...prev, newRecipient]);
   };
@@ -580,6 +578,8 @@ const getSteps = async () => {
               case 4:
                 setCurrentStep(4);
                 setEnvelopeId(envelopeId)
+                await getSignatureFields(envelopeId);
+                await getEnvelopeDetail(envelopeId);
                 break;
               case 5:
                 setCurrentStep(5);
@@ -731,54 +731,54 @@ const savePowerFormSlots = async (): Promise<string | null> => {
                     </div>
                   </div>
 
-<div className="space-y-3">
-  {documents.map((doc) => (
-    <div key={doc.id} className="flex flex-col p-4 bg-gray-50 rounded-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <FileText className="w-8 h-8 text-blue-600" />
-          <div>
-            {!doc.isUploading ? (
-              <>
-                <p className="font-medium text-gray-900">{doc.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(doc.size / 1024 / 1024).toFixed(2)} MB • {doc.pages} pages
-                </p>
-              </>
-            ) : (
-              <p className="font-medium text-gray-900">{doc.name} — Uploading...</p>
-            )}
-          </div>
-        </div>
+                  <div className="space-y-3">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="flex flex-col p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <FileText className="w-8 h-8 text-blue-600" />
+                            <div>
+                              {!doc.isUploading ? (
+                                <>
+                                  <p className="font-medium text-gray-900">{doc.name}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {(doc.size / 1024 / 1024).toFixed(2)} MB • {doc.pages} pages
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="font-medium text-gray-900">{doc.name} — Uploading...</p>
+                              )}
+                            </div>
+                          </div>
 
-        {!doc.isUploading && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              removeDocument(doc.id);
-            }}
-            className="p-1 text-gray-400 hover:text-red-600 rounded"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
+                          {!doc.isUploading && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeDocument(doc.id);
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-600 rounded"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
 
-      {/* Progress bar per document */}
-      {doc.isUploading && (
-        <div className="mt-2">
-          <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
-            <div
-              className="h-full bg-blue-500 transition-all"
-              style={{ width: `${doc.uploadProgress ?? 0}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
-        </div>
-      )}
-    </div>
-  ))}
-</div>
+                        {/* Progress bar per document */}
+                        {doc.isUploading && (
+                          <div className="mt-2">
+                            <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
+                              <div
+                                className="h-full bg-blue-500 transition-all"
+                                style={{ width: `${doc.uploadProgress ?? 0}%` }}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
 
 
                   <p className="text-xs text-gray-500 mt-3">Tip: click the box to add more files or drag & drop to add.</p>
@@ -863,21 +863,6 @@ const savePowerFormSlots = async (): Promise<string | null> => {
                               <option value="approver">Approver</option>
                               <option value="carbon_copy">Carbon Copy</option>
                               <option value="in_person_signer">In-Person Signer</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Authentication</label>
-                            <select
-                              value={recipient.authentication}
-                              onChange={(e) => updateRecipient(recipient.id, { authentication: e.target.value as any })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="none">None</option>
-                              <option value="email">Email Verification</option>
-                              <option value="sms">SMS Verification</option>
-                              <option value="access_code">Access Code</option>
-                              <option value="phone">Phone Verification</option>
                             </select>
                           </div>
                         </div>
@@ -1040,7 +1025,6 @@ const savePowerFormSlots = async (): Promise<string | null> => {
             {/* Advanced Authentication */}
             <div className="mt-8">
               <AdvancedAuthenticationSelector
-                selectedMethods={recipients.map(r => r.authentication).filter(Boolean)}
                 onMethodsChange={(methods) => {
                   // Update recipients with new authentication methods
                   setRecipients(prev => prev.map((recipient, index) => ({
@@ -1268,7 +1252,6 @@ const savePowerFormSlots = async (): Promise<string | null> => {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-700 capitalize">{recipient.role.replace('_', ' ')}</p>
-                        <p className="text-xs text-gray-500 capitalize">{recipient.authentication.replace('_', ' ')} auth</p>
                       </div>
                     </div>
                   ))}

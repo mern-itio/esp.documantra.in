@@ -12,7 +12,6 @@ import {
   MoreHorizontal,
   Eye,
   Mail,
-  Shield,
   Activity,
   User,
   Edit,
@@ -465,8 +464,8 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
                     <span className="capitalize">{recipient.role.replace('_', ' ')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Shield className="w-4 h-4" />
-                    <span className="capitalize">{recipient.authentication.replace('_', ' ')} authentication</span>
+                    {/* <Shield className="w-4 h-4" /> */}
+                    {/* <span className="capitalize">{recipient?.authentication.replace('_', ' ')} authentication</span> */}
                   </div>
                   {recipient.viewedAt && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">

@@ -1,135 +1,66 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
-  Shield, 
-  Smartphone, 
-  CreditCard, 
-  Video, 
-  Fingerprint, 
-  Phone,
-  Lock,
   AlertTriangle,
   CheckCircle,
   Clock,
-  User
 } from 'lucide-react';
+import { subscriptionApi } from '../../../services/apiHelper';
+import * as LucideIcons from 'lucide-react';
 
 interface AuthMethod {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: string;
   securityLevel: 'low' | 'medium' | 'high' | 'maximum';
   estimatedTime: string;
-  cost: 'free' | 'low' | 'medium' | 'high';
+  cost: number;
   compliance: string[];
   available: boolean;
 }
 
 interface AdvancedAuthenticationSelectorProps {
-  selectedMethods: string[];
-  onMethodsChange: (methods: string[]) => void;
+  selectedMethods?: string[];
+  onMethodsChange?: (methods: string[]) => void;
   riskLevel: 'low' | 'medium' | 'high';
   complianceRequirements?: string[];
 }
 
 const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorProps> = ({
-  selectedMethods,
+  selectedMethods = [],
   onMethodsChange,
   riskLevel,
   complianceRequirements = []
 }) => {
   const [activeTab, setActiveTab] = useState('recommended');
+  const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
+  const [localSelectedMethods, setLocalSelectedMethods] = useState<string[]>(selectedMethods);
 
-  const authMethods: AuthMethod[] = [
-    {
-      id: 'email',
-      name: 'Email Verification',
-      description: 'Send verification link to recipient email',
-      icon: Shield,
-      securityLevel: 'low',
-      estimatedTime: '1-2 minutes',
-      cost: 'free',
-      compliance: ['esign', 'ueta'],
-      available: true
-    },
-    {
-      id: 'sms',
-      name: 'SMS Verification',
-      description: 'Send verification code via text message',
-      icon: Smartphone,
-      securityLevel: 'medium',
-      estimatedTime: '30 seconds',
-      cost: 'low',
-      compliance: ['esign', 'ueta'],
-      available: true
-    },
-    {
-      id: 'knowledge_based',
-      name: 'Knowledge-Based Authentication',
-      description: 'Answer questions based on personal history',
-      icon: User,
-      securityLevel: 'high',
-      estimatedTime: '3-5 minutes',
-      cost: 'medium',
-      compliance: ['esign', 'ueta', 'eidas'],
-      available: true
-    },
-    {
-      id: 'government_id',
-      name: 'Government ID Verification',
-      description: 'Upload and verify government-issued ID',
-      icon: CreditCard,
-      securityLevel: 'high',
-      estimatedTime: '2-4 minutes',
-      cost: 'medium',
-      compliance: ['esign', 'ueta', 'eidas', 'kyc'],
-      available: true
-    },
-    {
-      id: 'biometric',
-      name: 'Biometric Authentication',
-      description: 'Fingerprint, face, or voice recognition',
-      icon: Fingerprint,
-      securityLevel: 'maximum',
-      estimatedTime: '30 seconds',
-      cost: 'high',
-      compliance: ['esign', 'ueta', 'eidas', 'fido2'],
-      available: true
-    },
-    {
-      id: 'video_id',
-      name: 'Video ID Verification',
-      description: 'Live video call with identity verification',
-      icon: Video,
-      securityLevel: 'maximum',
-      estimatedTime: '5-10 minutes',
-      cost: 'high',
-      compliance: ['esign', 'ueta', 'eidas', 'kyc'],
-      available: true
-    },
-    {
-      id: 'digital_certificate',
-      name: 'Digital Certificate',
-      description: 'PKI-based digital certificate authentication',
-      icon: Lock,
-      securityLevel: 'maximum',
-      estimatedTime: '1 minute',
-      cost: 'high',
-      compliance: ['esign', 'ueta', 'eidas', 'qes'],
-      available: true
-    },
-    {
-      id: 'phone',
-      name: 'Phone Call Verification',
-      description: 'Automated phone call with verification code',
-      icon: Phone,
-      securityLevel: 'medium',
-      estimatedTime: '2-3 minutes',
-      cost: 'medium',
-      compliance: ['esign', 'ueta'],
-      available: true
+  useEffect(() => {
+    fetchAvailableAuthMethods();
+  }, []);
+
+  const fetchAvailableAuthMethods = async () => {
+    try {
+      const response = await subscriptionApi.get('/user/available/auth/methods');
+      if (response.status === 200) {
+        setAuthMethods(response.data.data.methods);
+      }
+    } catch (error) {
+      console.error('Error fetching available auth methods:', error);
     }
-  ];
+  };
+
+  const toggleMethod = (methodId: string) => {
+    let updatedSelection: string[];
+    if (localSelectedMethods.includes(methodId)) {
+      updatedSelection = localSelectedMethods.filter(id => id !== methodId);
+    } else {
+      updatedSelection = [...localSelectedMethods, methodId];
+    }
+    setLocalSelectedMethods(updatedSelection);
+    onMethodsChange?.(updatedSelection); // notify parent if callback provided
+  };
 
   const getSecurityLevelColor = (level: string) => {
     switch (level) {
@@ -141,14 +72,12 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     }
   };
 
-  const getCostColor = (cost: string) => {
-    switch (cost) {
-      case 'free': return 'text-green-600';
-      case 'low': return 'text-blue-600';
-      case 'medium': return 'text-yellow-600';
-      case 'high': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
+  const getCostColor = (cost: number) => {
+    if (cost <= 2) return 'text-green-600';
+    if (cost > 2 && cost < 5) return 'text-blue-600';
+    if (cost >= 5 && cost < 8) return 'text-yellow-600';
+    if (cost >= 8) return 'text-red-600';
+    return 'text-gray-600';
   };
 
   const getRecommendedMethods = () => {
@@ -159,23 +88,16 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     };
     
     return authMethods.filter(method => 
-      riskBasedMethods[riskLevel].includes(method.id) ||
+      riskBasedMethods[riskLevel]?.includes(method.id) ||
       complianceRequirements.some(req => method.compliance.includes(req))
     );
   };
 
-  const toggleMethod = (methodId: string) => {
-    if (selectedMethods.includes(methodId)) {
-      onMethodsChange(selectedMethods.filter(id => id !== methodId));
-    } else {
-      onMethodsChange([...selectedMethods, methodId]);
-    }
-  };
-
   const renderMethodCard = (method: AuthMethod, isRecommended = false) => {
-    const isSelected = selectedMethods.includes(method.id);
-    const Icon = method.icon;
-
+    console.log('Rendering method:', method);
+    const isSelected = localSelectedMethods.includes(method.id);
+    const IconName = method.icon || 'Shield';
+    const Icon = (LucideIcons as any)[IconName];
     return (
       <div
         key={method.id}
@@ -191,22 +113,22 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
             Recommended
           </div>
         )}
-        
+
         <div className="flex items-start space-x-4">
           <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
             isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
           }`}>
             <Icon className="w-6 h-6" />
           </div>
-          
+
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-900">{method.name}</h3>
               {isSelected && <CheckCircle className="w-5 h-5 text-blue-600" />}
             </div>
-            
+
             <p className="text-gray-600 mb-4">{method.description}</p>
-            
+
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Security Level:</span>
@@ -214,7 +136,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
                   {method.securityLevel.charAt(0).toUpperCase() + method.securityLevel.slice(1)}
                 </span>
               </div>
-              
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Estimated Time:</span>
                 <span className="text-gray-900 flex items-center gap-1">
@@ -222,14 +144,14 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
                   {method.estimatedTime}
                 </span>
               </div>
-              
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Cost:</span>
-                <span className={`font-medium ${getCostColor(method.cost)}`}>
-                  {method.cost.charAt(0).toUpperCase() + method.cost.slice(1)}
+                <span className={`font-medium ${getCostColor(Number(method.cost))}`}>
+                  {Number(method.cost)} Credits
                 </span>
               </div>
-              
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Compliance:</span>
                 <div className="flex gap-1">
@@ -254,12 +176,12 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Authentication Methods</h3>
           <p className="text-gray-600">Select authentication methods for recipients</p>
         </div>
-        
         <div className="flex items-center gap-2 text-sm">
           <AlertTriangle className={`w-4 h-4 ${
             riskLevel === 'high' ? 'text-red-500' : 
@@ -302,16 +224,16 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       </div>
 
       {/* Selected Methods Summary */}
-      {selectedMethods.length > 0 && (
+      {localSelectedMethods.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-blue-600" />
             <span className="font-medium text-blue-900">
-              {selectedMethods.length} method{selectedMethods.length !== 1 ? 's' : ''} selected
+              {localSelectedMethods.length} method{localSelectedMethods.length !== 1 ? 's' : ''} selected
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {selectedMethods.map(methodId => {
+            {localSelectedMethods.map(methodId => {
               const method = authMethods.find(m => m.id === methodId);
               return method ? (
                 <span key={methodId} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
@@ -352,3 +274,4 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 };
 
 export default AdvancedAuthenticationSelector;
+  

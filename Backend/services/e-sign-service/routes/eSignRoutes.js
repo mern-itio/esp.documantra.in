@@ -18,7 +18,7 @@ const {
          getEnvSignFields,
          removeDocSignField,
          connectPowerForm,
-         getSigners  } = require('../controllers/mainController');
+         getSigners,getAllEnvelopeStats  } = require('../controllers/mainController');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
@@ -57,5 +57,6 @@ router.get('/envelope/get-signature-fields/:envelopeId',getEnvSignFields);
 router.post('/envelope/remove-signature-field/:fieldId', removeDocSignField);
 router.post('/envelope/connect/powerform', connectPowerForm);
 router.get('/envelope/signers/:envelopeId', getSigners);
+router.get('/envelope/all-stats/:userType', getAllEnvelopeStats);
 
 module.exports = router;

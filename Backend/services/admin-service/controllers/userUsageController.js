@@ -13,29 +13,48 @@ const getUserServiceStats = async (req, res) => {
   try {
     const { userId } = req.params;
     const { startDate, endDate } = req.query;
-    
+
     if (!userId) {
       return res.status(400).json({ status: 400, message: 'User ID is required', data: null });
     }
 
-    // Call pdf-service directly to avoid response-capture hacks
     const query = new URLSearchParams();
     query.append('userId', userId);
     if (startDate) query.append('startDate', startDate);
     if (endDate) query.append('endDate', endDate);
 
-    const result = await serviceGet(req, 'pdf', { url: `/admin/user-stats?${query.toString()}` });
-    if (!result.ok) {
-      return res.status(result.status).json({ status: result.status, message: result.message, data: null });
+    // Run both services in parallel and capture errors
+    const [pdfResult, eSignResult] = await Promise.allSettled([
+      serviceGet(req, 'pdf', { url: `/admin/user-stats?${query.toString()}` }),
+      serviceGet(req, 'esign', { url: `/admin/user-stats?${query.toString()}` })
+    ]);
+
+    const payload = {
+      pdf: pdfResult.status === 'fulfilled' && pdfResult.value.ok
+        ? pdfResult.value.data?.data || pdfResult.value.data || {}
+        : null,
+      eSign: eSignResult.status === 'fulfilled' && eSignResult.value.ok
+        ? eSignResult.value.data?.envelopeCount || null
+        : null
+    };
+
+    // Prepare a message based on which service failed
+    const errors = [];
+    if (pdfResult.status === 'rejected' || (pdfResult.status === 'fulfilled' && !pdfResult.value.ok)) {
+      errors.push('PDF service failed');
     }
-    const payload = result.data?.data || result.data || {};
+    if (eSignResult.status === 'rejected' || (eSignResult.status === 'fulfilled' && !eSignResult.value.ok)) {
+      errors.push('eSign service failed');
+    }
+
     return res.status(200).json({
       status: 200,
-      message: 'Service statistics retrieved successfully',
-      data: { pdf: payload }
+      message: errors.length ? `Partial success: ${errors.join(', ')}` : 'Service statistics retrieved successfully',
+      data: payload
     });
+
   } catch (err) {
-    console.error('Error fetching user service stats:', err);
+    console.error('Unexpected error fetching user service stats:', err);
     return res.status(500).json({ status: 500, message: 'Internal Server Error', data: null });
   }
 };
