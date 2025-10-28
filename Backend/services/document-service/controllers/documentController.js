@@ -1183,6 +1183,138 @@ class DocumentController {
       throw error;
     }
   }
+
+  // Get all documents (Admin only)
+  async getAllDocuments(req, res) {
+    // console.log('📋 getAllDocuments called in document controller');
+    try {
+      const userId = req?.user?.data?.id;
+      const userType = req?.userType;
+      console.log('User info:', { userId, userType, query: req.query });
+      const filterUserId = req.query.userId; // Optional userId filter
+      
+      // Build query
+      let query = {};
+      
+      if (userType === 'admin') {
+        // Admin can either see all documents or filter by a particular user
+        if (filterUserId) {
+          query.ownerId = filterUserId; // Fetch only this user's documents
+        }
+        // else query = {} => fetch all documents
+      } else {
+        // Regular user sees only their own documents
+        query.ownerId = userId;
+      }
+
+      // Exclude deleted documents by default
+      query.isDeleted = { $ne: true };
+
+      // Fetch all documents with folder info
+      const documents = await Document.find(query)
+        .sort({ createdAt: -1 }) // Descending by createdAt
+        .populate('folderId', 'name color')
+        .select('-filePath -fileName') // Don't expose file paths to frontend
+        .lean();
+
+      if (!documents || documents.length === 0) {
+        return res.status(404).json({ 
+          status: 404,
+          message: 'No documents found' 
+        });
+      }
+
+      // Format the response
+      const formattedDocuments = documents.map((doc) => ({
+        id: doc._id,
+        name: doc.name,
+        originalName: doc.originalName,
+        type: doc.type,
+        size: doc.size,
+        mimeType: doc.mimeType,
+        thumbnail: doc.thumbnail,
+        uploadedBy: doc.uploadedBy,
+        ownerId: doc.ownerId,
+        folderId: doc.folderId,
+        folder: doc.folderId ? {
+          id: doc.folderId._id,
+          name: doc.folderId.name,
+          color: doc.folderId.color
+        } : null,
+        description: doc.description,
+        tags: doc.tags,
+        isArchived: doc.isArchived,
+        isFavorite: doc.isFavorite,
+        isPublic: doc.isPublic,
+        shared: doc.shared,
+        sharedWith: doc.sharedWith,
+        views: doc.views,
+        downloads: doc.downloads,
+        createdAt: doc.createdAt,
+        modifiedAt: doc.modifiedAt,
+        lastAccessedAt: doc.lastAccessedAt
+      }));
+
+      return res.status(200).json({
+        status: 'success',
+        data: formattedDocuments,
+        totalDocuments: documents.length,
+      });
+
+    } catch (error) {
+      console.error('Get all documents error:', error);
+      return res.status(500).json({ 
+        status: 500, 
+        message: 'Internal Server Error',
+        error: error.message
+      });
+    }
+  }
+
+  // Get user document statistics (Admin only)
+  async getUserDocumentStats(req, res) {
+    try {
+      const { userId, startDate, endDate } = req.query;
+      console.log('📊 getUserDocumentStats called with:', { userId, startDate, endDate });
+      
+      if (!userId) {
+        return res.status(400).json({ 
+          status: 400, 
+          message: 'User ID is required', 
+          data: null 
+        });
+      }
+
+      // Build filter object
+      const filter = { ownerId: userId, isDeleted: { $ne: true } };
+      console.log('🔍 Filter:', filter);
+      
+      if (startDate || endDate) {
+        filter.createdAt = {};
+        if (startDate) filter.createdAt.$gte = new Date(startDate);
+        if (endDate) filter.createdAt.$lte = new Date(endDate);
+      }
+
+      // Get total documents count
+      const totalDocuments = await Document.countDocuments(filter);
+      console.log('✅ Total documents:', totalDocuments);
+
+      return res.status(200).json({
+        status: 200,
+        message: 'Document count retrieved successfully',
+        data: {
+          documentCount: totalDocuments
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching user document stats:', err);
+      return res.status(500).json({ 
+        status: 500, 
+        message: 'Internal server error', 
+        data: null 
+      });
+    }
+  }
 }
 
 module.exports = new DocumentController();

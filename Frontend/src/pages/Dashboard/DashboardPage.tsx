@@ -14,8 +14,8 @@ const DashboardPage: React.FC = () => {
     // get All envelope stats
     fetchAllEnvelopeStats();
   }
-, []);
- const fetchAllEnvelopeStats = async () => {
+    , []);
+  const fetchAllEnvelopeStats = async () => {
     try {
       setEnvStatesLoading(true);
       const response = await eSignApi.get('/api/e-sign/envelope/all-stats/user');
@@ -59,7 +59,7 @@ const DashboardPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">Welcome to your Final Draft & Sign dashboard</p>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center">
@@ -68,11 +68,11 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Envelopes</p>
-              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading? 'Loading...' : envelopeStats?.totalEnvelopes}</p>
+              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading ? 'Loading...' : envelopeStats?.totalEnvelopes}</p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -80,11 +80,11 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Completed Envelopes</p>
-              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading? 'Loading...' : envelopeStats?.completedEnvelopes}</p>
+              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading ? 'Loading...' : envelopeStats?.completedEnvelopes}</p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg">
@@ -92,25 +92,27 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading? 'Loading...' : envelopeStats.pendingEnvelopes}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {envStatesLoading ? 'Loading...' : envelopeStats?.pendingEnvelopes ?? 0}
+              </p>
             </div>
           </div>
         </div>
-        <Link to="/credits-usage"> 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <span className="text-2xl">📊</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Credits Balance</p>
-              <p className="text-2xl font-semibold text-gray-900">{loading ? '—' : (balance ?? 0)}</p>
+        <Link to="/credits-usage">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <span className="text-2xl">📊</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Credits Balance</p>
+                <p className="text-2xl font-semibold text-gray-900">{loading ? '—' : (balance ?? 0)}</p>
+              </div>
             </div>
           </div>
-        </div>
         </Link>
       </div>
-      
+
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Credit Usage</h2>
         <div className="space-y-3 mb-6">
@@ -128,7 +130,7 @@ const DashboardPage: React.FC = () => {
         </div>
         <div className="mt-2">
           <Link to="/credits-usage" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View details</Link>
-        </div>    
+        </div>
       </div>
     </div>
   );

@@ -23,11 +23,17 @@ const getUserServiceStats = async (req, res) => {
     if (startDate) query.append('startDate', startDate);
     if (endDate) query.append('endDate', endDate);
 
-    // Run both services in parallel and capture errors
-    const [pdfResult, eSignResult] = await Promise.allSettled([
+    // Run all services in parallel and capture errors
+    const [pdfResult, eSignResult, documentResult] = await Promise.allSettled([
       serviceGet(req, 'pdf', { url: `/admin/user-stats?${query.toString()}` }),
-      serviceGet(req, 'esign', { url: `/admin/user-stats?${query.toString()}` })
+      serviceGet(req, 'esign', { url: `/admin/user-stats?${query.toString()}` }),
+      serviceGet(req, 'document', { url: `/admin/user-stats?${query.toString()}` })
     ]);
+
+    console.log('Document result:', documentResult);
+    if (documentResult.status === 'fulfilled') {
+      console.log('Document result data:', documentResult.value.data);
+    }
 
     const payload = {
       pdf: pdfResult.status === 'fulfilled' && pdfResult.value.ok
@@ -35,6 +41,9 @@ const getUserServiceStats = async (req, res) => {
         : null,
       eSign: eSignResult.status === 'fulfilled' && eSignResult.value.ok
         ? eSignResult.value.data?.envelopeCount || null
+        : null,
+      document: documentResult.status === 'fulfilled' && documentResult.value.ok
+        ? (documentResult.value.data?.data?.documentCount || documentResult.value.data?.documentCount || null)
         : null
     };
 
@@ -45,6 +54,9 @@ const getUserServiceStats = async (req, res) => {
     }
     if (eSignResult.status === 'rejected' || (eSignResult.status === 'fulfilled' && !eSignResult.value.ok)) {
       errors.push('eSign service failed');
+    }
+    if (documentResult.status === 'rejected' || (documentResult.status === 'fulfilled' && !documentResult.value.ok)) {
+      errors.push('Document service failed');
     }
 
     return res.status(200).json({
