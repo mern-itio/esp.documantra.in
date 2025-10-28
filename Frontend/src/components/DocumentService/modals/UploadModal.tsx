@@ -24,6 +24,35 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Get subscription plan from localStorage
+  const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
+  
+  React.useEffect(() => {
+    const storedPlan = localStorage.getItem('userSubscriptionPlan');
+    if (storedPlan) {
+      setSubscriptionPlan(JSON.parse(storedPlan));
+    }
+  }, [isOpen]);
+
+  // Update plan when localStorage changes
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      const storedPlan = localStorage.getItem('userSubscriptionPlan');
+      if (storedPlan) {
+        setSubscriptionPlan(JSON.parse(storedPlan));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for our custom event
+    window.addEventListener('subscription-plan-updated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('subscription-plan-updated', handleStorageChange);
+    };
+  }, []);
+
   // Duplicate filename handling
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateFile, setDuplicateFile] = useState<File | null>(null);
@@ -126,6 +155,10 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             setIsUploading(false);
             return;
           }
+          // Handle insufficient credits error - throw to outer handler
+          if (error.message === 'Insufficient credits' || error.response?.status === 402) {
+            throw error;
+          }
           throw error; // Re-throw other errors
         }
       }
@@ -135,8 +168,22 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       onClose();
       navigate(`/all-documents`);
     } catch (error: any) {
-      console.error('Upload failed:', error);
-      setUploadError(error.message || 'Upload failed. Please try again.');
+      console.error('❌ Upload failed:', error);
+      console.error('🔍 Error message:', error.message);
+      console.error('🔍 Error response:', error.response);
+      
+      // Handle insufficient credits error specifically
+      if (error.message === 'Insufficient credits' || error.response?.status === 402) {
+        console.log('💰 Handling insufficient credits error!');
+        const required = error.response?.data?.required || 'N/A';
+        const balance = error.response?.data?.creditsBalance || 'N/A';
+        console.log('Setting upload error message');
+        setUploadError(`Insufficient credits! Required: ${required}, You have: ${balance}. Please upgrade your plan to continue.`);
+      } else if (error.code === 'DUPLICATE_FILENAME') {
+        // Already handled above
+      } else {
+        setUploadError(error.message || 'Upload failed. Please try again.');
+      }
     } finally {
       setIsUploading(false);
     }
@@ -178,7 +225,15 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       onClose();
     } catch (error: any) {
       console.error('Upload failed:', error);
-      setUploadError(error.message || 'Upload failed. Please try again.');
+      
+      // Handle insufficient credits error specifically
+      if (error.message === 'Insufficient credits' || error.response?.status === 402) {
+        const required = error.response?.data?.required || 'N/A';
+        const balance = error.response?.data?.creditsBalance || 'N/A';
+        setUploadError(`Insufficient credits! Required: ${required}, You have: ${balance}. Please upgrade your plan to continue.`);
+      } else {
+        setUploadError(error.message || 'Upload failed. Please try again.');
+      }
     } finally {
       setIsUploading(false);
     }
@@ -195,7 +250,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-full overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-full overflow-auto">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Upload Documents</h2>
@@ -212,6 +267,20 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
         {/* Content */}
         <div className="p-2">
+          {/* Single-line Credits Info */}
+          {subscriptionPlan && (
+            <div className="mb-3 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span><span className="font-medium">Credits:</span> {subscriptionPlan.creditsBalance ?? 0}</span>
+                <span>•</span>
+                <span><span className="font-medium">Cost per upload:</span> {subscriptionPlan.documentCosts?.credits ?? 0}</span>
+                <span>•</span>
+                <span>
+                  <span className="font-medium">After upload:</span> {Math.max(0, (subscriptionPlan.creditsBalance ?? 0) - ((subscriptionPlan.documentCosts?.credits ?? 0) * Math.max(1, selectedFiles.length || 0)))}
+                </span>
+              </div>
+            </div>
+          )}
           {/* Upload Limits Info */}
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-2">
@@ -228,6 +297,8 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
               </div>
             </div>
           </div>
+
+          {/* Credit Balance Info (replaced by single-line banner above) */}
 
           {/* Error Display */}
           {uploadError && (
@@ -327,7 +398,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={selectedFiles.length === 0 || isUploading}
+              disabled={selectedFiles.length === 0 || isUploading || !!uploadError}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400"
             >
               {isUploading ? (

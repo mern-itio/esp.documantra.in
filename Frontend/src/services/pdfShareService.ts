@@ -168,10 +168,26 @@ export const pdfShareService = {
    * Create share link and send emails
    */
   async createShareAndSendEmails(request: PDFShareRequest): Promise<PDFShareResponse> {
-    return apiRequest(`${DOCUMENT_API_BASE_URL}/api/pdf-share/share`, {
+    const token = localStorage.getItem('accessToken');
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/share`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(request),
     });
+
+    // Pass through detailed credit errors
+    if (!response.ok) {
+      let body: any = null;
+      try { body = await response.json(); } catch {}
+      const err: any = new Error(body?.message || 'Failed to share document');
+      err.response = { status: response.status, data: body?.data || null };
+      throw err;
+    }
+
+    return response.json();
   },
 
   /**

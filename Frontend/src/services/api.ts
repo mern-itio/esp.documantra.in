@@ -86,6 +86,126 @@ const makeDocumentRequest = async (
     throw new Error('Authentication token not found');
   }
 
+  // Check for document upload/share and validate credits
+  const isDocumentUpload = options.method === 'POST' && endpoint.includes('/upload');
+  const isDocumentShare = options.method === 'POST' && endpoint.includes('/share') && !endpoint.includes('pdf-share');
+  const isPDFShare = options.method === 'POST' && (endpoint.includes('/pdf-share/upload') || endpoint.includes('/pdf-share/share'));
+  
+  if (isDocumentUpload) {
+    try {
+      const storedPlan = localStorage.getItem('userSubscriptionPlan');
+      if (storedPlan) {
+        const plan = JSON.parse(storedPlan);
+        const creditsBalance = plan.creditsBalance ?? 0;
+        const documentCosts = plan.documentCosts;
+        const required = documentCosts?.credits ?? 0;
+
+        if (required > 0 && creditsBalance < required) {
+          // Dispatch error toast
+          try { 
+            window.dispatchEvent(new CustomEvent('app:toast', { 
+              detail: { 
+                message: `Insufficient credits for document upload. Requires ${required}, you have ${creditsBalance}.`, 
+                type: 'error', 
+                cta: { 
+                  label: 'View Plan', 
+                  action: () => {
+                    window.dispatchEvent(new CustomEvent('app:open-plans-modal'));
+                  }
+                } 
+              } 
+            })); 
+          } catch {}
+          
+          const error: any = new Error('Insufficient credits');
+          error.response = { status: 402, data: { message: 'Insufficient credits', required, creditsBalance } };
+          throw error;
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Insufficient credits') {
+        throw error;
+      }
+      // Continue if it's a different error
+    }
+  }
+
+  // Check for document share
+  if (isDocumentShare) {
+    try {
+      const storedPlan = localStorage.getItem('userSubscriptionPlan');
+      if (storedPlan) {
+        const plan = JSON.parse(storedPlan);
+        const creditsBalance = plan.creditsBalance ?? 0;
+        const shareCosts = plan.shareCosts;
+        const required = shareCosts?.credits ?? 0;
+
+        if (required > 0 && creditsBalance < required) {
+          console.log('❌ INSUFFICIENT CREDITS FOR DOCUMENT SHARE! Required:', required, 'Have:', creditsBalance);
+          try { 
+            window.dispatchEvent(new CustomEvent('app:toast', { 
+              detail: { 
+                message: `Insufficient credits for document share. Requires ${required}, you have ${creditsBalance}.`, 
+                type: 'error', 
+                cta: { 
+                  label: 'View Plan', 
+                  action: () => {
+                    window.dispatchEvent(new CustomEvent('app:open-plans-modal'));
+                  }
+                } 
+              } 
+            })); 
+          } catch {}
+          const error: any = new Error('Insufficient credits');
+          error.response = { status: 402, data: { message: 'Insufficient credits', required, creditsBalance } };
+          throw error;
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Insufficient credits') {
+        throw error;
+      }
+    }
+  }
+
+  // Check for PDF share
+  if (isPDFShare) {
+    try {
+      const storedPlan = localStorage.getItem('userSubscriptionPlan');
+      if (storedPlan) {
+        const plan = JSON.parse(storedPlan);
+        const creditsBalance = plan.creditsBalance ?? 0;
+        const pdfShareCosts = plan.pdfShareCosts;
+        const required = pdfShareCosts?.credits ?? 0;
+
+        if (required > 0 && creditsBalance < required) {
+          console.log('❌ INSUFFICIENT CREDITS FOR PDF SHARE! Required:', required, 'Have:', creditsBalance);
+          try { 
+            window.dispatchEvent(new CustomEvent('app:toast', { 
+              detail: { 
+                message: `Insufficient credits for PDF share. Requires ${required}, you have ${creditsBalance}.`, 
+                type: 'error', 
+                cta: { 
+                  label: 'View Plan', 
+                  action: () => {
+                    window.dispatchEvent(new CustomEvent('app:open-plans-modal'));
+                  }
+                } 
+              } 
+            })); 
+          } catch {}
+          const error: any = new Error('Insufficient credits');
+          error.response = { status: 402, data: { message: 'Insufficient credits', required, creditsBalance } };
+          throw error;
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Insufficient credits') {
+        throw error;
+      }
+    }
+  }
+
   const url = `${DOCUMENT_API_BASE_URL}${endpoint}`;
   
   const headers: HeadersInit = {
@@ -113,6 +233,52 @@ const makeDocumentRequest = async (
       }
       
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    // Consume credits after successful operations
+    if ((isDocumentUpload || isDocumentShare || isPDFShare) && response.ok) {
+      try {
+        const storedPlan = localStorage.getItem('userSubscriptionPlan');
+        if (storedPlan) {
+          const plan = JSON.parse(storedPlan);
+          let required = 0;
+          let action = '';
+          
+          if (isDocumentUpload) {
+            const documentCosts = plan.documentCosts;
+            required = documentCosts?.credits ?? 0;
+            action = 'document:upload';
+          } else if (isDocumentShare) {
+            const shareCosts = plan.shareCosts;
+            required = shareCosts?.credits ?? 0;
+            action = 'document:share';
+          } else if (isPDFShare) {
+            const pdfShareCosts = plan.pdfShareCosts;
+            required = pdfShareCosts?.credits ?? 0;
+            action = 'pdf:share';
+          }
+
+          if (required > 0) {
+            // Update local balance
+            const newBalance = (plan.creditsBalance || 0) - required;
+            plan.creditsBalance = newBalance;
+            localStorage.setItem('userSubscriptionPlan', JSON.stringify(plan));
+
+            // Call consume API in background (fire and forget)
+            try {
+              const subscriptionServiceUrl = import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
+              fetch(`${subscriptionServiceUrl}/usage/consume`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ action, credits: required })
+              }).catch(() => {}); // Ignore errors in background call
+            } catch {}
+          }
+        }
+      } catch {}
     }
 
     // Handle different response types

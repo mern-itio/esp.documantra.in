@@ -62,11 +62,13 @@ const getMyPlan = async (req, res) => {
       creditsBalance: subscription.creditsBalance || 0,
       toolCosts: planTemplate?.toolCosts || [],
       authCosts: planTemplate?.authCosts || [],
+      documentCosts: planTemplate?.documentCosts || { credits: 0 },
+      shareCosts: planTemplate?.shareCosts || { credits: 0 },
+      pdfShareCosts: planTemplate?.pdfShareCosts || { credits: 0 },
       status: subscription.status || 'active',
       periodStart: subscription.periodStart || null,
       periodEnd: subscription.periodEnd || null,
       nextBillingAt: subscription.nextBillingAt || null,
-
       isFree: (planTemplate?.type === 'free') || (planTemplate?.pricePerPeriod === 0),
     };
 

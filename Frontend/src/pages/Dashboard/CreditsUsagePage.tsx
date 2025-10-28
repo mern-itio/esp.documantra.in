@@ -78,7 +78,7 @@ const CreditsUsagePage: React.FC = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tool</th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tool</th> */}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credits</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance After</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -96,12 +96,12 @@ const CreditsUsagePage: React.FC = () => {
                   <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">{r.action || 'usage'}</span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  {/* <td className="px-6 py-4 text-sm text-gray-700">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-indigo-500" />
                       <span>{r.toolId ? (toolNameByIdRef.current[r.toolId] || r.toolId) : '—'}</span>
                     </div>
-                  </td>
+                  </td> */}
                   <td className={`px-6 py-4 text-sm text-right font-semibold ${r.creditsDelta < 0 ? 'text-red-600' : 'text-green-600'}`}>{r.creditsDelta}</td>
                   <td className="px-6 py-4 text-sm text-right text-gray-700 whitespace-nowrap">{r.balanceAfter}</td>
                   <td className="px-6 py-4 text-sm text-gray-700">

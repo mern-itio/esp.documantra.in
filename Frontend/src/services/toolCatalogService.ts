@@ -1,6 +1,18 @@
 import { adminServiceApi } from './apiHelper';
-
-export interface CatalogTool { _id?: string; id: string; name: string; description?: string; category?: string; priority?: number; createdAt?: string; updatedAt?: string }
+export interface CatalogTool {
+  _id?: string;
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  priority?: number;
+  icon?: string;
+  complexity?: 'easy' | 'medium' | 'advanced';
+  avgProcessingTime?: string;
+  popularity?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export const toolCatalogService = {
   async listPublic(): Promise<CatalogTool[]> {
