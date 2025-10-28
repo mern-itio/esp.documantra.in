@@ -554,10 +554,9 @@ const handleNext = async () => {
 
   useEffect(() => {
     getSteps();
-}, []);
+}, [currentStep]);
 const calculateEnvelopeCost = (envelope: any) => {
   const subscription = JSON.parse(localStorage.getItem("userSubscriptionPlan") ?? "null");
-  console.log("User subscription data:", subscription);
 
   if (!subscription?.authCosts?.length || !envelope?.recipients?.length) return;
 
