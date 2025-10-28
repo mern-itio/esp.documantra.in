@@ -4,6 +4,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { documentAPI } from '../../../services/api';
+import { useSubscription } from '../../../context/SubscriptionContext';
+import { SubscriptionStorage } from '../../../services/subscriptionService';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -27,6 +29,12 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
   const [success, setSuccess] = useState<string | null>(null);
 
   const { refreshData } = useDocumentStore();
+  const { userPlan } = useSubscription();
+  const localPlan = SubscriptionStorage.getPlan();
+  const effectivePlan: any = localPlan || userPlan;
+  const creditsBalance = effectivePlan?.creditsBalance ?? 0;
+  const shareCost = effectivePlan?.shareCosts?.credits ?? effectivePlan?.pdfShareCosts?.credits ?? effectivePlan?.documentCosts?.credits ?? 0;
+  const remainingAfter = Math.max(0, creditsBalance - shareCost);
 
   const addShareRequest = () => {
     setShareRequests([...shareRequests, { email: '', permission: 'view', message: '' }]);
@@ -91,7 +99,20 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
       }, 2000);
 
     } catch (error: any) {
-      setError(error.message || 'Failed to share documents');
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+      const msg = error?.message || '';
+      if (status === 402 && data && typeof data === 'object') {
+        const required = Number(data.required || data?.requiredCredits || 0);
+        const balance = Number(data.creditsBalance || data?.balance || 0);
+        const shortage = required > balance ? (required - balance) : 0;
+        const formatted = `Insufficient credits (need ${shortage} more). You have ${balance}, required ${required} for sharing.`;
+        setError(formatted);
+      } else if (/insufficient credits/i.test(msg)) {
+        setError(msg);
+      } else {
+        setError(msg || 'Failed to share documents');
+      }
     } finally {
       setIsSharing(false);
     }
@@ -153,6 +174,15 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          <div className="mb-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span><span className="font-medium">Credits:</span> {creditsBalance}</span>
+              <span>•</span>
+              <span><span className="font-medium">Cost per share:</span> {shareCost}</span>
+              <span>•</span>
+              <span><span className="font-medium">After share:</span> {remainingAfter}</span>
+            </div>
+          </div>
           {/* Share Message */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

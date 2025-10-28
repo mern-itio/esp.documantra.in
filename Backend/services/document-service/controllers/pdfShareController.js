@@ -135,6 +135,32 @@ class PDFShareController {
         }
       }
 
+      // Before creating the share, consume credits from subscription-service for pdf:share
+      try {
+        const subscriptionServiceUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
+        const authHeader = req.headers['authorization'] || '';
+        const resp = await fetch(`${subscriptionServiceUrl}/usage/consume`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authHeader ? { Authorization: authHeader } : {})
+          },
+          body: JSON.stringify({ action: 'pdf:share' })
+        });
+
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => ({}));
+          const status = resp.status;
+          if (status === 402) {
+            return res.status(402).json({ success: false, message: body?.message || 'Insufficient credits', data: body?.data || null });
+          }
+          return res.status(status).json({ success: false, message: body?.message || 'Failed to consume credits', data: body?.data || null });
+        }
+      } catch (consumeErr) {
+        console.error('Error consuming credits for pdf:share:', consumeErr);
+        return res.status(500).json({ success: false, message: 'Unable to verify credits for sharing. Please try again.' });
+      }
+
       // Create shared document record
       const sharedDocument = new SharedDocument({
         documentId: document._id,
@@ -735,6 +761,52 @@ class PDFShareController {
         message: 'Failed to revoke shared document',
         error: error.message
       });
+    }
+  }
+
+  // Get all shared documents (Admin view, optional user filter)
+  async getAllSharedDocuments(req, res) {
+    try {
+      const userType = req?.userType;
+      const filterUserId = req.query.userId;
+
+      const filter = {};
+      if (userType === 'admin') {
+        if (filterUserId) {
+          filter.ownerId = filterUserId;
+        }
+      } else {
+        // Non-admins see only their own shares
+        const userId = req?.user?.data?.id;
+        filter.ownerId = userId;
+      }
+
+      const sharedDocs = await SharedDocument.find(filter)
+        .populate('documentId', 'name size createdAt')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const formatted = (sharedDocs || []).map(share => ({
+        id: share._id,
+        shareToken: share.shareToken,
+        shareUrl: share.shareUrl,
+        document: share.documentId,
+        toRecipients: share.toRecipients || [],
+        ccRecipients: share.ccRecipients || [],
+        bccRecipients: share.bccRecipients || [],
+        viewCount: share.viewCount,
+        downloadCount: share.downloadCount,
+        isActive: share.isActive,
+        expiresAt: share.expiresAt,
+        createdAt: share.createdAt,
+        allowComments: share.allowComments,
+        ownerId: share.ownerId,
+      }));
+
+      return res.status(200).json({ success: true, data: formatted });
+    } catch (error) {
+      console.error('Error fetching shared documents (admin):', error);
+      return res.status(500).json({ success: false, message: 'Failed to fetch shared documents' });
     }
   }
 }

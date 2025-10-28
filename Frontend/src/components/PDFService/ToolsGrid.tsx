@@ -25,6 +25,19 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
 }) => {
   const recentToolIds = new Set(recentTools.map(tool => tool.id));
 
+  // Resolve tool slug -> Mongo ObjectId map and current plan toolCosts
+  let toolIdMap: Record<string, string> = {};
+  let planToolCosts: Array<{ toolId: string; credits: number }> = [];
+  try {
+    const raw = localStorage.getItem('toolCatalogIdMap');
+    toolIdMap = raw ? JSON.parse(raw) : {};
+  } catch {}
+  try {
+    const rawPlan = localStorage.getItem('userSubscriptionPlan');
+    const parsed = rawPlan ? JSON.parse(rawPlan) : null;
+    planToolCosts = parsed?.toolCosts || [];
+  } catch {}
+
   const getCategoryDisplayName = (category?: string) => {
     switch (category) {
       case 'conversion':
@@ -97,6 +110,16 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
           const Icon = getIcon(tool.icon || 'FileText');
           const isRecent = recentToolIds.has(tool.id || '');
           const isFavorite = favoriteTools.has(tool.id || '');
+
+          // Determine required credits for this tool from plan
+          let requiredCredits = 0;
+          try {
+            const toolKey = (tool.id ?? '').toString();
+            const objId = toolKey ? (toolIdMap[toolKey] || null) : null;
+            if (objId) {
+              requiredCredits = planToolCosts.find(tc => String(tc.toolId) === String(objId))?.credits || 0;
+            }
+          } catch {}
 
           return (
             <div
@@ -193,6 +216,9 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                     )}>
                       <Zap className="w-3 h-3 mr-1" />
                       {tool.popularity || 50}%
+                    </div>
+                    <div className="px-2 py-1 text-xs font-medium text-amber-800">
+                      Cost: {requiredCredits} credit
                     </div>
                   </div>
                   

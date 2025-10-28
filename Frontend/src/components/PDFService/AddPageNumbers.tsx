@@ -262,7 +262,7 @@ const AddPageNumbers: React.FC = () => {
     if (result?.downloadUrl) {
       // This is from "Add Page Numbers" - use the main downloadUrl
       try {
-        console.log('Downloading main PDF with page numbers from:', result.downloadUrl);
+        // console.log('Downloading main PDF with page numbers from:', result.downloadUrl);
         await addPageNumbersService.downloadFile(result.downloadUrl, result.filename);
         console.log('Download completed successfully');
       } catch (err: any) {

@@ -75,7 +75,7 @@ export const authApi = createApiInstance(
 );
 
 export const documentApi = createApiInstance(
-  import.meta.env.VITE_DOCUMENT_BASE_URL || 'http://165.22.215.73:2102',
+  import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://165.22.215.73:2102',
   'Document'
 );
 
@@ -152,6 +152,82 @@ pdfApi.interceptors.response.use((response) => {
     // Fire and forget; do not block UI
     if (toolObjId) {
       try { subscriptionApi.post('/usage/consume', { toolId: toolObjId }); } catch {}
+
+      // Update local credits balance immediately
+      try {
+        const plan: any = SubscriptionStorage.getPlan();
+        const toolCosts: Array<{ toolId: string; credits: number }> = plan?.toolCosts || [];
+        const required = toolCosts.find(tc => String(tc.toolId) === String(toolObjId))?.credits || 0;
+        if (required > 0) {
+          const newBalance = Math.max(0, (plan?.creditsBalance || 0) - required);
+          SubscriptionStorage.updateCredits(newBalance);
+        }
+      } catch {}
+    }
+  } catch {}
+  return response;
+}, (error) => Promise.reject(error));
+
+// Centralized credit gating for document uploads
+documentApi.interceptors.request.use((config) => {
+  try {
+    const method = (config.method || 'get').toLowerCase();
+    const url = String(config.url || '');
+    const isDocumentUpload = method === 'post' && /\/upload$/.test(url);
+    if (!isDocumentUpload) return config;
+
+    const plan: any = SubscriptionStorage.getPlan();
+    const creditsBalance: number = plan?.creditsBalance ?? 0;
+    const documentCosts = plan?.documentCosts;
+    const required = documentCosts?.credits ?? 0;
+
+    if (required > 0 && creditsBalance < required) {
+      try { 
+        window.dispatchEvent(new CustomEvent('app:toast', { 
+          detail: { 
+            message: `Insufficient credits for document upload. Requires ${required}, you have ${creditsBalance}.`, 
+            type: 'error', 
+            cta: { 
+              label: 'View Plan', 
+              action: () => {
+                window.dispatchEvent(new CustomEvent('app:open-plans-modal'));
+              }
+            } 
+          } 
+        })); 
+      } catch {}
+      const rejection: any = new Error('Insufficient credits');
+      rejection.response = { status: 402, data: { message: 'Insufficient credits', required, creditsBalance } };
+      return Promise.reject(rejection);
+    }
+  } catch {}
+  return config;
+});
+
+// After successful document upload, consume credits
+documentApi.interceptors.response.use((response) => {
+  try {
+    const method = (response.config.method || 'get').toLowerCase();
+    const url = String(response.config.url || '');
+    const isDocumentUpload = method === 'post' && /\/upload$/.test(url);
+    if (!isDocumentUpload) return response;
+
+    // Get the plan to determine the cost
+    const plan: any = SubscriptionStorage.getPlan();
+    const documentCosts = plan?.documentCosts;
+    const required = documentCosts?.credits ?? 0;
+
+    // Fire and forget; do not block UI
+    if (required > 0) {
+      try { 
+        subscriptionApi.post('/usage/consume', { action: 'document:upload', credits: required }); 
+        
+        // Update local balance
+        if (plan) {
+          const newBalance = (plan.creditsBalance || 0) - required;
+          SubscriptionStorage.updateCredits(newBalance);
+        }
+      } catch {}
     }
   } catch {}
   return response;

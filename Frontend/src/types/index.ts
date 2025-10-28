@@ -27,14 +27,19 @@ export interface UserType {
 export interface SubscriptionPlan {
   id?: string;
   name: string;
-  type: 'free' | 'pro' | 'custom';
+  type: 'free' | 'paid' | 'custom';
   price: number;
-  conversionsLimitType: 'number' | 'unlimited';
+  conversionsLimitType?: 'number' | 'unlimited';
   conversionsLimit: number;
   description: string;
   services: string[];
   creditsBalance: number;
   creditReserved?: number;
+  toolCosts?: Array<{ toolId: string; credits: number; _id?: string }>;
+  authCosts?: Array<{ authId: string; credits: number; _id?: string }>;
+  documentCosts?: { credits: number };
+  shareCosts?: { credits: number };
+  pdfShareCosts?: { credits: number };
   status: 'active' | 'paused' | 'cancelled' | 'trial';
   periodStart?: string;
   periodEnd?: string;

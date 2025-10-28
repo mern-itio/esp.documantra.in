@@ -7,6 +7,8 @@ import { Card } from '../ui/card';
 import { Alert } from '../ui/alert';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { useSubscription } from '../../../context/SubscriptionContext';
+import { SubscriptionStorage } from '../../../services/subscriptionService';
 
 interface PDFShareModalProps {
   isOpen: boolean;
@@ -43,6 +45,12 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
   const [shareData, setShareData] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userPlan } = useSubscription();
+  const localPlan = SubscriptionStorage.getPlan();
+  const effectivePlan: any = localPlan || userPlan;
+  const creditsBalance = effectivePlan?.creditsBalance ?? 0;
+  const shareCost = effectivePlan?.pdfShareCosts?.credits ?? effectivePlan?.shareCosts?.credits ?? effectivePlan?.documentCosts?.credits ?? 0;
+  const remainingAfter = Math.max(0, creditsBalance - shareCost);
 
   // Handle existing document
   useEffect(() => {
@@ -383,7 +391,22 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
       }
     } catch (error) {
       console.error('Error sharing document:', error);
-      setError('Failed to share document. Please try again.');
+      const anyErr = error as any;
+      const status = anyErr?.response?.status;
+      const data = anyErr?.response?.data;
+      const msg = anyErr?.message || '';
+
+      if (status === 402 && data && typeof data === 'object') {
+        const required = Number(data.required || data?.requiredCredits || 0);
+        const balance = Number(data.creditsBalance || data?.balance || 0);
+        const shortage = required > balance ? (required - balance) : 0;
+        const formatted = `Insufficient credits (need ${shortage} more). You have ${balance}, required ${required} for sharing.`;
+        setError(formatted);
+      } else if (/insufficient credits/i.test(msg)) {
+        setError(msg);
+      } else {
+        setError(msg || 'Failed to share document. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -577,6 +600,17 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
+          {((step === 'upload' && !existingDocument) || (existingDocument && step === 'recipients')) && (
+            <div className="mb-4 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span><span className="font-medium">Credits:</span> {creditsBalance}</span>
+                <span>•</span>
+                <span><span className="font-medium">Cost per share:</span> {shareCost}</span>
+                <span>•</span>
+                <span><span className="font-medium">After share:</span> {remainingAfter}</span>
+              </div>
+            </div>
+          )}
           {error && (
             <Alert className="mb-4 bg-red-50 border-red-200 text-red-800">
               {error}

@@ -8,6 +8,11 @@ const pdfToolSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     category: { type: String, default: 'general', index: true },
     priority: { type: Number, default: 0, index: true },
+    // New optional display fields for ToolsGrid
+    icon: { type: String, default: '' },
+    complexity: { type: String, enum: ['easy', 'medium', 'advanced'], default: 'medium', index: true },
+    avgProcessingTime: { type: String, default: '' },
+    popularity: { type: Number, default: 50, min: 0, max: 100, index: true },
   },
   { timestamps: true }
 );

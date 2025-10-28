@@ -22,6 +22,11 @@ export class SubscriptionService {
         description: 'Free plan with limited conversions',
         services: ['pdf', 'esign'],
         creditsBalance: 5,
+        toolCosts: [],
+        authCosts: [],
+        documentCosts: { credits: 0 },
+        shareCosts: { credits: 0 },
+        pdfShareCosts: { credits: 0 },
         status: 'active',
         isFree: true
       };

@@ -146,6 +146,7 @@ import { Analytics } from '../components/PDFService/Analytics';
 // import { PDFEditor } from '../components/PDFService/PDFEditor';
 // import { PDFViewer } from '../components/PDFService/PDFViewer';
 import { Header } from '../components/PDFService/Header';
+import CostHeader from '../components/PDFService/CostHeader';
 import { PdftoDoc } from '../pages/PDFTools/PDFtoDoc';
 import { DoctoPdf } from '../pages/PDFTools/DoctoPdf';
 import { PdfToExcel } from '../pages/PDFTools/PdftoExcel';
@@ -181,6 +182,18 @@ import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 import { PowerForm } from '../pages/eSign/PowerForm';
 import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
+
+// Lightweight wrapper to show PDF header on individual tool pages
+const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className='bg-white p-2'>
+      <CostHeader />
+      <div>
+        {children}
+      </div>
+    </div>
+  );
+};
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -197,7 +210,7 @@ const PDFToolsLayout = () => {
 
   // Load active tools from admin and filter mock list
   const [filteredMock, setFilteredMock] = useState<any>(mockPDFTools);
-  const [catalogTools, setCatalogTools] = useState<Array<{ _id?: string; id: string; name: string; description?: string; category?: string; priority?: number }>>([]);
+  const [catalogTools, setCatalogTools] = useState<Array<{ _id?: string; id: string; name: string; description?: string; category?: string; priority?: number; icon?: string; complexity?: 'easy' | 'medium' | 'advanced'; avgProcessingTime?: string; popularity?: number }>>([]);
   const [activeToolIds, setActiveToolIds] = useState<Set<string>>(new Set());
   const mockDescMap = React.useMemo(() => {
     const map = new Map<string, string>();
@@ -264,10 +277,10 @@ const PDFToolsLayout = () => {
           inputFormats: [],
           outputFormats: [],
           features: [],
-          complexity: 'medium' as const,
-          popularity: 50,
-          avgProcessingTime: '',
-          icon: 'FileText',
+          complexity: (t.complexity as any) || 'medium',
+          popularity: typeof t.popularity === 'number' ? t.popularity : 50,
+          avgProcessingTime: t.avgProcessingTime || '',
+          icon: t.icon || 'FileText',
           route: `/pdf-tools/${t.id}`,
           priority: typeof t.priority === 'number' ? t.priority : 9999,
         }))
@@ -396,7 +409,7 @@ const PDFToolsLayout = () => {
 
   return (
     <div className='bg-white p-2'>
-      {isPro && (
+     {isPro && (
         <Header
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -659,73 +672,73 @@ const authRoutes = [
   },
 
   // Individual PDF Tool Pages
-  { path: '/pdf-tools/pdf-to-word', element: <PdftoDoc /> },
-  { path: '/pdf-tools/word-to-pdf', element: <DoctoPdf /> },
-  { path: '/pdf-tools/pdf-to-excel', element: <PdfToExcel /> },
-  { path: '/pdf-tools/excel-to-pdf', element: <ExcelToPdf /> },
-  { path: '/pdf-tools/pdf-to-powerpoint', element: <PdftoPpt /> },
-  { path: '/pdf-tools/powerpoint-to-pdf', element: <PptToPdf /> },
-  { path: '/pdf-tools/pdf-to-img', element: <PdfToImage /> },
-  { path: '/pdf-tools/img-to-pdf', element: <ImageToPDF /> },
-  { path: '/pdf-tools/pdf-to-text', element: <PdftoText /> },
-  { path: '/pdf-tools/text-to-pdf', element: <TextToPdf /> },
-  { path: '/pdf-tools/pdf-to-html', element: <PdfToHtml /> },
-  { path: '/pdf-tools/html-to-pdf', element: <HtmlToPdf /> },
-  { path: '/pdf-tools/pdf-to-epub', element: <PdfToEpub /> },
-  { path: '/pdf-tools/batch-conversion', element: <BatchConversion /> },
+  { path: '/pdf-tools/pdf-to-word', element: <PDFToolHeaderWrapper><PdftoDoc /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/word-to-pdf', element: <PDFToolHeaderWrapper><DoctoPdf /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-to-excel', element: <PDFToolHeaderWrapper><PdfToExcel /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/excel-to-pdf', element: <PDFToolHeaderWrapper><ExcelToPdf /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-to-powerpoint', element: <PDFToolHeaderWrapper><PdftoPpt /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/powerpoint-to-pdf', element: <PDFToolHeaderWrapper><PptToPdf /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-to-img', element: <PDFToolHeaderWrapper><PdfToImage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/img-to-pdf', element: <PDFToolHeaderWrapper><ImageToPDF /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-to-text', element: <PDFToolHeaderWrapper><PdftoText /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/text-to-pdf', element: <PDFToolHeaderWrapper><TextToPdf /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-to-html', element: <PDFToolHeaderWrapper><PdfToHtml /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/html-to-pdf', element: <PDFToolHeaderWrapper><HtmlToPdf /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-to-epub', element: <PDFToolHeaderWrapper><PdfToEpub /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/batch-conversion', element: <PDFToolHeaderWrapper><BatchConversion /></PDFToolHeaderWrapper> },
   { path: '/pdf-tools/pdf-editor', element: <AdvancedPDFEditor /> },
   { path: '/pdf-tools/add-text', element: <AdvancedPDFEditor /> },
   { path: '/pdf-tools/add-images', element: <AdvancedPDFEditor /> },
   { path: '/pdf-tools/add-shapes', element: <AdvancedPDFEditor /> },
   { path: '/pdf-tools/highlight-text', element: <AdvancedPDFEditor /> },
   { path: '/pdf-tools/draw-annotations', element: <AdvancedPDFEditor /> },
-  { path: '/pdf-tools/merge-pdf', element: <PDFToolsMergePDFPage /> },
-  { path: '/pdf-tools/split-pdf', element: <PDFToolsSplitPDFPage /> },
-  { path: '/pdf-tools/extract-pdf', element: <PDFToolsExtractPDFPage /> },
-  { path: '/pdf-tools/delete-pdf', element: <PDFToolsDeletePDFPage /> },
-  { path: '/pdf-tools/reorder-pdf', element: <PDFToolsReorderPDFPage /> },
-  { path: '/pdf-tools/rotate-pdf', element: <PDFToolsRotatePDFPage /> },
-  { path: '/pdf-tools/crop-pdf', element: <PDFToolsCropPDFPage /> },
-  { path: '/pdf-tools/insert-pdf', element: <PDFToolsInsertPDFPage /> },
-  { path: '/pdf-tools/add-page-numbers', element: <PDFToolsAddPageNumbersPage /> },
-  { path: '/pdf-tools/add-header-footer', element: <PDFToolsAddHeaderFooterPage /> },
-  { path: '/pdf-tools/add-password', element: <PDFToolsAddPasswordPage /> },
-  { path: '/pdf-tools/remove-password', element: <PDFToolsRemovePasswordPage /> },
-  { path: '/pdf-tools/digital-signature', element: <PDFToolsDigitalSignaturePage /> },
-  { path: '/pdf-tools/set-permissions', element: <PDFToolsSetPermissionsPage /> },
-  { path: '/pdf-tools/remove-metadata', element: <PDFToolsRemoveMetadataPage /> },
-  { path: '/pdf-tools/edit-metadata', element: <PDFToolsEditMetadataPage /> },
+  { path: '/pdf-tools/merge-pdf', element: <PDFToolHeaderWrapper><PDFToolsMergePDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/split-pdf', element: <PDFToolHeaderWrapper><PDFToolsSplitPDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/extract-pdf', element: <PDFToolHeaderWrapper><PDFToolsExtractPDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/delete-pdf', element: <PDFToolHeaderWrapper><PDFToolsDeletePDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/reorder-pdf', element: <PDFToolHeaderWrapper><PDFToolsReorderPDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/rotate-pdf', element: <PDFToolHeaderWrapper><PDFToolsRotatePDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/crop-pdf', element: <PDFToolHeaderWrapper><PDFToolsCropPDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/insert-pdf', element: <PDFToolHeaderWrapper><PDFToolsInsertPDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/add-page-numbers', element: <PDFToolHeaderWrapper><PDFToolsAddPageNumbersPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/add-header-footer', element: <PDFToolHeaderWrapper><PDFToolsAddHeaderFooterPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/add-password', element: <PDFToolHeaderWrapper><PDFToolsAddPasswordPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/remove-password', element: <PDFToolHeaderWrapper><PDFToolsRemovePasswordPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/digital-signature', element: <PDFToolHeaderWrapper><PDFToolsDigitalSignaturePage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/set-permissions', element: <PDFToolHeaderWrapper><PDFToolsSetPermissionsPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/remove-metadata', element: <PDFToolHeaderWrapper><PDFToolsRemoveMetadataPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/edit-metadata', element: <PDFToolHeaderWrapper><PDFToolsEditMetadataPage /></PDFToolHeaderWrapper> },
   { path: '/pdf-tools/smart-conversion', element: <SmartConversion /> },
-  { path: '/pdf-tools/spell-check', element: <PDFToolsSpellCheckPage /> },
-  { path: '/pdf-tools/find-replace', element: <PDFToolsFindReplacePage /> },
-  { path: '/pdf-tools/redact-content', element: <PDFToolsRedactContentPage /> },
-  { path: '/pdf-tools/add-stamps', element: <PDFToolsAddStampsPage /> },
-  { path: '/pdf-tools/add-comments', element: <PDFToolsDBAddCommentsPage /> },
+  { path: '/pdf-tools/spell-check', element: <PDFToolHeaderWrapper><PDFToolsSpellCheckPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/find-replace', element: <PDFToolHeaderWrapper><PDFToolsFindReplacePage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/redact-content', element: <PDFToolHeaderWrapper><PDFToolsRedactContentPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/add-stamps', element: <PDFToolHeaderWrapper><PDFToolsAddStampsPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/add-comments', element: <PDFToolHeaderWrapper><PDFToolsDBAddCommentsPage /></PDFToolHeaderWrapper> },
   { path: '/pdf-comments/shared/:linkToken', element: <PDFToolsSharedDocumentPage /> },
-  { path: '/pdf-tools/compress-pdf', element: <PDFToolsCompressPDFPage /> },
-  { path: '/pdf-tools/optimize-image', element: <PDFToolsOptimizeImagePage /> },
-  { path: '/pdf-tools/optimize-font', element: <PDFToolsOptimizeFontPage /> },
-  { path: '/pdf-tools/remove-unused-objects', element: <PDFToolsRemoveUnusedObjectsPage /> },
-  { path: '/pdf-tools/linearize-pdf', element: <PDFToolsLinearizePDFPage /> },
-  { path: '/pdf-tools/color-optimization', element: <PDFToolsColorOptimizationPage /> },
-  { path: '/pdf-tools/quality-analysis', element: <PDFToolsQualityAnalysisPage /> },
-  { path: '/pdf-tools/document-tracking', element: <PDFToolsDocumentTrackingPage /> },
-  { path: '/pdf-tools/batch-optimization', element: <PDFToolsBatchOptimizationPage /> },
-  { path: '/pdf-tools/ocr', element: <PDFToolsOCRPage /> },
-  { path: '/pdf-tools/make-searchable', element: <PDFToolsMakeSearchablePage /> },
-  { path: '/pdf-tools/extract-tables', element: <PDFToolsExtractTablesPage /> },
-  { path: '/pdf-tools/add-watermark', element: <AddWatermark /> },
-  { path: '/pdf-tools/handwriting-recognition', element: <HandwritingRecognition /> },
-  { path: '/pdf-tools/create-form', element: <CreatePdfFormPage /> },
-  { path: '/pdf-tools/fill-form', element: <FillPdfFormPage /> },
-  { path: '/pdf-tools/form-recognition', element: <FormRecognitionPage /> },
-  { path: '/pdf-tools/calculate-fields', element: <CalculateFieldsPage /> },
-  { path: '/pdf-tools/pdf-info', element: <PdfInfoPage /> },
-  { path: '/pdf-tools/pdf-validator', element: <PdfValidatorPage /> },
-  { path: '/pdf-tools/pdf-compare', element: <PdfComparePage /> },
-  { path: '/pdf-tools/pdf-repair', element: <PdfRepairPage /> },
-  { path: '/pdf-tools/pdf-bookmarks', element: <PdfBookmarksPage /> },
-  { path: '/pdf-tools/pdf-statistics', element: <PdfStatisticsPage /> },
+  { path: '/pdf-tools/compress-pdf', element: <PDFToolHeaderWrapper><PDFToolsCompressPDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/optimize-image', element: <PDFToolHeaderWrapper><PDFToolsOptimizeImagePage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/optimize-font', element: <PDFToolHeaderWrapper><PDFToolsOptimizeFontPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/remove-unused-objects', element: <PDFToolHeaderWrapper><PDFToolsRemoveUnusedObjectsPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/linearize-pdf', element: <PDFToolHeaderWrapper><PDFToolsLinearizePDFPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/color-optimization', element: <PDFToolHeaderWrapper><PDFToolsColorOptimizationPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/quality-analysis', element: <PDFToolHeaderWrapper><PDFToolsQualityAnalysisPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/document-tracking', element: <PDFToolHeaderWrapper><PDFToolsDocumentTrackingPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/batch-optimization', element: <PDFToolHeaderWrapper><PDFToolsBatchOptimizationPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/ocr', element: <PDFToolHeaderWrapper><PDFToolsOCRPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/make-searchable', element: <PDFToolHeaderWrapper><PDFToolsMakeSearchablePage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/extract-tables', element: <PDFToolHeaderWrapper><PDFToolsExtractTablesPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/add-watermark', element: <PDFToolHeaderWrapper><AddWatermark /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/handwriting-recognition', element: <PDFToolHeaderWrapper><HandwritingRecognition /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/create-form', element: <PDFToolHeaderWrapper><CreatePdfFormPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/fill-form', element: <PDFToolHeaderWrapper><FillPdfFormPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/form-recognition', element: <PDFToolHeaderWrapper><FormRecognitionPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/calculate-fields', element: <PDFToolHeaderWrapper><CalculateFieldsPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-info', element: <PDFToolHeaderWrapper><PdfInfoPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-validator', element: <PDFToolHeaderWrapper><PdfValidatorPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-compare', element: <PDFToolHeaderWrapper><PdfComparePage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-repair', element: <PDFToolHeaderWrapper><PdfRepairPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-bookmarks', element: <PDFToolHeaderWrapper><PdfBookmarksPage /></PDFToolHeaderWrapper> },
+  { path: '/pdf-tools/pdf-statistics', element: <PDFToolHeaderWrapper><PdfStatisticsPage /></PDFToolHeaderWrapper> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
 
 

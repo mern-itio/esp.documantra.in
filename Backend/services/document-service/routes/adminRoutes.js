@@ -1,10 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const documentController = require('../controllers/documentController');
+const pdfShareController = require('../controllers/pdfShareController');
 
 // Admin endpoint to fetch all documents with optional userId filter
 router.get('/fetch/documents', async (req, res) => {
   return await documentController.getAllDocuments(req, res);
+});
+
+// Admin endpoint to fetch shared PDF documents with optional userId filter
+router.get('/fetch/shared-documents', async (req, res) => {
+  return await pdfShareController.getAllSharedDocuments(req, res);
 });
 
 // Admin endpoint to get document stats for a specific user
