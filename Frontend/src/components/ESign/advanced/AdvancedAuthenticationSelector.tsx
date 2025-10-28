@@ -22,6 +22,7 @@ interface AuthMethod {
 interface AdvancedAuthenticationSelectorProps {
   selectedMethods?: string[];
   onMethodsChange?: (methods: string[]) => void;
+  onMethodSelect?: (methodId: string) => void;
   riskLevel: 'low' | 'medium' | 'high';
   complianceRequirements?: string[];
 }
@@ -29,12 +30,16 @@ interface AdvancedAuthenticationSelectorProps {
 const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorProps> = ({
   selectedMethods = [],
   onMethodsChange,
+  onMethodSelect,
   riskLevel,
   complianceRequirements = []
 }) => {
   const [activeTab, setActiveTab] = useState('recommended');
   const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
-  const [localSelectedMethods, setLocalSelectedMethods] = useState<string[]>(selectedMethods);
+  // single-select mode: keep one selected method id (or null)
+  const [localSelectedMethod, setLocalSelectedMethod] = useState<string | null>(
+    (selectedMethods && selectedMethods.length > 0) ? selectedMethods[0] : null
+  );
 
   useEffect(() => {
     fetchAvailableAuthMethods();
@@ -51,15 +56,15 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     }
   };
 
+  // single-select toggle: select or deselect the method
   const toggleMethod = (methodId: string) => {
-    let updatedSelection: string[];
-    if (localSelectedMethods.includes(methodId)) {
-      updatedSelection = localSelectedMethods.filter(id => id !== methodId);
-    } else {
-      updatedSelection = [...localSelectedMethods, methodId];
-    }
-    setLocalSelectedMethods(updatedSelection);
-    onMethodsChange?.(updatedSelection); // notify parent if callback provided
+    const isCurrentlySelected = localSelectedMethod === methodId;
+    const newSelected = isCurrentlySelected ? null : methodId;
+    setLocalSelectedMethod(newSelected);
+    // Keep legacy onMethodsChange signature (array) for compatibility
+    onMethodsChange?.(newSelected ? [newSelected] : []);
+    // Notify parent a single method was selected (or deselected)
+    if (newSelected) onMethodSelect?.(newSelected);
   };
 
   const getSecurityLevelColor = (level: string) => {
@@ -81,21 +86,17 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   };
 
   const getRecommendedMethods = () => {
-    const riskBasedMethods = {
-      low: ['email', 'sms'],
-      medium: ['sms', 'knowledge_based'],
-      high: ['knowledge_based', 'government_id', 'biometric']
-    };
+
     
     return authMethods.filter(method => 
-      riskBasedMethods[riskLevel]?.includes(method.id) ||
-      complianceRequirements.some(req => method.compliance.includes(req))
+      // is recommended based on backend flag
+      (method as any).isRecommended
     );
   };
 
   const renderMethodCard = (method: AuthMethod, isRecommended = false) => {
     console.log('Rendering method:', method);
-    const isSelected = localSelectedMethods.includes(method.id);
+  const isSelected = localSelectedMethod === method.id;
     const IconName = method.icon || 'Shield';
     const Icon = (LucideIcons as any)[IconName];
     return (
@@ -223,24 +224,22 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         </nav>
       </div>
 
-      {/* Selected Methods Summary */}
-      {localSelectedMethods.length > 0 && (
+      {/* Selected Method Summary (single-select) */}
+      {localSelectedMethod && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-blue-900">
-              {localSelectedMethods.length} method{localSelectedMethods.length !== 1 ? 's' : ''} selected
-            </span>
+            <span className="font-medium text-blue-900">Method Selected</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {localSelectedMethods.map(methodId => {
-              const method = authMethods.find(m => m.id === methodId);
+            {(() => {
+              const method = authMethods.find(m => m.id === localSelectedMethod);
               return method ? (
-                <span key={methodId} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
                   {method.name}
                 </span>
               ) : null;
-            })}
+            })()}
           </div>
         </div>
       )}

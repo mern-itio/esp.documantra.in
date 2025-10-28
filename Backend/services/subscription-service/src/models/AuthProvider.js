@@ -4,6 +4,7 @@ const AuthProviderSchema = new mongoose.Schema({
   name: String,
   description: String,
   defaultCredits: { type: Number, default: 1 },
+  isRecommended: { type: Boolean, default: false },
 
   // Config object for authentication provider
   config: {

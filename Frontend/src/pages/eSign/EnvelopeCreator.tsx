@@ -65,6 +65,8 @@ const EnvelopeCreator: React.FC = () => {
   const [selectedForm, setSelectedForm] = useState<string>("");
   const [powerFormData, setPowerFormData] = useState<any>(null);
   const [slots, setSlots] = useState<any[]>([]);
+  const [isSufficientCredits, setIsSufficientCredits] = useState<boolean>(false);
+  const [credit , setCredit] = useState<number>(0);
 
   // Parties & related state
   const [parties, setParties] = useState<Party[]>(
@@ -90,7 +92,8 @@ const EnvelopeCreator: React.FC = () => {
     allowDecline: true,
     signingOrder: 'sequential' as const,
     signatureType: 'standard' as 'standard' | 'advanced' | 'qualified',
-    complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified'
+    complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified',
+    totalCost:0
   });
   
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -334,16 +337,17 @@ const getEnvelopeDetail = async (envelopeId: string) => {
   try {
     const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
     if (response.status === 200) {
-      setDocuments(response.data.data.documents);
-      console.log('Fetched documents:', response.data.data.documents);
-      setRecipients(response.data.data.recipients);
-      console.log('Fetched recipients:', response.data.data.recipients);
+      const envelope = response.data.data;
+      setDocuments(envelope.documents);
+      setRecipients(envelope.recipients);
       setEnvelopeId(envelopeId);
-    }
+      return envelope;
+    } 
   } catch (error) {
     console.error('Error fetching envelope details:', error);
   }
 };
+
 const updateEnvelope = async () => {
   console.log('Updating envelope with data:', envelopeId);
   if (!envelopeId) return;
@@ -371,7 +375,7 @@ const handleNext = async () => {
       const success = await uploadDocuments(currentStep);
       if (!success) {
         setNextLoading(false);
-        return; // 🚫 stop here — no next step
+        return; //stop here — no next step
       }
       }
       if (currentStep === 2 ) {
@@ -521,7 +525,7 @@ const handleNext = async () => {
       case 4:
         return true; // Authentication is optional
       case 5:
-        return envelopeData.subject.trim() !== '';
+        return envelopeData?.subject?.trim() !== '';
       default:
         return true;
     }
@@ -546,9 +550,45 @@ const handleNext = async () => {
         setSending(false);
       }
   };
+
+
   useEffect(() => {
     getSteps();
 }, []);
+const calculateEnvelopeCost = (envelope: any) => {
+  const subscription = JSON.parse(localStorage.getItem("userSubscriptionPlan") ?? "null");
+  console.log("User subscription data:", subscription);
+
+  if (!subscription?.authCosts?.length || !envelope?.recipients?.length) return;
+
+  const costMap = Object.fromEntries(
+    subscription.authCosts.map((a: any) => [a.authId, a.credits])
+  );
+
+  const updatedRecipients = envelope.recipients.map((r: any) => ({
+    ...r,
+    cost: r.authentication ? (costMap[r.authentication] ?? 0) : 0,
+  }));
+
+  const totalCost = updatedRecipients.reduce(
+    (sum: number, r: any) => sum + (r.cost || 0),
+    0
+  );
+
+  setIsSufficientCredits(totalCost <= (subscription?.creditsBalance || 0));
+  setCredit(subscription?.creditsBalance || 0);
+
+  setEnvelopeData({
+    ...envelope,
+    recipients: updatedRecipients,
+    totalCost,
+  });
+  setRecipients(updatedRecipients);
+
+  console.log("Updated Recipients with Cost:", updatedRecipients);
+  console.log("Total Cost:", totalCost);
+};
+
 const getSteps = async () => {
     const params = new URLSearchParams(location.search);
     const step = params.get('step');
@@ -588,7 +628,9 @@ const getSteps = async () => {
               case 6:
                 setCurrentStep(6);
                 setEnvelopeId(envelopeId);
-                await getEnvelopeDetail(envelopeId);
+                const envelope = await getEnvelopeDetail(envelopeId);
+                if (envelope) calculateEnvelopeCost(envelope);
+
                 break;
               default:
                 setCurrentStep(1);
@@ -1025,12 +1067,47 @@ const savePowerFormSlots = async (): Promise<string | null> => {
             {/* Advanced Authentication */}
             <div className="mt-8">
               <AdvancedAuthenticationSelector
-                onMethodsChange={(methods) => {
-                  // Update recipients with new authentication methods
-                  setRecipients(prev => prev.map((recipient, index) => ({
+                // When a method is selected, apply it to all recipients
+                onMethodSelect={async (methodId) => {
+                  // Compute new recipients with updated authentication
+                  const newRecipients = recipients.map(recipient => ({
                     ...recipient,
-                    authentication: methods[index] as Recipient['authentication'] || 'email'
-                  })));
+                    authentication: methodId as Recipient['authentication'] || 'email'
+                  }));
+
+                  // Update local state immediately for responsive UI
+                  setRecipients(newRecipients);
+                  console.log('Updated recipients with auth method:', newRecipients);
+                  // If we have an envelopeId, persist the recipient permissions/auth in DB
+                  if (envelopeId) {
+                    try {
+                      // Build payload expected by backend insertRecipient
+                      const recipientPayload = newRecipients.map(r => ({
+                        name: r.name,
+                        email: r.email,
+                        role: r.role,
+                        order: r.order,
+                        authentication: r.authentication
+                      }));
+
+                      const resp = await eSignApi.post('/api/e-sign/add-recipients', {
+                        envelopeId,
+                        recipients: recipientPayload
+                      });
+
+                      if (resp.status === 200) {
+                        // Refresh recipients from server to keep IDs and permissions in sync
+                        await getEnvelopeDetail(envelopeId);
+                      } else {
+                        console.warn('Failed to persist recipient auth method', resp);
+                      }
+                    } catch (err) {
+                      console.error('Error persisting recipient auth method:', err);
+                    }
+                  } else {
+                    // No envelopeId yet — recipients will be persisted when envelope is created
+                    console.log('Envelope not created yet; auth method will be persisted when recipients are saved.');
+                  }
                 }}
                 riskLevel="medium"
                 complianceRequirements={[]}
@@ -1176,90 +1253,192 @@ const savePowerFormSlots = async (): Promise<string | null> => {
             </div>
           </div>
         );
-
-      case 6:
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Review & Send</h3>
-              <p className="text-gray-600 mb-6">Review your envelope details before sending to recipients.</p>
-            </div>
-
+        case 6:
+          return (
             <div className="space-y-6">
-              {/* Envelope Summary */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Envelope Summary</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Subject</p>
-                    <p className="text-gray-900">{envelopeData.subject}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Priority</p>
-                    <p className="text-gray-900 capitalize">{envelopeData.priority}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Signature Type</p>
-                    <div className="flex items-center gap-2">
-                      {envelopeData.signatureType === 'qualified' && <Award className="w-4 h-4 text-purple-600" />}
-                      {envelopeData.signatureType === 'advanced' && <Shield className="w-4 h-4 text-blue-600" />}
-                      <p className="text-gray-900 capitalize">{envelopeData.signatureType}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Documents</p>
-                    <p className="text-gray-900">{documents?.length} document{documents?.length !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-                {envelopeData.message && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700">Message</p>
-                    <p className="text-gray-900">{envelopeData.message}</p>
-                  </div>
-                )}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Review & Send</h3>
+                <p className="text-gray-600 mb-6">Review your envelope details before sending to recipients.</p>
               </div>
 
-              {/* Documents */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Documents</h4>
-                <div className="space-y-3">
-                  {documents?.map((doc) => (
-                    <div key={doc.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <FileText className="w-6 h-6 text-blue-600" />
+              <div className="space-y-6">
+              {/* Credit Summary Box */}
+                {envelopeData?.totalCost > 0 && (
+                <div
+                  className={`rounded-2xl p-6 shadow-md border transition-all duration-300 ${
+                    isSufficientCredits
+                      ? "bg-gradient-to-r from-green-50 to-green-100 border-green-300"
+                      : "bg-gradient-to-r from-red-50 to-red-100 border-red-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isSufficientCredits ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"
+                        }`}
+                      >
+                        {isSufficientCredits ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-6 h-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-6 h-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                      </div>
+
                       <div>
-                        <p className="font-medium text-gray-900">{doc.name}</p>
-                        <p className="text-sm text-gray-500">{doc.pages} pages • {(doc.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <h4
+                          className={`text-lg font-semibold ${
+                            isSufficientCredits ? "text-green-800" : "text-red-800"
+                          }`}
+                        >
+                          Credit Overview
+                        </h4>
+                        <p
+                          className={`text-sm ${
+                            isSufficientCredits ? "text-green-700" : "text-red-700"
+                          }`}
+                        >
+                          {isSufficientCredits
+                            ? "You have enough credits to send this envelope."
+                            : "You don’t have enough credits to proceed."}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Recipients */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Recipients</h4>
-                <div className="space-y-3">
-                  {recipients.map((recipient, index) => (
-                    <div key={recipient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{recipient.name}</p>
-                          <p className="text-sm text-gray-500">{recipient.email}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700 capitalize">{recipient.role.replace('_', ' ')}</p>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-gray-900">{envelopeData?.totalCost}</p>
+                      <p className="text-sm text-gray-600 font-medium">Total Credits Required</p>
+                    </div>
+                  </div>
+
+                  {/* Credit Breakdown */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6 text-sm">
+                    <div className="bg-white rounded-lg p-3 shadow-sm border text-center">
+                      <p className="text-gray-500">Available Credits</p>
+                      <p className="font-semibold text-gray-800">{credit ?? 0}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 shadow-sm border text-center">
+                      <p className="text-gray-500">Envelope Cost</p>
+                      <p className="font-semibold text-gray-800">{envelopeData?.totalCost}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 shadow-sm border text-center">
+                      <p className="text-gray-500">Remaining After Send</p>
+                      <p
+                        className={`font-semibold ${
+                          isSufficientCredits ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {(credit ?? 0) - envelopeData?.totalCost}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                )}
+                {/* Envelope Summary */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Envelope Summary</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Subject</p>
+                      <p className="text-gray-900">{envelopeData.subject}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Priority</p>
+                      <p className="text-gray-900 capitalize">{envelopeData.priority}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Signature Type</p>
+                      <div className="flex items-center gap-2">
+                        {envelopeData.signatureType === 'qualified' && <Award className="w-4 h-4 text-purple-600" />}
+                        {envelopeData.signatureType === 'advanced' && <Shield className="w-4 h-4 text-blue-600" />}
+                        <p className="text-gray-900 capitalize">{envelopeData.signatureType}</p>
                       </div>
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Documents</p>
+                      <p className="text-gray-900">
+                        {documents?.length} document{documents?.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  {envelopeData.message && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-700">Message</p>
+                      <p className="text-gray-900">{envelopeData.message}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Documents */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Documents</h4>
+                  <div className="space-y-3">
+                    {documents?.map((doc) => (
+                      <div key={doc.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">{doc.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {doc.pages} pages • {(doc.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recipients */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Recipients</h4>
+                  <div className="space-y-3">
+                    {recipients.map((recipient, index) => (
+                      <div
+                        key={recipient.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{recipient.name}</p>
+                            <p className="text-sm text-gray-500">{recipient.email}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-700 capitalize">
+                            {recipient.role.replace('_', ' ')}
+                          </p>
+                          {recipient.cost !== undefined && (
+                            <p className="text-xs text-green-700 mt-1 font-medium">
+                              Cost: {recipient.cost} credit{recipient.cost !== 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
+          );
 
       default:
         return null;
@@ -1287,6 +1466,7 @@ const savePowerFormSlots = async (): Promise<string | null> => {
           <div className="flex items-center space-x-3">
             {currentStep === 6 && (
               <>
+                {/* Save Draft Button */}
                 <button
                   onClick={handleCreateEnvelope}
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -1294,28 +1474,74 @@ const savePowerFormSlots = async (): Promise<string | null> => {
                   <Save className="w-4 h-4" />
                   Save Draft
                 </button>
-                { mode === 'normal' &&
-                <button
-                  onClick={handleSendEnvelope}
-                  disabled={sending}
-                  className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${
-                    sending ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  {sending ? (
-                    <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                  ) : (
-                    <Send className="w-4 h-4 text-white" />
-                  )}
-                  {sending ? 'Sending...' : 'Send Envelope'}
-                </button>
-                }
+
+                {/* Send Envelope Button */}
+                {mode === 'normal' && (
+                  <div className="flex flex-col items-start">
+                    <button
+                      onClick={handleSendEnvelope}
+                      disabled={sending || !isSufficientCredits}
+                      className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${
+                        !isSufficientCredits
+                          ? 'bg-red-400 cursor-not-allowed text-white'
+                          : sending
+                          ? 'bg-blue-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {sending ? (
+                        <>
+                          <svg
+                            className="animate-spin w-4 h-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8H4z"
+                            />
+                          </svg>
+                          Sending...
+                        </>
+                      ) : !isSufficientCredits ? (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          Insufficient Credits
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 text-white" />
+                          Send Envelope
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
+
         </div>
       </div>
 

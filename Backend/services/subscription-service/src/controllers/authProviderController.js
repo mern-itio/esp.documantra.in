@@ -15,7 +15,8 @@ const addAuthProvider = async (req, res) => {
       defaultCredits: payload?.defaultCredits || 1,
       uiSchema: payload?.uiSchema || {},
       enabled: payload?.enabled !== undefined ? payload.enabled : true,
-      constraints: payload?.constraints || {}
+      constraints: payload?.constraints || {},
+      isRecommended: payload?.isRecommended || false
     });
     return res.status(201).json({ status: 201, message: 'Auth provider added', data: authProvider });
     }catch(error){
@@ -66,6 +67,7 @@ const updateAuthProvider = async (req, res) => {
     if ('description' in payload) update.description = payload.description;
     if ('defaultCredits' in payload) update.defaultCredits = Number(payload.defaultCredits) || 0;
     if ('enabled' in payload) update.enabled = !!payload.enabled;
+    if ('isRecommended' in payload) update.isRecommended = !!payload.isRecommended;
 
     // CONFIG
     if ('config' in payload) {
@@ -190,6 +192,7 @@ const deleteAuthProvider = async (req, res) => {
 };
 const availableAuthMethods = async (req, res) => {
   const userId = req.user?.data?.id;
+  console.log('availableAuthMethods called for userId:', userId);
   if (!userId) {
     return res.status(401).json({
       status: 401,
@@ -201,9 +204,10 @@ const availableAuthMethods = async (req, res) => {
     // Fetch active subscription + plan
     const sub = await Subscription.findOne({ userId, status: 'active' })
       .populate('planTemplateId');
-    if (!sub || !sub.planTemplateId)
+    if (!sub || !sub.planTemplateId){
+      console.log('No active subscription found for userId:', userId);
       return res.status(404).json({ status: 404, message: 'No active subscription found' });
-
+    }
     const plan = sub.planTemplateId;
     const authCosts = plan.authCosts || [];
     // Get IDs of providers listed in plan
@@ -222,7 +226,8 @@ const availableAuthMethods = async (req, res) => {
       icon: p.uiSchema?.icon || 'Shield',
       cost: costMap[p._id.toString()] ?? p.defaultCredits,
       compliance: p.uiSchema?.compliance || [],
-      available: true
+      available: true,
+      isRecommended: p.isRecommended || false
     }));
     return res.json({ status: 200, message: 'OK', data: { methods } });
 

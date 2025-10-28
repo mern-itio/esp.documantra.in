@@ -85,6 +85,7 @@ export interface Recipient {
   ipAddress?: string;
   location?: string;
   authenticationData?: AuthenticationData;
+  cost?: number;
 }
 
 export interface AuthenticationData {
