@@ -20,18 +20,27 @@ const createPlan = async (req, res) => {
       }
     }
 
+    console.log('Creating plan with documentCosts:', payload.documentCosts);
+
     const plan = await PlanTemplate.create({
       name: payload.name,
       services: payload.services,
       type: payload.type || 'paid',
       toolCosts: payload.toolCosts,
       authCosts: payload.authCosts,
+      documentCosts: payload.documentCosts || { credits: 0 },
+      shareCosts: payload.shareCosts || { credits: 0 },
+      pdfShareCosts: payload.pdfShareCosts || { credits: 0 },
       monthlyCredits: payload.monthlyCredits,
       pricePerPeriod: payload.pricePerPeriod,
       period: payload.period || 'monthly',
     });
+    
+    console.log('Plan created:', plan);
+    
     return res.status(201).json({ status: 201, message: 'Plan created', data: plan });
   } catch (error) {
+    console.error('Error creating plan:', error);
     return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
   }
 };
@@ -111,18 +120,33 @@ const updatePlan = async (req, res) => {
       return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
     }
 
-    // Update the plan
+    console.log('Updating plan with payload:', payload);
+    console.log('documentCosts in payload:', payload.documentCosts);
+
+    // Update the plan - ensure documentCosts is properly handled
+    const updateData = {
+      ...payload,
+      version: existingPlan.version + 1 // Increment version
+    };
+    
+    // If documentCosts is not provided and plan has document service, set default
+    if (!updateData.documentCosts && payload.services?.includes('document')) {
+      updateData.documentCosts = { credits: 0 };
+    }
+
+    console.log('Update data:', updateData);
+
     const updatedPlan = await PlanTemplate.findByIdAndUpdate(
       id,
-      {
-        ...payload,
-        version: existingPlan.version + 1 // Increment version
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
+    console.log('Plan updated:', updatedPlan);
+
     return res.status(200).json({ status: 200, message: 'Plan updated successfully', data: updatedPlan });
   } catch (error) {
+    console.error('Error updating plan:', error);
     return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
   }
 };

@@ -14,6 +14,18 @@ const PlanTemplateSchema = new mongoose.Schema({
     authId: { type: mongoose.Schema.Types.ObjectId, ref: 'AuthProvider' },
     credits: Number
   }],
+  // credits cost per document upload
+  documentCosts: {
+    credits: { type: Number, default: 0 }
+  },
+  // credits cost per document share
+  shareCosts: {
+    credits: { type: Number, default: 0 }
+  },
+  // credits cost per PDF share
+  pdfShareCosts: {
+    credits: { type: Number, default: 0 }
+  },
   monthlyCredits: Number,   // or other currency (topup amount)
   pricePerPeriod: Number,
   period: { type: String, enum: ['monthly','yearly'] },

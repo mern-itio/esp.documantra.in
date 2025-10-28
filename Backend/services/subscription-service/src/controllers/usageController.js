@@ -33,11 +33,49 @@ const consumeCredits = async (req, res) => {
     const userId = getUserIdFromRequest(req);
     if (!userId) return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
 
-    const { slug, toolId } = req.body || {};
-    if (!slug && !toolId) return res.status(400).json({ status: 400, message: 'slug or toolId is required', data: null });
-
     const subscription = await Subscription.findOne({ userId });
     if (!subscription) return res.status(404).json({ status: 404, message: 'Subscription not found', data: null });
+
+    // Handle document/PDF share actions with credits (derive when not provided)
+    if (['document:upload', 'document:share', 'pdf:share'].includes(req.body.action)) {
+      const action = req.body.action;
+
+      // Determine required from provided credits or plan template
+      let required = Number(req.body.credits || 0);
+
+      if (!required || required <= 0) {
+        const planTemplate = subscription.planTemplateId ? await PlanTemplate.findById(subscription.planTemplateId).lean() : null;
+        if (planTemplate) {
+          if (action === 'document:upload') {
+            required = Number(planTemplate?.documentCosts?.credits || 0);
+          } else if (action === 'document:share') {
+            required = Number(planTemplate?.shareCosts?.credits || 0);
+          } else if (action === 'pdf:share') {
+            required = Number(planTemplate?.pdfShareCosts?.credits || 0);
+          }
+        }
+      }
+
+      if (required <= 0) {
+        return res.status(200).json({ status: 200, data: { creditsBalance: subscription.creditsBalance, debited: 0 } });
+      }
+
+      if (subscription.creditsBalance < required) {
+        await UsageRecord.create({ subscriptionId: subscription._id, userId, action, creditsDelta: 0, balanceAfter: subscription.creditsBalance, success: false, reason: 'insufficient_credits' });
+        return res.status(402).json({ status: 402, message: 'Insufficient credits', data: { required, creditsBalance: subscription.creditsBalance } });
+      }
+
+      subscription.creditsBalance = subscription.creditsBalance - required;
+      await subscription.save();
+
+      await UsageRecord.create({ subscriptionId: subscription._id, userId, action, creditsDelta: -required, balanceAfter: subscription.creditsBalance, success: true });
+
+      return res.status(200).json({ status: 200, data: { creditsBalance: subscription.creditsBalance, debited: required } });
+    }
+
+    // Handle PDF tool consumption (existing logic)
+    const { slug, toolId } = req.body || {};
+    if (!slug && !toolId) return res.status(400).json({ status: 400, message: 'slug or toolId is required', data: null });
 
     // Resolve tool objectId from slug using PlanTemplate toolCosts list if toolId not provided
     let effectiveToolId = toolId;

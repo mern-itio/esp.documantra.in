@@ -2,12 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const {
-  getPDFToolSettings,
-  createPDFToolSettings,
-  updatePDFToolSettings,
-  deletePDFToolSettings,
-  bulkUpdatePDFToolSettings,
-  initializeDefaultToolSettings,
   userStatusToggle,
   getUserDetail,
   updateUserDetail,
@@ -17,6 +11,7 @@ const {
 const { getActivation, setActivation } = require('../controllers/activationController');
 const {getEnvelopes,getAllEnvelopeStats} = require('../controllers/eSignController');
 const {getDocuments, getDocumentVersions, getDocumentComments, getDocumentWorkflows} = require('../controllers/documentController');
+const { getSharedDocuments, getSharedDocumentComments } = require('../controllers/documentController');
 
 const {createPlane, getPlan, listPlans, updatePlan, deletePlan} = require('../controllers/subscriptionController');
 const {getUserPdfOperations, getUserServiceStats, getUserOperationHistory} = require('../controllers/userUsageController');
@@ -38,13 +33,6 @@ const {
   deleteTool,
 } = require('../controllers/pdfToolController');
 
-// PDF Tool Settings Management routes (Admin only)
-router.get('/pdf-tool-settings', getPDFToolSettings);
-router.post('/pdf-tool-settings', createPDFToolSettings);
-router.put('/pdf-tool-settings/:toolId', updatePDFToolSettings);
-router.delete('/pdf-tool-settings/:toolId', deletePDFToolSettings);
-router.post('/pdf-tool-settings/bulk-update', bulkUpdatePDFToolSettings);
-router.post('/pdf-tool-settings/initialize', initializeDefaultToolSettings);
 
 // Tool Activation routes (separate from settings)
 router.get('/tool-activation/:toolId', getActivation);
@@ -56,6 +44,8 @@ router.get('/envelope/all-stats', getAllEnvelopeStats);
 
 // Document Routes
 router.get('/fetch/documents',getDocuments);
+router.get('/fetch/shared-documents', getSharedDocuments);
+router.get('/shared-documents/:shareToken/comments', getSharedDocumentComments);
 router.get('/documents/:documentId/versions', getDocumentVersions);
 router.get('/documents/:documentId/comments', getDocumentComments);
 router.get('/documents/:documentId/workflows', getDocumentWorkflows);

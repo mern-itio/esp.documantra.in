@@ -322,6 +322,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
               : p
           )
         }));
+        
+        // Re-throw insufficient credits error so modal can handle it
+        if (error.message === 'Insufficient credits' || error.response?.status === 402) {
+          console.log('🔄 Re-throwing insufficient credits error to modal');
+          throw error;
+        }
       }
     }
 
