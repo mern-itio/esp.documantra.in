@@ -36,6 +36,7 @@ export interface PDFShareResponse {
     expiresAt?: string;
     allowDownload: boolean;
     allowComments: boolean;
+    credits?: { creditsBalance: number; debited: number };
   };
 }
 

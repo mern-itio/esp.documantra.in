@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { documentAPI } from '../../../services/api';
+import { subscriptionApi } from '../../../services/apiHelper';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { SubscriptionStorage } from '../../../services/subscriptionService';
 
@@ -85,6 +86,21 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
           }
         }
       }
+
+      // Refresh localStorage credits via subscription balance endpoint using configured Axios instance
+      try {
+        const r = await subscriptionApi.get('/usage/balance');
+        const creditsBalance = r?.data?.data?.creditsBalance;
+        if (typeof creditsBalance === 'number') {
+          const storedPlanRaw = localStorage.getItem('userSubscriptionPlan');
+          if (storedPlanRaw) {
+            const storedPlan = JSON.parse(storedPlanRaw);
+            storedPlan.creditsBalance = creditsBalance;
+            localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
+            window.dispatchEvent(new Event('subscription-plan-updated'));
+          }
+        }
+      } catch {}
 
       setSuccess(`Successfully shared ${selectedDocuments.length} document(s) with ${shareRequests.length} user(s)`);
       
