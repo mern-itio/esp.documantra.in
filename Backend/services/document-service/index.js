@@ -12,6 +12,9 @@ const versionRoutes = require('./routes/versionRoutes');
 const workflowRoutes = require('./routes/workflowRoutes');
 const documentAnalysisRoutes = require('./routes/documentAnalysisRoutes');
 const pdfShareRoutes = require('./routes/pdfShareRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+
+// console.log('📦 Loaded admin routes');
 
 dotenv.config();
 
@@ -103,6 +106,9 @@ app.get('/test-email', async (req, res) => {
 
 app.use('/public/pdf-share', require('./routes/pdfSharePublicRoutes'));
 
+// Admin routes (using JWT like e-sign service)
+app.use('/admin', verifyJWT('admin'), adminRoutes);
+
 app.use('/api', verifyJWT(process.env.ACCESS_TOKEN_SECRET));
 
 // API Routes
@@ -143,6 +149,7 @@ app.use((error, req, res, next) => {
 
 // 404 handler
 app.use('*', (req, res) => {
+  console.log('❌ 404 handler - No route matched for:', req.method, req.path);
   res.status(404).json({
     success: false,
     message: 'Route not found'
@@ -152,7 +159,7 @@ app.use('*', (req, res) => {
 // Start server
 const PORT = process.env.PORT || 2102;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Document Service running on ${PORT}/`);
-  
+  console.log(`Admin routes registered: /admin/fetch/documents`);
 });
