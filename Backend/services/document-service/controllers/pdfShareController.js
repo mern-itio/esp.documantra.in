@@ -137,7 +137,8 @@ class PDFShareController {
 
       // Before creating the share, consume credits from subscription-service for pdf:share
       try {
-        const subscriptionServiceUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
+        // Use service hostname by default for container-to-container calls
+        const subscriptionServiceUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://165.22.215.73:2110';
         const authHeader = req.headers['authorization'] || '';
         const resp = await fetch(`${subscriptionServiceUrl}/usage/consume`, {
           method: 'POST',
