@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Mail, Eye, Edit, UserPlus } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -31,8 +31,15 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
 
   const { refreshData } = useDocumentStore();
   const { userPlan } = useSubscription();
-  const localPlan = SubscriptionStorage.getPlan();
-  const effectivePlan: any = localPlan || userPlan;
+  const [plan, setPlan] = useState<any>(() => SubscriptionStorage.getPlan());
+  useEffect(() => {
+    const load = () => setPlan(SubscriptionStorage.getPlan());
+    load();
+    const handler = () => load();
+    window.addEventListener('subscription-plan-updated', handler);
+    return () => window.removeEventListener('subscription-plan-updated', handler);
+  }, [isOpen]);
+  const effectivePlan: any = plan || userPlan;
   const creditsBalance = effectivePlan?.creditsBalance ?? 0;
   const shareCost = effectivePlan?.shareCosts?.credits ?? effectivePlan?.pdfShareCosts?.credits ?? effectivePlan?.documentCosts?.credits ?? 0;
   const remainingAfter = Math.max(0, creditsBalance - shareCost);
@@ -98,6 +105,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
             storedPlan.creditsBalance = creditsBalance;
             localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
             window.dispatchEvent(new Event('subscription-plan-updated'));
+            setPlan(storedPlan);
           }
         }
       } catch {}

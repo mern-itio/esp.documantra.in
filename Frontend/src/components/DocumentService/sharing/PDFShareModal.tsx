@@ -9,6 +9,7 @@ import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { SubscriptionStorage } from '../../../services/subscriptionService';
+import { subscriptionApi } from '../../../services/apiHelper';
 
 interface PDFShareModalProps {
   isOpen: boolean;
@@ -46,8 +47,15 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userPlan } = useSubscription();
-  const localPlan = SubscriptionStorage.getPlan();
-  const effectivePlan: any = localPlan || userPlan;
+  const [plan, setPlan] = useState<any>(() => SubscriptionStorage.getPlan());
+  useEffect(() => {
+    const load = () => setPlan(SubscriptionStorage.getPlan());
+    load();
+    const handler = () => load();
+    window.addEventListener('subscription-plan-updated', handler);
+    return () => window.removeEventListener('subscription-plan-updated', handler);
+  }, [isOpen]);
+  const effectivePlan: any = plan || userPlan;
   const creditsBalance = effectivePlan?.creditsBalance ?? 0;
   const shareCost = effectivePlan?.pdfShareCosts?.credits ?? effectivePlan?.shareCosts?.credits ?? effectivePlan?.documentCosts?.credits ?? 0;
   const remainingAfter = Math.max(0, creditsBalance - shareCost);
@@ -395,6 +403,22 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
               localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
               // Notify listeners
               window.dispatchEvent(new Event('subscription-plan-updated'));
+              setPlan(storedPlan);
+            }
+          }
+        } catch {}
+        // Fallback: if credits were not returned, fetch balance and update
+        try {
+          const r = await subscriptionApi.get('/usage/balance');
+          const newBalance = r?.data?.data?.creditsBalance;
+          if (typeof newBalance === 'number') {
+            const storedPlanRaw = localStorage.getItem('userSubscriptionPlan');
+            if (storedPlanRaw) {
+              const storedPlan = JSON.parse(storedPlanRaw);
+              storedPlan.creditsBalance = newBalance;
+              localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
+              window.dispatchEvent(new Event('subscription-plan-updated'));
+              setPlan(storedPlan);
             }
           }
         } catch {}
