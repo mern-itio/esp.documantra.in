@@ -384,6 +384,20 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
       if (response.success) {
         setShareData(response.data);
+        // Update localStorage plan balance immediately if credits info returned
+        try {
+          const credits = (response as any)?.data?.credits;
+          if (credits && typeof credits.creditsBalance === 'number') {
+            const storedPlanRaw = localStorage.getItem('userSubscriptionPlan');
+            if (storedPlanRaw) {
+              const storedPlan = JSON.parse(storedPlanRaw);
+              storedPlan.creditsBalance = credits.creditsBalance;
+              localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
+              // Notify listeners
+              window.dispatchEvent(new Event('subscription-plan-updated'));
+            }
+          }
+        } catch {}
         setStep('confirm');
         // Don't call onSuccess here - let user see the confirm step first
       } else {
