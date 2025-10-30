@@ -114,7 +114,7 @@ const ComprehensivePlatform = () => {
         {/* Platform Features Grid */}
         <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 mb-16">
           {platformFeatures.map((feature, index) => (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+            <div key={index} className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 transition-colors duration-200 hover:border-primary-500 hover:shadow-xl cursor-pointer">
               <div className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-6`}>
                 <feature.icon className="h-6 w-6 text-white" />
               </div>
@@ -169,7 +169,7 @@ const ComprehensivePlatform = () => {
         {/* Benefits Section */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {benefits.map((benefit, index) => (
-            <div key={index} className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div key={index} className=" cursor-pointer border border-transparent hover:border-blue-500 text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <benefit.icon className="h-6 w-6 text-primary-600" />
               </div>
@@ -295,10 +295,11 @@ const ComprehensivePlatform = () => {
               </Link>
              
 
-              {/* Secondary Outlined (White border with hover flip) */}
+                <Link to="/login">
               <button className="flex items-center justify-center gap-2 border-2 border-white text-white hover:bg-white hover:text-blue-600 font-semibold text-base px-6 py-3 rounded-md transition-all duration-200">
                 View All Features
               </button>
+              </Link>
             </div>
 
           </div>

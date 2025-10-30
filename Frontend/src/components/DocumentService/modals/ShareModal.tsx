@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Mail, Eye, Edit, UserPlus } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { documentAPI } from '../../../services/api';
+import { subscriptionApi } from '../../../services/apiHelper';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { SubscriptionStorage } from '../../../services/subscriptionService';
 
@@ -30,11 +31,18 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
 
   const { refreshData } = useDocumentStore();
   const { userPlan } = useSubscription();
-  const localPlan = SubscriptionStorage.getPlan();
-  const effectivePlan: any = localPlan || userPlan;
+  const [plan, setPlan] = useState<any>(() => SubscriptionStorage.getPlan());
+  useEffect(() => {
+    const load = () => setPlan(SubscriptionStorage.getPlan());
+    load();
+    const handler = () => load();
+    window.addEventListener('subscription-plan-updated', handler);
+    return () => window.removeEventListener('subscription-plan-updated', handler);
+  }, [isOpen]);
+  const effectivePlan: any = plan || userPlan;
   const creditsBalance = effectivePlan?.creditsBalance ?? 0;
   const shareCost = effectivePlan?.shareCosts?.credits ?? effectivePlan?.pdfShareCosts?.credits ?? effectivePlan?.documentCosts?.credits ?? 0;
-  const remainingAfter = Math.max(0, creditsBalance - shareCost);
+  const remainingAfter = creditsBalance - shareCost;
 
   const addShareRequest = () => {
     setShareRequests([...shareRequests, { email: '', permission: 'view', message: '' }]);
@@ -85,6 +93,22 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
           }
         }
       }
+
+      // Refresh localStorage credits via subscription balance endpoint using configured Axios instance
+      try {
+        const r = await subscriptionApi.get('/usage/balance');
+        const creditsBalance = r?.data?.data?.creditsBalance;
+        if (typeof creditsBalance === 'number') {
+          const storedPlanRaw = localStorage.getItem('userSubscriptionPlan');
+          if (storedPlanRaw) {
+            const storedPlan = JSON.parse(storedPlanRaw);
+            storedPlan.creditsBalance = creditsBalance;
+            localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
+            window.dispatchEvent(new Event('subscription-plan-updated'));
+            setPlan(storedPlan);
+          }
+        }
+      } catch {}
 
       setSuccess(`Successfully shared ${selectedDocuments.length} document(s) with ${shareRequests.length} user(s)`);
       
@@ -174,13 +198,26 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          <div className="mb-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center justify-between">
+          <div className={`mb-2 px-3 py-2 rounded-lg text-sm flex items-center justify-between ${
+            remainingAfter < 0 
+              ? 'bg-red-50 border border-red-200 text-red-800' 
+              : 'bg-green-50 border border-green-200 text-green-800'
+          }`}>
             <div className="flex items-center gap-3">
               <span><span className="font-medium">Credits:</span> {creditsBalance}</span>
               <span>•</span>
               <span><span className="font-medium">Cost per share:</span> {shareCost}</span>
               <span>•</span>
-              <span><span className="font-medium">After share:</span> {remainingAfter}</span>
+              <span>
+                <span className="font-medium">After share:</span>{' '}
+                {remainingAfter < 0 ? (
+                  <span className="text-red-600 font-semibold">
+                    {remainingAfter} ({Math.abs(remainingAfter)} credits required)
+                  </span>
+                ) : (
+                  remainingAfter
+                )}
+              </span>
             </div>
           </div>
           {/* Share Message */}

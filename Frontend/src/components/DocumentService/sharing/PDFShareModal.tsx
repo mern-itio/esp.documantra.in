@@ -9,6 +9,7 @@ import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { SubscriptionStorage } from '../../../services/subscriptionService';
+import { subscriptionApi } from '../../../services/apiHelper';
 
 interface PDFShareModalProps {
   isOpen: boolean;
@@ -46,11 +47,18 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userPlan } = useSubscription();
-  const localPlan = SubscriptionStorage.getPlan();
-  const effectivePlan: any = localPlan || userPlan;
+  const [plan, setPlan] = useState<any>(() => SubscriptionStorage.getPlan());
+  useEffect(() => {
+    const load = () => setPlan(SubscriptionStorage.getPlan());
+    load();
+    const handler = () => load();
+    window.addEventListener('subscription-plan-updated', handler);
+    return () => window.removeEventListener('subscription-plan-updated', handler);
+  }, [isOpen]);
+  const effectivePlan: any = plan || userPlan;
   const creditsBalance = effectivePlan?.creditsBalance ?? 0;
   const shareCost = effectivePlan?.pdfShareCosts?.credits ?? effectivePlan?.shareCosts?.credits ?? effectivePlan?.documentCosts?.credits ?? 0;
-  const remainingAfter = Math.max(0, creditsBalance - shareCost);
+  const remainingAfter = creditsBalance - shareCost;
 
   // Handle existing document
   useEffect(() => {
@@ -384,6 +392,36 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
       if (response.success) {
         setShareData(response.data);
+        // Update localStorage plan balance immediately if credits info returned
+        try {
+          const credits = (response as any)?.data?.credits;
+          if (credits && typeof credits.creditsBalance === 'number') {
+            const storedPlanRaw = localStorage.getItem('userSubscriptionPlan');
+            if (storedPlanRaw) {
+              const storedPlan = JSON.parse(storedPlanRaw);
+              storedPlan.creditsBalance = credits.creditsBalance;
+              localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
+              // Notify listeners
+              window.dispatchEvent(new Event('subscription-plan-updated'));
+              setPlan(storedPlan);
+            }
+          }
+        } catch {}
+        // Fallback: if credits were not returned, fetch balance and update
+        try {
+          const r = await subscriptionApi.get('/usage/balance');
+          const newBalance = r?.data?.data?.creditsBalance;
+          if (typeof newBalance === 'number') {
+            const storedPlanRaw = localStorage.getItem('userSubscriptionPlan');
+            if (storedPlanRaw) {
+              const storedPlan = JSON.parse(storedPlanRaw);
+              storedPlan.creditsBalance = newBalance;
+              localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
+              window.dispatchEvent(new Event('subscription-plan-updated'));
+              setPlan(storedPlan);
+            }
+          }
+        } catch {}
         setStep('confirm');
         // Don't call onSuccess here - let user see the confirm step first
       } else {
@@ -601,13 +639,26 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           {((step === 'upload' && !existingDocument) || (existingDocument && step === 'recipients')) && (
-            <div className="mb-4 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center justify-between">
+            <div className={`mb-4 px-3 py-2 rounded-lg text-sm flex items-center justify-between ${
+              remainingAfter < 0 
+                ? 'bg-red-50 border border-red-200 text-red-800' 
+                : 'bg-green-50 border border-green-200 text-green-800'
+            }`}>
               <div className="flex items-center gap-3">
                 <span><span className="font-medium">Credits:</span> {creditsBalance}</span>
                 <span>•</span>
                 <span><span className="font-medium">Cost per share:</span> {shareCost}</span>
                 <span>•</span>
-                <span><span className="font-medium">After share:</span> {remainingAfter}</span>
+                <span>
+                  <span className="font-medium">After share:</span>{' '}
+                  {remainingAfter < 0 ? (
+                    <span className="text-red-600 font-semibold">
+                      {remainingAfter} ({Math.abs(remainingAfter)} credits required)
+                    </span>
+                  ) : (
+                    remainingAfter
+                  )}
+                </span>
               </div>
             </div>
           )}

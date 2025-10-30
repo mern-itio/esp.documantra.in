@@ -10,7 +10,7 @@ import {
 import { extractPDFService } from '../../services/extractPDFService';
 import type { ExtractPDFResponse } from '../../types/extractPDF';
 import type { PDFInfo } from '../../types/common';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import SuccessBox from '../common/SuccessBox';
 
@@ -26,6 +26,12 @@ interface ExtractPDFProps {
 }
 
 const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
+  const location = useLocation();
+  const isLandingRoute = location.pathname === '/extract-pages';
+  const headingTitle = isLandingRoute ? 'Extract pages' : 'Extract PDF';
+  const headingSubtitle = isLandingRoute
+    ? 'Extract specific pages from your PDF document.'
+    : 'Extract specific pages from your PDF documents';
   const [document, setDocument] = useState<File | null>(null);
   const [pdfInfo, setPdfInfo] = useState<PDFInfo | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -349,7 +355,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
  
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Show success box only when extract is successful */}
         {extractResult && extractResult.success ? (
@@ -391,17 +397,24 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                     <FiScissors className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Extract PDF</h1>
-                    <p className="text-gray-600">Extract specific pages from your PDF documents</p>
+                    <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
+                    <p className="text-gray-600">{headingSubtitle}</p>
                   </div>
                 </div>
               </div>
             </div>
 
+            {isLandingRoute && (
+              <div className="max-w-4xl mx-auto text-center">
+                <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+                <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+              </div>
+            )}
+
             {/* Upload Section - Full Width Initially */}
         {!document && (
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2>
+          <div className="bg-white rounded-xl mt-8 shadow-lg">
+            {/* <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2> */}
 
             <div
               className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive
@@ -680,3 +693,4 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
 };
 
 export default ExtractPDF;
+

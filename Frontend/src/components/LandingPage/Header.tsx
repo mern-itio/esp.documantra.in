@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Toast from '../Toast'
 import { Link } from 'react-router-dom'
-import { Menu, X, ChevronDown, Shield, Users, Code, BookOpen, Building, Heart, Home, Briefcase, DollarSign, Scale, UserCheck, FileCheck,  Calendar, MessageSquare, Award, Globe, FileText, Zap, Database, Settings, TrendingUp, BarChart3, PieChart, Layers, Cloud, Smartphone, Monitor, Headphones, Search, Star } from 'lucide-react'
+import { Menu, X, ChevronDown, Shield, Users, Code, BookOpen, Building, Heart, Home, Briefcase, DollarSign, Scale, UserCheck, FileCheck, Calendar, MessageSquare, Award, Globe, FileText, Zap, Database, Settings, TrendingUp, BarChart3, PieChart, Layers, Cloud, Monitor, Headphones, Search, Star } from 'lucide-react'
 import { useAuth } from '../AuthService/AuthContext'
 
 const Header = () => {
@@ -10,6 +10,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pdfToolsButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,16 +20,12 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
- 
-
-
-
   const handleToolClick = () => {
     // Always close dropdown
     setActiveDropdown(null)
     if (isAuthenticated) return
     // Enforce guest limit UX-side
-   
+
   }
 
   const scrollToSection = (sectionId: string) => {
@@ -60,6 +57,22 @@ const Header = () => {
       const rect = dropdown.getBoundingClientRect();
       const screenWidth = window.innerWidth;
 
+      // For wide, multi-column menus like PDF Tools, center it to viewport
+      if (activeDropdown === 'pdf-tools') {
+        const triggerRect = pdfToolsButtonRef.current?.getBoundingClientRect()
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = '50%';
+        dropdown.style.transform = 'translateX(-50%)';
+        dropdown.style.right = 'auto';
+        dropdown.style.top = `${(triggerRect?.bottom ?? 64) + 8}px`;
+        dropdown.style.maxWidth = '1200px';
+        dropdown.style.width = '95vw';
+        dropdown.style.maxHeight = '80vh';
+        dropdown.style.overflowY = 'auto';
+        return;
+      }
+
+      // Fallback for smaller menus: clamp to viewport edges
       if (rect.right > screenWidth) {
         dropdown.style.left = 'auto';
         dropdown.style.right = '0';
@@ -78,7 +91,7 @@ const Header = () => {
 
 
   // Helper function to create tool links
-  const createToolLink = (toolName: string, path: string, icon: string, color: string) => {
+  const createToolLink = (toolName: string, path: string, icon: string) => {
     return (
       <Link
         to={path}
@@ -86,50 +99,12 @@ const Header = () => {
         onClick={handleToolClick}
       >
         <span className="text-lg">{icon}</span>
-        <span className={`text-sm font-medium ${color}`}>{toolName}.</span>
+        <span className={`text-sm font-medium`}>{toolName}</span>
       </Link>
     )
   }
 
-  const pdfToolsMenu = {
-    recent: [
-      { name: 'Organize', icon: '📁', color: 'text-green-600' },
-      createToolLink('PDF to Word*', '/pdf-to-word', '📄', 'text-orange-600'),
-    
-      createToolLink('Compress*', '/compress-pdf', '🗜️', 'text-blue-600'),
-      createToolLink('Extract Pages*', '/extract-pages', '📄', 'text-green-600'),
-      
-    ],
-   
-    split: [
-      createToolLink('Extract Pages*', '/extract-pages', '📄', 'text-green-600'),
-     
-    ],
-    editSign: [
-      
-      createToolLink('Delete Pages*', '/delete-pages', '🗑️', 'text-blue-600')
-    ],
-    compress: [
-      createToolLink('Compress*', '/compress-pdf', '🗜️', 'text-blue-600')
-    ],
-    security: [
-      createToolLink('Protect*', '/protect-pdf', '🔒', 'text-blue-600'),
-      createToolLink('Unlock*', '/unlock-pdf', '🔓', 'text-blue-600'),
-      createToolLink('Watermark*', '/watermark-pdf', '💧', 'text-blue-600'),
-      
-    ],
-    convertFromPdf: [
-      createToolLink('PDF to Excel*', '/pdf-to-excel', '📊', 'text-orange-600'),
-      createToolLink('PDF to JPG*', '/pdf-to-jpg', '🖼️', 'text-orange-600'),
-      createToolLink('PDF to PowerPoint*', '/pdf-to-powerpoint', '📽️', 'text-orange-600'),
-      createToolLink('PDF to Text*', '/pdf-to-text', '📝', 'text-orange-600'),
-      createToolLink('PDF to Word*', '/pdf-to-word', '📄', 'text-orange-600')
-    ],
-    convertToPdf: [
-      createToolLink('HTML to PDF*', '/html-to-pdf', '🌐', 'text-purple-600'),
-     createToolLink('Word to PDF*', '/word-to-pdf', '📄', 'text-purple-600')
-    ],
-  }
+  // (pdfToolsMenu removed; dropdown rebuilt to match new 6-column style)
 
   const whyDocuSignerMenu = [
     {
@@ -253,35 +228,35 @@ const Header = () => {
     }
   ]
 
-  const industriesMenu = [
-    {
-      category: 'Professional Services',
-      items: [
-        { name: 'Legal & Law Firms', icon: Scale, description: 'Contract management and legal documents' },
-        { name: 'Accounting & Finance', icon: DollarSign, description: 'Financial agreements and audit documents' },
-        { name: 'Consulting', icon: Users, description: 'Client contracts and project agreements' },
-        { name: 'Insurance', icon: Shield, description: 'Policy documents and claims processing' }
-      ]
-    },
-    {
-      category: 'Technology & Innovation',
-      items: [
-        { name: 'Software & SaaS', icon: Code, description: 'NDAs, partnerships, and user agreements' },
-        { name: 'Startups', icon: TrendingUp, description: 'Investor docs and employee contracts' },
-        { name: 'E-commerce', icon: Smartphone, description: 'Vendor agreements and terms of service' },
-        { name: 'Manufacturing', icon: Settings, description: 'Supply chain and vendor contracts' }
-      ]
-    },
-    {
-      category: 'Healthcare & Education',
-      items: [
-        { name: 'Healthcare', icon: UserCheck, description: 'Patient forms and HIPAA compliance' },
-        { name: 'Education', icon: BookOpen, description: 'Student enrollment and administrative forms' },
-        { name: 'Non-Profit', icon: Heart, description: 'Volunteer agreements and donor forms' },
-        { name: 'Government', icon: Award, description: 'Public sector document workflows' }
-      ]
-    }
-  ]
+  // const industriesMenu = [
+  //   {
+  //     category: 'Professional Services',
+  //     items: [
+  //       { name: 'Legal & Law Firms', icon: Scale, description: 'Contract management and legal documents' },
+  //       { name: 'Accounting & Finance', icon: DollarSign, description: 'Financial agreements and audit documents' },
+  //       { name: 'Consulting', icon: Users, description: 'Client contracts and project agreements' },
+  //       { name: 'Insurance', icon: Shield, description: 'Policy documents and claims processing' }
+  //     ]
+  //   },
+  //   {
+  //     category: 'Technology & Innovation',
+  //     items: [
+  //       { name: 'Software & SaaS', icon: Code, description: 'NDAs, partnerships, and user agreements' },
+  //       { name: 'Startups', icon: TrendingUp, description: 'Investor docs and employee contracts' },
+  //       { name: 'E-commerce', icon: Smartphone, description: 'Vendor agreements and terms of service' },
+  //       { name: 'Manufacturing', icon: Settings, description: 'Supply chain and vendor contracts' }
+  //     ]
+  //   },
+  //   {
+  //     category: 'Healthcare & Education',
+  //     items: [
+  //       { name: 'Healthcare', icon: UserCheck, description: 'Patient forms and HIPAA compliance' },
+  //       { name: 'Education', icon: BookOpen, description: 'Student enrollment and administrative forms' },
+  //       { name: 'Non-Profit', icon: Heart, description: 'Volunteer agreements and donor forms' },
+  //       { name: 'Government', icon: Award, description: 'Public sector document workflows' }
+  //     ]
+  //   }
+  // ]
 
   // const supportMenu = [
   //   {
@@ -368,10 +343,10 @@ const Header = () => {
               <a href="#" className="hover:text-primary-200 transition-colors">Blog</a>
               <a href="#" className="hover:text-primary-200 transition-colors">Docs</a>
               {/* <a href="#" className="hover:text-primary-200 transition-colors">Get Support</a> */}
-              <a href="#" className="hover:text-primary-200 transition-colors">Contact Sales</a>
+              <Link to="/contact-sales" className="hover:text-primary-200 transition-colors">Contact Sales</Link>
               {isAuthenticated ? (
-                   <Link to="/dashboard" className="hover:text-primary-200 transition-colors font-medium">Dashboard</Link>
-             
+                <Link to="/dashboard" className="hover:text-primary-200 transition-colors font-medium">Dashboard</Link>
+
               ) : (
                 <Link to="/login" className="hover:text-primary-200 transition-colors font-medium">Log in</Link>
               )}
@@ -386,18 +361,19 @@ const Header = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/" className="text-2xl font-bold gradient-text">DraftnSign</Link>
+              <Link to="/" className="text-2xl font-bold gradient-text">Draft&Sign</Link>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-6">
               {/* PDF Tools Dropdown */}
-              <div 
+              <div
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('pdf-tools')}
                 onMouseLeave={handleDropdownLeave}
               >
                 <button
+                  ref={pdfToolsButtonRef}
                   className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
                 >
                   PDF Tools <ChevronDown className="ml-1 h-4 w-4" />
@@ -405,63 +381,69 @@ const Header = () => {
 
                 {activeDropdown === 'pdf-tools' && (
                   <div
-                    // ref={(el) => {
-                    //   dropdownRefs.current['pdf-tools'] = el;
-                    // }}
-                    className="absolute top-full left-1/2-translate-x-1/2 mt-2 w-[1050px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+                    ref={(el) => {
+                      dropdownRefs.current['pdf-tools'] = el
+                    }}
+                    className="fixed inset-x-0 mx-auto w-[95vw] max-w-[1200px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-4 z-50"
                   >
-                    <div className="grid grid-cols-4 gap-6">
-                      {/* Recent Column */}
+                    <div className="grid grid-cols-5 gap-8">
+                      {/* ORGANIZE PDF */}
                       <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">RECENT</h3>
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">ORGANIZE PDF</h3>
                         <div className="space-y-2">
-                          {pdfToolsMenu.recent.map((tool, index) => renderToolItem(tool, index))}
+                          {renderToolItem(createToolLink('Merge PDF', '/merge-pdf', '🧩'), 0)}
+                          {renderToolItem(createToolLink('Split PDF', '/split-pdf', '✂️'), 1)}
+                          {renderToolItem(createToolLink('Remove pages', '/delete-pages', '🗑️'), 2)}
+                          {renderToolItem(createToolLink('Extract pages', '/extract-pages', '📄'), 3)}
+                          {renderToolItem(createToolLink('Compress PDF', '/compress-pdf', '🗜️'), 4)}
                         </div>
                       </div>
 
-                      {/* Merge Column */}
-                      <div>                      
 
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">SPLIT</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.split.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-                      </div>
-
-                      {/* Edit & Sign Column */}
+                      {/* CONVERT TO PDF */}
                       <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">EDIT & SIGN</h3>
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">CONVERT TO PDF</h3>
                         <div className="space-y-2">
-                          {pdfToolsMenu.editSign.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">COMPRESS</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.compress.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">SECURITY</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.security.map((tool, index) => renderToolItem(tool, index))}
+                          {renderToolItem(createToolLink('IMG TO PDF', '/img-to-pdf', '🖼️'), 0)}
+                          {renderToolItem(createToolLink('WORD to PDF', '/word-to-pdf', '📄'), 1)}
+                          {renderToolItem(createToolLink('POWERPOINT to PDF', '/powerpoint-to-pdf', '📽️'), 2)}
+                          {renderToolItem(createToolLink('EXCEL to PDF', '/excel-to-pdf', '📊'), 3)}
+                          {renderToolItem(createToolLink('HTML to PDF', '/html-to-pdf', '🌐'), 4)}
                         </div>
                       </div>
 
-                      {/* Convert From PDF Column */}
+                      {/* CONVERT FROM PDF */}
                       <div>
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">CONVERT FROM PDF</h3>
                         <div className="space-y-2">
-                          {pdfToolsMenu.convertFromPdf.map((tool, index) => renderToolItem(tool, index))}
-                        </div>
-
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-6">CONVERT TO PDF</h3>
-                        <div className="space-y-2">
-                          {pdfToolsMenu.convertToPdf.map((tool, index) => renderToolItem(tool, index))}
+                          {renderToolItem(createToolLink('PDF to IMG', '/pdf-to-jpg', '🖼️'), 0)}
+                          {renderToolItem(createToolLink('PDF to WORD', '/pdf-to-word', '📄'), 1)}
+                          {renderToolItem(createToolLink('PDF to POWERPOINT', '/pdf-to-powerpoint', '📽️'), 2)}
+                          {renderToolItem(createToolLink('PDF to EXCEL', '/pdf-to-excel', '📊'), 3)}
                         </div>
                       </div>
 
+                      {/* EDIT PDF */}
+                      <div>
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">EDIT PDF</h3>
+                        <div className="space-y-2">
+                          {renderToolItem(createToolLink('Rotate PDF', '/rotate-pdf', '↩️'), 0)}
+                          {renderToolItem(createToolLink('Add watermark', '/watermark-pdf', '💧'), 2)}
+
+                        </div>
+                      </div>
+
+                      {/* PDF SECURITY */}
+                      <div>
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">PDF SECURITY</h3>
+                        <div className="space-y-2">
+                          {renderToolItem(createToolLink('Unlock PDF', '/unlock-pdf', '🔓'), 0)}
+                          {renderToolItem(createToolLink('Protect PDF', '/protect-pdf', '🔒'), 1)}
+                          {/* {renderToolItem(createToolLink('Redact PDF', '/redact-pdf', '🧽'), 3)} */}
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Bottom CTA */}
                     <div className="mt-6 pt-6 border-t border-gray-200">
                       <div className="flex items-center justify-between">
                         <div className="text-xs text-gray-600">
@@ -480,7 +462,7 @@ const Header = () => {
               </div>
 
               {/* Why DocuSigner Dropdown */}
-              <div 
+              <div
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('why-docusigner')}
                 onMouseLeave={handleDropdownLeave}
@@ -504,8 +486,10 @@ const Header = () => {
                           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{section.category}</h3>
                           <div className="space-y-3">
                             {section.items.map((item, index) => (
-                              <button
+                              <Link
+                                to={`/why-draft-sign#${item.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-')}`}
                                 key={index}
+                                onClick={() => setActiveDropdown(null)}
                                 className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                               >
                                 <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
@@ -513,7 +497,7 @@ const Header = () => {
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
                                 </div>
-                              </button>
+                              </Link>
                             ))}
                           </div>
                         </div>
@@ -524,7 +508,7 @@ const Header = () => {
               </div>
 
               {/* Use Cases Dropdown */}
-              <div 
+              <div
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('use-cases')}
                 onMouseLeave={handleDropdownLeave}
@@ -540,7 +524,7 @@ const Header = () => {
                     //                      ref={(el) => {
                     //    dropdownRefs.current['use-cases'] = el;
                     //  }}
-                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[1050px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[1050px] max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
                   >
                     <div className="grid grid-cols-3 gap-6">
                       {useCasesMenu.industries.map((section, sectionIndex) => (
@@ -548,8 +532,10 @@ const Header = () => {
                           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{section.category}</h3>
                           <div className="space-y-3">
                             {section.items.map((item, index) => (
-                              <button
+                              <Link
+                                to={`/use-cases`}
                                 key={index}
+                                onClick={() => setActiveDropdown(null)}
                                 className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                               >
                                 <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
@@ -557,7 +543,7 @@ const Header = () => {
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
                                 </div>
-                              </button>
+                              </Link>
                             ))}
                           </div>
                         </div>
@@ -568,8 +554,10 @@ const Header = () => {
                       <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">COMMON USE CASES</h3>
                       <div className="grid grid-cols-2 gap-3">
                         {useCasesMenu.useCases.map((useCase, index) => (
-                          <button
+                          <Link
+                            to={`/use-cases`}
                             key={index}
+                            onClick={() => setActiveDropdown(null)}
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                           >
                             <useCase.icon className="h-5 w-5 text-primary-600" />
@@ -577,7 +565,7 @@ const Header = () => {
                               <div className="font-medium text-gray-900 text-sm">{useCase.name}</div>
                               <div className="text-xs text-gray-500">{useCase.description}</div>
                             </div>
-                          </button>
+                          </Link>
                         ))}
                       </div>
                     </div>
@@ -586,7 +574,7 @@ const Header = () => {
               </div>
 
               {/* Resources Dropdown */}
-              <div 
+              <div
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('resources')}
                 onMouseLeave={handleDropdownLeave}
@@ -632,7 +620,7 @@ const Header = () => {
               </div>
 
               {/* Developer Dropdown */}
-              <div 
+              <div
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('developer')}
                 onMouseLeave={handleDropdownLeave}
@@ -656,16 +644,18 @@ const Header = () => {
                           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{section.category}</h3>
                           <div className="space-y-3">
                             {section.items.map((item, index) => (
-                              <button
+                              <Link
+                                to={`/api-documentation`}
                                 key={index}
-                                className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                                onClick={() => setActiveDropdown(null)}
+                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                               >
                                 <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
                                 </div>
-                              </button>
+                              </Link>
                             ))}
                           </div>
                         </div>
@@ -676,7 +666,7 @@ const Header = () => {
               </div>
 
               {/* Workspace Dropdown */}
-              <div 
+              <div
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('workspace')}
                 onMouseLeave={handleDropdownLeave}
@@ -700,16 +690,18 @@ const Header = () => {
                           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{section.category}</h3>
                           <div className="space-y-3">
                             {section.items.map((item, index) => (
-                              <button
+                              <Link
+                                to={`/workspace`}
                                 key={index}
-                                className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                                onClick={() => setActiveDropdown(null)}
+                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                               >
                                 <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
                                 </div>
-                              </button>
+                              </Link>
                             ))}
                           </div>
                         </div>
@@ -720,7 +712,7 @@ const Header = () => {
               </div>
 
               {/* Industries Dropdown */}
-              <div 
+              {/* <div 
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('industries')}
                 onMouseLeave={handleDropdownLeave}
@@ -736,7 +728,7 @@ const Header = () => {
                     ref={(el) => {
                       dropdownRefs.current['industries'] = el;
                     }}
-                    className="absolute top-full -translate-x-1/2 mt-2 w-[700px] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
+                    className="absolute top-full right-1/2 -translate-x-1/2 mt-2 w-[650px] max-w-[95vw] bg-white rounded-lg shadow-2xl border border-gray-200 p-6 z-50"
                   >
                     <div className="grid grid-cols-3 gap-6">
                       {industriesMenu.map((section, sectionIndex) => (
@@ -761,10 +753,10 @@ const Header = () => {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Features Dropdown */}
-              <div 
+              <div
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('features')}
                 onMouseLeave={handleDropdownLeave}
@@ -788,8 +780,10 @@ const Header = () => {
                           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{section.category}</h3>
                           <div className="space-y-3">
                             {section.items.map((item, index) => (
-                              <button
+                              <Link
+                                to="/login"
                                 key={index}
+                                onClick={handleToolClick}
                                 className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                               >
                                 <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
@@ -797,7 +791,7 @@ const Header = () => {
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
                                 </div>
-                              </button>
+                              </Link>
                             ))}
                           </div>
                         </div>

@@ -13,20 +13,30 @@ const SplitPDFPage: React.FC = () => {
   };
 
   const downloadAllFiles = async () => {
-    if (!splitResult?.files) return;
-    
     try {
-      // Import the service dynamically to avoid circular dependencies
       const { splitPDFService } = await import('../../services/splitPDFService');
-      await splitPDFService.downloadAllSplitPDFs(splitResult.files);
+      // Prefer ZIP download when available (consistent with success box behavior)
+      if ((splitResult as any)?.zipFile) {
+        await splitPDFService.downloadZipFile((splitResult as any).zipFile);
+        return;
+      }
+      if (splitResult?.files && splitResult.files.length > 0) {
+        await splitPDFService.downloadAllSplitPDFs(splitResult.files);
+        return;
+      }
+      alert('No downloadable files found');
     } catch (error) {
       console.error('Download error:', error);
-      alert('Failed to download some files');
+      alert('Failed to download files');
     }
   };
 
+  const isLandingRoute = location.pathname === '/split-pdf';
+  const headingTitle = 'Split PDF files';
+  const headingSubtitle = 'Divide your PDF into multiple files with precision and control.';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,10 +49,8 @@ const SplitPDFPage: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Split PDF Documents</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Divide your PDF into multiple files with precision and control
-                </p>
+                <h1 className="text-2xl font-bold text-gray-900">{headingTitle}</h1>
+                <p className="mt-1 text-sm text-gray-500">{headingSubtitle}</p>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full mb-4">
@@ -54,8 +62,15 @@ const SplitPDFPage: React.FC = () => {
         </div>
       </div>
 
+      {isLandingRoute && (
+        <div className="max-w-4xl mx-auto mt-8 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="">
+      <div className="py-6">
         <SplitPDF onSplitComplete={handleSplitComplete} />
       </div>
 

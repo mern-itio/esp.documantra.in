@@ -183,19 +183,19 @@ const DocuSignerVsDocuSignPage = () => {
 
   const testimonials = [
     {
-      quote: "We switched from DocuSign to DocuSigner and saved over 60% on our annual costs while gaining access to powerful PDF tools we were paying for separately.",
+      quote: "We switched from DocuSign to Draft&Sign and saved over 60% on our annual costs while gaining access to powerful PDF tools we were paying for separately.",
       author: "Sarah Johnson",
       position: "Operations Director",
       company: "TechCorp Inc."
     },
     {
-      quote: "The free PDF tools alone make DocuSigner worth it. Getting e-signatures, document management, and PDF editing in one platform has streamlined our entire workflow.",
+      quote: "The free PDF tools alone make Draft&Sign worth it. Getting e-signatures, document management, and PDF editing in one platform has streamlined our entire workflow.",
       author: "Michael Chen",
       position: "Small Business Owner",
       company: "Chen Consulting"
     },
     {
-      quote: "DocuSigner's legal templates saved us thousands in legal fees. The platform is intuitive, and the pricing is much more reasonable than what we were paying with DocuSign.",
+      quote: "Draft&Sign's legal templates saved us thousands in legal fees. The platform is intuitive, and the pricing is much more reasonable than what we were paying with DocuSign.",
       author: "Emily Rodriguez",
       position: "HR Manager",
       company: "Global Solutions"
@@ -203,14 +203,14 @@ const DocuSignerVsDocuSignPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 mt-8 pt-24 mt-8 pb-16">
       <div className="container-max">
         {/* Hero Section */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
           <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-white">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">DocuSigner vs DocuSign: The Complete Comparison</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Draft&Sign vs DocuSign: The Complete Comparison</h1>
             <p className="text-xl text-primary-100 max-w-3xl">
-              See how DocuSigner offers a more comprehensive document solution at a fraction of the cost of DocuSign.
+              See how Draft&Sign offers a more comprehensive document solution at a fraction of the cost of DocuSign.
             </p>
           </div>
           
@@ -227,7 +227,7 @@ const DocuSignerVsDocuSignPage = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-6">
-                  Unlike DocuSign, which focuses primarily on e-signatures, DocuSigner provides a complete document ecosystem including e-signatures, 30+ PDF tools, legal templates, and AI-powered document generation—all in one integrated platform.
+                  Unlike DocuSign, which focuses primarily on e-signatures, Draft&Sign provides a complete document ecosystem including e-signatures, 30+ PDF tools, legal templates, and AI-powered document generation—all in one integrated platform.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
@@ -256,7 +256,7 @@ const DocuSignerVsDocuSignPage = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-6">
-                  DocuSigner offers significantly more value than DocuSign with lower prices across all plan tiers. Our free forever plan includes features that DocuSign only offers in their premium plans, and our paid plans cost 50-70% less than comparable DocuSign plans.
+                  Draft&Sign offers significantly more value than DocuSign with lower prices across all plan tiers. Our free forever plan includes features that DocuSign only offers in their premium plans, and our paid plans cost 50-70% less than comparable DocuSign plans.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
@@ -291,7 +291,7 @@ const DocuSignerVsDocuSignPage = () => {
                       <th className="text-left p-3 w-1/2">Feature</th>
                       <th className="text-center p-3 w-1/4">
                         <div className="flex flex-col items-center">
-                          <span className="text-primary-600 font-bold">DocuSigner</span>
+                          <span className="text-primary-600 font-bold">Draft&Sign</span>
                           <span className="text-xs text-gray-500">Our Platform</span>
                         </div>
                       </th>
@@ -341,7 +341,7 @@ const DocuSignerVsDocuSignPage = () => {
         {/* Pricing Comparison */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Pricing Comparison</h2>
-          <p className="text-gray-600 mb-6">See how much you can save by choosing DocuSigner over DocuSign</p>
+          <p className="text-gray-600 mb-6">See how much you can save by choosing Draft&Sign over DocuSign</p>
           
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -350,7 +350,7 @@ const DocuSignerVsDocuSignPage = () => {
                   <th className="text-left p-4">Plan</th>
                   <th className="p-4">
                     <div className="flex flex-col items-center">
-                      <span className="text-primary-600 font-bold">DocuSigner</span>
+                      <span className="text-primary-600 font-bold">Draft&Sign</span>
                       <span className="text-xs text-gray-500">Price</span>
                     </div>
                   </th>
@@ -363,7 +363,7 @@ const DocuSignerVsDocuSignPage = () => {
                   <th className="p-4">
                     <div className="flex flex-col items-center">
                       <span className="text-green-600 font-bold">Your Savings</span>
-                      <span className="text-xs text-gray-500">with DocuSigner</span>
+                      <span className="text-xs text-gray-500">with Draft&Sign</span>
                     </div>
                   </th>
                 </tr>
@@ -439,7 +439,7 @@ const DocuSignerVsDocuSignPage = () => {
               <div>
                 <h4 className="font-medium text-green-800">Annual Savings Potential</h4>
                 <p className="text-sm text-green-700 mt-1">
-                  Organizations typically save 50-70% on their document management costs by switching from DocuSign to DocuSigner. For a team of 10 users, this can translate to $3,000-$5,000 in annual savings.
+                  Organizations typically save 50-70% on their document management costs by switching from DocuSign to Draft&Sign. For a team of 10 users, this can translate to $3,000-$5,000 in annual savings.
                 </p>
               </div>
             </div>
@@ -448,66 +448,66 @@ const DocuSignerVsDocuSignPage = () => {
 
         {/* Key Advantages */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Advantages of DocuSigner over DocuSign</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Advantages of Draft&Sign over DocuSign</h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <FileText className="h-6 w-6 text-primary-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Comprehensive PDF Tools</h3>
               <p className="text-gray-700">
-                DocuSigner includes 30+ PDF tools that DocuSign doesn't offer, eliminating the need for separate PDF software subscriptions and saving you hundreds of dollars annually.
+                Draft&Sign includes 30+ PDF tools that DocuSign doesn't offer, eliminating the need for separate PDF software subscriptions and saving you hundreds of dollars annually.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer  bg-gray-50 rounded-xl p-6">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <DollarSign className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Free Forever Plan</h3>
               <p className="text-gray-700">
-                Unlike DocuSign, DocuSigner offers a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates—perfect for individuals and small businesses.
+                Unlike DocuSign, Draft&Sign offers a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates—perfect for individuals and small businesses.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointerbg-gray-50 rounded-xl p-6">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <Award className="h-6 w-6 text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Legal Template Library</h3>
               <p className="text-gray-700">
-                DocuSigner provides 45+ professionally drafted legal templates that DocuSign doesn't offer, saving you thousands in potential legal fees and consultation costs.
+                Draft&Sign provides 45+ professionally drafted legal templates that DocuSign doesn't offer, saving you thousands in potential legal fees and consultation costs.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
                 <Zap className="h-6 w-6 text-purple-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Features</h3>
               <p className="text-gray-700">
-                DocuSigner's advanced AI capabilities for document generation, field detection, and content analysis outpace DocuSign's limited AI offerings, making document preparation faster and more accurate.
+                Draft&Sign's advanced AI capabilities for document generation, field detection, and content analysis outpace DocuSign's limited AI offerings, making document preparation faster and more accurate.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
               <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-4">
                 <Users className="h-6 w-6 text-orange-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Accessible Team Features</h3>
               <p className="text-gray-700">
-                DocuSigner offers team collaboration features at lower price points than DocuSign, making advanced workflow capabilities accessible to small and medium-sized businesses.
+                Draft&Sign offers team collaboration features at lower price points than DocuSign, making advanced workflow capabilities accessible to small and medium-sized businesses.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <Clock className="h-6 w-6 text-red-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Faster Implementation</h3>
               <p className="text-gray-700">
-                DocuSigner's intuitive interface and streamlined onboarding process gets teams up and running in minutes, compared to DocuSign's more complex implementation that often requires training.
+                Draft&Sign's intuitive interface and streamlined onboarding process gets teams up and running in minutes, compared to DocuSign's more complex implementation that often requires training.
               </p>
             </div>
           </div>
@@ -519,7 +519,7 @@ const DocuSignerVsDocuSignPage = () => {
           
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-6">
+              <div key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
                 <div className="flex items-center gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
@@ -541,21 +541,21 @@ const DocuSignerVsDocuSignPage = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Easy Migration from DocuSign</h2>
           <p className="text-gray-600 mb-6">
-            Switching from DocuSign to DocuSigner is simple with our migration tools and dedicated support.
+            Switching from DocuSign to Draft&Sign is simple with our migration tools and dedicated support.
           </p>
           
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-primary-600 font-bold">1</span>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Import Your Templates</h3>
               <p className="text-gray-700 text-sm">
-                Our template converter automatically imports and adapts your existing DocuSign templates to work with DocuSigner.
+                Our template converter automatically imports and adapts your existing DocuSign templates to work with Draft&Sign.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-primary-600 font-bold">2</span>
               </div>
@@ -565,7 +565,7 @@ const DocuSignerVsDocuSignPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-6">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-primary-600 font-bold">3</span>
               </div>
@@ -577,7 +577,7 @@ const DocuSignerVsDocuSignPage = () => {
           </div>
           
           <div className="mt-6 text-center">
-            <Link to="/contact" className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+            <Link to="/contact-sales" className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
               Schedule Migration Consultation
               <ArrowRight className="h-5 w-5" />
             </Link>
@@ -591,55 +591,55 @@ const DocuSignerVsDocuSignPage = () => {
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Is DocuSigner as legally binding as DocuSign?</h3>
+                <h3 className="font-semibold text-gray-900">Is Draft&Sign as legally binding as DocuSign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Yes, absolutely. DocuSigner's electronic signatures are equally legally binding and compliant with all major e-signature laws including ESIGN Act, UETA, and eIDAS. Our signatures provide the same level of legal validity and court admissibility as DocuSign, with comprehensive audit trails and certificate of completion documentation.
+                  Yes, absolutely. Draft&Sign's electronic signatures are equally legally binding and compliant with all major e-signature laws including ESIGN Act, UETA, and eIDAS. Our signatures provide the same level of legal validity and court admissibility as DocuSign, with comprehensive audit trails and certificate of completion documentation.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How difficult is it to switch from DocuSign to DocuSigner?</h3>
+                <h3 className="font-semibold text-gray-900">How difficult is it to switch from DocuSign to Draft&Sign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Switching is remarkably easy. DocuSigner provides migration tools to import your templates, contacts, and workflows. Most customers complete their migration in less than a day, and our dedicated migration specialists are available to assist with the transition. We also provide comprehensive training resources to help your team get up to speed quickly.
+                  Switching is remarkably easy. Draft&Sign provides migration tools to import your templates, contacts, and workflows. Most customers complete their migration in less than a day, and our dedicated migration specialists are available to assist with the transition. We also provide comprehensive training resources to help your team get up to speed quickly.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Is DocuSigner as secure as DocuSign?</h3>
+                <h3 className="font-semibold text-gray-900">Is Draft&Sign as secure as DocuSign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  DocuSigner implements the same enterprise-grade security measures as DocuSign, including 256-bit SSL encryption, SOC 2 Type II certification, GDPR compliance, and tamper-evident seals. We also offer advanced security features like multi-factor authentication, detailed access controls, and comprehensive audit logs. Your documents and data are equally secure with DocuSigner.
+                  Draft&Sign implements the same enterprise-grade security measures as DocuSign, including 256-bit SSL encryption, SOC 2 Type II certification, GDPR compliance, and tamper-evident seals. We also offer advanced security features like multi-factor authentication, detailed access controls, and comprehensive audit logs. Your documents and data are equally secure with Draft&Sign.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Does DocuSigner offer the same API capabilities as DocuSign?</h3>
+                <h3 className="font-semibold text-gray-900">Does Draft&Sign offer the same API capabilities as DocuSign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  DocuSigner offers comprehensive API capabilities comparable to DocuSign, but with more generous access at lower price points. Our API allows for the same document preparation, sending, signing, and status tracking functionalities. The key difference is that DocuSigner includes API access in our free tier (10 calls/month) and offers more affordable API call packages in our paid plans.
+                  Draft&Sign offers comprehensive API capabilities comparable to DocuSign, but with more generous access at lower price points. Our API allows for the same document preparation, sending, signing, and status tracking functionalities. The key difference is that Draft&Sign includes API access in our free tier (10 calls/month) and offers more affordable API call packages in our paid plans.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How much can I save by switching from DocuSign to DocuSigner?</h3>
+                <h3 className="font-semibold text-gray-900">How much can I save by switching from DocuSign to Draft&Sign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Most organizations save 50-70% on their document management costs by switching to DocuSigner. For example, a business with 10 users on DocuSign's Business plan paying approximately $450/month could switch to DocuSigner's equivalent plan for around $150/month—a savings of $3,600 annually. Additionally, the included PDF tools and legal templates eliminate the need for separate subscriptions to those services, potentially saving thousands more.
+                  Most organizations save 50-70% on their document management costs by switching to Draft&Sign. For example, a business with 10 users on DocuSign's Business plan paying approximately $450/month could switch to Draft&Sign's equivalent plan for around $150/month—a savings of $3,600 annually. Additionally, the included PDF tools and legal templates eliminate the need for separate subscriptions to those services, potentially saving thousands more.
                 </p>
               </div>
             </div>
@@ -650,7 +650,7 @@ const DocuSignerVsDocuSignPage = () => {
         <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Save Money and Get More Features?</h2>
           <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
-            Join thousands of businesses that have switched from DocuSign to DocuSigner for better features at lower prices.
+            Join thousands of businesses that have switched from DocuSign to Draft&Sign for better features at lower prices.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">

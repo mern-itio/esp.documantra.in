@@ -268,19 +268,39 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
         {/* Content */}
         <div className="p-2">
           {/* Single-line Credits Info */}
-          {subscriptionPlan && (
-            <div className="mb-3 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span><span className="font-medium">Credits:</span> {subscriptionPlan.creditsBalance ?? 0}</span>
-                <span>•</span>
-                <span><span className="font-medium">Cost per upload:</span> {subscriptionPlan.documentCosts?.credits ?? 0}</span>
-                <span>•</span>
-                <span>
-                  <span className="font-medium">After upload:</span> {Math.max(0, (subscriptionPlan.creditsBalance ?? 0) - ((subscriptionPlan.documentCosts?.credits ?? 0) * Math.max(1, selectedFiles.length || 0)))}
-                </span>
+          {subscriptionPlan && (() => {
+            const creditsBalance = subscriptionPlan.creditsBalance ?? 0;
+            const costPerUpload = subscriptionPlan.documentCosts?.credits ?? 0;
+            const fileCount = Math.max(1, selectedFiles.length || 0);
+            const totalCost = costPerUpload * fileCount;
+            const balanceAfterUpload = creditsBalance - totalCost;
+            const isNegative = balanceAfterUpload < 0;
+            
+            return (
+              <div className={`mb-3 px-3 py-2 rounded-lg text-sm flex items-center justify-between ${
+                isNegative 
+                  ? 'bg-red-50 border border-red-200 text-red-800' 
+                  : 'bg-green-50 border border-green-200 text-green-800'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <span><span className="font-medium">Credits:</span> {creditsBalance}</span>
+                  <span>•</span>
+                  <span><span className="font-medium">Cost per upload:</span> {costPerUpload}</span>
+                  <span>•</span>
+                  <span>
+                    <span className="font-medium">After upload:</span>{' '}
+                    {isNegative ? (
+                      <span className="text-red-600 font-semibold">
+                        {balanceAfterUpload} ({Math.abs(balanceAfterUpload)} credits required)
+                      </span>
+                    ) : (
+                      balanceAfterUpload
+                    )}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           {/* Upload Limits Info */}
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-2">

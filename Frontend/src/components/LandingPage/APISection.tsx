@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Code, Webhook, Send, BarChart3, Copy, Check } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const APISection = () => {
   const [activeTab, setActiveTab] = useState<'prepare' | 'template' | 'send' | 'webhook'>('prepare')
@@ -96,7 +97,7 @@ app.post('/webhook', (req, res) => {
             Automate Documents with <span className="gradient-text">Developer-Friendly APIs</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Integrate DocuFie's powerful document automation into your applications
+            Integrate Draft&Sign powerful document automation into your applications
           </p>
         </div>
 
@@ -135,8 +136,12 @@ app.post('/webhook', (req, res) => {
             </div>
 
             <div className="flex gap-4">
-              <button className="btn-primary">View API Docs</button>
-              <button className="btn-secondary">Get Your API Key</button>
+              <Link to='/api-documentation'>
+                <button className="btn-primary">View API Docs</button>
+              </Link>
+              <Link to='/login'>
+                <button className="btn-secondary">Get Your API Key</button>
+              </Link>
             </div>
           </div>
 

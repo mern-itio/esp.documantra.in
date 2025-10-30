@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Upload, Settings, CheckCircle, AlertCircle, Info, Zap, FileDown, ArrowLeft, X } from 'lucide-react';
+import { FileText, Settings, CheckCircle, AlertCircle, Info, Zap, FileDown, ArrowLeft, X } from 'lucide-react';
 import { Button } from '../DocumentService/ui/button';
 import { Card } from '../DocumentService/ui/card';
 import { compressPDFService } from '../../services/compressPDFService';
@@ -8,6 +8,9 @@ import { Link, useLocation } from 'react-router-dom';
 
 const CompressPDF: React.FC = () => {
   const location = useLocation();
+  const isLandingRoute = location.pathname === '/compress-pdf';
+  const headingTitle = 'Compress PDF';
+  const headingSubtitle = 'Reduce file size while maintaining quality.';
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<CompressPDFResponse | null>(null);
@@ -288,7 +291,7 @@ const CompressPDF: React.FC = () => {
   }
 
   return (
-    <div className=" p-2 space-y-6">
+    <div className="min-h-screen bg-white p-2 space-y-6">
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
@@ -299,50 +302,42 @@ const CompressPDF: React.FC = () => {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Compress PDF</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Reduce file size while maintaining quality
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
+              <p className="mt-2 text-sm text-gray-600">{headingSubtitle}</p>
             </div>
           </div>
         </div>
       </div>
 
+      {isLandingRoute && (
+        <div className="max-w-4xl mx-auto mt-8 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+        </div>
+      )}
+
       {/* File Upload Section - Only show when no file selected */}
       {!selectedFile && (
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Upload className="w-5 h-5 text-gray-500" />
-              <h2 className="text-xl font-semibold text-gray-900">Upload PDF</h2>
-            </div>
-
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-
-              <div className="space-y-4">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto" />
-                <div>
-                  <p className="text-lg font-medium text-gray-900">Drop your PDF here</p>
-                  <p className="text-gray-500">or click to browse</p>
-                </div>
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  size="lg"
-                >
-                  Choose File
-                </Button>
-              </div>
-            </div>
+        <div className="max-w-4xl mx-auto mt-8">
+          <div
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors hover:border-gray-400 border-gray-300`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg text-gray-600 mb-2">
+              Drag and drop your PDF here, or{' '}
+              <button type="button" className="text-blue-600 hover:text-blue-700 font-medium">browse files</button>
+            </p>
+            <p className="text-sm text-gray-500">Maximum file size: 10MB</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Selected File Info - Show after file upload */}
