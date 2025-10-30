@@ -1,5 +1,5 @@
 import { Brain, Scan, FileSearch, PenTool, Zap, ArrowRight } from 'lucide-react'
-
+import { Link } from 'react-router-dom'
 const AIFeatures = () => {
   const features = [
     {
@@ -127,10 +127,12 @@ const AIFeatures = () => {
         </div>
 
         <div className="text-center mt-12">
+          <Link to="/ai-powered-features">
           <button className="flex items-center justify-center gap-2 bg-white text-gray-900 hover:bg-gray-100 font-semibold text-base px-6 py-3 rounded-md shadow-md hover:shadow-lg transition-all duration-200 mx-auto">
             See AI in Action
             <ArrowRight className="h-4 w-4 align-middle" />
           </button>
+          </Link>
         </div>
 
       </div>

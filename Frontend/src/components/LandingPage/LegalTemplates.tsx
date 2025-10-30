@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FileText, Eye, Download, Search, Filter, Star, Clock, Users, Check, Zap, Shield, Heart, Home, Briefcase, DollarSign, Scale, UserCheck} from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 type FormData = {
   companyName: string
@@ -592,12 +593,16 @@ const LegalTemplates = () => {
               Get professional legal documents drafted by experienced attorneys.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
-                Request Custom Document
-              </button>
-              <button className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
-                Schedule Consultation
-              </button>
+              <Link to="/contact-sales">
+                <button className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
+                  Request Custom Document
+                </button>
+              </Link>
+              <Link to="/contact-sales">
+                <button className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
+                  Schedule Consultation
+                </button>
+              </Link>
             </div>
           </div>
         </div>

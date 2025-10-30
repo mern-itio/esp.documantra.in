@@ -5,7 +5,7 @@ import { Button } from '../DocumentService/ui/button';
 import { Input } from '../DocumentService/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Lock, Shield, FileText, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { ArrowLeft, Lock, Shield, FileText, AlertCircle } from 'lucide-react';
 import SuccessBox from '../common/SuccessBox';
 const AddPassword: React.FC = () => {
    const location = useLocation();
@@ -17,6 +17,7 @@ const AddPassword: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addPasswordResult, setAddPasswordResult] = useState<any>(null);
+  const [dragActive, setDragActive] = useState(false);
   // const [totalPages, setTotalPages] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +46,31 @@ const AddPassword: React.FC = () => {
       reader.readAsArrayBuffer(file);
     } else if (file) {
       setError('Please select a valid PDF file');
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+        setError(null);
+      } else {
+        setError('Please select a valid PDF file');
+      }
     }
   };
 
@@ -205,53 +231,65 @@ const AddPassword: React.FC = () => {
     );
   }
 
+  const isLandingRoute = location.pathname === '/protect-pdf';
+  const headingTitle = isLandingRoute ? 'Protect PDF file' : 'Add Password Protection';
+  const headingSubtitle = isLandingRoute
+    ? 'Encrypt your PDF with a password to keep sensitive data confidential.'
+    : 'Secure your PDFs with owner and user passwords';
+
   return (
-    <div className="mx-auto space-y-6">
+    <div className="min-h-screen bg-white mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b p-2">
+      <div className=" shadow-sm border-b p-2">
         <div className="flex items-center space-x-4">
           <Link to={`/pdf-tools${location.search}`} className="text-gray-600 hover:text-gray-800">
             <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Add Password Protection</h1>
-            <p className="text-gray-600">Secure your PDFs with owner and user passwords</p>
+            <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
+            <p className="text-gray-600">{headingSubtitle}</p>
           </div>
         </div>
       </div>
 
+      {isLandingRoute && (
+        <div className="max-w-4xl mx-auto mt-8 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+        </div>
+      )}
 
-      {/* File Upload - Only show when no file selected */}
+
+      {/* Upload Section - Only upload field initially (match Merge PDF style) */}
       {!selectedFile && (
-        <div className="max-w-6xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <span>Upload PDF</span>
-              </CardTitle>
-              <CardDescription>
-                Select the PDF file you want to protect with passwords
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileSelect}
-                  className="cursor-pointer"
-                />
-                {selectedFile && (
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>{(selectedFile as File).name} ({((selectedFile as File).size / 1024 / 1024).toFixed(2)} MB)</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="max-w-4xl mx-auto mt-2 md:mt-2">
+          <div
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-lg text-gray-600 mb-2">
+              Drag and drop your PDF here, or{' '}
+              <button
+                type="button"
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                browse files
+              </button>
+            </p>
+            <p className="text-sm text-gray-500">Maximum file size: 10MB</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </div>
         </div>
       )}
 
@@ -395,25 +433,7 @@ const AddPassword: React.FC = () => {
         </div>
       )}
 
-      {/* Help Information - Only show when no file selected */}
-      {!selectedFile && (
-        <div className="max-w-6xl mx-auto">
-          <Card className="border-blue-200 bg-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-blue-800">
-                <Info className="h-5 w-5" />
-                <span>How Password Protection Works</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-blue-800 text-sm space-y-2">
-              <p><strong>Owner Password:</strong> Provides full access to modify permissions and passwords.</p>
-              <p><strong>User Password:</strong> Required to open and view the PDF.</p>
-              <p><strong>Permissions:</strong> Control what users can do with the PDF after entering the password.</p>
-              <p><strong>Encryption:</strong> AES-256 provides maximum security, AES-128 offers good protection.</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* No extra info initially; only the upload field is shown */}
 
       {/* Processing Overlay */}
       {isProcessing && (
@@ -429,3 +449,4 @@ const AddPassword: React.FC = () => {
 };
 
 export default AddPassword;
+

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { 
-  FileText, Edit, Users, Send, Shield, Zap, CheckCircle, 
+import {
+  FileText, Edit, Users, Send, Shield, Zap, CheckCircle,
   ArrowRight, Upload, Eye, Building,
   PenTool, BarChart3, Database, Settings, Globe, Code
 } from 'lucide-react';
@@ -73,7 +73,7 @@ const AllInOnePlatformPage = () => {
       icon: FileText
     },
     {
-      step: "02", 
+      step: "02",
       title: "Edit & Customize",
       description: "Use advanced editing tools to customize and perfect your documents",
       icon: Edit
@@ -206,16 +206,25 @@ const AllInOnePlatformPage = () => {
               Complete Document Lifecycle <span className="gradient-text">Management</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              From creation to signature, DocuSigner handles every aspect of your document workflow in one integrated platform. No more juggling multiple tools or subscriptions.
+              From creation to signature, Draft&Sign handles every aspect of your document workflow in one integrated platform. No more juggling multiple tools or subscriptions.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/signup" className="btn-primary">
-                Start Free Forever <ArrowRight className="ml-2 h-5 w-5" />
+              <Link
+                to="/signup"
+                className="btn-primary inline-flex items-center justify-center gap-2"
+              >
+                Start Free Forever
+                <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link to="/demo" className="btn-secondary">
+
+              <Link
+                to="/demo"
+                className="btn-secondary inline-flex items-center justify-center"
+              >
                 Watch Demo
               </Link>
             </div>
+
           </div>
         </div>
       </section>
@@ -228,13 +237,13 @@ const AllInOnePlatformPage = () => {
               One Platform, Complete Solution
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              DocuSigner combines all the tools you need for document management in a single, intuitive platform.
+              Draft&Sign combines all the tools you need for document management in a single, intuitive platform.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {platformFeatures.map((feature, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-white rounded-xl p-6 shadow-lg ">
                 <div className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-6`}>
                   <feature.icon className="h-6 w-6 text-white" />
                 </div>
@@ -268,7 +277,7 @@ const AllInOnePlatformPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {workflowSteps.map((step, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover relative">
+              <div key={index} className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all relative">
                 <div className="absolute -top-4 -right-4 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                   {step.step}
                 </div>
@@ -297,7 +306,7 @@ const AllInOnePlatformPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="text-center p-6 bg-gray-50 rounded-xl hover:shadow-lg transition-all duration-200">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center p-6 bg-gray-50 rounded-xl hover:shadow-lg transition-all duration-200">
                 <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <benefit.icon className="h-8 w-8 text-primary-600" />
                 </div>
@@ -317,13 +326,13 @@ const AllInOnePlatformPage = () => {
               Real-World Use Cases
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how organizations use DocuSigner to streamline their document processes
+              See how organizations use Draft&Sign to streamline their document processes
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {useCases.map((useCase, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 card-hover">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-white rounded-xl p-8 shadow-lg">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">{useCase.title}</h3>
                 <p className="text-gray-600 mb-6">{useCase.description}</p>
                 <div className="space-y-4">
@@ -350,7 +359,7 @@ const AllInOnePlatformPage = () => {
               Seamless Integrations
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              DocuSigner connects with your favorite tools to create a unified workflow
+              Draft&Sign connects with your favorite tools to create a unified workflow
             </p>
           </div>
 
@@ -369,7 +378,7 @@ const AllInOnePlatformPage = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <Link to="/integrations" className="inline-flex items-center text-primary-600 font-medium hover:text-primary-700">
+            <Link to="/api-documentation" className="inline-flex items-center text-primary-600 font-medium hover:text-primary-700">
               View all integrations
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
@@ -386,7 +395,7 @@ const AllInOnePlatformPage = () => {
                 Developer-Friendly API
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Integrate DocuSigner's powerful features directly into your applications with our comprehensive API. Build custom document workflows that fit your exact needs.
+                Integrate Draft&Sign's powerful features directly into your applications with our comprehensive API. Build custom document workflows that fit your exact needs.
               </p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
@@ -418,7 +427,7 @@ const AllInOnePlatformPage = () => {
                   </div>
                 </li>
               </ul>
-              <Link to="/api" className="btn-primary inline-flex items-center">
+              <Link to="/api-documentation" className="btn-primary inline-flex items-center">
                 Explore API Documentation
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
@@ -479,7 +488,7 @@ sendDocument();`}</code>
                   <h4 className="font-semibold text-gray-900">Acme Corp Organization</h4>
                   <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Active</span>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
                     <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">JD</div>
@@ -489,7 +498,7 @@ sendDocument();`}</code>
                     </div>
                     <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Online</div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
                     <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">SM</div>
                     <div className="flex-1">
@@ -497,7 +506,7 @@ sendDocument();`}</code>
                       <div className="text-xs text-gray-500">Editor • Can Edit & Sign</div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
                     <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">MJ</div>
                     <div className="flex-1">
@@ -506,10 +515,11 @@ sendDocument();`}</code>
                     </div>
                   </div>
                 </div>
-                
-                <button className="w-full bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">
-                  + Invite Team Member
-                </button>
+                <Link to='/login'>
+                  <button className="w-full bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">
+                    + Invite Team Member
+                  </button>
+                </Link>
               </div>
             </div>
 
@@ -550,7 +560,7 @@ sendDocument();`}</code>
                   </div>
                 </li>
               </ul>
-              <Link to="/team-features" className="btn-primary inline-flex items-center">
+              <Link to="/login" className="btn-primary inline-flex items-center">
                 Explore Team Features
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
@@ -567,7 +577,7 @@ sendDocument();`}</code>
               Calculate Your Savings
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how much you can save by switching to DocuSigner's all-in-one platform
+              See how much you can save by switching to Draft&Sign's all-in-one platform
             </p>
           </div>
 
@@ -600,7 +610,7 @@ sendDocument();`}</code>
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">DocuSigner All-in-One Cost</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-6">Draft&Sign All-in-One Cost</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-3 bg-primary-50 rounded-lg">
                     <span className="font-medium">Free Plan</span>
@@ -627,10 +637,14 @@ sendDocument();`}</code>
             </div>
 
             <div className="mt-8 text-center">
-              <Link to="/pricing" className="btn-primary">
+              <Link
+                to="/pricing"
+                className="btn-primary inline-flex items-center gap-2"
+              >
                 View Detailed Pricing
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="h-5 w-5" />
               </Link>
+
             </div>
           </div>
         </div>
@@ -645,7 +659,7 @@ sendDocument();`}</code>
                 Global Accessibility & Compliance
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                DocuSigner's platform is designed to be accessible worldwide, with compliance features for 40+ countries and support for multiple languages.
+                Draft&Sign's platform is designed to be accessible worldwide, with compliance features for 40+ countries and support for multiple languages.
               </p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
@@ -741,7 +755,7 @@ sendDocument();`}</code>
               Detailed Use Cases
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how DocuSigner's all-in-one platform transforms document workflows
+              See how Draft&Sign's all-in-one platform transforms document workflows
             </p>
           </div>
 
@@ -779,7 +793,7 @@ sendDocument();`}</code>
               Ready to Streamline Your Document Workflow?
             </h2>
             <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-              Join thousands of organizations who trust DocuSigner's all-in-one platform for their document management, 
+              Join thousands of organizations who trust Draft&Sign's all-in-one platform for their document management,
               e-signature, and legal template needs.
             </p>
 

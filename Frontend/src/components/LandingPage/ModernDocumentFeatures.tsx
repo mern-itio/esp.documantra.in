@@ -59,15 +59,15 @@ const ModernDocumentFeatures = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Everything You Need for <span className="gradient-text">Modern Documents</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Powerful AI-driven features that transform how you create, manage, and sign documents. 
+          <p className="text-m text-gray-600 mx-auto">
+            Powerful AI-driven features that transform how you create, manage, and sign documents.
             More than just e-signatures - it's a complete document ecosystem.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {features.map((feature, index) => (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+            <div key={index} className="cursor-pointer border border-transparent hover:border-blue-500 bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
               <div className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-6`}>
                 <feature.icon className="h-6 w-6 text-white" />
               </div>

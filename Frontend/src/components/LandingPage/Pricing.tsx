@@ -1,4 +1,5 @@
 import { Check, Star, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const Pricing = () => {
   const plans = [
@@ -106,15 +107,16 @@ const Pricing = () => {
                   </li>
                 ))}
               </ul>
-
-              <button
-                className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${plan.popular
-                  ? 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                  }`}
-              >
-                {plan.cta}
-              </button>
+              <Link to={plan.cta === 'Contact Sales' ? '/contact-sales' : '/signup'}>
+                <button
+                  className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${plan.popular
+                    ? 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                    }`}
+                >
+                  {plan.cta}
+                </button>
+              </Link>
             </div>
           ))}
         </div>
@@ -129,10 +131,12 @@ const Pricing = () => {
               <p className="text-gray-600 mb-6">
                 Our team can help you find the perfect plan for your organization's needs.
               </p>
-              <button className="flex items-center justify-center gap-2 border border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold text-base px-6 py-3 rounded-md transition-all duration-200">
-                Schedule a Demo
-                <ArrowRight className="h-4 w-4 align-middle" />
-              </button>
+              <Link to="/contact-sales">
+                <button className="flex items-center justify-center gap-2 border border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold text-base px-6 py-3 rounded-md transition-all duration-200">
+                  Schedule a Demo
+                  <ArrowRight className="h-4 w-4 align-middle" />
+                </button>
+              </Link>
 
             </div>
             <div className="space-y-4">
@@ -156,13 +160,13 @@ const Pricing = () => {
           </div>
         </div>
 
-        <div className="text-center mt-12">
+        {/* <div className="text-center mt-12">
           <button className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base px-6 py-3 rounded-md shadow-md transition duration-200 mx-auto">
             Compare All Plans
             <ArrowRight className="h-4 w-4 align-middle" />
           </button>
 
-        </div>
+        </div> */}
       </div>
     </section>
   )

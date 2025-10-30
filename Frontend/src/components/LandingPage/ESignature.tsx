@@ -1,4 +1,5 @@
 import { Users, MousePointer, Shield, FileCheck, Repeat, Award } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const ESignature = () => {
   const features = [
@@ -62,10 +63,11 @@ const ESignature = () => {
                 </div>
               ))}
             </div>
-
-            <button className="btn-primary text-lg px-8 py-4">
-              Send Your First Envelope Free
-            </button>
+            <Link to="/login" className="inline-block mt-4">
+              <button className="btn-primary text-lg px-8 py-4">
+                Send Your First Envelope Free
+              </button>
+            </Link>
           </div>
 
           {/* Right Visual - Mock Signature Interface */}
@@ -85,7 +87,7 @@ const ESignature = () => {
                   <FileCheck className="h-5 w-5 text-primary-600" />
                   <span className="font-medium text-gray-900">Employment Contract.pdf</span>
                 </div>
-                
+
                 {/* Signature Fields */}
                 <div className="space-y-3">
                   <div className="border-2 border-dashed border-primary-300 rounded-lg p-3 bg-primary-50">
@@ -95,7 +97,7 @@ const ESignature = () => {
                     </div>
                     <div className="mt-2 text-xs text-primary-600">Click to sign</div>
                   </div>
-                  
+
                   <div className="border-2 border-dashed border-orange-300 rounded-lg p-3 bg-orange-50">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-orange-700">Date Field</span>
@@ -127,10 +129,11 @@ const ESignature = () => {
                 </div>
               </div>
 
-              {/* Action Button */}
+             <Link to="/login">
               <button className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors">
                 Continue Signing Process
               </button>
+              </Link>
             </div>
 
             {/* Floating Security Badge */}

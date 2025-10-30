@@ -20,10 +20,11 @@ const CTASection = () => {
               <ArrowRight className="h-4 w-4 align-middle" />
             </button>
             </Link>
-            
+            <Link to="/contact-sales">
             <button className="flex items-center justify-center gap-2 border-2 border-white text-white hover:bg-white hover:text-blue-600 font-semibold text-base px-6 py-3 rounded-md transition duration-200">
               Schedule Demo
             </button>
+            </Link>
           </div>
 
 

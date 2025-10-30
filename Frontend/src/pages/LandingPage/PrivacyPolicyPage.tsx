@@ -1,11 +1,62 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Download, Printer, ChevronDown, ChevronUp, Shield, Lock, Database, Globe, AlertCircle, Check, FileText } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { Link } from 'react-router-dom';
 
 const PrivacyPolicyPage = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'section-1': true,
-  });
+  }); 
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const pageTitle = 'Privacy Policy';
+  const globalCompliance = 'Global Compliance';
+  const noDataSelling = 'No Data Selling';
+
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    const node = contentRef.current;
+    if (!node) return;
+    // Generate a clean, text-first PDF to avoid CSS parsing issues (oklch)
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 40;
+    let cursorY = margin;
+
+    const addParagraph = (text: string, opts?: { bold?: boolean; size?: number }) => {
+      if (!text.trim()) return;
+      const size = opts?.size ?? 11;
+      pdf.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
+      pdf.setFontSize(size);
+      const maxWidth = pageWidth - margin * 2;
+      const lines = pdf.splitTextToSize(text, maxWidth);
+      const neededHeight = lines.length * (size + 3);
+      if (cursorY + neededHeight > pageHeight - margin) {
+        pdf.addPage();
+        cursorY = margin;
+      }
+      pdf.text(lines, margin, cursorY);
+      cursorY += neededHeight + 6;
+    };
+
+    // Title
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(18);
+    addParagraph(pageTitle, { bold: true, size: 18 });
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    addParagraph(`Last Updated: ${lastUpdated}    Effective Date: ${effectiveDate}`, { size: 10 });
+
+    // Extract visible text content
+    const text = node.innerText || '';
+    addParagraph(text, { size: 11 });
+
+    pdf.save(`privacy-policy.pdf`);
+  };
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => ({
@@ -24,7 +75,7 @@ const PrivacyPolicyPage = () => {
       content: (
         <>
           <p className="mb-4">
-            DocuSigner ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, mobile applications, APIs, and any related services (collectively, the "Services").
+            Draft&Sign ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, mobile applications, APIs, and any related services (collectively, the "Services").
           </p>
           <p className="mb-4">
             <strong>Our Privacy Philosophy:</strong> We believe in transparency, data minimization, and user control. We collect only the information necessary to provide and improve our Services, and we give you meaningful choices about how your data is used and shared.
@@ -275,7 +326,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <p className="text-green-800 font-medium">We Do Not Sell Your Personal Information</p>
                 <p className="text-green-700 text-sm mt-1">
-                  DocuSigner does not sell, rent, or trade your personal information to third parties for their marketing purposes. We only share your information as described in this Privacy Policy.
+                  Draft&Sign does not sell, rent, or trade your personal information to third parties for their marketing purposes. We only share your information as described in this Privacy Policy.
                 </p>
               </div>
             </div>
@@ -357,7 +408,7 @@ const PrivacyPolicyPage = () => {
         <>
           <h4 className="text-lg font-semibold mb-2">Transfer Mechanisms</h4>
           <p className="mb-4">
-            DocuSigner is based in the United States and processes data on servers located in various countries. When we transfer personal data from the European Economic Area (EEA), United Kingdom, or Switzerland to countries without an adequacy decision, we use these legal mechanisms:
+            Draft&Sign is based in the United States and processes data on servers located in various countries. When we transfer personal data from the European Economic Area (EEA), United Kingdom, or Switzerland to countries without an adequacy decision, we use these legal mechanisms:
           </p>
           <ul className="list-disc pl-6 mb-4">
             <li><strong>Adequacy Decisions:</strong> Transfers to countries with adequate protection (EU Commission approved)</li>
@@ -768,7 +819,7 @@ const PrivacyPolicyPage = () => {
             For users in the European Union, our EU representative pursuant to Article 27 of the GDPR is:
           </p>
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <p className="mb-1"><strong>Name:</strong> DocuSigner EU Representative</p>
+            <p className="mb-1"><strong>Name:</strong> Draft&Sign EU Representative</p>
             <p className="mb-1"><strong>Email:</strong> eu-representative@docusigner.com</p>
             <p><strong>Address:</strong> 1 Dublin Square, Dublin, Ireland</p>
           </div>
@@ -778,7 +829,7 @@ const PrivacyPolicyPage = () => {
             For users in the United Kingdom, our UK representative pursuant to the UK GDPR is:
           </p>
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <p className="mb-1"><strong>Name:</strong> DocuSigner UK Representative</p>
+            <p className="mb-1"><strong>Name:</strong> Draft&Sign UK Representative</p>
             <p className="mb-1"><strong>Email:</strong> uk-representative@docusigner.com</p>
             <p><strong>Address:</strong> 1 London Bridge, London, UK</p>
           </div>
@@ -805,7 +856,7 @@ const PrivacyPolicyPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 mt-8 pt-24 pb-16">
       <div className="container-max">
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
@@ -818,11 +869,11 @@ const PrivacyPolicyPage = () => {
               </div>
             </div>
             <div className="flex gap-4 mt-4 md:mt-0">
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors">
+              <button onClick={handleDownloadPdf} className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors">
                 <Download className="h-4 w-4" />
                 <span>Download PDF</span>
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors">
+              <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors">
                 <Printer className="h-4 w-4" />
                 <span>Print</span>
               </button>
@@ -856,7 +907,7 @@ const PrivacyPolicyPage = () => {
                   <Globe className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-blue-800">Global Compliance</h3>
+                  <h3 className="font-semibold text-blue-800">{globalCompliance}</h3>
                   <p className="text-sm text-blue-700">Our privacy practices comply with GDPR, CCPA, and other global privacy regulations.</p>
                 </div>
               </div>
@@ -865,27 +916,14 @@ const PrivacyPolicyPage = () => {
                   <Lock className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-blue-800">No Data Selling</h3>
+                  <h3 className="font-semibold text-blue-800">{noDataSelling}</h3>
                   <p className="text-sm text-blue-700">We never sell your personal information or document content to third parties.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Language Selector */}
-          <div className="mb-6">
-            <label htmlFor="language-selector" className="block text-sm font-medium text-gray-700 mb-2">Select Language:</label>
-            <select id="language-selector" className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-              <option value="en">English</option>
-              <option value="es">Español</option>
-              <option value="fr">Français</option>
-              <option value="de">Deutsch</option>
-              <option value="it">Italiano</option>
-              <option value="pt">Português</option>
-              <option value="ja">日本語</option>
-              <option value="zh">中文</option>
-            </select>
-          </div>
+          {/* Language selector removed */}
 
           {/* Quick Navigation */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -908,13 +946,13 @@ const PrivacyPolicyPage = () => {
             <div className="flex items-center gap-3 mb-4 bg-blue-50 p-4 rounded-lg">
               <Shield className="h-6 w-6 text-blue-600 flex-shrink-0" />
               <p className="text-blue-800">
-                This Privacy Policy explains how DocuSigner collects, uses, and protects your personal information when you use our e-signature, PDF tools, document management, and related services.
+                This Privacy Policy explains how Draft&Sign collects, uses, and protects your personal information when you use our e-signature, PDF tools, document management, and related services.
               </p>
             </div>
           </div>
 
           {/* Main Content Sections */}
-          <div className="space-y-6">
+          <div ref={contentRef} className="space-y-6">
             {sections.map((section) => (
               <div key={section.id} id={section.id} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
@@ -944,7 +982,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-green-800 mb-2">Our Commitment to Data Security</h3>
                 <p className="text-green-700">
-                  DocuSigner employs industry-standard security measures to protect your personal information, including 256-bit encryption, secure data centers, and strict access controls. We regularly review and update our security practices to maintain the highest standards of data protection.
+                  Draft&Sign employs industry-standard security measures to protect your personal information, including 256-bit encryption, secure data centers, and strict access controls. We regularly review and update our security practices to maintain the highest standards of data protection.
                 </p>
               </div>
             </div>
@@ -970,7 +1008,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-yellow-800 mb-2">Notice to International Users</h3>
                 <p className="text-yellow-700">
-                  DocuSigner is based in the United States. If you are accessing our Services from outside the United States, please be aware that your information may be transferred to, stored, and processed in the United States and other countries. We implement appropriate safeguards for international data transfers as described in this Privacy Policy.
+                  Draft&Sign is based in the United States. If you are accessing our Services from outside the United States, please be aware that your information may be transferred to, stored, and processed in the United States and other countries. We implement appropriate safeguards for international data transfers as described in this Privacy Policy.
                 </p>
               </div>
             </div>
@@ -983,7 +1021,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-red-800 mb-2">Your Consent</h3>
                 <p className="text-red-700">
-                  By using DocuSigner's services, you consent to the collection, use, and sharing of your information as described in this Privacy Policy. If you do not agree with our policies and practices, please do not use our services.
+                  By using Draft&Sign services, you consent to the collection, use, and sharing of your information as described in this Privacy Policy. If you do not agree with our policies and practices, please do not use our services.
                 </p>
               </div>
             </div>

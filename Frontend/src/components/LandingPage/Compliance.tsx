@@ -292,7 +292,7 @@ const Compliance = () => {
     country.laws.some(law => law.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
-  // Document Lifecycle with DocuSigner
+  // Document Lifecycle with Draft&Sign
   const documentLifecycle = [
     {
       step: 1,
@@ -503,7 +503,7 @@ const Compliance = () => {
             Legally Binding in <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 bg-clip-text text-transparent">40+ Countries</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            DocuSigner ensures your electronic signatures are legally binding and compliant with regulations worldwide. Stay informed about e-signature laws in your jurisdiction.
+            Draft&Sign ensures your electronic signatures are legally binding and compliant with regulations worldwide. Stay informed about e-signature laws in your jurisdiction.
           </p>
 
           {/* User Location Banner */}
@@ -557,13 +557,13 @@ const Compliance = () => {
               Best Practices for <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 bg-clip-text text-transparent">Legal Compliance</span>
             </h3>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
-              Follow the complete document lifecycle with DocuSigner - from drafting to long-term retention. 
+              Follow the complete document lifecycle with Draft&Sign - from drafting to long-term retention. 
               Our platform ensures legal compliance at every step while streamlining your workflow.
             </p>
             
             {/* Lifecycle Overview */}
             <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
-              <h4 className="text-2xl font-bold text-gray-900 mb-6">Complete Document Lifecycle with DocuSigner</h4>
+              <h4 className="text-2xl font-bold text-gray-900 mb-6">Complete Document Lifecycle with Draft&Sign</h4>
               
               {/* Progress Indicator */}
               <div className="flex justify-center mb-8">
@@ -604,13 +604,13 @@ const Compliance = () => {
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-8">
-                    {/* DocuSigner Features */}
+                    {/* Draft&Sign Features */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                           <Zap className="h-5 w-5 text-white" />
                         </div>
-                        <h6 className="font-semibold text-gray-900">DocuSigner Features</h6>
+                        <h6 className="font-semibold text-gray-900">Draft&Sign Features</h6>
                       </div>
                       <ul className="space-y-3">
                         {documentLifecycle[activeStep].docusignerFeatures.map((feature, index) => (
@@ -692,7 +692,7 @@ const Compliance = () => {
             {/* Key Benefits */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white">
               <h4 className="text-2xl font-bold text-center mb-8">
-                Why Choose DocuSigner for Legal Compliance?
+                Why Choose Draft&Sign for Legal Compliance?
               </h4>
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">

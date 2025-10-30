@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/common/sidebar';
 import Header from '../components/common/header';
+import ScrollToTop from '../components/common/ScrollToTop';
 
 const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -21,6 +22,7 @@ const DashboardLayout: React.FC = () => {
           setSidebarOpen={setSidebarOpen}
         />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-2">
+          <ScrollToTop />
           <Outlet />
         </main>
       </div>

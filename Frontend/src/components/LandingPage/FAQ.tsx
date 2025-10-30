@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
@@ -81,9 +82,11 @@ const FAQ = () => {
 
         <div className="text-center mt-12">
           <p className="text-gray-600 mb-4">Still have questions?</p>
-          <button className="btn-secondary">
-            Contact Support
-          </button>
+          <Link to="/contact-sales">
+            <button className="btn-secondary">
+              Contact Support
+            </button>
+          </Link>
         </div>
       </div>
     </section>

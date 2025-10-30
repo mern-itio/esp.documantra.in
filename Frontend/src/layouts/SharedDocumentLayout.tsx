@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import ScrollToTop from '../components/common/ScrollToTop';
 
 const SharedDocumentLayout: React.FC = () => {
   return (
@@ -9,6 +10,7 @@ const SharedDocumentLayout: React.FC = () => {
       
       {/* Main content */}
       <main className="w-full">
+        <ScrollToTop />
         <Outlet />
       </main>
     </div>
