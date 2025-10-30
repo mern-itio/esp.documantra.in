@@ -23,8 +23,12 @@ const RotatePDFPage: React.FC = () => {
     }
   };
 
+  const isLandingRoute = location.pathname === '/rotate-pdf';
+  const headingTitle = 'Rotate PDF pages';
+  const headingSubtitle = 'Rotate individual pages or apply batch rotations to your PDF documents.';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header with back button */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,17 +40,22 @@ const RotatePDFPage: React.FC = () => {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Rotate PDF Pages</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Rotate individual pages or apply batch rotations to your PDF documents
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
+              <p className="mt-2 text-sm text-gray-600">{headingSubtitle}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="py-8">
+      {isLandingRoute && (
+        <div className="max-w-4xl mx-auto mt-8 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+        </div>
+      )}
+
+      <div className="py-6">
         <RotatePDF onRotateResult={handleRotateResult} />
       </div>
 

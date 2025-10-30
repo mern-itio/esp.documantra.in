@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Search, FileText, Image, Lock, Merge, Eye } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 type ToolCategory = {
   title: string
@@ -136,9 +137,10 @@ const PDFTools = () => {
             ).flatMap(([key, category]) => {
               if (isToolCategory(category)) {
                 return category.tools.map((tool: string, index: number) => (
-                  <div
+                  <Link
+                    to="/login"
                     key={`${key}-${index}`}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-primary-300 transition-all duration-200 cursor-pointer group"
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-primary-300 transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
@@ -148,7 +150,7 @@ const PDFTools = () => {
                         {tool}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 ))
               }
               return []

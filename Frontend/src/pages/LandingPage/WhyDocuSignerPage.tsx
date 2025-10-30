@@ -1,16 +1,39 @@
-import { Link } from 'react-router-dom';
-import { 
-  Layers, Shield, Zap, Globe, Code, Award, Heart, 
-  CheckCircle, ArrowRight, FileText, DollarSign, 
-  Clock,  Lock
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Layers, Shield, Zap, Globe, Code, Award, Heart,
+  CheckCircle, ArrowRight, FileText, DollarSign,
+  Clock, Lock
 } from 'lucide-react';
 
 const WhyDocuSignerPage = () => {
+  const location = useLocation();
+
+  const slugify = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
+
+  // Scroll to hash target on load and when hash changes
+  useEffect(() => {
+    const hash = (location.hash || '').replace('#', '');
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) {
+      // slight delay to ensure layout is ready (header offset)
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [location.hash]);
   const keyFeatures = [
     {
       icon: Layers,
       title: "All-in-One Platform",
       description: "Complete document lifecycle management in a single platform. Create, edit, sign, and manage documents without switching between multiple tools.",
+      path: "/all-in-one",
       benefits: [
         "Eliminate multiple software subscriptions",
         "Streamline your document workflow",
@@ -22,6 +45,7 @@ const WhyDocuSignerPage = () => {
       icon: Zap,
       title: "AI-Powered Features",
       description: "Advanced artificial intelligence that streamlines document creation, automates field detection, and enhances document processing.",
+      path: "/ai-powered-features",
       benefits: [
         "Generate legal documents from simple prompts",
         "Auto-detect signature fields and form elements",
@@ -33,6 +57,7 @@ const WhyDocuSignerPage = () => {
       icon: Globe,
       title: "Global Compliance",
       description: "Legally binding in 40+ countries with comprehensive compliance with international e-signature laws and regulations.",
+      path: "/security-overview",
       benefits: [
         "ESIGN Act, UETA, and eIDAS compliant",
         "Court-admissible audit trails",
@@ -44,6 +69,7 @@ const WhyDocuSignerPage = () => {
       icon: Shield,
       title: "Enterprise Security",
       description: "Bank-level security with advanced encryption, compliance certifications, and comprehensive data protection.",
+      path: "/security-overview",
       benefits: [
         "256-bit AES encryption for all data",
         "SOC 2 Type II certified",
@@ -56,7 +82,7 @@ const WhyDocuSignerPage = () => {
   const competitiveAdvantages = [
     {
       title: "Free Forever Plan",
-      description: "Unlike competitors who only offer limited trials, DocuSigner provides a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates.",
+      description: "Unlike competitors who only offer limited trials, Draft&Sign provides a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates.",
       icon: Heart
     },
     {
@@ -88,19 +114,19 @@ const WhyDocuSignerPage = () => {
 
   const testimonials = [
     {
-      quote: "We switched from DocuSign to DocuSigner and saved over 60% on our annual costs while gaining access to powerful PDF tools we were paying for separately.",
+      quote: "We switched from DocuSign to Draft&Sign and saved over 60% on our annual costs while gaining access to powerful PDF tools we were paying for separately.",
       author: "Sarah Johnson",
       position: "Operations Director",
       company: "TechCorp Inc."
     },
     {
-      quote: "The legal templates alone make DocuSigner worth it. The platform is intuitive, and the pricing is much more reasonable than what we were paying with our previous provider.",
+      quote: "The legal templates alone make Draft&Sign worth it. The platform is intuitive, and the pricing is much more reasonable than what we were paying with our previous provider.",
       author: "Michael Chen",
       position: "Legal Counsel",
       company: "Horizon Financial"
     },
     {
-      quote: "The free PDF tools and AI-powered features have streamlined our entire document workflow. DocuSigner has become an essential part of our business operations.",
+      quote: "The free PDF tools and AI-powered features have streamlined our entire document workflow. Draft&Sign has become an essential part of our business operations.",
       author: "Emily Rodriguez",
       position: "HR Manager",
       company: "Global Solutions"
@@ -121,18 +147,27 @@ const WhyDocuSignerPage = () => {
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose <span className="gradient-text">DocuSigner</span>?
+              Why Choose <span className="gradient-text">Draft&Sign</span>?
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              DocuSigner is more than just e-signatures. It's a complete document ecosystem designed to streamline your workflow, reduce costs, and enhance productivity.
+              Draft&Sign is more than just e-signatures. It's a complete document ecosystem designed to streamline your workflow, reduce costs, and enhance productivity.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/signup" className="btn-primary">
-                Start Free Forever <ArrowRight className="ml-2 h-5 w-5" />
+              <Link
+                to="/signup"
+                className="btn-primary inline-flex items-center justify-center gap-2"
+              >
+                Start Free Forever
+                <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link to="/pricing" className="btn-secondary">
+
+              <Link
+                to="/pricing"
+                className="btn-secondary inline-flex items-center justify-center"
+              >
                 View Pricing
               </Link>
+
             </div>
           </div>
         </div>
@@ -146,13 +181,13 @@ const WhyDocuSignerPage = () => {
               Key Features That Set Us Apart
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              DocuSigner combines powerful features with intuitive design to deliver an unmatched document management experience.
+              Draft&Sign combines powerful features with intuitive design to deliver an unmatched document management experience.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {keyFeatures.map((feature, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 card-hover">
+              <Link to={feature.path} id={slugify(feature.title)} key={index} className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all block">
                 <div className={`w-16 h-16 rounded-lg flex items-center justify-center mb-6 bg-primary-100`}>
                   <feature.icon className="h-8 w-8 text-primary-600" />
                 </div>
@@ -166,7 +201,7 @@ const WhyDocuSignerPage = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -191,16 +226,16 @@ const WhyDocuSignerPage = () => {
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Why DocuSigner Outperforms Competitors
+              Why Draft&Sign Outperforms Competitors
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how DocuSigner offers more value and better features than other document management platforms.
+              See how Draft&Sign offers more value and better features than other document management platforms.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {competitiveAdvantages.map((advantage, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+              <div id={slugify(advantage.title)} key={index} className="bg-white hover:border-primary-500 hover:shadow-xl cursor-pointer rounded-xl p-6 shadow-md border border-gray-100 card-hover">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
                     <advantage.icon className="h-6 w-6 text-primary-600" />
@@ -213,7 +248,7 @@ const WhyDocuSignerPage = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <Link to="/docusigner-vs-docusign" className="inline-flex items-center text-primary-600 font-medium hover:text-primary-700">
+            <Link to="/draft-n-sign-vs-docusign" className="inline-flex items-center text-primary-600 font-medium hover:text-primary-700">
               See detailed comparisons with competitors
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
@@ -229,13 +264,13 @@ const WhyDocuSignerPage = () => {
               What Our Customers Say
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Thousands of businesses trust DocuSigner for their document needs.
+              Thousands of businesses trust Draft&Sign for their document needs.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-8 card-hover">
+              <div key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-8 card-hover">
                 <div className="flex items-center gap-1 mb-6">
                   {[...Array(5)].map((_, i) => (
                     <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
@@ -262,12 +297,12 @@ const WhyDocuSignerPage = () => {
               Perfect for Every Industry
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              DocuSigner adapts to your specific needs, no matter your industry or use case.
+              Draft&Sign adapts to your specific needs, no matter your industry or use case.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Legal Firms</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -285,7 +320,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Real Estate</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -303,7 +338,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Healthcare</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -321,7 +356,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Financial Services</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -339,7 +374,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Human Resources</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -357,7 +392,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Technology</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -487,7 +522,7 @@ const WhyDocuSignerPage = () => {
               Ready to Transform Your Document Workflow?
             </h2>
             <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-              Join thousands of organizations who trust DocuSigner for their document management, 
+              Join thousands of organizations who trust Draft&Sign for their document management,
               e-signature, and legal template needs.
             </p>
 
@@ -495,7 +530,7 @@ const WhyDocuSignerPage = () => {
               <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
+              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
                 Schedule Demo
               </Link>
             </div>

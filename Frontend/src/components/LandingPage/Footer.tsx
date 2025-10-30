@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Mail, Linkedin, Github, Globe, Search, ArrowRight} from 'lucide-react'
+import { Mail, Linkedin, Github, Search, ArrowRight} from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Footer = () => {
@@ -893,7 +893,7 @@ const Footer = () => {
             </div>
 
             {/* Language Selector */}
-            <div className="flex items-center justify-end gap-4">
+            {/* <div className="flex items-center justify-end gap-4">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-gray-400" />
                 <select className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm">
@@ -903,7 +903,7 @@ const Footer = () => {
                   <option>Deutsch</option>
                 </select>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 

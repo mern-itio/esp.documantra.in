@@ -71,14 +71,17 @@ import PdfStatisticsPage from '../pages/PDFTools/PdfStatisticsPage';
 import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
 import SharedDocument from '../pages/SharedDocument';
 // import HowItWorksPage from '../pages/LandingPage/HowItWorks';
-// import SecurityOverviewPage from '../pages/LandingPage/SecurityOverview';
 import StatusPage from '../pages/LandingPage/StatusPage';
+import ContactSales from '../pages/LandingPage/ContactSales';
 import WhyDocuSignerPage from '../pages/LandingPage/WhyDocuSignerPage';
-import AccessibilityPage from '../pages/LandingPage/AccessibilityPage';
 import LoginPage from '../pages/LandingPage/LoginPage';
 import SignupPage from '../pages/LandingPage/SignupPage';
 import PrivacyPolicyPage from '../pages/LandingPage/PrivacyPolicyPage';
+import CookiePolicyPage from '../pages/LandingPage/CookiePolicyPage';
 import TermsOfServicePage from '../pages/LandingPage/TermsOfServicePage';
+import UseCasesPage from '../pages/LandingPage/UseCasesPage';
+import WorkspacePage from '../pages/LandingPage/WorkspacePage';
+import FeatureComparisonPage from '../pages/LandingPage/FeatureComparisonPage';
 
 // Dashboard Pages
 import DashboardPage from '../pages/Dashboard/DashboardPage';
@@ -182,6 +185,9 @@ import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 import { PowerForm } from '../pages/eSign/PowerForm';
 import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
+import { AllInOnePlatformPage, APIDocumentationPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
+import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
+import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -509,9 +515,25 @@ const guestRoutes = [
   { path: '/login', element: <GuestRoute><LoginPage /></GuestRoute> },
   { path: '/signup', element: <GuestRoute><SignupPage /></GuestRoute> },
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
+  { path: '/cookie-policy', element: <CookiePolicyPage /> },
+  { path: '/use-cases', element: <UseCasesPage /> },
+  { path: '/workspace', element: <WorkspacePage /> },
+  { path: '/feature-comparison', element: <FeatureComparisonPage /> },
+  { path: '/security-overview', element: <SecurityOverviewPage /> },
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
-  { path: '/oauth-callback', element: <OAuthCallback /> },
+  { path: '/contact-sales', element: <ContactSales /> },
+  { path: '/oauth-callback', element: <OAuthCallback /> },  
+  { path: '/why-draft-sign', element: <WhyDocuSignerPage /> },
+  // { path: '/accessibility', element: <AccessibilityPage /> },
+  { path: '/draft-n-sign-vs-docusign', element: <DocuSignerVsDocuSignPage /> },
+  { path: '/draft-n-sign-vs-adobesign', element: <DocuSignerVsAdobeSignPage /> },
+  { path: '/draft-n-sign-vs-hellosign', element: <DocuSignerVsHelloSignPage /> },
+  { path: '/draft-n-sign-vs-pandadoc', element: <DocuSignerVsPandaDocPage /> },
+  { path: '/pricing', element: <Pricing /> },
+  { path: '/all-in-one', element: <AllInOnePlatformPage /> },
+  { path: '/ai-powered-features', element: <AIPoweredFeaturesPage /> },
+  { path: '/api-documentation', element: <APIDocumentationPage /> },
   
   // Public Shared Document Route (No Authentication Required)
 
@@ -523,6 +545,7 @@ const guestRoutes = [
   { path: '/pdf-to-excel', element: <PdfToExcel /> },
   { path: '/protect-pdf', element: <PDFToolsAddPasswordPage /> },
   { path: '/pdf-to-jpg', element: <PdfToImage /> },
+   { path: '/img-to-pdf', element: <ImageToPDF />}, 
   { path: '/rotate-pdf', element: <PDFToolsRotatePDFPage /> },
   { path: '/ocr-pdf', element: <PDFToolsOCRPage /> },
   { path: '/pdf-to-powerpoint', element: <PdftoPpt /> },
@@ -538,8 +561,9 @@ const guestRoutes = [
   { path: '/text-to-pdf', element: <TextToPdf /> },
   { path: '/validate-pdf', element: <PdfValidatorPage /> },
   { path: '/pdf-to-html', element: <PdfToHtml /> },
-  { path: '/why-docusigner', element: <WhyDocuSignerPage /> },
-  { path: '/accessibility', element: <AccessibilityPage /> },
+  { path: '/rotate-pdf', element: <PDFToolsRotatePDFPage /> }, 
+  { path: '/redact-pdf', element: <PDFToolsRedactContentPage /> },
+  { path: '/repair-pdf', element: <PdfRepairPage /> },   
 ];
 
 // Authenticated User Routes

@@ -183,19 +183,19 @@ const DocuSignerVsAdobeSignPage = () => {
 
   const testimonials = [
     {
-      quote: "We were using Adobe Sign and paying separately for Acrobat Pro. Switching to DocuSigner gave us both e-signatures and PDF tools in one platform, saving us over 65% on our annual costs.",
+      quote: "We were using Adobe Sign and paying separately for Acrobat Pro. Switching to Draft&Sign gave us both e-signatures and PDF tools in one platform, saving us over 65% on our annual costs.",
       author: "Robert Anderson",
       position: "IT Director",
       company: "Meridian Enterprises"
     },
     {
-      quote: "DocuSigner's legal templates are a game-changer. With Adobe Sign, we had to create all our templates from scratch. DocuSigner's template library has saved us thousands in legal fees and countless hours.",
+      quote: "Draft&Sign's legal templates are a game-changer. With Adobe Sign, we had to create all our templates from scratch. Draft&Sign's template library has saved us thousands in legal fees and countless hours.",
       author: "Priya Sharma",
       position: "Legal Operations Manager",
       company: "Horizon Financial"
     },
     {
-      quote: "The free plan from DocuSigner gives us everything Adobe Sign charged for, plus PDF tools we were paying Adobe separately to use. For a small business like ours, this makes a huge difference to our bottom line.",
+      quote: "The free plan from Draft&Sign gives us everything Adobe Sign charged for, plus PDF tools we were paying Adobe separately to use. For a small business like ours, this makes a huge difference to our bottom line.",
       author: "Carlos Mendez",
       position: "Operations Manager",
       company: "Nexus Creative"
@@ -203,14 +203,14 @@ const DocuSignerVsAdobeSignPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 mt-8 pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
           <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-white">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">DocuSigner vs Adobe Sign: The Complete Comparison</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Draft&Sign vs Adobe Sign: The Complete Comparison</h1>
             <p className="text-xl text-primary-100 max-w-3xl">
-              Discover why DocuSigner offers superior value with more features and lower prices than Adobe Sign.
+              Discover why Draft&Sign offers superior value with more features and lower prices than Adobe Sign.
             </p>
           </div>
           
@@ -227,7 +227,7 @@ const DocuSignerVsAdobeSignPage = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-6">
-                  Unlike Adobe Sign, which requires a separate Acrobat subscription for PDF tools, DocuSigner provides e-signatures, 30+ PDF tools, legal templates, and AI-powered document generation—all in one integrated platform at a single price point.
+                  Unlike Adobe Sign, which requires a separate Acrobat subscription for PDF tools, Draft&Sign provides e-signatures, 30+ PDF tools, legal templates, and AI-powered document generation—all in one integrated platform at a single price point.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
@@ -256,7 +256,7 @@ const DocuSignerVsAdobeSignPage = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-6">
-                  DocuSigner offers exceptional value compared to Adobe Sign with lower prices across all plan tiers. When you factor in the additional cost of Acrobat Pro that Adobe users typically need, the savings with DocuSigner are even more substantial—often 60-75% less.
+                  Draft&Sign offers exceptional value compared to Adobe Sign with lower prices across all plan tiers. When you factor in the additional cost of Acrobat Pro that Adobe users typically need, the savings with Draft&Sign are even more substantial—often 60-75% less.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
@@ -291,7 +291,7 @@ const DocuSignerVsAdobeSignPage = () => {
                       <th className="text-left p-3 w-1/2">Feature</th>
                       <th className="text-center p-3 w-1/4">
                         <div className="flex flex-col items-center">
-                          <span className="text-primary-600 font-bold">DocuSigner</span>
+                          <span className="text-primary-600 font-bold">Draft&Sign</span>
                           <span className="text-xs text-gray-500">Our Platform</span>
                         </div>
                       </th>
@@ -341,7 +341,7 @@ const DocuSignerVsAdobeSignPage = () => {
         {/* Pricing Comparison */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Pricing Comparison</h2>
-          <p className="text-gray-600 mb-6">See how much you can save by choosing DocuSigner over Adobe Sign</p>
+          <p className="text-gray-600 mb-6">See how much you can save by choosing Draft&Sign over Adobe Sign</p>
           
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -350,7 +350,7 @@ const DocuSignerVsAdobeSignPage = () => {
                   <th className="text-left p-4">Plan</th>
                   <th className="p-4">
                     <div className="flex flex-col items-center">
-                      <span className="text-primary-600 font-bold">DocuSigner</span>
+                      <span className="text-primary-600 font-bold">Draft&Sign</span>
                       <span className="text-xs text-gray-500">Price</span>
                     </div>
                   </th>
@@ -363,7 +363,7 @@ const DocuSignerVsAdobeSignPage = () => {
                   <th className="p-4">
                     <div className="flex flex-col items-center">
                       <span className="text-green-600 font-bold">Your Savings</span>
-                      <span className="text-xs text-gray-500">with DocuSigner</span>
+                      <span className="text-xs text-gray-500">with Draft&Sign</span>
                     </div>
                   </th>
                 </tr>
@@ -439,7 +439,7 @@ const DocuSignerVsAdobeSignPage = () => {
               <div>
                 <h4 className="font-medium text-green-800">Total Cost Comparison</h4>
                 <p className="text-sm text-green-700 mt-1">
-                  When you factor in the additional cost of Acrobat Pro DC ($14.99-$19.99/month) that most Adobe Sign users need for PDF tools, the savings with DocuSigner are even more substantial. A typical business with 10 users could save $6,000-$8,400 annually by switching to DocuSigner's all-in-one solution.
+                  When you factor in the additional cost of Acrobat Pro DC ($14.99-$19.99/month) that most Adobe Sign users need for PDF tools, the savings with Draft&Sign are even more substantial. A typical business with 10 users could save $6,000-$8,400 annually by switching to Draft&Sign's all-in-one solution.
                 </p>
               </div>
             </div>
@@ -448,7 +448,7 @@ const DocuSignerVsAdobeSignPage = () => {
 
         {/* Key Advantages */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Advantages of DocuSigner over Adobe Sign</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Advantages of Draft&Sign over Adobe Sign</h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-gray-50 rounded-xl p-6">
@@ -457,7 +457,7 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">All-in-One Solution</h3>
               <p className="text-gray-700">
-                DocuSigner combines e-signature and PDF tools in one platform, while Adobe requires separate subscriptions for Adobe Sign and Acrobat Pro, resulting in higher costs and fragmented workflows.
+                Draft&Sign combines e-signature and PDF tools in one platform, while Adobe requires separate subscriptions for Adobe Sign and Acrobat Pro, resulting in higher costs and fragmented workflows.
               </p>
             </div>
             
@@ -467,7 +467,7 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Free Forever Plan</h3>
               <p className="text-gray-700">
-                DocuSigner offers a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates. Adobe Sign has no permanent free plan, only a limited trial.
+                Draft&Sign offers a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates. Adobe Sign has no permanent free plan, only a limited trial.
               </p>
             </div>
             
@@ -477,7 +477,7 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Legal Template Library</h3>
               <p className="text-gray-700">
-                DocuSigner provides 45+ professionally drafted legal templates that Adobe Sign doesn't offer, saving you thousands in potential legal fees and consultation costs.
+                Draft&Sign provides 45+ professionally drafted legal templates that Adobe Sign doesn't offer, saving you thousands in potential legal fees and consultation costs.
               </p>
             </div>
             
@@ -487,7 +487,7 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Features</h3>
               <p className="text-gray-700">
-                DocuSigner's advanced AI capabilities for document generation, field detection, and content analysis outpace Adobe Sign's more limited AI offerings, making document preparation faster and more intuitive.
+                Draft&Sign's advanced AI capabilities for document generation, field detection, and content analysis outpace Adobe Sign's more limited AI offerings, making document preparation faster and more intuitive.
               </p>
             </div>
             
@@ -497,7 +497,7 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">More Affordable Team Features</h3>
               <p className="text-gray-700">
-                DocuSigner offers team collaboration features at lower price points than Adobe Sign, making advanced workflow capabilities accessible to small and medium-sized businesses.
+                Draft&Sign offers team collaboration features at lower price points than Adobe Sign, making advanced workflow capabilities accessible to small and medium-sized businesses.
               </p>
             </div>
             
@@ -507,7 +507,7 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Simpler Implementation</h3>
               <p className="text-gray-700">
-                DocuSigner's intuitive interface and streamlined onboarding process gets teams up and running in minutes, compared to Adobe Sign's more complex implementation that often requires training.
+                Draft&Sign's intuitive interface and streamlined onboarding process gets teams up and running in minutes, compared to Adobe Sign's more complex implementation that often requires training.
               </p>
             </div>
           </div>
@@ -541,7 +541,7 @@ const DocuSignerVsAdobeSignPage = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Easy Migration from Adobe Sign</h2>
           <p className="text-gray-600 mb-6">
-            Switching from Adobe Sign to DocuSigner is simple with our migration tools and dedicated support.
+            Switching from Adobe Sign to Draft&Sign is simple with our migration tools and dedicated support.
           </p>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -551,7 +551,7 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Import Your Templates</h3>
               <p className="text-gray-700 text-sm">
-                Our template converter automatically imports and adapts your existing Adobe Sign templates to work with DocuSigner.
+                Our template converter automatically imports and adapts your existing Adobe Sign templates to work with Draft&Sign.
               </p>
             </div>
             
@@ -591,11 +591,11 @@ const DocuSignerVsAdobeSignPage = () => {
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Is DocuSigner as legally binding as Adobe Sign?</h3>
+                <h3 className="font-semibold text-gray-900">Is Draft&Sign as legally binding as Adobe Sign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Yes, absolutely. DocuSigner's electronic signatures are equally legally binding and compliant with all major e-signature laws including ESIGN Act, UETA, and eIDAS. Our signatures provide the same level of legal validity and court admissibility as Adobe Sign, with comprehensive audit trails and certificate of completion documentation.
+                  Yes, absolutely. Draft&Sign's electronic signatures are equally legally binding and compliant with all major e-signature laws including ESIGN Act, UETA, and eIDAS. Our signatures provide the same level of legal validity and court admissibility as Adobe Sign, with comprehensive audit trails and certificate of completion documentation.
                 </p>
               </div>
             </div>
@@ -606,40 +606,40 @@ const DocuSignerVsAdobeSignPage = () => {
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  No, you can cancel your Adobe Acrobat subscription when switching to DocuSigner. Our platform includes all the PDF tools you need—editing, conversion, compression, merging, splitting, OCR, and more—as part of your DocuSigner subscription. This integration eliminates the need for separate software and results in significant cost savings.
+                  No, you can cancel your Adobe Acrobat subscription when switching to Draft&Sign. Our platform includes all the PDF tools you need—editing, conversion, compression, merging, splitting, OCR, and more—as part of your Draft&Sign subscription. This integration eliminates the need for separate software and results in significant cost savings.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How difficult is it to switch from Adobe Sign to DocuSigner?</h3>
+                <h3 className="font-semibold text-gray-900">How difficult is it to switch from Adobe Sign to Draft&Sign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Switching is remarkably easy. DocuSigner provides migration tools to import your templates, contacts, and workflows. Most customers complete their migration in less than a day, and our dedicated migration specialists are available to assist with the transition. We also provide comprehensive training resources to help your team get up to speed quickly.
+                  Switching is remarkably easy. Draft&Sign provides migration tools to import your templates, contacts, and workflows. Most customers complete their migration in less than a day, and our dedicated migration specialists are available to assist with the transition. We also provide comprehensive training resources to help your team get up to speed quickly.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Is DocuSigner as secure as Adobe Sign?</h3>
+                <h3 className="font-semibold text-gray-900">Is Draft&Sign as secure as Adobe Sign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  DocuSigner implements the same enterprise-grade security measures as Adobe Sign, including 256-bit SSL encryption, SOC 2 Type II certification, GDPR compliance, and tamper-evident seals. We also offer advanced security features like multi-factor authentication, detailed access controls, and comprehensive audit logs. Your documents and data are equally secure with DocuSigner.
+                  Draft&Sign implements the same enterprise-grade security measures as Adobe Sign, including 256-bit SSL encryption, SOC 2 Type II certification, GDPR compliance, and tamper-evident seals. We also offer advanced security features like multi-factor authentication, detailed access controls, and comprehensive audit logs. Your documents and data are equally secure with Draft&Sign.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How much can I save by switching from Adobe Sign to DocuSigner?</h3>
+                <h3 className="font-semibold text-gray-900">How much can I save by switching from Adobe Sign to Draft&Sign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Most organizations save 60-75% on their document management costs by switching to DocuSigner. For example, a business with 10 users on Adobe Sign's Business plan ($49.99/month per user) plus Acrobat Pro ($19.99/month per user) would pay approximately $700/month. The equivalent functionality with DocuSigner would cost around $200/month—a savings of $6,000 annually. Additionally, the included legal templates provide even more value and potential cost savings.
+                  Most organizations save 60-75% on their document management costs by switching to Draft&Sign. For example, a business with 10 users on Adobe Sign's Business plan ($49.99/month per user) plus Acrobat Pro ($19.99/month per user) would pay approximately $700/month. The equivalent functionality with Draft&Sign would cost around $200/month—a savings of $6,000 annually. Additionally, the included legal templates provide even more value and potential cost savings.
                 </p>
               </div>
             </div>
@@ -650,7 +650,7 @@ const DocuSignerVsAdobeSignPage = () => {
         <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Save Money and Get More Features?</h2>
           <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
-            Join thousands of businesses that have switched from Adobe Sign to DocuSigner for better features at lower prices.
+            Join thousands of businesses that have switched from Adobe Sign to Draft&Sign for better features at lower prices.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">

@@ -4,6 +4,7 @@ import { deletePDFService } from '../../services/deletePDFService';
 import type { DeletePDFResponse, DeletePageItem } from '../../types/deletePDF';
 import type { PDFInfo } from '../../types/common';
 import SuccessBox from '../common/SuccessBox';
+import { useLocation } from 'react-router-dom';
 
 // Type declarations for PDF.js
 declare global {
@@ -19,6 +20,12 @@ interface DeletePDFProps {
 
 
 const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
+  const location = useLocation();
+  const isLandingRoute = location.pathname === '/delete-pages';
+  const headingTitle = isLandingRoute ? 'Remove pages' : 'Delete PDF Pages';
+  const headingSubtitle = isLandingRoute
+    ? 'Remove specific pages from your PDF document.'
+    : 'Remove specific pages from your PDF documents';
   const [document, setDocument] = useState<File | null>(null);
   const [pdfInfo, setPdfInfo] = useState<PDFInfo | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -335,11 +342,17 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
+      {isLandingRoute && (
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+        </div>
+      )}
       {/* Show success box only when delete is successful */}
       {deleteResult && deleteResult.success ? (
         <SuccessBox
-          title="Delete PDF Pages"
-          subtitle="Remove specific pages from your PDF documents"
+          title={headingTitle}
+          subtitle={headingSubtitle}
           message="Pages Deleted Successfully!"
           fileInfo={deleteResult.file ? {
             filename: deleteResult.file.filename,
@@ -361,8 +374,8 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
       ) : (
         <>
           {/* File Upload Section */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2>
+      <div className="bg-white rounded-xl shadow-lg ">
+        {/* <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2> */}
         
         {!document ? (
           <div

@@ -1,4 +1,5 @@
 import { Check, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const FeatureComparison = () => {
   const competitors = [
@@ -26,7 +27,7 @@ const FeatureComparison = () => {
             Why Choose DraftnSign?
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            See how DocuSigner compares to other document management platforms
+            See how Draft&Sign compares to other document management platforms
           </p>
         </div>
 
@@ -85,9 +86,11 @@ const FeatureComparison = () => {
         </div>
 
         <div className="text-center mt-8">
-          <button className="btn-primary text-lg px-8 py-4">
-            See Full Comparison
-          </button>
+          <Link to="/feature-comparison">
+            <button className="btn-primary text-lg px-8 py-4">
+              See Full Comparison
+            </button>
+          </Link>
         </div>
       </div>
     </section>

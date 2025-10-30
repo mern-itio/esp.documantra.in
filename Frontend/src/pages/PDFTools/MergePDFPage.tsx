@@ -38,8 +38,12 @@ const MergePDFPage: React.FC = () => {
     }
   };
 
+  const isLandingRoute = location.pathname === '/merge-pdf';
+  const headingTitle = 'Merge PDF files';
+  const headingSubtitle = 'Combine multiple PDFs into a single document in your preferred order.';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,10 +56,8 @@ const MergePDFPage: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Merge PDF Documents</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Combine multiple PDF files into one document with custom ordering
-                </p>
+                <h1 className="text-2xl font-bold text-gray-900">{headingTitle}</h1>
+                <p className="mt-1 text-sm text-gray-500">{headingSubtitle}</p>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full mb-4">
@@ -67,8 +69,16 @@ const MergePDFPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Landing heading duplicate for marketing route */}
+      {isLandingRoute && (
+        <div className="max-w-4xl mx-auto mt-8 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="py-8">
+      <div className="py-6">
         <MergePDF onMergeComplete={handleMergeComplete} />
       </div>
 

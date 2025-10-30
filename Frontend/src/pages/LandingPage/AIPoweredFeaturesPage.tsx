@@ -123,7 +123,7 @@ const AIPoweredFeaturesPage = () => {
       company: "Global Financial Services"
     },
     {
-      quote: "DocuSigner's AI document generation has transformed how we create legal documents. The quality and accuracy are impressive.",
+      quote: "Draft&Sign's AI document generation has transformed how we create legal documents. The quality and accuracy are impressive.",
       author: "Sarah Johnson",
       position: "General Counsel",
       company: "TechCorp Inc."
@@ -202,7 +202,7 @@ const AIPoweredFeaturesPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {aiFeatures.map((feature, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-white rounded-xl p-6 shadow-lg">
                 <div className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-6`}>
                   <feature.icon className="h-6 w-6 text-white" />
                 </div>
@@ -235,7 +235,7 @@ const AIPoweredFeaturesPage = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 text-center">
+            <div className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
               <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Eye className="h-8 w-8 text-indigo-600" />
               </div>
@@ -245,7 +245,7 @@ const AIPoweredFeaturesPage = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 text-center">
+            <div className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Brain className="h-8 w-8 text-purple-600" />
               </div>
@@ -255,7 +255,7 @@ const AIPoweredFeaturesPage = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 text-center">
+            <div className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Zap className="h-8 w-8 text-blue-600" />
               </div>
@@ -313,7 +313,7 @@ const AIPoweredFeaturesPage = () => {
                   </div>
                 </li>
               </ul>
-              <Link to="/ai-assistant-waitlist" className="btn-primary inline-flex items-center">
+              <Link to="/contact-sales" className="btn-primary inline-flex items-center">
                 Join the Waitlist
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
@@ -396,7 +396,7 @@ const AIPoweredFeaturesPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {useCases.map((useCase, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 card-hover">
+              <div key={index} className="bg-white rounded-xl p-8 shadow-lg card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">{useCase.title}</h3>
                 <p className="text-gray-600 mb-6">{useCase.description}</p>
                 <div className="space-y-4">
@@ -550,7 +550,7 @@ const AIPoweredFeaturesPage = () => {
               AI Feature Roadmap
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Exciting AI capabilities coming soon to the DocuSigner platform
+              Exciting AI capabilities coming soon to the Draft&Sign platform
             </p>
           </div>
 
@@ -671,7 +671,7 @@ const AIPoweredFeaturesPage = () => {
               Experience the Power of AI in Document Management
             </h2>
             <p className="text-xl text-indigo-100 mb-8 leading-relaxed">
-              Join thousands of organizations that are transforming their document workflows with DocuSigner's AI-powered features.
+              Join thousands of organizations that are transforming their document workflows with Draft&Sign's AI-powered features.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">

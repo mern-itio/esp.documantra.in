@@ -18,6 +18,7 @@ const RemovePassword: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -30,6 +31,34 @@ const RemovePassword: React.FC = () => {
       checkPasswordProtection(file);
     } else if (file) {
       setError('Please select a valid PDF file');
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+        setError(null);
+        setResult(null);
+        setProtectionCheck(null);
+        checkPasswordProtection(file);
+      } else {
+        setError('Please select a valid PDF file');
+      }
     }
   };
 
@@ -122,8 +151,14 @@ const RemovePassword: React.FC = () => {
     }
   };
  
+  const isLandingRoute = location.pathname === '/unlock-pdf';
+  const headingTitle = isLandingRoute ? 'Unlock PDF file' : 'Remove Password Protection';
+  const headingSubtitle = isLandingRoute
+    ? 'Remove the password from your PDF to access content freely.'
+    : 'Unlock your password-protected PDFs with ease';
+
   return (
-    <div className="mx-auto space-y-6">
+    <div className="min-h-screen bg-white mx-auto space-y-6">
       {/* Header */}
       <div className="bg-white shadow-sm border-b p-2">
         <div className="flex items-center space-x-4">
@@ -131,44 +166,56 @@ const RemovePassword: React.FC = () => {
             <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Remove Password Protection</h1>
-            <p className="text-gray-600">Unlock your password-protected PDFs with ease</p>
+            <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
+            <p className="text-gray-600">{headingSubtitle}</p>
           </div>
         </div>
       </div>
 
+      {isLandingRoute && (
+        <div className="max-w-4xl mx-auto mt-8 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
+          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+        </div>
+      )}
+
+      {/* Upload Section - Only upload field initially (match Merge PDF style) */}
+      {!selectedFile && (
+        <div className="max-w-4xl mx-auto mt-2 md:mt-2">
+          <div
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-lg text-gray-600 mb-2">
+              Drag and drop your PDF here, or{' '}
+              <button
+                type="button"
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                browse files
+              </button>
+            </p>
+            <p className="text-sm text-gray-500">Maximum file size: 10MB</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </div>
+        </div>
+      )}
+
+      {selectedFile && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Configuration Panel */}
         <div className="space-y-6">
-          {/* File Upload */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <span>Upload Protected PDF</span>
-              </CardTitle>
-              <CardDescription>
-                Select the password-protected PDF file you want to unlock
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileSelect}
-                  className="cursor-pointer"
-                />
-                {selectedFile && (
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>{selectedFile.name} ({removePasswordService.formatFileSize(selectedFile.size)})</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Protection Check Result */}
           {isCheckingProtection && (
@@ -366,6 +413,7 @@ const RemovePassword: React.FC = () => {
           </Card>
         </div>
       </div>
+      )}
 
       {/* Processing Overlay */}
       {isProcessing && (
@@ -381,3 +429,4 @@ const RemovePassword: React.FC = () => {
 };
 
 export default RemovePassword;
+
