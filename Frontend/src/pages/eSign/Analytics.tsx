@@ -6,22 +6,19 @@ import {
   FileText,
   Clock,
   CheckCircle,
-  Download,
-  Filter,
-  RefreshCw,
   Shield,
   Zap,
   Globe,
   Target
 } from 'lucide-react';
 import { format, subDays, startOfMonth } from 'date-fns';
-import AdvancedAnalyticsDashboard from '../../components/ESign/advanced/AdvancedAnalyticsDashboard';
+// import AdvancedAnalyticsDashboard from '../../components/ESign/advanced/AdvancedAnalyticsDashboard';
 import { eSignApi } from '../../services/apiHelper';
 
 const Analytics: React.FC = () => {
-  const [dateRange, setDateRange] = useState('30');
-  const [selectedMetric, setSelectedMetric] = useState('completion_rate');
-  const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
+  const [dateRange, _setDateRange] = useState('30');
+  const [_selectedMetric, _setSelectedMetric] = useState('completion_rate');
+  const [_viewMode, _setViewMode] = useState<'basic' | 'advanced'>('basic');
   const [envelopes, setEnvelopes] = useState<any[]>([]);
   useEffect(() => {
     fetchEnvelopes();
@@ -123,15 +120,6 @@ const Analytics: React.FC = () => {
     }
   ];
 
-  const chartData = [
-    { name: 'Mon', completed: 12, sent: 8, advanced: 5, qualified: 2 },
-    { name: 'Tue', completed: 15, sent: 12, advanced: 8, qualified: 3 },
-    { name: 'Wed', completed: 8, sent: 15, advanced: 6, qualified: 1 },
-    { name: 'Thu', completed: 18, sent: 10, advanced: 12, qualified: 4 },
-    { name: 'Fri', completed: 22, sent: 14, advanced: 15, qualified: 6 },
-    { name: 'Sat', completed: 5, sent: 8, advanced: 3, qualified: 1 },
-    { name: 'Sun', completed: 3, sent: 6, advanced: 2, qualified: 0 }
-  ];
 
   const statusDistribution = [
     { name: 'Completed', value: completedEnvelopes, color: 'bg-green-500' },
@@ -140,9 +128,9 @@ const Analytics: React.FC = () => {
     { name: 'Draft', value: filteredEnvelopes.filter(env => env.status === 'draft').length, color: 'bg-gray-500' }
   ];
 
-  if (viewMode === 'advanced') {
-    return <AdvancedAnalyticsDashboard />;
-  }
+  // if (viewMode === 'advanced') {
+  //   return <AdvancedAnalyticsDashboard />;
+  // }
 
   return (
     <div className="p-6 space-y-8">
@@ -153,7 +141,7 @@ const Analytics: React.FC = () => {
           <p className="text-gray-600 mt-2">Track your envelope performance and signing metrics.</p>
         </div>
         
-        <div className="flex items-center gap-4">
+        {/* <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1">
             <button
               onClick={() => setViewMode('basic')}
@@ -195,7 +183,7 @@ const Analytics: React.FC = () => {
           <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             <RefreshCw className="w-5 h-5" />
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Key Metrics */}
@@ -228,7 +216,7 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Enterprise Features Preview */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white">
+      {/* <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold mb-2">Unlock Advanced Analytics</h3>
@@ -257,60 +245,60 @@ const Analytics: React.FC = () => {
             View Advanced Analytics
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Envelope Activity Chart */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Envelope Activity</h3>
-            <select
-              value={selectedMetric}
-              onChange={(e) => setSelectedMetric(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="completion_rate">Completion Rate</option>
-              <option value="volume">Volume</option>
-              <option value="response_time">Response Time</option>
-            </select>
+                  <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+            {/* <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+              <Filter className="w-4 h-4" />
+              Filter
+            </button> */}
           </div>
-          
-          <div className="space-y-4">
-            {chartData.map((day) => (
-              <div key={day.name} className="flex items-center gap-4">
-                <div className="w-12 text-sm text-gray-600">{day.name}</div>
-                <div className="flex-1 flex items-center gap-2">
-                  <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div className="flex h-full">
-                      <div 
-                        className="bg-green-500 transition-all duration-300"
-                        style={{ width: `${(day.completed / (day.completed + day.sent)) * 100}%` }}
-                      />
-                      <div 
-                        className="bg-blue-500 transition-all duration-300"
-                        style={{ width: `${(day.sent / (day.completed + day.sent)) * 100}%` }}
-                      />
+        </div>
+        
+        <div className="divide-y divide-gray-200">
+          {envelopes.slice(0, 3).map((envelope) => (
+            <div key={envelope.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    envelope.status === 'completed' ? 'bg-green-100 text-green-600' :
+                    envelope.status === 'sent' ? 'bg-blue-100 text-blue-600' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-gray-900">{envelope.subject}</p>
+                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                      <span>{envelope.recipients.length} recipients</span>
+                      <span>{format(new Date(envelope.createdAt), 'MMM d, yyyy')}</span>
+                      {envelope.signatureType && (
+                        <span className="capitalize">{envelope.signatureType} signature</span>
+                      )}
                     </div>
                   </div>
-                  <div className="text-sm text-gray-600 w-16 text-right">
-                    {day.completed + day.sent}
-                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    envelope.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    envelope.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1)}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-          
-          <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full" />
-              <span className="text-sm text-gray-600">Completed</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full" />
-              <span className="text-sm text-gray-600">Sent</span>
-            </div>
-          </div>
+          ))}
+        </div>
         </div>
 
         {/* Status Distribution */}
@@ -351,56 +339,6 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-            <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
-          </div>
-        </div>
-        
-        <div className="divide-y divide-gray-200">
-          {envelopes.slice(0, 5).map((envelope) => (
-            <div key={envelope.id} className="p-6 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    envelope.status === 'completed' ? 'bg-green-100 text-green-600' :
-                    envelope.status === 'sent' ? 'bg-blue-100 text-blue-600' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-gray-900">{envelope.subject}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                      <span>{envelope.recipients.length} recipients</span>
-                      <span>{format(new Date(envelope.createdAt), 'MMM d, yyyy')}</span>
-                      {envelope.signatureType && (
-                        <span className="capitalize">{envelope.signatureType} signature</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    envelope.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    envelope.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

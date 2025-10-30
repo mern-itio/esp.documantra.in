@@ -19,9 +19,10 @@ import { useApp } from '../../context/AppContext';
 import type{ Document, Recipient } from '../../types';
 import AdvancedAuthenticationSelector from  '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector'; 
-import {eSignApi, templateServiceApi} from '../../services/apiHelper';
+import {eSignApi, subscriptionApi, templateServiceApi} from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { AxiosProgressEvent } from 'axios';
+import { SubscriptionStorage } from '../../services/subscriptionService';
 type FieldType = "signature" | "text" | "email" | "number" | "id";
 
 type SignatureField = {
@@ -67,6 +68,20 @@ const EnvelopeCreator: React.FC = () => {
   const [slots, setSlots] = useState<any[]>([]);
   const [isSufficientCredits, setIsSufficientCredits] = useState<boolean>(false);
   const [credit , setCredit] = useState<number>(0);
+
+  const handlePrevious = async () => {
+    if (currentStep === 1) return; // Don't go back if we're on first step
+    
+    try {
+      // Update URL with previous step
+      if (envelopeId) {
+        navigate(`/e-sign/create?step=${currentStep - 1}&envelopeId=${envelopeId}`);
+      }
+      setCurrentStep(prev => Math.max(1, prev - 1));
+    } catch (err) {
+      console.error('handlePrevious error:', err);
+    }
+  };
 
   // Parties & related state
   const [parties, setParties] = useState<Party[]>(
@@ -540,7 +555,41 @@ const handleNext = async () => {
     if (!envelopeId) return;
     setSending(true);
       try {
+        // Send envelope
         await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
+        
+        // Record credit usage for the envelope
+        if (envelopeData?.totalCost > 0) {
+          try {
+            // Record usage for each recipient that has a cost
+            const recipientsWithCost = recipients.filter(recipient => recipient.cost && recipient.cost > 0);
+            
+            if (recipientsWithCost.length > 0) {
+              await Promise.all(recipientsWithCost.map(recipient => 
+                subscriptionApi.post('/usage/consume', {
+                  action: 'esign:envelopeSend',
+                  credits: recipient.cost || 0,
+                  authId: recipient.authentication || null,
+                  toolId: 'esign',
+                  reason: `Envelope ${envelopeId} sent to ${recipient.email}`,
+                })
+              ));
+
+              // Update remaining credits in localStorage
+              const plan: any = SubscriptionStorage.getPlan();
+              const newBalance = (plan.creditsBalance || 0) - envelopeData.totalCost;
+              console.log(newBalance);
+              SubscriptionStorage.updateCredits(newBalance);
+              // Update state if needed
+              setCredit(newBalance);
+            }
+
+          } catch (creditErr) {
+            console.error('Failed to record credit usage:', creditErr);
+            // Don't block the flow if credit recording fails
+          }
+        }
+
         alert('Envelope sent successfully!');
         navigate('/e-sign/dashboard');
       } catch (err) {
@@ -1616,7 +1665,7 @@ const savePowerFormSlots = async (): Promise<string | null> => {
             {/* Navigation */}
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
               <button
-                onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
+                onClick={() => handlePrevious()}
                 disabled={currentStep === 1}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
               >

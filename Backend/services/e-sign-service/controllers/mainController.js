@@ -314,6 +314,7 @@ try {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) return res.status(404).send("Envelope not found");
+    // 
 
     // Update envelope status if draft
     if (envelope.status === 'draft') {

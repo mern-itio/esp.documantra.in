@@ -27,7 +27,7 @@ const getBalance = async (req, res) => {
   }
 };
 
-// POST /usage/consume { slug: 'pdf-to-excel' }
+// POST /usage/consume { slug: 'pdf-to-excel' } or { action: 'esign:envelopeSend', credits: number }
 const consumeCredits = async (req, res) => {
   try {
     const userId = getUserIdFromRequest(req);
@@ -35,6 +35,57 @@ const consumeCredits = async (req, res) => {
 
     const subscription = await Subscription.findOne({ userId });
     if (!subscription) return res.status(404).json({ status: 404, message: 'Subscription not found', data: null });
+
+    // Handle e-sign envelope credit consumption
+    if (req.body.action === 'esign:envelopeSend') {
+      const { credits, authId, toolId = 'esign', reason } = req.body;
+      
+      if (!credits || credits <= 0) {
+        return res.status(200).json({ status: 200, data: { creditsBalance: subscription.creditsBalance, debited: 0 } });
+      }
+
+      if (subscription.creditsBalance < credits) {
+        await UsageRecord.create({ 
+          subscriptionId: subscription._id, 
+          userId, 
+          action: 'esign:envelopeSend',
+          toolId,
+          authId,
+          creditsDelta: 0, 
+          balanceAfter: subscription.creditsBalance, 
+          success: false, 
+          reason: 'insufficient_credits' 
+        });
+        return res.status(402).json({ 
+          status: 402, 
+          message: 'Insufficient credits', 
+          data: { required: credits, creditsBalance: subscription.creditsBalance } 
+        });
+      }
+
+      const updatedSub = await Subscription.findOneAndUpdate(
+        { _id: subscription._id, creditsBalance: { $gte: credits } },
+        { $inc: { creditsBalance: -credits } },
+        { new: true }
+      );
+
+      await UsageRecord.create({ 
+        subscriptionId: subscription._id, 
+        userId, 
+        action: 'esign:envelopeSend',
+        toolId,
+        authId,
+        creditsDelta: -credits, 
+        balanceAfter: subscription.creditsBalance, 
+        success: true,
+        reason 
+      });
+
+      return res.status(200).json({ 
+        status: 200, 
+        data: { creditsBalance: subscription.creditsBalance, debited: credits } 
+      });
+    }
 
     // Handle document/PDF share actions with credits (derive when not provided)
     if (['document:upload', 'document:share', 'pdf:share'].includes(req.body.action)) {

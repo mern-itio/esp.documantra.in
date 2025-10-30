@@ -21,8 +21,9 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { formatDistanceToNow, format } from 'date-fns';
-import { eSignApi } from '../../services/apiHelper';
+import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import ActionButton from '../../components/ESign/ActionButton';
+import { SubscriptionStorage } from '../../services/subscriptionService';
 
 const EnvelopeDetails: React.FC = () => { 
   const { id } = useParams<{ id: string }>();
@@ -31,6 +32,10 @@ const EnvelopeDetails: React.FC = () => {
   const [cycles , setCycles] = useState<any[]>([]);
   const [openCycle, setOpenCycle] = useState<string | null>(null);
   const [duplicating, setDuplicating] = useState(false);
+  const [envelope, setEnvelope] = useState<any>(null);
+  const [isSufficientCredits, setIsSufficientCredits] = useState<boolean>(false);
+  const [credit , setCredit] = useState<number>(0);
+  const [requiredCredits , setRequiredCredits] = useState<number>(0);
   const navigate = useNavigate();
   const {addAuditEntry } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
@@ -38,7 +43,41 @@ const EnvelopeDetails: React.FC = () => {
     fetchEnvelopeDetails();
     fetchLogs();
   }, []);
-  const [envelope, setEnvelope] = useState<any>(null);
+
+  // Updated to calculate cost as soon as we have the envelope data
+
+
+  const calculateEnvelopeCost = (envelope: any) => {
+    const subscription = JSON.parse(localStorage.getItem("userSubscriptionPlan") ?? "null");
+
+    if (!subscription?.authCosts?.length || !envelope?.recipients?.length) return;
+
+    const costMap = Object.fromEntries(
+      subscription.authCosts.map((a: any) => [a.authId, a.credits])
+    );
+
+    const updatedRecipients = envelope.recipients.map((r: any) => ({
+      ...r,
+      cost: r.authentication ? (costMap[r.authentication] ?? 0) : 0,
+    }));
+
+    const totalCost = updatedRecipients.reduce(
+      (sum: number, r: any) => sum + (r.cost || 0),
+      0
+    );
+    setRequiredCredits(totalCost);
+    setIsSufficientCredits(totalCost <= (subscription?.creditsBalance || 0));
+    setCredit(subscription?.creditsBalance || 0);
+
+    setEnvelope({
+      ...envelope,
+      recipients: updatedRecipients,
+      totalCost,
+    });
+
+    console.log("Updated Recipients with Cost:", updatedRecipients);
+    console.log("Total Cost:", totalCost);
+  };
   const fetchLogs = async () =>{
     try{
       const response = await eSignApi.get(`/api/e-sign/envelope/activity-log/${id}`);
@@ -52,7 +91,10 @@ const EnvelopeDetails: React.FC = () => {
       try {
          const response = await eSignApi.get('/api/e-sign/envelope/' + id);
          if (response.status == 200) {
-          setEnvelope(response.data.data);
+          const envelopeData = response.data.data;
+          setEnvelope(envelopeData);
+          // Calculate costs immediately after getting the envelope data
+          calculateEnvelopeCost(envelopeData);
          }
       } catch (error) {
         console.error('Error fetching envelopes:', error);
@@ -262,8 +304,45 @@ const handleDownloadAll = () =>{
 const handleSendEnvelope = async () => {
     if (!id) return;
     setSending(true);
-      try {
+    try {
+        // Send envelope
         await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+        
+        // Record credit usage for the envelope
+        console.log(envelope.totalCost)
+        if (envelope?.totalCost > 0) {
+          try {
+            // Record usage for each recipient that has a cost
+            const recipientsWithCost = envelope.recipients.filter((recipient:any) => recipient.cost && recipient.cost > 0);
+            
+            if (recipientsWithCost.length > 0) {
+              await Promise.all(recipientsWithCost.map((recipient:any) => 
+                subscriptionApi.post('/usage/consume', {
+                  action: 'esign:envelopeSend',
+                  credits: recipient.cost || 0,
+                  authId: recipient.authentication || null,
+                  toolId: 'esign',
+                  reason: `Envelope ${id} sent to ${recipient.email}`,
+                })
+              ));
+
+              // Update remaining credits in localStorage
+              const plan: any = SubscriptionStorage.getPlan();
+              const newBalance = (plan.creditsBalance || 0) - envelope?.totalCost;
+              SubscriptionStorage.updateCredits(newBalance);
+              // Update state if needed
+              setCredit(newBalance);
+            }
+
+          } catch (creditErr) {
+            console.error('Failed to record credit usage:', creditErr);
+            // Don't block the flow if credit recording fails
+          }
+        }
+        else{
+          return
+        }
+
         alert('Envelope sent successfully!');
         navigate('/e-sign/dashboard');
       } catch (err) {
@@ -272,7 +351,6 @@ const handleSendEnvelope = async () => {
       } finally {
         setSending(false);
       }
-    // In a real app, this would trigger email sending
     navigate('/e-sign/dashboard');
   };
 const handleDuplicate = async () =>{
@@ -402,7 +480,9 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
               onClick={handleSendEnvelope}
               loading={sending}
               icon={<Send className="w-4 h-4 text-white" />}
-              variant="primary"
+              variant={isSufficientCredits ? "primary" : "secondary"}
+              disabled={!isSufficientCredits}
+              tooltip={isSufficientCredits ? "Click this button to send the envelope" : `Insufficient credits to send this envelope, add ${requiredCredits - credit} more credits to send this envelope.`}
             >
               Send Envelope
             </ActionButton>
