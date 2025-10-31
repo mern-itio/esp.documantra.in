@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'react-modal';
 import SignPad from './SignPad';
 import { eSignApi } from '../../services/apiHelper';
+import ErrorBoundary from '../ErrorBoundary';
+import type { SignerData, ActiveField } from '../../types/documentTypes';
 
 interface Props {
   document: any;
@@ -16,14 +18,13 @@ interface Props {
 
 Modal.setAppElement('#root');
 
-const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUserId, onClose,envelopeID,onSignatureSave,cycleId}) => {
+const DocumentViewerContent: React.FC<Props> = ({ document, signatureFields, currentUserId, envelopeID, onSignatureSave, cycleId}) => {
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get('self'); 
-  const [activeField, setActiveField] = useState<any>(null);
-  const [selfSigner, setSelfSigner] = useState<any>(null);
+  const [activeField, setActiveField] = useState<ActiveField | null>(null);
+  const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
+  const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
-
-  console.log(`Envelope ID in DocumentViewer: ${envelopeID}`);
 
     // --- PDF.js worker setup ---
   useEffect(() => {
@@ -48,21 +49,34 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const handleFieldClick = (field: any) => {
-    console.log("Field clicked:", field);
-    setActiveField(field);
+    const activeField: ActiveField = {
+      ...field,
+      status: 'pending'
+    };
+    setActiveField(activeField);
   };
-  console.log(`Document: ${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`)
   const getSelfSigner = async () => {
     try {
+      setIsLoading(true);
+      if (!cycleId) {
+        console.warn("No cycleId provided");
+        return;
+      }
       const response = await eSignApi.get(`/api/e-sign/public/envelope/self-signer/${cycleId}`);
-      if (response && response.data) {
-        console.log("Self-signer data loaded:", response.data);
-      setSelfSigner(response.data.selfSigner || []);
+      if (response?.data?.selfSigner) {
+        const validSigners = response.data.selfSigner.filter((signer: SignerData) => 
+          signer && typeof signer === 'object' && signer.signerSlotId
+        );
+        setSelfSigner(validSigners);
       } else {
         console.warn("No self-signer data found in response");
+        setSelfSigner([]);
       }
     } catch (err) {
       console.error('Failed to load self-signer data:', err);
+      setSelfSigner([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -113,20 +127,16 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
   }, [signatureFields, selfSigner, selfValue, currentPage, activeField, currentUserId]);
 
   return (
-    <div className="relative flex flex-col items-center mt-4">
+    <div className="relative flex flex-col items-center ">
       {/* PDF Container */}
-      <div ref={pdfContainerRef} className="relative border border-gray-300 rounded-lg shadow-sm bg-white overflow-auto max-w-4xl max-h-[80vh] p-2">
-      <button
-        onClick={onClose}
-        className="mb-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 z-20"
-      >
-        Close
-      </button>
+      <div ref={pdfContainerRef} className="relative border border-gray-300 rounded-lg shadow-sm bg-white overflow-auto max-w-4xl max-h-[80vh] ">
         <Document
           file={document.filePath || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`}
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
         >
-          <Page pageNumber={currentPage} />
+          <Page pageNumber={currentPage} 
+           width={800} 
+           height={1132} />
         </Document>
 
         {/* Signature Fields */}
@@ -136,20 +146,28 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
             .map(field => {
               const isSignatureType = field.type === "signature";
               let isCurrentUser;
-                if (selfValue === "1") { 
+                if (selfValue === "1" && selfSigner) { 
                   // self-signing mode
-                  isCurrentUser =  selfSigner?.some((s:any) =>s.signerSlotId === field.slotId && s._id?.toString?.() === currentUserId?.toString?.());
+                  isCurrentUser = selfSigner.some((s:any) => {
+                    if (!s) return false;
+                    return s.signerSlotId === field.slotId && s._id?.toString?.() === currentUserId?.toString?.();
+                  });
                 } else {
                   // Regular signing mode
-                    isCurrentUser = field.recipientId === currentUserId; 
+                  isCurrentUser = field.recipientId === currentUserId; 
                 }
               let isSigned = false;
               let signedImage = null;
                if (selfValue === "1" ) { 
                 //Self Signer Mode
-                const matchedSigner = selfSigner?.find((s: any) => s.signerSlotId === field.slotId);
-                 isSigned =  matchedSigner ? !!matchedSigner.signature : false;
-                 signedImage =matchedSigner ? matchedSigner.signature : null;
+                if (selfSigner) {
+                  const matchedSigner = selfSigner.find((s: any) => s.signerSlotId === field.slotId);
+                  isSigned = matchedSigner ? !!matchedSigner.signature : false;
+                  signedImage = matchedSigner ? matchedSigner.signature : null;
+                } else {
+                  isSigned = false;
+                  signedImage = null;
+                }
                }else{
               // If selfSigner check already signed using selfSigner data otherwise use field.signature
                  isSigned = !!field.signature;
@@ -291,6 +309,14 @@ const DocumentViewer: React.FC<Props> = ({ document, signatureFields, currentUse
           />
         )}
     </div>
+  );
+};
+
+const DocumentViewer: React.FC<Props> = (props) => {
+  return (
+    <ErrorBoundary>
+      <DocumentViewerContent {...props} />
+    </ErrorBoundary>
   );
 };
 

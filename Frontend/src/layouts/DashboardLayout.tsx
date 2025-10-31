@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/common/sidebar';
 import Header from '../components/common/header';
 import ScrollToTop from '../components/common/ScrollToTop';
 
+import { useSidebar } from '../context/SidebarContext';
 const DashboardLayout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState('dashboard');
-
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
+  const [activeView, setActiveView] = React.useState('dashboard');
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar 

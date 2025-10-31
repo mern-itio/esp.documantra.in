@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import router from "./routes/index";
 import ThemeConfig from "./theme/index";
+import { SidebarProvider } from "./context/SidebarContext";
 import { AuthProvider } from "./components/AuthService/AuthContext";
 import Loader from "./components/common/loader";
 import { AppProvider } from "./context/AppContext";
@@ -22,17 +23,19 @@ const App: React.FC = () => {
 
   return (
     <APIProvider>
-    <AuthProvider>
-      <SubscriptionProvider>
-        <AppProvider>
-          <ThemeConfig>
-            <RouterProvider router={router} />
-             <Toaster />
-             <GlobalPlansModalPortal />
-          </ThemeConfig>
-        </AppProvider>
-      </SubscriptionProvider>
-    </AuthProvider>
+      <AuthProvider>
+        <SubscriptionProvider>
+          <AppProvider>
+            <SidebarProvider>
+              <ThemeConfig>
+                <RouterProvider router={router} />
+                <Toaster />
+                <GlobalPlansModalPortal />
+              </ThemeConfig>
+            </SidebarProvider>
+          </AppProvider>
+        </SubscriptionProvider>
+      </AuthProvider>
     </APIProvider>
   );
 };

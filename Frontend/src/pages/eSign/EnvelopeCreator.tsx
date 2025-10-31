@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSidebar } from '../../context/SidebarContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Upload,
@@ -23,6 +24,7 @@ import {eSignApi, subscriptionApi, templateServiceApi} from '../../services/apiH
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { AxiosProgressEvent } from 'axios';
 import { SubscriptionStorage } from '../../services/subscriptionService';
+import { Card } from '../../components/DocumentService/ui/card';
 type FieldType = "signature" | "text" | "email" | "number" | "id";
 
 type SignatureField = {
@@ -56,7 +58,14 @@ type Party = {
 };
 
 const EnvelopeCreator: React.FC = () => {
+  const { setSidebarOpen } = useSidebar();
   const location = useLocation();
+
+  // Collapse sidebar on mount, restore on unmount
+  useEffect(() => {
+    setSidebarOpen(false);
+    return () => setSidebarOpen(true);
+  }, [setSidebarOpen]);
   const navigate = useNavigate();
   const { user } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,6 +128,10 @@ const EnvelopeCreator: React.FC = () => {
   const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
   const [sending, setSending] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
+  const [existingRecipients, setExistingRecipients] = useState<Recipient[]>([]);
+  const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string>('');
+  const [addMode, setAddMode] = useState<'new' | 'existing'>('new');
 
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -473,6 +486,44 @@ const handleNext = async () => {
     setDocuments(prev => prev.filter(doc => doc.id !== docId));
   };
 
+  // Fetch existing recipients when step 2 is reached
+  useEffect(() => {
+    if (currentStep === 2) {
+      fetchExistingRecipients();
+    }
+  }, [currentStep]);
+
+  // Fetch existing recipients
+  const fetchExistingRecipients = async () => {
+    setIsLoadingRecipients(true);
+    try {
+      const response = await eSignApi.get('/api/e-sign/get-all-recipients');
+      if (response.status === 200) {
+        setExistingRecipients(response.data.recipients);
+      }
+    } catch (error) {
+      console.error('Error fetching existing recipients:', error);
+    } finally {
+      setIsLoadingRecipients(false);
+    }
+  };
+
+  // Handle selecting an existing recipient
+  const handleSelectRecipient = (recipientId: string) => {
+    const selectedRecipient = existingRecipients.find(r => r.id === recipientId);
+    if (selectedRecipient) {
+      console.log(selectedRecipient); 
+      const newRecipient: Recipient = {
+        ...selectedRecipient,
+        order: recipients.length + 1,
+        status: 'waiting' as const,
+        role:'signer'
+      };
+      setRecipients(prev => [...prev, newRecipient]);
+      setSelectedRecipientId('');
+    }
+  };
+
   const addRecipient = () => {
     const newRecipient: Recipient = {
       id: `recipient_${Date.now()}`,
@@ -551,53 +602,55 @@ const handleNext = async () => {
     navigate('/e-sign/dashboard');
   };
 
+  // (already declared above)
   const handleSendEnvelope = async () => {
     if (!envelopeId) return;
     setSending(true);
-      try {
-        // Send envelope
-        await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
-        
-        // Record credit usage for the envelope
-        if (envelopeData?.totalCost > 0) {
-          try {
-            // Record usage for each recipient that has a cost
-            const recipientsWithCost = recipients.filter(recipient => recipient.cost && recipient.cost > 0);
-            
-            if (recipientsWithCost.length > 0) {
-              await Promise.all(recipientsWithCost.map(recipient => 
-                subscriptionApi.post('/usage/consume', {
-                  action: 'esign:envelopeSend',
-                  credits: recipient.cost || 0,
-                  authId: recipient.authentication || null,
-                  toolId: 'esign',
-                  reason: `Envelope ${envelopeId} sent to ${recipient.email}`,
-                })
-              ));
+    try {
+      // Send envelope
+      await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
 
-              // Update remaining credits in localStorage
-              const plan: any = SubscriptionStorage.getPlan();
-              const newBalance = (plan.creditsBalance || 0) - envelopeData.totalCost;
-              console.log(newBalance);
-              SubscriptionStorage.updateCredits(newBalance);
-              // Update state if needed
-              setCredit(newBalance);
-            }
+      // Record credit usage for the envelope
+      if (envelopeData?.totalCost > 0) {
+        try {
+          // Record usage for each recipient that has a cost
+          const recipientsWithCost = recipients.filter(recipient => recipient.cost && recipient.cost > 0);
 
-          } catch (creditErr) {
-            console.error('Failed to record credit usage:', creditErr);
-            // Don't block the flow if credit recording fails
+          if (recipientsWithCost.length > 0) {
+            await Promise.all(recipientsWithCost.map(recipient => 
+              subscriptionApi.post('/usage/consume', {
+                action: 'esign:envelopeSend',
+                credits: recipient.cost || 0,
+                authId: recipient.authentication || null,
+                toolId: 'esign',
+                reason: `Envelope ${envelopeId} sent to ${recipient.email}`,
+              })
+            ));
+
+            // Update remaining credits in localStorage
+            const plan: any = SubscriptionStorage.getPlan();
+            const newBalance = (plan.creditsBalance || 0) - envelopeData.totalCost;
+            console.log(newBalance);
+            SubscriptionStorage.updateCredits(newBalance);
+            // Update state if needed
+            setCredit(newBalance);
           }
-        }
 
-        alert('Envelope sent successfully!');
-        navigate('/e-sign/dashboard');
-      } catch (err) {
-        console.error(err);
-        alert('Failed to send envelope. Try again.');
-      } finally {
-        setSending(false);
+        } catch (creditErr) {
+          console.error('Failed to record credit usage:', creditErr);
+          // Don't block the flow if credit recording fails
+        }
       }
+
+      alert('Envelope sent successfully!');
+      setSidebarOpen(false); // Collapse sidebar
+      navigate('/e-sign/dashboard');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to send envelope. Try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
 
@@ -878,206 +931,331 @@ const savePowerFormSlots = async (): Promise<string | null> => {
           </div>
         );
 
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Choose flow: Normal or Power Form</h3>
-              <p className="text-gray-600 mb-6">Normal — add recipients and place recipient-specific signature fields. Power Form — define a reusable form with numbered signer slots.</p>
-            </div>
+case 2:
+  return (
+    <div className="space-y-8">
+      {/* ======================== FLOW SELECTION ======================== */}
+      <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          Choose Flow
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          <span className="font-medium">Normal</span> — Add recipients and place their signature fields. <br />
+          <span className="font-medium">Power Form</span> — Define a reusable form with signer slots.
+        </p>
 
-            <div className="flex items-center gap-4">
-              <button onClick={() => setMode('normal')} className={`px-4 py-2 rounded-lg ${mode==='normal' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Normal (Recipients)</button>
-              <button onClick={() => getPowerForm()} className={`px-4 py-2 rounded-lg ${mode==='power' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Power Form</button>
-            </div>
-            {mode === 'normal' ? (
-              //Recipient UI
-              <>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Recipients</h3>
-                  <p className="text-gray-600 mb-6">Add people who need to sign or receive copies of the documents.</p>
-                </div>
-                <button
-                  onClick={addRecipient}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Recipient
-                </button>
-                {recipients?.length > 0 && (
-                  <div className="space-y-4">
-                    {recipients.map((recipient, index) => (
-                      <div key={recipient.id} className="bg-gray-50 rounded-lg p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-sm font-medium text-gray-900">Recipient {index + 1}</h4>
-                          <button
-                            onClick={() => removeRecipient(recipient.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 rounded"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => setMode('normal')}
+            className={`flex-1 min-w-[140px] px-4 py-2.5 rounded-lg font-medium transition ${
+              mode === 'normal'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+            }`}
+          >
+            Normal (Recipients)
+          </button>
+          <button
+            onClick={() => getPowerForm()}
+            className={`flex-1 min-w-[140px] px-4 py-2.5 rounded-lg font-medium transition ${
+              mode === 'power'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+            }`}
+          >
+            Power Form
+          </button>
+        </div>
+      </Card>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                            <input
-                              type="text"
-                              value={recipient.name}
-                              onChange={(e) => updateRecipient(recipient.id, { name: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Full name"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input
-                              type="email"
-                              value={recipient.email}
-                              onChange={(e) => updateRecipient(recipient.id, { email: e.target.value })}
-                              onBlur={(e) => handleEmailOnBlur(recipient.id, e.target.value )}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="email@example.com"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                            <select
-                              value={recipient.role}
-                              onChange={(e) => updateRecipient(recipient.id, { role: e.target.value as any })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="signer">Signer</option>
-                              <option value="approver">Approver</option>
-                              <option value="carbon_copy">Carbon Copy</option>
-                              <option value="in_person_signer">In-Person Signer</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-              </>
-              
-            ) : (
-              <div>
-                  <h4 className="text-sm font-medium text-gray-900">Build Power Form</h4>
-                  <p className="text-sm text-gray-500 mb-4">Set the number of signers (slots). You will drag power-form placeholders onto the document in the next step.</p>
-                  {/* select field creation with powerForm list as options */}
-                  <div className="w-full">
-                      <label htmlFor="powerForm" className="block mb-2 text-sm font-medium text-gray-700">
-                        Select Power Form
-                      </label>
-                      <select id="powerForm" value={selectedForm} onChange={handleChange}
-                        className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
-                          <option value="">-- Choose a Form --</option>
-                          {powerForms.map((form) => (
-                            <option key={form._id} value={form._id}>
-                              {form.title}
-                            </option>
-                          ))}
-                      </select>
-                  </div>
-                   {/* Show selected form details */}
-                    {powerFormData && (
-                      <div className="bg-gray-50  rounded-lg p-4 space-y-4 p-4 mt-4">
-                        <div>
-                          <h5 className="text-lg font-semibold text-gray-900">
-                            {powerFormData.title}
-                          </h5>
-                          <p className="text-sm text-gray-600">{powerFormData.description}</p>
-                        </div>
-
-                        <div>
-                          <h6 className="text-sm font-medium text-gray-800 mb-2">Fields</h6>
-                          <ul className="space-y-2">
-                            {powerFormData.fields.map((field: any) => (
-                              <li
-                                key={field._id}
-                                className="flex items-center justify-between bg-white border rounded p-2 text-sm"
-                              >
-                                <span>{field.label || field.type}</span>
-                                <span className="text-gray-500">{field.type}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                    {/* Step 1C: Number of parties control */}
-                    <div className="mb-4 flex items-center gap-4">
-                      <label className="text-sm font-medium text-gray-700">Number of parties</label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="px-2 py-1 rounded border"
-                          onClick={() => syncPartiesToNumber(Math.max(1, numberOfParties - 1))}
-                          type="button"
-                        >
-                          <ArrowDown className="w-4 h-4" />
-                        </button>
-                        <input
-                          type="number"
-                          min={1}
-                          max={maxParties}
-                          value={numberOfParties}
-                          onChange={(e) => {
-                            const val = Number(e.target.value || 1);
-                            syncPartiesToNumber(val);
-                          }}
-                          className="w-20 px-2 py-1 border rounded text-center"
-                        />
-                        <button
-                          className="px-2 py-1 rounded border"
-                          onClick={() => syncPartiesToNumber(Math.min(maxParties, numberOfParties + 1))}
-                          type="button"
-                        >
-                          <ArrowUp className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 ml-4">Min 1 — Max {maxParties}</p>
-                    </div>
-                    {/* ===== First signer selector ===== */}
-                    <div className="mt-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Which party signs first?</label>
-                      <select
-                        value={firstSigningPartyId}
-                        onChange={(e) => setFirstSigningPartyId(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 p-2"
-                      >
-                        {parties.map(p => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} {p.slot ? `(${p.slot})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* ===== Which party are you (creator) ===== */}
-                    <div className="mt-4">
-                      <h6 className="text-sm font-medium text-gray-900 mb-2">Choose which party you are</h6>
-                      <div className="space-y-2">
-                        {parties.map((party) => (
-                          <label key={party.id} className="flex items-center gap-3">
-                            <input
-                              type="radio"
-                              name="creatorParty"
-                              checked={selectedPartyId === party.id}
-                              onChange={() => setSelectedPartyId(party.id)}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">{party.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-              </div>
-            )}
+      {/* ======================== NORMAL MODE ======================== */}
+      {mode === 'normal' ? (
+        <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Add Recipients</h3>
+            <p className="text-sm text-gray-600">
+              Add people who need to sign or receive the document.
+            </p>
           </div>
-        );
+
+          {/* Add Mode Toggle */}
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => setAddMode('new')}
+              className={`flex-1 min-w-[120px] px-4 py-2 rounded-lg font-medium transition ${
+                addMode === 'new'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200'
+              }`}
+            >
+              Add New
+            </button>
+            <button
+              onClick={() => setAddMode('existing')}
+              className={`flex-1 min-w-[120px] px-4 py-2 rounded-lg font-medium transition ${
+                addMode === 'existing'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200'
+              }`}
+            >
+              Select Existing
+            </button>
+          </div>
+
+          {/* Add Recipient or Select Existing */}
+          {addMode === 'new' ? (
+            <button
+              onClick={addRecipient}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Recipient
+            </button>
+          ) : (
+            <div className="w-full max-w-md">
+              {isLoadingRecipients ? (
+                <div className="text-gray-500 text-sm">Loading recipients...</div>
+              ) : (
+                <select
+                  value={selectedRecipientId}
+                  onChange={(e) => handleSelectRecipient(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a recipient</option>
+                  {existingRecipients.map((recipient) => (
+                    <option key={recipient.id} value={recipient.id}>
+                      {recipient.name} ({recipient.email})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* Recipient List */}
+          {recipients?.length > 0 && (
+            <div className="space-y-4">
+              {recipients.map((recipient, index) => (
+                <div
+                  key={recipient.id}
+                  className="border border-gray-200 rounded-lg p-5 bg-gray-50"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-medium text-gray-900">
+                      Recipient {index + 1}
+                    </h4>
+                    <button
+                      onClick={() => removeRecipient(recipient.id)}
+                      className="p-1 text-gray-400 hover:text-red-600 rounded transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        value={recipient.name}
+                        onChange={(e) =>
+                          updateRecipient(recipient.id, { name: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="Full name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={recipient.email}
+                        onChange={(e) =>
+                          updateRecipient(recipient.id, { email: e.target.value })
+                        }
+                        onBlur={(e) =>
+                          handleEmailOnBlur(recipient.id, e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="email@example.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Role
+                      </label>
+                      <select
+                        value={recipient.role}
+                        onChange={(e) =>
+                          updateRecipient(recipient.id, {
+                            role: e.target.value as any,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="signer">Signer</option>
+                        <option value="approver">Approver</option>
+                        <option value="carbon_copy">Carbon Copy</option>
+                        <option value="in_person_signer">In-Person Signer</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      ) : (
+        /* ======================== POWER FORM MODE ======================== */
+        <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white space-y-6">
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Build Power Form</h4>
+            <p className="text-sm text-gray-600">
+              Set up your reusable form and signer slots.
+            </p>
+          </div>
+
+          {/* Power Form Selector */}
+          <div>
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              Select Power Form
+            </label>
+            <select
+              id="powerForm"
+              value={selectedForm}
+              onChange={handleChange}
+              className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Choose a Form --</option>
+              {powerForms.map((form) => (
+                <option key={form._id} value={form._id}>
+                  {form.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Power Form Preview */}
+          {powerFormData && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+              <div>
+                <h5 className="text-base font-semibold text-gray-900">
+                  {powerFormData.title}
+                </h5>
+                <p className="text-sm text-gray-600">{powerFormData.description}</p>
+              </div>
+              <div>
+                <h6 className="text-sm font-medium text-gray-800 mb-2">Fields</h6>
+                <ul className="space-y-1">
+                  {powerFormData.fields.map((field: any) => (
+                    <li
+                      key={field._id}
+                      className="flex items-center justify-between bg-white border rounded p-2 text-sm"
+                    >
+                      <span>{field.label || field.type}</span>
+                      <span className="text-gray-500">{field.type}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Parties Configuration */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium text-gray-700">
+                Number of Parties
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-2 py-1 border rounded hover:bg-gray-100"
+                  onClick={() =>
+                    syncPartiesToNumber(Math.max(1, numberOfParties - 1))
+                  }
+                  type="button"
+                >
+                  <ArrowDown className="w-4 h-4" />
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={maxParties}
+                  value={numberOfParties}
+                  onChange={(e) =>
+                    syncPartiesToNumber(Number(e.target.value || 1))
+                  }
+                  className="w-20 px-2 py-1 border rounded text-center text-sm"
+                />
+                <button
+                  className="px-2 py-1 border rounded hover:bg-gray-100"
+                  onClick={() =>
+                    syncPartiesToNumber(
+                      Math.min(maxParties, numberOfParties + 1)
+                    )
+                  }
+                  type="button"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 ml-2">
+                Min 1 — Max {maxParties}
+              </p>
+            </div>
+
+            {/* First Signing Party */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Which party signs first?
+              </label>
+              <select
+                value={firstSigningPartyId}
+                onChange={(e) => setFirstSigningPartyId(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                {parties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.slot ? `(${p.slot})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Creator Party */}
+            <div>
+              <h6 className="text-sm font-medium text-gray-900 mb-2">
+                Choose which party you are
+              </h6>
+              <div className="space-y-2">
+                {parties.map((party) => (
+                  <label
+                    key={party.id}
+                    className="flex items-center gap-3 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="creatorParty"
+                      checked={selectedPartyId === party.id}
+                      onChange={() => setSelectedPartyId(party.id)}
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{party.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
 
       case 3:
         return (

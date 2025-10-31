@@ -558,10 +558,8 @@ const envelopeDelete = async (req, res) => {
   try {
     const envelopeId = req.params.envelopeId; 
      // Validate envelopeId is a valid ObjectId
-    if (!ObjectId.isValid(envelopeId)) {
-      return res.status(400).json({ message: "Invalid envelope ID." });
-    }
-    const envelope = await Envelope.findOneAndDelete({ _id: new ObjectId(envelopeId) });
+     console.log(envelopeId);
+    const envelope = await Envelope.findOneAndDelete({_id:envelopeId});
     if(envelope){
       return res.status(200).json({ message: "Envelope deleted successfully", envelope });
     }
@@ -986,11 +984,17 @@ const getAllEnvelopeStats = async (req, res) => {
     throw new Error('Internal Server Error');
   }
 };
-
+const getAllRecipients = async (req, res) =>{
+  const recipients = await Recipient.find();
+  return res.status(200).json({
+    recipients
+  })
+}
 
 
 // Export functions
 module.exports = {
+  getAllRecipients,
   envelopesData,
   envelopesDetail,
   getEnvelopeStats,
