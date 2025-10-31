@@ -45,7 +45,7 @@ const Analytics: React.FC = () => {
 
   const totalEnvelopes = filteredEnvelopes.length;
   const completedEnvelopes = filteredEnvelopes.filter(env => env.status === 'completed').length;
-  const pendingEnvelopes = filteredEnvelopes.filter(env => env.status === 'sent' || env.status === 'pending').length;
+  const pendingEnvelopes = filteredEnvelopes.filter(env => env.status === 'sent' || env.status === 'pending' || env.status ==='in-progress').length ;
   const expiredEnvelopes = filteredEnvelopes.filter(env => env.status === 'expired').length;
 
   const completionRate = totalEnvelopes > 0 ? (completedEnvelopes / totalEnvelopes) * 100 : 0;

@@ -49,24 +49,37 @@ const envelopesData = async (req, res) => {
           })
           .lean(); // optional, makes it simple to work with
 
-        // Fetch all envelope-specific permissions in one query
-        const allRecipientIds = envelopes.flatMap(e => e.recipientIds.map(r => r._id));
-        const allEnvelopeIds = envelopes.map(e => e._id);
+        // For each envelope, fetch only the permissions that belong to that envelope
+        // This prevents permission records from other envelopes (same recipient) leaking into results
+        for (const envelope of envelopes) {
+          if (!envelope || !envelope._id || !Array.isArray(envelope.recipientIds)) continue;
 
-        const permissions = await RecipientPermission.find({
-          recipientId: { $in: allRecipientIds },
-          envelopeId: { $in: allEnvelopeIds }
-        }).select('recipientId envelopeId role order status authLevel');
+          const envelopeRecipientIds = envelope.recipientIds.map(r => r._id);
 
-        // Attach permissions to the correct recipient in each envelope
-        envelopes.forEach(envelope => {
-          envelope.recipientIds.forEach(recipient => {
-            recipient.permissions = permissions.filter(p =>
-              p.recipientId.toString() === recipient._id.toString() &&
-              p.envelopeId.toString() === envelope._id.toString()
-            );
+          // Fetch permissions scoped to this envelope only
+          const envelopePermissions = await RecipientPermission.find({
+            envelopeId: envelope._id,
+            recipientId: { $in: envelopeRecipientIds }
+          }).select('recipientId envelopeId role order status authLevel');
+
+          // Map permissions by recipientId for quick lookup
+          const permMap = new Map();
+          envelopePermissions.forEach(p => {
+            if (p && p.recipientId) permMap.set(p.recipientId.toString(), p);
           });
-        });
+
+          // Attach only the matching permission to each recipient for this envelope
+          envelope.recipientIds = envelope.recipientIds.map(recipient => {
+            const r = recipient || {};
+            const rid = r._id ? r._id.toString() : null;
+            const permission = rid ? permMap.get(rid) : null;
+            // Keep original recipient fields and add permissions array (to keep downstream code unchanged)
+            return {
+              ...r,
+              permissions: permission ? [permission] : []
+            };
+          });
+        }
 
     if (!envelopes || envelopes.length === 0) {
       return res.status(404).json({ message: 'No envelopes found' });
@@ -118,16 +131,18 @@ const envelopesData = async (req, res) => {
           size: doc.fileSize,
           type: doc.mimeType,
         })),
-        recipients: envelope.recipientIds.map((recipient) => ({
-
-          id: recipient._id,
-          name: recipient.name,
-          email: recipient.email,
-          role: recipient.permissions[0].role,
-          order: recipient.permissions[0].order,
-          status: recipient.permissions[0].status,
-          authentication: recipient.permissions[0].authLevel,
-        })),
+        recipients: envelope.recipientIds.map((recipient) => {
+          const perm = (recipient && Array.isArray(recipient.permissions) && recipient.permissions[0]) || {};
+          return {
+            id: recipient._id,
+            name: recipient.name,
+            email: recipient.email,
+            role: perm.role || 'signer',
+            order: typeof perm.order === 'number' ? perm.order : 0,
+            status: perm.status || 'pending',
+            authentication: perm.authLevel || 'none',
+          };
+        }),
       };
     });
 
