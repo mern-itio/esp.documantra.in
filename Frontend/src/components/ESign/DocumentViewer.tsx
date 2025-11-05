@@ -50,6 +50,7 @@ const DocumentViewerContent: React.FC<Props> = ({
         console.warn("Failed to set PDF.js worker:", err);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [numPages, setNumPages] = useState<number>(0);
@@ -67,7 +68,7 @@ const DocumentViewerContent: React.FC<Props> = ({
         0
     );
 
-  // build actionable (user-specific) fields
+  // build actionable (user-specific) signature fields
   const actionableFields = useMemo(() => {
     if (!signatureFields || !Array.isArray(signatureFields)) return [];
     return signatureFields
@@ -94,7 +95,7 @@ const DocumentViewerContent: React.FC<Props> = ({
       .sort((a, b) => a.pageNum - b.pageNum);
   }, [signatureFields, selfSigner, selfValue, currentUserId, localSignedMap]);
 
-  // Auto-open first field on load (only if actionable exists)
+  // Auto-open first actionable field on load (only once)
   useEffect(() => {
     if (!hasAutoOpened && actionableFields.length > 0) {
       const first = actionableFields[0];
@@ -186,14 +187,12 @@ const DocumentViewerContent: React.FC<Props> = ({
       attempts++;
       const el = container.querySelector(selector) as HTMLElement | null;
       if (el) {
-        // compute offset relative to container and scroll so field is centered vertically
         const elTop = el.offsetTop;
         const elHeight = el.offsetHeight || 0;
         const containerHeight = container.clientHeight;
         const target = Math.max(0, elTop - containerHeight / 2 + elHeight / 2);
         container.scrollTo({ top: target, behavior: "smooth" });
       } else if (attempts < maxAttempts) {
-        // small delay and try again (gives PDF page time to render)
         setTimeout(attempt, 50);
       }
     };
@@ -250,9 +249,19 @@ const DocumentViewerContent: React.FC<Props> = ({
 
         {/* Fields overlay */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+          {/*
+            We render BOTH:
+              - signature fields (interactive for signer)
+              - non-signature fields (labels / values placed on document)
+            The non-signature logic was restored here — if selfValue === "1",
+            we pull values from selfSigner.data for that slot; otherwise we show field.value/label.
+          */}
           {signatureFields
-            .filter((f) => normalizePage(f) === currentPage && f.type === "signature")
+            .filter((f) => normalizePage(f) === currentPage)
             .map((field) => {
+              const isSignatureType = field.type === "signature";
+
+              // common derived values
               let isCurrentUser = false;
               let isSigned = false;
               let signedImage: string | null = null;
@@ -268,48 +277,110 @@ const DocumentViewerContent: React.FC<Props> = ({
                 signedImage = matched?.signature ?? null;
               } else {
                 isCurrentUser = field.recipientId === currentUserId;
-                // combine backend-saved signature and optimistic local signature
-                isSigned = !!field.signature || !!localSignedMap[field._id || field.fieldId];
-                signedImage = localSignedMap[field._id || field.fieldId] || field.signature || null;
+                isSigned =
+                  !!field.signature || !!localSignedMap[field._id || field.fieldId];
+                signedImage =
+                  localSignedMap[field._id || field.fieldId] || field.signature || null;
               }
 
               const keyId = field._id || field.fieldId;
 
-              return (
-                <div
-                  key={field._id?.$oid || field._id}
-                  data-field-id={keyId}
-                  style={{
-                    position: "absolute",
-                    top: field.y?.$numberDouble ?? field.y,
-                    left: field.x?.$numberDouble ?? field.x,
-                    width: field.width?.$numberInt ?? field.width,
-                    height: field.height?.$numberInt ?? field.height,
-                    zIndex: 10,
-                    pointerEvents: isCurrentUser && !isSigned ? "auto" : "none",
-                  }}
-                  className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${
-                    isSigned
-                      ? "border-green-500"
-                      : isCurrentUser
-                      ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
-                      : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
-                  }`}
-                  onClick={() => isCurrentUser && !isSigned && handleFieldClick(field)}
-                >
-                  {isSigned ? (
-                    <img
-                      src={signedImage as string}
-                      alt="Signed"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : isCurrentUser ? (
-                    "Sign Here"
-                  ) : (
-                    "Signature"
-                  )}
-                </div>
-              );
+              if (isSignatureType) {
+                // signature box rendering
+                return (
+                  <div
+                    key={field._id?.$oid || field._id}
+                    data-field-id={keyId}
+                    style={{
+                      position: "absolute",
+                      top: field.y?.$numberDouble ?? field.y,
+                      left: field.x?.$numberDouble ?? field.x,
+                      width: field.width?.$numberInt ?? field.width,
+                      height: field.height?.$numberInt ?? field.height,
+                      zIndex: 10,
+                      pointerEvents: isCurrentUser && !isSigned ? "auto" : "none",
+                    }}
+                    className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${
+                      isSigned
+                        ? "border-green-500"
+                        : isCurrentUser
+                        ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
+                        : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
+                    }`}
+                    onClick={() =>
+                      isCurrentUser && !isSigned && handleFieldClick(field)
+                    }
+                  >
+                    {isSigned ? (
+                      <img
+                        src={signedImage as string}
+                        alt="Signed"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : isCurrentUser ? (
+                      "Sign Here"
+                    ) : (
+                      "Signature"
+                    )}
+                  </div>
+                );
+              } else {
+                // Non-signature field: render label/value at its position
+                const fieldId = field.fieldId || field._id?.$oid || field._id;
+                // default display value
+                let displayValue = field.label ?? field.value ?? "";
+
+                // If self-signing mode, try to populate from matched signer's data
+                if (selfValue === "1") {
+                  const matchedSigner = selfSigner?.find(
+                    (s: any) => s && s.signerSlotId === field.slotId
+                  );
+                  if (matchedSigner && typeof matchedSigner.data === "object") {
+                    // If this slot is the same as matchedSigner, pick matching data key
+                    // If role is "creator", show signer name
+                    if (matchedSigner.role === "creator") {
+                      displayValue = matchedSigner.data?.name ?? displayValue;
+                    } else {
+                      // If the fieldId exists in matchedSigner.data use it
+                      if (fieldId && matchedSigner.data[fieldId] !== undefined) {
+                        displayValue = matchedSigner.data[fieldId];
+                      } else {
+                        // Try to fallback by iterating keys (old logic)
+                        for (const key in matchedSigner.data) {
+                          if (key === fieldId) {
+                            displayValue = matchedSigner.data[key];
+                            break;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                return (
+                  <div
+                    key={fieldId}
+                    data-field-id={keyId}
+                    style={{
+                      position: "absolute",
+                      top: field.y?.$numberDouble ?? field.y,
+                      left: field.x?.$numberDouble ?? field.x,
+                      width: field.width?.$numberInt ?? field.width,
+                      height: field.height?.$numberInt ?? field.height,
+                      zIndex: 10,
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <span className="text-sm text-gray-700">{displayValue}</span>
+                  </div>
+                );
+              }
             })}
         </div>
       </div>
@@ -349,7 +420,8 @@ const DocumentViewerContent: React.FC<Props> = ({
             ←
           </button>
           <div className="text-sm">
-            Field {Math.min(currentActionableIndex + 1, actionableFields.length)} / {actionableFields.length}
+            Field {Math.min(currentActionableIndex + 1, actionableFields.length)} /{" "}
+            {actionableFields.length}
           </div>
           <button
             onClick={goToNext}
@@ -380,19 +452,21 @@ const DocumentViewerContent: React.FC<Props> = ({
             if (selfValue === "1") {
               setSelfSigner((prev) => {
                 const updated = (prev || []).map((s: any) =>
-                  s && s.signerSlotId === activeField?.slotId ? { ...s, signature: signatureUrl } : s
+                  s && s.signerSlotId === activeField?.slotId
+                    ? { ...s, signature: signatureUrl }
+                    : s
                 );
-                // show confetti immediately after signature
+                // immediate feedback
                 triggerConfetti();
                 return updated;
               });
             } else {
               // non-self: optimistic local update so UI shows signed image immediately
-              const key = activeField?._id;
+              const key = activeField?._id ;
               if (key) {
                 setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
               }
-              // show confetti immediately after signature
+              // immediate feedback
               triggerConfetti();
             }
 
