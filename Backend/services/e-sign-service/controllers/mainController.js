@@ -420,7 +420,7 @@ const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuf
 }
 
 const addSignature = async (req, res) => {
-  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue } = req.body;
+  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue,cycleId } = req.body;
 
   if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
     return res.status(400).json({ message: 'All parameters are required' });
@@ -441,79 +441,107 @@ const addSignature = async (req, res) => {
     return res.status(500).json({ message: 'Failed to initiate signature' });
   }
   // Check pending recipients and send email to next recipient
-    try {
-    const pendingFields = await SignatureField.find({
-      envelopeId: envelopeId,
-      status: 'pending'
-    });
-    if (pendingFields.length === 0) {
-      const envelope = await Envelope.findById(envelopeId);
-        if (envelope) {
-            // prepare document for final signing if all done
-            const prepareDoc = await prepareDocumentForFinalSigning(envelopeId, documentId);
-            if (!prepareDoc) {
-              console.log('Failed to prepare document for final signing');
-              return res.status(500).json({ message: 'Failed to prepare document for final signing' });
-            }
-            // Call the final signing function
-            const digiSign = await finalizeSigning(envelopeId, documentId);
-            if (!digiSign) {
-              console.log('Failed to finalize signing');
-              return res.status(500).json({ message: 'Failed to finalize signing' });
-            }
-            const signedPdfBuffer = fs.readFileSync(digiSign.finalPath);
-            const signedPdfFilename = `signed-document-${envelopeId}.pdf`;
-            // Update envelope status to completed
-            envelope.status = 'completed';
-            
-            await envelope.save();   
-            // Generate Certificate of Completion and send email
-            try{
-                const { buffer, filename, filepath } = await generateAndStoreCompletionCertificate(envelope._id);
-                // Persist reference to the envelope (adapt schema as needed)
-                envelope.completionCertificate = {
-                  filename,
-                  path: filepath,          // server path (or store URL if you upload to S3)
-                  mimeType: 'application/pdf',
-                  createdAt: new Date()
-                };
-                await envelope.save();
-                //Send completion email to all recipients
-                await sendToAllRecipients(envelope,buffer,filename,signedPdfBuffer,signedPdfFilename);
+    if(selfValue !== "1"){ 
+        try {
+        const pendingFields = await SignatureField.find({
+          envelopeId: envelopeId,
+          status: 'pending'
+        });
+        if (pendingFields.length === 0) {
+          const envelope = await Envelope.findById(envelopeId);
+            if (envelope) {
+                // prepare document for final signing if all done
+                const prepareDoc = await prepareDocumentForFinalSigning(envelopeId, documentId);
+                if (!prepareDoc) {
+                  console.log('Failed to prepare document for final signing');
+                  return res.status(500).json({ message: 'Failed to prepare document for final signing' });
+                }
+                // Call the final signing function
+                const digiSign = await finalizeSigning(envelopeId, documentId);
+                if (!digiSign) {
+                  console.log('Failed to finalize signing');
+                  return res.status(500).json({ message: 'Failed to finalize signing' });
+                }
+                const signedPdfBuffer = fs.readFileSync(digiSign.finalPath);
+                const signedPdfFilename = `signed-document-${envelopeId}.pdf`;
+                // Update envelope status to completed
+                envelope.status = 'completed';
+                
+                await envelope.save();   
+                // Generate Certificate of Completion and send email
+                try{
+                    const { buffer, filename, filepath } = await generateAndStoreCompletionCertificate(envelope._id);
+                    // Persist reference to the envelope (adapt schema as needed)
+                    envelope.completionCertificate = {
+                      filename,
+                      path: filepath,          // server path (or store URL if you upload to S3)
+                      mimeType: 'application/pdf',
+                      createdAt: new Date()
+                    };
+                    await envelope.save();
+                    //Send completion email to all recipients
+                    await sendToAllRecipients(envelope,buffer,filename,signedPdfBuffer,signedPdfFilename);
 
-            }catch(err){
-                console.error('Error generating completion certificate:', err);
-            }
+                }catch(err){
+                    console.error('Error generating completion certificate:', err);
+                }
 
-            await logActivity(envelopeId, "ENVELOPE_COMPLETED", "System", {
-              subject:envelope.subject,
-              message:envelope.message
-            });
-            return res.status(200).json({
-              status: 'success',
-              message: 'Envelope signing completed',
-              data: finalizeSigning
-            }); 
+                await logActivity(envelopeId, "ENVELOPE_COMPLETED", "System", {
+                  subject:envelope.subject,
+                  message:envelope.message
+                });
+                return res.status(200).json({
+                  status: 'success',
+                  message: 'Envelope signing completed',
+                  data: finalizeSigning
+                }); 
+            }
+          }else{
+          const envelope = await Envelope.findById(envelopeId);
+            if (envelope) {
+              await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+              // Log individual field signature
+              await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
+                subject:envelope.subject,
+                message:envelope.message
+              });
+              console.log('Envelope sent to next recipient');
+              return res.status(200).json({
+                status: 'success',
+                message: 'Signature added with compliance'
+              });
+            }
         }
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+    }else if (selfValue == "1"){
+      // Find Pending Signers
+      const pendingSelfSigners = await Cycle.findById(cycleId)
+                 .populate({ path: 'signers', match: { status: { $in: ['pending', 'initiated'] } } });
+      
+      if(!pendingSelfSigners || pendingSelfSigners.signers.length == 0){
+        // Preprare Document
+        // Cryptographical Sign
+        // BlockChain anchoring 
+        // Generate Certificate
+        // Send Email and Certificate
       }else{
-      const envelope = await Envelope.findById(envelopeId);
-        if (envelope) {
-          await sendToRecipients(envelope._id,envelope.subject,envelope.message);
-          // Log individual field signature
-          await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
-            subject:envelope.subject,
-            message:envelope.message
-          });
-          console.log('Envelope sent to next recipient');
-          return res.status(200).json({
-            status: 'success',
-            message: 'Signature added with compliance'
-          });
-        }
+        const signer = await selfSigner.findById(recipientId);
+        const signerEmail = signer.data['Email'];
+        console.log(signerEmail)
+        const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${recipient._id}`;
+        const html = signReminderTemplate(recipient.name,envelope.subject,envelope.message,signLink);
+        // Send Reminder E-Mail to pending recipients
+        await sendEmail(
+            recipient.email,
+          `Reminder: Action Required: Sign "${envelope.subject}"`,
+          html
+        );
+        //Notify Creater or Next Signer
+        //Notify Signer 
+      }
     }
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
 };
 const addPowerFormSignerSignature = async (req, res) => {
 }

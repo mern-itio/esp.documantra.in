@@ -20,10 +20,10 @@ interface FormPreviewProps {
 export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId }) => {
   const isEmbedded = window.self !== window.top;
   const [formData, setFormData] = useState<Record<string, any>>({});
-  const handleInputChange = (fieldId: string, value: any) => {
+  const handleInputChange = (label: string, value:any) => {
     setFormData(prev => ({
       ...prev,
-      [fieldId]: value
+      [label]: value
     }));
   };
 
@@ -89,16 +89,16 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
                   type={field.type}
                   placeholder={field.placeholder}
                   required={field.required}
-                  value={formData[field._id] || ''}
-                  onChange={(e) => handleInputChange(field._id, e.target.value)}
+                  value={formData[field.label] || ''}
+                  onChange={(e) => handleInputChange(field.label, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               ) : field.type === 'textarea' ? (
                 <textarea
                   placeholder={field.placeholder}
                   required={field.required}
-                  value={formData[field._id] || ''}
-                  onChange={(e) => handleInputChange(field._id, e.target.value)}
+                  value={formData[field.label] || ''}
+                  onChange={(e) => handleInputChange(field.label, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={4}
                 />
@@ -106,8 +106,8 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
                 <input
                   type="date"
                   required={field.required}
-                  value={formData[field._id] || ''}
-                  onChange={(e) => handleInputChange(field._id, e.target.value)}
+                  value={formData[field.label] || ''}
+                  onChange={(e) => handleInputChange(field.label, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               ) : field.type === 'checkbox' ? (
@@ -115,8 +115,8 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
                   <input
                     type="checkbox"
                     required={field.required}
-                    checked={formData[field._id] || false}
-                    onChange={(e) => handleInputChange(field._id, e.target.checked)}
+                    checked={formData[field.label] || false}
+                    onChange={(e) => handleInputChange(field.label, e.target.checked)}
                     className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-gray-700">I agree to the terms and conditions</span>
@@ -127,11 +127,11 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
                     <label key={index} className="flex items-center">
                       <input
                         type="radio"
-                        name={field._id}
+                        name={field.label}
                         value={option}
                         required={field.required}
-                        checked={formData[field._id] === option}
-                        onChange={(e) => handleInputChange(field._id, e.target.value)}
+                        checked={formData[field.label] === option}
+                        onChange={(e) => handleInputChange(field.label, e.target.value)}
                         className="mr-2 border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-gray-700">{option}</span>
@@ -141,8 +141,8 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
               ) : field.type === 'select' ? (
                 <select
                   required={field.required}
-                  value={formData[field._id] || ''}
-                  onChange={(e) => handleInputChange(field._id, e.target.value)}
+                  value={formData[field.label] || ''}
+                  onChange={(e) => handleInputChange(field.label, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select an option...</option>

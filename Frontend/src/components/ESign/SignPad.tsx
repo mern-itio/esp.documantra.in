@@ -26,6 +26,7 @@ interface SignPadProps {
   defaultSign?: string | null;
   onSaveSign?: (fieldId: string, signatureUrl: string) => void;
   selfValue?: string;
+  cycleId?:string;
 }
 
 export default function SignPad({
@@ -38,6 +39,7 @@ export default function SignPad({
   defaultSign = null,
   onSaveSign,
   selfValue,
+  cycleId
 }: SignPadProps) {
   const [penColor, setPenColor] = useState("blue");
   const [isTab, setIsTab] = useState<"draw" | "upload" | "typed">("draw");
@@ -178,6 +180,7 @@ export default function SignPad({
         certificateId, 
         signerName: "John Doe", // adjust dynamically if you have a real name
         selfValue: selfValue || "",
+        cycleId:cycleId || ""
       };
 
       const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);

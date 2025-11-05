@@ -326,7 +326,8 @@ const DocumentViewerContent: React.FC<Props> = ({
                 );
               } else {
                 // Non-signature field: render label/value at its position
-                const fieldId = field.fieldId || field._id?.$oid || field._id;
+                const fieldLable = field.label
+                const fieldId = field._id
                 // default display value
                 let displayValue = field.label ?? field.value ?? "";
 
@@ -342,16 +343,8 @@ const DocumentViewerContent: React.FC<Props> = ({
                       displayValue = matchedSigner.data?.name ?? displayValue;
                     } else {
                       // If the fieldId exists in matchedSigner.data use it
-                      if (fieldId && matchedSigner.data[fieldId] !== undefined) {
-                        displayValue = matchedSigner.data[fieldId];
-                      } else {
-                        // Try to fallback by iterating keys (old logic)
-                        for (const key in matchedSigner.data) {
-                          if (key === fieldId) {
-                            displayValue = matchedSigner.data[key];
-                            break;
-                          }
-                        }
+                      if (fieldLable && matchedSigner.data[fieldLable] !== undefined) {
+                        displayValue = matchedSigner.data[fieldLable];
                       }
                     }
                   }
@@ -447,6 +440,7 @@ const DocumentViewerContent: React.FC<Props> = ({
           envelopeID={envelopeID}
           defaultSign={null}
           selfValue={selfValue || ""}
+          cycleId={cycleId || ""}
           onSaveSign={(fieldId: string, signatureUrl: string) => {
             // When selfValue === "1" update the signer entry and trigger confetti reliably
             if (selfValue === "1") {
