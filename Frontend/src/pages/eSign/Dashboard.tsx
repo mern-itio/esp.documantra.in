@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../../components/AuthService/AuthContext';
+import { useTutorial } from '../../context/TutorialContext';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   FileText, 
@@ -15,6 +17,27 @@ import { formatDistanceToNow } from 'date-fns';
 import { eSignApi } from '../../services/apiHelper';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { 
+    showTutorial,
+    tutorialStep,
+    setShowTutorial,
+    handleNextStep,
+    handlePrevStep,
+    handleCloseTutorial 
+  } = useTutorial();
+
+  // Show tutorial if first login
+  useEffect(() => {
+    if (user?.isFirstLogin) {
+      setShowTutorial(true);
+    }
+  }, [user]);
+  const handleTutorialNext = async () =>{
+    await handleNextStep();
+     navigate('/e-sign/create');
+  }
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
   const [envelopes, setEnvelopes] = useState<any[]>([]);
@@ -112,6 +135,124 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="p-6 space-y-8">
+      {/* Step-by-step Tutorial Modal */}
+      {showTutorial && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 backdrop-blur-[2px]"></div>
+          {/* Tutorial box position will be dynamically set based on step */}
+          <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-300 ease-in-out min-h-[340px] flex flex-col justify-between ${
+            tutorialStep === 1 ? 'top-24 right-8' :  // Create Envelope button position
+            tutorialStep === 2 ? 'top-1/3 left-8' :  // Recipients section position
+            tutorialStep === 3 ? 'bottom-1/3 right-8' : // Send button position
+            tutorialStep === 4 ? 'top-1/2 left-8' :  // Status tracking position
+            tutorialStep === 5 ? 'bottom-24 right-8' : // Completed documents position
+            'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' // Welcome screen centered
+          }`}>
+            {tutorialStep === 0 && (
+              <>
+                <h2 className="text-2xl font-bold mb-4 text-center">Welcome to E-Signature!</h2>
+                <p className="text-gray-700 text-center mb-6">Digitally sign, send, and manage your documents with ease. Let's walk through the main features.</p>
+                <div className="flex-1" />
+                <div className="flex justify-end gap-2 mt-6">
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Start Tutorial</button>
+                </div>
+              </>
+            )}
+            {tutorialStep === 1 && (
+              <>
+                <div className="relative">
+                  {/* Arrow pointing to Create Envelope button */}
+                  <div className="absolute -top-16 right-8 w-16 h-16">
+                    <div className="w-16 h-16 border-t-4 border-r-4 border-blue-500 rounded-tr-xl transform rotate-45 absolute"></div>
+                  </div>
+                  <h2 className="text-xl font-bold mb-4">Step 1: Create an Envelope</h2>
+                  <p className="text-gray-700 mb-4">Click <b>"Create Envelope"</b> to start a new signing workflow. You can upload documents, set a subject, and add a message for recipients.</p>
+                </div>
+                <div className="flex-1" />
+                <div className="flex justify-between gap-2 mt-6">
+                  <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleTutorialNext}>Next</button>
+                </div>
+              </>
+            )}
+            {tutorialStep === 2 && (
+              <>
+                <div className="relative">
+                  {/* Arrow pointing to recipients section */}
+                  <div className="absolute -left-16 top-8 w-16 h-16">
+                    <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform -rotate-45 absolute"></div>
+                  </div>
+                  <h2 className="text-xl font-bold mb-4">Step 2: Add Recipients</h2>
+                  <p className="text-gray-700 mb-4">Add one or more recipients and set their signing order. You can assign roles and add authentication if needed.</p>
+                </div>
+                <div className="flex-1" />
+                <div className="flex justify-between gap-2 mt-6">
+                  <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                </div>
+              </>
+            )}
+            {tutorialStep === 3 && (
+              <>
+                <div className="relative">
+                  {/* Arrow pointing to send button */}
+                  <div className="absolute -right-16 bottom-8 w-16 h-16">
+                    <div className="w-16 h-16 border-r-4 border-b-4 border-blue-500 rounded-br-xl transform rotate-45 absolute"></div>
+                  </div>
+                  <h2 className="text-xl font-bold mb-4">Step 3: Send for Signature</h2>
+                  <p className="text-gray-700 mb-4">Once your envelope is ready, click <b>"Send"</b>. Recipients will receive an email to review and sign the document.</p>
+                </div>
+                <div className="flex-1" />
+                <div className="flex justify-between gap-2 mt-6">
+                  <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                </div>
+              </>
+            )}
+            {tutorialStep === 4 && (
+              <>
+                <div className="relative">
+                  {/* Arrow pointing to status tracking section */}
+                  <div className="absolute -left-16 top-8 w-16 h-16">
+                    <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform -rotate-45 absolute"></div>
+                  </div>
+                  <h2 className="text-xl font-bold mb-4">Step 4: Track Status</h2>
+                  <p className="text-gray-700 mb-4">Monitor the status of your envelopes in real time. See who has signed, who is pending, and send reminders if needed.</p>
+                </div>
+                <div className="flex-1" />
+                <div className="flex justify-between gap-2 mt-6">
+                  <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                </div>
+              </>
+            )}
+            {tutorialStep === 5 && (
+              <>
+                <div className="relative">
+                  {/* Arrow pointing to completed documents section */}
+                  <div className="absolute -right-16 bottom-8 w-16 h-16">
+                    <div className="w-16 h-16 border-r-4 border-b-4 border-blue-500 rounded-br-xl transform rotate-45 absolute"></div>
+                  </div>
+                  <h2 className="text-xl font-bold mb-4">Step 5: Access Completed Documents</h2>
+                  <p className="text-gray-700 mb-4">Download or review signed documents anytime from your dashboard. All your completed envelopes are securely stored.</p>
+                </div>
+                <div className="flex-1" />
+                <div className="flex justify-between gap-2 mt-6">
+                  <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                  <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700" onClick={handleCloseTutorial}>Finish</button>
+                </div>
+              </>
+            )}
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl"
+              onClick={handleCloseTutorial}
+              aria-label="Close tutorial"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

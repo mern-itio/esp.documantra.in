@@ -11,6 +11,8 @@ const userSchema = new mongoose.Schema({
   status: { type: Boolean, default: true },
   // User subscription plan indicator (null => treated as Free plan)
   plan: { type: String, enum: ['free', 'pro', 'custom'], default: null },
+  // Flag for first login tutorial
+  isFirstLogin: { type: Boolean, default: true },
 }, { timestamps: true });
 
 // 🔐 Hash password before saving

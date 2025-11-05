@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSidebar } from '../../context/SidebarContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTutorial } from '../../context/TutorialContext';
 import { 
   Upload,
   X,
@@ -58,8 +59,29 @@ type Party = {
 };
 
 const EnvelopeCreator: React.FC = () => {
+    const { 
+      showTutorial,
+      tutorialStep,
+      setShowTutorial,
+      handleNextStep,
+      handlePrevStep,
+      handleCloseTutorial 
+    } = useTutorial();
+  
   const { setSidebarOpen } = useSidebar();
   const location = useLocation();
+  
+  const handleTutorialNext =async ()=>{
+    if (tutorialStep === 2) {
+        fileInputRef.current?.click();
+        handleNextStep()
+    }
+    if( tutorialStep ===3){
+      await handleNext();
+      await handleNextStep();
+    }
+    
+  }
 
   // Collapse sidebar on mount, restore on unmount
   useEffect(() => {
@@ -77,6 +99,9 @@ const EnvelopeCreator: React.FC = () => {
   const [slots, setSlots] = useState<any[]>([]);
   const [isSufficientCredits, setIsSufficientCredits] = useState<boolean>(false);
   const [credit , setCredit] = useState<number>(0);
+
+    // Show tutorial if first login
+
 
   const handlePrevious = async () => {
     if (currentStep === 1) return; // Don't go back if we're on first step
@@ -491,6 +516,16 @@ const handleNext = async () => {
     if (currentStep === 2) {
       fetchExistingRecipients();
     }
+    if(currentStep ===3){
+      if (user?.isFirstLogin) {
+        setShowTutorial(true);
+      }
+    }
+    if(currentStep ===4){
+      if (user?.isFirstLogin) {
+        setShowTutorial(true);
+      }
+    }
   }, [currentStep]);
 
   // Fetch existing recipients
@@ -652,11 +687,13 @@ const handleNext = async () => {
       setSending(false);
     }
   };
-
+  // Read route param (supports /e-sign/edit/:envelopeId)
+  const { envelopeId: routeEnvelopeId } = useParams<{ envelopeId?: string }>();
 
   useEffect(() => {
     getSteps();
-}, [currentStep]);
+    // Re-run when query string or route param changes
+  }, [location.search, routeEnvelopeId]);
 const calculateEnvelopeCost = (envelope: any) => {
   const subscription = JSON.parse(localStorage.getItem("userSubscriptionPlan") ?? "null");
 
@@ -693,51 +730,64 @@ const calculateEnvelopeCost = (envelope: any) => {
 const getSteps = async () => {
     const params = new URLSearchParams(location.search);
     const step = params.get('step');
-    const envelopeId = params.get('envelopeId');
-    if(step && envelopeId ) {
-       const response = await eSignApi.get('/api/e-sign/get-envelopes');
-        if(response)
-          {
-            switch (Number(step)) 
-            {
-              case 1:
-                setCurrentStep(1);
-                setEnvelopeId(envelopeId)
-                if(envelopeId) await getEnvelopeDetail(envelopeId);
-                break;
-              case 2:
-                setCurrentStep(2);
-                setEnvelopeId(envelopeId)
-                await getEnvelopeDetail(envelopeId);
-                break;
-              case 3:
-                console.log('Current step', step);
-                setCurrentStep(3);
-                await getEnvelopeDetail(envelopeId);
-                await getSignatureFields(envelopeId);
-                break;
-              case 4:
-                setCurrentStep(4);
-                setEnvelopeId(envelopeId)
-                await getSignatureFields(envelopeId);
-                await getEnvelopeDetail(envelopeId);
-                break;
-              case 5:
-                setCurrentStep(5);
-                setEnvelopeId(envelopeId)
-                break;
-              case 6:
-                setCurrentStep(6);
-                setEnvelopeId(envelopeId);
-                const envelope = await getEnvelopeDetail(envelopeId);
-                if (envelope) calculateEnvelopeCost(envelope);
+    // prefer query param but fall back to route param (/e-sign/edit/:envelopeId)
+    const envelopeIdParam = params.get('envelopeId') || routeEnvelopeId;
 
-                break;
-              default:
-                setCurrentStep(1);
-            }
-          }
+    // If both step and envelopeId (from query or route) are provided, follow the previous flow
+    if (step && envelopeIdParam) {
+      const response = await eSignApi.get('/api/e-sign/get-envelopes');
+      if (response) {
+        switch (Number(step)) {
+          case 1:
+            setCurrentStep(1);
+            setEnvelopeId(envelopeIdParam);
+            if (envelopeIdParam) await getEnvelopeDetail(envelopeIdParam);
+            break;
+          case 2:
+            setCurrentStep(2);
+            setEnvelopeId(envelopeIdParam);
+            await getEnvelopeDetail(envelopeIdParam);
+            break;
+          case 3:
+            console.log('Current step', step);
+            setCurrentStep(3);
+            await getEnvelopeDetail(envelopeIdParam);
+            await getSignatureFields(envelopeIdParam);
+            break;
+          case 4:
+            setCurrentStep(4);
+            setEnvelopeId(envelopeIdParam);
+            await getSignatureFields(envelopeIdParam);
+            await getEnvelopeDetail(envelopeIdParam);
+            break;
+          case 5:
+            setCurrentStep(5);
+            setEnvelopeId(envelopeIdParam);
+            break;
+          case 6:
+            setCurrentStep(6);
+            setEnvelopeId(envelopeIdParam);
+            const envelope = await getEnvelopeDetail(envelopeIdParam);
+            if (envelope) calculateEnvelopeCost(envelope);
+            break;
+          default:
+            setCurrentStep(1);
+        }
+      }
+      return;
     }
+
+    // If we only have a route param like /e-sign/edit/:envelopeId, load envelope for editing
+    if (!step && routeEnvelopeId) {
+      setEnvelopeId(routeEnvelopeId);
+      await getEnvelopeDetail(routeEnvelopeId);
+      // default to first step of the create/edit flow
+      setCurrentStep(1);
+      return;
+    }
+
+    // No envelopeId provided: ensure we're at default create state
+    setCurrentStep(1);
 }
 const syncPartiesToNumber = (count: number) => {
   if (!count || count < 1) count = 1;
@@ -836,6 +886,58 @@ const savePowerFormSlots = async (): Promise<string | null> => {
       case 1:
         return (
           <div className="space-y-6">
+            {/* Step-by-step Tutorial Modal */}
+              {showTutorial && (
+                <div className="fixed inset-0 z-50">
+                  <div className="absolute inset-0 backdrop-blur-[2px]"></div>
+                  <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-500 ease-in-out min-h-[340px] flex flex-col justify-between ${
+                    tutorialStep === 2 ? 'top-1/4 left-1/2 -translate-x-1/6 -translate-y-1/2' : 
+                    'top-1/4 right-5 -translate-x-1/6 -translate-y-1/2'
+                  }`}>
+                    {tutorialStep === 2 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute left-50 top-70 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-225 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 2: Upload Documents</h2>
+                          <p className="text-gray-700 mb-4">By clicking here you can Upload a document for signing. Click next to procced </p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleTutorialNext}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 3 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute left-50 top-64 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-225 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 3: Save Documents</h2>
+                          <p className="text-gray-700 mb-4">Choose document from the opened window and click next to upload the document for further proccess. Click next to move the tutorial ahead </p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"disabled={!canProceedToNext() || nextLoading} onClick={handleTutorialNext}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    <button
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl"
+                      onClick={handleCloseTutorial}
+                      aria-label="Close tutorial"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              )}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Documents</h3>
               <p className="text-gray-600 mb-6">Add the documents that need to be signed. Supported formats: PDF, DOC, DOCX.</p>
@@ -931,334 +1033,459 @@ const savePowerFormSlots = async (): Promise<string | null> => {
           </div>
         );
 
-case 2:
-  return (
-    <div className="space-y-8">
-      {/* ======================== FLOW SELECTION ======================== */}
-      <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Choose Flow
-        </h3>
-        <p className="text-sm text-gray-600 mb-4">
-          <span className="font-medium">Normal</span> — Add recipients and place their signature fields. <br />
-          <span className="font-medium">Power Form</span> — Define a reusable form with signer slots.
-        </p>
+      case 2:
+        return (
+          <div className="space-y-8">
+            {/* Step-by-step Tutorial Modal */}
+                    {showTutorial && (
+                      <div className="fixed inset-0 z-50">
+                        <div className="absolute inset-0 backdrop-blur-[2px]"></div>
+                        <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-500 ease-in-out min-h-[340px] flex flex-col justify-between ${
+                          tutorialStep === 4 ? 'top-1/2 left-1/2 -translate-x-1/6 -translate-y-1/2' : 
+                          tutorialStep === 5 ? 'top-87 left-10':
+                          tutorialStep === 6 ? 'top-50 left-100' :
+                          tutorialStep === 7 ? 'top-35 left-2/3' :
+                          tutorialStep === 8 ? 'top-85 left-120' :
+                          'top-1/4 right-5 -translate-x-1/6 -translate-y-1/2'
+                        }`}>  
+                          {tutorialStep === 4 && (
+                            <>
+                              <div className="relative">
+                                {/* Arrow pointing to recipients section
+                                <div className="absolute left-50 top-64 w-16 h-16">
+                                  <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-225 absolute"></div>
+                                </div> */}
+                                <h2 className="text-xl font-bold mb-4">Step 4: Choose Workflow</h2>
+                                <p className="text-gray-700 mb-4">There are two kinds of flow for creating an Envelope</p>
+                                <ol>
+                                  <li>Recipient Wise</li>
+                                  <li>Power Form</li>
+                                </ol>
+                              </div>
+                              <div className="flex-1" />
+                              <div className="flex justify-between gap-2 mt-6">
+                                <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                              </div>
+                            </>
+                          )}
+                          {tutorialStep === 5 && (
+                            <>
+                              <div className="relative">
+                                {/* Arrow pointing to recipients section */}
+                                <div className="absolute -top-16 right-8 w-16 h-16">
+                                  <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-133 absolute"></div>
+                                </div>
+                                <h2 className="text-xl font-bold mb-4">Step 5: Recipient Wise</h2>
+                                <p className="text-gray-700 mb-4">This option is for Recipient Wise flow.</p>
+                              </div>
+                              <div className="flex-1" />
+                              <div className="flex justify-between gap-2 mt-6">
+                                <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                              </div>
+                            </>
+                          )}
+                          {tutorialStep === 6 && (
+                            <>
+                              <div className="relative">
+                                {/* Arrow pointing to recipients section */}
+                                <div className="absolute left-40 top-70 w-16 h-16">
+                                  <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-222 absolute"></div>
+                                </div>
+                                <h2 className="text-xl font-bold mb-4">Step 6: Add new recipient</h2>
+                                <p className="text-gray-700 mb-4">By clicking this button you can add a new recipient</p>
+                              </div>
+                              <div className="flex-1" />
+                              <div className="flex justify-between gap-2 mt-6">
+                                <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                              </div>
+                            </>
+                          )}
+                          {tutorialStep === 7 && (
+                            <>
+                              <div className="relative">
+                                {/* Arrow pointing to recipients section */}
+                                <div className="absolute left-40 top-70 w-16 h-16">
+                                  <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-222 absolute"></div>
+                                </div>
+                                <h2 className="text-xl font-bold mb-4">Step :7 Select existing recipient</h2>
+                                <p className="text-gray-700 mb-4">By clicking this button you can select exsisting recipient</p>
+                              </div>
+                              <div className="flex-1" />
+                              <div className="flex justify-between gap-2 mt-6">
+                                <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                              </div>
+                            </>
+                          )}
+                          {tutorialStep === 8 && (
+                            <>
+                              <div className="relative">
+                                {/* Arrow pointing to recipients section */}
+                                <div className="absolute -top-16 right-8 w-16 h-16">
+                                  <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-133 absolute"></div>
+                                </div>
+                                <h2 className="text-xl font-bold mb-4">Step :8 Power Form </h2>
+                                <p className="text-gray-700 mb-4">By clicking this button you can select power form flow</p>
+                              </div>
+                              <div className="flex-1" />
+                              <div className="flex justify-between gap-2 mt-6">
+                                <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleCloseTutorial}>Next</button>
+                              </div>
+                            </>
+                          )}
+                          {tutorialStep === 9 && (
+                            <>
+                              <div className="relative">
+                                {/* Arrow pointing to recipients section */}
+                                <div className="absolute -top-16 right-8 w-16 h-16">
+                                  <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-133 absolute"></div>
+                                </div>
+                                <h2 className="text-xl font-bold mb-4">Choose any one flow</h2>
+                                <p className="text-gray-700 mb-4">By clicking this button you can select power form flow</p>
+                              </div>
+                            </>
+                          )}
 
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={() => setMode('normal')}
-            className={`flex-1 min-w-[140px] px-4 py-2.5 rounded-lg font-medium transition ${
-              mode === 'normal'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-            }`}
-          >
-            Normal (Recipients)
-          </button>
-          <button
-            onClick={() => getPowerForm()}
-            className={`flex-1 min-w-[140px] px-4 py-2.5 rounded-lg font-medium transition ${
-              mode === 'power'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-            }`}
-          >
-            Power Form
-          </button>
-        </div>
-      </Card>
+                          <button
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl"
+                            onClick={handleCloseTutorial}
+                            aria-label="Close tutorial"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      </div>
+                    )}
+            {/* ======================== FLOW SELECTION ======================== */}
+            <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Choose Flow
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                <span className="font-medium">Normal</span> — Add recipients and place their signature fields. <br />
+                <span className="font-medium">Power Form</span> — Define a reusable form with signer slots.
+              </p>
 
-      {/* ======================== NORMAL MODE ======================== */}
-      {mode === 'normal' ? (
-        <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Add Recipients</h3>
-            <p className="text-sm text-gray-600">
-              Add people who need to sign or receive the document.
-            </p>
-          </div>
-
-          {/* Add Mode Toggle */}
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => setAddMode('new')}
-              className={`flex-1 min-w-[120px] px-4 py-2 rounded-lg font-medium transition ${
-                addMode === 'new'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-            >
-              Add New
-            </button>
-            <button
-              onClick={() => setAddMode('existing')}
-              className={`flex-1 min-w-[120px] px-4 py-2 rounded-lg font-medium transition ${
-                addMode === 'existing'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-            >
-              Select Existing
-            </button>
-          </div>
-
-          {/* Add Recipient or Select Existing */}
-          {addMode === 'new' ? (
-            <button
-              onClick={addRecipient}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add New Recipient
-            </button>
-          ) : (
-            <div className="w-full max-w-md">
-              {isLoadingRecipients ? (
-                <div className="text-gray-500 text-sm">Loading recipients...</div>
-              ) : (
-                <select
-                  value={selectedRecipientId}
-                  onChange={(e) => handleSelectRecipient(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={() => setMode('normal')}
+                  className={`flex-1 min-w-[140px] px-4 py-2.5 rounded-lg font-medium transition ${
+                    mode === 'normal'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
                 >
-                  <option value="">Select a recipient</option>
-                  {existingRecipients.map((recipient) => (
-                    <option key={recipient.id} value={recipient.id}>
-                      {recipient.name} ({recipient.email})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
-
-          {/* Recipient List */}
-          {recipients?.length > 0 && (
-            <div className="space-y-4">
-              {recipients.map((recipient, index) => (
-                <div
-                  key={recipient.id}
-                  className="border border-gray-200 rounded-lg p-5 bg-gray-50"
+                  Normal (Recipients)
+                </button>
+                <button
+                  onClick={() => getPowerForm()}
+                  className={`flex-1 min-w-[140px] px-4 py-2.5 rounded-lg font-medium transition ${
+                    mode === 'power'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-medium text-gray-900">
-                      Recipient {index + 1}
-                    </h4>
-                    <button
-                      onClick={() => removeRecipient(recipient.id)}
-                      className="p-1 text-gray-400 hover:text-red-600 rounded transition"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                  Power Form
+                </button>
+              </div>
+            </Card>
+
+            {/* ======================== NORMAL MODE ======================== */}
+            {mode === 'normal' ? (
+              <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Add Recipients</h3>
+                  <p className="text-sm text-gray-600">
+                    Add people who need to sign or receive the document.
+                  </p>
+                </div>
+
+                {/* Add Mode Toggle */}
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    onClick={() => setAddMode('new')}
+                    className={`flex-1 min-w-[120px] px-4 py-2 rounded-lg font-medium transition ${
+                      addMode === 'new'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    Add New
+                  </button>
+                  <button
+                    onClick={() => setAddMode('existing')}
+                    className={`flex-1 min-w-[120px] px-4 py-2 rounded-lg font-medium transition ${
+                      addMode === 'existing'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    Select Existing
+                  </button>
+                </div>
+
+                {/* Add Recipient or Select Existing */}
+                {addMode === 'new' ? (
+                  <button
+                    onClick={addRecipient}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add New Recipient
+                  </button>
+                ) : (
+                  <div className="w-full max-w-md">
+                    {isLoadingRecipients ? (
+                      <div className="text-gray-500 text-sm">Loading recipients...</div>
+                    ) : (
+                      <select
+                        value={selectedRecipientId}
+                        onChange={(e) => handleSelectRecipient(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select a recipient</option>
+                        {existingRecipients.map((recipient) => (
+                          <option key={recipient.id} value={recipient.id}>
+                            {recipient.name} ({recipient.email})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+
+                {/* Recipient List */}
+                {recipients?.length > 0 && (
+                  <div className="space-y-4">
+                    {recipients.map((recipient, index) => (
+                      <div
+                        key={recipient.id}
+                        className="border border-gray-200 rounded-lg p-5 bg-gray-50"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            Recipient {index + 1}
+                          </h4>
+                          <button
+                            onClick={() => removeRecipient(recipient.id)}
+                            className="p-1 text-gray-400 hover:text-red-600 rounded transition"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Name
+                            </label>
+                            <input
+                              type="text"
+                              value={recipient.name}
+                              onChange={(e) =>
+                                updateRecipient(recipient.id, { name: e.target.value })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                              placeholder="Full name"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              value={recipient.email}
+                              onChange={(e) =>
+                                updateRecipient(recipient.id, { email: e.target.value })
+                              }
+                              onBlur={(e) =>
+                                handleEmailOnBlur(recipient.id, e.target.value)
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                              placeholder="email@example.com"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Role
+                            </label>
+                            <select
+                              value={recipient.role}
+                              onChange={(e) =>
+                                updateRecipient(recipient.id, {
+                                  role: e.target.value as any,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="signer">Signer</option>
+                              <option value="approver">Approver</option>
+                              <option value="carbon_copy">Carbon Copy</option>
+                              <option value="in_person_signer">In-Person Signer</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ) : (
+              /* ======================== POWER FORM MODE ======================== */
+              <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white space-y-6">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">Build Power Form</h4>
+                  <p className="text-sm text-gray-600">
+                    Set up your reusable form and signer slots.
+                  </p>
+                </div>
+
+                {/* Power Form Selector */}
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
+                    Select Power Form
+                  </label>
+                  <select
+                    id="powerForm"
+                    value={selectedForm}
+                    onChange={handleChange}
+                    className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">-- Choose a Form --</option>
+                    {powerForms.map((form) => (
+                      <option key={form._id} value={form._id}>
+                        {form.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Power Form Preview */}
+                {powerFormData && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+                    <div>
+                      <h5 className="text-base font-semibold text-gray-900">
+                        {powerFormData.title}
+                      </h5>
+                      <p className="text-sm text-gray-600">{powerFormData.description}</p>
+                    </div>
+                    <div>
+                      <h6 className="text-sm font-medium text-gray-800 mb-2">Fields</h6>
+                      <ul className="space-y-1">
+                        {powerFormData.fields.map((field: any) => (
+                          <li
+                            key={field._id}
+                            className="flex items-center justify-between bg-white border rounded p-2 text-sm"
+                          >
+                            <span>{field.label || field.type}</span>
+                            <span className="text-gray-500">{field.type}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Parties Configuration */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700">
+                      Number of Parties
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="px-2 py-1 border rounded hover:bg-gray-100"
+                        onClick={() =>
+                          syncPartiesToNumber(Math.max(1, numberOfParties - 1))
+                        }
+                        type="button"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={maxParties}
+                        value={numberOfParties}
+                        onChange={(e) =>
+                          syncPartiesToNumber(Number(e.target.value || 1))
+                        }
+                        className="w-20 px-2 py-1 border rounded text-center text-sm"
+                      />
+                      <button
+                        className="px-2 py-1 border rounded hover:bg-gray-100"
+                        onClick={() =>
+                          syncPartiesToNumber(
+                            Math.min(maxParties, numberOfParties + 1)
+                          )
+                        }
+                        type="button"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 ml-2">
+                      Min 1 — Max {maxParties}
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        value={recipient.name}
-                        onChange={(e) =>
-                          updateRecipient(recipient.id, { name: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                        placeholder="Full name"
-                      />
-                    </div>
+                  {/* First Signing Party */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Which party signs first?
+                    </label>
+                    <select
+                      value={firstSigningPartyId}
+                      onChange={(e) => setFirstSigningPartyId(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                      {parties.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} {p.slot ? `(${p.slot})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={recipient.email}
-                        onChange={(e) =>
-                          updateRecipient(recipient.id, { email: e.target.value })
-                        }
-                        onBlur={(e) =>
-                          handleEmailOnBlur(recipient.id, e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                        placeholder="email@example.com"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Role
-                      </label>
-                      <select
-                        value={recipient.role}
-                        onChange={(e) =>
-                          updateRecipient(recipient.id, {
-                            role: e.target.value as any,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="signer">Signer</option>
-                        <option value="approver">Approver</option>
-                        <option value="carbon_copy">Carbon Copy</option>
-                        <option value="in_person_signer">In-Person Signer</option>
-                      </select>
+                  {/* Creator Party */}
+                  <div>
+                    <h6 className="text-sm font-medium text-gray-900 mb-2">
+                      Choose which party you are
+                    </h6>
+                    <div className="space-y-2">
+                      {parties.map((party) => (
+                        <label
+                          key={party.id}
+                          className="flex items-center gap-3 cursor-pointer"
+                        >
+                          <input
+                            type="radio"
+                            name="creatorParty"
+                            checked={selectedPartyId === party.id}
+                            onChange={() => setSelectedPartyId(party.id)}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{party.name}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      ) : (
-        /* ======================== POWER FORM MODE ======================== */
-        <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white space-y-6">
-          <div>
-            <h4 className="text-lg font-semibold text-gray-900">Build Power Form</h4>
-            <p className="text-sm text-gray-600">
-              Set up your reusable form and signer slots.
-            </p>
+              </Card>
+            )}
           </div>
-
-          {/* Power Form Selector */}
-          <div>
-            <label className="block mb-2 text-sm font-medium text-gray-700">
-              Select Power Form
-            </label>
-            <select
-              id="powerForm"
-              value={selectedForm}
-              onChange={handleChange}
-              className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">-- Choose a Form --</option>
-              {powerForms.map((form) => (
-                <option key={form._id} value={form._id}>
-                  {form.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Power Form Preview */}
-          {powerFormData && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
-              <div>
-                <h5 className="text-base font-semibold text-gray-900">
-                  {powerFormData.title}
-                </h5>
-                <p className="text-sm text-gray-600">{powerFormData.description}</p>
-              </div>
-              <div>
-                <h6 className="text-sm font-medium text-gray-800 mb-2">Fields</h6>
-                <ul className="space-y-1">
-                  {powerFormData.fields.map((field: any) => (
-                    <li
-                      key={field._id}
-                      className="flex items-center justify-between bg-white border rounded p-2 text-sm"
-                    >
-                      <span>{field.label || field.type}</span>
-                      <span className="text-gray-500">{field.type}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Parties Configuration */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium text-gray-700">
-                Number of Parties
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  className="px-2 py-1 border rounded hover:bg-gray-100"
-                  onClick={() =>
-                    syncPartiesToNumber(Math.max(1, numberOfParties - 1))
-                  }
-                  type="button"
-                >
-                  <ArrowDown className="w-4 h-4" />
-                </button>
-                <input
-                  type="number"
-                  min={1}
-                  max={maxParties}
-                  value={numberOfParties}
-                  onChange={(e) =>
-                    syncPartiesToNumber(Number(e.target.value || 1))
-                  }
-                  className="w-20 px-2 py-1 border rounded text-center text-sm"
-                />
-                <button
-                  className="px-2 py-1 border rounded hover:bg-gray-100"
-                  onClick={() =>
-                    syncPartiesToNumber(
-                      Math.min(maxParties, numberOfParties + 1)
-                    )
-                  }
-                  type="button"
-                >
-                  <ArrowUp className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 ml-2">
-                Min 1 — Max {maxParties}
-              </p>
-            </div>
-
-            {/* First Signing Party */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Which party signs first?
-              </label>
-              <select
-                value={firstSigningPartyId}
-                onChange={(e) => setFirstSigningPartyId(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-blue-500"
-              >
-                {parties.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.slot ? `(${p.slot})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Creator Party */}
-            <div>
-              <h6 className="text-sm font-medium text-gray-900 mb-2">
-                Choose which party you are
-              </h6>
-              <div className="space-y-2">
-                {parties.map((party) => (
-                  <label
-                    key={party.id}
-                    className="flex items-center gap-3 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="creatorParty"
-                      checked={selectedPartyId === party.id}
-                      onChange={() => setSelectedPartyId(party.id)}
-                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{party.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-    </div>
-  );
+        );
 
       case 3:
         return (
+          
           <SigningEditorStep 
             documents={documents} 
             recipients={recipients} 
@@ -1273,6 +1500,130 @@ case 2:
       case 4:
         return (
           <div className="space-y-6">
+            {showTutorial}
+              {showTutorial && (
+                <div className="fixed inset-0 z-50">
+                  <div className="absolute inset-0 backdrop-blur-[2px]"></div>
+                  <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-500 ease-in-out min-h-[340px] flex flex-col justify-between ${
+                    tutorialStep === 4 ? 'top-1/2 left-1/2 -translate-x-1/6 -translate-y-1/2' : 
+                    tutorialStep === 5 ? 'top-87 left-10':
+                    tutorialStep === 6 ? 'top-50 left-100' :
+                    tutorialStep === 7 ? 'top-35 left-2/3' :
+                    tutorialStep === 8 ? 'top-85 left-120' :
+                    'top-1/4 right-5 -translate-x-1/6 -translate-y-1/2'
+                  }`}>  
+                    {tutorialStep === 4 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section
+                          <div className="absolute left-50 top-64 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-225 absolute"></div>
+                          </div> */}
+                          <h2 className="text-xl font-bold mb-4">Step 4: Choose Workflow</h2>
+                          <p className="text-gray-700 mb-4">There are two kinds of flow for creating an Envelope</p>
+                          <ol>
+                            <li>Recipient Wise</li>
+                            <li>Power Form</li>
+                          </ol>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 5 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute -top-16 right-8 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-133 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 5: Recipient Wise</h2>
+                          <p className="text-gray-700 mb-4">This option is for Recipient Wise flow.</p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 6 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute left-40 top-70 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-222 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 6: Add new recipient</h2>
+                          <p className="text-gray-700 mb-4">By clicking this button you can add a new recipient</p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 7 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute left-40 top-70 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-222 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step :7 Select existing recipient</h2>
+                          <p className="text-gray-700 mb-4">By clicking this button you can select exsisting recipient</p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 8 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute -top-16 right-8 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-133 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step :8 Power Form </h2>
+                          <p className="text-gray-700 mb-4">By clicking this button you can select power form flow</p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleCloseTutorial}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 9 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute -top-16 right-8 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-133 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Choose any one flow</h2>
+                          <p className="text-gray-700 mb-4">By clicking this button you can select power form flow</p>
+                        </div>
+                      </>
+                    )}
+
+                    <button
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl"
+                      onClick={handleCloseTutorial}
+                      aria-label="Close tutorial"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              )}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Security & Authentication</h3>
               <p className="text-gray-600 mb-6">Configure signature types and advanced authentication methods for enhanced security.</p>

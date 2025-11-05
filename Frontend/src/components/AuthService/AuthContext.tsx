@@ -9,6 +9,7 @@ interface User {
   fullname: string;
   type: string;
   plan: string;
+  isFirstLogin?: boolean;
 }
 
 interface AuthContextType {
@@ -101,22 +102,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Keep the fallback fullname
       }
 
-      // Store authentication data
+      // Store authentication data, including isFirstLogin
       localStorage.setItem('accessToken', data.token);
       localStorage.setItem('userData', JSON.stringify({
         id: data.user_id,
         email: email,
         fullname: fullname,
         type: data.type,
-        plan: data.plan || 'free'
+        plan: data.plan || 'free',
+        isFirstLogin: data.isFirstLogin
       }));
-      
+
       setUser({
         id: data.user_id,
         email: email,
         fullname: fullname,
         type: data.type,
-        plan: data.plan || 'free'
+        plan: data.plan || 'free',
+        isFirstLogin: data.isFirstLogin
       });
       setIsAuthenticated(true);
 

@@ -175,7 +175,7 @@ export default function SignPad({
         envelopeId: envelopeID || "",
         documentId,
         recipientId: currentUserId,
-        certificateId,
+        certificateId, 
         signerName: "John Doe", // adjust dynamically if you have a real name
         selfValue: selfValue || "",
       };

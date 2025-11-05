@@ -39,6 +39,13 @@ const login = async (req, res) => {
     });
   }
 
+  // If first login, set isFirstLogin to false after login
+  let isFirstLogin = user.isFirstLogin;
+  if (user.isFirstLogin) {
+    user.isFirstLogin = false;
+    await user.save();
+  }
+
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '12h';
   const generateToken = await generateAccessTokenUser(user, expireIn);
   const options = {
@@ -52,7 +59,8 @@ const login = async (req, res) => {
     user_id: user._id,
     token: generateToken,
     type: 'user',
-    plan: user.plan || 'free'
+    plan: user.plan || 'free',
+    isFirstLogin: isFirstLogin
   });
 };
 

@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-r
 import { useAuth } from '../components/AuthService/AuthContext';
 
 // Layouts
+import RootLayout from '../layouts/RootLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import PublicSignerLayout from '../layouts/PublicSignerLayout';
@@ -771,33 +772,37 @@ const authRoutes = [
 
 const router = createBrowserRouter([
   {
-    element: <GuestLayout />,
-    children: guestRoutes,
-  },
-  {
-    element: (
-      <PrivateRoute>
-        <DashboardLayout />
-      </PrivateRoute>
-    ),
-    children: authRoutes,
-  },
-  
-  {
-    // Public Signer Routes
-    element: <PublicSignerLayout />,
+    element: <RootLayout />,
     children: [
-      { path: 'e-sign/signer/:id/:recipientId/:cycleId?', element: <PublicSignerPage /> },
-      { path: '/template/form-view/:id', element:<FormView/>},
-      { path: '/e-sign/power-form/:formId/:envelopeId', element:<PowerForm/>}
-    ],
-  },
-  {
-    // Shared Document Routes (Clean layout without header/footer)
-    element: <SharedDocumentLayout />,
-    children: [
-      { path: '/shared/:shareToken', element: <SharedDocument /> },
-    ],
-  },
+      {
+        element: <GuestLayout />,
+        children: guestRoutes,
+      },
+      {
+        element: (
+          <PrivateRoute>
+            <DashboardLayout />
+          </PrivateRoute>
+        ),
+        children: authRoutes,
+      },
+      {
+        // Public Signer Routes
+        element: <PublicSignerLayout />,
+        children: [
+          { path: 'e-sign/signer/:id/:recipientId/:cycleId?', element: <PublicSignerPage /> },
+          { path: '/template/form-view/:id', element:<FormView/>},
+          { path: '/e-sign/power-form/:formId/:envelopeId', element:<PowerForm/>}
+        ],
+      },
+      {
+        // Shared Document Routes (Clean layout without header/footer)
+        element: <SharedDocumentLayout />,
+        children: [
+          { path: '/shared/:shareToken', element: <SharedDocument /> },
+        ],
+      },
+    ]
+  }
 ]);
 export default router;

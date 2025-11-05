@@ -7,6 +7,7 @@ export interface User {
   organization?: string;
   createdAt: string
   lastActive: string
+  isFirstLogin?: boolean;
 }
 
 export interface UserType {

@@ -1,60 +1,153 @@
-import { Document, Page, pdfjs } from 'react-pdf';
-import React, { useEffect, useRef, useState } from 'react';
-import Modal from 'react-modal';
-import SignPad from './SignPad';
-import { eSignApi } from '../../services/apiHelper';
-import ErrorBoundary from '../ErrorBoundary';
-import type { SignerData, ActiveField } from '../../types/documentTypes';
+import { Document, Page, pdfjs } from "react-pdf";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import Modal from "react-modal";
+import SignPad from "./SignPad";
+import { eSignApi } from "../../services/apiHelper";
+import type { SignerData, ActiveField } from "../../types/documentTypes";
+import confetti from "canvas-confetti";
 
 interface Props {
   document: any;
   signatureFields: any[];
   currentUserId: string;
-  envelopeID?:string;
+  envelopeID?: string;
   onClose?: () => void;
   onSignatureSave?: (fieldId: string, signatureUrl: string) => void;
-  cycleId?:string;
+  cycleId?: string;
 }
 
-Modal.setAppElement('#root');
+Modal.setAppElement("#root");
 
-const DocumentViewerContent: React.FC<Props> = ({ document, signatureFields, currentUserId, envelopeID, onSignatureSave, cycleId}) => {
+const DocumentViewerContent: React.FC<Props> = ({
+  document,
+  signatureFields,
+  currentUserId,
+  envelopeID,
+  onSignatureSave,
+  cycleId,
+}) => {
   const urlParams = new URLSearchParams(window.location.search);
-  const selfValue = urlParams.get('self'); 
+  const selfValue = urlParams.get("self");
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
   const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
 
-    // --- PDF.js worker setup ---
+  // Local optimistic store for signatures in non-self mode so user sees signature immediately
+  const [localSignedMap, setLocalSignedMap] = useState<Record<string, string>>(
+    {}
+  );
+
+  // PDF.js worker setup
   useEffect(() => {
-    console.log(selfValue); // "1"
-    if(selfValue==="1"){
+    if (selfValue === "1") {
       getSelfSigner();
-    }else{
-      console.log("Regular Signer Mode Enabled");
     }
     if (typeof window !== "undefined") {
       try {
-        // Point to the worker file in your public folder
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
       } catch (err) {
         console.warn("Failed to set PDF.js worker:", err);
       }
     }
   }, []);
-  // Multi-page states
+
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentActionableIndex, setCurrentActionableIndex] =
+    useState<number>(0);
+  const [hasAutoOpened, setHasAutoOpened] = useState<boolean>(false);
+
+  const normalizePage = (field: any) =>
+    Number(
+      field?.page?.$numberInt ??
+        field?.page ??
+        field?.pageNumber ??
+        field?.pageNo ??
+        0
+    );
+
+  // build actionable (user-specific) fields
+  const actionableFields = useMemo(() => {
+    if (!signatureFields || !Array.isArray(signatureFields)) return [];
+    return signatureFields
+      .map((f) => ({ ...f, pageNum: normalizePage(f) }))
+      .filter((field) => field.type === "signature")
+      .filter((field) => {
+        if (selfValue === "1") {
+          const matchedSigner = (selfSigner || []).find(
+            (s: any) => s && s.signerSlotId === field.slotId
+          );
+          const isCurrentUser = matchedSigner
+            ? matchedSigner._id?.toString?.() === currentUserId?.toString?.()
+            : false;
+          const isSigned = matchedSigner ? !!matchedSigner.signature : false;
+          return isCurrentUser && !isSigned;
+        } else {
+          // For non-self mode: consider both backend field.signature and optimistic localSignedMap
+          const isCurrentUser = field.recipientId === currentUserId;
+          const isSigned =
+            !!field.signature || !!localSignedMap[field._id || field.fieldId];
+          return isCurrentUser && !isSigned;
+        }
+      })
+      .sort((a, b) => a.pageNum - b.pageNum);
+  }, [signatureFields, selfSigner, selfValue, currentUserId, localSignedMap]);
+
+  // Auto-open first field on load (only if actionable exists)
+  useEffect(() => {
+    if (!hasAutoOpened && actionableFields.length > 0) {
+      const first = actionableFields[0];
+      setCurrentPage(first.pageNum || 1);
+      setActiveField(first);
+      setCurrentActionableIndex(0);
+      setHasAutoOpened(true);
+    }
+  }, [actionableFields, hasAutoOpened]);
+
+  // click-to-sign behavior (open signpad for first actionable field on that page)
+  useEffect(() => {
+    const node = pdfContainerRef.current;
+    if (!node) return;
+
+    const handler = (e: MouseEvent) => {
+      if (activeField) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest("button, a, input, textarea, .no-sign")) return;
+
+      const actionableOnPage = actionableFields.filter(
+        (f) => f.pageNum === currentPage
+      );
+      if (actionableOnPage.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveField(actionableOnPage[0]);
+        const globalIndex = actionableFields.findIndex(
+          (af) =>
+            af._id === actionableOnPage[0]._id ||
+            af.fieldId === actionableOnPage[0].fieldId
+        );
+        if (globalIndex >= 0) setCurrentActionableIndex(globalIndex);
+      }
+    };
+
+    node.addEventListener("click", handler);
+    return () => node.removeEventListener("click", handler);
+  }, [actionableFields, currentPage, activeField]);
 
   const handleFieldClick = (field: any) => {
-    const activeField: ActiveField = {
+    const af: ActiveField = {
       ...field,
-      status: 'pending'
+      status: "pending",
     };
-    setActiveField(activeField);
+    const idx = actionableFields.findIndex(
+      (af) => af._id === field._id || af.fieldId === field.fieldId
+    );
+    if (idx >= 0) setCurrentActionableIndex(idx);
+    setActiveField(af);
   };
+
   const getSelfSigner = async () => {
     try {
       setIsLoading(true);
@@ -62,216 +155,181 @@ const DocumentViewerContent: React.FC<Props> = ({ document, signatureFields, cur
         console.warn("No cycleId provided");
         return;
       }
-      const response = await eSignApi.get(`/api/e-sign/public/envelope/self-signer/${cycleId}`);
+      const response = await eSignApi.get(
+        `/api/e-sign/public/envelope/self-signer/${cycleId}`
+      );
       if (response?.data?.selfSigner) {
-        const validSigners = response.data.selfSigner.filter((signer: SignerData) => 
-          signer && typeof signer === 'object' && signer.signerSlotId
+        const validSigners = response.data.selfSigner.filter(
+          (signer: SignerData) =>
+            signer && typeof signer === "object" && signer.signerSlotId
         );
         setSelfSigner(validSigners);
       } else {
-        console.warn("No self-signer data found in response");
         setSelfSigner([]);
       }
     } catch (err) {
-      console.error('Failed to load self-signer data:', err);
+      console.error("Failed to load self-signer data:", err);
       setSelfSigner([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- New: click-anywhere behavior ---
-  // Clicking anywhere inside the PDF container will open the SignPad for the first actionable signature field on the current page.
-  useEffect(() => {
-    const node = pdfContainerRef.current;
-    if (!node) return;
-
-    const handler = (e: MouseEvent) => {
-      // If SignPad already open, don't open another
-      if (activeField) return;
-
-      // Avoid triggering when focusing/interacting with controls (buttons, inputs, links)
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (target.closest('button, a, input, textarea, .no-sign')) return;
-
-      // Find actionable signature fields on current page
-      const actionable = signatureFields
-        .filter(field => {
-          const pageNum = Number(field?.page?.$numberInt ?? field?.page ?? field?.pageNumber ?? field?.pageNo ?? 0);
-          return pageNum === currentPage && field?.type === 'signature';
-        })
-        .filter(field => {
-          if (selfValue === '1') {
-            const matchedSigner = selfSigner?.find((s: any) => s.signerSlotId === field.slotId);
-            const isCurrentUser = matchedSigner ? (matchedSigner._id?.toString?.() === currentUserId?.toString?.()) : false;
-            const isSigned = matchedSigner ? !!matchedSigner.signature : false;
-            return isCurrentUser && !isSigned;
-          } else {
-            const isCurrentUser = field.recipientId === currentUserId;
-            const isSigned = !!field.signature;
-            return isCurrentUser && !isSigned;
-          }
-        });
-
-      if (actionable.length > 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        // pick first actionable field (you can enhance to pick nearest to click)
-        setActiveField(actionable[0]);
+  // scroll helper: waits for element to appear inside pdfContainerRef then centers it
+  const scrollToFieldElement = (fieldId: string | number) => {
+    const container = pdfContainerRef.current;
+    if (!container) return;
+    const selector = `[data-field-id="${fieldId}"]`;
+    let attempts = 0;
+    const maxAttempts = 30;
+    const attempt = () => {
+      attempts++;
+      const el = container.querySelector(selector) as HTMLElement | null;
+      if (el) {
+        // compute offset relative to container and scroll so field is centered vertically
+        const elTop = el.offsetTop;
+        const elHeight = el.offsetHeight || 0;
+        const containerHeight = container.clientHeight;
+        const target = Math.max(0, elTop - containerHeight / 2 + elHeight / 2);
+        container.scrollTo({ top: target, behavior: "smooth" });
+      } else if (attempts < maxAttempts) {
+        // small delay and try again (gives PDF page time to render)
+        setTimeout(attempt, 50);
       }
     };
+    attempt();
+  };
 
-    node.addEventListener('click', handler);
-    return () => node.removeEventListener('click', handler);
-  }, [signatureFields, selfSigner, selfValue, currentPage, activeField, currentUserId]);
+  // Arrow navigation — move to field (center it) but DO NOT open signpad
+  const goToActionableIndex = (index: number) => {
+    if (index < 0 || index >= actionableFields.length) return;
+    const field = actionableFields[index];
+    if (!field) return;
+    setCurrentActionableIndex(index);
+    setCurrentPage(field.pageNum || 1);
+
+    // wait for page render then scroll to exact field element (robust polling)
+    setTimeout(() => {
+      scrollToFieldElement(field._id || field.fieldId);
+    }, 80);
+  };
+  const goToPrev = () => goToActionableIndex(currentActionableIndex - 1);
+  const goToNext = () => goToActionableIndex(currentActionableIndex + 1);
+
+  // 🎉 Party popper immediately after a signature is saved
+  const triggerConfetti = () => {
+    // small burst in center
+    confetti({
+      particleCount: 60,
+      spread: 70,
+      origin: { x: 0.5, y: 0.35 },
+    });
+    confetti({
+      particleCount: 30,
+      spread: 120,
+      origin: { x: 0.5, y: 0.35 },
+    });
+  };
 
   return (
-    <div className="relative flex flex-col items-center ">
-      {/* PDF Container */}
-      <div ref={pdfContainerRef} className="relative border border-gray-300 rounded-lg shadow-sm bg-white overflow-auto max-w-4xl max-h-[80vh] ">
+    <div className="relative flex flex-col items-center">
+      {/* PDF */}
+      <div
+        ref={pdfContainerRef}
+        className="relative border border-gray-300 rounded-lg shadow-sm bg-white overflow-auto max-w-4xl max-h-[80vh] p-2"
+      >
         <Document
-          file={document.filePath || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`}
+          file={
+            document.filePath ||
+            `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`
+          }
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
         >
-          <Page pageNumber={currentPage} 
-           width={800} 
-           height={1132} />
+          <Page pageNumber={currentPage} width={800} height={1132} />
         </Document>
 
-        {/* Signature Fields */}
+        {/* Fields overlay */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          { signatureFields
-            .filter(field => Number(field?.page?.$numberInt ?? field?.page ?? field?.pageNumber ?? field?.pageNo ?? 0) === currentPage)
-            .map(field => {
-              const isSignatureType = field.type === "signature";
-              let isCurrentUser;
-                if (selfValue === "1" && selfSigner) { 
-                  // self-signing mode
-                  isCurrentUser = selfSigner.some((s:any) => {
-                    if (!s) return false;
-                    return s.signerSlotId === field.slotId && s._id?.toString?.() === currentUserId?.toString?.();
-                  });
-                } else {
-                  // Regular signing mode
-                  isCurrentUser = field.recipientId === currentUserId; 
-                }
+          {signatureFields
+            .filter((f) => normalizePage(f) === currentPage && f.type === "signature")
+            .map((field) => {
+              let isCurrentUser = false;
               let isSigned = false;
-              let signedImage = null;
-               if (selfValue === "1" ) { 
-                //Self Signer Mode
-                if (selfSigner) {
-                  const matchedSigner = selfSigner.find((s: any) => s.signerSlotId === field.slotId);
-                  isSigned = matchedSigner ? !!matchedSigner.signature : false;
-                  signedImage = matchedSigner ? matchedSigner.signature : null;
-                } else {
-                  isSigned = false;
-                  signedImage = null;
-                }
-               }else{
-              // If selfSigner check already signed using selfSigner data otherwise use field.signature
-                 isSigned = !!field.signature;
-                 signedImage = field.signature;
-            }
+              let signedImage: string | null = null;
 
-              if (isSignatureType) {
-                return (
-                  <div
-                    key={field._id?.$oid || field._id}
-                    style={{
-                      position: 'absolute',
-                      top: field.y?.$numberDouble ?? field.y,
-                      left: field.x?.$numberDouble ?? field.x,
-                      width: field.width?.$numberInt ?? field.width,
-                      height: field.height?.$numberInt ?? field.height,
-                      zIndex: 10,
-                      pointerEvents: isCurrentUser && !isSigned ? 'auto' : 'none',
-                    }}
-                    className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${
-                      isSigned
-                        ? 'border-green-500'
-                        : isCurrentUser
-                        ? 'bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200'
-                        : 'bg-gray-100 border-gray-300 text-gray-500 opacity-50'
-                    }`}
-                    onClick={() =>
-                      isCurrentUser && !isSigned && handleFieldClick(field)
-                    }
-                  >
-                    {isSigned ? (
-                      <img
-                        src={signedImage}
-                        alt="Signed"
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      isCurrentUser ? 'Sign Here' : 'Signature'
-                    )}
-                  </div>
+              if (selfValue === "1" && selfSigner) {
+                const matched = selfSigner.find(
+                  (s: any) => s && s.signerSlotId === field.slotId
                 );
+                isCurrentUser = matched
+                  ? matched._id?.toString?.() === currentUserId?.toString?.()
+                  : false;
+                isSigned = matched ? !!matched.signature : false;
+                signedImage = matched?.signature ?? null;
               } else {
-                        const fieldId = field.fieldId || field._id?.$oid || field._id;
-                        let displayValue = field.label || field.value || '';
+                isCurrentUser = field.recipientId === currentUserId;
+                // combine backend-saved signature and optimistic local signature
+                isSigned = !!field.signature || !!localSignedMap[field._id || field.fieldId];
+                signedImage = localSignedMap[field._id || field.fieldId] || field.signature || null;
+              }
 
-                        // Check if selfValue is "1" and selfSigner has data for this fieldId
-                        if (selfValue === "1" ) {
-                          const matchedSigner = selfSigner?.find((s: any) => s.signerSlotId === field.slotId);
-                            // Loop through selfSigner.data keys and find a match with field.fieldId
-                            
-                            for (const key in matchedSigner?.data) {
-                                if ( field?.slotId === matchedSigner?.signerSlotId) {
-                                  if( matchedSigner?.role !== "creator" && key === fieldId){
-                                    displayValue = matchedSigner.data[key]; // use the matched value
-                                    break;
-                                  }else if(matchedSigner?.role === "creator" ){
-                                    displayValue = matchedSigner.data["name"];
-                                    break;
-                                  }
+              const keyId = field._id || field.fieldId;
 
-                                }
-                            }
-                        }
-                        return (
-                            <div
-                                key={fieldId}
-                                style={{
-                                    position: 'absolute',
-                                    top: field.y?.$numberDouble ?? field.y,
-                                    left: field.x?.$numberDouble ?? field.x,
-                                    width: field.width?.$numberInt ?? field.width,
-                                    height: field.height?.$numberInt ?? field.height,
-                                    zIndex: 10,
-                                    background: 'transparent',
-                                    border: 'none',
-                                    padding: 0,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    pointerEvents: 'none',
-                                }}
-                            >
-                                <span className="text-sm text-gray-700">{displayValue}</span>
-                            </div>
-                        );
-                     }
+              return (
+                <div
+                  key={field._id?.$oid || field._id}
+                  data-field-id={keyId}
+                  style={{
+                    position: "absolute",
+                    top: field.y?.$numberDouble ?? field.y,
+                    left: field.x?.$numberDouble ?? field.x,
+                    width: field.width?.$numberInt ?? field.width,
+                    height: field.height?.$numberInt ?? field.height,
+                    zIndex: 10,
+                    pointerEvents: isCurrentUser && !isSigned ? "auto" : "none",
+                  }}
+                  className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${
+                    isSigned
+                      ? "border-green-500"
+                      : isCurrentUser
+                      ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
+                      : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
+                  }`}
+                  onClick={() => isCurrentUser && !isSigned && handleFieldClick(field)}
+                >
+                  {isSigned ? (
+                    <img
+                      src={signedImage as string}
+                      alt="Signed"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : isCurrentUser ? (
+                    "Sign Here"
+                  ) : (
+                    "Signature"
+                  )}
+                </div>
+              );
             })}
         </div>
       </div>
 
-      {/* Page Navigation */}
+      {/* Page Nav */}
       {numPages > 1 && (
         <div className="flex justify-between mt-2 w-full max-w-4xl px-2">
           <button
             disabled={currentPage <= 1}
-            onClick={() => setCurrentPage(prev => prev - 1)}
+            onClick={() => setCurrentPage((p) => p - 1)}
             className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
           >
             Previous
           </button>
-          <span className="text-sm text-gray-600">Page {currentPage} / {numPages}</span>
+          <span className="text-sm text-gray-600">
+            Page {currentPage} / {numPages}
+          </span>
           <button
             disabled={currentPage >= numPages}
-            onClick={() => setCurrentPage(prev => prev + 1)}
+            onClick={() => setCurrentPage((p) => p + 1)}
             className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
           >
             Next
@@ -279,45 +337,79 @@ const DocumentViewerContent: React.FC<Props> = ({ document, signatureFields, cur
         </div>
       )}
 
-      {/* Signature Modal */}
-        {activeField && (
-          <SignPad
-            isSignPad={!!activeField}
-            setIsSignPad={(open: boolean) => {
-              if (!open) setActiveField(null);
-            }}
-            activeField={activeField}
-            currentUserId={currentUserId}
-            documentId={document.id}
-            envelopeID={envelopeID}
-            defaultSign={null} // if you have a default saved signature
-            selfValue={selfValue || ''}
-            onSaveSign={(fieldId: string, signatureUrl: string) => {
-              // Update selfSigner locally for immediate visual update
-            if(selfValue==="1"){
-              setSelfSigner((prev: any) =>
-                prev.map((s: any) =>{
-                  s.signerSlotId === activeField?.slotId
-                    ? { ...s, signature: signatureUrl }
-                    : s
-                  })
-              );
+      {/* Floating arrows (do not open signpad) */}
+      {actionableFields.length > 0 && (
+        <div className="fixed right-6 bottom-6 z-50 flex items-center gap-3 bg-white/90 border p-2 rounded shadow">
+          <button
+            onClick={goToPrev}
+            disabled={currentActionableIndex <= 0}
+            className="px-2 py-1 border rounded disabled:opacity-40"
+            aria-label="Previous signature field"
+          >
+            ←
+          </button>
+          <div className="text-sm">
+            Field {Math.min(currentActionableIndex + 1, actionableFields.length)} / {actionableFields.length}
+          </div>
+          <button
+            onClick={goToNext}
+            disabled={currentActionableIndex >= actionableFields.length - 1}
+            className="px-2 py-1 border rounded disabled:opacity-40"
+            aria-label="Next signature field"
+          >
+            →
+          </button>
+        </div>
+      )}
+
+      {/* SignPad Modal */}
+      {activeField && (
+        <SignPad
+          isSignPad={!!activeField}
+          setIsSignPad={(open: boolean) => {
+            if (!open) setActiveField(null);
+          }}
+          activeField={activeField}
+          currentUserId={currentUserId}
+          documentId={document.id}
+          envelopeID={envelopeID}
+          defaultSign={null}
+          selfValue={selfValue || ""}
+          onSaveSign={(fieldId: string, signatureUrl: string) => {
+            // When selfValue === "1" update the signer entry and trigger confetti reliably
+            if (selfValue === "1") {
+              setSelfSigner((prev) => {
+                const updated = (prev || []).map((s: any) =>
+                  s && s.signerSlotId === activeField?.slotId ? { ...s, signature: signatureUrl } : s
+                );
+                // show confetti immediately after signature
+                triggerConfetti();
+                return updated;
+              });
+            } else {
+              // non-self: optimistic local update so UI shows signed image immediately
+              const key = activeField?._id;
+              if (key) {
+                setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
+              }
+              // show confetti immediately after signature
+              triggerConfetti();
             }
-              setActiveField(null); // Close the SignPad
-              onSignatureSave?.(fieldId, signatureUrl); // Optional: notify parent
-            }}
-          />
-        )}
+
+            // Close modal but keep arrows visible (arrows navigation does not auto-open SignPad)
+            setActiveField(null);
+
+            // notify parent if needed
+            onSignatureSave?.(fieldId, signatureUrl);
+          }}
+        />
+      )}
     </div>
   );
 };
 
 const DocumentViewer: React.FC<Props> = (props) => {
-  return (
-    <ErrorBoundary>
-      <DocumentViewerContent {...props} />
-    </ErrorBoundary>
-  );
+  return <DocumentViewerContent {...props} />;
 };
 
 export default DocumentViewer;

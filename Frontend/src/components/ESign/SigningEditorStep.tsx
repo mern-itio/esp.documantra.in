@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { FileText, UserCircle } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
+import { useAuth } from '../../components/AuthService/AuthContext';
+import { useTutorial } from '../../context/TutorialContext';
 
 export type Doc = {
   id: string;
@@ -79,7 +81,22 @@ export default function SigningEditorStep({
       pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
     }
   }, []);
+  const { user } = useAuth();
+  const { 
+    showTutorial,
+    tutorialStep,
+    setShowTutorial,
+    handleNextStep,
+    handlePrevStep,
+    handleCloseTutorial 
+  } = useTutorial();
 
+  // Show tutorial if first login
+  useEffect(() => {
+    if (user?.isFirstLogin) {
+      setShowTutorial(true);
+    }
+  }, [user]);
   // state
   const [activeDocId, setActiveDocId] = useState<string | null>(documents[0]?.id ?? null);
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(mode === "normal" ? recipients[0]?.id ?? null : null);
@@ -310,7 +327,97 @@ export default function SigningEditorStep({
 
   // render
   return (
+    
     <div className="flex flex-col h-[calc(100vh-160px)] gap-4">
+            {/* Step-by-step Tutorial Modal */}
+              {showTutorial && (
+                <div className="fixed inset-0 z-50">
+                  <div className="absolute inset-0 backdrop-blur-[0px]"></div>
+                  <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-500 ease-in-out min-h-[340px] flex flex-col justify-between ${
+                    tutorialStep === 0 ? 'top-95 right-50 -translate-x-1/6 -translate-y-1/2' : 
+                    tutorialStep === 1 ? 'top-125 right-60 -translate-x-1/6 -translate-y-1/2' :
+                    tutorialStep === 2 ? 'top-105 right-20 -translate-x-1/6 -translate-y-1/2' :
+                    tutorialStep === 3 ? 'top-115 right-20 -translate-x-1/6 -translate-y-1/2' :
+                    'top-1/4 right-5 -translate-x-1/6 -translate-y-1/2'
+                  }`}>
+                    {tutorialStep === 0 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute left-20 -top-16 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-311 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 1: Document Tab</h2>
+                          <p className="text-gray-700 mb-4">By clicking this we can active the document </p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 1 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute right-20 -top-16 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-133 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 2: Choose Recipients</h2>
+                          <p className="text-gray-700 mb-4">Here is the added recipients list we can active any one recipient at a time by clicking on the box. </p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 2 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute right-20 top-70 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-224 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 3: Fixed signature fields</h2>
+                          <p className="text-gray-700 mb-4">By clicking this button we can add fixed field for all the added recipients. </p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleNextStep}>Next</button>
+                        </div>
+                      </>
+                    )}
+                    {tutorialStep === 3 && (
+                      <>
+                        <div className="relative">
+                          {/* Arrow pointing to recipients section */}
+                          <div className="absolute right-20 top-70 w-16 h-16">
+                            <div className="w-16 h-16 border-l-4 border-t-4 border-blue-500 rounded-tl-xl transform rotate-224 absolute"></div>
+                          </div>
+                          <h2 className="text-xl font-bold mb-4">Step 4: Signature Fields</h2>
+                          <p className="text-gray-700 mb-4">This is a dragable element we can drag it on to the pdf and this will create a signature field for the active recipient that we did in Step 2 </p>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex justify-between gap-2 mt-6">
+                          <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={handlePrevStep}>Back</button>
+                          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleCloseTutorial}>Finish</button>
+                        </div>
+                      </>
+                    )}
+                    <button
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl"
+                      onClick={handleCloseTutorial}
+                      aria-label="Close tutorial"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              )}
       {/* Document buttons */}
       <div className="flex flex-wrap items-center gap-2">
         {documents.map(doc => {
@@ -351,132 +458,132 @@ export default function SigningEditorStep({
           >
             {activeDoc?.type === "application/pdf" ? (
               <Document
-  file={
-    activeDoc.file ||
-    `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${activeDoc.name}`
-  }
-  onLoadSuccess={onDocLoadSuccess}
->
-  <div className="relative w-max mx-auto">
-    <Page pageNumber={currentPage} width={800} className="shadow mb-4" />
-
-    {/* Render ALL fields on this page */}
-    {signatureFields
-      .filter(
-        (f) => (f.docId ?? f.documentId) === activeDocId && f.page === currentPage
-      )
-      .map((f) => {
-        const assignee = findAssignee(f);
-        const color =
-          recipientColorMap[f.recipientId ?? f.slotId ?? ""] || "#2563eb";
-        const isActive =
-          mode === "normal"
-            ? f.recipientId === activeRecipientId
-            : f.slotId === activeSlotId;
-
-        return (
-          <React.Fragment key={f.id ?? f._id}>
-            {/* Signature/Field Box */}
-            <div
-              style={{
-                position: "absolute",
-                left: f.x,
-                top: f.y,
-                width: f.width,
-                height: f.height,
-                border: `2px dashed ${color}`,
-                background: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 6,
-                cursor: f.locked ? "not-allowed" : "move",
-                opacity: isActive ? 1 : 0.9,
-                boxSizing: "border-box",
-                zIndex: isActive ? 30 : 20,
-              }}
-              onMouseDown={(e) => handleFieldMouseDown(e, f)}
-              title={
-                f.type === "signature"
-                  ? `Signature - ${assignee?.name ?? ""}`
-                  : f.label
-              }
-            >
-              {/* Signature text stays inside box */}
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textAlign: "center",
-                }}
+                file={
+                  activeDoc.file ||
+                  `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${activeDoc.name}`
+                }
+                onLoadSuccess={onDocLoadSuccess}
               >
-                {f.type === "signature" ? "Signature" : f.label || f.type}
-              </div>
-            </div>
+              <div className="relative w-max mx-auto">
+                <Page pageNumber={currentPage} width={800} className="shadow mb-4" />
 
-            {/* Labels BELOW the box (only if assignee exists) */}
-            {assignee && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: f.x,
-                  top: f.y + f.height + 4, // just below the box
-                  width: f.width,
-                  textAlign: "center",
-                  fontSize: 11,
-                  color: "#555",
-                }}
-              >
-                {"email" in assignee && (assignee as any).email ? (
-                  <>
-                    <div style={{ fontWeight: 600 }}>
-                      {(assignee as any).name ||
-                        (assignee as any).slotId ||
-                        ""}
-                    </div>
-                    <div style={{ fontSize: 10 }}>
-                      {(assignee as any).email}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ fontWeight: 600 }}>
-                    {(assignee as any).name || (assignee as any).slotId || ""}
+                {/* Render ALL fields on this page */}
+                {signatureFields
+                  .filter(
+                    (f) => (f.docId ?? f.documentId) === activeDocId && f.page === currentPage
+                  )
+                  .map((f) => {
+                    const assignee = findAssignee(f);
+                    const color =
+                      recipientColorMap[f.recipientId ?? f.slotId ?? ""] || "#2563eb";
+                    const isActive =
+                      mode === "normal"
+                        ? f.recipientId === activeRecipientId
+                        : f.slotId === activeSlotId;
+
+                    return (
+                      <React.Fragment key={f.id ?? f._id}>
+                        {/* Signature/Field Box */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: f.x,
+                            top: f.y,
+                            width: f.width,
+                            height: f.height,
+                            border: `2px dashed ${color}`,
+                            background: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: 6,
+                            cursor: f.locked ? "not-allowed" : "move",
+                            opacity: isActive ? 1 : 0.9,
+                            boxSizing: "border-box",
+                            zIndex: isActive ? 30 : 20,
+                          }}
+                          onMouseDown={(e) => handleFieldMouseDown(e, f)}
+                          title={
+                            f.type === "signature"
+                              ? `Signature - ${assignee?.name ?? ""}`
+                              : f.label
+                          }
+                        >
+                          {/* Signature text stays inside box */}
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              textAlign: "center",
+                            }}
+                          >
+                            {f.type === "signature" ? "Signature" : f.label || f.type}
+                          </div>
+                        </div>
+
+                        {/* Labels BELOW the box (only if assignee exists) */}
+                        {assignee && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: f.x,
+                              top: f.y + f.height + 4, // just below the box
+                              width: f.width,
+                              textAlign: "center",
+                              fontSize: 11,
+                              color: "#555",
+                            }}
+                          >
+                            {"email" in assignee && (assignee as any).email ? (
+                              <>
+                                <div style={{ fontWeight: 600 }}>
+                                  {(assignee as any).name ||
+                                    (assignee as any).slotId ||
+                                    ""}
+                                </div>
+                                <div style={{ fontSize: 10 }}>
+                                  {(assignee as any).email}
+                                </div>
+                              </>
+                            ) : (
+                              <div style={{ fontWeight: 600 }}>
+                                {(assignee as any).name || (assignee as any).slotId || ""}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+
+                {/* Drag preview */}
+                {dragging && dropPreview && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: dropPreview.x - 60,
+                      top: dropPreview.y - 20,
+                      width: 120,
+                      height: 40,
+                      border: `2px dashed ${
+                        recipientColorMap[activeAssigneeId ?? ""] || "#2563eb"
+                      }`,
+                      background: "#e0e7ff88",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 6,
+                      pointerEvents: "none",
+                      zIndex: 40,
+                    }}
+                  >
+                    {draggedField?.type === "signature"
+                      ? "Signature"
+                      : draggedField?.label || draggedField?.type}
                   </div>
                 )}
               </div>
-            )}
-          </React.Fragment>
-        );
-      })}
-
-    {/* Drag preview */}
-    {dragging && dropPreview && (
-      <div
-        style={{
-          position: "absolute",
-          left: dropPreview.x - 60,
-          top: dropPreview.y - 20,
-          width: 120,
-          height: 40,
-          border: `2px dashed ${
-            recipientColorMap[activeAssigneeId ?? ""] || "#2563eb"
-          }`,
-          background: "#e0e7ff88",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 6,
-          pointerEvents: "none",
-          zIndex: 40,
-        }}
-      >
-        {draggedField?.type === "signature"
-          ? "Signature"
-          : draggedField?.label || draggedField?.type}
-      </div>
-    )}
-  </div>
-</Document>
+            </Document>
 
             ) : (
               <div className="text-center p-8 text-gray-500">Preview not available</div>
