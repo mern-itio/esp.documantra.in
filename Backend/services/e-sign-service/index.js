@@ -12,6 +12,7 @@ const tsaRoutes = require('./routes/tsaRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
 const anchorRoutes = require('./routes/anchorRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const envelopeTypeRoutes = require('./routes/envelopeTypeRoutes');
 
 dotenv.config();
 const app = express(); 
@@ -37,7 +38,7 @@ app.use('/api/e-sign', digitalSignatureRoutes);
 app.use('/api/e-sign', tsaRoutes);
 app.use('/api/e-sign',verificationRoutes);
 app.use('/api/e-sign/anchor', anchorRoutes);
-
+app.use('/api/e-sign/envelope-types', verifyJWT(), envelopeTypeRoutes);
 app.use('/api/e-sign', verifyJWT(), eSignRoutes);
 app.use('/admin', verifyJWT("admin"),adminRoutes );
 // Start server
