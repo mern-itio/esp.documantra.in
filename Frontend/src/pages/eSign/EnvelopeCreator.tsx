@@ -74,7 +74,7 @@ const EnvelopeCreator: React.FC = () => {
   const [powerFormData, _setPowerFormData] = useState<any>(null);
   const [slots, setSlots] = useState<any[]>([]);
 
-  // Parties & related state
+  // Parties & related state.....
   const [parties, _setParties] = useState<Party[]>(
     [{ id: 'slot_1', name: 'Party A', slot: 1, role: 'signer', authMethod: 'email', required: true }]
   );
