@@ -4,6 +4,7 @@ import { useAuth } from '../components/AuthService/AuthContext';
 
 // Layouts
 import RootLayout from '../layouts/RootLayout';
+import DashboardNoSidebarLayout from '../layouts/DashboardNoSidebarLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import PublicSignerLayout from '../layouts/PublicSignerLayout';
@@ -108,8 +109,8 @@ import TrashPage from '../pages/DocumentService/TrashPage';
 
 // E-Signature Pages Started
 import EsignDashboard from '../pages/eSign/Dashboard';
-import EsignEnvelopeCreator from '../pages/eSign/EnvelopeCreator';
-import EsignEnvelopeDetails from '../pages/eSign/EnvelopeDetails';
+// import EsignEnvelopeCreator from '../pages/eSign/EnvelopeCreator';
+// import EsignEnvelopeDetails from '../pages/eSign/EnvelopeDetails';
 import EsignSigningPage from '../pages/eSign/SigningPage';
 import EsignAnalytics from '../pages/eSign/Analytics';
 import EsignSettings from '../pages/eSign/Settings';
@@ -189,6 +190,8 @@ import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
 import { AllInOnePlatformPage, APIDocumentationPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
 import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
 import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
+import EnvelopeDetailPage from '../pages/eSign/EnvelopeDetailPage';
+import EnvelopeCreator from '../pages/eSign/EnvelopeCreator';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -649,9 +652,9 @@ const authRoutes = [
   },
   // E-Signature Routes
   { path: '/e-sign/dashboard', element: <EsignDashboard /> },
-  { path: '/e-sign/create', element: <EsignEnvelopeCreator /> },
-  { path: '/e-sign/edit/:envelopeId', element: <EsignEnvelopeCreator /> },
-  { path: '/e-sign/envelope/:id', element: <EsignEnvelopeDetails /> },
+  // { path: '/e-sign/create', element: <EsignEnvelopeCreator /> },
+  // { path: '/e-sign/edit/:envelopeId', element: <EsignEnvelopeCreator /> },
+  // { path: '/e-sign/envelope/:id', element: <EsignEnvelopeDetails /> },
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },
   { path: '/e-sign/settings', element: <EsignSettings /> },
@@ -785,6 +788,19 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
         children: authRoutes,
+      },
+      {
+        element: (
+          <PrivateRoute>
+            <DashboardNoSidebarLayout />
+          </PrivateRoute>
+        ),
+        children: [
+          { path: '/e-sign/envelope/:id', element: <EnvelopeDetailPage /> },
+          { path: '/e-sign/create', element: <EnvelopeCreator /> },
+          { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
+
+        ],
       },
       {
         // Public Signer Routes

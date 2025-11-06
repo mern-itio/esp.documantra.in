@@ -81,11 +81,12 @@ export interface Recipient {
   id: string;
   name: string;
   email: string;
-  role: 'signer' | 'approver' | 'carbon_copy' | 'in_person_signer';
+  role: 'signer' | 'approver' | 'carbon_copy' | 'in_person_signer'| 'needs_to_view';
   order: number;
   status: 'waiting' | 'sent' | 'viewed' | 'signed' | 'completed' | 'declined';
   authentication?: string;
   authValue?: string;
+  privateMessage?: string;
   signedAt?: string;
   viewedAt?: string;
   ipAddress?: string;
