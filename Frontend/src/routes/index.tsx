@@ -192,6 +192,9 @@ import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
 import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
 import EnvelopeDetailPage from '../pages/eSign/EnvelopeDetailPage';
 import EnvelopeCreator from '../pages/eSign/EnvelopeCreator';
+import AgreementPage from '../pages/eSign/AgreementPage';
+import EnvelopeTypes from '../pages/eSign/EnvelopeTypes';
+import ManageRecipients from '../pages/eSign/ManageRecipients';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -651,16 +654,23 @@ const authRoutes = [
     )
   },
   // E-Signature Routes
-  { path: '/e-sign/dashboard', element: <EsignDashboard /> },
-  // { path: '/e-sign/create', element: <EsignEnvelopeCreator /> },
-  // { path: '/e-sign/edit/:envelopeId', element: <EsignEnvelopeCreator /> },
-  // { path: '/e-sign/envelope/:id', element: <EsignEnvelopeDetails /> },
+   { path: '/e-sign/dashboard', element: <EsignDashboard /> },
+  { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
+  // moved to no-sidebar layout group below
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },
+  { path: '/e-sign/aggrement', element: <AgreementPage /> },
+  { path: '/e-sign/aggrement/all', element: <AgreementPage /> },
+  { path: '/e-sign/aggrement/completed', element: <AgreementPage /> },
+  { path: '/e-sign/aggrement/draft', element: <AgreementPage /> },
+  { path: '/e-sign/aggrement/in-progress', element: <AgreementPage /> },
+  { path: '/e-sign/aggrement/deleted', element: <AgreementPage /> },
   { path: '/e-sign/settings', element: <EsignSettings /> },
   { path: '/e-sign/enterprise', element: <EsignEnterpriseSettings /> },
   { path: '/e-sign/admin', element: <EsignESignatureAdmin /> },
-  { path: '/e-sign/power-form-embed/:formId/:envelopeId', element: <PowerFormEmbed/>},
+  { path: '/e-sign/power-form-embed/:formId/:envelopeId', element: <PowerFormEmbed /> },
+  { path: '/e-sign/envelope_types', element: <EnvelopeTypes /> },
+  { path: '/e-sign/manage_receipients', element: <ManageRecipients /> },
 
   // Template Routes
   { path: '/template/dashboard', element: <TemplateDashboard /> },

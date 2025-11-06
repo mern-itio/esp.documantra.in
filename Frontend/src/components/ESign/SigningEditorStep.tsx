@@ -92,7 +92,8 @@ export default function SigningEditorStep({
   slots,
   onSend,
   sending,
-  onBack
+  onBack,
+  onFieldsChange
 }: {
   documents: Doc[];
   recipients: Recipient[];
@@ -104,6 +105,7 @@ export default function SigningEditorStep({
   onSend?: () => void;
   sending?: boolean;
   onBack?: () => void;
+  onFieldsChange?: (fields: SignatureField[]) => void;
 }) {
   // PDF.js worker setup - same approach as InsertPDF
   useEffect(() => {
@@ -513,7 +515,11 @@ export default function SigningEditorStep({
     };
     console.log(`New Field ID : ${JSON.stringify(newField)}`);
     console.log("activeRecipientId6", activeRecipientId);
-    setSignatureFields(prev => [...prev, newField]);
+    setSignatureFields(prev => {
+      const next = [...prev, newField];
+      if (onFieldsChange) onFieldsChange(next);
+      return next;
+    });
 
     setDragging(false);
     setDraggedField(null);
