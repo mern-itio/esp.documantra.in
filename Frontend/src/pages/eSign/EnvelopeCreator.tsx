@@ -1029,6 +1029,40 @@ const EnvelopeCreator: React.FC = () => {
       console.error('Error saving signature fields:', error);
     }
   };
+
+  // Immediate save with provided fields (used by SigningEditorStep on add)
+  const saveSignatureFieldsImmediate = async (fields: EditorSignatureFieldExt[]) => {
+    try {
+      if (!envelopeId) return;
+      const fieldsData = fields.map(field => ({
+        _id: field._id,
+        documentId: field.docId ?? field.documentId,
+        recipientId: mode === 'normal' ? field.recipientId || null : null,
+        slotId: field?.slotId || null,
+        page: field.page,
+        x: field.x,
+        y: field.y,
+        width: field.width,
+        height: field.height,
+        type: field.type || 'signature',
+        status: 'pending',
+        signerIndex: mode === 'power' ? (field.signerIndex ?? null) : null,
+        label: field.label ?? (field.type === 'signature' ? 'Signature' : undefined),
+        option: field.options ?? [],
+        fieldId: field.fieldId ?? null,
+      }));
+
+      const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+        envelopeId,
+        signatureFields: fieldsData,
+      });
+      if (response.status === 200) {
+        setSignatureFields(response.data.data.signatureFields);
+      }
+    } catch (err) {
+      console.error('Immediate save of signature fields failed:', err);
+    }
+  };
   const getEnvelopeDetail = async (envelopeId: string) => {
     try {
       const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
@@ -3608,6 +3642,7 @@ const EnvelopeCreator: React.FC = () => {
             slots={slots}
             onSend={mode === 'normal' ? handleSendEnvelope : undefined}
             sending={sending}
+            onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
             onBack={() => {
               setCurrentStep(1);
               if (envelopeId) {
@@ -3631,6 +3666,7 @@ const EnvelopeCreator: React.FC = () => {
             slots={slots}
             onSend={mode === 'normal' ? handleSendEnvelope : undefined}
             sending={sending}
+            onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
           />
         );
 
