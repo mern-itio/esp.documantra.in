@@ -1018,7 +1018,111 @@ const getAllRecipients = async (req, res) =>{
     recipients
   })
 }
+const saveTextField = async (req, res) => {
+  try {
+    const { fieldId, textInputValue, envelopeID, documentId } = req.body;
+    console.log("Envelope Id: ", envelopeID);
+    console.log("Document Id: ", documentId);
 
+    // Validate input
+    if (!fieldId || !textInputValue || !envelopeID || !documentId) {
+      return res.status(400).json({ message: 'All parameters are required' });
+    }
+
+    // Find and update the current field
+    const field = await SignatureField.findById(fieldId);
+    if (!field) return res.status(404).json({ message: 'Field not found' });
+
+    field.signature = textInputValue;
+    field.status = 'completed';
+    await field.save();
+
+    // Check for any pending fields
+    const pendingFields = await SignatureField.find({
+      envelopeId: envelopeID,
+      documentId: documentId,
+      status: 'pending'
+    });
+
+    if (pendingFields.length === 0) {
+      console.log('All fields for this document are completed.');
+
+      // Get all fields and check if any signature fields exist
+      const allFields = await SignatureField.find({ envelopeId: envelopeID, documentId: documentId });
+      const hasSignatureFields = allFields.some(f => f.type === 'signature');
+
+      if (!hasSignatureFields) {
+        console.log('No signature fields found, embedding text fields into PDF.');
+
+        // Load the document
+        const document = await Document.findById(documentId);
+        if (!document || !document.filePath) {
+          return res.status(404).json({ message: 'Document not found or missing file path' });
+        }
+
+        const pdfPath = path.resolve(document.filePath);
+        const pdfBytes = fs.readFileSync(pdfPath);
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pages = pdfDoc.getPages();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+        // Draw each non-signature field
+        allFields.forEach(f => {
+          if (f.type !== 'signature' && f.page && f.page > 0 && f.page <= pages.length) {
+            const page = pages[f.page - 1];
+            if (!page) return;
+
+            const { width: pageWidth, height: pageHeight } = page.getSize();
+            const x = f.x || 0;
+            const y = pageHeight - f.y - f.height; // invert Y
+
+            // Draw text inside the field
+            page.drawText(f.signature || '', {
+              x: x + 2, // small padding
+              y: y + 2,
+              size: 12,
+              font,
+              color: rgb(0, 0, 0),
+            });
+
+            console.log(`✅ Drawn "${f.signature}" at (${x}, ${y}) on page ${f.page}`);
+          } else {
+            console.warn(`Skipping field ${f._id}: invalid page or type`);
+          }
+        });
+
+        // Save updated PDF
+        const updatedPdfBytes = await pdfDoc.save();
+        const outputPath = path.resolve(`uploads/filled_${documentId}.pdf`);
+        fs.writeFileSync(outputPath, updatedPdfBytes);
+
+        // Update document record
+        document.signedFilePath = outputPath;
+        document.signedFileName = `filled_${document.fileName}`;
+        await document.save();
+        const envelope = await Envelope.findById(envelopeID);
+        envelope.status = 'completed';
+        await envelope.save();
+        // Send Email to all recipients with updated PDF
+        const signedPdfBuffer = fs.readFileSync(outputPath);
+        const signedPdfFilename = `signed-document-${envelopeID}.pdf`;
+        const certBuffer = null;
+        const certFilename = null;
+
+        // Send updated PDF to all recipients
+
+        await sendToAllRecipients(envelope,certBuffer,certFilename,signedPdfBuffer,signedPdfFilename);
+
+        console.log(`PDF updated successfully: ${outputPath}`);
+      }
+    }
+
+    return res.status(200).json({ message: 'Field saved successfully' });
+  } catch (err) {
+    console.error('saveTextField error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
 
 // Export functions
 module.exports = {
@@ -1046,5 +1150,6 @@ module.exports = {
   getSelfSigner,
   getSigners,
   envelopeStats,
-  getAllEnvelopeStats
+  getAllEnvelopeStats,
+  saveTextField
 };

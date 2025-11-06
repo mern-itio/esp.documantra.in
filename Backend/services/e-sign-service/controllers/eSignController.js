@@ -16,11 +16,28 @@ const Upload = async (req, res) => {
     }
     // Step 1: Create empty envelope (or reuse if client sends envelopeId)
     let envelope;
-    if (req.body.envelopeId) {
+  if (req.body.envelopeId) {
       envelope = await Envelope.findById(req.body.envelopeId);
+      // Update subject/message if provided on existing envelope
+      const { subject, message, envelopetype } = req.body || {};
+      if (typeof subject === 'string' && subject.trim().length > 0) {
+        envelope.subject = subject.trim();
+      }
+      if (typeof envelopetype === 'string' && envelopetype.trim().length > 0) {
+        envelope.envelopetype = envelopetype.trim();
+      }
+      if (typeof message === 'string') {
+        envelope.message = message.trim();
+      }
+      await envelope.save();
     } else {
+      // Create a new envelope with optional subject/message
+      const { subject, message, envelopetype } = req.body || {};
       envelope = new Envelope({
         sender: userId,
+        subject: typeof subject === 'string' ? subject.trim() : undefined,
+        envelopetype: typeof envelopetype === 'string' && envelopetype.trim().length > 0 ? envelopetype.trim() : (typeof subject === 'string' ? subject.trim() : undefined),
+        message: typeof message === 'string' ? message.trim() : undefined,
       });
       await envelope.save();
 
@@ -155,6 +172,8 @@ const saveSignatureFields = async (req, res) => {
   const { signatureFields, envelopeId } = req.body;
   const userId = req.user.data.id;
 
+  console.log('Received signature fields:', JSON.stringify(signatureFields, null, 2));
+
   if (!envelopeId) {
     return res.status(400).json({ message: 'Envelope ID is required' });
   }
@@ -164,6 +183,7 @@ const saveSignatureFields = async (req, res) => {
 
   const processedFields = await Promise.all(
     signatureFields.map(async (sf) => {
+      console.log('Processing field with type:', sf.type, 'for field:', sf);
       if (sf._id) {
         // Update existing field
         const updatedField = await SignatureField.findByIdAndUpdate(
@@ -182,6 +202,7 @@ const saveSignatureFields = async (req, res) => {
             type: sf.type,
             status: sf.status || 'pending',
             fieldId: sf.fieldId || null, // for power form linkage
+            option: sf.option || null
           },
           { new: true }  // Return the updated document
         );
@@ -197,6 +218,7 @@ const saveSignatureFields = async (req, res) => {
         return updatedField;
       } else {
         // Create new field
+        console.log('Creating new field with type:', sf.type);
         const newField = new SignatureField({
           envelopeId: envelopeId,
           documentId: sf.documentId,
@@ -211,8 +233,10 @@ const saveSignatureFields = async (req, res) => {
           type: sf.type,
           status: sf.status || 'pending',
           fieldId: sf.fieldId || null, // for power form linkage
+          option: sf.option || null
         });
 
+        console.log('About to save field:', newField);
         await newField.save();
 
         // Log creation activity
@@ -256,6 +280,10 @@ const updateEnvelope = async (req, res) => {
     }
     // Step 2: Update envelope fields
     envelope.subject = envelopeData.subject || envelope.subject;
+    // set envelopetype from provided value if present, else leave unchanged
+    if (typeof envelopeData.envelopetype === 'string' && envelopeData.envelopetype.trim().length > 0) {
+      envelope.envelopetype = envelopeData.envelopetype.trim();
+    }
     envelope.message = envelopeData.message || envelope.message;
     envelope.priority = envelopeData.priority || envelope.priority;
     envelope.signingOrder = envelopeData.signingOrder || envelope.signingOrder;
