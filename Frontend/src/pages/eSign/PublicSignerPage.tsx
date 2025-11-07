@@ -11,6 +11,7 @@ const EnvelopeDetails: React.FC = () => {
   const [envelope, setEnvelope] = useState<any>(null);
   const [signatureFields, setSignatureFields] = useState<any[]>([]);
   const [activeDocument, setActiveDocument] = useState<any>(null);
+  const [allDocuments, setAllDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,13 +23,23 @@ const EnvelopeDetails: React.FC = () => {
       const response = await eSignApi.get(`/api/e-sign/public/envelope/${id}`);
       if (response.status === 200) {
         setEnvelope(response.data.data);
-
-        // Auto-select the first document for signing
-        if (response.data.data.documents?.length > 0) {
-            const doc = response.data.data.documents[0];
-            setActiveDocument(doc);
-            await fetchSignatureFields(doc.id);
+        const docs = response.data.data.documents || [];
+        setAllDocuments(docs);
+        // Preload all signature fields across documents for continuous view
+        const allFields: any[] = [];
+        for (const d of docs) {
+          try {
+            const res = await eSignApi.get(`/api/e-sign/public/document/signature-fields/${d.id}`);
+            if (res.status === 200 && Array.isArray(res.data.signatureFields)) {
+              allFields.push(...res.data.signatureFields);
+            }
+          } catch (err) {
+            console.warn('Failed to load signature fields for document', d.id);
+          }
         }
+        setSignatureFields(allFields);
+        // keep compatibility: select first document (not required for continuous viewer)
+        if (docs.length > 0) setActiveDocument(docs[0]);
       }
     } catch (error) {
       console.error("Error fetching envelope:", error);
@@ -78,25 +89,16 @@ const EnvelopeDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      {activeDocument ? (
-        <DocumentViewer
-          document={activeDocument}
-          signatureFields={signatureFields}
-          currentUserId={recipientId || ""}
-          envelopeID={id || ""}
-          onClose={() => setActiveDocument(null)}
-          onSignatureSave={handleSignatureSave}
-          cycleId={cycleId || ""}
-        />
-      ) : (
-        <button
-          onClick={() => setActiveDocument(envelope.documents[0])}
-          className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Start Signing
-        </button>
-      )}
+    <div className="min-h-screen flex items-center justify-center">
+      <DocumentViewer
+        documents={allDocuments}
+        signatureFields={signatureFields}
+        currentUserId={recipientId || ""}
+        envelopeID={id || ""}
+        onClose={() => setActiveDocument(null)}
+        onSignatureSave={handleSignatureSave}
+        cycleId={cycleId || ""}
+      />
     </div>
   );
 };

@@ -921,7 +921,7 @@ const EnvelopeCreator: React.FC = () => {
             role: r.role,
             order: r.order,
             status: r.status,
-            authentication: r.authentication
+            // authentication: r.authentication
           }));
           await eSignApi.post('/api/e-sign/add-recipients', {
             envelopeId: loopEnvelopeId,
@@ -1067,8 +1067,14 @@ const EnvelopeCreator: React.FC = () => {
     try {
       const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
       if (response.status === 200) {
-        setDocuments(response.data.data.documents);
-        console.log('Fetched documents:', response.data.data.documents);
+        // Normalize documents to ensure preview works in both upload and edit flows
+        const apiDocs = (response.data.data.documents || []).map((doc: any) => ({
+          ...doc,
+          type: doc.type || 'application/pdf',
+          url: doc.url || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${encodeURIComponent(doc.name || '')}`,
+        }));
+        setDocuments(apiDocs);
+        console.log('Fetched documents:', apiDocs);
         setRecipients(response.data.data.recipients);
         console.log('Fetched recipients:', response.data.data.recipients);
         // Prefill subject/message when returning to earlier steps
@@ -1289,7 +1295,7 @@ const EnvelopeCreator: React.FC = () => {
     try {
       await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
       alert('Envelope sent successfully!');
-      navigate('/e-sign/dashboard');
+      navigate('/e-sign/aggrement');
     } catch (err) {
       console.error(err);
       alert('Failed to send envelope. Try again.');

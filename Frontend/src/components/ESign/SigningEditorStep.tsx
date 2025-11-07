@@ -162,6 +162,7 @@ export default function SigningEditorStep({
   const [zoomLevel, setZoomLevel] = useState(100);
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
+  const [showDocDropdown, setShowDocDropdown] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [leftPanel, setLeftPanel] = useState<'standard' | 'custom' | 'pen'>('standard');
@@ -206,10 +207,16 @@ export default function SigningEditorStep({
           setShowRecipientDropdown(false);
         }
       }
+      if (showDocDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.document-dropdown')) {
+          setShowDocDropdown(false);
+        }
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showRecipientDropdown]);
+  }, [showRecipientDropdown, showDocDropdown]);
   console.log("activeRecipientId3", activeRecipientId);
   // auto-select activeSlot from selected recipient when activeSlot is empty
   useEffect(() => {
@@ -775,6 +782,47 @@ export default function SigningEditorStep({
               </>
             )}
           </div>
+
+          {/* Document chooser */}
+          {documents.length > 1 && (
+            <div className="p-3 flex-shrink-0 relative document-dropdown">
+              <button
+                onClick={() => setShowDocDropdown(!showDocDropdown)}
+                className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-white-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                title="Select document"
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-3 h-3 text-gray-600" />
+                  </div>
+                  <span className="text-xs font-medium leading-tight truncate" style={{ fontSize: "12px", color: "#301934" }}>
+                    {documents.find(d => d.id === activeDocId)?.name || 'Select Document'}
+                  </span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
+              </button>
+              {showDocDropdown && (
+                <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {documents.map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => {
+                        setActiveDocId(d.id);
+                        setCurrentPage(1);
+                        setShowDocDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <div className="w-6 h-6 rounded bg-gray-100 border border-gray-300 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-3.5 h-3.5 text-gray-600" />
+                      </div>
+                      <span className="text-xs font-medium text-gray-800 truncate" style={{ fontSize: '12px' }}>{d.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {/* Middle Icons */}
         <div className="flex items-center justify-center flex-1">

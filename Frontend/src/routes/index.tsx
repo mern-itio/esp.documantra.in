@@ -655,7 +655,6 @@ const authRoutes = [
   },
   // E-Signature Routes
    { path: '/e-sign/dashboard', element: <EsignDashboard /> },
-  { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
   // moved to no-sidebar layout group below
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },

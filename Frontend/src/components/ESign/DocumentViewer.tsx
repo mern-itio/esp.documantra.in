@@ -5,9 +5,13 @@ import SignPad from "./SignPad";
 import { eSignApi } from "../../services/apiHelper";
 import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
+import { Link } from "react-router-dom";
 
 interface Props {
-  document: any;
+  // Backward compatible single document
+  document?: any;
+  // New: multiple documents continuous rendering
+  documents?: any[];
   signatureFields: any[];
   currentUserId: string;
   envelopeID?: string;
@@ -20,6 +24,7 @@ Modal.setAppElement("#root");
 
 const DocumentViewerContent: React.FC<Props> = ({
   document,
+  documents,
   signatureFields,
   currentUserId,
   envelopeID,
@@ -53,8 +58,6 @@ const DocumentViewerContent: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [numPages, setNumPages] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const [currentActionableIndex, setCurrentActionableIndex] =
     useState<number>(0);
   const [hasAutoOpened, setHasAutoOpened] = useState<boolean>(false);
@@ -62,10 +65,10 @@ const DocumentViewerContent: React.FC<Props> = ({
   const normalizePage = (field: any) =>
     Number(
       field?.page?.$numberInt ??
-        field?.page ??
-        field?.pageNumber ??
-        field?.pageNo ??
-        0
+      field?.page ??
+      field?.pageNumber ??
+      field?.pageNo ??
+      0
     );
 
   // build actionable (user-specific) signature fields
@@ -99,43 +102,17 @@ const DocumentViewerContent: React.FC<Props> = ({
   useEffect(() => {
     if (!hasAutoOpened && actionableFields.length > 0) {
       const first = actionableFields[0];
-      setCurrentPage(first.pageNum || 1);
       setActiveField(first);
       setCurrentActionableIndex(0);
       setHasAutoOpened(true);
+      // Center the first actionable field in view
+      setTimeout(() => {
+        scrollToFieldElement(first._id || first.fieldId);
+      }, 80);
     }
   }, [actionableFields, hasAutoOpened]);
 
-  // click-to-sign behavior (open signpad for first actionable field on that page)
-  useEffect(() => {
-    const node = pdfContainerRef.current;
-    if (!node) return;
-
-    const handler = (e: MouseEvent) => {
-      if (activeField) return;
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (target.closest("button, a, input, textarea, .no-sign")) return;
-
-      const actionableOnPage = actionableFields.filter(
-        (f) => f.pageNum === currentPage
-      );
-      if (actionableOnPage.length > 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        setActiveField(actionableOnPage[0]);
-        const globalIndex = actionableFields.findIndex(
-          (af) =>
-            af._id === actionableOnPage[0]._id ||
-            af.fieldId === actionableOnPage[0].fieldId
-        );
-        if (globalIndex >= 0) setCurrentActionableIndex(globalIndex);
-      }
-    };
-
-    node.addEventListener("click", handler);
-    return () => node.removeEventListener("click", handler);
-  }, [actionableFields, currentPage, activeField]);
+  // click-to-sign behavior removed dependency on page concept; keep disabled to avoid unintended opens on scroll viewport clicks
 
   const handleFieldClick = (field: any) => {
     const af: ActiveField = {
@@ -176,24 +153,30 @@ const DocumentViewerContent: React.FC<Props> = ({
     }
   };
 
-  // scroll helper: waits for element to appear inside pdfContainerRef then centers it
+  // scroll helper: waits for element to appear then smoothly scrolls the container so it is centered
   const scrollToFieldElement = (fieldId: string | number) => {
     const container = pdfContainerRef.current;
     if (!container) return;
     const selector = `[data-field-id="${fieldId}"]`;
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 40;
     const attempt = () => {
       attempts++;
       const el = container.querySelector(selector) as HTMLElement | null;
       if (el) {
-        const elTop = el.offsetTop;
-        const elHeight = el.offsetHeight || 0;
-        const containerHeight = container.clientHeight;
-        const target = Math.max(0, elTop - containerHeight / 2 + elHeight / 2);
-        container.scrollTo({ top: target, behavior: "smooth" });
+        const elRect = el.getBoundingClientRect();
+        const contRect = container.getBoundingClientRect();
+        // distance from container's top to element's top in the page coordinate space
+        const deltaTop = elRect.top - contRect.top;
+        const elHeight = elRect.height || 0;
+        const target = Math.max(
+          0,
+          container.scrollTop + deltaTop - (container.clientHeight / 2) + (elHeight / 2)
+        );
+        container.scrollTo({ top: target, behavior: 'smooth' });
       } else if (attempts < maxAttempts) {
-        setTimeout(attempt, 50);
+        // element may not be rendered yet; retry shortly
+        setTimeout(attempt, 60);
       }
     };
     attempt();
@@ -205,15 +188,25 @@ const DocumentViewerContent: React.FC<Props> = ({
     const field = actionableFields[index];
     if (!field) return;
     setCurrentActionableIndex(index);
-    setCurrentPage(field.pageNum || 1);
-
     // wait for page render then scroll to exact field element (robust polling)
     setTimeout(() => {
       scrollToFieldElement(field._id || field.fieldId);
     }, 80);
   };
-  const goToPrev = () => goToActionableIndex(currentActionableIndex - 1);
-  const goToNext = () => goToActionableIndex(currentActionableIndex + 1);
+  // (Prev navigation removed because it wasn't used; keeping only Next in UI)
+  const goToNext = () => {
+    if (actionableFields.length === 0) return;
+    const next = (currentActionableIndex + 1) % actionableFields.length;
+    goToActionableIndex(next);
+  };
+
+  // Ensure current index stays valid when actionableFields change (e.g., after signing)
+  useEffect(() => {
+    if (actionableFields.length === 0) return;
+    if (currentActionableIndex >= actionableFields.length) {
+      goToActionableIndex(0);
+    }
+  }, [actionableFields.length]);
 
   // 🎉 Party popper immediately after a signature is saved
   const triggerConfetti = () => {
@@ -230,201 +223,230 @@ const DocumentViewerContent: React.FC<Props> = ({
     });
   };
 
-  return (
-    <div className="relative flex flex-col items-center">
-      {/* PDF */}
-      <div
-        ref={pdfContainerRef}
-        className="relative border border-gray-300 rounded-lg shadow-sm bg-white overflow-auto max-w-4xl max-h-[80vh] p-2"
-      >
+  // Render a single document with all pages stacked vertically and per-page overlays
+  const SingleDoc: React.FC<{
+    doc: any;
+    signatureFields: any[];
+    currentUserId: string;
+    selfValue: string | null;
+    selfSigner: any[];
+    localSignedMap: Record<string, string>;
+    onFieldClick: (field: any) => void;
+    normalizePage: (field: any) => number;
+  }> = ({
+    doc,
+    signatureFields,
+    currentUserId,
+    selfValue,
+    selfSigner,
+    localSignedMap,
+    onFieldClick,
+    normalizePage,
+  }) => {
+      const [numPages, setNumPages] = useState<number>(0);
+
+      const isFieldForDoc = (field: any) => {
+        const fieldDoc = (field?.documentId || field?.docId || field?.document?.id);
+        const docId = doc?.id || doc?._id || doc?.documentId;
+        return fieldDoc ? String(fieldDoc) === String(docId) : true; // fallback if backend omitted doc id
+      };
+
+      return (
         <Document
-          file={
-            document.filePath ||
-            `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${document.name}`
-          }
-          onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+          file={doc.filePath || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${doc.name}`}
+          onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         >
-          <Page pageNumber={currentPage} width={800} height={1132} />
+          {Array.from({ length: numPages }, (_, i) => {
+            const pageNum = i + 1;
+            return (
+              <div key={`p-${pageNum}`} className="relative mb-8 flex justify-center py-6 bg-gray-100">
+                <div className="relative">
+                  <Page pageNumber={pageNum} width={800} />
+
+                  {/* per-page overlay */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] z-40">
+                    {signatureFields
+                      .filter(isFieldForDoc)
+                      .filter((f) => normalizePage(f) === pageNum)
+                      .map((field) => {
+                        const isSignatureType = field.type === "signature";
+
+                        // common derived values
+                        let isCurrentUser = false;
+                        let isSigned = false;
+                        let signedImage: string | null = null;
+
+                        if (selfValue === "1" && selfSigner) {
+                          const matched = selfSigner.find(
+                            (s: any) => s && s.signerSlotId === field.slotId
+                          );
+                          isCurrentUser = matched
+                            ? matched._id?.toString?.() === currentUserId?.toString?.()
+                            : false;
+                          isSigned = matched ? !!matched.signature : false;
+                          signedImage = matched?.signature ?? null;
+                        } else {
+                          isCurrentUser = field.recipientId === currentUserId;
+                          isSigned =
+                            !!field.signature || !!localSignedMap[field._id || field.fieldId];
+                          signedImage =
+                            localSignedMap[field._id || field.fieldId] || field.signature || null;
+                        }
+
+                        const keyId = field._id || field.fieldId;
+
+                        if (isSignatureType) {
+                          return (
+                            <div
+                              key={field._id?.$oid || field._id}
+                              data-field-id={keyId}
+                              style={{
+                                position: "absolute",
+                                top: field.y?.$numberDouble ?? field.y,
+                                left: field.x?.$numberDouble ?? field.x,
+                                width: field.width?.$numberInt ?? field.width,
+                                height: field.height?.$numberInt ?? field.height,
+                                zIndex: 10,
+                                pointerEvents: isCurrentUser && !isSigned ? "auto" : "none",
+                              }}
+                              className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${isSigned
+                                ? "border-green-500"
+                                : isCurrentUser
+                                  ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
+                                  : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
+                                }`}
+                              onClick={() =>
+                                isCurrentUser && !isSigned && onFieldClick(field)
+                              }
+                            >
+                              {isSigned ? (
+                                <img
+                                  src={signedImage as string}
+                                  alt="Signed"
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : isCurrentUser ? (
+                                "Sign Here"
+                              ) : (
+                                "Signature"
+                              )}
+                            </div>
+                          );
+                        }
+
+                        // Non-signature field
+                        const fieldLable = field.label;
+                        const fieldId = field._id;
+                        let displayValue = field.label ?? field.value ?? "";
+
+                        if (selfValue === "1") {
+                          const matchedSigner = selfSigner?.find(
+                            (s: any) => s && s.signerSlotId === field.slotId
+                          );
+                          if (matchedSigner && typeof matchedSigner.data === "object") {
+                            if (matchedSigner.role === "creator") {
+                              displayValue = matchedSigner.data?.name ?? displayValue;
+                            } else {
+                              if (fieldLable && matchedSigner.data[fieldLable] !== undefined) {
+                                displayValue = matchedSigner.data[fieldLable];
+                              }
+                            }
+                          }
+                        }
+
+                        return (
+                          <div
+                            key={fieldId}
+                            data-field-id={keyId}
+                            style={{
+                              position: "absolute",
+                              top: field.y?.$numberDouble ?? field.y,
+                              left: field.x?.$numberDouble ?? field.x,
+                              width: field.width?.$numberInt ?? field.width,
+                              height: field.height?.$numberInt ?? field.height,
+                              zIndex: 10,
+                              background: "transparent",
+                              border: "none",
+                              padding: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            <span className="text-sm text-gray-700">{displayValue}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+
+              </div>
+            );
+          })}
         </Document>
+      );
+    };
 
-        {/* Fields overlay */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          {/*
-            We render BOTH:
-              - signature fields (interactive for signer)
-              - non-signature fields (labels / values placed on document)
-            The non-signature logic was restored here — if selfValue === "1",
-            we pull values from selfSigner.data for that slot; otherwise we show field.value/label.
-          */}
-          {signatureFields
-            .filter((f) => normalizePage(f) === currentPage)
-            .map((field) => {
-              const isSignatureType = field.type === "signature";
-
-              // common derived values
-              let isCurrentUser = false;
-              let isSigned = false;
-              let signedImage: string | null = null;
-
-              if (selfValue === "1" && selfSigner) {
-                const matched = selfSigner.find(
-                  (s: any) => s && s.signerSlotId === field.slotId
-                );
-                isCurrentUser = matched
-                  ? matched._id?.toString?.() === currentUserId?.toString?.()
-                  : false;
-                isSigned = matched ? !!matched.signature : false;
-                signedImage = matched?.signature ?? null;
-              } else {
-                isCurrentUser = field.recipientId === currentUserId;
-                isSigned =
-                  !!field.signature || !!localSignedMap[field._id || field.fieldId];
-                signedImage =
-                  localSignedMap[field._id || field.fieldId] || field.signature || null;
-              }
-
-              const keyId = field._id || field.fieldId;
-
-              if (isSignatureType) {
-                // signature box rendering
-                return (
-                  <div
-                    key={field._id?.$oid || field._id}
-                    data-field-id={keyId}
-                    style={{
-                      position: "absolute",
-                      top: field.y?.$numberDouble ?? field.y,
-                      left: field.x?.$numberDouble ?? field.x,
-                      width: field.width?.$numberInt ?? field.width,
-                      height: field.height?.$numberInt ?? field.height,
-                      zIndex: 10,
-                      pointerEvents: isCurrentUser && !isSigned ? "auto" : "none",
-                    }}
-                    className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${
-                      isSigned
-                        ? "border-green-500"
-                        : isCurrentUser
-                        ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
-                        : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
-                    }`}
-                    onClick={() =>
-                      isCurrentUser && !isSigned && handleFieldClick(field)
-                    }
-                  >
-                    {isSigned ? (
-                      <img
-                        src={signedImage as string}
-                        alt="Signed"
-                        className="w-full h-full object-contain"
-                      />
-                    ) : isCurrentUser ? (
-                      "Sign Here"
-                    ) : (
-                      "Signature"
-                    )}
-                  </div>
-                );
-              } else {
-                // Non-signature field: render label/value at its position
-                const fieldLable = field.label
-                const fieldId = field._id
-                // default display value
-                let displayValue = field.label ?? field.value ?? "";
-
-                // If self-signing mode, try to populate from matched signer's data
-                if (selfValue === "1") {
-                  const matchedSigner = selfSigner?.find(
-                    (s: any) => s && s.signerSlotId === field.slotId
-                  );
-                  if (matchedSigner && typeof matchedSigner.data === "object") {
-                    // If this slot is the same as matchedSigner, pick matching data key
-                    // If role is "creator", show signer name
-                    if (matchedSigner.role === "creator") {
-                      displayValue = matchedSigner.data?.name ?? displayValue;
-                    } else {
-                      // If the fieldId exists in matchedSigner.data use it
-                      if (fieldLable && matchedSigner.data[fieldLable] !== undefined) {
-                        displayValue = matchedSigner.data[fieldLable];
-                      }
-                    }
-                  }
-                }
-
-                return (
-                  <div
-                    key={fieldId}
-                    data-field-id={keyId}
-                    style={{
-                      position: "absolute",
-                      top: field.y?.$numberDouble ?? field.y,
-                      left: field.x?.$numberDouble ?? field.x,
-                      width: field.width?.$numberInt ?? field.width,
-                      height: field.height?.$numberInt ?? field.height,
-                      zIndex: 10,
-                      background: "transparent",
-                      border: "none",
-                      padding: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    <span className="text-sm text-gray-700">{displayValue}</span>
-                  </div>
-                );
-              }
-            })}
-        </div>
+  return (
+    <div className="relative flex flex-col items-stretch min-h-screen bg-gray-50">
+      {/* Header (sticky full-width) */}
+      <div className="fixed top-0 left-0 right-0 h-12 bg-[#1b0c3e] text-white flex items-center justify-between px-4 z-50">
+        <div className="text-sm font-medium">Review and complete</div>
       </div>
 
-      {/* Page Nav */}
-      {numPages > 1 && (
-        <div className="flex justify-between mt-2 w-full max-w-4xl px-2">
-          <button
-            disabled={currentPage <= 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-600">
-            Page {currentPage} / {numPages}
-          </span>
-          <button
-            disabled={currentPage >= numPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-            className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            Next
-          </button>
-        </div>
-      )}
+      {/* PDF(s) container */}
+      <div
+        ref={pdfContainerRef}
+        className="relative border border-gray-300 rounded-sm shadow-sm bg-white overflow-auto max-w-4xl max-h-[100vh] self-center mt-8 mb-12"
+      >
+        {(() => {
+          const docs = (documents && documents.length > 0)
+            ? documents
+            : (document ? [document] : []);
 
-      {/* Floating arrows (do not open signpad) */}
+          return docs.map((doc, dIdx) => (
+            <div key={doc.id || doc._id || dIdx} className="mb-6">
+              <SingleDoc
+                doc={doc}
+                signatureFields={signatureFields}
+                currentUserId={currentUserId}
+                selfValue={selfValue}
+                selfSigner={selfSigner}
+                localSignedMap={localSignedMap}
+                onFieldClick={handleFieldClick}
+                normalizePage={normalizePage}
+              />
+
+              {/* separator between documents with next document name */}
+              {dIdx < docs.length - 1 && (
+                <div className="my-6 relative">
+                  <div className="h-px bg-gray-200" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="px-2 py-0.5 text-xs text-gray-600 bg-white border border-gray-200 rounded">
+                      {docs[dIdx + 1]?.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ));
+        })()}
+      </div>
+
+      {/* Sticky left-side Next button */}
       {actionableFields.length > 0 && (
-        <div className="fixed right-6 bottom-6 z-50 flex items-center gap-3 bg-white/90 border p-2 rounded shadow">
-          <button
-            onClick={goToPrev}
-            disabled={currentActionableIndex <= 0}
-            className="px-2 py-1 border rounded disabled:opacity-40"
-            aria-label="Previous signature field"
-          >
-            ←
-          </button>
-          <div className="text-sm">
-            Field {Math.min(currentActionableIndex + 1, actionableFields.length)} /{" "}
-            {actionableFields.length}
-          </div>
-          <button
-            onClick={goToNext}
-            disabled={currentActionableIndex >= actionableFields.length - 1}
-            className="px-2 py-1 border rounded disabled:opacity-40"
-            aria-label="Next signature field"
-          >
-            →
-          </button>
-        </div>
+        <button
+          onClick={goToNext}
+          disabled={actionableFields.length === 0}
+          className="fixed left-68 top-1/2 -translate-y-1/2 z-50 px-5 py-2 rounded font-medium shadow border border-yellow-500 disabled:opacity-50"
+          style={{ backgroundColor: '#ffc107', color: '#1a1a1a', marginLeft: 0, borderRadius: 8 }}
+          aria-label="Next field"
+        >
+          Next
+        </button>
+
       )}
 
       {/* SignPad Modal */}
@@ -436,7 +458,7 @@ const DocumentViewerContent: React.FC<Props> = ({
           }}
           activeField={activeField}
           currentUserId={currentUserId}
-          documentId={document.id}
+          documentId={(activeField as any)?.documentId || (activeField as any)?.docId || (document && (document as any).id) || ""}
           envelopeID={envelopeID}
           defaultSign={null}
           selfValue={selfValue || ""}
@@ -456,7 +478,7 @@ const DocumentViewerContent: React.FC<Props> = ({
               });
             } else {
               // non-self: optimistic local update so UI shows signed image immediately
-              const key = activeField?._id ;
+              const key = activeField?._id;
               if (key) {
                 setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
               }
@@ -472,6 +494,14 @@ const DocumentViewerContent: React.FC<Props> = ({
           }}
         />
       )}
+      {/* Footer (sticky full-width) */}
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-white text-xs text-gray-600 flex items-center justify-between px-4 py-3 z-50">
+        <div>Powered by Draft&Sign</div>
+        <div className="flex items-center gap-4">
+          <Link to="/terms-of-service"><span>Terms of Use</span></Link>
+          <Link to="/privacy-policy"><span>Privacy</span></Link>
+        </div>
+      </div>
     </div>
   );
 };
