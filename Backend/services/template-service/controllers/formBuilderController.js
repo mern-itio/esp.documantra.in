@@ -16,12 +16,25 @@ const createForm = async (req, res) => {
         message:"Title field is required."
       });
     }
-    const form = new Form({title, description});
+    
+    // Extract owner information from authenticated user
+    const ownerId = req.user?.data?.id || req.user?.id || req.user?._id || null;
+    const owner = req.user?.data?.fullname || req.user?.fullname || null;
+    
+    const form = new Form({
+      title, 
+      description,
+      ownerId,
+      owner
+    });
     await form.save();
     return res.status(200).json(form);
 
   }catch (err){
     console.log(err);
+    return res.status(500).json({
+      message:"Something went wrong, Please try again later."
+    });
   }
 }
 
@@ -194,6 +207,47 @@ const getFormSubmissions = async (req, res) => {
   }
 };
 
+// Delete a form and all associated data
+const deleteForm = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Form ID is required" });
+    }
+
+    // Check if form exists
+    const form = await Form.findById(id);
+    if (!form) {
+      return res.status(404).json({ error: "Form not found" });
+    }
+
+    // Optional: Check if user is the owner (if you want to restrict deletion)
+    // const ownerId = req.user?.data?.id || req.user?.id || req.user?._id;
+    // if (form.ownerId && form.ownerId !== ownerId) {
+    //   return res.status(403).json({ error: "You don't have permission to delete this form" });
+    // }
+
+    // Delete all associated data
+    await Promise.all([
+      Form.findByIdAndDelete(id), // Delete the form
+      FormFields.deleteMany({ formId: id }), // Delete all form fields
+      FormSubmission.deleteMany({ formId: id }) // Delete all form submissions
+    ]);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Form and all associated data deleted successfully"
+    });
+  } catch (err) {
+    console.error("Error deleting form:", err);
+    return res.status(500).json({
+      error: "Failed to delete form",
+      details: err.message
+    });
+  }
+};
+
 module.exports = {
     Test,
     createForm,
@@ -201,5 +255,6 @@ module.exports = {
     addField,
     getFormDetail,
     insertFormData,
-    getFormSubmissions
+    getFormSubmissions,
+    deleteForm
 }

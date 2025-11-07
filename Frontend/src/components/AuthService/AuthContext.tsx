@@ -9,6 +9,7 @@ interface User {
   fullname: string;
   type: string;
   plan: string;
+  phone?: string;
   isFirstLogin?: boolean;
 }
 
@@ -48,25 +49,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        
-        // If fullname is just the email prefix, try to decode it from JWT
-        if (parsedUser.fullname === parsedUser.email.split('@')[0]) {
-          try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const jwtFullname = payload.data?.fullname || payload.fullname;
-            if (jwtFullname && jwtFullname !== parsedUser.email.split('@')[0]) {
-              // Update localStorage with correct fullname
-              const updatedUser = { ...parsedUser, fullname: jwtFullname };
-              localStorage.setItem('userData', JSON.stringify(updatedUser));
-              setUser(updatedUser);
-            } else {
-              setUser(parsedUser);
-            }
-          } catch (jwtError) {
-            console.warn('Could not decode JWT token on load:', jwtError);
+
+        // Try to enrich missing fields from JWT payload (fullname/phone)
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const jwtFullname = payload?.data?.fullname || payload?.fullname;
+          const jwtPhone = payload?.data?.phone || payload?.phone;
+
+          const needsFullname = !parsedUser.fullname || parsedUser.fullname === parsedUser.email?.split('@')[0];
+          const needsPhone = !parsedUser.phone && !!jwtPhone;
+
+          if ((needsFullname && jwtFullname) || needsPhone) {
+            const updatedUser = {
+              ...parsedUser,
+              fullname: needsFullname && jwtFullname ? jwtFullname : parsedUser.fullname,
+              phone: needsPhone ? jwtPhone : parsedUser.phone,
+            };
+            localStorage.setItem('userData', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+          } else {
             setUser(parsedUser);
           }
-        } else {
+        } catch (jwtError) {
+          // If JWT cannot be decoded, just use stored user
+          console.warn('Could not decode JWT token on load:', jwtError);
           setUser(parsedUser);
         }
         
@@ -89,6 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Decode JWT token to get fullname
       let fullname = email.split('@')[0]; // fallback
+      let phone: string | undefined = undefined;
       
       try {
         const token = data.token;
@@ -96,6 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Decode JWT token (without verification for client-side)
           const payload = JSON.parse(atob(token.split('.')[1]));
           fullname = payload.data?.fullname || payload.fullname || fullname;
+          phone = payload.data?.phone || payload.phone || phone;
         }
       } catch (jwtError) {
         console.warn('Could not decode JWT token:', jwtError);
@@ -110,6 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         fullname: fullname,
         type: data.type,
         plan: data.plan || 'free',
+        phone: data.phone || phone,
         isFirstLogin: data.isFirstLogin
       }));
 
@@ -119,6 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         fullname: fullname,
         type: data.type,
         plan: data.plan || 'free',
+        phone: data.phone || phone,
         isFirstLogin: data.isFirstLogin
       });
       setIsAuthenticated(true);

@@ -54,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       if (pathname.startsWith('/e-sign/aggrement/completed')) return 'esignCompleted';
       if (pathname.startsWith('/e-sign/aggrement/deleted')) return 'esignDeleted';
       if (pathname.startsWith('/e-sign/create')) return 'create';
+      if (pathname.startsWith('/e-sign/form-list')) return 'form-list';
       // Any other e-sign route - keep e-sign expanded but don't force dashboard
       return 'e-sign';
     }
@@ -128,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'esignDeleted', label: 'Deleted', path: '/e-sign/aggrement/deleted', icon: Trash2Icon },
         // { id: 'sent', label: 'Add Envelope', path: '/e-sign/sent', icon: MailPlus },
         { id: 'powerforms', label: 'PowerForms', path: '/e-sign/powerforms', icon: FormInput },
-        { id: 'bulk-send', label: 'Bulk Send', path: '/e-sign/bulk-send', icon: Send },
+        { id: 'form-list', label: 'Templates', path: '/e-sign/form-list', icon: Send },
         // { id: 'aggrement', label: 'Aggrement', path: '/e-sign/aggrement', icon: FileSignature },
         // { id: 'manage_receipients', label: 'Manage Receipients', path: '/e-sign/manage_receipients', icon: MailIcon },
         // { id: 'envelope_types', label: 'Envelope Types', path: '/e-sign/envelope_types', icon: MailIcon },

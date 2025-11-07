@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   FileText, X, Undo2, Redo2, Save, Printer, RefreshCw,
   HelpCircle, Search, ChevronDown, Trash2, FileSignature, PenLine,
@@ -170,6 +170,123 @@ export default function SigningEditorStep({
   const [pageCanvases, setPageCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
   const [thumbnailCanvases, setThumbnailCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Guided tour state
+  const [isEditorTourOpen, setIsEditorTourOpen] = useState<boolean>(false);
+  const [editorTourIndex, setEditorTourIndex] = useState<number>(0);
+  const editorTourSteps = useMemo(() => [
+    { id: 'recipient', selector: '[data-tour="editor-recipient"]', title: 'Switch Recipient', content: 'Click here to switch between different recipients. Fields you add will be assigned to the selected recipient.' },
+    { id: 'document', selector: '[data-tour="editor-document"]', title: 'Switch Document', content: 'If you have multiple documents, use this dropdown to switch between them and place fields on different documents.' },
+    { id: 'standardFields', selector: '[data-tour="editor-standard-fields"]', title: 'Standard Fields', content: 'Drag and drop these standard fields onto your document. Fields include Signature, Initial, Date, Name, Email, and more.' },
+    { id: 'previewToggle', selector: '[data-tour="editor-preview-toggle"]', title: 'Preview Panel', content: 'Toggle the preview panel on the right to show or hide page thumbnails. Use this to quickly navigate between pages.' },
+    { id: 'previewClick', selector: '[data-tour="editor-preview-click"]', title: 'Navigate Pages', content: 'Click on any page thumbnail in the preview panel to quickly jump to that page in the main document view.' },
+  ], []);
+  const [editorTargetRect, setEditorTargetRect] = useState<DOMRect | null>(null);
+  
+  // Separate effect to handle UI state updates (preview/panel visibility)
+  // Only runs when step changes, not when state changes (prevents infinite loops)
+  useEffect(() => {
+    if (!isEditorTourOpen) return;
+    const step = editorTourSteps[editorTourIndex];
+    if (!step) return;
+    
+    // Ensure preview is visible for preview-related steps
+    if ((step.id === 'previewToggle' || step.id === 'previewClick') && !showRightSidebar) {
+      setShowRightSidebar(true);
+    }
+    
+    // Ensure standard panel is active for standard fields step
+    if (step.id === 'standardFields' && leftPanel !== 'standard') {
+      setLeftPanel('standard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditorTourOpen, editorTourIndex]);
+  
+  // Use useLayoutEffect to run synchronously before browser paint, so position updates with text
+  useLayoutEffect(() => {
+    if (!isEditorTourOpen) return;
+    const step = editorTourSteps[editorTourIndex];
+    if (!step) return;
+    
+    // Find element immediately for instant position update (synchronous)
+    const el = document.querySelector(step.selector || '') as HTMLElement | null;
+    if (el) {
+      // Get position immediately for instant update (no delays) - runs synchronously
+      const rect = el.getBoundingClientRect();
+      setEditorTargetRect(rect);
+      // Scroll element into view (non-blocking, happens after position is set)
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        // Refine position after scroll completes (non-blocking, doesn't delay initial update)
+        setTimeout(() => {
+          const updatedRect = el.getBoundingClientRect();
+          setEditorTargetRect(updatedRect);
+        }, 300);
+      });
+    } else {
+      setEditorTargetRect(null);
+      // For preview click, retry after a short delay if element not found
+      if (step.id === 'previewClick') {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const retryEl = document.querySelector(step.selector || '') as HTMLElement | null;
+            if (retryEl) {
+              const rect = retryEl.getBoundingClientRect();
+              setEditorTargetRect(rect);
+              retryEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            }
+          }, 100);
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditorTourOpen, editorTourIndex]);
+  
+  const closeEditorTour = () => {
+    setIsEditorTourOpen(false);
+    setEditorTourIndex(0);
+    setEditorTargetRect(null);
+  };
+  const nextEditorStep = () => {
+    let nextIndex = editorTourIndex + 1;
+    // Skip document step if only one document
+    if (nextIndex < editorTourSteps.length && editorTourSteps[nextIndex]?.id === 'document' && documents.length <= 1) {
+      nextIndex++;
+    }
+    // Skip preview click step if preview is hidden
+    if (nextIndex < editorTourSteps.length && editorTourSteps[nextIndex]?.id === 'previewClick' && !showRightSidebar) {
+      nextIndex++;
+    }
+    setEditorTourIndex(Math.min(nextIndex, editorTourSteps.length - 1));
+  };
+  const prevEditorStep = () => {
+    let prevIndex = editorTourIndex - 1;
+    // Skip document step if only one document
+    if (prevIndex >= 0 && editorTourSteps[prevIndex]?.id === 'document' && documents.length <= 1) {
+      prevIndex--;
+    }
+    // Skip preview click step if preview is hidden
+    if (prevIndex >= 0 && editorTourSteps[prevIndex]?.id === 'previewClick' && !showRightSidebar) {
+      prevIndex--;
+    }
+    setEditorTourIndex(Math.max(prevIndex, 0));
+  };
+  
+  // Auto-start tour on mount
+  const editorTourStartedRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (!editorTourStartedRef.current && documents.length > 0) {
+      editorTourStartedRef.current = true;
+      setIsEditorTourOpen(true);
+      // Skip document step if only one document
+      let startIndex = 0;
+      const firstStep = editorTourSteps[0];
+      if (firstStep && (firstStep.id as string) === 'document' && documents.length <= 1) {
+        startIndex = 1;
+      }
+      setEditorTourIndex(startIndex);
+    }
+  }, [documents.length, editorTourSteps]);
   console.log("activeRecipientId1", activeRecipientId);
   console.log("recipients", recipients[0]?.id);
   console.log("mode", mode);
@@ -696,6 +813,7 @@ export default function SigningEditorStep({
                 <button
                   onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
                   className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-white-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                  data-tour="editor-recipient"
                 >
                   {/* LEFT BLOCK — icon + name */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -790,6 +908,7 @@ export default function SigningEditorStep({
                 onClick={() => setShowDocDropdown(!showDocDropdown)}
                 className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-white-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
                 title="Select document"
+                data-tour="editor-document"
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300 flex items-center justify-center flex-shrink-0">
@@ -874,6 +993,7 @@ export default function SigningEditorStep({
                 onClick={() => setShowRightSidebar(!showRightSidebar)}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
                 title={showRightSidebar ? "Hide preview" : "Show preview"}
+                data-tour="editor-preview-toggle"
               >
                 <SaveAll className="w-4 h-4 text-black-500" />
               </button>
@@ -894,7 +1014,7 @@ export default function SigningEditorStep({
             >
               <RectangleHorizontal className="w-3.5 h-3.5 text-gray-700" />
             </button>
-            <button
+            {/* <button
               onClick={() => setLeftPanel(prev => (prev === 'custom' ? 'standard' : 'custom'))}
               className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'custom' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
             >
@@ -905,7 +1025,7 @@ export default function SigningEditorStep({
               className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'pen' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
             >
               <Pen className="w-3.5 h-3.5 text-gray-500" />
-            </button>
+            </button> */}
           </div>
 
           {/* Search and Fields */}
@@ -937,7 +1057,7 @@ export default function SigningEditorStep({
 
                 {/* Standard Fields List */}
                 <div className="flex-1 overflow-y-auto min-h-0">
-                  <div className="p-3">
+                  <div className="p-3" data-tour="editor-standard-fields">
                     <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide" style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>
                       STANDARD FIELDS
                     </h3>
@@ -1381,6 +1501,7 @@ export default function SigningEditorStep({
                           }
                           setCurrentPage(pageNum);
                         }}
+                        data-tour={pageNum === 1 ? "editor-preview-click" : undefined}
                       >
                         {thumbnailCanvas ? (
                           <img
@@ -1675,6 +1796,84 @@ export default function SigningEditorStep({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Guided Tour Overlay */}
+      {isEditorTourOpen && (
+        editorTargetRect && (() => {
+          // Calculate tooltip position relative to target element
+          const tooltipWidth = 384; // max-w-sm = 384px
+          const tooltipHeight = 200; // approximate height
+          const spacing = 12; // space between tooltip and target
+          const padding = 16; // padding from viewport edges
+          
+          // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+          const targetCenterX = editorTargetRect.left + (editorTargetRect.width / 2);
+          let tooltipLeft = targetCenterX - (tooltipWidth / 2);
+          // Keep tooltip within viewport bounds
+          if (tooltipLeft < padding) {
+            tooltipLeft = padding;
+          } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
+            tooltipLeft = window.innerWidth - tooltipWidth - padding;
+          }
+          
+          // Calculate vertical position - prefer below, but show above if not enough space
+          const spaceBelow = window.innerHeight - editorTargetRect.bottom - spacing;
+          const spaceAbove = editorTargetRect.top - spacing;
+          const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+          
+          const tooltipTop = showAbove 
+            ? editorTargetRect.top - tooltipHeight - spacing
+            : editorTargetRect.bottom + spacing;
+          
+          // Calculate arrow position (centered on target element)
+          const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
+          const arrowPadding = 20;
+          const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
+          
+          return (
+            <>
+              {/* Tooltip - styled like the tooltip UI */}
+              <div
+                className="fixed z-50"
+                style={{
+                  left: `${tooltipLeft}px`,
+                  top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`
+                }}
+              >
+                {/* Tooltip box */}
+                <div className="bg-[#26263d] text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                  <div className="px-4 py-3 font-semibold">
+                    {editorTourSteps[editorTourIndex]?.title}
+                  </div>
+                  <div className="px-4 py-2 text-sm leading-relaxed">
+                    {editorTourSteps[editorTourIndex]?.content}
+                  </div>
+                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
+                    <div className="text-xs text-gray-400">Step {editorTourIndex + 1} of {editorTourSteps.length}</div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={closeEditorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
+                      <button onClick={prevEditorStep} disabled={editorTourIndex===0} className={`px-3 py-1.5 border border-gray-500 rounded-sm text-sm ${editorTourIndex===0 ? 'opacity-40 cursor-not-allowed text-gray-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                      {editorTourIndex < editorTourSteps.length - 1 ? (
+                        <button onClick={nextEditorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                      ) : (
+                        <button onClick={closeEditorTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Arrow pointing to target - positioned absolutely within tooltip */}
+                  <div 
+                    className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                    style={{ 
+                      left: `${constrainedArrowLeft}px`,
+                      transform: 'translateX(-50%)'
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </>
+          );
+        })()
       )}
 
     </div>
