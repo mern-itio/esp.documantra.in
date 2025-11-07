@@ -40,7 +40,7 @@ export const FormView: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-semibold mb-4">{formTitle}</h1>
-      <div className="bg-white p-6 rounded-2xl shadow">
+      <div>
         <FormPreview fields={formFields} />
       </div>
     </div>

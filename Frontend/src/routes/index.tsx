@@ -136,6 +136,7 @@ import { FormsList } from '../pages/Template/FormList';
 import { FormView } from '../pages/Template/FormView';
 import { FormEmbed } from '../pages/Template/FormEmbed';
 import { FormSubmissions } from '../pages/Template/FormSubmissions';
+import UserProfile from '../pages/Account/UserProfile';
 // Template Pages Ended
 
 //PDF Tools Started
@@ -673,6 +674,7 @@ const authRoutes = [
   { path: '/e-sign/envelope_types', element: <EnvelopeTypes /> },
   { path: '/e-sign/manage_receipients', element: <ManageRecipients /> },
   { path: '/e-sign/powerforms', element:<PowerFormCreate/>},
+  { path: '/e-sign/form-list', element: <FormsList/>},
 
   // Template Routes
   { path: '/template/dashboard', element: <TemplateDashboard /> },
@@ -680,15 +682,16 @@ const authRoutes = [
   { path: '/template/advance-designer', element: <AdvancedTemplateDesigner /> },
   { path: '/template/ai-studio', element: <AITemplateStudio /> },
   { path: '/template/library', element: <TemplateLibrary /> },
-  { path: '/template/form-builder/:id', element: <FormBuilder /> },
   { path: '/template/marketplace', element: <TemplateMarketplace /> },
   { path: '/template/anylytics', element: <TemplateAnylytics /> },
   { path: '/template/api-management', element: <APIManagement /> },
   { path: '/template/automation', element: <WorkflowAutomation /> },
   { path: '/template/admin-dashboard', element: <TemplateAdminDashboard /> },
-  { path: '/template/form-list', element: <FormsList/>},
   { path: '/template/form-embed/:id', element: <FormEmbed/>},
   { path: '/template/form-submissions/:id', element: <FormSubmissions/>},
+
+  // Account
+  { path: '/account/profile', element: <UserProfile /> },
 
   // API-service routes
   { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
@@ -811,6 +814,8 @@ const router = createBrowserRouter([
           { path: '/e-sign/envelope/:id', element: <EnvelopeDetailPage /> },
           { path: '/e-sign/create', element: <EnvelopeCreator /> },
           { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
+          { path: '/e-sign/form-builder/:id', element: <FormBuilder /> },
+
 
         ],
       },

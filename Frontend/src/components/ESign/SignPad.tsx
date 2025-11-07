@@ -186,7 +186,7 @@ export default function SignPad({
       const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
 
       if (response?.status === 200) {
-        alert("Signature submitted successfully!");
+        // alert("Signature submitted successfully!");
         onSaveSign?.(activeField?._id || "", isSignImg);
         setIsSignPad(false);
       } else {

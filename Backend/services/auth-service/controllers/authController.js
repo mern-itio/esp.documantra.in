@@ -59,6 +59,7 @@ const login = async (req, res) => {
     user_id: user._id,
     token: generateToken,
     type: 'user',
+    phone: user.phone,
     plan: user.plan || 'free',
     isFirstLogin: isFirstLogin
   });
@@ -96,6 +97,7 @@ async function generateAccessTokenUser(user, expireIn) {
     id: user._id,
     email: user.email,
     fullname: user.fullname,
+    phone: user.phone,
     type: 'user'
   };
 

@@ -34,6 +34,7 @@ import {
   ExternalLink,
   Phone
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 // import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import type { Document, Recipient } from '../../types';
@@ -180,29 +181,37 @@ const EnvelopeCreator: React.FC = () => {
   const [isCreatorTourOpen, setIsCreatorTourOpen] = useState<boolean>(false);
   const [creatorTourIndex, setCreatorTourIndex] = useState<number>(0);
   const creatorTourSteps = [
-    { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Drag and drop or browse to upload PDF documents for signing.' },
-    { id: 'recipients', selector: '[data-tour="ec-recipients-toggle"]', title: 'Add Recipients', content: 'Open the recipients section to specify who needs to sign.' },
-    { id: 'addRecipient', selector: '[data-tour="ec-add-recipient"]', title: 'Create Recipient', content: 'Add at least one recipient and provide their name and email.' },
-    { id: 'message', selector: '[data-tour="ec-message-toggle"]', title: 'Subject & Message', content: 'Set an email subject and an optional message for your recipients.' },
-    { id: 'subjectInput', selector: '[data-tour="ec-subject-input"]', title: 'Subject', content: 'Enter a clear subject. It appears in the email sent to recipients.' },
-    { id: 'type', selector: '[data-tour="ec-envelope-type"]', title: 'Envelope Type', content: 'Choose an envelope type to help organize and track your envelope.' },
-    { id: 'next', selector: '[data-tour="ec-next-button"]', title: 'Next', content: 'Proceed to the next step. You can return later if needed.' },
-    { id: 'send', selector: '[data-tour="ec-send-button"]', title: 'Send', content: 'When everything looks good, send your envelope for signature.' },
+    { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Upload your PDF documents by dragging and dropping or clicking to browse files.' },
+    { id: 'recipients', selector: '[data-tour="ec-recipients-toggle"]', title: 'Add Recipients', content: 'Click to expand the recipients section and add people who need to sign the document.' },
+    { id: 'addRecipient', selector: '[data-tour="ec-add-recipient"]', title: 'Add Recipient', content: 'Click this button to add a new recipient. Enter their full name and email address.' },
+    { id: 'bulkSend', selector: '[data-tour="ec-bulk-send"]', title: 'Bulk Send', content: 'Use Bulk Send to add multiple recipients at once. You can manually enter multiple recipients or upload a CSV file with recipient information. This saves time when sending to many people.' },
+    { id: 'signingOrder', selector: '[data-tour="ec-signing-order"]', title: 'Set Signing Order', content: 'Enable this option to control the order in which recipients sign. Sequential order means one person signs after another. Parallel order allows all recipients to sign at the same time.' },
+    { id: 'message', selector: '[data-tour="ec-message-toggle"]', title: 'Add Message', content: 'Click to add a subject line and optional message that will be included in the email sent to recipients.' },
+    { id: 'subjectInput', selector: '[data-tour="ec-subject-input"]', title: 'Email Subject', content: 'Enter a clear and descriptive subject line for the email that recipients will receive.' },
+    { id: 'type', selector: '[data-tour="ec-envelope-type"]', title: 'Envelope Type', content: 'Select an envelope type to categorize and organize your documents (e.g., Contract, Agreement, Invoice).' },
+    { id: 'next', selector: '[data-tour="ec-next-button"]', title: 'Next Step', content: 'Click Next to proceed to placing signature fields on your documents. You can return to edit settings later.' },
   ] as const;
   const [creatorTargetRect, setCreatorTargetRect] = useState<DOMRect | null>(null);
   useEffect(() => {
     if (!isCreatorTourOpen) return;
     const step = creatorTourSteps[creatorTourIndex];
-    const el = document.querySelector(step?.selector || '') as HTMLElement | null;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      setCreatorTargetRect(rect);
-      const top = Math.max(0, window.scrollY + rect.top - 140);
-      window.scrollTo({ top, behavior: 'smooth' });
-    } else {
-      setCreatorTargetRect(null);
-    }
-  }, [isCreatorTourOpen, creatorTourIndex]);
+    // Wait a bit for any UI changes (like expanding sections) to complete
+    const timeoutId = setTimeout(() => {
+      const el = document.querySelector(step?.selector || '') as HTMLElement | null;
+      if (el) {
+        // Scroll element into view first
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        // Wait for scroll to complete, then get position
+        setTimeout(() => {
+          const rect = el.getBoundingClientRect();
+          setCreatorTargetRect(rect);
+        }, 300);
+      } else {
+        setCreatorTargetRect(null);
+      }
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [isCreatorTourOpen, creatorTourIndex, showRecipients, setSigningOrder, showAddMessage]);
   const closeCreatorTour = () => { setIsCreatorTourOpen(false); setCreatorTourIndex(0); setCreatorTargetRect(null); };
   const nextCreatorStep = async () => {
     const step = creatorTourSteps[creatorTourIndex];
@@ -213,14 +222,19 @@ const EnvelopeCreator: React.FC = () => {
       if (step?.id === 'addRecipient') {
         if (!recipients || recipients.length === 0) addRecipient();
       }
+      if (step?.id === 'bulkSend') {
+        // Bulk send button is already visible, no action needed
+      }
+      if (step?.id === 'signingOrder') {
+        if (recipients && recipients.length >= 2 && !setSigningOrder) {
+          setSetSigningOrder(true);
+        }
+      }
       if (step?.id === 'message') {
         setShowAddMessage(true);
       }
       if (step?.id === 'next') {
         await handleNext();
-      }
-      if (step?.id === 'send') {
-        if (!sending) await handleSendEnvelope();
       }
     } finally {
       setCreatorTourIndex(i => Math.min(i + 1, creatorTourSteps.length - 1));
@@ -707,8 +721,10 @@ const EnvelopeCreator: React.FC = () => {
   };
   const [recipientSuggestions, setRecipientSuggestions] = useState<Array<{ name: string; email: string }>>([]);
   const [suggestionsOpenForId, setSuggestionsOpenForId] = useState<string | null>(null);
+  const [emailSuggestionsOpenForId, setEmailSuggestionsOpenForId] = useState<string | null>(null);
   const [loadingRecipientSuggestions, setLoadingRecipientSuggestions] = useState(false);
   const suggestionsContainerRef = useRef<HTMLDivElement | null>(null);
+  const emailSuggestionsContainerRef = useRef<HTMLDivElement | null>(null);
   // Access code expanded panels per recipient
   const [openAccessForId, setOpenAccessForId] = useState<Record<string, boolean>>({});
   // Private message expanded panels per recipient
@@ -1294,11 +1310,24 @@ const EnvelopeCreator: React.FC = () => {
     setSending(true);
     try {
       await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
-      alert('Envelope sent successfully!');
+      // Show success alert before navigation
+      await Swal.fire({
+        title: "Envelope Sent!",
+        text: "Enevelop Sent Successfully",
+        icon: "success",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#ffc107",
+      });
       navigate('/e-sign/aggrement');
     } catch (err) {
       console.error(err);
-      alert('Failed to send envelope. Try again.');
+      Swal.fire({
+        title: "Error",
+        text: "Failed to send envelope. Please try again.",
+        icon: "error",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#ffc107",
+      });
     } finally {
       setSending(false);
     }
@@ -1404,10 +1433,28 @@ const EnvelopeCreator: React.FC = () => {
           if (Array.isArray(recs)) recs.forEach(addIfValid);
         });
       }
+      // Always include logged-in user's email in suggestions
+      if (user?.email) {
+        const userEmail = user.email.toLowerCase();
+        if (!map.has(userEmail)) {
+          map.set(userEmail, {
+            name: user.fullname || user.email,
+            email: user.email
+          });
+        }
+      }
       setRecipientSuggestions(Array.from(map.values()));
     } catch (err) {
       console.warn('Failed to load recipient suggestions; defaulting to empty list');
-      setRecipientSuggestions([]);
+      // Still include logged-in user's email even on error
+      if (user?.email) {
+        setRecipientSuggestions([{
+          name: user.fullname || user.email,
+          email: user.email
+        }]);
+      } else {
+        setRecipientSuggestions([]);
+      }
     } finally {
       setLoadingRecipientSuggestions(false);
     }
@@ -1425,6 +1472,19 @@ const EnvelopeCreator: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [suggestionsOpenForId]);
+
+  // Close email suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!emailSuggestionsOpenForId) return;
+      const el = emailSuggestionsContainerRef.current;
+      if (el && e.target instanceof Node && !el.contains(e.target)) {
+        setEmailSuggestionsOpenForId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [emailSuggestionsOpenForId]);
 
   // Close document menu when clicking outside
   useEffect(() => {
@@ -2146,7 +2206,7 @@ const EnvelopeCreator: React.FC = () => {
 
                     {/* Set signing order checkbox */}
                     <div className="flex items-center justify-start gap-2 w-full">
-                      <label className="flex items-center space-x-2 cursor-pointer">
+                      <label className="flex items-center space-x-2 cursor-pointer" data-tour="ec-signing-order">
                         <input
                           type="checkbox"
                           checked={setSigningOrder}
@@ -2165,7 +2225,7 @@ const EnvelopeCreator: React.FC = () => {
                         </button>
 
                         {!bulkList ? (
-                          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-2" onClick={() => { setShowBulkModal(true); setBulkStep(1); }}>
+                          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-2" onClick={() => { setShowBulkModal(true); setBulkStep(1); }} data-tour="ec-bulk-send">
                             Bulk send
                             <span className="bg-yellow-400 text-yellow-900 text-xs px-2 py-0.5 rounded font-semibold">NEW</span>
                           </button>
@@ -3113,33 +3173,83 @@ const EnvelopeCreator: React.FC = () => {
                                             <input
                                               type="text"
                                               value={recipient.name}
-                                              onChange={(e) => updateRecipient(recipient.id, { name: e.target.value })}
+                                              onChange={(e) => {
+                                                updateRecipient(recipient.id, { name: e.target.value });
+                                                // Show suggestions if user is typing
+                                                if (e.target.value.trim().length > 0) {
+                                                  setSuggestionsOpenForId(recipient.id);
+                                                  loadRecipientSuggestions();
+                                                }
+                                              }}
+                                              onBlur={() => {
+                                                // Close dropdown after a short delay to allow click on suggestion
+                                                setTimeout(() => {
+                                                  setSuggestionsOpenForId(null);
+                                                }, 200);
+                                              }}
                                               onFocus={() => { setSuggestionsOpenForId(recipient.id); loadRecipientSuggestions(); }}
                                               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
                                               placeholder="Full name"
                                             />
                                             {suggestionsOpenForId === recipient.id && (
-                                              <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                                              <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
                                                 {loadingRecipientSuggestions ? (
                                                   <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
-                                                ) : recipientSuggestions.length === 0 ? (
-                                                  <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>
-                                                ) : (
-                                                  recipientSuggestions.map((s) => (
+                                                ) : (() => {
+                                                  // Filter suggestions: initially show only logged-in user's name, then show matching suggestions
+                                                  const userName = user?.fullname?.toLowerCase() || '';
+                                                  const currentName = recipient.name.toLowerCase().trim();
+                                                  
+                                                  // If no input, show only logged-in user's name
+                                                  if (!currentName) {
+                                                    const userSuggestion = recipientSuggestions.find(s => 
+                                                      s.name.toLowerCase() === userName || 
+                                                      s.email.toLowerCase() === (user?.email?.toLowerCase() || '')
+                                                    );
+                                                    if (userSuggestion) {
+                                                      return (
+                                                        <button
+                                                          key={userSuggestion.email}
+                                                          type="button"
+                                                          onClick={() => {
+                                                            updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
+                                                            setSuggestionsOpenForId(null);
+                                                          }}
+                                                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                        >
+                                                          <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
+                                                          <div className="text-xs text-gray-600">{userSuggestion.email}</div>
+                                                        </button>
+                                                      );
+                                                    }
+                                                    return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
+                                                  }
+                                                  
+                                                  // Filter suggestions that match the typed name
+                                                  const matchingSuggestions = recipientSuggestions.filter(s => 
+                                                    s.name.toLowerCase().includes(currentName) || 
+                                                    s.email.toLowerCase().includes(currentName)
+                                                  );
+                                                  
+                                                  if (matchingSuggestions.length === 0) {
+                                                    return <div className="px-3 py-2 text-sm text-gray-500">No matching suggestions</div>;
+                                                  }
+                                                  
+                                                  return matchingSuggestions.map((s) => (
                                                     <button
                                                       key={s.email}
                                                       type="button"
                                                       onClick={() => {
-                                                        updateRecipient(recipient.id, { name: s.name, email: s.email });
+                                                        updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
                                                         setSuggestionsOpenForId(null);
                                                       }}
                                                       className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
                                                     >
-                                                      <div className="font-medium text-gray-900">{s.name}</div>
+                                                      <div className="font-medium text-gray-900">{s.name || s.email}</div>
                                                       <div className="text-xs text-gray-600">{s.email}</div>
                                                     </button>
-                                                  ))
-                                                )}
+                                                  ));
+                                                })()}
                                               </div>
                                             )}
                                           </div>
@@ -3362,19 +3472,102 @@ const EnvelopeCreator: React.FC = () => {
                                         </div>
 
                                         {/* Email Field - Below Delivery in same column */}
-                                        <div className='w-125'>
+                                        <div className='w-125 relative'>
                                           <label className="block text-sm font-medium text-gray-900 mb-2">
                                             Email <span className="text-red-500">*</span>
                                           </label>
-                                          <input
-                                            type="email"
-                                            value={recipient.email}
-                                            onChange={(e) => updateRecipient(recipient.id, { email: e.target.value })}
-                                            onBlur={(e) => handleEmailOnBlur(recipient.id, e.target.value)}
-                                            onFocus={() => { setSuggestionsOpenForId(recipient.id); loadRecipientSuggestions(); }}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                            placeholder="email@example.com"
-                                          />
+                                          <div
+                                            className="relative"
+                                            ref={(el) => {
+                                              if (emailSuggestionsOpenForId === recipient.id) {
+                                                emailSuggestionsContainerRef.current = el;
+                                              }
+                                            }}
+                                          >
+                                            <input
+                                              type="email"
+                                              value={recipient.email}
+                                              onChange={(e) => {
+                                                updateRecipient(recipient.id, { email: e.target.value });
+                                                // Show suggestions if user is typing
+                                                if (e.target.value.trim().length > 0) {
+                                                  setEmailSuggestionsOpenForId(recipient.id);
+                                                  loadRecipientSuggestions();
+                                                }
+                                              }}
+                                              onBlur={(e) => {
+                                                handleEmailOnBlur(recipient.id, e.target.value);
+                                                // Close dropdown after a short delay to allow click on suggestion
+                                                setTimeout(() => {
+                                                  setEmailSuggestionsOpenForId(null);
+                                                }, 200);
+                                              }}
+                                              onFocus={() => {
+                                                setEmailSuggestionsOpenForId(recipient.id);
+                                                loadRecipientSuggestions();
+                                              }}
+                                              className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                              placeholder="email@example.com"
+                                            />
+                                            {emailSuggestionsOpenForId === recipient.id && (
+                                              <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                                                {loadingRecipientSuggestions ? (
+                                                  <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                                                ) : (() => {
+                                                  // Filter suggestions: initially show only logged-in user's email, then show matching suggestions
+                                                  const userEmail = user?.email?.toLowerCase() || '';
+                                                  const currentEmail = recipient.email.toLowerCase().trim();
+                                                  
+                                                  // If no input, show only logged-in user's email
+                                                  if (!currentEmail) {
+                                                    const userSuggestion = recipientSuggestions.find(s => s.email.toLowerCase() === userEmail);
+                                                    if (userSuggestion) {
+                                                      return (
+                                                        <button
+                                                          key={userSuggestion.email}
+                                                          type="button"
+                                                          onClick={() => {
+                                                            updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
+                                                            setEmailSuggestionsOpenForId(null);
+                                                          }}
+                                                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                        >
+                                                          <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
+                                                          <div className="text-xs text-gray-600">{userSuggestion.email}</div>
+                                                        </button>
+                                                      );
+                                                    }
+                                                    return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
+                                                  }
+                                                  
+                                                  // Filter suggestions that match the typed email
+                                                  const matchingSuggestions = recipientSuggestions.filter(s => 
+                                                    s.email.toLowerCase().includes(currentEmail) || 
+                                                    s.name.toLowerCase().includes(currentEmail)
+                                                  );
+                                                  
+                                                  if (matchingSuggestions.length === 0) {
+                                                    return <div className="px-3 py-2 text-sm text-gray-500">No matching suggestions</div>;
+                                                  }
+                                                  
+                                                  return matchingSuggestions.map((s) => (
+                                                    <button
+                                                      key={s.email}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
+                                                        setEmailSuggestionsOpenForId(null);
+                                                      }}
+                                                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                    >
+                                                      <div className="font-medium text-gray-900">{s.name || s.email}</div>
+                                                      <div className="text-xs text-gray-600">{s.email}</div>
+                                                    </button>
+                                                  ));
+                                                })()}
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
@@ -4234,47 +4427,83 @@ const EnvelopeCreator: React.FC = () => {
 
     {/* Guided Tour Overlay */}
     {isCreatorTourOpen && (
-      creatorTargetRect && (
-        <>
-          {/* Highlight box with dimming via huge box-shadow */}
-          <div
-            className="fixed border-2 border-indigo-500 rounded-md shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] z-50 pointer-events-none"
-            style={{
-              left: `${creatorTargetRect.left}px`,
-              top: `${creatorTargetRect.top}px`,
-              width: `${creatorTargetRect.width}px`,
-              height: `${creatorTargetRect.height}px`
-            }}
-          />
-          {/* Tooltip */}
-          <div
-            className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-xl max-w-sm"
-            style={{
-              left: `${Math.min(Math.max(16, creatorTargetRect.left), window.innerWidth - 320)}px`,
-              top: `${Math.min(creatorTargetRect.bottom + 12, window.innerHeight - 180)}px`
-            }}
-          >
-            <div className="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">
-              {creatorTourSteps[creatorTourIndex]?.title}
-            </div>
-            <div className="px-4 py-3 text-sm text-gray-700">
-              {creatorTourSteps[creatorTourIndex]?.content}
-            </div>
-            <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-100">
-              <div className="text-xs text-gray-500">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
-              <div className="flex items-center gap-2">
-                <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Skip</button>
-                <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-gray-300 rounded-sm text-sm ${creatorTourIndex===0 ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}>Back</button>
-                {creatorTourIndex < creatorTourSteps.length - 1 ? (
-                  <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-[#3E2B66] text-white rounded-sm text-sm">Next</button>
-                ) : (
-                  <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-[#3E2B66] text-white rounded-sm text-sm">Done</button>
-                )}
+      creatorTargetRect && (() => {
+        // Calculate tooltip position relative to target element
+        const tooltipWidth = 384; // max-w-sm = 384px
+        const tooltipHeight = 200; // approximate height
+        const spacing = 12; // space between tooltip and target
+        const padding = 16; // padding from viewport edges
+        
+        // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+        const targetCenterX = creatorTargetRect.left + (creatorTargetRect.width / 2);
+        let tooltipLeft = targetCenterX - (tooltipWidth / 2);
+        // Keep tooltip within viewport bounds
+        if (tooltipLeft < padding) {
+          tooltipLeft = padding;
+        } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
+          tooltipLeft = window.innerWidth - tooltipWidth - padding;
+        }
+        
+        // Calculate vertical position - prefer below, but show above if not enough space
+        const spaceBelow = window.innerHeight - creatorTargetRect.bottom - spacing;
+        const spaceAbove = creatorTargetRect.top - spacing;
+        const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+        
+        const tooltipTop = showAbove 
+          ? creatorTargetRect.top - tooltipHeight - spacing
+          : creatorTargetRect.bottom + spacing;
+        
+        // Calculate arrow position (centered on target element)
+        // Arrow should point to the center of the target element
+        // Position is relative to tooltip's left edge
+        const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
+        // Constrain arrow to be within tooltip bounds (with some padding)
+        const arrowPadding = 20;
+        const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
+        
+        return (
+          <>
+            {/* Tooltip - styled like the tooltip UI */}
+            <div
+              className="fixed z-50"
+              style={{
+                left: `${tooltipLeft}px`,
+                top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`
+              }}
+            >
+              {/* Tooltip box */}
+              <div className="bg-[#26263d] text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                <div className="px-4 py-3 font-semibold">
+                  {creatorTourSteps[creatorTourIndex]?.title}
+                </div>
+                <div className="px-4 py-2 text-sm leading-relaxed">
+                  {creatorTourSteps[creatorTourIndex]?.content}
+                </div>
+                <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
+                  <div className="text-xs text-gray-400">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
+                    <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-gray-500 rounded-sm text-sm ${creatorTourIndex===0 ? 'opacity-40 cursor-not-allowed text-gray-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                    {creatorTourIndex < creatorTourSteps.length - 1 ? (
+                      <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                    ) : (
+                      <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                    )}
+                  </div>
+                </div>
+                {/* Arrow pointing to target - positioned absolutely within tooltip */}
+                <div 
+                  className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                  style={{ 
+                    left: `${constrainedArrowLeft}px`,
+                    transform: 'translateX(-50%)'
+                  }}
+                ></div>
               </div>
             </div>
-          </div>
-        </>
-      )
+          </>
+        );
+      })()
     )}
       {/* Advanced Options Modal */}
       {showAdvanced && (

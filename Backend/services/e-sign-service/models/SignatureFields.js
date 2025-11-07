@@ -34,10 +34,27 @@ const SignatureFields = new mongoose.Schema({
   height: { type: Number, required: true },
 
   // --- Strict typing ---
-  type: { 
-    type: String, 
-    enum: ["signature", "initials", "text", "checkbox", "date","input", "email", "phone", "number", "dropdown"], 
-    required: true 
+  type: {
+    type: String,
+    // Align with frontend/editor field types
+    enum: [
+      "signature",
+      "initial", // was "initials"; accept singular used by frontend
+      "stamp",
+      "date",
+      "name",
+      "email",
+      "company",
+      "title",
+      "text",
+      "number",
+      "checkbox",
+      // keep compatibility with other services
+      "phone",
+      "dropdown",
+      "input"
+    ],
+    required: true
   },
 
   // Displayed name (dynamic)

@@ -114,7 +114,7 @@ const AgreementPage: React.FC = () => {
     },
     {
       id: 'pagination',
-      selector: '[data-tour="pagination"]',
+      selector: '[data-tour="pagination-nav"]',
       title: 'Pagination',
       content: 'Navigate through pages of results.'
     }
@@ -124,16 +124,24 @@ const AgreementPage: React.FC = () => {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   useEffect(() => {
     if (!isTourOpen) return;
-    const el = document.querySelector(currentStep?.selector || '') as HTMLElement | null;
+    const step = tourSteps[tourStepIndex];
+    const el = document.querySelector(step?.selector || '') as HTMLElement | null;
     if (el) {
+      // Get position immediately for instant update
       const rect = el.getBoundingClientRect();
       setTargetRect(rect);
-      const top = Math.max(0, window.scrollY + rect.top - 120);
-      window.scrollTo({ top, behavior: 'smooth' });
+      // Then scroll element into view and refine position after scroll
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      // Refine position after scroll completes
+      const refineTimeout = setTimeout(() => {
+        const updatedRect = el.getBoundingClientRect();
+        setTargetRect(updatedRect);
+      }, 300);
+      return () => clearTimeout(refineTimeout);
     } else {
       setTargetRect(null);
     }
-  }, [isTourOpen, tourStepIndex]);
+  }, [isTourOpen, tourStepIndex, tourSteps]);
 
   const closeTour = () => {
     setIsTourOpen(false);
@@ -1003,7 +1011,7 @@ const AgreementPage: React.FC = () => {
                 </p>
               </div>
               <div>
-                <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px" aria-label="Pagination">
+                <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px" aria-label="Pagination" data-tour="pagination-nav">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
@@ -1060,49 +1068,83 @@ const AgreementPage: React.FC = () => {
 
       {/* Guided Tour Overlay */}
       {isTourOpen && (
-        <>
-          {targetRect && (
+        targetRect && (() => {
+          // Calculate tooltip position relative to target element
+          const tooltipWidth = 384; // max-w-sm = 384px
+          const tooltipHeight = 200; // approximate height
+          const spacing = 12; // space between tooltip and target
+          const padding = 16; // padding from viewport edges
+          
+          // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+          const targetCenterX = targetRect.left + (targetRect.width / 2);
+          let tooltipLeft = targetCenterX - (tooltipWidth / 2);
+          // Keep tooltip within viewport bounds
+          if (tooltipLeft < padding) {
+            tooltipLeft = padding;
+          } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
+            tooltipLeft = window.innerWidth - tooltipWidth - padding;
+          }
+          
+          // Calculate vertical position - prefer below, but show above if not enough space
+          const spaceBelow = window.innerHeight - targetRect.bottom - spacing;
+          const spaceAbove = targetRect.top - spacing;
+          const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+          
+          const tooltipTop = showAbove 
+            ? targetRect.top - tooltipHeight - spacing
+            : targetRect.bottom + spacing;
+          
+          // Calculate arrow position (centered on target element)
+          // Arrow should point to the center of the target element
+          // Position is relative to tooltip's left edge
+          const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
+          // Constrain arrow to be within tooltip bounds (with some padding)
+          const arrowPadding = 20;
+          const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
+          
+          return (
             <>
-              {/* Highlight box */}
+              {/* Tooltip - styled like the tooltip UI */}
               <div
-                className="fixed border-2 border-indigo-500 rounded-md shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] z-50 pointer-events-none"
+                className="fixed z-50"
                 style={{
-                  left: `${targetRect.left}px`,
-                  top: `${targetRect.top}px`,
-                  width: `${targetRect.width}px`,
-                  height: `${targetRect.height}px`
-                }}
-              />
-              {/* Tooltip */}
-              <div
-                className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-xl max-w-sm"
-                style={{
-                  left: `${Math.min(Math.max(16, targetRect.left), window.innerWidth - 320)}px`,
-                  top: `${Math.min(targetRect.bottom + 12, window.innerHeight - 180)}px`
+                  left: `${tooltipLeft}px`,
+                  top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`
                 }}
               >
-                <div className="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">
-                  {currentStep?.title}
-                </div>
-                <div className="px-4 py-3 text-sm text-gray-700">
-                  {currentStep?.content}
-                </div>
-                <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-100">
-                  <div className="text-xs text-gray-500">Step {tourStepIndex + 1} of {tourSteps.length}</div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={closeTour} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Skip</button>
-                    <button onClick={prevStep} disabled={tourStepIndex===0} className={`px-3 py-1.5 border border-gray-300 rounded-sm text-sm ${tourStepIndex===0 ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}>Back</button>
-                    {tourStepIndex < tourSteps.length - 1 ? (
-                      <button onClick={nextStep} className="px-3 py-1.5 bg-[#3E2B66] text-white rounded-sm text-sm">Next</button>
-                    ) : (
-                      <button onClick={closeTour} className="px-3 py-1.5 bg-[#3E2B66] text-white rounded-sm text-sm">Done</button>
-                    )}
+                {/* Tooltip box */}
+                <div className="bg-[#26263d] text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                  <div className="px-4 py-3 font-semibold">
+                    {currentStep?.title}
                   </div>
+                  <div className="px-4 py-2 text-sm leading-relaxed">
+                    {currentStep?.content}
+                  </div>
+                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
+                    <div className="text-xs text-gray-400">Step {tourStepIndex + 1} of {tourSteps.length}</div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={closeTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
+                      <button onClick={prevStep} disabled={tourStepIndex===0} className={`px-3 py-1.5 border border-gray-500 rounded-sm text-sm ${tourStepIndex===0 ? 'opacity-40 cursor-not-allowed text-gray-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                      {tourStepIndex < tourSteps.length - 1 ? (
+                        <button onClick={nextStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                      ) : (
+                        <button onClick={closeTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Arrow pointing to target - positioned absolutely within tooltip */}
+                  <div 
+                    className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                    style={{ 
+                      left: `${constrainedArrowLeft}px`,
+                      transform: 'translateX(-50%)'
+                    }}
+                  ></div>
                 </div>
               </div>
             </>
-          )}
-        </>
+          );
+        })()
       )}
 
       {/* Header dropdowns (Date/Status/Sender/Quick/Advanced/Shared Access) */}
