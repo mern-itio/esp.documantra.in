@@ -2,10 +2,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useState, useRef, useCallba
 import {
   FileText, X, Undo2, Redo2, Save, Printer, RefreshCw,
   HelpCircle, Search, ChevronDown, Trash2, FileSignature, PenLine,
-  Stamp, Calendar, Building2, Briefcase, Hash, Check, User, Type,
- 
+  Stamp, Calendar, Building2, Briefcase, Hash, Check, User, Type, 
   SaveAll,
-  Pen,
   SquareMousePointer,
   RectangleHorizontal,
   CircleDot,
