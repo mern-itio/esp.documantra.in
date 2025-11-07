@@ -77,12 +77,12 @@ const UserProfile: React.FC = () => {
 
       {/* Action footer */}
       <div className="max-w-7xl mx-auto px-6 mt-8 mb-12 flex flex-col sm:flex-row gap-3">
-        <button
+        {/* <button
           className="inline-flex items-center justify-center px-5 py-3 rounded-lg border border-gray-300 text-gray-900 hover:bg-gray-50"
           onClick={() => navigate('/account/profile')}
         >
           Manage Profile
-        </button>
+        </button> */}
         <button
           className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-white"
           style={{ backgroundColor: '#4D0080' }}
