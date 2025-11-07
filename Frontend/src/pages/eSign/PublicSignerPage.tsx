@@ -10,7 +10,7 @@ const EnvelopeDetails: React.FC = () => {
   const { cycleId } = useParams<{ cycleId: string }>();
   const [envelope, setEnvelope] = useState<any>(null);
   const [signatureFields, setSignatureFields] = useState<any[]>([]);
-  const [activeDocument, setActiveDocument] = useState<any>(null);
+  const [_activeDocument, setActiveDocument] = useState<any>(null);
   const [allDocuments, setAllDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,18 +48,18 @@ const EnvelopeDetails: React.FC = () => {
     }
   };
 
-  const fetchSignatureFields = async (documentId: string) => {
-    try {
-      const response = await eSignApi.get(
-        `/api/e-sign/public/document/signature-fields/${documentId}`
-      );
-      if (response.status === 200) {
-        setSignatureFields(response.data.signatureFields);
-      }
-    } catch (err) {
-      console.error("Error fetching signature fields", err);
-    }
-  };
+  // const fetchSignatureFields = async (documentId: string) => {
+  //   try {
+  //     const response = await eSignApi.get(
+  //       `/api/e-sign/public/document/signature-fields/${documentId}`
+  //     );
+  //     if (response.status === 200) {
+  //       setSignatureFields(response.data.signatureFields);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error fetching signature fields", err);
+  //   }
+  // };
 
   const handleSignatureSave = (fieldId: string, signatureUrl: string) => {
     setSignatureFields((prev) =>
