@@ -521,6 +521,10 @@ const addSignature = async (req, res) => {
                  .populate({ path: 'signers', match: { status: { $in: ['pending', 'initiated'] } } });
       
       if(!pendingSelfSigners || pendingSelfSigners.signers.length == 0){
+              return res.status(200).json({
+                status: 'success',
+                message: 'Signature added with compliance'
+              });
         // Preprare Document
         // Cryptographical Sign
         // BlockChain anchoring 
@@ -532,12 +536,16 @@ const addSignature = async (req, res) => {
         console.log(signerEmail)
         const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${recipient._id}`;
         const html = signReminderTemplate(recipient.name,envelope.subject,envelope.message,signLink);
+        return res.status(200).json({
+          status: 'success',
+          message: 'Signature added with compliance'
+        });
         // Send Reminder E-Mail to pending recipients
-        await sendEmail(
-            recipient.email,
-          `Reminder: Action Required: Sign "${envelope.subject}"`,
-          html
-        );
+        // await sendEmail(
+        //     recipient.email,
+        //   `Reminder: Action Required: Sign "${envelope.subject}"`,
+        //   html
+        // );
         //Notify Creater or Next Signer
         //Notify Signer 
       }

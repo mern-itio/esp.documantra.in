@@ -22,6 +22,8 @@ interface EnvelopeDetailsResponse {
     createdAt?: string;
     sentAt?: string;
     updatedAt?: string;
+    isPowerForm?:boolean;
+    powerFormId?:string;
     sender?: { name?: string; email?: string };
     recipients?: Recipient[];
     customFields?: Array<{ name: string; value: string }>;
@@ -408,38 +410,57 @@ const EnvelopeDetailPage: React.FC = () => {
 
                     {(() => {
                         const s = (envelope.status || '').toLowerCase();
-                        const anyWaiting = (envelope.recipients || []).some(r => (r.status || '').toLowerCase() === 'waiting');
-                        const label = anyWaiting || s === 'waiting'
-                            ? 'Waiting for Others'
-                            : s === 'in-progress'
-                                ? 'In progress'
-                                : envelope.status
-                                    ? envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1)
-                                    : 'Completed';
+                        const anyWaiting = (envelope.recipients || []).some(
+                            r => (r.status || '').toLowerCase() === 'waiting'
+                        );
+
+                        let label;
+                        if (envelope.isPowerForm) {
+                            label = 'Power Form';
+                        } else if (anyWaiting || s === 'waiting') {
+                            label = 'Waiting for Others';
+                        } else if (s === 'in-progress') {
+                            label = 'In Progress';
+                        } else if (envelope.status) {
+                            label = envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1);
+                        } else {
+                            label = 'Completed';
+                        }
 
                         const kind = label.toLowerCase();
-                        const chipClass = kind === 'waiting for others'
+
+                        const chipClass =
+                            kind === 'power form'
+                            ? 'bg-[#FFE6FF] text-xs text-[#D600AA] border border-[#FFB3E6]' // magenta theme
+                            : kind === 'waiting for others'
                             ? 'bg-gray-100 text-xs text-gray-900 border border-gray-300'
                             : kind === 'completed'
-                                ? 'bg-green-50 text-xs text-green-700 border border-green-200'
-                                : kind === 'in progress'
-                                    ? 'bg-yellow-50 text-xs text-yellow-800 border border-yellow-200'
-                                    : 'bg-gray-100 text-xs text-gray-900 border border-gray-300';
-                        const dotClass = kind === 'waiting for others'
+                            ? 'bg-green-50 text-xs text-green-700 border border-green-200'
+                            : kind === 'in progress'
+                            ? 'bg-yellow-50 text-xs text-yellow-800 border border-yellow-200'
+                            : 'bg-gray-100 text-xs text-gray-900 border border-gray-300';
+
+                        const dotClass =
+                            kind === 'power form'
+                            ? 'bg-[#D600AA]'
+                            : kind === 'waiting for others'
                             ? 'bg-gray-600'
                             : kind === 'completed'
-                                ? 'bg-green-500'
-                                : kind === 'in progress'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-gray-600';
+                            ? 'bg-green-500'
+                            : kind === 'in progress'
+                            ? 'bg-yellow-500'
+                            : 'bg-gray-600';
 
                         return (
-                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm mb-6 ${chipClass}`}>
-                                <span className={`w-2 h-2 rounded-full ${dotClass}`}></span>
-                                {label}
+                            <div
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm mb-6 ${chipClass}`}
+                            >
+                            <span className={`w-2 h-2 rounded-full ${dotClass}`}></span>
+                            {label}
                             </div>
                         );
-                    })()}
+                        })()}
+
 
                      {/* Actions */}
                      <div className="flex justify-between items-center mb-6 relative w-full">
@@ -533,54 +554,104 @@ const EnvelopeDetailPage: React.FC = () => {
 
                     <hr className="border-gray-300 mb-6" />
                     {/* Recipients */}
+                    
                     <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-[15px] font-semibold text-gray-900">Recipients</h2>
-                            <button type="button" onClick={() => setShowSigningOrder(true)} className="flex items-center gap-2 text-gray-900 font-semibold tracking-wide hover:underline">
+
+
+                    {envelope.isPowerForm ? (
+                        <>
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-[15px] font-semibold text-gray-900">Power Form</h2>
+                                <button
+                                type="button"
+                                onClick={() => setShowSigningOrder(true)}
+                                className="flex items-center gap-2 text-gray-900 font-semibold tracking-wide hover:underline"
+                                >
                                 <ListOrdered className="w-4 h-4" /> SIGNING ORDER
+                                </button>
+                            </div>
+                        <div className="p-6 text-center">
+                        <h3 className="text-[#D600AA] font-semibold mb-2">Power Form</h3>
+                        <button
+                            onClick={() =>
+                            navigate(`/e-sign/power-form-embed/${envelope.powerFormId}/${envelope.id}`)
+                            }
+                            className="px-5 py-2 bg-[#D600AA] text-white text-sm font-semibold rounded-md hover:bg-[#b30088] transition"
+                        >
+                            Embed Power Form
+                        </button>
+                        </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-[15px] font-semibold text-gray-900">Recipients</h2>
+                            <button
+                            type="button"
+                            onClick={() => setShowSigningOrder(true)}
+                            className="flex items-center gap-2 text-gray-900 font-semibold tracking-wide hover:underline"
+                            >
+                            <ListOrdered className="w-4 h-4" /> SIGNING ORDER
                             </button>
                         </div>
-                        <div className="divide-y ">
-                            {recipients.length === 0 ? (
-                                <div className="p-4 text-gray-600">No recipients</div>
-                            ) : (
-                                recipients.map((r, idx) => {
-                                    const status = (r.status || '').toLowerCase();
-                                    const isSigned = status === 'signed' || status === 'completed';
-                                    const isWaiting = status === 'waiting' || status === 'needs to sign' || status === 'pending';
-                                    const isCopy = (r.role || '').toLowerCase() === 'cc' || (r.role || '').toLowerCase() === 'copy';
-                                    const rightTitle = isCopy ? 'Copy Received' : isWaiting ? 'Needs to Sign' : isSigned ? 'Signed' : (status.charAt(0).toUpperCase() + status.slice(1));
-                                    const rightTime = formatDateTime(envelope.updatedAt || envelope.sentAt || envelope.createdAt);
-                                    return (
-                                        <div key={r.id || idx} className="flex items-start justify-between p-4">
-                                            <div className="flex items-start gap-3">
-                                                {isSigned ? (
-                                                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
-                                                ) : (
-                                                    <span className="w-4 h-4 mt-1 inline-block"></span>
-                                                )}
-                                                <div>
-                                                    <div className="font-semibold text-gray-900">{r.name || r.email}</div>
-                                                    <div className="text-sm text-gray-600">{r.email}</div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right min-w-[220px]">
-                                                <div className="flex items-center justify-end gap-2 text-gray-900 font-semibold">
-                                                    {!isCopy && <PenLine className="w-4 h-4" />}
-                                                    {isCopy && <span className="text-gray-700">CC</span>}
-                                                    <span>{rightTitle}</span>
-                                                </div>
-                                                <div className="text-sm text-gray-600">on {rightTime}</div>
-                                                {isSigned && (
-                                                    <a href="#" className="text-indigo-600 text-sm hover:underline">Signed in location</a>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
+                        <div className="divide-y">
+                        {recipients.length === 0 ? (
+                            <div className="p-4 text-gray-600">No recipients</div>
+                        ) : (
+                            recipients.map((r, idx) => {
+                            const status = (r.status || '').toLowerCase();
+                            const isSigned = status === 'signed' || status === 'completed';
+                            const isWaiting =
+                                status === 'waiting' || status === 'needs to sign' || status === 'pending';
+                            const isCopy =
+                                (r.role || '').toLowerCase() === 'cc' ||
+                                (r.role || '').toLowerCase() === 'copy';
+                            const rightTitle = isCopy
+                                ? 'Copy Received'
+                                : isWaiting
+                                ? 'Needs to Sign'
+                                : isSigned
+                                ? 'Signed'
+                                : status.charAt(0).toUpperCase() + status.slice(1);
+                            const rightTime = formatDateTime(
+                                envelope.updatedAt || envelope.sentAt || envelope.createdAt
+                            );
+
+                            return (
+                                <div key={r.id || idx} className="flex items-start justify-between p-4">
+                                <div className="flex items-start gap-3">
+                                    {isSigned ? (
+                                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                                    ) : (
+                                    <span className="w-4 h-4 mt-1 inline-block"></span>
+                                    )}
+                                    <div>
+                                    <div className="font-semibold text-gray-900">{r.name || r.email}</div>
+                                    <div className="text-sm text-gray-600">{r.email}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right min-w-[220px]">
+                                    <div className="flex items-center justify-end gap-2 text-gray-900 font-semibold">
+                                    {!isCopy && <PenLine className="w-4 h-4" />}
+                                    {isCopy && <span className="text-gray-700">CC</span>}
+                                    <span>{rightTitle}</span>
+                                    </div>
+                                    <div className="text-sm text-gray-600">on {rightTime}</div>
+                                    {isSigned && (
+                                    <a href="#" className="text-indigo-600 text-sm hover:underline">
+                                        Signed in location
+                                    </a>
+                                    )}
+                                </div>
+                                </div>
+                            );
+                            })
+                        )}
                         </div>
+                        </>
+                    )}
                     </div>
+
                     <hr className="border-gray-300 mb-6" />
                     {/* Custom fields */}
                     <div className="mb-8">

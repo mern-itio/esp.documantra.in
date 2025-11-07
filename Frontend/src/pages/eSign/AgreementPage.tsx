@@ -13,6 +13,7 @@ interface Agreement {
   completedCount: number;
   waitingFor?: string;
   primaryRecipientName?: string;
+  isPowerForm?:boolean;
 }
 
 interface EnvelopeData {
@@ -21,6 +22,7 @@ interface EnvelopeData {
   status: string;
   createdAt: string;
   sentAt: string;
+  isPowerForm?:boolean;
   sender: {
     name: string;
     email: string;
@@ -189,6 +191,7 @@ const AgreementPage: React.FC = () => {
           lastChange: envelope.sentAt || envelope.createdAt,
           createdBy: envelope.sender?.name || 'Unknown',
           recipientCount: envelope.recipients?.length || 0,
+          isPowerForm:envelope.isPowerForm,
           completedCount: envelope.recipients?.filter(recipient => 
             recipient.status === 'completed' || recipient.status === 'signed'
           ).length || 0,
@@ -887,10 +890,17 @@ const AgreementPage: React.FC = () => {
                               <span className="text-sm">Completed</span>
                             </div>
                           )}
-                          {agreement.status === 'draft' && (
+                          {agreement.status === 'draft' && !agreement.isPowerForm && (
                             <div className="flex items-center gap-2 text-[#3E2B66]">
                               <Pencil className="w-5 h-5 text-[#3E2B66]" />
                               <span className="text-sm">Draft</span>
+                            </div>
+                          )}
+
+                          {agreement.isPowerForm && (
+                            <div className="flex items-center gap-2 text-[#FF00FF]"> {/* Magenta */}
+                              <Pencil className="w-5 h-5 text-[#FF00FF]" />
+                              <span className="text-sm">Power Form</span>
                             </div>
                           )}
                           {agreement.status === 'deleted' && (

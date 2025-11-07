@@ -196,6 +196,8 @@ import EnvelopeCreator from '../pages/eSign/EnvelopeCreator';
 import AgreementPage from '../pages/eSign/AgreementPage';
 import EnvelopeTypes from '../pages/eSign/EnvelopeTypes';
 import ManageRecipients from '../pages/eSign/ManageRecipients';
+// import { elements } from 'chart.js';
+import PowerFormCreate from '../pages/eSign/PowerFormCreate';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -671,8 +673,8 @@ const authRoutes = [
   { path: '/e-sign/power-form-embed/:formId/:envelopeId', element: <PowerFormEmbed /> },
   { path: '/e-sign/envelope_types', element: <EnvelopeTypes /> },
   { path: '/e-sign/manage_receipients', element: <ManageRecipients /> },
+  { path: '/e-sign/powerforms', element:<PowerFormCreate/>},
   { path: '/e-sign/form-list', element: <FormsList/>},
-
 
   // Template Routes
   { path: '/template/dashboard', element: <TemplateDashboard /> },
