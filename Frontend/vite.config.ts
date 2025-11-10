@@ -1,23 +1,28 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { copyFileSync } from 'fs'
 import { join } from 'path'
+import { existsSync } from 'fs'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    // Plugin to copy the correct PDF.js worker file during build
+    // Plugin to ensure the correct PDF.js worker file exists in public folder
+    // The worker file (version 5.3.93) should already be in public folder to match react-pdf
     {
-      name: 'copy-pdf-worker',
+      name: 'verify-pdf-worker',
       buildStart() {
         try {
-          const workerSource = join(process.cwd(), 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.min.mjs')
           const workerDest = join(process.cwd(), 'public', 'pdf.worker.min.mjs')
-          copyFileSync(workerSource, workerDest)
-          console.log('✓ Copied PDF.js worker file to public folder')
+          
+          // Verify the worker file exists
+          if (existsSync(workerDest)) {
+            console.log('✓ PDF.js worker file verified in public folder')
+          } else {
+            console.warn('⚠ PDF.js worker file not found in public folder')
+          }
         } catch (error) {
-          console.warn('Failed to copy PDF.js worker file:', error)
+          console.warn('Failed to verify PDF.js worker file:', error)
         }
       }
     }

@@ -7,37 +7,52 @@
 // Configure PDF.js worker globally using react-pdf's recommended method
 // This ensures the worker version matches the PDF.js version used by react-pdf
 if (typeof window !== 'undefined') {
-  // Use react-pdf's recommended approach to get the worker URL
-  // This will resolve to the correct worker file from the pdfjs-dist package
-  // The ?url suffix tells Vite to treat it as a URL asset
-  import('pdfjs-dist/build/pdf.worker.min.mjs?url').then((workerModule) => {
-    const workerSrc = workerModule.default;
-    
-    // Store the worker URL globally so all components can use it
-    (window as any).__PDFJS_WORKER_SRC__ = workerSrc;
-    
-    // Set for any existing window.pdfjsLib (used by other components)
-    if (window.pdfjsLib?.GlobalWorkerOptions) {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
-    }
-    
-    // Configure react-pdf's pdfjs immediately if it's already loaded
+  // Use react-pdf's recommended approach: new URL() to get worker from pdfjs-dist
+  // This resolves to the worker that matches react-pdf's bundled PDF.js version
+  try {
+    // Import react-pdf to get access to pdfjs
     import('react-pdf').then((reactPdf) => {
       if (reactPdf.pdfjs?.GlobalWorkerOptions) {
+        // Use react-pdf's recommended approach - this resolves to the correct worker
+        // from the pdfjs-dist package that react-pdf uses
+        const workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url
+        ).toString();
+        
         reactPdf.pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+        
+        // Store globally for other components
+        (window as any).__PDFJS_WORKER_SRC__ = workerSrc;
+        
+        // Set for any existing window.pdfjsLib (used by other components)
+        if (window.pdfjsLib?.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+        }
       }
     }).catch(() => {
-      // react-pdf not loaded yet, will be configured when imported
+      // If react-pdf import fails, try alternative approach
+      // Use Vite's ?url import to get the worker
+      import('pdfjs-dist/build/pdf.worker.min.mjs?url').then((workerModule) => {
+        const workerSrc = workerModule.default;
+        (window as any).__PDFJS_WORKER_SRC__ = workerSrc;
+        
+        if (window.pdfjsLib?.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+        }
+      }).catch((err) => {
+        console.warn('Failed to load PDF.js worker, using local file:', err);
+        const fallbackWorker = '/pdf.worker.min.mjs';
+        (window as any).__PDFJS_WORKER_SRC__ = fallbackWorker;
+        
+        if (window.pdfjsLib?.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = fallbackWorker;
+        }
+      });
     });
-  }).catch((err) => {
-    console.warn('Failed to load PDF.js worker from package, using local file:', err);
-    const fallbackWorker = '/pdf.worker.min.mjs';
-    (window as any).__PDFJS_WORKER_SRC__ = fallbackWorker;
-    
-    if (window.pdfjsLib?.GlobalWorkerOptions) {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = fallbackWorker;
-    }
-  });
+  } catch (err) {
+    console.warn('Failed to configure PDF.js worker:', err);
+  }
   
   // Monitor for react-pdf imports and configure the worker
   // This ensures react-pdf uses the correct worker even if it loads after this config
@@ -50,6 +65,22 @@ if (typeof window !== 'undefined') {
       if (workerSrc && reactPdf.pdfjs?.GlobalWorkerOptions) {
         reactPdf.pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
         reactPdfConfigured = true;
+      } else if (reactPdf.pdfjs?.GlobalWorkerOptions) {
+        // If no global worker set yet, use react-pdf's recommended approach
+        try {
+          const workerSrc = new URL(
+            'pdfjs-dist/build/pdf.worker.min.mjs',
+            import.meta.url
+          ).toString();
+          reactPdf.pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+          (window as any).__PDFJS_WORKER_SRC__ = workerSrc;
+          reactPdfConfigured = true;
+        } catch (e) {
+          // Fallback to local file
+          reactPdf.pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+          (window as any).__PDFJS_WORKER_SRC__ = '/pdf.worker.min.mjs';
+          reactPdfConfigured = true;
+        }
       }
     }).catch(() => {
       // react-pdf not available yet

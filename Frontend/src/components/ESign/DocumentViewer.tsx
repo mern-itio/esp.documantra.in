@@ -56,9 +56,18 @@ const DocumentViewerContent: React.FC<Props> = ({
     }
     if (typeof window !== "undefined") {
       try {
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        // Use react-pdf's recommended approach to get the worker
+        // This ensures the worker version matches react-pdf's bundled PDF.js
+        const workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url
+        ).toString();
+        pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
       } catch (err) {
-        console.warn("Failed to set PDF.js worker:", err);
+        console.warn("Failed to set PDF.js worker, using fallback:", err);
+        // Fallback to global config or local file
+        const globalWorkerSrc = (window as any).__PDFJS_WORKER_SRC__;
+        pdfjs.GlobalWorkerOptions.workerSrc = globalWorkerSrc || "/pdf.worker.min.mjs";
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
