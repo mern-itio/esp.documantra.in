@@ -116,7 +116,7 @@ import EsignAnalytics from '../pages/eSign/Analytics';
 import EsignSettings from '../pages/eSign/Settings';
 import EsignEnterpriseSettings from '../pages/eSign/EnterpriseSettings';
 import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
-import {PowerFormEmbed} from '../pages/eSign/PowerFormEmbed';
+import { PowerFormEmbed } from '../pages/eSign/PowerFormEmbed';
 // E-Signature Pages Ended
 
 // Template Pages Started
@@ -256,7 +256,7 @@ const PDFToolsLayout = () => {
         const tools = await toolCatalogService.listPublic();
         if (!mounted) return;
         setCatalogTools(Array.isArray(tools) ? tools : []);
-      } catch {}
+      } catch { }
     })();
     return () => { mounted = false; };
   }, []);
@@ -275,9 +275,9 @@ const PDFToolsLayout = () => {
       setSelectedCategory('all');
       // console.log('Category set to: all');
     }
-    
+
     setCurrentView('tools');
-  }, [location.search]); 
+  }, [location.search]);
 
   const getFilteredTools = () => {
     // Prefer backend catalog if available
@@ -337,17 +337,17 @@ const PDFToolsLayout = () => {
     // console.log('Tool selected:', tool);
     // console.log('Navigating to:', `/pdf-tools/${tool.id}`);
     // setSelectedTool(tool);
-    
+
     // Get current category from URL or tool's category
     const urlParams = new URLSearchParams(location.search);
     const currentCategory = urlParams.get('category') || tool.category;
-    
+
     // Navigate with category parameter to maintain sidebar state
     const params = new URLSearchParams();
     if (currentCategory) params.set('category', currentCategory);
     const qs = params.toString();
     const navigateUrl = qs ? `/pdf-tools/${tool.id}?${qs}` : `/pdf-tools/${tool.id}`;
-    
+
     navigate(navigateUrl);
 
     // Add to recent tools
@@ -387,7 +387,7 @@ const PDFToolsLayout = () => {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'viewer':
-        // return <PDFViewer selectedTool={selectedTool} onBack={() => setCurrentView('tools')} />;
+      // return <PDFViewer selectedTool={selectedTool} onBack={() => setCurrentView('tools')} />;
       case 'editor':
         return <PdfEditorPage />;
       case 'batch':
@@ -425,7 +425,7 @@ const PDFToolsLayout = () => {
 
   return (
     <div className='bg-white p-2'>
-     {isPro && (
+      {isPro && (
         <Header
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -533,7 +533,7 @@ const guestRoutes = [
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
   { path: '/contact-sales', element: <ContactSales /> },
-  { path: '/oauth-callback', element: <OAuthCallback /> },  
+  { path: '/oauth-callback', element: <OAuthCallback /> },
   { path: '/why-draft-sign', element: <WhyDocuSignerPage /> },
   // { path: '/accessibility', element: <AccessibilityPage /> },
   { path: '/draft-n-sign-vs-docusign', element: <DocuSignerVsDocuSignPage /> },
@@ -544,7 +544,7 @@ const guestRoutes = [
   { path: '/all-in-one', element: <AllInOnePlatformPage /> },
   { path: '/ai-powered-features', element: <AIPoweredFeaturesPage /> },
   { path: '/api-documentation', element: <APIDocumentationPage /> },
-  
+
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages
@@ -555,7 +555,7 @@ const guestRoutes = [
   { path: '/pdf-to-excel', element: <PdfToExcel /> },
   { path: '/protect-pdf', element: <PDFToolsAddPasswordPage /> },
   { path: '/pdf-to-jpg', element: <PdfToImage /> },
-   { path: '/img-to-pdf', element: <ImageToPDF />}, 
+  { path: '/img-to-pdf', element: <ImageToPDF /> },
   { path: '/rotate-pdf', element: <PDFToolsRotatePDFPage /> },
   { path: '/ocr-pdf', element: <PDFToolsOCRPage /> },
   { path: '/pdf-to-powerpoint', element: <PdftoPpt /> },
@@ -571,9 +571,9 @@ const guestRoutes = [
   { path: '/text-to-pdf', element: <TextToPdf /> },
   { path: '/validate-pdf', element: <PdfValidatorPage /> },
   { path: '/pdf-to-html', element: <PdfToHtml /> },
-  { path: '/rotate-pdf', element: <PDFToolsRotatePDFPage /> }, 
+  { path: '/rotate-pdf', element: <PDFToolsRotatePDFPage /> },
   { path: '/redact-pdf', element: <PDFToolsRedactContentPage /> },
-  { path: '/repair-pdf', element: <PdfRepairPage /> },   
+  { path: '/repair-pdf', element: <PdfRepairPage /> },
 ];
 
 // Authenticated User Routes
@@ -619,9 +619,9 @@ const authRoutes = [
   },
   {
     path: '/documents/folder',
-    element: (    
-        <FoldersPage />
-  
+    element: (
+      <FoldersPage />
+
     )
   },
   {
@@ -657,7 +657,7 @@ const authRoutes = [
     )
   },
   // E-Signature Routes
-   { path: '/e-sign/dashboard', element: <EsignDashboard /> },
+  { path: '/e-sign/dashboard', element: <EsignDashboard /> },
   // moved to no-sidebar layout group below
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },
@@ -673,8 +673,7 @@ const authRoutes = [
   { path: '/e-sign/power-form-embed/:formId/:envelopeId', element: <PowerFormEmbed /> },
   { path: '/e-sign/envelope_types', element: <EnvelopeTypes /> },
   { path: '/e-sign/manage_receipients', element: <ManageRecipients /> },
-  { path: '/e-sign/powerforms', element:<PowerFormCreate/>},
-  { path: '/e-sign/form-list', element: <FormsList/>},
+  { path: '/e-sign/form-list', element: <FormsList /> },
 
   // Template Routes
   { path: '/template/dashboard', element: <TemplateDashboard /> },
@@ -687,8 +686,8 @@ const authRoutes = [
   { path: '/template/api-management', element: <APIManagement /> },
   { path: '/template/automation', element: <WorkflowAutomation /> },
   { path: '/template/admin-dashboard', element: <TemplateAdminDashboard /> },
-  { path: '/template/form-embed/:id', element: <FormEmbed/>},
-  { path: '/template/form-submissions/:id', element: <FormSubmissions/>},
+  { path: '/template/form-embed/:id', element: <FormEmbed /> },
+  { path: '/template/form-submissions/:id', element: <FormSubmissions /> },
 
   // Account
   { path: '/account/profile', element: <UserProfile /> },
@@ -815,6 +814,7 @@ const router = createBrowserRouter([
           { path: '/e-sign/create', element: <EnvelopeCreator /> },
           { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
           { path: '/e-sign/form-builder/:id', element: <FormBuilder /> },
+          { path: '/e-sign/powerforms', element: <PowerFormCreate /> },
 
 
         ],
@@ -824,8 +824,8 @@ const router = createBrowserRouter([
         element: <PublicSignerLayout />,
         children: [
           { path: 'e-sign/signer/:id/:recipientId/:cycleId?', element: <PublicSignerPage /> },
-          { path: '/template/form-view/:id', element:<FormView/>},
-          { path: '/e-sign/power-form/:formId/:envelopeId', element:<PowerForm/>}
+          { path: '/template/form-view/:id', element: <FormView /> },
+          { path: '/e-sign/power-form/:formId/:envelopeId', element: <PowerForm /> }
         ],
       },
       {

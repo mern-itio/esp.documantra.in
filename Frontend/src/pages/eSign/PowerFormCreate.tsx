@@ -23,7 +23,8 @@ import {
   ChevronLeft,
   ExternalLink,
   Phone,
-  ArrowUp
+  Plus,
+  Minus
 } from 'lucide-react';
 // import { useApp } from '../../context/AppContext';
 import type { Document, Recipient } from '../../types';
@@ -66,7 +67,7 @@ const PowerFormCreate: React.FC = () => {
 
   // Parties & related state.....
   const [parties, setParties] = useState<Party[]>(
-    [{ id: 'slot_1', name: 'Party A', slot: 1, role: 'signer', authMethod: 'email', required: true }]
+    [{ id: 'slot_1', name: 'Signer A', slot: 1, role: 'signer', authMethod: 'email', required: true }]
   );
   const [numberOfParties, setNumberOfParties] = useState<number>(parties.length || 1);
   const [maxParties] = useState<number>(10);
@@ -1133,17 +1134,17 @@ const PowerFormCreate: React.FC = () => {
         } else {
           // power form: ensure totalSigners is set
           if (parties.length === 0) {
-            alert('Please add at least one party for the Power Form.');
+            alert('Please add at least one signer for the Power Form.');
             setNextLoading(false);
             return;
           }
           if (!selectedPartyId) {
-            alert('Please choose which party you are.');
+            alert('Please choose which signer you are.');
             setNextLoading(false);
             return;
           }
           if (!firstSigningPartyId) {
-            alert('Please choose which party signs first.');
+            alert('Please choose which signer signs first.');
             setNextLoading(false);
             return;
           }
@@ -1472,7 +1473,7 @@ const PowerFormCreate: React.FC = () => {
       const letter = String.fromCharCode(64 + i); // 1 -> 'A'
       newParties.push({
         id: `slot_${i}`,
-        name: `Party ${letter}`,
+        name: `Signer ${letter}`,
         slot: i,
         role: 'signer',
         authMethod: 'email',
@@ -2070,7 +2071,7 @@ const PowerFormCreate: React.FC = () => {
             </div>
             {showPowerForm && (
                /* ======================== POWER FORM MODE ======================== */
-              <Card className="p-6 shadow-sm border border-gray-200 rounded-2xl bg-white space-y-6">
+              <Card className="p-6 shadow-sm border border-gray-200 rounded-sm bg-white space-y-6">
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900">Build Power Form</h4>
                   <p className="text-sm text-gray-600">
@@ -2128,7 +2129,7 @@ const PowerFormCreate: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <label className="text-sm font-medium text-gray-700">
-                      Number of Parties
+                      Number of Signer
                     </label>
                     <div className="flex items-center gap-2">
                       <button
@@ -2138,7 +2139,7 @@ const PowerFormCreate: React.FC = () => {
                         }
                         type="button"
                       >
-                        <ArrowDown className="w-4 h-4" />
+                        <Minus className="w-4 h-4" />
                       </button>
                       <input
                         type="number"
@@ -2159,18 +2160,18 @@ const PowerFormCreate: React.FC = () => {
                         }
                         type="button"
                       >
-                        <ArrowUp className="w-4 h-4" />
+                        <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 ml-2">
-                      Min 1 — Max {maxParties}
+                    <p className="text-xs text-gray-500">
+                     ( Min 1 - Max {maxParties})
                     </p>
                   </div>
 
                   {/* First Signing Party */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Which party signs first?
+                      Which signer signs first?
                     </label>
                     <select
                       value={firstSigningPartyId}
@@ -2188,7 +2189,7 @@ const PowerFormCreate: React.FC = () => {
                   {/* Creator Party */}
                   <div>
                     <h6 className="text-sm font-medium text-gray-900 mb-2">
-                      Choose which party you are
+                      Choose which signer you are
                     </h6>
                     <div className="space-y-2">
                       {parties.map((party) => (

@@ -110,10 +110,10 @@ export default function SigningEditorStep({
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        // Point to the worker file in your public folder
+        // Use the worker from public folder (same as production)
+        // This matches the behavior that works in production
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
           window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         }
       } catch (err) {
         console.warn("Failed to set PDF.js worker:", err);
@@ -121,16 +121,16 @@ export default function SigningEditorStep({
     }
   }, []);
 
-  // Load PDF.js dynamically - same approach as InsertPDF
+  // Load PDF.js dynamically
   const loadPDFJS = useCallback(async () => {
     try {
       if (typeof window !== 'undefined' && !window.pdfjsLib) {
         const pdfjsLib = await import('pdfjs-dist');
 
-        // Set worker path to local file
+        // Set worker path to public folder (same as production)
+        // This matches the behavior that works in production
         try {
           pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-          console.log("PDF.js worker set to local file: /pdf.worker.min.mjs");
         } catch (error) {
           console.warn("Failed to set PDF.js worker:", error);
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';
@@ -139,7 +139,7 @@ export default function SigningEditorStep({
         // Assign to window
         window.pdfjsLib = pdfjsLib;
       }
-
+      
       return window.pdfjsLib;
     } catch (error) {
       console.error('Error loading PDF.js:', error);
