@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Upload,
   X,
@@ -144,6 +144,32 @@ const EnvelopeCreator: React.FC = () => {
   // Help menu / sidebar state
   const [helpMenuOpen, setHelpMenuOpen] = useState<boolean>(false);
   const [helpSidebarOpen, setHelpSidebarOpen] = useState<boolean>(false);
+  const helpMenuRef = useRef<HTMLDivElement | null>(null);
+  const helpButtonRef = useRef<HTMLButtonElement | null>(null);
+  
+  // Close help menu when clicking outside
+  useEffect(() => {
+    if (!helpMenuOpen) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      // Close if click is outside both the help menu and the help button
+      if (
+        helpMenuRef.current && 
+        !helpMenuRef.current.contains(target) &&
+        helpButtonRef.current &&
+        !helpButtonRef.current.contains(target)
+      ) {
+        setHelpMenuOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [helpMenuOpen]);
+  
   // Advanced options modal state
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const advancedContentRef = useRef<HTMLDivElement | null>(null);
@@ -4185,6 +4211,7 @@ const EnvelopeCreator: React.FC = () => {
             {/* RIGHT — Help + Advanced Options */}
             <div className="flex items-center space-x-3 relative">
               <button
+                ref={helpButtonRef}
                 onClick={(e) => { e.stopPropagation(); setHelpMenuOpen(prev => !prev); }}
                 className="p-2 rounded hover:bg-gray-100"
                 title="Help"
@@ -4193,7 +4220,10 @@ const EnvelopeCreator: React.FC = () => {
               </button>
 
               {helpMenuOpen && (
-                <div className="absolute right-24 top-10 w-70 bg-white border border-gray-200 rounded-md shadow-xl z-50">
+                <div 
+                  ref={helpMenuRef}
+                  className="absolute right-24 top-10 w-70 bg-white border border-gray-200 rounded-md shadow-xl z-50"
+                >
                   <div className="px-4 py-3 border-b">
                     <h4 className="text-sm font-semibold text-gray-900">Help for this Page</h4>
                   </div>
@@ -4205,18 +4235,18 @@ const EnvelopeCreator: React.FC = () => {
                       Basic steps to send an envelope
                     </button>
                     <button
-                      onClick={() => { setHelpMenuOpen(false); window.open('https://support.docusign.com', '_blank'); }}
+                      onClick={() => { setHelpMenuOpen(false); window.open('/contact-sales', '_blank'); }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-t border-gray-100"
                     >
-                      <span className="text-blue-700">Visit the Docusign Support Center</span> for helpful articles, guides, videos, and more.
+                      <span className="text-blue-700">Visit the Draft&Sign Support Center</span> for helpful articles, guides, videos, and more.
                     </button>
                     <div className="p-4 border-t border-gray-100">
                       <button
-                        onClick={() => window.open('https://support.docusign.com/contactSupport', '_blank')}
+                        onClick={() => window.open('/contact-sales', '_blank')}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md text-white"
-                        style={{ backgroundColor: '#5015FF' }}
+                      style={{ backgroundColor: '#260559' }}
                       >
-                       <Phone className='w-4 h-4'/>
+                       <Phone className='w-4 h-4'/>                        
                         <span className="font-semibold">Contact Support</span>
                       </button>
                     </div>
@@ -4261,7 +4291,7 @@ const EnvelopeCreator: React.FC = () => {
                 </div>
                 <div className="pl-4 mt-4 border-l-2 border-gray-300">
                   <button
-                    onClick={() => window.open('https://support.docusign.com/en/guides/ndse-user-guide-sending-documents', '_blank')}
+                    onClick={() => window.open('/contact-sales', '_blank')}
                     className="text-[#4C2FFF] underline text-[14px]"
                   >
                     Sending Documents for Signature
@@ -4272,21 +4302,21 @@ const EnvelopeCreator: React.FC = () => {
               {/* Bottom links */}
               <div className="pt-6 border-t border-gray-200 space-y-5 text-[14px]">
                 <button
-                  onClick={() => window.open('https://support.docusign.com', '_blank')}
+                  onClick={() => window.open('/contact-sales', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
                 >
                   <span>Support Center</span>
                   <ExternalLink className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => window.open('https://community.docusign.com', '_blank')}
+                  onClick={() => window.open('/contact-sales', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
                 >
                   <span>Community</span>
                   <ExternalLink className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => window.open('https://support.docusign.com/contactSupport', '_blank')}
+                  onClick={() => window.open('/contact-sales', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
                 >
                   <span>Contact Us</span>
