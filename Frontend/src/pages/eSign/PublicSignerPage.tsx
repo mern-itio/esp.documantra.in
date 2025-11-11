@@ -12,6 +12,7 @@ const EnvelopeDetails: React.FC = () => {
   const [signatureFields, setSignatureFields] = useState<any[]>([]);
   const [_activeDocument, setActiveDocument] = useState<any>(null);
   const [allDocuments, setAllDocuments] = useState<any[]>([]);
+  const [allRecipients, setAllRecipients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +26,8 @@ const EnvelopeDetails: React.FC = () => {
         setEnvelope(response.data.data);
         const docs = response.data.data.documents || [];
         setAllDocuments(docs);
+        const recipients = response.data.data.recipients || [];
+        setAllRecipients(recipients);
         // Preload all signature fields across documents for continuous view
         const allFields: any[] = [];
         for (const d of docs) {
@@ -92,12 +95,14 @@ const EnvelopeDetails: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center">
       <DocumentViewer
         documents={allDocuments}
+        allRecipients={allRecipients}
         signatureFields={signatureFields}
         currentUserId={recipientId || ""}
         envelopeID={id || ""}
         onClose={() => setActiveDocument(null)}
         onSignatureSave={handleSignatureSave}
         cycleId={cycleId || ""}
+        setSignatureFields={setSignatureFields}
       />
     </div>
   );

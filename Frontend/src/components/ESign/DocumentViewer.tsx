@@ -20,6 +20,8 @@ interface Props {
   onClose?: () => void;
   onSignatureSave?: (fieldId: string, signatureUrl: string) => void;
   cycleId?: string;
+  allRecipients?: any[];
+  setSignatureFields: (fields: any[] | ((prev: any[]) => any[])) => void;
 }
 
 Modal.setAppElement("#root");
@@ -32,6 +34,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   envelopeID,
   onSignatureSave,
   cycleId,
+  allRecipients,
+  setSignatureFields
 }) => {
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
@@ -76,6 +80,11 @@ const DocumentViewerContent: React.FC<Props> = ({
   const activeInputRef = useRef<HTMLInputElement | null>(null);
   const activeInputIdRef = useRef<string | null>(null);
   const currentFieldIdRef = useRef<string | null>(null);
+  const [buttonStyle, setButtonStyle] = useState<React.CSSProperties>({});
+  const buttonUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastButtonPositionRef = useRef<{ top: number; left: number } | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isNavigatingRef = useRef<boolean>(false);
 
   const normalizePage = (field: any) =>
     Number(
@@ -85,6 +94,67 @@ const DocumentViewerContent: React.FC<Props> = ({
       field?.pageNo ??
       0
     );
+  // returns whether one non-signature field is considered filled
+const isFieldFilled = (f: any): boolean => {
+  const key = f._id || f.fieldId;
+  let v = fieldValuesRef.current[key];
+  if (v === undefined) v = localFieldValues[key];
+  if (v !== undefined && v !== null) {
+    if (f.type === "checkbox") return !!v;
+    return String(v).trim().length > 0;
+  }
+
+  // respect existing selfValue/selfSigner fallback if you use it for prefill
+  if (selfValue === "1") {
+    const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === f.slotId);
+    if (matched) {
+      const val = matched.role === "creator" ? matched.data?.name : matched.data?.[f.label];
+      if (f.type === "checkbox") return !!val;
+      return val !== undefined && val !== null && String(val).trim().length > 0;
+    }
+  }
+
+  // backend-provided default
+  if (f.signature !== undefined && f.signature !== null) {
+    return String(f.signature).trim().length > 0;
+  }
+  return false;
+};
+
+// returns true only if ALL non-signature fields for that recipient are filled
+const areAllNonSignatureFieldsFilledForRecipient = (recipientId: string) => {
+  const fields = signatureFields.filter((ff: any) => ff.type !== "signature" && ff.recipientId === recipientId);
+  if (fields.length === 0) return true; // no other fields => allow signing
+  return fields.every(isFieldFilled);
+};
+// Submit non-signature fields 
+// call after you setValue(..., true) (i.e., onBlur / onChange)
+const submitSingleField = async (recipientId: string, fieldId: string, value: any) => {
+  if (!recipientId || value == null) return;
+
+  const payload = {
+    envelopeID,
+    recipientId,
+    fields: { fieldId, value },
+  };
+
+  try {
+    const response = await eSignApi.post('/api/e-sign/public/save-non-signature-field', payload);
+    console.log("Field submitted:", response);
+
+    // Update signatureFields to trigger actionableFields recompute
+    setSignatureFields(prev => prev.map(f => 
+      (f._id || f.fieldId) === fieldId ? { ...f, signature: value } : f
+    ));
+
+  } catch (e) {
+    console.error("Network error while submitting field", e);
+  }
+};
+
+
+
+
 
   // Determine if a non-signature field is completed
   const isNonSignatureCompleted = (field: any): boolean => {
@@ -105,7 +175,7 @@ const DocumentViewerContent: React.FC<Props> = ({
       }
     }
     // backend default value
-    if (field.value !== undefined && field.value !== null) {
+    if (field.signature !== undefined && field.signature !== null) {
       return String(field.value).trim().length > 0;
     }
     return false;
@@ -130,8 +200,15 @@ const DocumentViewerContent: React.FC<Props> = ({
             isCompleted = isNonSignatureCompleted(field);
           }
         } else {
+          // Regular mode: recipient-based signing
           isCurrentUser = field.recipientId === currentUserId;
           if (field.type === 'signature') {
+            // In regular mode, exclude signature fields until all non-signature fields for that recipient are filled
+            const allFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
+            if (!allFilled) {
+              // Don't include signature field in actionableFields if non-signature fields aren't all filled
+              return false;
+            }
             isCompleted = !!field.signature || !!localSignedMap[field._id || field.fieldId];
           } else {
             isCompleted = isNonSignatureCompleted(field);
@@ -139,7 +216,15 @@ const DocumentViewerContent: React.FC<Props> = ({
         }
         return isCurrentUser && !isCompleted;
       })
-      .sort((a, b) => a.pageNum - b.pageNum);
+      .sort((a, b) => {
+        // In regular mode, prioritize non-signature fields first, then signature fields
+        if (selfValue !== '1') {
+          if (a.type === 'signature' && b.type !== 'signature') return 1;
+          if (a.type !== 'signature' && b.type === 'signature') return -1;
+        }
+        // Then sort by page number
+        return a.pageNum - b.pageNum;
+      });
   }, [signatureFields, selfSigner, selfValue, currentUserId, localSignedMap, localFieldValues]);
 
   // Track if there were fields initially
@@ -148,6 +233,14 @@ const DocumentViewerContent: React.FC<Props> = ({
       hadFieldsInitiallyRef.current = true;
     }
   }, [actionableFields.length]);
+
+  const currentNavField =
+    currentActionableIndex < actionableFields.length
+      ? actionableFields[currentActionableIndex]
+      : null;
+  const currentNavFieldKey = currentNavField
+    ? currentNavField._id || currentNavField.fieldId
+    : null;
 
   // Show success alert when all signatures are completed
   useEffect(() => {
@@ -179,14 +272,28 @@ const DocumentViewerContent: React.FC<Props> = ({
   useEffect(() => {
     // Only run once when fields first become available, not when they change due to user input
     if (!hasAutoOpened && actionableFields.length > 0) {
-      const first = actionableFields[0];
-      setCurrentActionableIndex(0);
-      // Track the field ID
-      currentFieldIdRef.current = first._id || first.fieldId;
+      // In regular mode, find first non-signature field if available
+      let firstField = actionableFields[0];
+      if (selfValue !== '1') {
+        const firstNonSignature = actionableFields.find(f => f.type !== 'signature');
+        if (firstNonSignature) {
+          firstField = firstNonSignature;
+          const firstIndex = actionableFields.findIndex(f => f === firstNonSignature);
+          setCurrentActionableIndex(firstIndex);
+          currentFieldIdRef.current = firstField._id || firstField.fieldId;
+        } else {
+          // If no non-signature fields, use first field (should be signature)
+          setCurrentActionableIndex(0);
+          currentFieldIdRef.current = firstField._id || firstField.fieldId;
+        }
+      } else {
+        setCurrentActionableIndex(0);
+        currentFieldIdRef.current = firstField._id || firstField.fieldId;
+      }
       setHasAutoOpened(true);
       // Center the first actionable field in view (but don't open sign pad)
       setTimeout(() => {
-        scrollToFieldElement(first._id || first.fieldId);
+        scrollToFieldElement(firstField._id || firstField.fieldId);
       }, 80);
     }
     // Check actionableFields.length but only trigger once via hasAutoOpened guard
@@ -327,6 +434,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   // Arrow navigation — move to field (center it) but DO NOT open signpad
   const goToActionableIndex = (index: number) => {
     if (actionableFields.length === 0) return;
+    if (isNavigatingRef.current) return; // Prevent concurrent navigation
+    
     // Ensure index is valid and wraps around correctly
     const validIndex = ((index % actionableFields.length) + actionableFields.length) % actionableFields.length;
     if (validIndex < 0 || validIndex >= actionableFields.length) return;
@@ -334,43 +443,81 @@ const DocumentViewerContent: React.FC<Props> = ({
     const field = actionableFields[validIndex];
     if (!field) return;
     
+    isNavigatingRef.current = true;
     setCurrentActionableIndex(validIndex);
     // Track the field ID so we can maintain position when actionableFields changes
     currentFieldIdRef.current = field._id || field.fieldId;
     // wait for page render then scroll to exact field element (robust polling)
     requestAnimationFrame(() => {
       scrollToFieldElement(field._id || field.fieldId);
+      // Allow navigation after scroll completes
+      setTimeout(() => {
+        isNavigatingRef.current = false;
+      }, 500);
     });
   };
   
   // Find the next incomplete field, starting from a given index
-  const findNextIncompleteField = (startIndex: number) => {
+  // In regular mode, prioritizes non-signature fields first
+  const findNextIncompleteField = (startIndex: number, prioritizeNonSignature: boolean = false) => {
     if (actionableFields.length === 0) return null;
     
-    // Search forward from startIndex
-    for (let i = 0; i < actionableFields.length; i++) {
-      const idx = (startIndex + i) % actionableFields.length;
-      const field = actionableFields[idx];
-      
-      if (!field) continue;
-      
-      // Check if this field is still incomplete (check refs too)
-      const key = field._id || field.fieldId;
-      let isCompleted = false;
-      
-      if (field.type === 'signature') {
-        if (selfValue === '1') {
-          const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-          isCompleted = matchedSigner ? !!matchedSigner.signature : false;
-        } else {
-          isCompleted = !!field.signature || !!localSignedMap[key];
+    // In regular mode, first try to find non-signature fields
+    if (selfValue !== '1' && prioritizeNonSignature) {
+      // First pass: look for non-signature fields
+      for (let i = 0; i < actionableFields.length; i++) {
+        const idx = (startIndex + i) % actionableFields.length;
+        const field = actionableFields[idx];
+        
+        if (!field || field.type === 'signature') continue;
+        
+        const isCompleted = isNonSignatureCompleted(field);
+        
+        if (!isCompleted) {
+          return idx;
         }
-      } else {
-        isCompleted = isNonSignatureCompleted(field);
       }
       
-      if (!isCompleted) {
-        return idx;
+      // Second pass: if no incomplete non-signature fields, look for signature fields
+      for (let i = 0; i < actionableFields.length; i++) {
+        const idx = (startIndex + i) % actionableFields.length;
+        const field = actionableFields[idx];
+        
+        if (!field || field.type !== 'signature') continue;
+        
+        const fieldKey = field._id || field.fieldId;
+        const isCompleted = !!field.signature || !!localSignedMap[fieldKey];
+        
+        if (!isCompleted) {
+          return idx;
+        }
+      }
+    } else {
+      // Self mode or no prioritization: search forward from startIndex
+      for (let i = 0; i < actionableFields.length; i++) {
+        const idx = (startIndex + i) % actionableFields.length;
+        const field = actionableFields[idx];
+        
+        if (!field) continue;
+        
+        // Check if this field is still incomplete (check refs too)
+        const key = field._id || field.fieldId;
+        let isCompleted = false;
+        
+        if (field.type === 'signature') {
+          if (selfValue === '1') {
+            const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
+            isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+          } else {
+            isCompleted = !!field.signature || !!localSignedMap[key];
+          }
+        } else {
+          isCompleted = isNonSignatureCompleted(field);
+        }
+        
+        if (!isCompleted) {
+          return idx;
+        }
       }
     }
     
@@ -384,7 +531,10 @@ const DocumentViewerContent: React.FC<Props> = ({
     // If not started yet, navigate to first incomplete field and mark as started
     if (!hasStarted) {
       setHasStarted(true);
-      const firstIncomplete = findNextIncompleteField(0);
+      // In regular mode, prioritize non-signature fields first
+      const firstIncomplete = selfValue !== '1' 
+        ? findNextIncompleteField(0, true) // Prioritize non-signature in regular mode
+        : findNextIncompleteField(0);
       if (firstIncomplete !== null) {
         goToActionableIndex(firstIncomplete);
       } else {
@@ -393,19 +543,61 @@ const DocumentViewerContent: React.FC<Props> = ({
       return;
     }
     
-    // Find the next incomplete field starting from current index + 1
-    let nextIndex = findNextIncompleteField(currentActionableIndex + 1);
+    // Check if current field is completed - if so, it may have been removed from actionableFields
+    const currentField = currentActionableIndex < actionableFields.length 
+      ? actionableFields[currentActionableIndex] 
+      : null;
     
-    // If not found after current, try from the beginning
-    if (nextIndex === null) {
-      nextIndex = findNextIncompleteField(0);
+    let isCurrentCompleted = false;
+    if (currentField) {
+      const key = currentField._id || currentField.fieldId;
+      if (currentField.type === 'signature') {
+        if (selfValue === '1') {
+          const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
+          isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+        } else {
+          isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
+        }
+      } else {
+        isCurrentCompleted = isNonSignatureCompleted(currentField);
+      }
+    } else {
+      // Current field doesn't exist in actionableFields, so it's completed
+      isCurrentCompleted = true;
     }
     
-    // Only navigate if we found a different field
-    if (nextIndex !== null && nextIndex !== currentActionableIndex) {
-      goToActionableIndex(nextIndex);
+    // In regular mode, prioritize non-signature fields first
+    if (selfValue !== '1') {
+      // If current is completed, start from current index (field was removed, so next field is now at this index)
+      // Otherwise, start from current + 1
+      const startIdx = isCurrentCompleted ? currentActionableIndex : currentActionableIndex + 1;
+      let nextIndex = findNextIncompleteField(startIdx, true);
+      
+      // If not found after current, try from the beginning
+      if (nextIndex === null) {
+        nextIndex = findNextIncompleteField(0, true);
+      }
+      
+      // Navigate if we found a field (even if index is same, because the field at that index changed)
+      if (nextIndex !== null) {
+        goToActionableIndex(nextIndex);
+      }
+    } else {
+      // Self mode: original behavior
+      const startIdx = isCurrentCompleted ? currentActionableIndex : currentActionableIndex + 1;
+      let nextIndex = findNextIncompleteField(startIdx);
+      
+      // If not found after current, try from the beginning
+      if (nextIndex === null) {
+        nextIndex = findNextIncompleteField(0);
+      }
+      
+      // Navigate if we found a field
+      if (nextIndex !== null) {
+        goToActionableIndex(nextIndex);
+      }
     }
-    // If nextIndex is null or same as current, all fields are completed or we're on the last one - do nothing
+    // If nextIndex is null, all fields are completed - do nothing
   };
 
   // Preserve scroll position when actionableFields changes (e.g., when a field is completed)
@@ -423,6 +615,103 @@ const DocumentViewerContent: React.FC<Props> = ({
       });
     }
   }, [actionableFields.length]);
+
+  // Update button position based on current field
+  useEffect(() => {
+    if (!hasStarted || !pdfContainerRef.current) {
+      setButtonStyle({});
+      lastButtonPositionRef.current = null;
+      return;
+    }
+
+    // Clear any pending updates
+    if (buttonUpdateTimeoutRef.current) {
+      clearTimeout(buttonUpdateTimeoutRef.current);
+      buttonUpdateTimeoutRef.current = null;
+    }
+
+    const updatePosition = () => {
+      const container = pdfContainerRef.current;
+      if (!container) return;
+
+      // Get current field from actionableFields using the index
+      const currentField = currentNavField;
+
+      if (!currentField) {
+        setButtonStyle({});
+        lastButtonPositionRef.current = null;
+        return;
+      }
+
+      const fieldId = currentField._id || currentField.fieldId;
+      const selector = `[data-field-id="${fieldId}"]`;
+      const fieldElement = container.querySelector(selector) as HTMLElement | null;
+
+      if (!fieldElement) {
+        // Field not rendered yet, try again after a delay
+        buttonUpdateTimeoutRef.current = setTimeout(updatePosition, 200);
+        return;
+      }
+
+      // Get positions relative to container
+      const containerRect = container.getBoundingClientRect();
+      const fieldRect = fieldElement.getBoundingClientRect();
+
+      // Calculate field position accounting for scroll
+      const fieldTop = fieldRect.top - containerRect.top + container.scrollTop;
+      const fieldLeft = fieldRect.left - containerRect.left + container.scrollLeft;
+      const fieldHeight = fieldRect.height;
+
+      // Button dimensions
+      const buttonWidth = 90;
+      const buttonHeight = 36;
+      const spacing = 12;
+
+      // Position to the left of field, vertically centered
+      const left = Math.max(0, fieldLeft - buttonWidth - spacing);
+      const top = fieldTop + (fieldHeight / 2) - (buttonHeight / 4);
+
+      // Only update if position actually changed (avoid unnecessary re-renders)
+      if (!lastButtonPositionRef.current || 
+          Math.abs(lastButtonPositionRef.current.top - top) > 1 || 
+          Math.abs(lastButtonPositionRef.current.left - left) > 1) {
+        lastButtonPositionRef.current = { top, left };
+        setButtonStyle({
+          position: 'absolute',
+          top: `${top}px`,
+          left: `${left}px`,
+          transform: 'translateY(-50%)',
+        });
+      }
+    };
+
+    // Delay initial update to avoid conflicts with navigation/rendering
+    buttonUpdateTimeoutRef.current = setTimeout(updatePosition, 300);
+
+    // Throttled scroll handler
+    const container = pdfContainerRef.current;
+    const handleScroll = () => {
+      if (scrollTimeoutRef.current) return;
+      scrollTimeoutRef.current = setTimeout(() => {
+        updatePosition();
+        scrollTimeoutRef.current = null;
+      }, 50); // Throttle to max 20 updates per second
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (buttonUpdateTimeoutRef.current) {
+        clearTimeout(buttonUpdateTimeoutRef.current);
+        buttonUpdateTimeoutRef.current = null;
+      }
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+    };
+    // Only depend on current index, nav field, and started state to avoid excessive recalculations
+  }, [hasStarted, currentActionableIndex, currentNavFieldKey, actionableFields.length]);
 
   // Restore focus to active input after re-render
   useEffect(() => {
@@ -445,10 +734,10 @@ const DocumentViewerContent: React.FC<Props> = ({
 
   // Ensure current index stays valid when actionableFields change
   // IMPORTANT: Never scroll automatically - only adjust index silently
-  // Don't adjust if user is currently typing to avoid interrupting them
+  // Don't adjust if user is currently typing or navigating to avoid interrupting them
   useEffect(() => {
-    // Don't make any changes if user is typing
-    if (isUserTypingRef.current) {
+    // Don't make any changes if user is typing or we're navigating
+    if (isUserTypingRef.current || isNavigatingRef.current) {
       return;
     }
     
@@ -457,25 +746,31 @@ const DocumentViewerContent: React.FC<Props> = ({
       return;
     }
     
+    // Get current index from state (don't use in dependency to avoid loops)
+    const currentIdx = currentActionableIndex;
+    
     // If we have a tracked field ID, try to find it in the new actionableFields
     if (currentFieldIdRef.current) {
       const foundIndex = actionableFields.findIndex(
         (f) => (f._id || f.fieldId) === currentFieldIdRef.current
       );
-      if (foundIndex >= 0) {
+      if (foundIndex >= 0 && foundIndex !== currentIdx) {
         // Field still exists and is incomplete, update index to its new position
         setCurrentActionableIndex(foundIndex);
         return;
-      } else {
-        // Field was completed and removed, find next incomplete
+      } else if (foundIndex < 0) {
+        // Field was completed and removed from actionableFields
+        // Don't auto-navigate - let user click Next button
         currentFieldIdRef.current = null;
       }
     }
     
     // Check if current index is out of bounds
-    if (currentActionableIndex >= actionableFields.length) {
-      // Find the first incomplete field
-      const nextIncomplete = findNextIncompleteField(0);
+    if (currentIdx >= actionableFields.length) {
+      // Find the first incomplete field - in regular mode, prioritize non-signature fields
+      const nextIncomplete = selfValue !== '1' 
+        ? findNextIncompleteField(0, true)
+        : findNextIncompleteField(0);
       if (nextIncomplete !== null) {
         setCurrentActionableIndex(nextIncomplete);
         const field = actionableFields[nextIncomplete];
@@ -489,45 +784,15 @@ const DocumentViewerContent: React.FC<Props> = ({
       return;
     }
     
-    // Check if the current field is still incomplete
-    const currentField = actionableFields[currentActionableIndex];
+    // Just update the ref if field exists - don't auto-navigate on completion
+    const currentField = actionableFields[currentIdx];
     if (currentField) {
       const key = currentField._id || currentField.fieldId;
       currentFieldIdRef.current = key;
-      
-      let isCompleted = false;
-      
-      if (currentField.type === 'signature') {
-        if (selfValue === '1') {
-          const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-          isCompleted = matchedSigner ? !!matchedSigner.signature : false;
-        } else {
-          isCompleted = !!currentField.signature || !!localSignedMap[key];
-        }
-      } else {
-        isCompleted = isNonSignatureCompleted(currentField);
-      }
-      
-      // If current field is completed, find the next incomplete field
-      if (isCompleted) {
-        currentFieldIdRef.current = null;
-        const nextIncomplete = findNextIncompleteField(currentActionableIndex + 1);
-        if (nextIncomplete !== null) {
-          setCurrentActionableIndex(nextIncomplete);
-          const nextField = actionableFields[nextIncomplete];
-          currentFieldIdRef.current = nextField ? (nextField._id || nextField.fieldId) : null;
-        } else {
-          // Try from beginning
-          const firstIncomplete = findNextIncompleteField(0);
-          if (firstIncomplete !== null && firstIncomplete !== currentActionableIndex) {
-            setCurrentActionableIndex(firstIncomplete);
-            const firstField = actionableFields[firstIncomplete];
-            currentFieldIdRef.current = firstField ? (firstField._id || firstField.fieldId) : null;
-          }
-        }
-      }
     }
-  }, [actionableFields.length, currentActionableIndex, localFieldValues, localSignedMap, selfSigner]);
+    // Only depend on actionableFields.length, NOT completion states to avoid re-renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actionableFields.length]);
 
   // 🎉 Party popper immediately after a signature is saved
   const triggerConfetti = () => {
@@ -615,8 +880,39 @@ const DocumentViewerContent: React.FC<Props> = ({
                         }
 
                         const keyId = field._id || field.fieldId;
+                        const fieldWidth = field.width?.$numberInt ?? field.width;
+                        const fieldHeight = field.height?.$numberInt ?? field.height;
+
+                        // recipient display (best-effort)
+                        const getRecipientDisplay = () => {
+                          
+                          if (selfValue === '1') {
+                            const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
+                            if (matched) {
+                              const nm = matched?.data?.name || matched?.name || '';
+                              if (nm) return nm;
+                              const em = matched?.data?.email || matched?.email || '';
+                              if (em) return em;
+                              return 'Recipient';
+                            }
+                          } else {
+                            const recipient = allRecipients?.find((r: any) => r.id === field.recipientId);
+                            if (recipient) {
+                              return <div className="z-50 bg-gray-200/60  rounded-sm p-1">
+                                <div className="text-black text-sm">{recipient.name}</div>
+                                <div className="text-black text-sm">{recipient.email}</div>
+                              </div>;
+                            }
+                            if (field.recipientId && String(field.recipientId) === String(currentUserId)) {
+                              return 'You';
+                            }
+                          }
+                          return 'Recipient';
+                        };
 
                         if (isSignatureType) {
+                          const allFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
+                          const allowSigning = isCurrentUser && !isSigned && allFilled;
                           return (
                             <div
                               key={field._id?.$oid || field._id}
@@ -625,32 +921,56 @@ const DocumentViewerContent: React.FC<Props> = ({
                                 position: "absolute",
                                 top: field.y?.$numberDouble ?? field.y,
                                 left: field.x?.$numberDouble ?? field.x,
-                                width: field.width?.$numberInt ?? field.width,
-                                height: field.height?.$numberInt ?? field.height,
-                                zIndex: 10,
-                                pointerEvents: isCurrentUser && !isSigned ? "auto" : "none",
+                                width: fieldWidth,
+                                // expand height to include label area
+                                height: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 18,
+                                zIndex: 10
                               }}
-                              className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${isSigned
-                                ? "border-green-500"
-                                : isCurrentUser
-                                  ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
-                                  : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
-                                }`}
-                              onClick={() =>
-                                isCurrentUser && !isSigned && onFieldClick(field)
-                              }
                             >
-                              {isSigned ? (
-                                <img
-                                  src={signedImage as string}
-                                  alt="Signed"
-                                  className="w-full h-full object-contain"
-                                />
-                              ) : isCurrentUser ? (
-                                "Sign Here"
-                              ) : (
-                                "Signature"
-                              )}
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  width: fieldWidth,
+                                  height: fieldHeight,
+                                  pointerEvents: allowSigning ? "auto" : "none",
+                                }}
+                                className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${isSigned
+                                  ? "border-green-500"
+                                  : isCurrentUser
+                                    ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
+                                    : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
+                                  }`}
+                                onClick={() =>
+                                  isCurrentUser && !isSigned && onFieldClick(field)
+                                }
+                              >
+                                {isSigned ? (
+                                  <img
+                                    src={signedImage as string}
+                                    alt="Signed"
+                                    className="w-full h-full object-contain"
+                                  />
+                                ) : !allFilled ? (
+                                  "Fill all other fields first"
+                                ) : isCurrentUser ? (
+                                  "Click to sign"
+                                ) : ("Signature")}
+                              </div>
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 2,
+                                  left: 0,
+                                  width: fieldWidth,
+                                  pointerEvents: 'none',
+                                  textAlign: 'center',
+                                }}
+                                className="text-[10px] text-gray-600"
+                              >
+                                {getRecipientDisplay()}
+                              </div>
                             </div>
                           );
                         }
@@ -775,9 +1095,10 @@ const DocumentViewerContent: React.FC<Props> = ({
                         const editable = isCurrentUser;
                         const commonBox =
                           "w-full h-full flex items-center justify-center rounded border text-sm " +
-                          (editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
+                          ( isSigned? "border-green-500" :editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
 
                         // Render control based on type
+
                         const renderInput = () => {
                           switch (field.type) {
                             case "checkbox":
@@ -841,6 +1162,7 @@ const DocumentViewerContent: React.FC<Props> = ({
                                     const newValue = e.target.value;
                                     setValue(newValue, true); // true = update state
                                     handleBlur();
+                                    submitSingleField(field.recipientId,field._id,newValue);
                                   }}
                                   onKeyDown={(e) => {
                                     handleKeyDown(e);
@@ -960,13 +1282,43 @@ const DocumentViewerContent: React.FC<Props> = ({
                               position: "absolute",
                               top: field.y?.$numberDouble ?? field.y,
                               left: field.x?.$numberDouble ?? field.x,
-                              width: field.width?.$numberInt ?? field.width,
-                              height: field.height?.$numberInt ?? field.height,
+                              width: fieldWidth,
+                              // expand height to include label
+                              height: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 18,
                               zIndex: 10,
                               pointerEvents: "auto",
                             }}
-                          >
-                            {renderInput()}
+                          >{
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: fieldWidth,
+                                height: fieldHeight,
+                              }}
+                            >
+                              {
+                                isSigned ? (
+                                  <div className={commonBox}>{field.signature}</div>
+                                ) : renderInput()
+                              }
+                              
+                            </div>
+                          }
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 2,
+                                left: 0,
+                                width: fieldWidth,
+                                pointerEvents: 'none',
+                                textAlign: 'center',
+                              }}
+                              className="text-[10px] text-gray-600"
+                            >
+                              {getRecipientDisplay()}
+                            </div>
                           </div>
                         );
                       })}
@@ -1047,10 +1399,9 @@ const DocumentViewerContent: React.FC<Props> = ({
             </div>
           ));
         })()}
-      </div>
 
-      {/* Sticky left-side Next button */}
-      {(() => {
+        {/* Navigation button - positioned relative to current field */}
+        {(() => {
         // Get the current field at currentActionableIndex
         const currentField = currentActionableIndex < actionableFields.length 
           ? actionableFields[currentActionableIndex] 
@@ -1058,33 +1409,52 @@ const DocumentViewerContent: React.FC<Props> = ({
         
         // Find the next incomplete field for navigation
         let nextFieldIndex: number | null = null;
-        if (hasStarted && currentField) {
-          // Check if current field is still incomplete
-          const key = currentField._id || currentField.fieldId;
-          let isCurrentCompleted = false;
-          
-          if (currentField.type === 'signature') {
-            if (selfValue === '1') {
-              const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-              isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+        let isCurrentCompleted = false;
+        
+        if (hasStarted) {
+          // Check if current field exists and is still incomplete
+          if (currentField) {
+            const key = currentField._id || currentField.fieldId;
+            
+            if (currentField.type === 'signature') {
+              if (selfValue === '1') {
+                const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
+                isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+              } else {
+                isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
+              }
             } else {
-              isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
+              isCurrentCompleted = isNonSignatureCompleted(currentField);
             }
           } else {
-            isCurrentCompleted = isNonSignatureCompleted(currentField);
+            // Current field doesn't exist (was removed from actionableFields), so it's completed
+            isCurrentCompleted = true;
           }
           
-          // If current is completed, find next from current index, otherwise from current + 1
-          nextFieldIndex = findNextIncompleteField(isCurrentCompleted ? currentActionableIndex : currentActionableIndex + 1);
+          // Always start searching from current index + 1
+          // In regular mode, prioritize non-signature fields
+          const startIdx = currentActionableIndex + 1;
+          nextFieldIndex = selfValue !== '1'
+            ? findNextIncompleteField(startIdx, true)
+            : findNextIncompleteField(startIdx);
+          
+          // If not found after current, try from the beginning
           if (nextFieldIndex === null) {
-            nextFieldIndex = findNextIncompleteField(0);
+            nextFieldIndex = selfValue !== '1'
+              ? findNextIncompleteField(0, true)
+              : findNextIncompleteField(0);
           }
         } else {
-          nextFieldIndex = findNextIncompleteField(0);
+          // Not started yet - in regular mode, prioritize non-signature fields
+          nextFieldIndex = selfValue !== '1' 
+            ? findNextIncompleteField(0, true) 
+            : findNextIncompleteField(0);
         }
         
-        // Show the current field type (or first field if not started)
-        const displayField = currentField || (nextFieldIndex !== null ? actionableFields[nextFieldIndex] : null);
+        // Show the current field type (or next field if current is completed)
+        const displayField = currentField && !isCurrentCompleted 
+          ? currentField 
+          : (nextFieldIndex !== null ? actionableFields[nextFieldIndex] : null);
         const fieldType = displayField?.type || '';
         // Show "Sign" for signature type, otherwise capitalize first letter
         const fieldTypeDisplay = fieldType === 'signature' 
@@ -1092,38 +1462,60 @@ const DocumentViewerContent: React.FC<Props> = ({
           : fieldType ? fieldType.charAt(0).toUpperCase() + fieldType.slice(1) : '';
         const buttonText = hasStarted ? (fieldTypeDisplay || 'Next') : "Start";
         
-        // Check if there's a next field to navigate to (different from current)
-        const hasNextField = nextFieldIndex !== null && (!hasStarted || nextFieldIndex !== currentActionableIndex);
+        // Check if there's a next field to navigate to
+        // Button should be enabled if there's a next field OR if current field is completed (so user can move to next)
+        const hasNextField = (nextFieldIndex !== null) || (currentField && !isCurrentCompleted);
         
+        // For "Start" button, use fixed positioning
+        if (!hasStarted) {
+          return (
+            <button
+              onClick={goToNext}
+              disabled={!hasNextField}
+              className="fixed z-50 font-medium shadow disabled:opacity-50"
+              style={{ 
+                backgroundColor: '#ffc107', 
+                color: '#1a1a1a', 
+                padding: '8px 16px',
+                border: 'none',
+                borderRadius: '8px',
+                top: '60px',
+                left: '71px',
+                cursor: 'pointer',
+              }}
+              aria-label="Start"
+            >
+              {buttonText}
+            </button>
+          );
+        }
+
+        // For navigation button, position relative to current field
         return (
           <button
             onClick={goToNext}
             disabled={!hasNextField || actionableFields.length === 0}
-            className={`fixed z-50 font-medium shadow disabled:opacity-50 ${
-              hasStarted ? "left-75" : "left-71"
-            }`}
+            className="absolute z-50 font-medium shadow disabled:opacity-50"
             style={{ 
               backgroundColor: '#ffc107', 
               color: '#1a1a1a', 
-              marginLeft: 0,
-              padding: hasStarted ? '8px 20px 8px 16px' : '8px 16px',
+              padding: '8px 20px 8px 16px',
               border: 'none',
-              borderRadius: hasStarted ? undefined : '8px',
-              borderTopLeftRadius: hasStarted ? '8px' : undefined,
-              borderBottomLeftRadius: hasStarted ? '8px' : undefined,
-              borderTopRightRadius: hasStarted ? 0 : undefined,
-              borderBottomRightRadius: hasStarted ? 0 : undefined,
-              top: hasStarted ? '50%' : '60px',
-              transform: hasStarted ? 'translateY(-50%)' : 'none',
-              clipPath: hasStarted ? 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)' : 'none',
+              borderRadius: '8px',
+              borderTopRightRadius: 0,
+              borderBottomRightRadius: 0,
+              clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)',
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              ...buttonStyle,
             }}
-            aria-label={hasStarted ? `${fieldTypeDisplay} field` : "Start"}
+            aria-label={fieldTypeDisplay}
           >
             {buttonText}
           </button>
         );
       })()}
+      </div>
 
       {/* SignPad Modal */}
       {activeField && (

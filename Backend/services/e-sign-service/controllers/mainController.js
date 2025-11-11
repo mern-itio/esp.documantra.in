@@ -17,6 +17,7 @@ const { generateAndStoreCompletionCertificate } = require('../services/certifica
 const fs = require('fs');
 const selfSigner = require('../models/selfSigner');
 const { sign } = require('crypto');
+const { values } = require('pdf-lib');
 
 const envelopesData = async (req, res) => {
   const userId = req?.user?.data?.id;
@@ -1131,6 +1132,18 @@ const saveTextField = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+const saveNonSignatureField = async (req, res) => {
+  const {envelopeID, recipientId,fields} = req.body;
+  const nonSignatureField = await SignatureField.findById(fields.fieldId);
+  console.log(nonSignatureField);
+  if(!nonSignatureField){
+    return res.status(404).json({message: 'Field not found'});
+  }
+  nonSignatureField.signature = fields.value;
+  nonSignatureField.status = 'completed';
+  await nonSignatureField.save();
+  return res.status(200).json({message: 'Field saved succesfully'});
+}
 
 // Export functions
 module.exports = {
@@ -1159,5 +1172,6 @@ module.exports = {
   getSigners,
   envelopeStats,
   getAllEnvelopeStats,
-  saveTextField
+  saveTextField,
+  saveNonSignatureField
 };
