@@ -22,7 +22,13 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [showPalette, setShowPalette] = React.useState(false);
   const [paletteQuery, setPaletteQuery] = React.useState('');
-  const [credits, setCredits] = React.useState<number>(() => SubscriptionStorage.getPlan()?.creditsBalance ?? 0);
+  const [credits, setCredits] = React.useState<number | null>(() => {
+    try {
+      const val = (SubscriptionStorage.getPlan() as any)?.creditsBalance;
+      const n = Number(val);
+      return Number.isFinite(n) ? n : null;
+    } catch { return null; }
+  });
   const notifRef = React.useRef<HTMLDivElement | null>(null);
   const userRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -37,14 +43,28 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   }, [showNotif, showUserMenu]);
 
   // Load credits from storage and listen for changes
+  const refreshCredits = React.useCallback(() => {
+    try {
+      // Prefer live context value if available
+      const planFromContext: any = userPlan;
+      const planFromStorage: any = SubscriptionStorage.getPlan();
+      const raw = (planFromContext && planFromContext.creditsBalance != null)
+        ? planFromContext.creditsBalance
+        : planFromStorage?.creditsBalance;
+      const n = Number(raw);
+      setCredits(Number.isFinite(n) ? n : null);
+    } catch {
+      setCredits(null);
+    }
+  }, [userPlan]);
+
+  React.useEffect(() => { refreshCredits(); }, [refreshCredits]);
+
   React.useEffect(() => {
-    try { setCredits(SubscriptionStorage.getPlan()?.creditsBalance ?? 0); } catch {}
-    const onStorage = () => {
-      try { setCredits(SubscriptionStorage.getPlan()?.creditsBalance ?? 0); } catch {}
-    };
+    const onStorage = () => refreshCredits();
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, []);
+  }, [refreshCredits]);
 
   // Keyboard shortcut: Ctrl/Cmd+K to open command palette
   React.useEffect(() => {
@@ -96,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     return items.filter(i => i.label.toLowerCase().includes(q));
   }, [paletteQuery, navigate]);
 
-  const lowCredits = Number.isFinite(credits) && credits <= 10;
+  const lowCredits = credits != null && credits <= 10;
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -129,7 +149,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${lowCredits ? 'border-red-200 bg-red-50 text-red-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}
             title="View credits usage"
           >
-            <span className="font-medium">{Number.isFinite(credits) ? credits : '—'}</span>
+            <span className="font-medium">{credits != null ? credits : '—'}</span>
             <span className="text-xs opacity-80">credits</span>
             {lowCredits && <span className="ml-1 h-2 w-2 rounded-full bg-red-500" />}
           </button>

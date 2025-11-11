@@ -154,7 +154,7 @@ const DashboardPage: React.FC = () => {
               New Envelope
             </button>
             <button
-              onClick={() => navigate('/e-sign/dashboard')}
+              onClick={() => navigate('/e-sign/aggrement')}
               className="px-4 py-2 bg-white text-indigo-700 font-medium rounded-lg text-sm hover:bg-slate-100 transition-colors"
             >
               Open E‑Sign
