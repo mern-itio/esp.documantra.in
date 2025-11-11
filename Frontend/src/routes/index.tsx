@@ -199,6 +199,7 @@ import ManageRecipients from '../pages/eSign/ManageRecipients';
 // import { elements } from 'chart.js';
 import PowerFormCreate from '../pages/eSign/PowerFormCreate';
 import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
+import ThankYouPage from '../pages/eSign/ThankYou';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -827,7 +828,8 @@ const router = createBrowserRouter([
         children: [
           { path: 'e-sign/signer/:id/:recipientId/:cycleId?', element: <PublicSignerPage /> },
           { path: '/template/form-view/:id', element: <FormView /> },
-          { path: '/e-sign/power-form/:formId/:envelopeId', element: <PowerForm /> }
+          { path: '/e-sign/power-form/:formId/:envelopeId', element: <PowerForm /> },
+          { path: '/e-sign/signer/thank-you', element: <ThankYouPage/>}
         ],
       },
       {
