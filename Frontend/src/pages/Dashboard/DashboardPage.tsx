@@ -95,7 +95,7 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Advanced Tutorial Modal */}
       {showTutorial && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -139,81 +139,142 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome to Draft & Sign</p>
+      {/* Top banner */}
+      <div className="rounded-sm bg-gradient-to-r from-[#1D2D80] via-[#2759A5] to-[#4AB6E4] text-white p-6 shadow-md">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Dashboard</h1>
+            <p className="text-white/80 text-sm mt-1">Welcome to Draft & Sign — manage envelopes and documents at a glance.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/e-sign/create')}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm transition-colors"
+            >
+              New Envelope
+            </button>
+            <button
+              onClick={() => navigate('/e-sign/dashboard')}
+              className="px-4 py-2 bg-white text-indigo-700 font-medium rounded-lg text-sm hover:bg-slate-100 transition-colors"
+            >
+              Open E‑Sign
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* KPI cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <span className="text-2xl">📄</span>
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">📄</div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Total Envelopes</p>
+                <p className="text-2xl font-semibold text-slate-900 mt-1">
+                  {envStatesLoading ? '—' : envelopeStats?.totalEnvelopes}
+                </p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Envelopes</p>
-              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading ? 'Loading...' : envelopeStats?.totalEnvelopes}</p>
-            </div>
+            <span className="text-[10px] px-2 py-1 rounded-full bg-blue-50 text-blue-600">All time</span>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <span className="text-2xl">✅</span>
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-green-50 text-green-600">✅</div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
+                <p className="text-2xl font-semibold text-slate-900 mt-1">
+                  {envStatesLoading ? '—' : envelopeStats?.completedEnvelopes}
+                </p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Completed Envelopes</p>
-              <p className="text-2xl font-semibold text-gray-900">{envStatesLoading ? 'Loading...' : envelopeStats?.completedEnvelopes}</p>
-            </div>
+            <span className="text-[10px] px-2 py-1 rounded-full bg-green-50 text-green-600">Done</span>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <span className="text-2xl">⏳</span>
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-yellow-50 text-yellow-700">⏳</div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Pending</p>
+                <p className="text-2xl font-semibold text-slate-900 mt-1">
+                  {envStatesLoading ? '—' : (envelopeStats?.pendingEnvelopes ?? 0)}
+                </p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {envStatesLoading ? 'Loading...' : envelopeStats?.pendingEnvelopes ?? 0}
-              </p>
-            </div>
+            <span className="text-[10px] px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">In queue</span>
           </div>
         </div>
+
+        {/* Card */}
         <Link to="/credits-usage">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <span className="text-2xl">📊</span>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-fuchsia-50 text-fuchsia-600">📊</div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Credits Balance</p>
+                  <p className="text-2xl font-semibold text-slate-900 mt-1">{loading ? '—' : (balance ?? 0)}</p>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Credits Balance</p>
-                <p className="text-2xl font-semibold text-gray-900">{loading ? '—' : (balance ?? 0)}</p>
-              </div>
+              <span className="text-[10px] px-2 py-1 rounded-full bg-fuchsia-50 text-fuchsia-600">Billing</span>
             </div>
           </div>
         </Link>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Credit Usage</h2>
-        <div className="space-y-3 mb-6">
+      {/* Quick actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button onClick={() => navigate('/e-sign/create')} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 hover:shadow transition-shadow">
+          <span className="text-indigo-600 text-lg">✍️</span>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-slate-800">Create Envelope</p>
+            <p className="text-xs text-slate-500">Upload docs and add recipients</p>
+          </div>
+        </button>
+        <button onClick={() => navigate('/e-sign/aggrement')} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 hover:shadow transition-shadow">
+          <span className="text-emerald-600 text-lg">📬</span>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-slate-800">Manage Envelopes</p>
+            <p className="text-xs text-slate-500">Track progress & resend</p>
+          </div>
+        </button>
+        <button onClick={() => navigate('/credits-usage')} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 hover:shadow transition-shadow">
+          <span className="text-fuchsia-600 text-lg">💳</span>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-slate-800">Credits & Billing</p>
+            <p className="text-xs text-slate-500">See usage and balance</p>
+          </div>
+        </button>
+      </div>
+
+      {/* Recent credit usage */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">Recent Credit Usage</h2>
+          <Link to="/credits-usage" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View details</Link>
+        </div>
+        <div className="space-y-2 mb-2">
           {usage.length === 0 && !loading && (
-            <p className="text-sm text-gray-600">No recent usage.</p>
+            <p className="text-sm text-slate-600">No recent usage.</p>
           )}
           {usage.map((u, idx) => (
-            <div key={idx} className="flex items-center space-x-3">
+            <div key={idx} className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
               <div className={`w-2 h-2 rounded-full ${u.creditsDelta < 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
-              <span className="text-sm text-gray-700">{u.action || 'usage'} {u.toolId ? `(${toolNameByIdRef.current[u.toolId] || u.toolId})` : ''}</span>
+              <span className="text-sm text-slate-800">
+                {u.action || 'usage'} {u.toolId ? <span className="text-slate-500">({toolNameByIdRef.current[u.toolId] || u.toolId})</span> : ''}
+              </span>
               <span className={`text-sm ml-auto font-medium ${u.creditsDelta < 0 ? 'text-red-600' : 'text-green-600'}`}>{u.creditsDelta}</span>
-              <span className="text-xs text-gray-400 ml-3">{new Date(u.createdAt).toLocaleString()}</span>
+              <span className="text-xs text-slate-400 ml-3">{new Date(u.createdAt).toLocaleString()}</span>
             </div>
           ))}
-        </div>
-        <div className="mt-2">
-          <Link to="/credits-usage" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View details</Link>
         </div>
       </div>
     </div>

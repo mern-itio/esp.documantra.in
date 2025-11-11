@@ -86,6 +86,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // Listen for subscription updates and update user plan
+  useEffect(() => {
+    const handleSubscriptionUpdate = (event: CustomEvent) => {
+      const { planName } = event.detail;
+      if (user) {
+        const updatedUser = { ...user, plan: planName };
+        setUser(updatedUser);
+        // Also update localStorage
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          try {
+            const parsedUser = JSON.parse(userData);
+            parsedUser.plan = planName;
+            localStorage.setItem('userData', JSON.stringify(parsedUser));
+          } catch (err) {
+            console.warn('Failed to update userData:', err);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('subscription-updated', handleSubscriptionUpdate as EventListener);
+    return () => {
+      window.removeEventListener('subscription-updated', handleSubscriptionUpdate as EventListener);
+    };
+  }, [user]);
+
   const login = async (email: string, password: string) => {
     try {
       const data = await apiRequest(API_ENDPOINTS.AUTH.LOGIN, {
@@ -137,6 +164,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const subscriptionPlan = await SubscriptionService.getUserPlan();
         SubscriptionStorage.savePlan(subscriptionPlan);
+        
+        // Update user plan in userData localStorage and state
+        const updatedUserData = {
+          id: data.user_id,
+          email: email,
+          fullname: fullname,
+          type: data.type,
+          plan: subscriptionPlan.name || subscriptionPlan.type || 'free',
+          phone: data.phone || phone,
+          isFirstLogin: data.isFirstLogin
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUser(updatedUserData);
       } catch (error) {
         console.error('Error fetching subscription plan after login:', error);
       }

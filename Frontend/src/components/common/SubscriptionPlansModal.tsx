@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { X, Star } from 'lucide-react';
 import { subscriptionApi } from '../../services/apiHelper';
+import { useSubscription } from '../../context/SubscriptionContext';
+import toast from 'react-hot-toast';
 
 interface PlanTemplate {
   _id: string;
@@ -20,6 +22,8 @@ interface SubscriptionPlansModalProps {
 export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ open, onClose }) => {
   const [plans, setPlans] = useState<PlanTemplate[]>([]);
   const [loading, setLoading] = useState(false);
+  const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
+  const { upgradeToPlan, refreshPlan, userPlan } = useSubscription();
 
   useEffect(() => {
     if (!open) return;
@@ -74,6 +78,8 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
                     : (plans[1]?._id || plans[0]?._id);
                   return plans.map((plan) => {
                     const idxRecommended = plan._id === recommendedId;
+                    const isUpgrading = upgradingPlanId === plan._id;
+                    const isCurrent = userPlan?.name && userPlan.name.toLowerCase() === String(plan.name || '').toLowerCase();
                     return (
                       <div key={plan._id} className={`rounded-2xl p-6 border ${idxRecommended ? 'border-indigo-500/50 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
                     {idxRecommended && (
@@ -83,8 +89,36 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
                     )}
                     <div className="text-sm text-gray-600 mb-1">{plan.name}</div>
                     <div className="text-3xl font-extrabold mb-1 text-gray-900">${plan.pricePerPeriod}<span className="text-sm font-normal text-gray-500"> / {plan.period}</span></div>
-                    <button className={`w-full mt-4 h-10 rounded-lg font-semibold ${idxRecommended ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>{plan.type === 'free' ? 'Get started for free' : 'Upgrade'}</button>
-                    <div className="mt-5 text-sm text-gray-700">Includes:</div>
+                    {isCurrent ? (
+                      <div className="w-full mt-4 h-10 rounded-lg font-semibold bg-gray-100 text-gray-700 flex items-center justify-center border border-gray-200">
+                        Your current plan
+                      </div>
+                    ) : (
+                      <button
+                        disabled={isUpgrading}
+                        onClick={async () => {
+                          try {
+                            setUpgradingPlanId(plan._id);
+                            const t = toast.loading('Upgrading plan...');
+                            await upgradeToPlan(plan._id);
+                            // Optionally refresh in background
+                            refreshPlan().catch(() => {});
+                            toast.success('Plan upgraded successfully', { id: t });
+                            onClose();
+                          } catch (err: any) {
+                            toast.error(err?.message || 'Failed to upgrade plan');
+                          } finally {
+                            setUpgradingPlanId(null);
+                          }
+                        }}
+                        className={`w-full mt-4 h-10 rounded-lg font-semibold transition ${
+                          idxRecommended ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-900 text-white hover:bg-gray-800'
+                        } ${isUpgrading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      >
+                        {isUpgrading ? 'Upgrading...' : (plan.type === 'free' ? 'Get started for free' : 'Upgrade')}
+                      </button>
+                    )}
+                    <div className="mt-5 text-medium font-bold text-gray-700">Includes:-</div>
                     <ul className="mt-3 space-y-2 text-sm text-gray-700">
                       <li>Monthly credits: {plan.monthlyCredits ?? 0}</li>
                       <li>Services: {(plan.services || []).join(', ') || '—'}</li>

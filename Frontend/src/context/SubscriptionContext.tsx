@@ -8,6 +8,7 @@ interface SubscriptionContextType {
   loading: boolean;
   error: string | null;
   refreshPlan: () => Promise<void>;
+  upgradeToPlan: (planId: string) => Promise<SubscriptionPlan>;
   updatePlan: (planData: Partial<SubscriptionPlan>) => Promise<void>;
   hasSufficientCredits: (requiredCredits: number) => boolean;
   isServiceAvailable: (service: string) => boolean;
@@ -33,18 +34,6 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const [userPlan, setUserPlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Load subscription plan from localStorage on mount
-  useEffect(() => {
-    const loadStoredPlan = () => {
-      const storedPlan = SubscriptionStorage.getPlan();
-      if (storedPlan) {
-        setUserPlan(storedPlan);
-      }
-    };
-
-    loadStoredPlan();
-  }, []);
 
   // Fetch subscription plan from API
   const refreshPlan = async () => {
@@ -83,6 +72,44 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
   };
 
+  // Upgrade to a specific plan by planId
+  const upgradeToPlan = async (planId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const upgradedPlan = await SubscriptionService.upgradeToPlan(planId);
+      setUserPlan(upgradedPlan);
+      SubscriptionStorage.savePlan(upgradedPlan);
+      
+      // Update user plan in localStorage (userData) so it persists after re-login
+      try {
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          parsedUser.plan = upgradedPlan.name || upgradedPlan.type || 'free';
+          localStorage.setItem('userData', JSON.stringify(parsedUser));
+          
+          // Dispatch custom event to notify AuthContext to update user state
+          window.dispatchEvent(new CustomEvent('subscription-updated', { 
+            detail: { planName: parsedUser.plan } 
+          }));
+        }
+      } catch (err) {
+        console.warn('Failed to update userData in localStorage:', err);
+      }
+      
+      return upgradedPlan;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade subscription plan';
+      setError(errorMessage);
+      console.error('Error upgrading subscription plan:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Helper functions
   const hasSufficientCredits = (requiredCredits: number): boolean => {
     if (!userPlan) return false;
@@ -104,18 +131,38 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     return SubscriptionService.isFreePlan(userPlan);
   };
 
-  // Auto-refresh plan when component mounts if no stored plan
+  // Load subscription plan from localStorage on mount, then fetch from API if needed
   useEffect(() => {
-    if (!userPlan && !loading) {
-      refreshPlan();
-    }
-  }, [userPlan, loading]);
+    const loadInitialPlan = async () => {
+      // First, try to load from localStorage
+      const storedPlan = SubscriptionStorage.getPlan();
+      if (storedPlan) {
+        setUserPlan(storedPlan);
+        setLoading(false); // Set loading to false if we have stored plan
+        // Optionally refresh in background to get latest data
+        try {
+          const plan = await SubscriptionService.getUserPlan();
+          setUserPlan(plan);
+          SubscriptionStorage.savePlan(plan);
+        } catch (err) {
+          // If refresh fails, keep using stored plan
+          console.warn('Failed to refresh subscription plan, using stored plan:', err);
+        }
+      } else {
+        // No stored plan, fetch from API
+        await refreshPlan();
+      }
+    };
+
+    loadInitialPlan();
+  }, []);
 
   const value: SubscriptionContextType = {
     userPlan,
     loading,
     error,
     refreshPlan,
+    upgradeToPlan,
     updatePlan,
     hasSufficientCredits,
     isServiceAvailable,

@@ -45,6 +45,15 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     fetchAvailableAuthMethods();
   }, []);
 
+  // Update localSelectedMethod when selectedMethods prop changes
+  useEffect(() => {
+    if (selectedMethods && selectedMethods.length > 0) {
+      setLocalSelectedMethod(selectedMethods[0]);
+    } else {
+      setLocalSelectedMethod(null);
+    }
+  }, [selectedMethods]);
+
   const fetchAvailableAuthMethods = async () => {
     try {
       const response = await subscriptionApi.get('/user/available/auth/methods');
@@ -209,7 +218,9 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Recommended ({getRecommendedMethods().length})
+ {/* Recommended ({getRecommendedMethods().length}) */}
+
+            Selected Method
           </button>
           <button
             onClick={() => setActiveTab('all')}

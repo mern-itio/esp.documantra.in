@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {LayoutDashboard, FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, LayoutDashboardIcon, Key,  BarChart3, FolderOpen, Play, Book, Webhook, Package, TestTube, Store, Users, HelpCircle, Layers, Layout, Cpu, ClipboardList, ShoppingCart, Code, Zap, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send} from 'lucide-react';
+import {LayoutDashboard, FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, LayoutDashboardIcon, Key,  BarChart3, FolderOpen, Play, Book, Webhook, Package, TestTube, Store, Users, HelpCircle, Layers, Layout, Cpu, ClipboardList, ShoppingCart, Code, Zap, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus} from 'lucide-react';
 
 interface SidebarProps {
   activeView?: string;
@@ -101,27 +101,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    {
-      id: 'document-management',
-      label: 'Documents',
-      icon: FileText,
-      children: [
-        { id: 'all-documents', label: 'All Documents', path: '/all-documents', icon: FileText },
-        { id: 'recent', label: 'Recent', path: '/recent', icon: Clock },
-        { id: 'favorites', label: 'Favorites', path: '/documents/favorites', icon: Star },
-        { id: 'shared', label: 'Shared with me', path: '/documents/shared', icon: Share2 },
-        { id: 'shared-pdf', label: 'Document Share', path: '/documents/shared-pdf', icon: File },
-        { id: 'archived', label: 'Archived', path: '/documents/archived', icon: Archive },
-        { id: 'folders', label: 'Folders', path: '/documents/folder', icon: Folder },
-        { id: 'trash', label: 'Trash', path: '/documents/trash', icon: Trash2 }
-      ]
-    },
-   {
+      {
       id: 'e-sign',
       label: 'E-Sign',
       icon: FileSignature,
       children: [
-        { id: 'create', label: 'Send an Envelope', path: '/e-sign/create' },
+        { id: 'create', label: 'Create Envelope', path: '/e-sign/create', icon: Plus },
         { id: 'esignDashboard', label: 'All Agreement', path: '/e-sign/aggrement', icon: Mail },
         { id: 'esignDraft', label: 'Drafts', path: '/e-sign/aggrement/draft', icon: FileEdit },
         { id: 'esignInProgress', label: 'In Progress', path: '/e-sign/aggrement/in-progress', icon: Pencil },
@@ -139,6 +124,22 @@ const Sidebar: React.FC<SidebarProps> = ({
         // { id: 'admin', label: 'Admin', path: '/e-sign/admin', icon: UserCog }
       ]
     },
+    {
+      id: 'document-management',
+      label: 'Documents',
+      icon: FileText,
+      children: [
+        { id: 'all-documents', label: 'All Documents', path: '/all-documents', icon: FileText },
+        { id: 'recent', label: 'Recent', path: '/recent', icon: Clock },
+        { id: 'favorites', label: 'Favorites', path: '/documents/favorites', icon: Star },
+        { id: 'shared', label: 'Shared with me', path: '/documents/shared', icon: Share2 },
+        { id: 'shared-pdf', label: 'Document Share', path: '/documents/shared-pdf', icon: File },
+        { id: 'archived', label: 'Archived', path: '/documents/archived', icon: Archive },
+        { id: 'folders', label: 'Folders', path: '/documents/folder', icon: Folder },
+        { id: 'trash', label: 'Trash', path: '/documents/trash', icon: Trash2 }
+      ]
+    },
+ 
     {
       id: 'template',
       label: 'Template',
@@ -212,45 +213,45 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className={`bg-gray-100 shadow-lg transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'}`}>
+    <div className={`bg-white shadow-sm border-r border-slate-200 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'}`}>
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200">
           {isOpen && (
             <div className="flex items-center space-x-2">
-              <Building2 className="h-8 w-8 text-primary-600" />
+              <Building2 className="h-7 w-7 text-indigo-600" />
               <div>
-                <h1 className="text-lg font-bold text-gray-900">DraftnSign</h1>
+                <h1 className="text-base font-semibold text-slate-900">Draft&Sign</h1>
               </div>
             </div>
           )}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-1 rounded-md hover:bg-gray-100 transition-colors duration-200"
+            className="p-1 rounded-md hover:bg-slate-100 transition-colors duration-200"
           >
             <ChevronLeft
-              className={`h-5 w-5 text-gray-500 transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''
+              className={`h-5 w-5 text-slate-500 transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''
                 }`}
             />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
             <div key={item.id}>
               <button
                 onClick={() => handleMainMenuClick(item)}
-                className={`w-full text-[14px] flex items-center justify-between px-3 py-2.5 text-left transition-all duration-200 ${activeView === item.id
-                  ? 'bg-gray-300 text-black-700 border-r-2 border-gray-600'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                className={`w-full text-[14px] flex items-center justify-between px-2.5 py-2.5 rounded-lg text-left transition-all duration-200 ${activeView === item.id
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 style={{ cursor: 'pointer' }}
               >
                 <div className="flex items-center space-x-3">
                   {item.icon && (
                     <item.icon
-                      className={`h-5 w-5 ${activeView === item.id ? 'text-xs text-primary-600' : 'text-xs text-gray-400'
+                      className={`h-5 w-5 ${activeView === item.id ? 'text-indigo-600' : 'text-slate-400'
                         }`}
                     />
                   )}
@@ -258,16 +259,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 {item.children && isOpen && (
                   expandedMenu === item.id ? (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-slate-400" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-slate-400" />
                   )
                 )}
               </button>
 
               {/* Submenu */}
               {item.children && expandedMenu === item.id && isOpen && (
-                <div className="ml-10 mt-1 space-y-1">
+                <div className="ml-6 mt-1 space-y-1">
                   {item.children.map((sub) => {
 
                     const isSendEnvelope = sub.id === "create";   // ✅ only for Send Envelope
@@ -278,12 +279,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                         key={sub.id}
                         onClick={() => handleNavigation(sub.path, sub.id)}
                         className={`
-                          text-xs w-full flex items-center px-3 py-2 text-sm transition-all duration-200
+                          text-xs w-full flex items-center px-2.5 py-2 rounded-md text-sm transition-all duration-200
                           ${isSendEnvelope
                             ? "send-envelope text-white hover:bg-brandPurple-900"     // ✅ Dark for only Send Envelope
                             : isActive
-                              ? "bg-gray-300 text-black"
-                              : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                              ? "bg-indigo-100 text-indigo-700"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                           }
                               `}
                         style={{ 
@@ -296,7 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <sub.icon
                               className={`h-4 w-4 
                   ${isSendEnvelope ? "text-white" :
-                                  isActive ? "text-primary-600" : "text-gray-400"}
+                                  isActive ? "text-indigo-600" : "text-slate-400"}
                 `}
                             />
                           )}

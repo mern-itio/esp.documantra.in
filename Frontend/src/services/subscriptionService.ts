@@ -47,6 +47,19 @@ export class SubscriptionService {
   }
 
   /**
+   * Upgrade user's subscription to a specific plan by ID
+   */
+  static async upgradeToPlan(planId: string): Promise<SubscriptionPlan> {
+    try {
+      const response = await subscriptionApi.post('/user-plan/upgrade', { planId });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error upgrading user plan:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Check if user has sufficient credits for an operation
    */
   static hasSufficientCredits(requiredCredits: number, userPlan: SubscriptionPlan): boolean {

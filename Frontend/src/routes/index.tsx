@@ -198,6 +198,7 @@ import EnvelopeTypes from '../pages/eSign/EnvelopeTypes';
 import ManageRecipients from '../pages/eSign/ManageRecipients';
 // import { elements } from 'chart.js';
 import PowerFormCreate from '../pages/eSign/PowerFormCreate';
+import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -583,6 +584,7 @@ const authRoutes = [
   { path: '/audit-trail', element: <AuditTrailPage /> },
   { path: '/compliance', element: <CompliancePage /> },
   { path: '/risk-management', element: <RiskManagementPage /> },
+  { path: '/subscription-management', element: <SubscriptionManagementPage /> },
 
   //Document Management Module
   {

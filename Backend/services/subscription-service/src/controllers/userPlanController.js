@@ -110,3 +110,81 @@ const createFreePlanForUser = async (req, res) => {
 module.exports = { getMyPlan, createFreePlanForUser };
 
 
+// POST /user-plan/upgrade
+const upgradePlan = async (req, res) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
+    }
+
+    const { planId } = req.body || {};
+    if (!planId) {
+      return res.status(400).json({ status: 400, message: 'planId is required', data: null });
+    }
+
+    const planTemplate = await PlanTemplate.findById(planId).lean();
+    if (!planTemplate) {
+      return res.status(404).json({ status: 404, message: 'Plan template not found', data: null });
+    }
+
+    // Find or create subscription
+    let subscription = await Subscription.findOne({ userId });
+    const now = new Date();
+    const nextBilling = planTemplate.period === 'monthly'
+      ? new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())
+      : new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
+    if (!subscription) {
+      subscription = await Subscription.create({
+        userId,
+        planTemplateId: planTemplate._id,
+        creditsBalance: planTemplate.monthlyCredits || 0,
+        status: 'active',
+        periodStart: now,
+        periodEnd: nextBilling,
+        nextBillingAt: nextBilling,
+      });
+    } else {
+      subscription.planTemplateId = planTemplate._id;
+      // Reset credits to plan monthlyCredits on upgrade
+      subscription.creditsBalance = planTemplate.monthlyCredits || 0;
+      subscription.status = 'active';
+      subscription.periodStart = now;
+      subscription.periodEnd = nextBilling;
+      subscription.nextBillingAt = nextBilling;
+      await subscription.save();
+    }
+
+    const response = {
+      id: subscription._id,
+      userId: subscription.userId,
+      planTemplateId: subscription.planTemplateId || null,
+      name: planTemplate.name,
+      description: `${planTemplate.name} subscription`,
+      services: planTemplate.services || [],
+      type: planTemplate.type || (planTemplate.pricePerPeriod > 0 ? 'paid' : 'free'),
+      price: planTemplate.pricePerPeriod || 0,
+      conversionsLimit: planTemplate.monthlyCredits ?? 0,
+      creditsBalance: subscription.creditsBalance || 0,
+      toolCosts: planTemplate.toolCosts || [],
+      authCosts: planTemplate.authCosts || [],
+      documentCosts: planTemplate.documentCosts || { credits: 0 },
+      shareCosts: planTemplate.shareCosts || { credits: 0 },
+      pdfShareCosts: planTemplate.pdfShareCosts || { credits: 0 },
+      status: subscription.status || 'active',
+      periodStart: subscription.periodStart || null,
+      periodEnd: subscription.periodEnd || null,
+      nextBillingAt: subscription.nextBillingAt || null,
+      isFree: (planTemplate.type === 'free') || (planTemplate.pricePerPeriod === 0),
+    };
+
+    return res.status(200).json({ status: 200, message: 'Plan upgraded', data: response });
+  } catch (error) {
+    console.error('upgradePlan error:', error);
+    return res.status(500).json({ status: 500, message: error.message || 'Server error', data: null });
+  }
+};
+
+module.exports = { getMyPlan, createFreePlanForUser, upgradePlan };
+

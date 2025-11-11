@@ -1,10 +1,19 @@
 import React from 'react';
 import { useAuth } from '../../components/AuthService/AuthContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { useNavigate } from 'react-router-dom';
+import { Crown } from 'lucide-react';
 
 const UserProfile: React.FC = () => {
   const { user } = useAuth();
+  const { userPlan, isFreePlan } = useSubscription();
   const navigate = useNavigate();
+  
+  // Get plan name from subscription context (most up-to-date) or fallback to user.plan
+  const planName = userPlan?.name || (user as any)?.plan || null;
+  
+  // Check if user has a paid plan
+  const isPaidPlan = userPlan && !isFreePlan();
 
   const accountId = (user as any)?.accountId || (user as any)?.id || (user as any)?._id || 'N/A';
   const formatName = (name?: string) =>
@@ -32,16 +41,27 @@ const UserProfile: React.FC = () => {
       {/* Profile header card */}
       <div className="max-w-7xl mx-auto -mt-10 px-6">
         <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex items-center gap-6">
-          <div className="h-16 w-16 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-semibold">
-            {initials}
+          <div className="relative">
+            <div className={`h-16 w-16 rounded-full flex items-center justify-center text-xl font-semibold ${
+              isPaidPlan 
+                ? 'bg-yellow-100 text-yellow-700' 
+                : 'bg-purple-100 text-purple-700'
+            }`}>
+              {initials}
+            </div>
+            {isPaidPlan && (
+              <div className="absolute top-2 left-0 transform -translate-x-1/2 -translate-y-1/2 -rotate-50 z-10">
+                <Crown className="h-5 w-5 text-yellow-500 fill-yellow-500 drop-shadow-sm" />
+              </div>
+            )}
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold text-gray-900">{formatName((user as any)?.fullname)}</h2>
             <p className="text-gray-600 text-sm">{(user as any)?.email || '—'} • Account #{accountId}</p>
           </div>
-          {(user as any)?.plan && (
+          {planName && (
             <div className="px-3 py-1.5 rounded-full text-sm font-medium bg-purple-50 text-purple-700 border border-purple-200">
-              {(user as any)?.plan}
+              {planName}
             </div>
           )}
         </div>
@@ -77,12 +97,12 @@ const UserProfile: React.FC = () => {
 
       {/* Action footer */}
       <div className="max-w-7xl mx-auto px-6 mt-8 mb-12 flex flex-col sm:flex-row gap-3">
-        {/* <button
+        <button
           className="inline-flex items-center justify-center px-5 py-3 rounded-lg border border-gray-300 text-gray-900 hover:bg-gray-50"
-          onClick={() => navigate('/account/profile')}
+          onClick={() => navigate('/subscription-management')}
         >
-          Manage Profile
-        </button> */}
+          Manage Subscription
+        </button>
         <button
           className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-white"
           style={{ backgroundColor: '#4D0080' }}

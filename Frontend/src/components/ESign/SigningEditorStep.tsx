@@ -8,9 +8,12 @@ import {
   RectangleHorizontal,
   CircleDot,
   Info,
-  FormInput
+  FormInput,
+  Settings
 } from "lucide-react";
 import type { Recipient } from "../../types";
+import { eSignApi } from "../../services/apiHelper";
+import toast from "react-hot-toast";
 
 // Type declarations for PDF.js
 declare global {
@@ -31,7 +34,7 @@ export type Doc = {
 
 // Recipient type is imported from shared types to keep role union in sync
 
-type FieldType = "signature" | "text" | "email" | "number" | "id" | "dropdown" | "input" | "checkbox" | "phone" | "stamp";
+type FieldType = "signature" | "text" | "email" | "number" | "id" | "dropdown" | "input" | "checkbox" | "phone" | "stamp" | "name" | "company" | "title" | "date" | "initial";
 
 export type SignatureField = {
   id: string;
@@ -70,16 +73,16 @@ function getRecipientColor(idx: number) {
   return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length];
 }
 
-// function hexToRgba(hex: string, alpha: number) {
-//   const sanitized = hex.replace('#', '');
-//   const bigint = parseInt(sanitized.length === 3
-//     ? sanitized.split('').map(c => c + c).join('')
-//     : sanitized, 16);
-//   const r = (bigint >> 16) & 255;
-//   const g = (bigint >> 8) & 255;
-//   const b = bigint & 255;
-//   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-// }
+function hexToRgba(hex: string, alpha: number) {
+  const sanitized = hex.replace('#', '');
+  const bigint = parseInt(sanitized.length === 3
+    ? sanitized.split('').map(c => c + c).join('')
+    : sanitized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export default function SigningEditorStep({
   documents,
@@ -92,7 +95,8 @@ export default function SigningEditorStep({
   onSend,
   sending,
   onBack,
-  onFieldsChange
+  onFieldsChange,
+  envelopeId
 }: {
   documents: Doc[];
   recipients: Recipient[];
@@ -105,6 +109,7 @@ export default function SigningEditorStep({
   sending?: boolean;
   onBack?: () => void;
   onFieldsChange?: (fields: SignatureField[]) => void;
+  envelopeId?: string | null;
 }) {
   // PDF.js worker setup - same approach as InsertPDF
   useEffect(() => {
@@ -167,6 +172,12 @@ export default function SigningEditorStep({
   const [leftPanel, setLeftPanel] = useState<'powerForm' | 'standard' | 'custom' | 'pen'>(
     mode === 'power' ? 'powerForm' : 'standard'
   );
+  
+  // Field properties sidebar state
+  const [selectedField, setSelectedField] = useState<SignatureField | null>(null);
+  const [showPropertiesSidebar, setShowPropertiesSidebar] = useState(false);
+  const [fieldLabel, setFieldLabel] = useState<string>('');
+  const [isSavingField, setIsSavingField] = useState(false);
 
   const [companyInfo, setCompanyInfo] = useState<{ visible: boolean; top: number }>({ visible: false, top: 120 });
   const [pageCanvases, setPageCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
@@ -184,6 +195,11 @@ export default function SigningEditorStep({
     { id: 'previewClick', selector: '[data-tour="editor-preview-click"]', title: 'Navigate Pages', content: 'Click on any page thumbnail in the preview panel to quickly jump to that page in the main document view.' },
   ], []);
   const [editorTargetRect, setEditorTargetRect] = useState<DOMRect | null>(null);
+  // Dragging state for tutorial tooltip
+  const [isEditorDragging, setIsEditorDragging] = useState<boolean>(false);
+  const [editorDragOffset, setEditorDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [editorTooltipPosition, setEditorTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const editorTooltipRef = useRef<HTMLDivElement | null>(null);
   
   // Separate effect to handle UI state updates (preview/panel visibility)
   // Only runs when step changes, not when state changes (prevents infinite loops)
@@ -244,10 +260,63 @@ export default function SigningEditorStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditorTourOpen, editorTourIndex]);
   
+  // Handle dragging for editor tour
+  useEffect(() => {
+    if (!isEditorDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (editorTooltipPosition) {
+        const newX = e.clientX - editorDragOffset.x;
+        const newY = e.clientY - editorDragOffset.y;
+        
+        // Keep tooltip within viewport bounds
+        const tooltipWidth = 384; // max-w-sm = 384px
+        const tooltipHeight = 200; // approximate height
+        const padding = 16;
+        
+        const constrainedX = Math.max(padding, Math.min(newX, window.innerWidth - tooltipWidth - padding));
+        const constrainedY = Math.max(padding, Math.min(newY, window.innerHeight - tooltipHeight - padding));
+        
+        setEditorTooltipPosition({ x: constrainedX, y: constrainedY });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsEditorDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isEditorDragging, editorDragOffset, editorTooltipPosition]);
+
+  const handleEditorDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Prevent text selection
+    if (!editorTooltipRef.current) return;
+    
+    const rect = editorTooltipRef.current.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    
+    setEditorDragOffset({ x: offsetX, y: offsetY });
+    setIsEditorDragging(true);
+    
+    // Initialize tooltip position with current position if not already set
+    if (!editorTooltipPosition) {
+      setEditorTooltipPosition({ x: rect.left, y: rect.top });
+    }
+  };
+
   const closeEditorTour = () => {
     setIsEditorTourOpen(false);
     setEditorTourIndex(0);
     setEditorTargetRect(null);
+    setEditorTooltipPosition(null);
+    setIsEditorDragging(false);
   };
   const nextEditorStep = () => {
     let nextIndex = editorTourIndex + 1;
@@ -260,6 +329,8 @@ export default function SigningEditorStep({
       nextIndex++;
     }
     setEditorTourIndex(Math.min(nextIndex, editorTourSteps.length - 1));
+    // Reset tooltip position when moving to next step
+    setEditorTooltipPosition(null);
   };
   const prevEditorStep = () => {
     let prevIndex = editorTourIndex - 1;
@@ -272,6 +343,8 @@ export default function SigningEditorStep({
       prevIndex--;
     }
     setEditorTourIndex(Math.max(prevIndex, 0));
+    // Reset tooltip position when moving to previous step
+    setEditorTooltipPosition(null);
   };
   
   // Auto-start tour on mount
@@ -652,6 +725,91 @@ export default function SigningEditorStep({
     setDropPreview(null);
   };
 
+  // Check if field type is editable (can have label changed)
+  const isEditableField = (fieldType: FieldType): boolean => {
+    const editableTypes: FieldType[] = ['text', 'number', 'checkbox', 'dropdown', 'input', 'phone', 'name', 'email', 'company', 'title'];
+    return editableTypes.includes(fieldType);
+  };
+
+  // Handle field click for selection (opens properties sidebar)
+  const handleFieldClick = (e: React.MouseEvent, field: SignatureField) => {
+    e.stopPropagation();
+    // Only open properties for editable fields
+    if (isEditableField(field.type)) {
+      setSelectedField(field);
+      setFieldLabel(field.label || '');
+      setShowPropertiesSidebar(true);
+    }
+  };
+
+  // Save field label to database
+  const saveFieldLabel = async () => {
+    if (!selectedField || !envelopeId) {
+      toast.error('Cannot save: Field or envelope ID missing');
+      return;
+    }
+
+    setIsSavingField(true);
+    try {
+      // Update local state first
+      const updatedFields = signatureFields.map(f => 
+        (f.id ?? f._id) === (selectedField.id ?? selectedField._id)
+          ? { ...f, label: fieldLabel }
+          : f
+      );
+      
+      setSignatureFields(updatedFields);
+      if (onFieldsChange) onFieldsChange(updatedFields);
+
+      // Prepare field data for API
+      const fieldData = {
+        _id: selectedField._id,
+        documentId: selectedField.docId ?? selectedField.documentId,
+        recipientId: selectedField.recipientId || null,
+        slotId: selectedField.slotId || null,
+        page: selectedField.page,
+        x: selectedField.x,
+        y: selectedField.y,
+        width: selectedField.width,
+        height: selectedField.height,
+        type: selectedField.type,
+        status: 'pending',
+        label: fieldLabel,
+        option: selectedField.options || [],
+        fieldId: selectedField.fieldId || null,
+      };
+
+      // Save to backend
+      const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+        envelopeId,
+        signatureFields: [fieldData],
+      });
+
+      if (response.status === 200) {
+        toast.success('Field label saved successfully');
+        // Update selected field with saved data
+        if (response.data?.data?.signatureFields?.[0]) {
+          const savedField = response.data.data.signatureFields[0];
+          setSelectedField({ ...selectedField, ...savedField, label: fieldLabel });
+        }
+      }
+    } catch (error: any) {
+      console.error('Error saving field label:', error);
+      toast.error(error?.response?.data?.message || 'Failed to save field label');
+      // Revert local state on error
+      setFieldLabel(selectedField.label || '');
+    } finally {
+      setIsSavingField(false);
+    }
+  };
+
+  // Update fieldLabel when selectedField changes
+  useEffect(() => {
+    if (selectedField) {
+      setFieldLabel(selectedField.label || '');
+    }
+  }, [selectedField]);
+
   // move logic — allow moving any non-locked field (not restricted by active)
   const handleFieldMouseDown = (e: React.MouseEvent, field: SignatureField) => {
     if (field.locked) return;
@@ -758,6 +916,9 @@ export default function SigningEditorStep({
   // active assignee id for preview color
   const activeAssigneeId = mode === "normal" ? activeRecipientId : activeSlotId;
   console.log("activeAssigneeId7", activeAssigneeId);
+  
+  // Get active recipient/slot color
+  const activeColor = activeRecipientId ? recipientColorMap[activeRecipientId] : (activeSlotId ? recipientColorMap[activeSlotId] : "#2563eb");
 
   // Standard fields list for left sidebar
   const standardFields = [
@@ -812,61 +973,104 @@ export default function SigningEditorStep({
           <div className="p-3 flex-shrink-0 relative recipient-dropdown">
             {mode === "normal" ? (
               <>
-                <button
-                  onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
-                  className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-white-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
-                  data-tour="editor-recipient"
-                >
-                  {/* LEFT BLOCK — icon + name */}
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className="w-4 h-4 rounded-full bg-blue-100 border border-blue-300 flex items-center justify-center flex-shrink-0">
-                      <User className="w-3 h-3 text-blue-600" />
-                    </div>
-
-                    <div className="flex flex-col min-w-0">
-                      <span
-                        className="text-xs font-medium leading-tight truncate"
-                        style={{ fontSize: "12px", color: "#301934" }}
-                      >
-                        {activeRecipient?.name || "Select Recipient"}
-                      </span>
-
-                      {/* {activeRecipient?.email && (
-                        <span
-                          className="text-xs leading-tight truncate"
-                          style={{ fontSize: "11px", color: "#6b7280" }}
+                {recipients.length <= 2 ? (
+                  <div className="flex items-center gap-2">
+                    {recipients.map((r, idx) => {
+                      const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx);
+                      const isActive = r.id === activeRecipientId;
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => setActiveRecipientId(r.id)}
+                          className={`flex items-center gap-2 px-3 py-1 rounded border transition-colors ${isActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:bg-gray-100'}`}
+                          title={r.email || r.name}
+                          data-tour="editor-recipient"
                         >
-                          {activeRecipient.email}
-                        </span>
-                      )} */}
-                    </div>
+                          <div 
+                            className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 border"
+                            style={{ 
+                              backgroundColor: hexToRgba(recipientColor, 0.1), 
+                              borderColor: recipientColor
+                            }}
+                          >
+                            <User className="w-3 h-3" style={{ color: recipientColor }} />
+                          </div>
+                          <span
+                            className="text-xs font-medium leading-tight truncate max-w-[140px]"
+                            style={{ fontSize: "12px", color: "#301934" }}
+                          >
+                            {r.name || r.email}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-
-                  {/* DROPDOWN ICON */}
-                  <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                </button>
-
-                {showRecipientDropdown && (
-                  <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
-                    {recipients.map((r) => (
-                      <button
-                        key={r.id}
-                        onClick={() => {
-                          setActiveRecipientId(r.id);
-                          setShowRecipientDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
-                      >
-                        <div className="w-6 h-6 rounded-full bg-blue-100 border border-blue-300 flex items-center justify-center flex-shrink-0">
-                          <User className="w-3.5 h-3.5 text-blue-600" />
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
+                      className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-white-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                      data-tour="editor-recipient"
+                    >
+                      {/* LEFT BLOCK — icon + name */}
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div 
+                          className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 border"
+                          style={{ 
+                            backgroundColor: hexToRgba(activeColor, 0.1), 
+                            borderColor: activeColor
+                          }}
+                        >
+                          <User className="w-3 h-3" style={{ color: activeColor }} />
                         </div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span className="text-xs font-medium text-gray-800 truncate" style={{ fontSize: '12px' }}>{r.name}</span>
-                          {r.email && <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{r.email}</span>}
+
+                        <div className="flex flex-col min-w-0">
+                          <span
+                            className="text-xs font-medium leading-tight truncate"
+                            style={{ fontSize: "12px", color: "#301934" }}
+                          >
+                            {activeRecipient?.name || "Select Recipient"}
+                          </span>
                         </div>
-                      </button>
-                    ))}
-                  </div>
+                      </div>
+
+                      {/* DROPDOWN ICON */}
+                      <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                    </button>
+
+                    {showRecipientDropdown && (
+                      <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
+                        {recipients.map((r, idx) => {
+                          const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx);
+                          const isActive = r.id === activeRecipientId;
+                          return (
+                            <button
+                              key={r.id}
+                              onClick={() => {
+                                setActiveRecipientId(r.id);
+                                setShowRecipientDropdown(false);
+                              }}
+                              className={`w-full text-left px-4 py-2 flex items-center gap-2 ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                            >
+                              <div 
+                                className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
+                                style={{ 
+                                  backgroundColor: hexToRgba(recipientColor, 0.1), 
+                                  borderColor: recipientColor
+                                }}
+                              >
+                                <User className="w-3.5 h-3.5" style={{ color: recipientColor }} />
+                              </div>
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="text-xs font-medium text-gray-800 truncate" style={{ fontSize: '12px' }}>{r.name}</span>
+                                {r.email && <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{r.email}</span>}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             ) : (
@@ -875,8 +1079,14 @@ export default function SigningEditorStep({
                   onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
                   className="w-full flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
                 >
-                  <div className="w-6 h-6 rounded-full bg-blue-100 border border-blue-300 flex items-center justify-center flex-shrink-0">
-                    <User className="w-3.5 h-3.5 text-blue-600" />
+                  <div 
+                    className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
+                    style={{ 
+                      backgroundColor: hexToRgba(activeColor, 0.1), 
+                      borderColor: activeColor
+                    }}
+                  >
+                    <User className="w-3.5 h-3.5" style={{ color: activeColor }} />
                   </div>
                   <span className="text-sm text-gray-800 font-medium truncate flex-1 text-left" style={{ fontSize: '14px', color: '#301934' }}>
                     {activeSlot?.name || activeSlot?.slotId || 'Select Slot'}
@@ -885,18 +1095,33 @@ export default function SigningEditorStep({
                 </button>
                 {showRecipientDropdown && (
                   <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
-                    {slotsToUse.map((s) => (
-                      <button
-                        key={s.slotId}
-                        onClick={() => {
-                          setActiveSlotId(s.slotId);
-                          setShowRecipientDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 truncate"
-                      >
-                        {s.name || s.slotId || 'Unnamed Slot'}
-                      </button>
-                    ))}
+                    {slotsToUse.map((s, idx) => {
+                      const slotColor = recipientColorMap[s.slotId] || getRecipientColor(idx + recipients.length);
+                      const isActive = s.slotId === activeSlotId;
+                      return (
+                        <button
+                          key={s.slotId}
+                          onClick={() => {
+                            setActiveSlotId(s.slotId);
+                            setShowRecipientDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 flex items-center gap-2 ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                        >
+                          <div 
+                            className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
+                            style={{ 
+                              backgroundColor: hexToRgba(slotColor, 0.1), 
+                              borderColor: slotColor
+                            }}
+                          >
+                            <User className="w-3.5 h-3.5" style={{ color: slotColor }} />
+                          </div>
+                          <span className="text-sm text-gray-800 truncate flex-1">
+                            {s.name || s.slotId || 'Unnamed Slot'}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -1108,10 +1333,26 @@ export default function SigningEditorStep({
                               onDragStart={e => handleDragStart(e, { type: field.type as FieldType, label: field.label })}
                               onDragEnd={handleDragEnd}
                               draggable
-                              className="w-full flex items-center gap-3 px-2 py-2 hover:bg-blue-50 rounded text-left transition-colors cursor-grab active:cursor-grabbing"
+                              className="w-full flex items-center gap-3 px-2 py-2 rounded text-left transition-colors cursor-grab active:cursor-grabbing"
+                              style={{ 
+                                backgroundColor: 'transparent'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = hexToRgba(activeColor, 0.1);
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
                             >
-                              <div className="w-5 h-5 flex items-center justify-center border border-blue bg-blue-100 rounded text-blue-600 flex-shrink-0" style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}>
-                                <Icon className="w-3.5 h-3.5" />
+                              <div 
+                                className="w-5 h-5 flex items-center justify-center border rounded flex-shrink-0" 
+                                style={{ 
+                                  backgroundColor: hexToRgba(activeColor, 0.1), 
+                                  borderColor: activeColor,
+                                  color: activeColor
+                                }}
+                              >
+                                <Icon className="w-3.5 h-3.5" style={{ color: activeColor }} />
                               </div>
                               <span className="text-sm text-gray-800" style={{ fontSize: '11px', color: '#301934' }}>
                                 {field.label}
@@ -1218,6 +1459,13 @@ export default function SigningEditorStep({
             ref={pdfContainerRef}
             onDragOver={handlePdfDragOver}
             onDrop={handlePdfDrop}
+            onClick={(e) => {
+              // Close properties sidebar when clicking on document area (but not on a field)
+              if (showPropertiesSidebar && e.target === e.currentTarget) {
+                setShowPropertiesSidebar(false);
+                setSelectedField(null);
+              }
+            }}
             style={{
               padding: '12px',
               minHeight: '100%',
@@ -1295,28 +1543,46 @@ export default function SigningEditorStep({
                                   top: f.y,
                                   width: f.width,
                                   height: f.height,
-                                  border: `2px dashed ${color}`,
+                                  border: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) 
+                                    ? `3px solid ${color}` 
+                                    : `2px dashed ${color}`,
                                   background: (f.type === "text" || f.type === "email" || f.type === "dropdown" || f.type === "input" || f.type === "checkbox" || f.type === "phone" || f.type === "stamp") ? "#f8fafc" : "#fff",
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
                                   borderRadius: 6,
-                                  cursor: f.locked ? "not-allowed" : "move",
+                                  cursor: f.locked ? "not-allowed" : (isEditableField(f.type) ? "pointer" : "move"),
                                   opacity: isActive ? 1 : 0.9,
                                   boxSizing: "border-box",
-                                  zIndex: isActive ? 30 : 20,
+                                  zIndex: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) ? 50 : (isActive ? 30 : 20),
+                                  boxShadow: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) 
+                                    ? `0 0 0 2px ${color}40` 
+                                    : 'none',
                                 }}
-                                onMouseDown={(e) => handleFieldMouseDown(e, f)}
+                                onMouseDown={(e) => {
+                                  // Only handle move if not an editable field or if shift is held
+                                  if (!isEditableField(f.type) || e.shiftKey) {
+                                    handleFieldMouseDown(e, f);
+                                  }
+                                }}
+                                onClick={(e) => {
+                                  // Handle click for editable fields
+                                  if (isEditableField(f.type)) {
+                                    handleFieldClick(e, f);
+                                  }
+                                }}
                                 title={
                                   f.type === "signature"
                                     ? `Signature - ${assignee?.name ?? ""}`
                                     : f.type === "stamp"
                                       ? `Stamp - ${assignee?.name ?? ""}`
                                       : f.type === "text"
-                                        ? `${f.label || "Text"} field - ${assignee?.name ?? ""}`
+                                        ? `${f.label || "Text"} field - ${assignee?.name ?? ""} (Click to edit label)`
                                         : f.type === "email"
-                                          ? `Email field - ${assignee?.name ?? ""}`
-                                          : f.label
+                                          ? `Email field - ${assignee?.name ?? ""} (Click to edit label)`
+                                          : isEditableField(f.type)
+                                            ? `${f.label || f.type} - Click to edit label`
+                                            : f.label
                                 }
                               >
                                 {/* Remove button */}
@@ -1504,8 +1770,98 @@ export default function SigningEditorStep({
           </div>
         )}
 
-        {/* Right Side Panel */}
-        {showRightSidebar && (
+        {/* Right Side Panel - Properties Sidebar (overrides preview when field is selected) */}
+        {showPropertiesSidebar && selectedField && (
+          <div className="w-[320px] bg-white border-l border-gray-200 flex flex-col flex-shrink-0 h-full min-h-0">
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-gray-600" />
+                <h3 className="text-sm font-semibold text-gray-900" style={{ fontSize: '14px', color: '#301934' }}>
+                  Field Properties
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPropertiesSidebar(false);
+                  setSelectedField(null);
+                }}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Close properties"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Field Type Display */}
+              <div>
+                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">
+                  Field Type
+                </label>
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800 capitalize">
+                  {selectedField.type}
+                </div>
+              </div>
+
+              {/* Label Input */}
+              <div>
+                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">
+                  Label
+                </label>
+                <input
+                  type="text"
+                  value={fieldLabel}
+                  onChange={(e) => setFieldLabel(e.target.value)}
+                  placeholder={`Enter ${selectedField.type} label`}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{ fontSize: '14px' }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This label will be displayed on the document
+                </p>
+              </div>
+
+              {/* Field Info */}
+              <div className="pt-4 border-t border-gray-200">
+                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">
+                  Field Information
+                </label>
+                <div className="space-y-2 text-xs text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Page:</span>
+                    <span className="font-medium">{selectedField.page}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Position:</span>
+                    <span className="font-medium">{Math.round(selectedField.x)}, {Math.round(selectedField.y)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Size:</span>
+                    <span className="font-medium">{Math.round(selectedField.width)} × {Math.round(selectedField.height)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={saveFieldLabel}
+                  disabled={isSavingField || !fieldLabel.trim()}
+                  className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isSavingField || !fieldLabel.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {isSavingField ? 'Saving...' : 'Save Label'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Right Side Panel - Preview Sidebar (shown when properties sidebar is not active) */}
+        {showRightSidebar && !showPropertiesSidebar && (
           <div className="w-[220px] bg-white border-l border-gray-200 flex flex-col flex-shrink-0 h-full min-h-0">
 
             <div className="px-3 pt-3 pb-2 border-b border-gray-200 flex-shrink-0">
@@ -1609,7 +1965,14 @@ export default function SigningEditorStep({
             </button>
           )}
           <button
-            onClick={onSend}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Send button clicked', { onSend, sending });
+              if (onSend && !sending) {
+                onSend();
+              }
+            }}
             disabled={!!sending}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${sending ? 'bg-blue-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
           >
@@ -1841,53 +2204,75 @@ export default function SigningEditorStep({
           const spacing = 12; // space between tooltip and target
           const padding = 16; // padding from viewport edges
           
-          // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+          // Use manual position if dragging, otherwise calculate position
+          let tooltipLeft: number;
+          let tooltipTop: number;
           const targetCenterX = editorTargetRect.left + (editorTargetRect.width / 2);
-          let tooltipLeft = targetCenterX - (tooltipWidth / 2);
-          // Keep tooltip within viewport bounds
-          if (tooltipLeft < padding) {
-            tooltipLeft = padding;
-          } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
-            tooltipLeft = window.innerWidth - tooltipWidth - padding;
+          
+          if (editorTooltipPosition) {
+            // Use manual position from dragging
+            tooltipLeft = editorTooltipPosition.x;
+            tooltipTop = editorTooltipPosition.y;
+          } else {
+            // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+            tooltipLeft = targetCenterX - (tooltipWidth / 2);
+            // Keep tooltip within viewport bounds
+            if (tooltipLeft < padding) {
+              tooltipLeft = padding;
+            } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
+              tooltipLeft = window.innerWidth - tooltipWidth - padding;
+            }
+            
+            // Calculate vertical position - prefer below, but show above if not enough space
+            const spaceBelow = window.innerHeight - editorTargetRect.bottom - spacing;
+            const spaceAbove = editorTargetRect.top - spacing;
+            const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+            
+            tooltipTop = showAbove 
+              ? editorTargetRect.top - tooltipHeight - spacing
+              : editorTargetRect.bottom + spacing;
           }
           
-          // Calculate vertical position - prefer below, but show above if not enough space
-          const spaceBelow = window.innerHeight - editorTargetRect.bottom - spacing;
-          const spaceAbove = editorTargetRect.top - spacing;
-          const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
-          
-          const tooltipTop = showAbove 
-            ? editorTargetRect.top - tooltipHeight - spacing
-            : editorTargetRect.bottom + spacing;
-          
-          // Calculate arrow position (centered on target element)
+          // Calculate arrow position (centered on target element) - only show if not manually positioned
           const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
           const arrowPadding = 20;
           const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
+          
+          // Determine arrow direction
+          const spaceBelow = window.innerHeight - editorTargetRect.bottom - spacing;
+          const spaceAbove = editorTargetRect.top - spacing;
+          const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
           
           return (
             <>
               {/* Tooltip - styled like the tooltip UI */}
               <div
+                ref={editorTooltipRef}
                 className="fixed z-50"
                 style={{
                   left: `${tooltipLeft}px`,
-                  top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`
+                  top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`,
+                  cursor: isEditorDragging ? 'grabbing' : 'default'
                 }}
               >
                 {/* Tooltip box */}
-                <div className="bg-[#26263d] text-white text-sm rounded-md shadow-lg max-w-sm relative">
-                  <div className="px-4 py-3 font-semibold">
+                <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                  {/* Draggable header */}
+                  <div 
+                    className="px-4 py-3 font-semibold cursor-move select-none"
+                    onMouseDown={handleEditorDragStart}
+                    style={{ userSelect: 'none' }}
+                  >
                     {editorTourSteps[editorTourIndex]?.title}
                   </div>
                   <div className="px-4 py-2 text-sm leading-relaxed">
                     {editorTourSteps[editorTourIndex]?.content}
                   </div>
                   <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
-                    <div className="text-xs text-gray-400">Step {editorTourIndex + 1} of {editorTourSteps.length}</div>
+                    <div className="text-xs text-white-900">Step {editorTourIndex + 1} of {editorTourSteps.length}</div>
                     <div className="flex items-center gap-2">
-                      <button onClick={closeEditorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
-                      <button onClick={prevEditorStep} disabled={editorTourIndex===0} className={`px-3 py-1.5 border border-gray-500 rounded-sm text-sm ${editorTourIndex===0 ? 'opacity-40 cursor-not-allowed text-gray-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                      <button onClick={closeEditorTour} className="px-3 py-1.5 text-sm text-white-300 hover:text-white">Skip</button>
+                      <button onClick={prevEditorStep} disabled={editorTourIndex===0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${editorTourIndex===0 ? ' cursor-not-allowed text-white-500' : 'hover:bg-white-700 text-white'}`}>Back</button>
                       {editorTourIndex < editorTourSteps.length - 1 ? (
                         <button onClick={nextEditorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
                       ) : (
@@ -1895,14 +2280,16 @@ export default function SigningEditorStep({
                       )}
                     </div>
                   </div>
-                  {/* Arrow pointing to target - positioned absolutely within tooltip */}
-                  <div 
-                    className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
-                    style={{ 
-                      left: `${constrainedArrowLeft}px`,
-                      transform: 'translateX(-50%)'
-                    }}
-                  ></div>
+                  {/* Arrow pointing to target - only show if not manually positioned */}
+                  {!editorTooltipPosition && (
+                    <div 
+                      className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                      style={{ 
+                        left: `${constrainedArrowLeft}px`,
+                        transform: 'translateX(-50%)'
+                      }}
+                    ></div>
+                  )}
                 </div>
               </div>
             </>

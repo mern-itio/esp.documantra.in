@@ -122,6 +122,12 @@ const AgreementPage: React.FC = () => {
 
   const currentStep = tourSteps[tourStepIndex];
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  // Dragging state for tutorial tooltip
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (!isTourOpen) return;
     const step = tourSteps[tourStepIndex];
@@ -143,13 +149,74 @@ const AgreementPage: React.FC = () => {
     }
   }, [isTourOpen, tourStepIndex, tourSteps]);
 
+  // Handle dragging
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (tooltipPosition) {
+        const newX = e.clientX - dragOffset.x;
+        const newY = e.clientY - dragOffset.y;
+        
+        // Keep tooltip within viewport bounds
+        const tooltipWidth = 384; // max-w-sm = 384px
+        const tooltipHeight = 200; // approximate height
+        const padding = 16;
+        
+        const constrainedX = Math.max(padding, Math.min(newX, window.innerWidth - tooltipWidth - padding));
+        const constrainedY = Math.max(padding, Math.min(newY, window.innerHeight - tooltipHeight - padding));
+        
+        setTooltipPosition({ x: constrainedX, y: constrainedY });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, tooltipPosition]);
+
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Prevent text selection
+    if (!tooltipRef.current) return;
+    
+    const rect = tooltipRef.current.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    
+    setDragOffset({ x: offsetX, y: offsetY });
+    setIsDragging(true);
+    
+    // Initialize tooltip position with current position if not already set
+    if (!tooltipPosition) {
+      setTooltipPosition({ x: rect.left, y: rect.top });
+    }
+  };
+
   const closeTour = () => {
     setIsTourOpen(false);
     setTourStepIndex(0);
     setTargetRect(null);
+    setTooltipPosition(null);
+    setIsDragging(false);
   };
-  const nextStep = () => setTourStepIndex((i) => Math.min(i + 1, tourSteps.length - 1));
-  const prevStep = () => setTourStepIndex((i) => Math.max(i - 1, 0));
+  const nextStep = () => {
+    setTourStepIndex((i) => Math.min(i + 1, tourSteps.length - 1));
+    // Reset tooltip position when moving to next step
+    setTooltipPosition(null);
+  };
+  const prevStep = () => {
+    setTourStepIndex((i) => Math.max(i - 1, 0));
+    // Reset tooltip position when moving to previous step
+    setTooltipPosition(null);
+  };
 
   // Auto-start guided tour on initial render after data loads
   const tourStartedRef = useRef<boolean>(false);
@@ -756,7 +823,7 @@ const AgreementPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div>
       {/* Selection header (replaces default header when any selected) */}
       {selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3">
@@ -783,7 +850,7 @@ const AgreementPage: React.FC = () => {
       )}
 
       {/* Top title and right actions */}
-      {selectedIds.size === 0 && (
+      {/* {selectedIds.size === 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl text-gray-900" data-tour="agreements-title">All Agreements</h1>
@@ -794,7 +861,7 @@ const AgreementPage: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Search + filter bar to match screenshot */}
       {selectedIds.size === 0 && (
@@ -1075,56 +1142,75 @@ const AgreementPage: React.FC = () => {
           const spacing = 12; // space between tooltip and target
           const padding = 16; // padding from viewport edges
           
-          // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+          // Use manual position if dragging, otherwise calculate position
+          let tooltipLeft: number;
+          let tooltipTop: number;
           const targetCenterX = targetRect.left + (targetRect.width / 2);
-          let tooltipLeft = targetCenterX - (tooltipWidth / 2);
-          // Keep tooltip within viewport bounds
-          if (tooltipLeft < padding) {
-            tooltipLeft = padding;
-          } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
-            tooltipLeft = window.innerWidth - tooltipWidth - padding;
+          
+          if (tooltipPosition) {
+            // Use manual position from dragging
+            tooltipLeft = tooltipPosition.x;
+            tooltipTop = tooltipPosition.y;
+          } else {
+            // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+            tooltipLeft = targetCenterX - (tooltipWidth / 2);
+            // Keep tooltip within viewport bounds
+            if (tooltipLeft < padding) {
+              tooltipLeft = padding;
+            } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
+              tooltipLeft = window.innerWidth - tooltipWidth - padding;
+            }
+            
+            // Calculate vertical position - prefer below, but show above if not enough space
+            const spaceBelow = window.innerHeight - targetRect.bottom - spacing;
+            const spaceAbove = targetRect.top - spacing;
+            const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+            
+            tooltipTop = showAbove 
+              ? targetRect.top - tooltipHeight - spacing
+              : targetRect.bottom + spacing;
           }
           
-          // Calculate vertical position - prefer below, but show above if not enough space
+          // Calculate arrow position (centered on target element) - only show if not manually positioned
+          const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
+          const arrowPadding = 20;
+          const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
+          
+          // Determine arrow direction
           const spaceBelow = window.innerHeight - targetRect.bottom - spacing;
           const spaceAbove = targetRect.top - spacing;
           const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
-          
-          const tooltipTop = showAbove 
-            ? targetRect.top - tooltipHeight - spacing
-            : targetRect.bottom + spacing;
-          
-          // Calculate arrow position (centered on target element)
-          // Arrow should point to the center of the target element
-          // Position is relative to tooltip's left edge
-          const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
-          // Constrain arrow to be within tooltip bounds (with some padding)
-          const arrowPadding = 20;
-          const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
           
           return (
             <>
               {/* Tooltip - styled like the tooltip UI */}
               <div
+                ref={tooltipRef}
                 className="fixed z-50"
                 style={{
                   left: `${tooltipLeft}px`,
-                  top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`
+                  top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`,
+                  cursor: isDragging ? 'grabbing' : 'default'
                 }}
               >
                 {/* Tooltip box */}
-                <div className="bg-[#26263d] text-white text-sm rounded-md shadow-lg max-w-sm relative">
-                  <div className="px-4 py-3 font-semibold">
+                <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                  {/* Draggable header */}
+                  <div 
+                    className="px-4 py-3 font-semibold cursor-move select-none"
+                    onMouseDown={handleDragStart}
+                    style={{ userSelect: 'none' }}
+                  >
                     {currentStep?.title}
                   </div>
                   <div className="px-4 py-2 text-sm leading-relaxed">
                     {currentStep?.content}
                   </div>
                   <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
-                    <div className="text-xs text-gray-400">Step {tourStepIndex + 1} of {tourSteps.length}</div>
+                    <div className="text-xs text-white-900">Step {tourStepIndex + 1} of {tourSteps.length}</div>
                     <div className="flex items-center gap-2">
                       <button onClick={closeTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
-                      <button onClick={prevStep} disabled={tourStepIndex===0} className={`px-3 py-1.5 border border-gray-500 rounded-sm text-sm ${tourStepIndex===0 ? 'opacity-40 cursor-not-allowed text-gray-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                      <button onClick={prevStep} disabled={tourStepIndex===0} className={`px-3 py-1.5 border border-white-900 rounded-sm text-sm ${tourStepIndex===0 ? 'cursor-not-allowed text-white-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
                       {tourStepIndex < tourSteps.length - 1 ? (
                         <button onClick={nextStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
                       ) : (
@@ -1132,14 +1218,16 @@ const AgreementPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  {/* Arrow pointing to target - positioned absolutely within tooltip */}
-                  <div 
-                    className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
-                    style={{ 
-                      left: `${constrainedArrowLeft}px`,
-                      transform: 'translateX(-50%)'
-                    }}
-                  ></div>
+                  {/* Arrow pointing to target - only show if not manually positioned */}
+                  {!tooltipPosition && (
+                    <div 
+                      className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                      style={{ 
+                        left: `${constrainedArrowLeft}px`,
+                        transform: 'translateX(-50%)'
+                      }}
+                    ></div>
+                  )}
                 </div>
               </div>
             </>

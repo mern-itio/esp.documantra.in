@@ -32,15 +32,18 @@ import {
   CircleQuestionMark,
   ChevronLeft,
   ExternalLink,
-  Phone
+  Phone,
+  Edit
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 // import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../components/AuthService/AuthContext';
-import type { Document, Recipient } from '../../types';
-// import AdvancedAuthenticationSelector from '../../components/ESign/advanced/AdvancedAuthenticationSelector';
+import type { Document as ESDocument, Recipient } from '../../types';
+import AdvancedAuthenticationSelector from '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
-import { eSignApi } from '../../services/apiHelper';
+import { eSignApi, subscriptionApi } from '../../services/apiHelper';
+import { SubscriptionStorage } from '../../services/subscriptionService';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 // Extend editor field locally to allow optional power-form metadata used during save
@@ -61,6 +64,8 @@ type Party = {
   authMethod?: 'email' | 'sms' | 'access_code' | 'none' | string;
   required?: boolean;
 };
+
+import { Document as PDFDocument, Page as PDFPage } from 'react-pdf';
 
 const EnvelopeCreator: React.FC = () => {
   const location = useLocation();
@@ -102,7 +107,7 @@ const EnvelopeCreator: React.FC = () => {
     complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified'
   });
 
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<ESDocument[]>([]);
 
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [_files, setFiles] = useState<FileList | null>(null);
@@ -123,6 +128,15 @@ const EnvelopeCreator: React.FC = () => {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const RECIPIENT_COLORS = ["#789ceaff", "#87ecccff", "#f0c089ff", "#eea1c3ff", "#b99aeeff", "#f7b1bcff"];
   const [showSigningOrder, setShowSigningOrder] = useState(false);
+  // Drag and drop state for recipient reordering
+  const [draggedRecipientId, setDraggedRecipientId] = useState<string | null>(null);
+  const [dragOverRecipientId, setDragOverRecipientId] = useState<string | null>(null);
+  // Temporary order values while typing (before Enter is pressed)
+  const [tempOrderValues, setTempOrderValues] = useState<Record<string, number>>({});
+  // Track if order is being updated for animation
+  const [_isReordering, setIsReordering] = useState(false);
+  // Track which recipient is being reordered
+  const [reorderingRecipientId, setReorderingRecipientId] = useState<string | null>(null);
   // Bulk send modal state
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkStep, setBulkStep] = useState<1 | 2>(1);
@@ -141,6 +155,15 @@ const EnvelopeCreator: React.FC = () => {
   const [openBulkAccess, setOpenBulkAccess] = useState<boolean>(false);
   const [bulkPrivateMessage, setBulkPrivateMessage] = useState<string | undefined>(undefined);
   const [openBulkPrivate, setOpenBulkPrivate] = useState<boolean>(false);
+  // Authentication modal state
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authModalForRecipientId, setAuthModalForRecipientId] = useState<string | null>(null);
+  const [authModalForBulk, setAuthModalForBulk] = useState<boolean>(false);
+  // Send confirmation modal state
+  const [showSendConfirmationModal, setShowSendConfirmationModal] = useState<boolean>(false);
+  const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
+  const [authMethods, setAuthMethods] = useState<any[]>([]);
   // Help menu / sidebar state
   const [helpMenuOpen, setHelpMenuOpen] = useState<boolean>(false);
   const [helpSidebarOpen, setHelpSidebarOpen] = useState<boolean>(false);
@@ -184,7 +207,7 @@ const EnvelopeCreator: React.FC = () => {
   const [csvRecipientList, setCsvRecipientList] = useState<null | { fileName: string; role: Recipient['role']; items: Array<{ name: string; email: string }> }>(null);
   const [csvRoleDropdownOpen, setCsvRoleDropdownOpen] = useState<boolean>(false);
   const [csvCustomizeOpen, setCsvCustomizeOpen] = useState<boolean>(false);
-  const [csvAccessCode, setCsvAccessCode] = useState<string | undefined>(undefined);
+  const [_csvAccessCode, setCsvAccessCode] = useState<string | undefined>(undefined);
   const [_openCsvAccess, setOpenCsvAccess] = useState<boolean>(false);
   const [_csvPrivateMessage, setCsvPrivateMessage] = useState<string | undefined>(undefined);
   const [_openCsvPrivate, setOpenCsvPrivate] = useState<boolean>(false);
@@ -206,6 +229,10 @@ const EnvelopeCreator: React.FC = () => {
   // Guided tour for Envelope Creator
   const [isCreatorTourOpen, setIsCreatorTourOpen] = useState<boolean>(false);
   const [creatorTourIndex, setCreatorTourIndex] = useState<number>(0);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
   const creatorTourSteps = [
     { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Upload your PDF documents by dragging and dropping or clicking to browse files.' },
     { id: 'recipients', selector: '[data-tour="ec-recipients-toggle"]', title: 'Add Recipients', content: 'Click to expand the recipients section and add people who need to sign the document.' },
@@ -275,6 +302,41 @@ const EnvelopeCreator: React.FC = () => {
       setCreatorTourIndex(0);
     }
   }, []);
+
+  // Drag handlers for tooltip
+  const handleTooltipMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (tooltipRef.current) {
+      const rect = tooltipRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+      setIsDragging(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setTooltipPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -759,6 +821,15 @@ const EnvelopeCreator: React.FC = () => {
   // Envelope Type state
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
+  const [showOtherEnvelopeType, setShowOtherEnvelopeType] = useState<boolean>(false);
+  const [otherEnvelopeType, setOtherEnvelopeType] = useState<string>('');
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
+  const [typeSearch, setTypeSearch] = useState<string>('');
+  const typeDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // PDF Preview Modal state
+  const [pdfPreviewModalOpen, setPdfPreviewModalOpen] = useState<boolean>(false);
+  const [selectedPdfForPreview, setSelectedPdfForPreview] = useState<ESDocument | null>(null);
 
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -783,7 +854,7 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   const processFiles = (files: File[]) => {
-    const validDocs: Document[] = [];
+    const validDocs: ESDocument[] = [];
     const invalidFiles: File[] = [];
 
     files.forEach((file) => {
@@ -793,7 +864,7 @@ const EnvelopeCreator: React.FC = () => {
         return; // skip adding invalid file
       }
 
-      const newDocument: Document = {
+      const newDocument: ESDocument = {
         id: `doc_${Date.now()}_${Math.random()}`,
         name: file.name,
         size: file.size,
@@ -907,7 +978,10 @@ const EnvelopeCreator: React.FC = () => {
       formData.append('subject', envelopeData.subject.trim());
       formData.append('message', (envelopeData.message || '').trim());
       if (selectedEnvelopeType) {
-        formData.append('envelopetype', selectedEnvelopeType);
+        const typeToSend = (selectedEnvelopeType === 'Other' && otherEnvelopeType.trim())
+          ? otherEnvelopeType.trim()
+          : selectedEnvelopeType;
+        formData.append('envelopetype', typeToSend);
       }
 
       try {
@@ -963,7 +1037,7 @@ const EnvelopeCreator: React.FC = () => {
             role: r.role,
             order: r.order,
             status: r.status,
-            // authentication: r.authentication
+            authentication: r.authentication && r.authentication !== 'email' ? r.authentication : null
           }));
           await eSignApi.post('/api/e-sign/add-recipients', {
             envelopeId: loopEnvelopeId,
@@ -990,7 +1064,7 @@ const EnvelopeCreator: React.FC = () => {
       role: recipient.role,
       order: recipient.order,
       status: recipient.status,
-      authentication: recipient.authentication
+      authentication: recipient.authentication && recipient.authentication !== 'email' ? recipient.authentication : null
     }));
     try {
       const response = await eSignApi.post('/api/e-sign/add-recipients',
@@ -1145,7 +1219,9 @@ const EnvelopeCreator: React.FC = () => {
         envelopeId,
         envelopeData: {
           ...envelopeData,
-          envelopetype: selectedEnvelopeType || undefined,
+          envelopetype: (selectedEnvelopeType === 'Other' && otherEnvelopeType.trim())
+            ? otherEnvelopeType.trim()
+            : (selectedEnvelopeType || undefined),
         },
       });
       if (response.status === 200) {
@@ -1156,9 +1232,188 @@ const EnvelopeCreator: React.FC = () => {
       console.error('Error updating signature type:', error);
     }
   };
+  // Validation function to find first missing field and scroll to it
+  const validateAndScrollToField = (): { isValid: boolean; fieldSelector?: string; message?: string } => {
+    if (currentStep === 1) {
+      // Check documents
+      if (!documents || documents.length === 0) {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-upload"]',
+          message: 'Please upload at least one document'
+        };
+      }
+      // Check envelope type
+      if (!selectedEnvelopeType || selectedEnvelopeType.trim() === '') {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-envelope-type"]',
+          message: 'Please select an envelope type'
+        };
+      }
+      // If "Other" is selected, require custom input
+      if (selectedEnvelopeType === 'Other' && (!otherEnvelopeType || otherEnvelopeType.trim() === '')) {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-envelope-type-other"]',
+          message: 'Please enter an envelope type'
+        };
+      }
+    }
+    if (currentStep === 2) {
+      if (mode === 'normal') {
+        // Check if recipients exist
+        if (!recipients || recipients.length === 0) {
+          // Expand recipients section if collapsed
+          if (!showRecipients) {
+            setShowRecipients(true);
+          }
+          return {
+            isValid: false,
+            fieldSelector: '[data-tour="ec-recipients-toggle"]',
+            message: 'Please add at least one recipient'
+          };
+        }
+        // Check if all recipients have name and email
+        const firstInvalidRecipient = recipients.findIndex(r => !r.name || !r.name.trim() || !r.email || !r.email.trim());
+        if (firstInvalidRecipient !== -1) {
+          // Expand recipients section if collapsed
+          if (!showRecipients) {
+            setShowRecipients(true);
+          }
+          const recipient = recipients[firstInvalidRecipient];
+          // Check which field is missing
+          if (!recipient.name || !recipient.name.trim()) {
+            return {
+              isValid: false,
+              fieldSelector: `input[data-recipient-name-id="${recipient.id}"]`,
+              message: 'Please fill in the recipient name'
+            };
+          }
+          if (!recipient.email || !recipient.email.trim()) {
+            return {
+              isValid: false,
+              fieldSelector: `input[data-recipient-email-id="${recipient.id}"]`,
+              message: 'Please fill in the recipient email'
+            };
+          }
+        }
+      }
+    }
+    if (currentStep === 5) {
+      if (!envelopeData.subject || envelopeData.subject.trim() === '') {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-subject-input"]',
+          message: 'Please enter an email subject'
+        };
+      }
+    }
+    return { isValid: true };
+  };
+
+  // Scroll to field and show message
+  const scrollToField = (selector: string, message: string) => {
+    // Wait a bit for any state updates (like expanding sections) to complete
+    setTimeout(() => {
+      const element = document.querySelector(selector) as HTMLElement;
+      if (element) {
+        // Scroll to element with more padding to ensure it's centered
+        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        
+        // Get the input field (either the element itself or one inside it)
+        let inputField: HTMLElement | null = null;
+        if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+          inputField = element;
+        } else {
+          inputField = element.querySelector('input, select, textarea') as HTMLElement;
+        }
+        
+        if (inputField) {
+          setTimeout(() => {
+            // Scroll the field into view again to ensure it's centered
+            inputField!.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            
+            // Focus the field (this moves the text cursor there and positions the caret)
+            inputField!.focus();
+            
+            // If it's an input, also select the text if any (makes it more obvious where to type)
+            if (inputField instanceof HTMLInputElement || inputField instanceof HTMLTextAreaElement) {
+              // Small delay to ensure focus is complete before selecting
+              setTimeout(() => {
+                inputField!.select();
+              }, 50);
+            }
+            
+            // Highlight the field with prominent red border and animation
+            inputField.style.borderColor = '#ef4444';
+            inputField.style.borderWidth = '2px';
+            inputField.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.2), 0 0 20px rgba(239, 68, 68, 0.3)';
+            inputField.style.transition = 'all 0.3s ease';
+            inputField.style.zIndex = '9999';
+            
+            // Add a pulsing animation to draw attention
+            let pulseCount = 0;
+            const pulseInterval = setInterval(() => {
+              if (pulseCount < 3) {
+                inputField!.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                  inputField!.style.transform = 'scale(1)';
+                }, 200);
+                pulseCount++;
+              } else {
+                clearInterval(pulseInterval);
+              }
+            }, 600);
+            
+            // Remove highlight after 4 seconds
+            setTimeout(() => {
+              inputField!.style.borderColor = '';
+              inputField!.style.borderWidth = '';
+              inputField!.style.boxShadow = '';
+              inputField!.style.transform = '';
+              inputField!.style.zIndex = '';
+              clearInterval(pulseInterval);
+            }, 4000);
+          }, 500);
+        } else {
+          // If no input found, just highlight the container
+          element.style.outline = '3px solid rgba(239, 68, 68, 0.5)';
+          element.style.outlineOffset = '2px';
+          setTimeout(() => {
+            element.style.outline = '';
+            element.style.outlineOffset = '';
+          }, 4000);
+        }
+        
+        // Show toast message
+        toast.error(message, {
+          duration: 4000,
+          position: 'top-center',
+          style: {
+            background: '#ef4444',
+            color: '#fff',
+            fontSize: '16px',
+            padding: '16px 24px',
+          },
+        });
+      }
+    }, 150);
+  };
+
   // Update your "Next" button handler:
   const handleNext = async () => {
     if (nextLoading) return;
+    
+    // Validate fields first
+    const validation = validateAndScrollToField();
+    if (!validation.isValid) {
+      if (validation.fieldSelector && validation.message) {
+        scrollToField(validation.fieldSelector, validation.message);
+      }
+      return;
+    }
+    
     setNextLoading(true);
     try {
       if (currentStep === 1) {
@@ -1253,22 +1508,200 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   const addRecipient = () => {
+    const base = bulkList ? 1 : 0;
     const newRecipient: Recipient = {
       id: `recipient_${Date.now()}`,
       name: '',
       email: '',
       role: 'signer',
-      order: recipients?.length + 1,
+      order: (recipients?.length || 0) + 1 + base,
       status: 'waiting',
       authentication: 'email'
     };
-    setRecipients(prev => [...prev, newRecipient]);
+    setRecipients(prev => {
+      const updated = [...prev, newRecipient];
+      // Normalize orders to ensure they're sequential
+      return normalizeOrders(updated);
+    });
+  };
+
+  // Normalize orders to be sequential (1, 2, 3, ...)
+  const normalizeOrders = (recipientsList: Recipient[]): Recipient[] => {
+    const sorted = [...recipientsList].sort((a, b) => (a.order || 0) - (b.order || 0));
+    return sorted.map((r, idx) => ({ ...r, order: idx + 1 }));
+  };
+
+  // Handle manual order input with intelligent swapping and animation
+  const handleOrderChange = (recipientId: string, newOrder: number) => {
+    const maxOrder = recipients.length;
+    const clampedOrder = Math.max(1, Math.min(newOrder, maxOrder));
+    
+    setRecipients(prev => {
+      const recipient = prev.find(r => r.id === recipientId);
+      if (!recipient) return prev;
+      
+      const oldOrder = recipient.order || prev.findIndex(r => r.id === recipientId) + 1;
+      
+      // If order didn't change, return as is
+      if (oldOrder === clampedOrder) {
+        setTempOrderValues(prev => {
+          const next = { ...prev };
+          delete next[recipientId];
+          return next;
+        });
+        return prev;
+      }
+      
+      // Trigger animation
+      setIsReordering(true);
+      setReorderingRecipientId(recipientId);
+      
+      // Create updated list
+      const updated = prev.map(r => {
+        if (r.id === recipientId) {
+          return { ...r, order: clampedOrder };
+        }
+        // Shift other recipients' orders
+        if (oldOrder < clampedOrder) {
+          // Moving down: shift recipients between old and new position up
+          if (r.order && r.order > oldOrder && r.order <= clampedOrder) {
+            return { ...r, order: (r.order || 1) - 1 };
+          }
+        } else {
+          // Moving up: shift recipients between new and old position down
+          if (r.order && r.order >= clampedOrder && r.order < oldOrder) {
+            return { ...r, order: (r.order || 1) + 1 };
+          }
+        }
+        return r;
+      });
+      
+      // Normalize orders to ensure they're sequential
+      const normalized = normalizeOrders(updated);
+      
+      // Clear temp value after applying
+      setTempOrderValues(prev => {
+        const next = { ...prev };
+        delete next[recipientId];
+        return next;
+      });
+      
+      // End animation after transition completes
+      setTimeout(() => {
+        setIsReordering(false);
+        setReorderingRecipientId(null);
+      }, 600);
+      
+      return normalized;
+    });
+  };
+
+  // Handle Enter key press to apply order change
+  const handleOrderKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, recipientId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const tempValue = tempOrderValues[recipientId];
+      if (tempValue !== undefined) {
+        handleOrderChange(recipientId, tempValue);
+      }
+    } else if (e.key === 'Escape') {
+      // Cancel the change and revert to original order
+      setTempOrderValues(prev => {
+        const next = { ...prev };
+        delete next[recipientId];
+        return next;
+      });
+      e.currentTarget.blur();
+    }
   };
 
   const updateRecipient = (id: string, updates: Partial<Recipient>) => {
+    // If order is being updated, use the special handler
+    if (updates.order !== undefined) {
+      handleOrderChange(id, updates.order);
+      return;
+    }
+    
     setRecipients(prev => prev.map(recipient =>
       recipient.id === id ? { ...recipient, ...updates } : recipient
     ));
+  };
+
+  // Handle authentication method selection
+  const handleAuthMethodSelect = async (methodId: string) => {
+    try {
+      // If no method selected, treat as choosing default email (no additional authentication)
+      const normalizedMethod = methodId && methodId.trim().length > 0 ? methodId : 'email';
+
+      if (authModalForBulk) {
+        // Apply to all recipients in bulk list
+        const newRecipients = recipients.map(recipient => ({
+          ...recipient,
+          authentication: normalizedMethod
+        }));
+        setRecipients(newRecipients);
+        
+        // If we have an envelopeId, persist the recipient authentication in DB
+        if (envelopeId) {
+          const recipientPayload = newRecipients.map(r => ({
+            name: r.name,
+            email: r.email,
+            role: r.role,
+            order: r.order,
+            authentication: r.authentication && r.authentication !== 'email' ? r.authentication : null
+          }));
+          
+          const resp = await eSignApi.post('/api/e-sign/add-recipients', {
+            envelopeId,
+            recipients: recipientPayload
+          });
+          
+          if (resp.status === 200) {
+            await getEnvelopeDetail(envelopeId);
+            toast.success(normalizedMethod === 'email' ? 'Cleared authentication for all recipients' : 'Authentication method applied to all recipients');
+          }
+        } else {
+          toast.success(normalizedMethod === 'email' ? 'Authentication cleared (will save with recipients)' : 'Authentication method will be saved when recipients are added');
+        }
+      } else if (authModalForRecipientId) {
+        // Apply to specific recipient
+        updateRecipient(authModalForRecipientId, { authentication: normalizedMethod });
+        
+        // If we have an envelopeId, persist the recipient authentication in DB
+        if (envelopeId) {
+          const recipient = recipients.find(r => r.id === authModalForRecipientId);
+          if (recipient) {
+            const recipientPayload = [{
+              name: recipient.name,
+              email: recipient.email,
+              role: recipient.role,
+              order: recipient.order,
+              authentication: normalizedMethod !== 'email' ? normalizedMethod : null
+            }];
+            
+            const resp = await eSignApi.post('/api/e-sign/add-recipients', {
+              envelopeId,
+              recipients: recipientPayload
+            });
+            
+            if (resp.status === 200) {
+              await getEnvelopeDetail(envelopeId);
+              toast.success(normalizedMethod === 'email' ? 'Cleared authentication for recipient' : 'Authentication method applied to recipient');
+            }
+          }
+        } else {
+          toast.success(normalizedMethod === 'email' ? 'Authentication cleared (will save with recipient)' : 'Authentication method will be saved when recipient is added');
+        }
+      }
+      
+      // Close modal
+      setShowAuthModal(false);
+      setAuthModalForRecipientId(null);
+      setAuthModalForBulk(false);
+    } catch (error) {
+      console.error('Error updating recipient authentication:', error);
+      toast.error('Failed to update authentication method');
+    }
   };
   const handleEmailOnBlur = async (id: string, email: string) => {
     if (!email || !envelopeId) return;
@@ -1287,6 +1720,82 @@ const EnvelopeCreator: React.FC = () => {
     }
   }
 
+  // Drag handlers for recipient reordering
+  const handleRecipientDragStart = (e: React.DragEvent, recipientId: string) => {
+    if (!setSigningOrder) {
+      e.preventDefault();
+      return; // Only allow dragging when signing order is enabled
+    }
+    
+    // Prevent dragging if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.tagName === 'TEXTAREA' || 
+        target.closest('button') || target.closest('input') || target.closest('textarea') || 
+        target.closest('.role-dropdown-container') || target.closest('.customize-dropdown-container') ||
+        target.closest('[data-recipient-name-id]') || target.closest('[data-recipient-email-id]')) {
+      e.preventDefault();
+      return;
+    }
+    
+    setDraggedRecipientId(recipientId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', recipientId);
+    // Prevent text selection during drag
+    e.dataTransfer.setDragImage(new Image(), 0, 0);
+  };
+
+  const handleRecipientDragOver = (e: React.DragEvent, recipientId: string) => {
+    if (!setSigningOrder || !draggedRecipientId || draggedRecipientId === recipientId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverRecipientId(recipientId);
+  };
+
+  const handleRecipientDragLeave = () => {
+    setDragOverRecipientId(null);
+  };
+
+  const handleRecipientDrop = (e: React.DragEvent, targetRecipientId: string) => {
+    e.preventDefault();
+    if (!draggedRecipientId || draggedRecipientId === targetRecipientId) {
+      setDraggedRecipientId(null);
+      setDragOverRecipientId(null);
+      return;
+    }
+
+    setRecipients(prev => {
+      const draggedRecipient = prev.find(r => r.id === draggedRecipientId);
+      const targetRecipient = prev.find(r => r.id === targetRecipientId);
+      
+      if (!draggedRecipient || !targetRecipient) return prev;
+
+      const draggedOrder = draggedRecipient.order || prev.findIndex(r => r.id === draggedRecipientId) + 1;
+      const targetOrder = targetRecipient.order || prev.findIndex(r => r.id === targetRecipientId) + 1;
+
+      // Swap orders
+      const updated = prev.map(r => {
+        if (r.id === draggedRecipientId) {
+          return { ...r, order: targetOrder };
+        }
+        if (r.id === targetRecipientId) {
+          return { ...r, order: draggedOrder };
+        }
+        return r;
+      });
+
+      // Normalize orders to ensure they're sequential
+      return normalizeOrders(updated);
+    });
+
+    setDraggedRecipientId(null);
+    setDragOverRecipientId(null);
+  };
+
+  const handleRecipientDragEnd = () => {
+    setDraggedRecipientId(null);
+    setDragOverRecipientId(null);
+  };
+
   const removeRecipient = async (id: string) => {
     // Check if coming from db and delete from db too
 
@@ -1301,45 +1810,159 @@ const EnvelopeCreator: React.FC = () => {
         console.error('Failed to delete recipient from DB:', error);
       }
     }
-    setRecipients(prev => prev.filter(recipient => recipient.id !== id));
+    setRecipients(prev => {
+      const removed = prev.filter(recipient => recipient.id !== id);
+      // Normalize orders after removal
+      return normalizeOrders(removed);
+    });
   };
 
-  const canProceedToNext = () => {
-    switch (currentStep) {
-      case 1:
-        return documents?.length > 0 && selectedEnvelopeType !== '';
-      case 2:
-        if (mode === 'normal') {
-          return recipients?.length > 0 && recipients.every(r => r.name && r.email);
-        } else {
-          // power mode'
-          return true; // Fields are optional
-        }
-      case 3:
-        return true; // Fields are optional
-      case 4:
-        return true; // Authentication is optional
-      case 5:
-        return envelopeData.subject.trim() !== '';
-      default:
-        return true;
-    }
-  };
+  // const canProceedToNext = () => {
+  //   switch (currentStep) {
+  //     case 1:
+  //       return documents?.length > 0 && selectedEnvelopeType !== '';
+  //     case 2:
+  //       if (mode === 'normal') {
+  //         return recipients?.length > 0 && recipients.every(r => r.name && r.email);
+  //       } else {
+  //         // power mode'
+  //         return true; // Fields are optional
+  //       }
+  //     case 3:
+  //       return true; // Fields are optional
+  //     case 4:
+  //       return true; // Authentication is optional
+  //     case 5:
+  //       return envelopeData.subject.trim() !== '';
+  //     default:
+  //       return true;
+  //   }
+  // };
 
   // const handleCreateEnvelope = () => {
   //   if (!user) return;
   //   navigate('/e-sign/dashboard');
   // };
 
+  // Fetch subscription plan and auth methods for send confirmation
+  const fetchSendConfirmationData = async () => {
+    try {
+      // Fetch subscription plan
+      const planResponse = await subscriptionApi.get('/user-plan/me');
+      if (planResponse.status === 200) {
+        setSubscriptionPlan(planResponse.data.data);
+        SubscriptionStorage.savePlan(planResponse.data.data);
+      }
+      
+      // Fetch auth methods
+      const authResponse = await subscriptionApi.get('/user/available/auth/methods');
+      if (authResponse.status === 200) {
+        setAuthMethods(authResponse.data.data.methods || []);
+      }
+    } catch (error) {
+      console.error('Error fetching send confirmation data:', error);
+    }
+  };
+
   const handleSendEnvelope = async () => {
+    console.log('handleSendEnvelope called', { envelopeId, mode });
+    if (!envelopeId) {
+      toast.error('Envelope ID is missing. Please save the envelope first.');
+      console.error('Cannot send envelope: envelopeId is missing');
+      return;
+    }
+    try {
+      // Show confirmation modal instead of directly sending
+      console.log('Fetching send confirmation data...');
+      await fetchSendConfirmationData();
+      console.log('Setting modal to show...');
+      setSendModalStep(1);
+      setShowSendConfirmationModal(true);
+      console.log('Modal should now be visible');
+    } catch (error) {
+      console.error('Error preparing send confirmation:', error);
+      // Still show the modal even if data fetch fails
+      setSendModalStep(1);
+      setShowSendConfirmationModal(true);
+      toast.error('Failed to load some data, but you can still proceed.');
+    }
+  };
+
+  // Actual send function called after confirmation
+  const confirmAndSendEnvelope = async () => {
     if (!envelopeId) return;
     setSending(true);
+    setShowSendConfirmationModal(false);
     try {
+      // First, save the recipients with their updated order to the backend
+      // Normalize orders to ensure they're sequential
+      const normalizedRecipients = normalizeOrders(recipients);
+      const recipientPayload = normalizedRecipients.map(r => ({
+        name: r.name,
+        email: r.email,
+        role: r.role,
+        order: r.order,
+        status: r.status,
+        authentication: r.authentication && r.authentication !== 'email' ? r.authentication : null
+      }));
+      
+      console.log('Saving recipients with updated order before sending:', recipientPayload);
+      try {
+        const saveResponse = await eSignApi.post('/api/e-sign/add-recipients', {
+          envelopeId,
+          recipients: recipientPayload
+        });
+        console.log('Recipients order saved successfully', saveResponse.data);
+        
+        // Update local state with normalized recipients to keep UI in sync
+        setRecipients(normalizedRecipients);
+        
+        // Refresh envelope details to ensure backend state is reflected
+        await getEnvelopeDetail(envelopeId);
+      } catch (saveErr) {
+        console.error('Failed to save recipients order:', saveErr);
+        toast.error('Failed to save signing order. Please try again.');
+        setSending(false);
+        return;
+      }
+      
+      // Now send the envelope
       await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
+      
+      // Record credit usage
+      const totalCost = calculateTotalCost();
+      if (totalCost > 0 && subscriptionPlan) {
+        try {
+          const recipientsWithAuth = recipients.filter(r => r.authentication && r.authentication !== 'email');
+          if (recipientsWithAuth.length > 0) {
+            await Promise.all(recipientsWithAuth.map(recipient => {
+              const authMethod = authMethods.find(m => m.id === recipient.authentication);
+              const cost = authMethod?.cost || 0;
+              if (cost > 0) {
+                return subscriptionApi.post('/usage/consume', {
+                  action: 'esign:envelopeSend',
+                  credits: cost,
+                  authId: recipient.authentication,
+                  toolId: 'esign',
+                  reason: `Envelope ${envelopeId} sent to ${recipient.email}`,
+                });
+              }
+            }));
+            
+            // Update credits in localStorage
+            const newBalance = (subscriptionPlan.creditsBalance || 0) - totalCost;
+            SubscriptionStorage.updateCredits(newBalance);
+            setSubscriptionPlan((prev: any) => prev ? { ...prev, creditsBalance: newBalance } : null);
+          }
+        } catch (creditErr) {
+          console.error('Failed to record credit usage:', creditErr);
+        }
+      }
+      
       // Show success alert before navigation
       await Swal.fire({
         title: "Envelope Sent!",
-        text: "Enevelop Sent Successfully",
+        text: "Envelope Sent Successfully",
         icon: "success",
         confirmButtonText: "OK",
         confirmButtonColor: "#ffc107",
@@ -1357,6 +1980,20 @@ const EnvelopeCreator: React.FC = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  // Calculate total cost based on authentication methods
+  const calculateTotalCost = (): number => {
+    let total = 0;
+    recipients.forEach(recipient => {
+      if (recipient.authentication && recipient.authentication !== 'email') {
+        const authMethod = authMethods.find(m => m.id === recipient.authentication);
+        if (authMethod) {
+          total += authMethod.cost || 0;
+        }
+      }
+    });
+    return total;
   };
   useEffect(() => {
     getSteps();
@@ -1377,6 +2014,34 @@ const EnvelopeCreator: React.FC = () => {
       console.error('Error fetching envelope types:', error);
     }
   };
+
+  // Handle envelope type selection (including "Other")
+  const handleEnvelopeTypeSelect = (value: string) => {
+    setSelectedEnvelopeType(value);
+    if (value === 'Other') {
+      setShowOtherEnvelopeType(true);
+    } else {
+      setShowOtherEnvelopeType(false);
+      setOtherEnvelopeType('');
+    }
+    setTypeDropdownOpen(false);
+    setTypeSearch('');
+  };
+
+  // Close type dropdown on outside click
+  useEffect(() => {
+    if (!typeDropdownOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(target)) {
+        setTypeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+    };
+  }, [typeDropdownOpen]);
 
   const getSteps = async () => {
     try {
@@ -1665,11 +2330,14 @@ const EnvelopeCreator: React.FC = () => {
               <div className="space-y-6">
                 {/* Layout: Previews + Upload. If multiple docs, show upload below previews */}
                 {documents && documents.length > 1 ? (
-                  <div className="flex flex-col gap-6">
-                    {/* Previews row */}
-                    <div className="flex gap-4 overflow-x-auto py-1">
+                  <div className="flex flex-col gap-4">
+                    {/* Previews grid (wraps, no horizontal scroll) */}
+                    <div
+                      className="grid gap-3 py-1"
+                      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
+                    >
                       {documents.map((doc) => (
-                        <div key={doc.id} className="w-60 flex-shrink-0 relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '320px' }}>
+                        <div key={doc.id} className="w-full relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '220px' }}>
                           {/* Close button at top right */}
                           {!doc.isUploading && (
                             <button
@@ -1685,33 +2353,44 @@ const EnvelopeCreator: React.FC = () => {
 
                           {/* PDF Preview/Thumbnail */}
                           {!doc.isUploading && doc.url && (
-                            <div className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0">
-                              <object
-                                data={doc.url}
-                                type="application/pdf"
-                                className="w-full h-full"
-                                title={`Preview of ${doc.name}`}
-                              >
-                                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                  <FileText className="w-12 h-12 mb-2" />
-                                  <p className="text-sm text-center">PDF Preview</p>
-                                </div>
-                              </object>
+                            <div 
+                              className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
+                            >
+                              {/* React-PDF thumbnail (first page) */}
+                              <div className="w-full h-full flex items-center justify-center bg-white">
+                                <PDFDocument file={doc.url}>
+                                  <PDFPage pageNumber={1} width={150} renderTextLayer={false} renderAnnotationLayer={false} />
+                                </PDFDocument>
+                              </div>
+                              {/* View Button - appears on hover */}
+                              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPdfForPreview(doc);
+                                    setPdfPreviewModalOpen(true);
+                                  }}
+                                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span className="text-sm font-medium">View</span>
+                                </button>
+                              </div>
                             </div>
                           )}
 
                           {/* File Info Section */}
                           {!doc.isUploading ? (
-                            <div className="p-4">
+                            <div className="p-2">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
                                   {/* File Name */}
-                                  <p className="font-bold text-gray-900 text-base mb-1 truncate" title={doc.name}>
+                                  <p className="font-semibold text-gray-900 text-xs mb-1 truncate" title={doc.name}>
                                     {doc.name}
                                   </p>
                                   {/* Page Count with three dots menu */}
                                   <div className="flex items-center justify-between">
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs text-gray-600">
                                       {doc.pages} page{doc.pages !== 1 ? 's' : ''}
                                     </p>
 
@@ -1726,7 +2405,7 @@ const EnvelopeCreator: React.FC = () => {
                                         }}
                                         className="p-1 hover:bg-gray-100 rounded transition-colors"
                                       >
-                                        <MoreVertical className="w-5 h-5 text-gray-600" />
+                                        <MoreVertical className="w-4 h-4 text-gray-600" />
                                       </button>
 
                                       {/* Context Menu */}
@@ -1734,7 +2413,7 @@ const EnvelopeCreator: React.FC = () => {
                                         <>
                                           {/* backdrop to close on outside click */}
                                           <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
-                                          <div className="fixed z-[1000] w-48 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
+                                          <div className="fixed z-[1000] w-44 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
                                             <div className="py-1">
                                               <button
                                                 onClick={(e) => {
@@ -1742,7 +2421,7 @@ const EnvelopeCreator: React.FC = () => {
                                                   setOpenMenuId(null);
                                                   // Handle Apply Templates
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
                                               >
                                                 Apply Templates
                                               </button>
@@ -1753,7 +2432,7 @@ const EnvelopeCreator: React.FC = () => {
                                                   // Handle Replace
                                                   fileInputRef.current?.click();
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                                               >
                                                 Replace
                                               </button>
@@ -1769,7 +2448,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     link.click();
                                                   }
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                                               >
                                                 <Download className="w-4 h-4" />
                                                 Download Document
@@ -1786,7 +2465,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     ));
                                                   }
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                                               >
                                                 <FileEdit className="w-4 h-4" />
                                                 Rename Document
@@ -1800,7 +2479,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     removeDocument(doc.id);
                                                   }
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                                className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
                                               >
                                                 <Trash2 className="w-4 h-4" />
                                                 Delete Document
@@ -1814,7 +2493,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     window.open(doc.url, '_blank');
                                                   }
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                                               >
                                                 <Eye className="w-4 h-4" />
                                                 View Document
@@ -1831,14 +2510,14 @@ const EnvelopeCreator: React.FC = () => {
                           ) : (
                             /* Uploading state */
                             <div className="p-4">
-                              <p className="font-medium text-gray-900 text-sm mb-2">{doc.name} — Uploading...</p>
+                              <p className="font-medium text-gray-900 text-xs mb-2">{doc.name} — Uploading...</p>
                               <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
                                 <div
                                   className="h-full bg-blue-500 transition-all"
                                   style={{ width: `${doc.uploadProgress ?? 0}%` }}
                                 />
                               </div>
-                              <p className="text-xs text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+                              <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
                             </div>
                           )}
                         </div>
@@ -1885,7 +2564,7 @@ const EnvelopeCreator: React.FC = () => {
                     {documents && documents.length > 0 && (
                       <div className="flex gap-4 overflow-x-auto py-1">
                         {documents.map((doc) => (
-                          <div key={doc.id} className="w-80 flex-shrink-0 relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '320px' }}>
+                          <div key={doc.id} className="w-80 flex-shrink-0 relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: documents.length === 1 ? '260px' : '320px' }}>
                             {/* Close button at top right */}
                             {!doc.isUploading && (
                               <button
@@ -1901,7 +2580,11 @@ const EnvelopeCreator: React.FC = () => {
 
                             {/* PDF Preview/Thumbnail */}
                             {!doc.isUploading && doc.url && (
-                              <div className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0">
+                              <div 
+                                className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
+                                onMouseEnter={() => {}}
+                                onMouseLeave={() => {}}
+                              >
                                 <object
                                   data={doc.url}
                                   type="application/pdf"
@@ -1913,6 +2596,20 @@ const EnvelopeCreator: React.FC = () => {
                                     <p className="text-sm text-center">PDF Preview</p>
                                   </div>
                                 </object>
+                                {/* View Button - appears on hover */}
+                                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedPdfForPreview(doc);
+                                      setPdfPreviewModalOpen(true);
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                    <span className="text-sm font-medium">View</span>
+                                  </button>
+                                </div>
                               </div>
                             )}
 
@@ -2075,7 +2772,7 @@ const EnvelopeCreator: React.FC = () => {
                           : 'border border-gray-200'
                           } ${documents && documents.length > 0 ? 'p-6' : 'p-12'
                           } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''}`}
-                        style={{ height: documents && documents.length > 0 ? '320px' : 'auto' }}
+                        style={{ height: documents && documents.length > 0 ? (documents.length === 1 ? '260px' : '320px') : 'auto' }}
                       >
                         {/* Hidden file input */}
                         <input
@@ -2269,6 +2966,10 @@ const EnvelopeCreator: React.FC = () => {
                                       id: `row_${Date.now()}_${idx}`,
                                       name: it.name,
                                       email: it.email,
+                                      role: bulkList.role,
+                                      order: idx + 1,
+                                      status: 'waiting' as const,
+                                      authentication: 'email' as Recipient['authentication']
                                     }))
                                   );
                                   setShowBulkModal(true);
@@ -2760,7 +3461,7 @@ const EnvelopeCreator: React.FC = () => {
                               onClick={() => setShowSigningOrder(false)}
                               className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800"
                             >
-                              ✕
+                              <X className="w-4 h-4" />
                             </button>
 
                             <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">Signing Order Diagram</h2>
@@ -2770,6 +3471,15 @@ const EnvelopeCreator: React.FC = () => {
                                 const src = (name && name.trim().length > 0 ? name : (email || '')) as string;
                                 const chars = (src.match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase();
                                 return chars || <PenLine className='w-4 h-4' />;
+                              };
+
+                              const formatSentenceCase = (text: string) => {
+                                if (!text) return text;
+                                return text
+                                  .toLowerCase()
+                                  .split(' ')
+                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                  .join(' ');
                               };
 
                               // If CSV list exists, render based on signing order toggle
@@ -2797,10 +3507,15 @@ const EnvelopeCreator: React.FC = () => {
                                         {/* Grouped participants */}
                                         <div className="relative h-24 flex justify-center items-center z-10">
                                           <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                                          <div className="px-4 py-2 border rounded-lg bg-white z-20 flex items-center gap-6">
+                                          <div className="px-4 py-2 border rounded-lg bg-white z-20 flex flex-wrap items-center justify-center gap-4">
                                             {items.map((it, idx) => (
-                                              <div key={`g-${idx}`} className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66]">
-                                                {getInitials(it.name, it.email)}
+                                              <div key={`g-${idx}`} className="flex flex-col items-center gap-1">
+                                                <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66]">
+                                                  {getInitials(it.name, it.email)}
+                                                </div>
+                                                <div className="text-xs font-medium text-[#3E2B66] text-center px-2 max-w-[80px] truncate">
+                                                  {formatSentenceCase(it.name || it.email || 'Unnamed')}
+                                                </div>
                                               </div>
                                             ))}
                                           </div>
@@ -2815,13 +3530,20 @@ const EnvelopeCreator: React.FC = () => {
                                 }
 
                                 // Sequential order (R1 -> R2 -> ...)
-                                const ordered = items.map((it, idx) => ({ key: `csv-${idx}`, node: <>{getInitials(it.name, it.email)}</> }));
+                                const ordered = items.map((it, idx) => ({ 
+                                  key: `csv-${idx}`, 
+                                  order: idx + 1,
+                                  name: formatSentenceCase(it.name || it.email || 'Unnamed'),
+                                  email: it.email
+                                }));
                                 return (
                                   <div className="grid grid-cols-12 gap-6">
                                     <div className="col-span-4 text-sm text-gray-600">
                                       <div className="h-20 flex items-center font-semibold">SENDER</div>
-                                      {ordered.map((_, idx) => (
-                                        <div key={`lbl-${idx}`} className="h-24 flex items-center">{idx + 1}</div>
+                                      {ordered.map((p) => (
+                                        <div key={`lbl-${p.key}`} className="h-24 flex items-center">
+                                          <span className="font-bold">{p.order}.</span> {p.name}
+                                        </div>
                                       ))}
                                       <div className="h-20 flex items-center font-semibold">COMPLETED</div>
                                     </div>
@@ -2837,7 +3559,9 @@ const EnvelopeCreator: React.FC = () => {
                                       {ordered.map((p) => (
                                         <div key={p.key} className="relative h-24 flex justify-center items-center z-10">
                                           <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                                          <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">{p.node}</div>
+                                          <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                            {getInitials(p.name, p.email)}
+                                          </div>
                                         </div>
                                       ))}
                                       {/* Completed */}
@@ -2850,18 +3574,22 @@ const EnvelopeCreator: React.FC = () => {
                               }
 
                               // Default (non-CSV) path using recipients
-                              const ordered = [] as Array<{ key: string; node: React.ReactNode }>;
                               const sortedRecipients = [...recipients].sort((a, b) => (a.order || 0) - (b.order || 0));
-                              sortedRecipients.forEach((r) => {
-                                ordered.push({ key: r.id, node: <>{getInitials(r.name, r.email)}</> });
-                              });
+                              const ordered = sortedRecipients.map((r) => ({
+                                key: r.id,
+                                order: r.order || 0,
+                                name: formatSentenceCase(r.name || r.email || 'Unnamed'),
+                                email: r.email
+                              }));
 
                               return (
                                 <div className="grid grid-cols-12 gap-6">
                                   <div className="col-span-4 text-sm text-gray-600">
                                     <div className="h-20 flex items-center font-semibold">SENDER</div>
-                                    {ordered.map((_, idx) => (
-                                      <div key={`lbl-${idx}`} className="h-24 flex items-center">{idx + 1}</div>
+                                    {ordered.map((p) => (
+                                      <div key={`lbl-${p.key}`} className="h-24 flex items-center">
+                                        <span className="font-bold">{p.order}.</span> {p.name}
+                                      </div>
                                     ))}
                                     <div className="h-20 flex items-center font-semibold">COMPLETED</div>
                                   </div>
@@ -2876,7 +3604,9 @@ const EnvelopeCreator: React.FC = () => {
                                     {ordered.map((p) => (
                                       <div key={p.key} className="relative h-24 flex justify-center items-center z-10">
                                         <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                                        <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">{p.node}</div>
+                                        <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                          {getInitials(p.name, p.email)}
+                                        </div>
                                       </div>
                                     ))}
                                     <div className="relative h-20 flex justify-center items-center z-10">
@@ -2894,6 +3624,56 @@ const EnvelopeCreator: React.FC = () => {
                               >
                                 Close
                               </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {/* Authentication Method Selection Modal */}
+                      {showAuthModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center">
+                          <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+                            onClick={() => {
+                              setShowAuthModal(false);
+                              setAuthModalForRecipientId(null);
+                              setAuthModalForBulk(false);
+                            }}
+                          />
+                          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+                            <button
+                              onClick={() => {
+                                setShowAuthModal(false);
+                                setAuthModalForRecipientId(null);
+                                setAuthModalForBulk(false);
+                              }}
+                              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
+                              Select Authentication Method
+                            </h2>
+                            <div className="mt-8">
+                              <AdvancedAuthenticationSelector
+                                selectedMethods={(() => {
+                                  if (authModalForBulk) {
+                                    // For bulk, check if all recipients have the same authentication
+                                    const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
+                                    if (!firstAuth) return [];
+                                    const allSame = recipients.every(r => r.authentication === firstAuth);
+                                    return allSame && firstAuth ? [firstAuth] : [];
+                                  } else if (authModalForRecipientId) {
+                                    // For individual recipient, get their authentication
+                                    const recipient = recipients.find(r => r.id === authModalForRecipientId);
+                                    const auth = recipient?.authentication;
+                                    return auth ? [auth] : [];
+                                  }
+                                  return [];
+                                })()}
+                                onMethodSelect={handleAuthMethodSelect}
+                                riskLevel="medium"
+                                complianceRequirements={[]}
+                              />
                             </div>
                           </div>
                         </div>
@@ -2952,17 +3732,18 @@ const EnvelopeCreator: React.FC = () => {
                                             <button
                                               type="button"
                                               onClick={() => {
-                                                setBulkAccessCode(bulkAccessCode || '');
                                                 setBulkCustomizeOpen(false);
-                                                setOpenBulkAccess(true);
+                                                setAuthModalForBulk(true);
+                                                setAuthModalForRecipientId(null);
+                                                setShowAuthModal(true);
                                               }}
                                               className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100"
                                             >
                                               <div className="flex items-start gap-3">
                                                 <Key className="w-5 h-5 text-gray-600 mt-0.5" />
                                                 <div>
-                                                  <div className="font-medium text-gray-900">Add access code</div>
-                                                  <div className="text-xs text-gray-500 mt-1">Enter a code that only you and this recipient know.</div>
+                                                  <div className="font-medium text-gray-900">Add authentication method</div>
+                                                  <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
                                                 </div>
                                               </div>
                                             </button>
@@ -3128,12 +3909,12 @@ const EnvelopeCreator: React.FC = () => {
                                         {csvCustomizeOpen && (
                                           <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
                                             <div className="py-2">
-                                              <button type="button" onClick={() => { setCsvAccessCode(csvAccessCode || ''); setCsvCustomizeOpen(false); setOpenCsvAccess(true); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100">
+                                              <button type="button" onClick={() => { setCsvCustomizeOpen(false); setAuthModalForBulk(true); setAuthModalForRecipientId(null); setShowAuthModal(true); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100">
                                                 <div className="flex items-start gap-3">
                                                   <Key className="w-5 h-5 text-gray-600 mt-0.5" />
                                                   <div>
-                                                    <div className="font-medium text-gray-900">Add access code</div>
-                                                    <div className="text-xs text-gray-500 mt-1">Enter a code that only you and this recipient know.</div>
+                                                    <div className="font-medium text-gray-900">Add authentication method</div>
+                                                    <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
                                                   </div>
                                                 </div>
                                               </button>
@@ -3161,25 +3942,99 @@ const EnvelopeCreator: React.FC = () => {
 
 
                       {/* Show existing recipients even if CSV exists so Add Recipient works */}
-                      {recipients?.length > 0 && (
-                        <div className="space-y-4">
-                          {recipients.map((recipient, index) => {
-                            const base = bulkList ? 1 : 0;
-                            const displayOrder = (recipient.order || (index + 1 + base));
-                            return (
-                              <div key={recipient.id} className="flex items-stretch gap-4">
-                                {setSigningOrder && (
-                                  <div className="w-16">
-                                    <input
-                                      type="number"
-                                      min={1}
-                                      value={displayOrder}
-                                      onChange={(e) => updateRecipient(recipient.id, { order: Number(e.target.value || 1) })}
-                                      className="w-full h-10 border rounded-sm text-center"
-                                    />
-                                  </div>
-                                )}
-                                <div className="flex-1 bg-white border border-gray-200 shadow-sm relative" style={{ borderLeft: `7px solid ${RECIPIENT_COLORS[index % RECIPIENT_COLORS.length]}` }}>
+                      {recipients?.length > 0 && (() => {
+                        // Sort recipients by order before displaying
+                        const sortedRecipients = [...recipients].sort((a, b) => {
+                          const orderA = a.order || 0;
+                          const orderB = b.order || 0;
+                          return orderA - orderB;
+                        });
+
+                        return (
+                          <div className="space-y-4 transition-all duration-500 ease-in-out">
+                            {sortedRecipients.map((recipient, index) => {
+                              const base = bulkList ? 1 : 0;
+                              const displayOrder = (recipient.order || (index + 1 + base));
+                              const isDragging = draggedRecipientId === recipient.id;
+                              const isDragOver = dragOverRecipientId === recipient.id;
+                              const isThisReordering = reorderingRecipientId === recipient.id;
+                              const originalIndex = recipients.findIndex(r => r.id === recipient.id);
+                              
+                              return (
+                                <div 
+                                  key={recipient.id} 
+                                  className={`flex items-stretch gap-4 transition-all duration-500 ease-in-out ${
+                                    isDragging ? 'opacity-50 scale-95' : ''
+                                  } ${isDragOver ? 'transform translate-y-1' : ''} ${
+                                    isThisReordering ? 'transform transition-all duration-500 ease-in-out' : ''
+                                  }`}
+                                  draggable={setSigningOrder}
+                                  onDragStart={(e) => handleRecipientDragStart(e, recipient.id)}
+                                  onDragOver={(e) => handleRecipientDragOver(e, recipient.id)}
+                                  onDragLeave={handleRecipientDragLeave}
+                                  onDrop={(e) => handleRecipientDrop(e, recipient.id)}
+                                  onDragEnd={handleRecipientDragEnd}
+                                  style={{
+                                    cursor: setSigningOrder ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                                    userSelect: 'none',
+                                    transition: isThisReordering ? 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 0.2s, transform 0.2s'
+                                  }}
+                                >
+                                  {setSigningOrder && (
+                                    <div className="w-16 flex flex-col items-center justify-center">
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        max={recipients.length}
+                                        value={tempOrderValues[recipient.id] !== undefined ? tempOrderValues[recipient.id] : displayOrder}
+                                        onChange={(e) => {
+                                          const newOrder = Number(e.target.value || 1);
+                                          // Store in temp values, don't apply yet
+                                          setTempOrderValues(prev => ({
+                                            ...prev,
+                                            [recipient.id]: newOrder
+                                          }));
+                                        }}
+                                        onKeyDown={(e) => handleOrderKeyDown(e, recipient.id)}
+                                        onBlur={() => {
+                                          // On blur, apply the change if temp value exists
+                                          const tempValue = tempOrderValues[recipient.id];
+                                          if (tempValue !== undefined) {
+                                            handleOrderChange(recipient.id, tempValue);
+                                          }
+                                        }}
+                                        onDragStart={(e) => e.stopPropagation()}
+                                        draggable="false"
+                                        className="w-full h-10 border rounded-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder={displayOrder.toString()}
+                                      />
+                                      {setSigningOrder && (
+                                        <div className="mt-1 text-gray-400 cursor-grab" title="Drag to reorder">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                          </svg>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  <div 
+                                    className={`flex-1 bg-white border shadow-sm relative transition-all duration-500 ease-in-out ${
+                                      isDragOver ? 'border-blue-500 border-2 shadow-lg' : 'border-gray-200'
+                                    } ${setSigningOrder ? 'cursor-grab active:cursor-grabbing' : ''} ${
+                                      isThisReordering ? 'shadow-2xl scale-[1.02] z-20 ring-2 ring-blue-400 ring-opacity-50' : ''
+                                    }`}
+                                    style={{ 
+                                      borderLeft: `7px solid ${RECIPIENT_COLORS[originalIndex % RECIPIENT_COLORS.length]}`,
+                                      transition: isThisReordering ? 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease-in-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.2s ease-in-out'
+                                    }}
+                                    onMouseDown={(e) => {
+                                      // Prevent drag when clicking on inputs, buttons, or interactive elements
+                                      const target = e.target as HTMLElement;
+                                      if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.tagName === 'TEXTAREA' || target.closest('button') || target.closest('input') || target.closest('textarea') || target.closest('.role-dropdown-container') || target.closest('.customize-dropdown-container')) {
+                                        e.stopPropagation();
+                                      }
+                                    }}
+                                  >
                                   <div className="p-6">
                                     <div className="space-y-4">
                                       <div className="flex items-start gap-4">
@@ -3199,6 +4054,7 @@ const EnvelopeCreator: React.FC = () => {
                                             <input
                                               type="text"
                                               value={recipient.name}
+                                              data-recipient-name-id={recipient.id}
                                               onChange={(e) => {
                                                 updateRecipient(recipient.id, { name: e.target.value });
                                                 // Show suggestions if user is typing
@@ -3214,6 +4070,8 @@ const EnvelopeCreator: React.FC = () => {
                                                 }, 200);
                                               }}
                                               onFocus={() => { setSuggestionsOpenForId(recipient.id); loadRecipientSuggestions(); }}
+                                              onDragStart={(e) => e.stopPropagation()}
+                                              draggable="false"
                                               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
                                               placeholder="Full name"
                                             />
@@ -3237,7 +4095,13 @@ const EnvelopeCreator: React.FC = () => {
                                                         <button
                                                           key={userSuggestion.email}
                                                           type="button"
-                                                          onClick={() => {
+                                                          onMouseDown={(e) => {
+                                                            e.preventDefault(); // Prevent input blur
+                                                            updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
+                                                            setSuggestionsOpenForId(null);
+                                                          }}
+                                                          onClick={(e) => {
+                                                            e.preventDefault();
                                                             updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
                                                             setSuggestionsOpenForId(null);
                                                           }}
@@ -3265,7 +4129,13 @@ const EnvelopeCreator: React.FC = () => {
                                                     <button
                                                       key={s.email}
                                                       type="button"
-                                                      onClick={() => {
+                                                      onMouseDown={(e) => {
+                                                        e.preventDefault(); // Prevent input blur
+                                                        updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
+                                                        setSuggestionsOpenForId(null);
+                                                      }}
+                                                      onClick={(e) => {
+                                                        e.preventDefault();
                                                         updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
                                                         setSuggestionsOpenForId(null);
                                                       }}
@@ -3408,17 +4278,18 @@ const EnvelopeCreator: React.FC = () => {
                                               <div className="py-2">
                                                 <button
                                                   onClick={() => {
-                                                    updateRecipient(recipient.id, { authentication: 'access_code' });
-                                                    setOpenAccessForId(prev => ({ ...prev, [recipient.id]: true }));
+                                                    setAuthModalForRecipientId(recipient.id);
+                                                    setAuthModalForBulk(false);
                                                     setOpenCustomizeDropdownId(null);
+                                                    setShowAuthModal(true);
                                                   }}
                                                   className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100"
                                                 >
                                                   <div className="flex items-start gap-3">
                                                     <Key className="w-5 h-5 text-gray-600 mt-0.5" />
                                                     <div>
-                                                      <div className="font-medium text-gray-900">Add access code</div>
-                                                      <div className="text-xs text-gray-500 mt-1">Enter a code that only you and this recipient know.</div>
+                                                      <div className="font-medium text-gray-900">Add authentication method</div>
+                                                      <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
                                                     </div>
                                                   </div>
                                                 </button>
@@ -3513,6 +4384,7 @@ const EnvelopeCreator: React.FC = () => {
                                             <input
                                               type="email"
                                               value={recipient.email}
+                                              data-recipient-email-id={recipient.id}
                                               onChange={(e) => {
                                                 updateRecipient(recipient.id, { email: e.target.value });
                                                 // Show suggestions if user is typing
@@ -3532,6 +4404,8 @@ const EnvelopeCreator: React.FC = () => {
                                                 setEmailSuggestionsOpenForId(recipient.id);
                                                 loadRecipientSuggestions();
                                               }}
+                                              onDragStart={(e) => e.stopPropagation()}
+                                              draggable="false"
                                               className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                                               placeholder="email@example.com"
                                             />
@@ -3552,7 +4426,13 @@ const EnvelopeCreator: React.FC = () => {
                                                         <button
                                                           key={userSuggestion.email}
                                                           type="button"
-                                                          onClick={() => {
+                                                          onMouseDown={(e) => {
+                                                            e.preventDefault(); // Prevent input blur
+                                                            updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
+                                                            setEmailSuggestionsOpenForId(null);
+                                                          }}
+                                                          onClick={(e) => {
+                                                            e.preventDefault();
                                                             updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
                                                             setEmailSuggestionsOpenForId(null);
                                                           }}
@@ -3580,7 +4460,13 @@ const EnvelopeCreator: React.FC = () => {
                                                     <button
                                                       key={s.email}
                                                       type="button"
-                                                      onClick={() => {
+                                                      onMouseDown={(e) => {
+                                                        e.preventDefault(); // Prevent input blur
+                                                        updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
+                                                        setEmailSuggestionsOpenForId(null);
+                                                      }}
+                                                      onClick={(e) => {
+                                                        e.preventDefault();
                                                         updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
                                                         setEmailSuggestionsOpenForId(null);
                                                       }}
@@ -3697,8 +4583,9 @@ const EnvelopeCreator: React.FC = () => {
                               </div>
                             );
                           })}
-                        </div>
-                      )}
+                          </div>
+                        );
+                      })()}
 
                     </>
                   )}
@@ -3781,21 +4668,51 @@ const EnvelopeCreator: React.FC = () => {
                 </label>
 
                 <div className="flex items-center gap-2 w-1/2">
-                  <select
-                    id="envelopeType"
-                    value={selectedEnvelopeType}
-                    onChange={(e) => setSelectedEnvelopeType(e.target.value)}
-                    required
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-sm"
-                    data-tour="ec-envelope-type"
-                  >
-                    <option value="">Select Envelope Type</option>
-                    {envelopeTypes.map((type) => (
-                      <option key={type.title} value={type.title}>
-                        {type.title}
-                      </option>
-                    ))}
-                  </select>
+                  <div ref={typeDropdownRef} className="relative flex-1">
+                    <button
+                      id="envelopeType"
+                      type="button"
+                      onClick={() => setTypeDropdownOpen((o) => !o)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-sm text-left"
+                      data-tour="ec-envelope-type"
+                    >
+                      {selectedEnvelopeType
+                        ? (selectedEnvelopeType === 'Other' && otherEnvelopeType.trim()
+                            ? otherEnvelopeType
+                            : selectedEnvelopeType)
+                        : 'Select Envelope Type'}
+                    </button>
+
+                    {typeDropdownOpen && (
+                      <div className="absolute left-0 bottom-full mb-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                        <div className="p-2 border-b border-gray-200">
+                          <input
+                            type="text"
+                            value={typeSearch}
+                            onChange={(e) => setTypeSearch(e.target.value)}
+                            placeholder="Search types..."
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                          />
+                        </div>
+                        <div className="max-h-56 overflow-auto py-1">
+                          {envelopeTypes
+                            .filter((t) => t.title.toLowerCase().includes(typeSearch.toLowerCase()))
+                            .map((type) => (
+                              <button
+                                key={type.title}
+                                type="button"
+                                onClick={() => handleEnvelopeTypeSelect(type.title)}
+                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedEnvelopeType === type.title ? 'bg-gray-50' : ''}`}
+                              >
+                                {type.title}
+                              </button>
+                            ))}
+                          <div className="border-t border-gray-100 my-1" />
+                          
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Info Icon */}
                   <div
@@ -3818,6 +4735,22 @@ const EnvelopeCreator: React.FC = () => {
                   <p className="text-sm text-gray-500 mt-2">
                     Selected: {envelopeTypes.find((t) => t.title === selectedEnvelopeType)?.title}
                   </p>
+                )}
+
+                {showOtherEnvelopeType && (
+                  <div className="mt-3 w-1/2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Enter Envelope Type <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={otherEnvelopeType}
+                      onChange={(e) => setOtherEnvelopeType(e.target.value)}
+                      placeholder="Enter custom envelope type"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      data-tour="ec-envelope-type-other"
+                    />
+                  </div>
                 )}
               </div>
 
@@ -3868,6 +4801,7 @@ const EnvelopeCreator: React.FC = () => {
             onSend={mode === 'normal' ? handleSendEnvelope : undefined}
             sending={sending}
             onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
+            envelopeId={envelopeId}
             onBack={() => {
               setCurrentStep(1);
               if (envelopeId) {
@@ -3892,6 +4826,7 @@ const EnvelopeCreator: React.FC = () => {
             onSend={mode === 'normal' ? handleSendEnvelope : undefined}
             sending={sending}
             onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
+            envelopeId={envelopeId}
           />
         );
 
@@ -4145,7 +5080,7 @@ const EnvelopeCreator: React.FC = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700 capitalize">{recipient?.role.replace('_', ' ')}</p>
+                        <p className="text-sm font-medium text-gray-700 capitalize">{recipient?.role?.replace('_', ' ') ?? ''}</p>
                         <p className="text-xs text-gray-500 capitalize">
                           {recipient?.authentication?.replace('_', ' ') ?? 'No'} auth
                         </p>
@@ -4182,6 +5117,20 @@ const EnvelopeCreator: React.FC = () => {
       addRecipient();
     }
   }, [showRecipients, bulkList]);
+
+  // Initialize orders when signing order is enabled
+  useEffect(() => {
+    if (setSigningOrder && recipients.length > 0) {
+      setRecipients(prev => {
+        // Check if any recipient is missing an order or orders are not sequential
+        const hasInvalidOrders = prev.some((r, idx) => !r.order || r.order !== idx + 1);
+        if (hasInvalidOrders) {
+          return normalizeOrders(prev);
+        }
+        return prev;
+      });
+    }
+  }, [setSigningOrder]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -4424,7 +5373,7 @@ const EnvelopeCreator: React.FC = () => {
                {currentStep < 2 ? (
                  <button
                    onClick={handleNext}
-                   disabled={!canProceedToNext() || nextLoading}
+                   disabled={nextLoading}
                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                    data-tour="ec-next-button"
                  >
@@ -4491,29 +5440,38 @@ const EnvelopeCreator: React.FC = () => {
         const arrowPadding = 20;
         const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
         
+        // Use dragged position if available, otherwise use calculated position
+        const finalLeft = tooltipPosition ? tooltipPosition.x : tooltipLeft;
+        const finalTop = tooltipPosition ? tooltipPosition.y : Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding));
+
         return (
           <>
             {/* Tooltip - styled like the tooltip UI */}
             <div
+              ref={tooltipRef}
               className="fixed z-50"
               style={{
-                left: `${tooltipLeft}px`,
-                top: `${Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding))}px`
+                left: `${finalLeft}px`,
+                top: `${finalTop}px`
               }}
             >
               {/* Tooltip box */}
-              <div className="bg-[#26263d] text-white text-sm rounded-md shadow-lg max-w-sm relative">
-                <div className="px-4 py-3 font-semibold">
+              <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
+              {/* Draggable header */}
+                <div 
+                  className="px-4 py-3 font-semibold cursor-move select-none"
+                  onMouseDown={handleTooltipMouseDown}
+                >
                   {creatorTourSteps[creatorTourIndex]?.title}
                 </div>
                 <div className="px-4 py-2 text-sm leading-relaxed">
                   {creatorTourSteps[creatorTourIndex]?.content}
                 </div>
                 <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
-                  <div className="text-xs text-gray-400">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
+                  <div className="text-xs text-white-900">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
                   <div className="flex items-center gap-2">
                     <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
-                    <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-gray-500 rounded-sm text-sm ${creatorTourIndex===0 ? 'opacity-40 cursor-not-allowed text-gray-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                    <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${creatorTourIndex===0 ? 'cursor-not-allowed text-white-900' : 'hover:bg-white-700 text-white'}`}>Back</button>
                     {creatorTourIndex < creatorTourSteps.length - 1 ? (
                       <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
                     ) : (
@@ -4523,7 +5481,7 @@ const EnvelopeCreator: React.FC = () => {
                 </div>
                 {/* Arrow pointing to target - positioned absolutely within tooltip */}
                 <div 
-                  className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                  className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
                   style={{ 
                     left: `${constrainedArrowLeft}px`,
                     transform: 'translateX(-50%)'
@@ -4640,6 +5598,335 @@ const EnvelopeCreator: React.FC = () => {
                   <button onClick={() => setShowAdvanced(false)} className="px-6 py-2 rounded text-white" style={{ backgroundColor: '#5015FF' }}>Save</button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Confirmation Modal */}
+      {showSendConfirmationModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+            onClick={() => setShowSendConfirmationModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 z-[10000]">
+            <button
+              onClick={() => setShowSendConfirmationModal(false)}
+              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Step Indicator */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`flex items-center gap-2 ${sendModalStep >= 1 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${sendModalStep >= 1 ? 'bg-[#3E2B66] text-white' : 'bg-gray-200 text-gray-500'}`}>
+                  {sendModalStep > 1 ? <Check className="w-5 h-5" /> : '1'}
+                </div>
+                <span className="font-medium">Signing Order</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-300" />
+              <div className={`flex items-center gap-2 ${sendModalStep >= 2 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${sendModalStep >= 2 ? 'bg-[#3E2B66] text-white' : 'bg-gray-200 text-gray-500'}`}>
+                  2
+                </div>
+                <span className="font-medium">Authentication & Credits</span>
+              </div>
+            </div>
+
+            {/* Step 1: Signing Order Diagram */}
+            {sendModalStep === 1 && (
+              <div>
+                <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
+                  Review Signing Order
+                </h2>
+                <div className="mb-6">
+                  {(() => {
+                    const getInitials = (name?: string, email?: string) => {
+                      const src = (name && name.trim().length > 0 ? name : (email || '')) as string;
+                      const chars = (src.match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase();
+                      return chars || <PenLine className='w-4 h-4' />;
+                    };
+
+                    const formatSentenceCase = (text: string) => {
+                      if (!text) return text;
+                      return text
+                        .toLowerCase()
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                    };
+
+                    const sortedRecipients = [...recipients].sort((a, b) => (a.order || 0) - (b.order || 0));
+                    const ordered = sortedRecipients.map((r) => ({
+                      key: r.id,
+                      order: r.order || 0,
+                      name: formatSentenceCase(r.name || r.email || 'Unnamed'),
+                      email: r.email
+                    }));
+
+                    return (
+                      <div className="grid grid-cols-12 gap-6">
+                        <div className="col-span-4 text-sm text-gray-600">
+                          <div className="h-20 flex items-center font-semibold">SENDER</div>
+                          {ordered.map((p) => {
+                            // const recipient = recipients.find(r => r.id === p.key);
+                            return (
+                              <div 
+                                key={`lbl-${p.key}`} 
+                                className="h-24 flex items-center gap-2 group cursor-move"
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.setData('recipientId', p.key);
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.add('bg-gray-50');
+                                }}
+                                onDragLeave={(e) => {
+                                  e.currentTarget.classList.remove('bg-gray-50');
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.remove('bg-gray-50');
+                                  const draggedId = e.dataTransfer.getData('recipientId');
+                                  if (draggedId && draggedId !== p.key) {
+                                    const draggedRecipient = recipients.find(r => r.id === draggedId);
+                                    const targetRecipient = recipients.find(r => r.id === p.key);
+                                    if (draggedRecipient && targetRecipient) {
+                                      const tempOrder = draggedRecipient.order;
+                                      updateRecipient(draggedId, { order: targetRecipient.order });
+                                      updateRecipient(p.key, { order: tempOrder });
+                                      // Normalize orders after swap
+                                      setTimeout(() => {
+                                        setRecipients(prev => normalizeOrders(prev));
+                                      }, 0);
+                                    }
+                                  }
+                                }}
+                              >
+                                <ArrowUpToLine className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <span className="font-bold">{p.order}.</span> {p.name}
+                              </div>
+                            );
+                          })}
+                          <div className="h-20 flex items-center font-semibold">COMPLETED</div>
+                        </div>
+                        <div className="col-span-8 relative">
+                          <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
+                          <div className="relative h-20 flex justify-center items-center z-10">
+                            <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                            <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                              {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
+                            </div>
+                          </div>
+                          {ordered.map((p) => (
+                            <div key={p.key} className="relative h-24 flex justify-center items-center z-10">
+                              <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                              <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                {getInitials(p.name, p.email)}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="relative h-20 flex justify-center items-center z-10">
+                            <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => setShowSendConfirmationModal(false)}
+                    className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setSendModalStep(2)}
+                    className="px-5 py-2 bg-[#3E2B66] text-white rounded-md hover:opacity-90"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Authentication & Credits */}
+            {sendModalStep === 2 && (
+              <div>
+                <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
+                  Authentication Methods & Credit Details
+                </h2>
+                
+                {/* Credit Balance Summary */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Current Balance</p>
+                      <p className="text-2xl font-bold text-[#3E2B66]">
+                        {subscriptionPlan?.creditsBalance || 0} credits
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">Total Cost</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        -{calculateTotalCost()} credits
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">Remaining Balance</p>
+                      <p className={`text-2xl font-bold ${((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} credits
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recipients with Authentication Methods */}
+                <div className="space-y-4 mb-6">
+                  <h3 className="font-semibold text-gray-900">Recipients & Authentication Methods</h3>
+                  {recipients.map((recipient) => {
+                    const authMethod = authMethods.find(m => m.id === recipient.authentication);
+                    const cost = authMethod?.cost || 0;
+                    return (
+                      <div key={recipient.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">
+                              {recipient.order}. {recipient.name || recipient.email}
+                            </p>
+                            <p className="text-sm text-gray-600">{recipient.email}</p>
+                            <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                              <span>
+                                Authentication: <span className="font-medium">{authMethod?.name || 'Email (Free)'}</span>
+                              </span>
+                              <button
+                                type="button"
+                                title="Edit authentication method"
+                                onClick={() => {
+                                  setAuthModalForRecipientId(recipient.id);
+                                  setAuthModalForBulk(false);
+                                  setShowAuthModal(true);
+                                }}
+                                className="inline-flex items-center px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
+                              >
+                                <Edit className='w-4 h-4' />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">Cost</p>
+                            <p className="text-lg font-semibold text-[#3E2B66]">
+                              {cost > 0 ? `${cost} credits` : 'Free'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => setSendModalStep(1)}
+                    className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={confirmAndSendEnvelope}
+                    disabled={sending || ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) < 0}
+                    className={`px-5 py-2 rounded-md text-white ${
+                      (subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-[#3E2B66] hover:opacity-90'
+                    }`}
+                  >
+                    {sending ? 'Sending...' : 'Confirm & Send'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* PDF Preview Modal */}
+      {pdfPreviewModalOpen && selectedPdfForPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]" onClick={() => setPdfPreviewModalOpen(false)}>
+          <div className="bg-white rounded-lg shadow-xl w-[90vw] h-[90vh] max-w-6xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 truncate flex-1 mr-4">
+                {selectedPdfForPreview.name}
+              </h2>
+              <button
+                onClick={() => setPdfPreviewModalOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            {/* PDF Viewer (React-PDF with local worker) */}
+            <div className="flex-1 overflow-hidden bg-gray-100">
+              <div className="w-full h-full overflow-auto flex items-start justify-center p-4">
+                <PDFDocument file={selectedPdfForPreview.url}>
+                  <PDFPage pageNumber={1} width={900} />
+                </PDFDocument>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Authentication Method Selection Modal (Global) */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+            onClick={() => {
+              setShowAuthModal(false);
+              setAuthModalForRecipientId(null);
+              setAuthModalForBulk(false);
+            }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+            <button
+              onClick={() => {
+                setShowAuthModal(false);
+                setAuthModalForRecipientId(null);
+                setAuthModalForBulk(false);
+              }}
+              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
+              Select Authentication Method
+            </h2>
+            <div className="mt-2">
+              <AdvancedAuthenticationSelector
+                selectedMethods={(() => {
+                  if (authModalForBulk) {
+                    const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
+                    if (!firstAuth) return [];
+                    const allSame = recipients.every(r => r.authentication === firstAuth);
+                    return allSame && firstAuth ? [firstAuth] : [];
+                  } else if (authModalForRecipientId) {
+                    const recipient = recipients.find(r => r.id === authModalForRecipientId);
+                    const auth = recipient?.authentication;
+                    return auth ? [auth] : [];
+                  }
+                  return [];
+                })()}
+                onMethodSelect={handleAuthMethodSelect}
+                riskLevel="medium"
+                complianceRequirements={[]}
+              />
             </div>
           </div>
         </div>
