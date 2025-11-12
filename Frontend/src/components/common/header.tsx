@@ -4,6 +4,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { Bell, LogOut, Menu, Search, User, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
+import { subscriptionApi, eSignApi } from '../../services/apiHelper';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -22,13 +23,11 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [showPalette, setShowPalette] = React.useState(false);
   const [paletteQuery, setPaletteQuery] = React.useState('');
-  const [credits, setCredits] = React.useState<number | null>(() => {
-    try {
-      const val = (SubscriptionStorage.getPlan() as any)?.creditsBalance;
-      const n = Number(val);
-      return Number.isFinite(n) ? n : null;
-    } catch { return null; }
-  });
+  const [credits, setCredits] = React.useState<number | null>(null);
+  const [creditsLoading, setCreditsLoading] = React.useState(true);
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = React.useState<number>(0);
+  const [notificationsLoading, setNotificationsLoading] = React.useState(false);
   const notifRef = React.useRef<HTMLDivElement | null>(null);
   const userRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -42,29 +41,115 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     return () => document.removeEventListener('click', onDocClick);
   }, [showNotif, showUserMenu]);
 
-  // Load credits from storage and listen for changes
-  const refreshCredits = React.useCallback(() => {
+  // Fetch credits from API (same approach as DashboardPage)
+  const fetchCredits = React.useCallback(async () => {
     try {
-      // Prefer live context value if available
-      const planFromContext: any = userPlan;
-      const planFromStorage: any = SubscriptionStorage.getPlan();
-      const raw = (planFromContext && planFromContext.creditsBalance != null)
-        ? planFromContext.creditsBalance
-        : planFromStorage?.creditsBalance;
-      const n = Number(raw);
+      setCreditsLoading(true);
+      const response = await subscriptionApi.get('/usage/balance');
+      const balance = (response as any).data?.data?.creditsBalance ?? null;
+      const n = Number(balance);
       setCredits(Number.isFinite(n) ? n : null);
-    } catch {
-      setCredits(null);
+      
+      // Also update localStorage for consistency
+      if (Number.isFinite(n)) {
+        SubscriptionStorage.updateCredits(n);
+      }
+    } catch (error) {
+      console.error('Error fetching credits:', error);
+      // Fallback to localStorage/context if API fails
+      try {
+        const planFromContext: any = userPlan;
+        const planFromStorage: any = SubscriptionStorage.getPlan();
+        const raw = (planFromContext && planFromContext.creditsBalance != null)
+          ? planFromContext.creditsBalance
+          : planFromStorage?.creditsBalance;
+        const n = Number(raw);
+        setCredits(Number.isFinite(n) ? n : null);
+      } catch {
+        setCredits(null);
+      }
+    } finally {
+      setCreditsLoading(false);
     }
   }, [userPlan]);
 
-  React.useEffect(() => { refreshCredits(); }, [refreshCredits]);
-
+  // Fetch credits on mount and when user changes
   React.useEffect(() => {
-    const onStorage = () => refreshCredits();
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [refreshCredits]);
+    if (user) {
+      fetchCredits();
+    }
+  }, [user, fetchCredits]);
+
+  // Listen for custom events when credits are consumed
+  React.useEffect(() => {
+    const handleCreditsUpdated = () => {
+      fetchCredits();
+    };
+
+    // Listen for custom event
+    window.addEventListener('credits-updated', handleCreditsUpdated);
+    // Also listen for storage events (for cross-tab updates)
+    window.addEventListener('storage', handleCreditsUpdated);
+    
+    return () => {
+      window.removeEventListener('credits-updated', handleCreditsUpdated);
+      window.removeEventListener('storage', handleCreditsUpdated);
+    };
+  }, [fetchCredits]);
+
+  // Fetch notifications
+  const fetchNotifications = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      setNotificationsLoading(true);
+      const response = await eSignApi.get('/api/e-sign/notifications?limit=20');
+      if (response.data?.status === 'success') {
+        setNotifications(response.data.data.notifications || []);
+        setUnreadCount(response.data.data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [user]);
+
+  // Fetch notifications on mount and when user changes
+  React.useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchNotifications]);
+
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      await eSignApi.post('/api/e-sign/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  // Format notification time
+  const formatNotificationTime = (date: string) => {
+    const now = new Date();
+    const notifDate = new Date(date);
+    const diffMs = now.getTime() - notifDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return notifDate.toLocaleDateString();
+  };
 
   // Keyboard shortcut: Ctrl/Cmd+K to open command palette
   React.useEffect(() => {
@@ -149,7 +234,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${lowCredits ? 'border-red-200 bg-red-50 text-red-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}
             title="View credits usage"
           >
-            <span className="font-medium">{credits != null ? credits : '—'}</span>
+            <span className="font-medium">{creditsLoading ? '—' : (credits != null ? credits : '—')}</span>
             <span className="text-xs opacity-80">credits</span>
             {lowCredits && <span className="ml-1 h-2 w-2 rounded-full bg-red-500" />}
           </button>
@@ -163,17 +248,73 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
               aria-expanded={showNotif}
             >
               <Bell className="h-5 w-5 text-gray-500" />
-              <span className="absolute top-0 right-0 h-2 w-2 bg-error-500 rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              )}
             </button>
             {showNotif && (
               <div
-                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden"
+                className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[500px] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-4 py-3 border-b border-gray-100">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-900">Notifications</p>
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-xs text-blue-600 hover:text-blue-700"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={() => {
+                          navigate('/notifications');
+                          setShowNotif(false);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700"
+                      >
+                        View all
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="p-4 text-sm text-gray-600">No notifications</div>
+                <div className="overflow-y-auto flex-1">
+                  {notificationsLoading ? (
+                    <div className="p-4 text-sm text-gray-600 text-center">Loading...</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-4 text-sm text-gray-600 text-center">No notifications</div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {notifications.slice(0, 3).map((notification) => (
+                        <div
+                          key={notification._id}
+                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${
+                            !notification.isRead ? 'bg-blue-50' : ''
+                          }`}
+                          onClick={() => {
+                            navigate('/notifications');
+                            setShowNotif(false);
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900">{notification.message}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatNotificationTime(notification.createdAt)}
+                              </p>
+                            </div>
+                            {!notification.isRead && (
+                              <div className="h-2 w-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

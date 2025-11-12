@@ -196,10 +196,12 @@ import EnvelopeCreator from '../pages/eSign/EnvelopeCreator';
 import AgreementPage from '../pages/eSign/AgreementPage';
 import EnvelopeTypes from '../pages/eSign/EnvelopeTypes';
 import ManageRecipients from '../pages/eSign/ManageRecipients';
+import EnvelopeGuideSupport from '../pages/eSign/EnvelopeGuideSupport';
 // import { elements } from 'chart.js';
 import PowerFormCreate from '../pages/eSign/PowerFormCreate';
 import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
 import ThankYouPage from '../pages/eSign/ThankYou';
+import NotificationsPage from '../pages/Notifications/NotificationsPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -694,6 +696,7 @@ const authRoutes = [
 
   // Account
   { path: '/account/profile', element: <UserProfile /> },
+  { path: '/notifications', element: <NotificationsPage /> },
 
   // API-service routes
   { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
@@ -816,6 +819,7 @@ const router = createBrowserRouter([
           { path: '/e-sign/envelope/:id', element: <EnvelopeDetailPage /> },
           { path: '/e-sign/create', element: <EnvelopeCreator /> },
           { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
+          { path: '/e-sign/guide', element: <EnvelopeGuideSupport /> },
           { path: '/e-sign/form-builder/:id', element: <FormBuilder /> },
           { path: '/e-sign/powerforms', element: <PowerFormCreate /> },
 

@@ -18,6 +18,7 @@ const fs = require('fs');
 const selfSigner = require('../models/selfSigner');
 const { sign } = require('crypto');
 const { values } = require('pdf-lib');
+const Notification = require('../models/Notification');
 
 const envelopesData = async (req, res) => {
   const userId = req?.user?.data?.id;
@@ -492,6 +493,25 @@ const addSignature = async (req, res) => {
                   subject:envelope.subject,
                   message:envelope.message
                 });
+                
+                // Create notification for envelope creator when envelope is completed
+                try {
+                  const recipient = await Recipient.findById(recipientId);
+                  if (recipient && envelope.sender) {
+                    await Notification.create({
+                      userId: envelope.sender.toString(),
+                      envelopeId: envelope._id,
+                      recipientId: recipient._id,
+                      recipientName: recipient.name,
+                      envelopeSubject: envelope.subject,
+                      type: 'envelope_completed',
+                      message: `All recipients have signed "${envelope.subject}"`
+                    });
+                  }
+                } catch (notifErr) {
+                  console.error('Error creating notification:', notifErr);
+                }
+                
                 return res.status(200).json({
                   status: 'success',
                   message: 'Envelope signing completed',
@@ -529,6 +549,39 @@ const addSignature = async (req, res) => {
               fieldRemmaning:true
             });
           }
+          const envelope = await Envelope.findById(envelopeId);
+            if (envelope) {
+              await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+              // Log individual field signature
+              await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
+                subject:envelope.subject,
+                message:envelope.message
+              });
+              
+              // Create notification for envelope creator when recipient signs
+              try {
+                const recipient = await Recipient.findById(recipientId);
+                if (recipient && envelope.sender) {
+                  await Notification.create({
+                    userId: envelope.sender.toString(),
+                    envelopeId: envelope._id,
+                    recipientId: recipient._id,
+                    recipientName: recipient.name,
+                    envelopeSubject: envelope.subject,
+                    type: 'signature_completed',
+                    message: `${recipient.name} has signed "${envelope.subject}"`
+                  });
+                }
+              } catch (notifErr) {
+                console.error('Error creating notification:', notifErr);
+              }
+              
+              console.log('Envelope sent to next recipient');
+              return res.status(200).json({
+                status: 'success',
+                message: 'Signature added with compliance'
+              });
+            }
         }
       } catch (err) {
         return res.status(500).json({ message: err.message });
@@ -1149,6 +1202,101 @@ const saveTextField = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+// Get notifications for the logged-in user
+const getNotifications = async (req, res) => {
+  try {
+    const userId = req?.user?.data?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { limit = 50, unreadOnly = false } = req.query;
+    const query = { userId: userId.toString() };
+    
+    if (unreadOnly === 'true') {
+      query.isRead = false;
+    }
+
+    const notifications = await Notification.find(query)
+      .populate('envelopeId', 'subject status')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit));
+
+    const unreadCount = await Notification.countDocuments({ 
+      userId: userId.toString(), 
+      isRead: false 
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        notifications,
+        unreadCount
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Mark a notification as read
+const markNotificationAsRead = async (req, res) => {
+  try {
+    const userId = req?.user?.data?.id;
+    const { notificationId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const notification = await Notification.findOne({
+      _id: notificationId,
+      userId: userId.toString()
+    });
+
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    notification.isRead = true;
+    notification.readAt = new Date();
+    await notification.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Notification marked as read'
+    });
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Mark all notifications as read
+const markAllNotificationsAsRead = async (req, res) => {
+  try {
+    const userId = req?.user?.data?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    await Notification.updateMany(
+      { userId: userId.toString(), isRead: false },
+      { isRead: true, readAt: new Date() }
+    );
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'All notifications marked as read'
+    });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 const saveNonSignatureField = async (req, res) => {
   const {envelopeID, recipientId,fields} = req.body;
   const nonSignatureField = await SignatureField.findById(fields.fieldId);
@@ -1202,4 +1350,7 @@ module.exports = {
   saveTextField,
   saveNonSignatureField,
   saveupdateSignature
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead
 };

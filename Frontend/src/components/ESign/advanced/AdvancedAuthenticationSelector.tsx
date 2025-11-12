@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { 
+import {
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -96,8 +96,8 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
   const getRecommendedMethods = () => {
 
-    
-    return authMethods.filter(method => 
+
+    return authMethods.filter(method =>
       // is recommended based on backend flag
       (method as any).isRecommended
     );
@@ -105,17 +105,16 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
   const renderMethodCard = (method: AuthMethod, isRecommended = false) => {
     console.log('Rendering method:', method);
-  const isSelected = localSelectedMethod === method.id;
+    const isSelected = localSelectedMethod === method.id;
     const IconName = method.icon || 'Shield';
     const Icon = (LucideIcons as any)[IconName];
     return (
       <div
         key={method.id}
-        className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-          isSelected
+        className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-200 ${isSelected
             ? 'border-blue-500 bg-blue-50'
             : 'border-gray-200 hover:border-gray-300 bg-white'
-        }`}
+          }`}
         onClick={() => toggleMethod(method.id)}
       >
         {isRecommended && (
@@ -125,9 +124,8 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         )}
 
         <div className="flex items-start space-x-4">
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-            isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
-          }`}>
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+            }`}>
             <Icon className="w-6 h-6" />
           </div>
 
@@ -193,15 +191,13 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
           <p className="text-gray-600">Select authentication methods for recipients</p>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <AlertTriangle className={`w-4 h-4 ${
-            riskLevel === 'high' ? 'text-red-500' : 
-            riskLevel === 'medium' ? 'text-yellow-500' : 'text-green-500'
-          }`} />
+          <AlertTriangle className={`w-4 h-4 ${riskLevel === 'high' ? 'text-red-500' :
+              riskLevel === 'medium' ? 'text-yellow-500' : 'text-green-500'
+            }`} />
           <span className="text-gray-600">Risk Level:</span>
-          <span className={`font-medium ${
-            riskLevel === 'high' ? 'text-red-600' : 
-            riskLevel === 'medium' ? 'text-yellow-600' : 'text-green-600'
-          }`}>
+          <span className={`font-medium ${riskLevel === 'high' ? 'text-red-600' :
+              riskLevel === 'medium' ? 'text-yellow-600' : 'text-green-600'
+            }`}>
             {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
           </span>
         </div>
@@ -212,23 +208,21 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab('recommended')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'recommended'
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'recommended'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
- {/* Recommended ({getRecommendedMethods().length}) */}
+            Recommended ({getRecommendedMethods().length})
 
-            Selected Method
+
           </button>
           <button
             onClick={() => setActiveTab('all')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'all'
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'all'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             All Methods ({authMethods.length})
           </button>
@@ -284,4 +278,3 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 };
 
 export default AdvancedAuthenticationSelector;
-  

@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
+import { 
+  TrendingDown, 
+  TrendingUp, 
+  ArrowRight, 
+  Clock, 
+  CreditCard,
+  Zap,
+  Loader2
+} from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -144,7 +153,7 @@ const DashboardPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Dashboard</h1>
-            <p className="text-white/80 text-sm mt-1">Welcome to Draft & Sign — manage envelopes and documents at a glance.</p>
+            <p className="text-white/80 text-sm mt-1">Welcome to Draft & Sign - manage envelopes and documents at a glance.</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -256,26 +265,131 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Recent credit usage */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Credit Usage</h2>
-          <Link to="/credits-usage" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View details</Link>
-        </div>
-        <div className="space-y-2 mb-2">
-          {usage.length === 0 && !loading && (
-            <p className="text-sm text-slate-600">No recent usage.</p>
-          )}
-          {usage.map((u, idx) => (
-            <div key={idx} className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
-              <div className={`w-2 h-2 rounded-full ${u.creditsDelta < 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
-              <span className="text-sm text-slate-800">
-                {u.action || 'usage'} {u.toolId ? <span className="text-slate-500">({toolNameByIdRef.current[u.toolId] || u.toolId})</span> : ''}
-              </span>
-              <span className={`text-sm ml-auto font-medium ${u.creditsDelta < 0 ? 'text-red-600' : 'text-green-600'}`}>{u.creditsDelta}</span>
-              <span className="text-xs text-slate-400 ml-3">{new Date(u.createdAt).toLocaleString()}</span>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50">
+                <CreditCard className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Recent Credit Usage</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Track your credit transactions</p>
+              </div>
             </div>
-          ))}
+            <Link 
+              to="/credits-usage" 
+              className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors group"
+            >
+              <span>View details</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
         </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+              <span className="ml-3 text-sm text-slate-600">Loading usage history...</span>
+            </div>
+          ) : usage.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="p-4 rounded-full bg-slate-100 mb-3">
+                <Zap className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-700 mb-1">No recent usage</p>
+              <p className="text-xs text-slate-500">Your credit transactions will appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {usage.map((u, idx) => {
+                const isDeduction = u.creditsDelta < 0;
+                const actionName = u.action || 'usage';
+                const toolName = u.toolId ? (toolNameByIdRef.current[u.toolId] || u.toolId) : '';
+                const date = new Date(u.createdAt);
+                const formattedDate = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                const formattedTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+                return (
+                  <div 
+                    key={idx} 
+                    className="group relative flex items-center gap-4 rounded-xl px-4 py-3.5 bg-gradient-to-r from-slate-50/50 to-white border border-slate-100 hover:border-indigo-200 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                  >
+                    {/* Status Indicator */}
+                    <div className="flex-shrink-0">
+                      <div className={`relative w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isDeduction 
+                          ? 'bg-red-50 group-hover:bg-red-100' 
+                          : 'bg-green-50 group-hover:bg-green-100'
+                      } transition-colors`}>
+                        {isDeduction ? (
+                          <TrendingDown className="w-5 h-5 text-red-600" />
+                        ) : (
+                          <TrendingUp className="w-5 h-5 text-green-600" />
+                        )}
+                        <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                          isDeduction ? 'bg-red-500' : 'bg-green-500'
+                        }`}></div>
+                      </div>
+                    </div>
+
+                    {/* Action Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-semibold text-slate-900 truncate">
+                          {actionName}
+                        </span>
+                        {toolName && (
+                          <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium">
+                            {toolName}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formattedDate}</span>
+                        <span className="text-slate-300">•</span>
+                        <span>{formattedTime}</span>
+                      </div>
+                    </div>
+
+                    {/* Credit Amount */}
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      <div className={`px-3 py-1.5 rounded-lg font-bold text-sm ${
+                        isDeduction
+                          ? 'bg-red-50 text-red-600 group-hover:bg-red-100'
+                          : 'bg-green-50 text-green-600 group-hover:bg-green-100'
+                      } transition-colors`}>
+                        {isDeduction ? '-' : '+'}{Math.abs(u.creditsDelta)}
+                      </div>
+                    </div>
+
+                    {/* Hover Arrow */}
+                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <Link to='/credits-usage'> <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" /></Link> 
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!loading && usage.length > 0 && (
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
+            <Link 
+              to="/credits-usage"
+              className="flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors group"
+            >
+              <span>View all credit transactions</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -42,6 +42,7 @@ const AgreementPage: React.FC = () => {
   const [filteredAgreements, setFilteredAgreements] = useState<Agreement[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageInput, setPageInput] = useState<string>('1');
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
@@ -462,6 +463,40 @@ const AgreementPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    setPageInput(page.toString());
+  };
+
+  // Handle page jump from input
+  const handlePageJump = () => {
+    const pageNum = parseInt(pageInput, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      handlePageChange(pageNum);
+    } else {
+      // Reset to current page if invalid
+      setPageInput(currentPage.toString());
+    }
+  };
+
+  // Handle Enter key in page input
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handlePageJump();
+    }
+  };
+
+  // Update page input when currentPage changes externally
+  useEffect(() => {
+    setPageInput(currentPage.toString());
+  }, [currentPage]);
+
+  // Generate pagination page numbers to display
+  const getPaginationPages = (): (number | string)[] => {
+    if (totalPages <= 4) {
+      // If 4 or fewer pages, show all
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    // Show: 1, 2, ..., last-1, last
+    return [1, 2, '...', totalPages - 1, totalPages];
   };
 
   // Note: navigation between tabs is preserved via URL reading above; UI mirrors filter bar
@@ -833,7 +868,7 @@ const AgreementPage: React.FC = () => {
             </span>
             {selectedIds.size} selected
           </div>
-          <button onClick={() => setShowMoveDialog(true)} className="px-3 py-2 border border-gray-300 rounded-sm hover:bg-gray-50 text-sm">Move</button>
+          {/* <button onClick={() => setShowMoveDialog(true)} className="px-3 py-2 border border-gray-300 rounded-sm hover:bg-gray-50 text-sm">Move</button> */}
           <button onClick={handleBulkResend} disabled={bulkResending} className={`px-3 py-2 border border-gray-300 rounded-sm text-sm ${bulkResending ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}>{bulkResending ? 'Resending…' : 'Resend'}</button>
           <div className="relative">
             <button onClick={() => setShowBulkMenu(s => !s)} className="px-3 py-2 border border-gray-300 rounded-sm hover:bg-gray-50 text-sm">▾</button>
@@ -1077,7 +1112,7 @@ const AgreementPage: React.FC = () => {
                   {' '}results
                 </p>
               </div>
-              <div>
+              <div className="flex items-center gap-3">
                 <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px" aria-label="Pagination" data-tour="pagination-nav">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
@@ -1088,19 +1123,32 @@ const AgreementPage: React.FC = () => {
                   </button>
                   
                   {/* Page numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        page === currentPage
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {getPaginationPages().map((page, index) => {
+                    if (page === '...') {
+                      return (
+                        <span
+                          key={`ellipsis-${index}`}
+                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    const pageNum = page as number;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          pageNum === currentPage
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
                   
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
@@ -1110,6 +1158,23 @@ const AgreementPage: React.FC = () => {
                     <ChevronRight className="h-5 w-5" />
                   </button>
                 </nav>
+                
+                {/* Page jump input */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700">Go to</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    value={pageInput}
+                    onChange={(e) => setPageInput(e.target.value)}
+                    onKeyDown={handlePageInputKeyDown}
+                    onBlur={handlePageJump}
+                    className="w-16 px-2 py-1 border border-gray-300 rounded-sm text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Jump to page"
+                  />
+                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                </div>
               </div>
             </div>
           </div>
