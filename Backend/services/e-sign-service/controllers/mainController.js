@@ -1349,7 +1349,7 @@ module.exports = {
   getAllEnvelopeStats,
   saveTextField,
   saveNonSignatureField,
-  saveupdateSignature
+  saveupdateSignature,
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead
