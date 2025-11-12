@@ -5,8 +5,7 @@ import SignPad from "./SignPad";
 import { eSignApi } from "../../services/apiHelper";
 import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
-import { Link } from "react-router-dom";
-import Swal from "sweetalert2";
+import { Link, useNavigate } from "react-router-dom";
 import { Upload, Stamp as StampIcon, X } from "lucide-react";
 
 interface Props {
@@ -26,6 +25,28 @@ interface Props {
 
 Modal.setAppElement("#root");
 
+const BASE_PAGE_WIDTH = 800;
+const MIN_FIELD_WIDTH = 16;
+const MIN_FIELD_HEIGHT = 14;
+
+const toNumber = (value: any): number => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  if (typeof value === "object") {
+    if (value.$numberDouble !== undefined) return Number(value.$numberDouble);
+    if (value.$numberDecimal !== undefined) return Number(value.$numberDecimal);
+    if (value.$numberInt !== undefined) return Number(value.$numberInt);
+    if (value.$numberLong !== undefined) return Number(value.$numberLong);
+    if ("value" in value) return toNumber(value.value);
+  }
+  const coerced = Number(value);
+  return Number.isNaN(coerced) ? 0 : coerced;
+};
+
 const DocumentViewerContent: React.FC<Props> = ({
   document,
   documents,
@@ -37,12 +58,24 @@ const DocumentViewerContent: React.FC<Props> = ({
   allRecipients,
   setSignatureFields
 }) => {
+  const curRecipientSignature = allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+
+  const [recipientSignature, setRecipientSignature] = useState<string | null>(curRecipientSignature);
+
+  useEffect(() => {
+    setRecipientSignature(curRecipientSignature);
+  }, [curRecipientSignature]);
+
+
+  const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
   const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
+  const [pageWidth, setPageWidth] = useState<number>(BASE_PAGE_WIDTH);
+  const [pageScale, setPageScale] = useState<number>(1);
 
   // Local optimistic store for signatures in non-self mode so user sees signature immediately
   const [localSignedMap, setLocalSignedMap] = useState<Record<string, string>>(
@@ -50,6 +83,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   );
   // Local values for non-signature inputs (text, date, checkbox, etc.)
   const [localFieldValues, setLocalFieldValues] = useState<Record<string, any>>({});
+  const [signingFieldIds, setSigningFieldIds] = useState<Record<string, boolean>>({});
   // Use refs to store values without causing re-renders
   const fieldValuesRef = useRef<Record<string, any>>({});
 
@@ -65,14 +99,45 @@ const DocumentViewerContent: React.FC<Props> = ({
         console.warn("Failed to set PDF.js worker:", err);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateDimensions = () => {
+      const container = pdfContainerRef.current;
+      if (!container) return;
+      const paddingOffset = 24; // account for container padding/scrollbar
+      const availableWidth = Math.max(
+        280,
+        container.clientWidth - paddingOffset
+      );
+      const nextWidth = Math.min(BASE_PAGE_WIDTH, availableWidth);
+      setPageWidth(nextWidth);
+      setPageScale(nextWidth / BASE_PAGE_WIDTH);
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if ((window as any).ResizeObserver && pdfContainerRef.current) {
+      resizeObserver = new ResizeObserver(() => updateDimensions());
+      resizeObserver.observe(pdfContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateDimensions);
+      if (resizeObserver && pdfContainerRef.current) {
+        resizeObserver.unobserve(pdfContainerRef.current);
+      }
+    };
   }, []);
 
   const [currentActionableIndex, setCurrentActionableIndex] =
     useState<number>(0);
   const [hasAutoOpened, setHasAutoOpened] = useState<boolean>(false);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
-  const hasShownCompletionAlertRef = useRef<boolean>(false);
   const hadFieldsInitiallyRef = useRef<boolean>(false);
   const isUserTypingRef = useRef<boolean>(false);
   const scrollPositionRef = useRef<number>(0);
@@ -241,32 +306,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   const currentNavFieldKey = currentNavField
     ? currentNavField._id || currentNavField.fieldId
     : null;
-
-  // Show success alert when all signatures are completed
-  useEffect(() => {
-    // Show alert if:
-    // 1. There were fields initially (hadFieldsInitiallyRef.current is true)
-    // 2. All fields are now completed (actionableFields.length === 0)
-    // 3. We haven't shown the alert yet
-    if (
-      hadFieldsInitiallyRef.current &&
-      actionableFields.length === 0 &&
-      !hasShownCompletionAlertRef.current
-    ) {
-      hasShownCompletionAlertRef.current = true;
-      
-      // Show success alert after a short delay to ensure UI updates are complete
-      setTimeout(() => {
-        Swal.fire({
-          title: "Congratulations!",
-          text: "All signatures have been successfully completed. You will receive the mail of certificate and signed documents!",
-          icon: "success",
-          confirmButtonText: "OK",
-          confirmButtonColor: "#ffc107",
-        });
-      }, 500);
-    }
-  }, [actionableFields.length]);
 
   // Auto-scroll to first actionable field on load (only once) - but don't open sign pad
   useEffect(() => {
@@ -599,7 +638,67 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     }
     // If nextIndex is null, all fields are completed - do nothing
   };
-
+  // Do Signature
+  const doSign = async (field:any) =>{
+    if(!recipientSignature){
+      alert("Please save a signature before submitting!");
+      return;
+    }
+    const fieldKey = field?._id || field?.fieldId;
+    if (fieldKey) {
+      setSigningFieldIds((prev) => ({ ...prev, [fieldKey]: true }));
+    }
+    const clearSigningState = () => {
+      if (!fieldKey) return;
+      setSigningFieldIds((prev) => {
+        const next = { ...prev };
+        delete next[fieldKey];
+        return next;
+      });
+    };
+    try{
+      console.log(field);
+      const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
+      const payload = {
+        fieldId: fieldKey,
+        signatureImageBase64: recipientSignature,
+        envelopeId: envelopeID || "",
+        documentId:field?.documentId,
+        recipientId: currentUserId,
+        certificateId, 
+        signerName: "John Doe", // adjust dynamically if you have a real name
+        selfValue: selfValue || "",
+        cycleId:cycleId || ""
+      };
+      const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
+      if (response?.status === 200) {
+        const key = fieldKey;
+        setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
+         triggerConfetti();
+        if(response?.data?.fieldRemmaning===false){
+          navigate("/e-sign/signer/thank-you");
+        }
+      }else{
+        console.error("submit response:", response);
+        alert("Failed to submit signature. Please try again.");
+      }
+    }catch (err){
+      console.error("submit error:", err);
+            alert("An error occurred while submitting the signature.");
+    } finally {
+      clearSigningState();
+    }
+  };
+    const issueCertificate = async (recipientId: any, envelopeId: any, selfVal: any) => {
+      const payload = { recipientId, envelopeId, selfValue: selfVal };
+      try {
+        const res = await eSignApi.post("/api/e-sign/certificates/issue", payload);
+        return res?.data?.certificateId;
+      } catch (err) {
+        console.error("issueCertificate error:", err);
+        throw err;
+      }
+    };
   // Preserve scroll position when actionableFields changes (e.g., when a field is completed)
   useLayoutEffect(() => {
     if (shouldPreserveScrollRef.current && pdfContainerRef.current) {
@@ -817,8 +916,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     selfValue: string | null;
     selfSigner: any[];
     localSignedMap: Record<string, string>;
+    recipientSignature: string | null;
     onFieldClick: (field: any) => void;
     normalizePage: (field: any) => number;
+    pageWidth: number;
+    pageScale: number;
+    signingFieldIds: Record<string, boolean>;
   }> = ({
     doc,
     signatureFields,
@@ -826,8 +929,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     selfValue,
     selfSigner,
     localSignedMap,
+    recipientSignature,
     onFieldClick,
     normalizePage,
+    pageWidth,
+    pageScale,
+    signingFieldIds,
   }) => {
       const [numPages, setNumPages] = useState<number>(0);
 
@@ -846,11 +953,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             const pageNum = i + 1;
             return (
               <div key={`p-${pageNum}`} className="relative mb-8 flex justify-center py-6 bg-gray-100">
-                <div className="relative">
-                  <Page pageNumber={pageNum} width={800} />
+                <div className="relative" style={{ width: pageWidth }}>
+                  <Page pageNumber={pageNum} width={pageWidth} />
 
                   {/* per-page overlay */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] z-40">
+                  <div
+                    className="absolute inset-0 z-40"
+                    style={{
+                      width: pageWidth,
+                    }}
+                  >
                     {signatureFields
                       .filter(isFieldForDoc)
                       .filter((f) => normalizePage(f) === pageNum)
@@ -880,50 +992,115 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         }
 
                         const keyId = field._id || field.fieldId;
-                        const fieldWidth = field.width?.$numberInt ?? field.width;
-                        const fieldHeight = field.height?.$numberInt ?? field.height;
+                        const isSigning = !!signingFieldIds[keyId];
+                        const rawWidth = toNumber(
+                          field.width?.$numberDouble ??
+                            field.width?.$numberInt ??
+                            field.width
+                        );
+                        const rawHeight = toNumber(
+                          field.height?.$numberDouble ??
+                            field.height?.$numberInt ??
+                            field.height
+                        );
+                        const rawX = toNumber(
+                          field.x?.$numberDouble ?? field.x?.$numberInt ?? field.x
+                        );
+                        const rawY = toNumber(
+                          field.y?.$numberDouble ?? field.y?.$numberInt ?? field.y
+                        );
+                        const scaledWidth = Math.max(
+                          rawWidth * pageScale,
+                          MIN_FIELD_WIDTH
+                        );
+                        const scaledHeight = Math.max(
+                          rawHeight * pageScale,
+                          MIN_FIELD_HEIGHT
+                        );
+                        const labelOffset = Math.max(
+                          4,
+                          Math.min(12, scaledHeight * 0.2)
+                        );
+                        const labelFontSize = Math.max(
+                          4.5,
+                          Math.min(10, 9 * pageScale)
+                        );
+                        const fieldFontSize = Math.max(
+                         4.5,
+                          Math.min(11, 11 * pageScale)
+                        );
+                        const boxPaddingY = Math.max(4, 12 * pageScale);
+                        const boxPaddingX = Math.max(6, 14 * pageScale);
+                        const labelTop = scaledHeight + 2;
 
                         // recipient display (best-effort)
-                        const getRecipientDisplay = () => {
-                          
-                          if (selfValue === '1') {
-                            const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
+                        const recipientDisplay = (() => {
+                          if (selfValue === "1") {
+                            const matched = (selfSigner || []).find(
+                              (s: any) => s && s.signerSlotId === field.slotId
+                            );
                             if (matched) {
-                              const nm = matched?.data?.name || matched?.name || '';
-                              if (nm) return nm;
-                              const em = matched?.data?.email || matched?.email || '';
-                              if (em) return em;
-                              return 'Recipient';
+                              const primary =
+                                matched?.data?.name || matched?.name || matched?.data?.email;
+                              const secondary =
+                                matched?.data?.name && matched?.data?.email
+                                  ? matched.data.email
+                                  : undefined;
+                              return {
+                                primary: primary || "Recipient",
+                                secondary,
+                                decorated: true,
+                              };
                             }
                           } else {
-                            const recipient = allRecipients?.find((r: any) => r.id === field.recipientId);
+                            const recipient = allRecipients?.find(
+                              (r: any) => r.id === field.recipientId
+                            );
                             if (recipient) {
-                              return <div className="z-50 bg-gray-200/60  rounded-sm p-1">
-                                <div className="text-black text-sm">{recipient.name}</div>
-                                <div className="text-black text-sm">{recipient.email}</div>
-                              </div>;
+                              return {
+                                primary: recipient.name || recipient.email || "Recipient",
+                                secondary:
+                                  recipient.name && recipient.email ? recipient.email : undefined,
+                                decorated: true,
+                              };
                             }
-                            if (field.recipientId && String(field.recipientId) === String(currentUserId)) {
-                              return 'You';
+                            if (
+                              field.recipientId &&
+                              String(field.recipientId) === String(currentUserId)
+                            ) {
+                              return {
+                                primary: "You",
+                                decorated: false,
+                              };
                             }
                           }
-                          return 'Recipient';
-                        };
+                          return {
+                            primary: "Recipient",
+                            decorated: false,
+                          };
+                        })();
+                        const recipientSecondaryFont = Math.max(
+                          4,
+                          Math.min(labelFontSize - 1, labelFontSize * 0.95)
+                        );
+                        const recipientBadgePaddingY = Math.max(2, 6 * pageScale);
+                        const recipientBadgePaddingX = Math.max(3, 10 * pageScale);
+                        const recipientBadgeRadius = Math.max(3, 8 * pageScale);
+                        const recipientBadgeGap = Math.max(1, 4 * pageScale);
 
                         if (isSignatureType) {
                           const allFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
-                          const allowSigning = isCurrentUser && !isSigned && allFilled;
+                          const allowSigning = isCurrentUser && !isSigned && allFilled && !isSigning;
                           return (
                             <div
                               key={field._id?.$oid || field._id}
                               data-field-id={keyId}
                               style={{
                                 position: "absolute",
-                                top: field.y?.$numberDouble ?? field.y,
-                                left: field.x?.$numberDouble ?? field.x,
-                                width: fieldWidth,
-                                // expand height to include label area
-                                height: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 18,
+                                top: rawY * pageScale,
+                                left: rawX * pageScale,
+                                width: scaledWidth,
+                                height: scaledHeight + labelOffset,
                                 zIndex: 10
                               }}
                             >
@@ -932,44 +1109,110 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   position: "absolute",
                                   top: 0,
                                   left: 0,
-                                  width: fieldWidth,
-                                  height: fieldHeight,
+                                  width: scaledWidth,
+                                  height: scaledHeight,
                                   pointerEvents: allowSigning ? "auto" : "none",
+                                  fontSize: fieldFontSize,
+                                  padding: `${boxPaddingY}px ${boxPaddingX}px`,
                                 }}
-                                className={`flex items-center justify-center text-sm font-semibold rounded border-2 ${isSigned
+                                className={`flex items-center justify-center font-semibold rounded border-2 ${isSigned
                                   ? "border-green-500"
                                   : isCurrentUser
-                                    ? "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
+                                    ? isSigning
+                                      ? "bg-blue-100 border-blue-400 text-blue-600 cursor-progress"
+                                      : "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
                                     : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
                                   }`}
-                                onClick={() =>
-                                  isCurrentUser && !isSigned && onFieldClick(field)
-                                }
+                                onClick={() => {
+                                  if (isSigning) return;
+                                  if (isCurrentUser && !recipientSignature) {
+                                    console.log(recipientSignature);
+                                    onFieldClick(field);
+                                  } else if (isCurrentUser && recipientSignature) {
+                                    doSign(field);
+                                  }
+                                }}
+
                               >
-                                {isSigned ? (
+                                {isSigning ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                    <span>Signing...</span>
+                                  </div>
+                                ) : isSigned ? (
                                   <img
                                     src={signedImage as string}
                                     alt="Signed"
-                                    className="w-full h-full object-contain"
+                                    className="h-full w-full object-contain"
                                   />
                                 ) : !allFilled ? (
                                   "Fill all other fields first"
-                                ) : isCurrentUser ? (
+                                ) : isCurrentUser && recipientSignature ? (
                                   "Click to sign"
-                                ) : ("Signature")}
+                                ) : isCurrentUser && !recipientSignature ?(
+                                  "Click to Save"
+                                ):("Signature")}
                               </div>
                               <div
                                 style={{
                                   position: "absolute",
-                                  top: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 2,
+                                  top: labelTop,
                                   left: 0,
-                                  width: fieldWidth,
+                                  width: scaledWidth,
                                   pointerEvents: 'none',
                                   textAlign: 'center',
+                                  fontSize: labelFontSize,
+                                  lineHeight: 1.1,
                                 }}
                                 className="text-[10px] text-gray-600"
                               >
-                                {getRecipientDisplay()}
+                                {recipientDisplay.decorated ? (
+                                  <div
+                                    style={{
+                                      display: "inline-flex",
+                                      flexDirection: "column",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      backgroundColor: "rgba(148, 163, 184, 0.35)",
+                                      borderRadius: recipientBadgeRadius,
+                                      padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
+                                      gap: recipientBadgeGap,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        fontSize: labelFontSize,
+                                        fontWeight: 600,
+                                        color: "#1f2937",
+                                        lineHeight: 1.1,
+                                      }}
+                                    >
+                                      {recipientDisplay.primary}
+                                    </span>
+                                    {recipientDisplay.secondary ? (
+                                      <span
+                                        style={{
+                                          fontSize: recipientSecondaryFont,
+                                          color: "#1f2937",
+                                          lineHeight: 1.05,
+                                        }}
+                                      >
+                                        {recipientDisplay.secondary}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <span
+                                    style={{
+                                      fontSize: labelFontSize,
+                                      fontWeight: 500,
+                                      color: "#4b5563",
+                                      lineHeight: 1.1,
+                                    }}
+                                  >
+                                    {recipientDisplay.primary}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           );
@@ -1094,16 +1337,29 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
                         const editable = isCurrentUser;
                         const commonBox =
-                          "w-full h-full flex items-center justify-center rounded border text-sm " +
+                          "w-full h-full flex items-center justify-center rounded border " +
                           ( isSigned? "border-green-500" :editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
 
-                        // Render control based on type
+                        const inputBaseStyle: React.CSSProperties = {
+                          height: scaledHeight,
+                          fontSize: fieldFontSize,
+                          padding: `${boxPaddingY}px ${boxPaddingX}px`,
+                        };
 
+                        // Render control based on type
                         const renderInput = () => {
                           switch (field.type) {
                             case "checkbox":
                               return (
-                                <label className={commonBox + " cursor-pointer gap-2 px-2"} style={{pointerEvents: editable? 'auto':'none'}}>
+                                <label
+                                  className={commonBox + " cursor-pointer gap-2"}
+                                  style={{
+                                    pointerEvents: editable ? "auto" : "none",
+                                    fontSize: fieldFontSize,
+                                    minHeight: scaledHeight,
+                                    padding: `${boxPaddingY}px ${boxPaddingX}px`,
+                                  }}
+                                >
                                   <input
                                     type="checkbox"
                                     defaultChecked={!!value}
@@ -1122,7 +1378,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   id={`field-${keyId}`}
                                   key={`field-${keyId}`}
                                   type="date"
-                                  className={commonBox + " px-2 outline-none"}
+                                  className={commonBox + " outline-none"}
                                   defaultValue={value || ""}
                                   onChange={(e) => {
                                     setValue(e.target.value, false); // false = don't update state
@@ -1134,7 +1390,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   onKeyDown={handleKeyDown}
                                   onFocus={handleFocus}
                                   disabled={!editable}
-                                  style={{pointerEvents: editable? 'auto':'none'}}
+                                  style={{
+                                    ...inputBaseStyle,
+                                    pointerEvents: editable ? "auto" : "none",
+                                  }}
                                   autoComplete="off"
                                 />
                               );
@@ -1149,7 +1408,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   id={`field-${keyId}`}
                                   key={`field-${keyId}`}
                                   type={field.type === 'number' ? 'number' : 'text'}
-                                  className={commonBox + " px-2 outline-none"}
+                                  className={commonBox + " outline-none"}
                                   placeholder={fieldLable || field.type}
                                   defaultValue={value || ""}
                                   onChange={(e) => {
@@ -1175,7 +1434,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   }}
                                   onFocus={handleFocus}
                                   disabled={!editable}
-                                  style={{pointerEvents: editable? 'auto':'none'}}
+                                  style={{
+                                    ...inputBaseStyle,
+                                    pointerEvents: editable ? "auto" : "none",
+                                  }}
                                   autoComplete="off"
                                 />
                               );
@@ -1186,7 +1448,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   key={`field-${keyId}`}
                                   type="text"
                                   maxLength={3}
-                                  className={commonBox + " px-2 tracking-widest outline-none"}
+                                  className={commonBox + " tracking-widest outline-none"}
                                   placeholder="Init"
                                   defaultValue={value || ""}
                                   onChange={(e) => {
@@ -1209,15 +1471,22 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   }}
                                   onFocus={handleFocus}
                                   disabled={!editable}
-                                  style={{pointerEvents: editable? 'auto':'none'}}
+                                  style={{
+                                    ...inputBaseStyle,
+                                    pointerEvents: editable ? "auto" : "none",
+                                    letterSpacing: "0.35em",
+                                  }}
                                   autoComplete="off"
                                 />
                               );
                             case "stamp":
                               return (
                                 <div 
-                                  className={`${commonBox} ${editable && !value ? 'cursor-pointer hover:bg-blue-100 transition-colors' : ''} flex-col gap-1.5 py-2`}
-                                  style={{pointerEvents: editable? 'auto':'none'}}
+                                  className={`${commonBox} ${editable && !value ? 'cursor-pointer hover:bg-blue-100 transition-colors' : ''} flex-col gap-1.5`}
+                                  style={{
+                                    pointerEvents: editable ? "auto" : "none",
+                                    minHeight: scaledHeight,
+                                  }}
                                 >
                                   {value ? (
                                     <div className="relative w-full h-full flex items-center justify-center group">
@@ -1269,7 +1538,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               );
                             default:
                               return (
-                                <div className={commonBox}>{fieldLable || field.type || ''}</div>
+                                <div
+                                  className={commonBox}
+                                  style={{
+                                    fontSize: fieldFontSize,
+                                    minHeight: scaledHeight,
+                                    padding: `${boxPaddingY}px ${boxPaddingX}px`,
+                                  }}
+                                >
+                                  {fieldLable || field.type || ''}
+                                </div>
                               );
                           }
                         };
@@ -1280,11 +1558,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             data-field-id={keyId}
                             style={{
                               position: "absolute",
-                              top: field.y?.$numberDouble ?? field.y,
-                              left: field.x?.$numberDouble ?? field.x,
-                              width: fieldWidth,
-                              // expand height to include label
-                              height: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 18,
+                              top: rawY * pageScale,
+                              left: rawX * pageScale,
+                              width: scaledWidth,
+                              height: scaledHeight + labelOffset,
                               zIndex: 10,
                               pointerEvents: "auto",
                             }}
@@ -1294,13 +1571,22 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 position: "absolute",
                                 top: 0,
                                 left: 0,
-                                width: fieldWidth,
-                                height: fieldHeight,
+                                width: scaledWidth,
+                                height: scaledHeight,
                               }}
                             >
                               {
                                 isSigned ? (
-                                  <div className={commonBox}>{field.signature}</div>
+                                  <div
+                                    className={commonBox}
+                                    style={{
+                                      fontSize: fieldFontSize,
+                                      minHeight: scaledHeight,
+                                      padding: `${boxPaddingY}px ${boxPaddingX}px`,
+                                    }}
+                                  >
+                                    {field.signature}
+                                  </div>
                                 ) : renderInput()
                               }
                               
@@ -1309,15 +1595,63 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             <div
                               style={{
                                 position: "absolute",
-                                top: (typeof fieldHeight === 'number' ? fieldHeight : 0) + 2,
+                                top: labelTop,
                                 left: 0,
-                                width: fieldWidth,
+                                width: scaledWidth,
                                 pointerEvents: 'none',
                                 textAlign: 'center',
+                                fontSize: labelFontSize,
+                                lineHeight: 1.1,
                               }}
                               className="text-[10px] text-gray-600"
                             >
-                              {getRecipientDisplay()}
+                              {recipientDisplay.decorated ? (
+                                <div
+                                  style={{
+                                    display: "inline-flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    backgroundColor: "rgba(148, 163, 184, 0.35)",
+                                    borderRadius: recipientBadgeRadius,
+                                    padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
+                                    gap: recipientBadgeGap,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: labelFontSize,
+                                      fontWeight: 600,
+                                      color: "#1f2937",
+                                      lineHeight: 1.1,
+                                    }}
+                                  >
+                                    {recipientDisplay.primary}
+                                  </span>
+                                  {recipientDisplay.secondary ? (
+                                    <span
+                                      style={{
+                                        fontSize: recipientSecondaryFont,
+                                        color: "#1f2937",
+                                        lineHeight: 1.05,
+                                      }}
+                                    >
+                                      {recipientDisplay.secondary}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <span
+                                  style={{
+                                    fontSize: labelFontSize,
+                                    fontWeight: 500,
+                                    color: "#4b5563",
+                                    lineHeight: 1.1,
+                                  }}
+                                >
+                                  {recipientDisplay.primary}
+                                </span>
+                              )}
                             </div>
                           </div>
                         );
@@ -1358,7 +1692,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       {/* PDF(s) container */}
       <div
         ref={pdfContainerRef}
-        className="relative border border-gray-300 rounded-sm shadow-sm bg-white overflow-auto max-w-4xl max-h-[100vh] self-center mt-8 mb-12"
+        className="relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-white overflow-auto self-center mt-14 sm:mt-16 lg:mt-20 mb-20 px-3 sm:px-4 py-4"
+        style={{ maxHeight: "calc(100vh - 160px)" }}
         onKeyDown={(e) => {
           // Prevent Enter key from submitting any form anywhere in the container
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT' && (e.target as HTMLInputElement).type !== 'submit') {
@@ -1381,8 +1716,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 selfValue={selfValue}
                 selfSigner={selfSigner}
                 localSignedMap={localSignedMap}
+                recipientSignature={recipientSignature}
                 onFieldClick={handleFieldClick}
                 normalizePage={normalizePage}
+                pageWidth={pageWidth}
+                pageScale={pageScale}
+                signingFieldIds={signingFieldIds}
               />
 
               {/* separator between documents with next document name */}
@@ -1466,6 +1805,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         // Button should be enabled if there's a next field OR if current field is completed (so user can move to next)
         const hasNextField = (nextFieldIndex !== null) || (currentField && !isCurrentCompleted);
         
+        const navScale = Math.min(1, Math.max(0.4, pageScale || 1));
+        const navFontSize = Math.max(9, Math.min(15, 10 + (navScale - 0.4) * 8));
+        const navPaddingY = Math.max(4, Math.min(12, 6 + (navScale - 0.4) * 12));
+        const navPaddingX = Math.max(8, Math.min(18, 10 + (navScale - 0.4) * 14));
+        const navTailWidth = Math.max(8, Math.min(18, 10 + (navScale - 0.4) * 12));
+        const navBorderRadius = Math.max(5, Math.min(12, 6 + (navScale - 0.4) * 10));
+        const navShadow = navScale <= 0.6 ? "0 3px 8px rgba(0,0,0,0.12)" : "0 6px 16px rgba(0,0,0,0.15)";
+
         // For "Start" button, use fixed positioning
         if (!hasStarted) {
           return (
@@ -1476,12 +1823,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               style={{ 
                 backgroundColor: '#ffc107', 
                 color: '#1a1a1a', 
-                padding: '8px 16px',
+                padding: `${navPaddingY}px ${navPaddingX}px`,
                 border: 'none',
-                borderRadius: '8px',
-                top: '60px',
-                left: '71px',
+                borderRadius: `${navBorderRadius}px`,
+                fontSize: `${navFontSize}px`,
+                top: navScale <= 0.6 ? '48px' : '56px',
+                left: navScale <= 0.6 ? '20px' : '64px',
                 cursor: 'pointer',
+                boxShadow: navShadow,
               }}
               aria-label="Start"
             >
@@ -1499,14 +1848,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             style={{ 
               backgroundColor: '#ffc107', 
               color: '#1a1a1a', 
-              padding: '8px 20px 8px 16px',
+              padding: `${navPaddingY}px ${navPaddingX + navTailWidth * 0.4}px ${navPaddingY}px ${navPaddingX}px`,
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: `${navBorderRadius}px`,
               borderTopRightRadius: 0,
               borderBottomRightRadius: 0,
-              clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)',
+              clipPath: `polygon(0 0, calc(100% - ${navTailWidth}px) 0, 100% 50%, calc(100% - ${navTailWidth}px) 100%, 0 100%)`,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              fontSize: `${navFontSize}px`,
+              boxShadow: navShadow,
               ...buttonStyle,
             }}
             aria-label={fieldTypeDisplay}
@@ -1531,7 +1882,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           defaultSign={null}
           selfValue={selfValue || ""}
           cycleId={cycleId || ""}
-          onSaveSign={(fieldId: string, signatureUrl: string) => {
+          onSignatureSaved={(signatureUrl: string) => {
+            setRecipientSignature(signatureUrl);
+          }}
+          onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
             // When selfValue === "1" update the signer entry and trigger confetti reliably
             if (selfValue === "1") {
               setSelfSigner((prev) => {
@@ -1547,11 +1901,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             } else {
               // non-self: optimistic local update so UI shows signed image immediately
               const key = activeField?._id;
-              if (key) {
+              if (key) { 
                 setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
               }
               // immediate feedback
-              triggerConfetti();
+               triggerConfetti();
+              if(fieldRemmaning===false){
+                navigate("/e-sign/signer/thank-you");
+              }
             }
 
             // Close modal but keep arrows visible (arrows navigation does not auto-open SignPad)
