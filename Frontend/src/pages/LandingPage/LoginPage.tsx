@@ -28,30 +28,30 @@ const LoginPage = () => {
     }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    console.log(`Login with ${provider}`)
-    // Handle social login logic here
-  }
+  // const handleSocialLogin = (provider: string) => {
+  //   console.log(`Login with ${provider}`)
+  //   // Handle social login logic here
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white pt-24">
       <div className="container-max">
         <div className="max-w-md mx-auto">
           {/* Header */}
-          <div className="text-center mt-2">
+          <div className="text-center mt-15">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-gray-600">Sign in to access your documents and continue processing</p>
+            <p className="text-gray-600 mb-2">Sign in to access your documents and continue processing</p>
           </div>
 
           {/* Login Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white rounded-sm shadow-lg p-8">
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-600 text-sm">{error}</p>
               </div>
             )}
             {/* Social Login Buttons */}
-            <div className="space-y-3 mb-6">
+            {/* <div className="space-y-3 mb-6">
               <button
                 onClick={() => handleSocialLogin('google')}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -85,17 +85,17 @@ const LoginPage = () => {
                   <span className="font-medium text-gray-700">GitHub</span>
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Divider */}
-            <div className="relative mb-6">
+            {/* <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">Or continue with email</span>
               </div>
-            </div>
+            </div> */}
 
             {/* Email/Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
