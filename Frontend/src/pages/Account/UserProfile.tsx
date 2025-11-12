@@ -31,7 +31,7 @@ const UserProfile: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Top header banner */}
-      <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-purple-700">
+      <div className="bg-gradient-to-r from-[#1D2D80] via-[#2759A5] to-[#4AB6E4] text-white ">
         <div className="max-w-7xl mx-auto px-6 py-10 text-white">
           <h1 className="text-3xl font-semibold">My Profile</h1>
           <p className="opacity-90 mt-1">Manage your personal information and account preferences</p>

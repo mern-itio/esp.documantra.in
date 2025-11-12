@@ -18,7 +18,10 @@ const {
          getEnvSignFields,
          removeDocSignField,
          connectPowerForm,
-         getSigners,getAllEnvelopeStats,getAllRecipients  } = require('../controllers/mainController');
+         getSigners,getAllEnvelopeStats,getAllRecipients,
+         getNotifications,
+         markNotificationAsRead,
+         markAllNotificationsAsRead  } = require('../controllers/mainController');
 const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = require('../controllers/recipientController');
 const multer = require('multer');
 const path = require('path');
@@ -60,6 +63,10 @@ router.post('/envelope/remove-signature-field/:fieldId', removeDocSignField);
 router.post('/envelope/connect/powerform', connectPowerForm);
 router.get('/envelope/signers/:envelopeId', getSigners);
 router.get('/envelope/all-stats/:userType', getAllEnvelopeStats);
+// Notifications
+router.get('/notifications', getNotifications);
+router.post('/notifications/:notificationId/read', markNotificationAsRead);
+router.post('/notifications/read-all', markAllNotificationsAsRead);
 // Recipients CRUD
 router.get('/recipients', listRecipients);
 router.post('/recipients', createRecipient);

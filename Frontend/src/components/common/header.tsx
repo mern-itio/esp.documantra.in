@@ -4,7 +4,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { Bell, LogOut, Menu, Search, User, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
-import { subscriptionApi } from '../../services/apiHelper';
+import { subscriptionApi, eSignApi } from '../../services/apiHelper';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -25,6 +25,9 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const [paletteQuery, setPaletteQuery] = React.useState('');
   const [credits, setCredits] = React.useState<number | null>(null);
   const [creditsLoading, setCreditsLoading] = React.useState(true);
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = React.useState<number>(0);
+  const [notificationsLoading, setNotificationsLoading] = React.useState(false);
   const notifRef = React.useRef<HTMLDivElement | null>(null);
   const userRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -93,6 +96,60 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       window.removeEventListener('storage', handleCreditsUpdated);
     };
   }, [fetchCredits]);
+
+  // Fetch notifications
+  const fetchNotifications = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      setNotificationsLoading(true);
+      const response = await eSignApi.get('/api/e-sign/notifications?limit=20');
+      if (response.data?.status === 'success') {
+        setNotifications(response.data.data.notifications || []);
+        setUnreadCount(response.data.data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [user]);
+
+  // Fetch notifications on mount and when user changes
+  React.useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchNotifications]);
+
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      await eSignApi.post('/api/e-sign/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  // Format notification time
+  const formatNotificationTime = (date: string) => {
+    const now = new Date();
+    const notifDate = new Date(date);
+    const diffMs = now.getTime() - notifDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return notifDate.toLocaleDateString();
+  };
 
   // Keyboard shortcut: Ctrl/Cmd+K to open command palette
   React.useEffect(() => {
@@ -191,17 +248,73 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
               aria-expanded={showNotif}
             >
               <Bell className="h-5 w-5 text-gray-500" />
-              <span className="absolute top-0 right-0 h-2 w-2 bg-error-500 rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              )}
             </button>
             {showNotif && (
               <div
-                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden"
+                className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[500px] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-4 py-3 border-b border-gray-100">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-900">Notifications</p>
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-xs text-blue-600 hover:text-blue-700"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={() => {
+                          navigate('/notifications');
+                          setShowNotif(false);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700"
+                      >
+                        View all
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="p-4 text-sm text-gray-600">No notifications</div>
+                <div className="overflow-y-auto flex-1">
+                  {notificationsLoading ? (
+                    <div className="p-4 text-sm text-gray-600 text-center">Loading...</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-4 text-sm text-gray-600 text-center">No notifications</div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {notifications.slice(0, 3).map((notification) => (
+                        <div
+                          key={notification._id}
+                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${
+                            !notification.isRead ? 'bg-blue-50' : ''
+                          }`}
+                          onClick={() => {
+                            navigate('/notifications');
+                            setShowNotif(false);
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900">{notification.message}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatNotificationTime(notification.createdAt)}
+                              </p>
+                            </div>
+                            {!notification.isRead && (
+                              <div className="h-2 w-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
