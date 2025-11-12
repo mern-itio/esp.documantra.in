@@ -169,7 +169,7 @@ const envelopesDetail = async (req, res) => {
             .populate("documentIds")   // fetch docs
             .populate({
                         path: 'recipientIds',           // populate recipients
-                        select: 'name email UserId',    // only global info
+                        select: 'name email UserId signature',    // only global info
                         populate: {
                           path: 'permissions',          // populate envelope-specific permissions
                           model: 'RecipientPermission',
@@ -227,7 +227,8 @@ const envelopesDetail = async (req, res) => {
                 role: perm.role,
                 order: perm.order,
                 status: perm.status,
-                authentication: perm.authLevel
+                authentication: perm.authLevel,
+                signature: recipient.signature
               };
             })
         };
@@ -494,24 +495,40 @@ const addSignature = async (req, res) => {
                 return res.status(200).json({
                   status: 'success',
                   message: 'Envelope signing completed',
+                  fieldRemmaning: false,
                   data: finalizeSigning
                 }); 
             }
           }else{
-          const envelope = await Envelope.findById(envelopeId);
-            if (envelope) {
-              await sendToRecipients(envelope._id,envelope.subject,envelope.message);
-              // Log individual field signature
-              await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
-                subject:envelope.subject,
-                message:envelope.message
-              });
-              console.log('Envelope sent to next recipient');
-              return res.status(200).json({
-                status: 'success',
-                message: 'Signature added with compliance'
-              });
-            }
+          // Check if current user's signature field or anyother field is pending or not
+          const pendingFields = await SignatureField.find({
+            envelopeId: envelopeId,
+            status: 'pending',
+            recipientId:recipientId
+          });
+          if(pendingFields.length === 0){
+            const envelope = await Envelope.findById(envelopeId);
+              if (envelope) {
+                await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+                // Log individual field signature
+                await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
+                  subject:envelope.subject,
+                  message:envelope.message
+                });
+                console.log('Envelope sent to next recipient');
+                return res.status(200).json({
+                  status: 'success',
+                  message: 'Signature added with compliance',
+                  fieldRemmaning: false
+                });
+              }
+          }else{
+            return res.status(200).json({
+              status: 'success',
+              message: 'Signature added with compliance',
+              fieldRemmaning:true
+            });
+          }
         }
       } catch (err) {
         return res.status(500).json({ message: err.message });
@@ -1144,6 +1161,16 @@ const saveNonSignatureField = async (req, res) => {
   await nonSignatureField.save();
   return res.status(200).json({message: 'Field saved succesfully'});
 }
+const saveupdateSignature = async (req, res) =>{
+  const {recipientId, Signature} = req.body;
+  if(!recipientId && !Signature){
+    return res.status(401).json({message: 'Recipient and Signature is required.'});
+  }
+  const RecipientUpdate = await Recipient.findById(recipientId);
+  RecipientUpdate.signature = Signature;
+  await RecipientUpdate.save();
+  return res.status(200).json({message: 'Signature saved succesfully'})
+}
 
 // Export functions
 module.exports = {
@@ -1173,5 +1200,6 @@ module.exports = {
   envelopeStats,
   getAllEnvelopeStats,
   saveTextField,
-  saveNonSignatureField
+  saveNonSignatureField,
+  saveupdateSignature
 };

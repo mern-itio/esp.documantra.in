@@ -5,6 +5,7 @@ const RecipientSchema = new mongoose.Schema({
   UserId: { type: mongoose.Schema.Types.ObjectId, default:null },
   name: { type: String, required: true },
   email: { type: String, required: true, lowercase: true, trim: true },
+  signature: {type: String, default: null}
 }, { timestamps: true });
 // Virtual to fetch envelope-specific permissions
 RecipientSchema.virtual('permissions', {

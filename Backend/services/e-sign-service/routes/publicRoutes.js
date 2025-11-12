@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
-const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField } = require('../controllers/mainController');
+const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature } = require('../controllers/mainController');
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '..', 'uploads')); // one level up from /routes
@@ -18,6 +18,7 @@ const router = express.Router();
 router.get('/health', (_, res) => res.send('E-Sign Public Service is running...'));
 router.get('/envelope/:id', envelopesDetail);
 router.get('/document/signature-fields/:id', getSignatureFields);
+router.post('/save-signature', saveupdateSignature);
 router.post('/add-signature', addSignature); 
 router.get('/envelope/activity-log/:envelopeId', activityLogs);
 router.get('/envelope/power/:powerFormId/:envelopeId',getEnvelopePower);

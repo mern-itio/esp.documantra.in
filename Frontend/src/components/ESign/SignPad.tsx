@@ -24,7 +24,8 @@ interface SignPadProps {
   documentId: string;
   envelopeID?: string;
   defaultSign?: string | null;
-  onSaveSign?: (fieldId: string, signatureUrl: string) => void;
+  onSaveSign?: (fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => void;
+  onSignatureSaved?: (signatureUrl: string) => void;
   selfValue?: string;
   cycleId?:string;
 }
@@ -32,14 +33,15 @@ interface SignPadProps {
 export default function SignPad({
   isSignPad,
   setIsSignPad,
-  activeField,
+  // activeField,
   currentUserId,
-  documentId,
-  envelopeID,
+  // documentId,
+  // envelopeID,
   defaultSign = null,
-  onSaveSign,
-  selfValue,
-  cycleId
+  // onSaveSign,
+  onSignatureSaved,
+  // selfValue,
+  // cycleId
 }: SignPadProps) {
   const [penColor, setPenColor] = useState("blue");
   const [isTab, setIsTab] = useState<"draw" | "upload" | "typed">("draw");
@@ -146,61 +148,83 @@ export default function SignPad({
     }
   };
 
-  const issueCertificate = async (recipientId: any, envelopeId: any, selfVal: any) => {
-    const payload = { recipientId, envelopeId, selfValue: selfVal };
-    try {
-      const res = await eSignApi.post("/api/e-sign/certificates/issue", payload);
-      // adjust according to your backend response structure
-      return res?.data?.certificateId;
-    } catch (err) {
-      console.error("issueCertificate error:", err);
-      throw err;
-    }
-  };
+  // const issueCertificate = async (recipientId: any, envelopeId: any, selfVal: any) => {
+  //   const payload = { recipientId, envelopeId, selfValue: selfVal };
+  //   try {
+  //     const res = await eSignApi.post("/api/e-sign/certificates/issue", payload);
+  //     // adjust according to your backend response structure
+  //     return res?.data?.certificateId;
+  //   } catch (err) {
+  //     console.error("issueCertificate error:", err);
+  //     throw err;
+  //   }
+  // };
 
-  const handleSubmit = async () => {
+  // const handleSubmit = async () => {
+  //   if (!isSignImg) {
+  //     alert("Please provide a signature before submitting!");
+  //     return;
+  //   }
+  //   setIsSubmitting(true);
+  //   try {
+  //     // Issue certificate first
+  //     const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
+  //     if (!certificateId) {
+  //       throw new Error("Certificate issuance failed");
+  //     }
+
+  //     const payload = {
+  //       fieldId: activeField?._id,
+  //       signatureImageBase64: isSignImg,
+  //       envelopeId: envelopeID || "",
+  //       documentId,
+  //       recipientId: currentUserId,
+  //       certificateId, 
+  //       signerName: "John Doe", // adjust dynamically if you have a real name
+  //       selfValue: selfValue || "",
+  //       cycleId:cycleId || ""
+  //     };
+
+  //     const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
+
+  //     if (response?.status === 200) {
+  //       // alert("Signature submitted successfully!");
+  //       onSaveSign?.(activeField?._id || "", isSignImg,response?.data?.fieldRemmaning);
+  //       setIsSignPad(false);
+  //     } else {
+  //       console.error("submit response:", response);
+  //       alert("Failed to submit signature. Please try again.");
+  //     }
+  //   } catch (err) {
+  //     console.error("submit error:", err);
+  //     alert("An error occurred while submitting the signature.");
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+  const handleSaveSignature = async () => {
     if (!isSignImg) {
       alert("Please provide a signature before submitting!");
       return;
     }
     setIsSubmitting(true);
-    try {
-      // Issue certificate first
-      const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
-      if (!certificateId) {
-        throw new Error("Certificate issuance failed");
-      }
-
+    try{
       const payload = {
-        fieldId: activeField?._id,
-        signatureImageBase64: isSignImg,
-        envelopeId: envelopeID || "",
-        documentId,
         recipientId: currentUserId,
-        certificateId, 
-        signerName: "John Doe", // adjust dynamically if you have a real name
-        selfValue: selfValue || "",
-        cycleId:cycleId || ""
-      };
-
-      const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
-
-      if (response?.status === 200) {
-        // alert("Signature submitted successfully!");
-        onSaveSign?.(activeField?._id || "", isSignImg);
-        setIsSignPad(false);
-      } else {
-        console.error("submit response:", response);
-        alert("Failed to submit signature. Please try again.");
+        Signature: isSignImg
       }
-    } catch (err) {
-      console.error("submit error:", err);
-      alert("An error occurred while submitting the signature.");
+      const response = await eSignApi.post("/api/e-sign/public/save-signature",payload);
+      if(response?.status === 200){
+        alert("Signature saved successfully.");
+        onSignatureSaved?.(isSignImg);
+        setIsSignPad(false);
+      }
+    } catch (err){
+      console.log(err);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
+  }
   // Focus typed input when we enter typed tab while modal open.
   useEffect(() => {
     if (isSignPad && isTab === "typed") {
@@ -245,8 +269,8 @@ export default function SignPad({
   if (!isSignPad) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl w-[600px] max-h-[82vh] overflow-y-auto p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 sm:px-6 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-[90vw] sm:max-w-[520px] lg:max-w-[600px] max-h-[82vh] overflow-y-auto rounded-xl p-5 sm:p-6 shadow-xl">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -271,7 +295,7 @@ export default function SignPad({
 
         {/* Tabs */}
         <div className="mt-4">
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {(["draw", "upload", "typed"] as const).map((tab) => (
               <button
                 key={tab}
@@ -327,7 +351,7 @@ export default function SignPad({
             {isTab === "upload" && (
               <>
                 <label
-                  className="flex flex-col items-center justify-center border-2 border-dashed rounded-md w-[420px] h-[120px] cursor-pointer p-3"
+                  className="flex w-full max-w-[420px] flex-col items-center justify-center border-2 border-dashed rounded-md h-[120px] cursor-pointer p-3"
                 >
                   <CloudUploadIcon fontSize="large" className="text-gray-500" />
                   <span className="text-sm text-gray-600 mt-1">Click to upload or drop an image (max 5MB)</span>
@@ -420,8 +444,8 @@ export default function SignPad({
             </ActionButton>
 
             {/* Primary Sign button */}
-            <ActionButton onClick={handleSubmit} loading={isSubmitting} disabled={!isSignImg} variant="primary">
-              Sign & Submit
+            <ActionButton onClick={handleSaveSignature} loading={isSubmitting} disabled={!isSignImg} variant="primary">
+              Save Signature
             </ActionButton>
           </div>
         </div>
