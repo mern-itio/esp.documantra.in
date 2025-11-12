@@ -161,6 +161,8 @@ pdfApi.interceptors.response.use((response) => {
         if (required > 0) {
           const newBalance = Math.max(0, (plan?.creditsBalance || 0) - required);
           SubscriptionStorage.updateCredits(newBalance);
+          // Dispatch event to notify header and other components to refresh credits
+          window.dispatchEvent(new CustomEvent('credits-updated'));
         }
       } catch {}
     }
@@ -226,6 +228,8 @@ documentApi.interceptors.response.use((response) => {
         if (plan) {
           const newBalance = (plan.creditsBalance || 0) - required;
           SubscriptionStorage.updateCredits(newBalance);
+          // Dispatch event to notify header and other components to refresh credits
+          window.dispatchEvent(new CustomEvent('credits-updated'));
         }
       } catch {}
     }

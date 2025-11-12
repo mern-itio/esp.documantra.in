@@ -45,6 +45,7 @@ import SignatureTypeSelector from '../../components/ESign/advanced/SignatureType
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
+import { SubscriptionPlansModal } from '../../components/common/SubscriptionPlansModal';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 // Extend editor field locally to allow optional power-form metadata used during save
 type EditorSignatureFieldExt = EditorSignatureField & {
@@ -106,9 +107,12 @@ const EnvelopeCreator: React.FC = () => {
     signatureType: 'standard' as 'standard' | 'advanced' | 'qualified',
     complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified'
   });
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const [documentTitle, setDocumentTitle] = useState<string>(''); // Separate state for title, independent of subject
 
   const [documents, setDocuments] = useState<ESDocument[]>([]);
-
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [_files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
@@ -120,6 +124,19 @@ const EnvelopeCreator: React.FC = () => {
   const [isOnlySigner, setIsOnlySigner] = useState(false);
   const [showRecipients, setShowRecipients] = useState(false);
   const [showAddMessage, setShowAddMessage] = useState(false);
+
+  // Initialize title when documents are uploaded (only once, not when subject changes)
+  useEffect(() => {
+    if (documents?.length > 0 && !documentTitle) {
+      const defaultTitle = `Complete with Draft&Sign: ${documents[0]?.name || 'Document'}`;
+      setDocumentTitle(defaultTitle);
+      setTitleInput(defaultTitle);
+      // Also set subject initially if it's empty
+      if (!envelopeData.subject) {
+        setEnvelopeData(prev => ({ ...prev, subject: defaultTitle }));
+      }
+    }
+  }, [documents]);
   const [showDocuments, setShowDocuments] = useState(true);
   const [openRoleDropdownId, setOpenRoleDropdownId] = useState<string | null>(null);
   const [openCustomizeDropdownId, setOpenCustomizeDropdownId] = useState<string | null>(null);
@@ -159,6 +176,7 @@ const EnvelopeCreator: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalForRecipientId, setAuthModalForRecipientId] = useState<string | null>(null);
   const [authModalForBulk, setAuthModalForBulk] = useState<boolean>(false);
+  const [shouldOpenAuthModalFromTour, setShouldOpenAuthModalFromTour] = useState<boolean>(false);
   // Send confirmation modal state
   const [showSendConfirmationModal, setShowSendConfirmationModal] = useState<boolean>(false);
   const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
@@ -169,6 +187,8 @@ const EnvelopeCreator: React.FC = () => {
   const [helpSidebarOpen, setHelpSidebarOpen] = useState<boolean>(false);
   const helpMenuRef = useRef<HTMLDivElement | null>(null);
   const helpButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Subscription modal state
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState<boolean>(false);
   
   // Close help menu when clicking outside
   useEffect(() => {
@@ -235,8 +255,10 @@ const EnvelopeCreator: React.FC = () => {
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const creatorTourSteps = [
     { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Upload your PDF documents by dragging and dropping or clicking to browse files.' },
+    { id: 'editTitle', selector: '[data-tour="ec-edit-title"]', title: 'Edit Document Title', content: 'Click the edit icon to customize the document title. After uploading a document, you can change the title to something more descriptive. Press Enter to save or Escape to cancel.' },
     { id: 'recipients', selector: '[data-tour="ec-recipients-toggle"]', title: 'Add Recipients', content: 'Click to expand the recipients section and add people who need to sign the document.' },
     { id: 'addRecipient', selector: '[data-tour="ec-add-recipient"]', title: 'Add Recipient', content: 'Click this button to add a new recipient. Enter their full name and email address.' },
+    { id: 'customize', selector: '[data-tour="ec-customize"]', title: 'Customize Options', content: 'Click the Customize button to set authentication methods for recipients. You can add security measures like access codes, SMS verification, or other authentication methods to ensure the right person signs the document.' },
     { id: 'bulkSend', selector: '[data-tour="ec-bulk-send"]', title: 'Bulk Send', content: 'Use Bulk Send to add multiple recipients at once. You can manually enter multiple recipients or upload a CSV file with recipient information. This saves time when sending to many people.' },
     { id: 'signingOrder', selector: '[data-tour="ec-signing-order"]', title: 'Set Signing Order', content: 'Enable this option to control the order in which recipients sign. Sequential order means one person signs after another. Parallel order allows all recipients to sign at the same time.' },
     { id: 'message', selector: '[data-tour="ec-message-toggle"]', title: 'Add Message', content: 'Click to add a subject line and optional message that will be included in the email sent to recipients.' },
@@ -275,6 +297,16 @@ const EnvelopeCreator: React.FC = () => {
       if (step?.id === 'addRecipient') {
         if (!recipients || recipients.length === 0) addRecipient();
       }
+      if (step?.id === 'customize') {
+        // Ensure recipients section is open
+        setShowRecipients(true);
+        // Ensure at least one recipient exists
+        if (!recipients || recipients.length === 0) {
+          addRecipient();
+        }
+        // Set flag to open auth modal - useEffect will handle it
+        setShouldOpenAuthModalFromTour(true);
+      }
       if (step?.id === 'bulkSend') {
         // Bulk send button is already visible, no action needed
       }
@@ -302,6 +334,45 @@ const EnvelopeCreator: React.FC = () => {
       setCreatorTourIndex(0);
     }
   }, []);
+
+  // Handle opening auth modal from customize tour step
+  useEffect(() => {
+    if (!shouldOpenAuthModalFromTour) return;
+    
+    // Wait for UI to update, then open auth modal
+    const timeoutId = setTimeout(() => {
+      // Get the first customize button to find which recipient to use
+      const customizeButton = document.querySelector('[data-tour="ec-customize"]') as HTMLElement;
+      if (customizeButton) {
+        // Find the recipient row containing this button
+        const recipientRow = customizeButton.closest('.recipient-row, [data-recipient-id]');
+        // Try to get recipient ID from data attribute or use first recipient from state
+        let recipientId: string | null = null;
+        if (recipientRow) {
+          const dataId = (recipientRow as HTMLElement).getAttribute('data-recipient-id');
+          if (dataId) recipientId = dataId;
+        }
+        // Fallback to first recipient from state
+        if (!recipientId && recipients && recipients.length > 0) {
+          recipientId = recipients[0].id;
+        }
+        if (recipientId) {
+          setAuthModalForRecipientId(recipientId);
+          setAuthModalForBulk(false);
+          setShowAuthModal(true);
+          setShouldOpenAuthModalFromTour(false);
+        }
+      } else if (recipients && recipients.length > 0) {
+        // Fallback: use first recipient if button not found
+        setAuthModalForRecipientId(recipients[0].id);
+        setAuthModalForBulk(false);
+        setShowAuthModal(true);
+        setShouldOpenAuthModalFromTour(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timeoutId);
+  }, [shouldOpenAuthModalFromTour, recipients]);
 
   // Drag handlers for tooltip
   const handleTooltipMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -1037,7 +1108,7 @@ const EnvelopeCreator: React.FC = () => {
             role: r.role,
             order: r.order,
             status: r.status,
-            authentication: r.authentication && r.authentication !== 'email' ? r.authentication : null
+            authentication: r.authentication || null
           }));
           await eSignApi.post('/api/e-sign/add-recipients', {
             envelopeId: loopEnvelopeId,
@@ -1064,7 +1135,7 @@ const EnvelopeCreator: React.FC = () => {
       role: recipient.role,
       order: recipient.order,
       status: recipient.status,
-      authentication: recipient.authentication && recipient.authentication !== 'email' ? recipient.authentication : null
+      authentication: recipient.authentication || null
     }));
     try {
       const response = await eSignApi.post('/api/e-sign/add-recipients',
@@ -1516,7 +1587,7 @@ const EnvelopeCreator: React.FC = () => {
       role: 'signer',
       order: (recipients?.length || 0) + 1 + base,
       status: 'waiting',
-      authentication: 'email'
+      authentication: undefined
     };
     setRecipients(prev => {
       const updated = [...prev, newRecipient];
@@ -1630,14 +1701,14 @@ const EnvelopeCreator: React.FC = () => {
   // Handle authentication method selection
   const handleAuthMethodSelect = async (methodId: string) => {
     try {
-      // If no method selected, treat as choosing default email (no additional authentication)
-      const normalizedMethod = methodId && methodId.trim().length > 0 ? methodId : 'email';
+      // If no method selected, set to null
+      const normalizedMethod = methodId && methodId.trim().length > 0 ? methodId : null;
 
       if (authModalForBulk) {
         // Apply to all recipients in bulk list
         const newRecipients = recipients.map(recipient => ({
           ...recipient,
-          authentication: normalizedMethod
+          authentication: normalizedMethod || undefined
         }));
         setRecipients(newRecipients);
         
@@ -1648,7 +1719,7 @@ const EnvelopeCreator: React.FC = () => {
             email: r.email,
             role: r.role,
             order: r.order,
-            authentication: r.authentication && r.authentication !== 'email' ? r.authentication : null
+            authentication: r.authentication || null
           }));
           
           const resp = await eSignApi.post('/api/e-sign/add-recipients', {
@@ -1658,14 +1729,14 @@ const EnvelopeCreator: React.FC = () => {
           
           if (resp.status === 200) {
             await getEnvelopeDetail(envelopeId);
-            toast.success(normalizedMethod === 'email' ? 'Cleared authentication for all recipients' : 'Authentication method applied to all recipients');
+            toast.success(normalizedMethod ? 'Authentication method applied to all recipients' : 'Cleared authentication for all recipients');
           }
         } else {
-          toast.success(normalizedMethod === 'email' ? 'Authentication cleared (will save with recipients)' : 'Authentication method will be saved when recipients are added');
+          toast.success(normalizedMethod ? 'Authentication method will be saved when recipients are added' : 'Authentication cleared (will save with recipients)');
         }
       } else if (authModalForRecipientId) {
         // Apply to specific recipient
-        updateRecipient(authModalForRecipientId, { authentication: normalizedMethod });
+        updateRecipient(authModalForRecipientId, { authentication: normalizedMethod || undefined });
         
         // If we have an envelopeId, persist the recipient authentication in DB
         if (envelopeId) {
@@ -1676,7 +1747,7 @@ const EnvelopeCreator: React.FC = () => {
               email: recipient.email,
               role: recipient.role,
               order: recipient.order,
-              authentication: normalizedMethod !== 'email' ? normalizedMethod : null
+              authentication: normalizedMethod || null
             }];
             
             const resp = await eSignApi.post('/api/e-sign/add-recipients', {
@@ -1686,11 +1757,11 @@ const EnvelopeCreator: React.FC = () => {
             
             if (resp.status === 200) {
               await getEnvelopeDetail(envelopeId);
-              toast.success(normalizedMethod === 'email' ? 'Cleared authentication for recipient' : 'Authentication method applied to recipient');
+              toast.success(normalizedMethod ? 'Authentication method applied to recipient' : 'Cleared authentication for recipient');
             }
           }
         } else {
-          toast.success(normalizedMethod === 'email' ? 'Authentication cleared (will save with recipient)' : 'Authentication method will be saved when recipient is added');
+          toast.success(normalizedMethod ? 'Authentication method will be saved when recipient is added' : 'Authentication cleared (will save with recipient)');
         }
       }
       
@@ -1871,6 +1942,18 @@ const EnvelopeCreator: React.FC = () => {
       console.error('Cannot send envelope: envelopeId is missing');
       return;
     }
+    
+    // Check if user has enough credits before proceeding
+    const totalCost = calculateTotalCost();
+    const creditsBalance = subscriptionPlan?.creditsBalance || 0;
+    
+    if (totalCost > 0 && creditsBalance < totalCost) {
+      // Show subscription modal instead of send confirmation
+      setShowSubscriptionModal(true);
+      toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
+      return;
+    }
+    
     try {
       // Show confirmation modal instead of directly sending
       console.log('Fetching send confirmation data...');
@@ -1891,8 +1974,23 @@ const EnvelopeCreator: React.FC = () => {
   // Actual send function called after confirmation
   const confirmAndSendEnvelope = async () => {
     if (!envelopeId) return;
+    
+    // Double-check credits before sending (safety check)
+    const totalCost = calculateTotalCost();
+    const creditsBalance = subscriptionPlan?.creditsBalance || 0;
+    
+    if (totalCost > 0 && creditsBalance < totalCost) {
+      // Close send confirmation modal
+      setShowSendConfirmationModal(false);
+      setSending(false);
+      // Show subscription modal
+      setShowSubscriptionModal(true);
+      toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
+      return;
+    }
+    
     setSending(true);
-    setShowSendConfirmationModal(false);
+    // Keep modal open to show loading state
     try {
       // First, save the recipients with their updated order to the backend
       // Normalize orders to ensure they're sequential
@@ -1903,7 +2001,7 @@ const EnvelopeCreator: React.FC = () => {
         role: r.role,
         order: r.order,
         status: r.status,
-        authentication: r.authentication && r.authentication !== 'email' ? r.authentication : null
+        authentication: r.authentication || null
       }));
       
       console.log('Saving recipients with updated order before sending:', recipientPayload);
@@ -1933,7 +2031,8 @@ const EnvelopeCreator: React.FC = () => {
       const totalCost = calculateTotalCost();
       if (totalCost > 0 && subscriptionPlan) {
         try {
-          const recipientsWithAuth = recipients.filter(r => r.authentication && r.authentication !== 'email');
+          // Include all recipients with authentication, including email verification
+          const recipientsWithAuth = recipients.filter(r => r.authentication);
           if (recipientsWithAuth.length > 0) {
             await Promise.all(recipientsWithAuth.map(recipient => {
               const authMethod = authMethods.find(m => m.id === recipient.authentication);
@@ -1953,11 +2052,29 @@ const EnvelopeCreator: React.FC = () => {
             const newBalance = (subscriptionPlan.creditsBalance || 0) - totalCost;
             SubscriptionStorage.updateCredits(newBalance);
             setSubscriptionPlan((prev: any) => prev ? { ...prev, creditsBalance: newBalance } : null);
+            
+            // Dispatch custom event to notify header and other components to refresh credits
+            window.dispatchEvent(new CustomEvent('credits-updated'));
           }
-        } catch (creditErr) {
+        } catch (creditErr: any) {
           console.error('Failed to record credit usage:', creditErr);
+          // Check if error is due to insufficient credits
+          if (creditErr?.response?.status === 402 || creditErr?.response?.data?.status === 402) {
+            // Close send confirmation modal
+            setShowSendConfirmationModal(false);
+            setSending(false);
+            // Show subscription modal
+            setShowSubscriptionModal(true);
+            const required = creditErr?.response?.data?.data?.required || totalCost;
+            const balance = creditErr?.response?.data?.data?.creditsBalance || creditsBalance;
+            toast.error(`Insufficient credits. You need ${required} credits but only have ${balance}. Please upgrade your plan.`);
+            return;
+          }
         }
       }
+      
+      // Close modal before showing success alert
+      setShowSendConfirmationModal(false);
       
       // Show success alert before navigation
       await Swal.fire({
@@ -1970,6 +2087,9 @@ const EnvelopeCreator: React.FC = () => {
       navigate('/e-sign/aggrement');
     } catch (err) {
       console.error(err);
+      // Close modal before showing error alert
+      setShowSendConfirmationModal(false);
+      
       Swal.fire({
         title: "Error",
         text: "Failed to send envelope. Please try again.",
@@ -1986,7 +2106,7 @@ const EnvelopeCreator: React.FC = () => {
   const calculateTotalCost = (): number => {
     let total = 0;
     recipients.forEach(recipient => {
-      if (recipient.authentication && recipient.authentication !== 'email') {
+      if (recipient.authentication) {
         const authMethod = authMethods.find(m => m.id === recipient.authentication);
         if (authMethod) {
           total += authMethod.cost || 0;
@@ -2890,7 +3010,7 @@ const EnvelopeCreator: React.FC = () => {
                               role: 'signer',
                               order: 1,
                               status: 'waiting',
-                              authentication: 'email'
+                              authentication: undefined
                             }]);
                           } else {
                             // Clear recipients when unchecked
@@ -2969,7 +3089,7 @@ const EnvelopeCreator: React.FC = () => {
                                       role: bulkList.role,
                                       order: idx + 1,
                                       status: 'waiting' as const,
-                                      authentication: 'email' as Recipient['authentication']
+                                      authentication: undefined as Recipient['authentication']
                                     }))
                                   );
                                   setShowBulkModal(true);
@@ -4267,6 +4387,7 @@ const EnvelopeCreator: React.FC = () => {
                                             onClick={() => setOpenCustomizeDropdownId(openCustomizeDropdownId === recipient.id ? null : recipient.id)}
                                             className="w-full px-2 py-2 bg-gray-100 font-bold text-black-700 rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300"
                                             style={{ height: '42px' }}
+                                            data-tour="ec-customize"
                                           >
                                             <span className="text-sm text-black-900">Customize</span>
                                             <ChevronDown className="w-4 h-4 mt-1 text-black-700 flex-shrink-0" />
@@ -4325,8 +4446,10 @@ const EnvelopeCreator: React.FC = () => {
                                             <label className="flex items-center space-x-2 cursor-pointer">
                                               <input
                                                 type="checkbox"
-                                                checked={recipient.authentication === 'email' || !recipient.authentication}
-                                                onChange={() => updateRecipient(recipient.id, { authentication: 'email' })}
+                                                checked={!recipient.authentication}
+                                                onChange={() => {
+                                                  updateRecipient(recipient.id, { authentication: undefined });
+                                                }}
                                                 className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                                                 style={{
                                                   accentColor: '#6d28d9'
@@ -4495,7 +4618,7 @@ const EnvelopeCreator: React.FC = () => {
                                           <button
                                             title="Remove access code"
                                             onClick={() => {
-                                              updateRecipient(recipient.id, { authentication: 'email', authValue: undefined });
+                                              updateRecipient(recipient.id, { authentication: undefined, authValue: undefined });
                                               setOpenAccessForId(prev => ({ ...prev, [recipient.id]: false }));
                                             }}
                                             className="p-2 rounded hover:bg-gray-100"
@@ -5150,11 +5273,57 @@ const EnvelopeCreator: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
 
-              <h1 className="text-base font-medium text-gray-900">
-                {documents?.length > 0
-                  ? `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`
-                  : 'Upload a Document and Add Envelope Recipients'}
-              </h1>
+              {isEditingTitle ? (
+                <div className="flex items-center space-x-2">
+                  <input
+                    ref={titleInputRef}
+                    type="text"
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    onBlur={() => {
+                      if (titleInput.trim()) {
+                        setDocumentTitle(titleInput.trim());
+                        // Also update subject when title is edited
+                        setEnvelopeData(prev => ({ ...prev, subject: titleInput.trim() }));
+                      }
+                      setIsEditingTitle(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
+                      } else if (e.key === 'Escape') {
+                        setTitleInput(documentTitle || `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`);
+                        setIsEditingTitle(false);
+                      }
+                    }}
+                    className="text-base font-medium text-gray-900 px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[300px]"
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-base font-medium text-gray-900">
+                    {documents?.length > 0
+                      ? (documentTitle || `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`)
+                      : 'Upload a Document and Add Envelope Recipients'}
+                  </h1>
+                  {documents?.length > 0 && (
+                    <button
+                      data-tour="ec-edit-title"
+                      onClick={() => {
+                        const currentTitle = documentTitle || `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`;
+                        setTitleInput(currentTitle);
+                        setIsEditingTitle(true);
+                        setTimeout(() => titleInputRef.current?.focus(), 0);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                      title="Edit title"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )} 
             </div>
 
             {/* RIGHT — Help + Advanced Options */}
@@ -5184,7 +5353,7 @@ const EnvelopeCreator: React.FC = () => {
                       Basic steps to send an envelope
                     </button>
                     <button
-                      onClick={() => { setHelpMenuOpen(false); window.open('/contact-sales', '_blank'); }}
+                      onClick={() => { setHelpMenuOpen(false); window.open('contact-sales', '_blank'); }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-t border-gray-100"
                     >
                       <span className="text-blue-700">Visit the Draft&Sign Support Center</span> for helpful articles, guides, videos, and more.
@@ -5240,7 +5409,7 @@ const EnvelopeCreator: React.FC = () => {
                 </div>
                 <div className="pl-4 mt-4 border-l-2 border-gray-300">
                   <button
-                    onClick={() => window.open('/contact-sales', '_blank')}
+                    onClick={() => window.open('/e-sign/guide', '_blank')}
                     className="text-[#4C2FFF] underline text-[14px]"
                   >
                     Sending Documents for Signature
@@ -5608,15 +5777,17 @@ const EnvelopeCreator: React.FC = () => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-xs"
-            onClick={() => setShowSendConfirmationModal(false)}
+            onClick={() => !sending && setShowSendConfirmationModal(false)}
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 z-[10000]">
-            <button
-              onClick={() => setShowSendConfirmationModal(false)}
-              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {!sending && (
+              <button
+                onClick={() => setShowSendConfirmationModal(false)}
+                className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Step Indicator */}
             <div className="flex items-center gap-4 mb-6">
@@ -5757,11 +5928,44 @@ const EnvelopeCreator: React.FC = () => {
             {/* Step 2: Authentication & Credits */}
             {sendModalStep === 2 && (
               <div>
-                <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
-                  Authentication Methods & Credit Details
-                </h2>
-                
-                {/* Credit Balance Summary */}
+                {sending ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="relative mb-6">
+                      <div className="w-20 h-20 border-4 border-[#3E2B66] border-t-transparent rounded-full animate-spin"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-[#3E2B66]/10 rounded-full flex items-center justify-center">
+                          <div className="w-6 h-6 bg-[#3E2B66] rounded-full"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-semibold text-[#3E2B66] mb-2">Sending Envelope...</h3>
+                    <p className="text-gray-600 text-center max-w-md mb-4">
+                      Please wait while we send your envelope to all recipients. This may take a few moments.
+                    </p>
+                    <div className="mt-6 flex items-center gap-3 text-sm text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                        <span>Processing recipients</span>
+                      </div>
+                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
+                        <span>Consuming credits</span>
+                      </div>
+                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
+                        <span>Sending emails</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
+                      Authentication Methods & Credit Details
+                    </h2>
+                    
+                    {/* Credit Balance Summary */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -5801,7 +6005,7 @@ const EnvelopeCreator: React.FC = () => {
                             <p className="text-sm text-gray-600">{recipient.email}</p>
                             <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
                               <span>
-                                Authentication: <span className="font-medium">{authMethod?.name || 'Email (Free)'}</span>
+                                Authentication: <span className="font-medium">{authMethod?.name || 'No Authentication Method selected'}</span>
                               </span>
                               <button
                                 type="button"
@@ -5829,25 +6033,53 @@ const EnvelopeCreator: React.FC = () => {
                   })}
                 </div>
 
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    onClick={() => setSendModalStep(1)}
-                    className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={confirmAndSendEnvelope}
-                    disabled={sending || ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) < 0}
-                    className={`px-5 py-2 rounded-md text-white ${
-                      (subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-[#3E2B66] hover:opacity-90'
-                    }`}
-                  >
-                    {sending ? 'Sending...' : 'Confirm & Send'}
-                  </button>
-                </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                      <button
+                        onClick={() => setSendModalStep(1)}
+                        disabled={sending}
+                        className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Check if credits are insufficient
+                          const totalCost = calculateTotalCost();
+                          const creditsBalance = subscriptionPlan?.creditsBalance || 0;
+                          
+                          if (totalCost > 0 && creditsBalance < totalCost) {
+                            // Show subscription modal instead of sending
+                            setShowSubscriptionModal(true);
+                            toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
+                            return;
+                          }
+                          
+                          // If credits are sufficient, proceed with sending
+                          if (!sending) {
+                            confirmAndSendEnvelope();
+                          }
+                        }}
+                        disabled={sending}
+                        className={`px-5 py-2 rounded-md text-white flex items-center gap-2 ${
+                          (subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
+                            ? 'bg-gray-400 cursor-pointer'
+                            : sending
+                            ? 'bg-[#3E2B66] cursor-wait'
+                            : 'bg-[#3E2B66] hover:opacity-90'
+                        }`}
+                      >
+                        {sending && (
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          </div>
+                        )}
+                        {sending ? 'Sending Envelope...' : 'Confirm & Send'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -5931,6 +6163,28 @@ const EnvelopeCreator: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Subscription Plans Modal */}
+      <SubscriptionPlansModal 
+        open={showSubscriptionModal} 
+        onClose={() => {
+          setShowSubscriptionModal(false);
+          // Refresh subscription plan after modal closes (in case user upgraded)
+          const refreshPlan = async () => {
+            try {
+              const planResponse = await subscriptionApi.get('/user-plan/me');
+              if (planResponse.data?.data) {
+                setSubscriptionPlan(planResponse.data.data);
+                SubscriptionStorage.savePlan(planResponse.data.data);
+                window.dispatchEvent(new CustomEvent('credits-updated'));
+              }
+            } catch (err) {
+              console.error('Failed to refresh plan:', err);
+            }
+          };
+          refreshPlan();
+        }} 
+      />
     </div>
   );
 };

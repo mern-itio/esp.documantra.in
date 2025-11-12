@@ -4,6 +4,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { Bell, LogOut, Menu, Search, User, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
+import { subscriptionApi } from '../../services/apiHelper';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -22,13 +23,8 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [showPalette, setShowPalette] = React.useState(false);
   const [paletteQuery, setPaletteQuery] = React.useState('');
-  const [credits, setCredits] = React.useState<number | null>(() => {
-    try {
-      const val = (SubscriptionStorage.getPlan() as any)?.creditsBalance;
-      const n = Number(val);
-      return Number.isFinite(n) ? n : null;
-    } catch { return null; }
-  });
+  const [credits, setCredits] = React.useState<number | null>(null);
+  const [creditsLoading, setCreditsLoading] = React.useState(true);
   const notifRef = React.useRef<HTMLDivElement | null>(null);
   const userRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -42,29 +38,61 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     return () => document.removeEventListener('click', onDocClick);
   }, [showNotif, showUserMenu]);
 
-  // Load credits from storage and listen for changes
-  const refreshCredits = React.useCallback(() => {
+  // Fetch credits from API (same approach as DashboardPage)
+  const fetchCredits = React.useCallback(async () => {
     try {
-      // Prefer live context value if available
-      const planFromContext: any = userPlan;
-      const planFromStorage: any = SubscriptionStorage.getPlan();
-      const raw = (planFromContext && planFromContext.creditsBalance != null)
-        ? planFromContext.creditsBalance
-        : planFromStorage?.creditsBalance;
-      const n = Number(raw);
+      setCreditsLoading(true);
+      const response = await subscriptionApi.get('/usage/balance');
+      const balance = (response as any).data?.data?.creditsBalance ?? null;
+      const n = Number(balance);
       setCredits(Number.isFinite(n) ? n : null);
-    } catch {
-      setCredits(null);
+      
+      // Also update localStorage for consistency
+      if (Number.isFinite(n)) {
+        SubscriptionStorage.updateCredits(n);
+      }
+    } catch (error) {
+      console.error('Error fetching credits:', error);
+      // Fallback to localStorage/context if API fails
+      try {
+        const planFromContext: any = userPlan;
+        const planFromStorage: any = SubscriptionStorage.getPlan();
+        const raw = (planFromContext && planFromContext.creditsBalance != null)
+          ? planFromContext.creditsBalance
+          : planFromStorage?.creditsBalance;
+        const n = Number(raw);
+        setCredits(Number.isFinite(n) ? n : null);
+      } catch {
+        setCredits(null);
+      }
+    } finally {
+      setCreditsLoading(false);
     }
   }, [userPlan]);
 
-  React.useEffect(() => { refreshCredits(); }, [refreshCredits]);
-
+  // Fetch credits on mount and when user changes
   React.useEffect(() => {
-    const onStorage = () => refreshCredits();
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [refreshCredits]);
+    if (user) {
+      fetchCredits();
+    }
+  }, [user, fetchCredits]);
+
+  // Listen for custom events when credits are consumed
+  React.useEffect(() => {
+    const handleCreditsUpdated = () => {
+      fetchCredits();
+    };
+
+    // Listen for custom event
+    window.addEventListener('credits-updated', handleCreditsUpdated);
+    // Also listen for storage events (for cross-tab updates)
+    window.addEventListener('storage', handleCreditsUpdated);
+    
+    return () => {
+      window.removeEventListener('credits-updated', handleCreditsUpdated);
+      window.removeEventListener('storage', handleCreditsUpdated);
+    };
+  }, [fetchCredits]);
 
   // Keyboard shortcut: Ctrl/Cmd+K to open command palette
   React.useEffect(() => {
@@ -149,7 +177,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${lowCredits ? 'border-red-200 bg-red-50 text-red-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}
             title="View credits usage"
           >
-            <span className="font-medium">{credits != null ? credits : '—'}</span>
+            <span className="font-medium">{creditsLoading ? '—' : (credits != null ? credits : '—')}</span>
             <span className="text-xs opacity-80">credits</span>
             {lowCredits && <span className="ml-1 h-2 w-2 rounded-full bg-red-500" />}
           </button>

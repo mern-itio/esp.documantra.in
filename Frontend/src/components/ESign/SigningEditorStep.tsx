@@ -73,7 +73,11 @@ function getRecipientColor(idx: number) {
   return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length];
 }
 
-function hexToRgba(hex: string, alpha: number) {
+function hexToRgba(hex: string | undefined | null, alpha: number) {
+  // Safety check: if hex is undefined, null, or empty, use default color
+  if (!hex || typeof hex !== 'string') {
+    hex = '#2563eb'; // Default blue color
+  }
   const sanitized = hex.replace('#', '');
   const bigint = parseInt(sanitized.length === 3
     ? sanitized.split('').map(c => c + c).join('')
@@ -163,6 +167,7 @@ export default function SigningEditorStep({
   const [dropPreview, setDropPreview] = useState<{ x: number; y: number; pageNum?: number } | null>(null);
   const [movingFieldId, setMovingFieldId] = useState<string | null>(null);
   const [moveOffset, setMoveOffset] = useState<{ x: number; y: number } | null>(null);
+  const fieldWasDraggedRef = useRef(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
@@ -742,6 +747,32 @@ export default function SigningEditorStep({
     }
   };
 
+  // Remove signature field from database and frontend
+  const removeSignatureField = async (field: SignatureField) => {
+    const fieldId = field._id || field.id;
+    
+    // Check if field has a database ID (MongoDB ObjectId is 24 hex chars)
+    const isDbRecord = field._id && /^[a-fA-F0-9]{24}$/.test(field._id);
+    
+    if (isDbRecord) {
+      try {
+        await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${field._id}`);
+        console.log(`Field ${field._id} deleted from DB successfully.`);
+      } catch (error: any) {
+        console.error('Failed to delete field from DB:', error);
+        toast.error(error?.response?.data?.message || 'Failed to delete field from database');
+        return; // Don't remove from frontend if DB deletion failed
+      }
+    }
+    
+    // Remove from frontend state
+    setSignatureFields(prev => prev.filter(f => (f.id ?? f._id) !== fieldId));
+    if (onFieldsChange) {
+      const updatedFields = signatureFields.filter(f => (f.id ?? f._id) !== fieldId);
+      onFieldsChange(updatedFields);
+    }
+  };
+
   // Save field label to database
   const saveFieldLabel = async () => {
     if (!selectedField || !envelopeId) {
@@ -819,6 +850,7 @@ export default function SigningEditorStep({
     const pageRect = pageEl?.getBoundingClientRect();
     if (!pageRect) return;
 
+    fieldWasDraggedRef.current = false; // Reset drag state
     setMovingFieldId(field.id ?? field._id ?? null);
     setMoveOffset({
       x: e.clientX - ((pageRect.left ?? 0) + field.x),
@@ -843,6 +875,16 @@ export default function SigningEditorStep({
       const pageWidth = pageRect.width ?? Infinity;
       const pageHeight = pageRect.height ?? Infinity;
 
+      // Check if mouse has moved significantly (more than 3 pixels)
+      const currentX = e.clientX - pageLeft - (moveOffset?.x ?? 0);
+      const currentY = e.clientY - pageTop - (moveOffset?.y ?? 0);
+      const fieldX = field.x;
+      const fieldY = field.y;
+      
+      if (Math.abs(currentX - fieldX) > 3 || Math.abs(currentY - fieldY) > 3) {
+        fieldWasDraggedRef.current = true;
+      }
+
       setSignatureFields(fields =>
         fields.map(f =>
           (f.id ?? f._id) === movingFieldId
@@ -857,6 +899,10 @@ export default function SigningEditorStep({
     };
 
     const handleMouseUp = () => {
+      // Reset after a short delay to allow onClick to check the state
+      setTimeout(() => {
+        fieldWasDraggedRef.current = false;
+      }, 100);
       setMovingFieldId(null);
       setMoveOffset(null);
     };
@@ -918,7 +964,7 @@ export default function SigningEditorStep({
   console.log("activeAssigneeId7", activeAssigneeId);
   
   // Get active recipient/slot color
-  const activeColor = activeRecipientId ? recipientColorMap[activeRecipientId] : (activeSlotId ? recipientColorMap[activeSlotId] : "#2563eb");
+  const activeColor = (activeRecipientId ? recipientColorMap[activeRecipientId] : (activeSlotId ? recipientColorMap[activeSlotId] : null)) || "#2563eb";
 
   // Standard fields list for left sidebar
   const standardFields = [
@@ -976,7 +1022,7 @@ export default function SigningEditorStep({
                 {recipients.length <= 2 ? (
                   <div className="flex items-center gap-2">
                     {recipients.map((r, idx) => {
-                      const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx);
+                      const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx) || "#2563eb";
                       const isActive = r.id === activeRecipientId;
                       return (
                         <button
@@ -990,10 +1036,10 @@ export default function SigningEditorStep({
                             className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 border"
                             style={{ 
                               backgroundColor: hexToRgba(recipientColor, 0.1), 
-                              borderColor: recipientColor
+                              borderColor: recipientColor || "#2563eb"
                             }}
                           >
-                            <User className="w-3 h-3" style={{ color: recipientColor }} />
+                            <User className="w-3 h-3" style={{ color: recipientColor || "#2563eb" }} />
                           </div>
                           <span
                             className="text-xs font-medium leading-tight truncate max-w-[140px]"
@@ -1017,11 +1063,11 @@ export default function SigningEditorStep({
                         <div 
                           className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 border"
                           style={{ 
-                            backgroundColor: hexToRgba(activeColor, 0.1), 
-                            borderColor: activeColor
+                            backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1), 
+                            borderColor: activeColor || "#2563eb"
                           }}
                         >
-                          <User className="w-3 h-3" style={{ color: activeColor }} />
+                          <User className="w-3 h-3" style={{ color: activeColor || "#2563eb" }} />
                         </div>
 
                         <div className="flex flex-col min-w-0">
@@ -1041,7 +1087,7 @@ export default function SigningEditorStep({
                     {showRecipientDropdown && (
                       <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
                         {recipients.map((r, idx) => {
-                          const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx);
+                          const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx) || "#2563eb";
                           const isActive = r.id === activeRecipientId;
                           return (
                             <button
@@ -1056,10 +1102,10 @@ export default function SigningEditorStep({
                                 className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
                                 style={{ 
                                   backgroundColor: hexToRgba(recipientColor, 0.1), 
-                                  borderColor: recipientColor
+                                  borderColor: recipientColor || "#2563eb"
                                 }}
                               >
-                                <User className="w-3.5 h-3.5" style={{ color: recipientColor }} />
+                                <User className="w-3.5 h-3.5" style={{ color: recipientColor || "#2563eb" }} />
                               </div>
                               <div className="flex flex-col min-w-0 flex-1">
                                 <span className="text-xs font-medium text-gray-800 truncate" style={{ fontSize: '12px' }}>{r.name}</span>
@@ -1082,11 +1128,11 @@ export default function SigningEditorStep({
                   <div 
                     className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
                     style={{ 
-                      backgroundColor: hexToRgba(activeColor, 0.1), 
-                      borderColor: activeColor
+                      backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1), 
+                      borderColor: activeColor || "#2563eb"
                     }}
                   >
-                    <User className="w-3.5 h-3.5" style={{ color: activeColor }} />
+                    <User className="w-3.5 h-3.5" style={{ color: activeColor || "#2563eb" }} />
                   </div>
                   <span className="text-sm text-gray-800 font-medium truncate flex-1 text-left" style={{ fontSize: '14px', color: '#301934' }}>
                     {activeSlot?.name || activeSlot?.slotId || 'Select Slot'}
@@ -1096,7 +1142,7 @@ export default function SigningEditorStep({
                 {showRecipientDropdown && (
                   <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
                     {slotsToUse.map((s, idx) => {
-                      const slotColor = recipientColorMap[s.slotId] || getRecipientColor(idx + recipients.length);
+                      const slotColor = recipientColorMap[s.slotId] || getRecipientColor((recipients?.length || 0) + idx) || "#2563eb";
                       const isActive = s.slotId === activeSlotId;
                       return (
                         <button
@@ -1111,10 +1157,10 @@ export default function SigningEditorStep({
                             className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
                             style={{ 
                               backgroundColor: hexToRgba(slotColor, 0.1), 
-                              borderColor: slotColor
+                              borderColor: slotColor || "#2563eb"
                             }}
                           >
-                            <User className="w-3.5 h-3.5" style={{ color: slotColor }} />
+                            <User className="w-3.5 h-3.5" style={{ color: slotColor || "#2563eb" }} />
                           </div>
                           <span className="text-sm text-gray-800 truncate flex-1">
                             {s.name || s.slotId || 'Unnamed Slot'}
@@ -1338,7 +1384,7 @@ export default function SigningEditorStep({
                                 backgroundColor: 'transparent'
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = hexToRgba(activeColor, 0.1);
+                                e.currentTarget.style.backgroundColor = hexToRgba(activeColor || "#2563eb", 0.1);
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
@@ -1347,12 +1393,12 @@ export default function SigningEditorStep({
                               <div 
                                 className="w-5 h-5 flex items-center justify-center border rounded flex-shrink-0" 
                                 style={{ 
-                                  backgroundColor: hexToRgba(activeColor, 0.1), 
-                                  borderColor: activeColor,
-                                  color: activeColor
+                                  backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1), 
+                                  borderColor: activeColor || "#2563eb",
+                                  color: activeColor || "#2563eb"
                                 }}
                               >
-                                <Icon className="w-3.5 h-3.5" style={{ color: activeColor }} />
+                                <Icon className="w-3.5 h-3.5" style={{ color: activeColor || "#2563eb" }} />
                               </div>
                               <span className="text-sm text-gray-800" style={{ fontSize: '11px', color: '#301934' }}>
                                 {field.label}
@@ -1551,7 +1597,7 @@ export default function SigningEditorStep({
                                   alignItems: "center",
                                   justifyContent: "center",
                                   borderRadius: 6,
-                                  cursor: f.locked ? "not-allowed" : (isEditableField(f.type) ? "pointer" : "move"),
+                                  cursor: f.locked ? "not-allowed" : "move",
                                   opacity: isActive ? 1 : 0.9,
                                   boxSizing: "border-box",
                                   zIndex: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) ? 50 : (isActive ? 30 : 20),
@@ -1560,14 +1606,12 @@ export default function SigningEditorStep({
                                     : 'none',
                                 }}
                                 onMouseDown={(e) => {
-                                  // Only handle move if not an editable field or if shift is held
-                                  if (!isEditableField(f.type) || e.shiftKey) {
-                                    handleFieldMouseDown(e, f);
-                                  }
+                                  // Allow dragging for all fields
+                                  handleFieldMouseDown(e, f);
                                 }}
                                 onClick={(e) => {
-                                  // Handle click for editable fields
-                                  if (isEditableField(f.type)) {
+                                  // Handle click for editable fields, but only if field wasn't dragged
+                                  if (isEditableField(f.type) && !fieldWasDraggedRef.current) {
                                     handleFieldClick(e, f);
                                   }
                                 }}
@@ -1589,7 +1633,7 @@ export default function SigningEditorStep({
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSignatureFields(prev => prev.filter(field => (field.id ?? field._id) !== (f.id ?? f._id)));
+                                    removeSignatureField(f);
                                   }}
                                   onMouseEnter={(e) => {
                                     e.currentTarget.style.background = "#dc2626";
@@ -1929,9 +1973,32 @@ export default function SigningEditorStep({
                             <RefreshCw className="w-3 h-3" />
                           </button>
                           <button
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
+                              // Get all fields on this page to delete from DB
+                              const fieldsToDelete = signatureFields.filter(
+                                f => (f.docId ?? f.documentId) === activeDocId && f.page === pageNum
+                              );
+                              
+                              // Delete each field from database
+                              for (const field of fieldsToDelete) {
+                                const isDbRecord = field._id && /^[a-fA-F0-9]{24}$/.test(field._id);
+                                if (isDbRecord) {
+                                  try {
+                                    await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${field._id}`);
+                                  } catch (error: any) {
+                                    console.error(`Failed to delete field ${field._id} from DB:`, error);
+                                    toast.error(`Failed to delete some fields from database`);
+                                  }
+                                }
+                              }
+                              
+                              // Remove from frontend state
                               setSignatureFields(prev => prev.filter(f => (f.docId ?? f.documentId) !== activeDocId || f.page !== pageNum));
+                              if (onFieldsChange) {
+                                const updatedFields = signatureFields.filter(f => (f.docId ?? f.documentId) !== activeDocId || f.page !== pageNum);
+                                onFieldsChange(updatedFields);
+                              }
                             }}
                             className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                             title="Clear fields"

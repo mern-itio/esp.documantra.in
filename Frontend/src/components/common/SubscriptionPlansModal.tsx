@@ -53,7 +53,7 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative w-full max-w-6xl mx-auto px-4">
         <div className="rounded-2xl overflow-hidden shadow-2xl bg-white text-gray-900">
