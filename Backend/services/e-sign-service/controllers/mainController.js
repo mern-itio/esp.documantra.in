@@ -423,6 +423,7 @@ const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuf
 }
 
 const addSignature = async (req, res) => {
+  console.log("Add Signature Started...");
   const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue,cycleId } = req.body;
 
   if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
@@ -1310,14 +1311,31 @@ const saveNonSignatureField = async (req, res) => {
   return res.status(200).json({message: 'Field saved succesfully'});
 }
 const saveupdateSignature = async (req, res) =>{
-  const {recipientId, Signature} = req.body;
+  const {recipientId, Signature, mode, envelopeId} = req.body;
   if(!recipientId && !Signature){
     return res.status(401).json({message: 'Recipient and Signature is required.'});
   }
   const RecipientUpdate = await Recipient.findById(recipientId);
   RecipientUpdate.signature = Signature;
   await RecipientUpdate.save();
-  return res.status(200).json({message: 'Signature saved succesfully'})
+  if(mode === 'update'){
+    //find all signature fields and update existing signature fields
+    const signatureFields = await SignatureField.find({
+      envelopeId: envelopeId,
+      recipientId: recipientId,
+      type: 'signature',
+      signature: { $exists: true, $nin: ['', null] } // ensures signature is not empty or null
+    });
+    if(signatureFields.length > 0){
+      for(const field of signatureFields){
+        field.signature = Signature;
+        await field.save();
+      }
+      // Pass field id to front end to re render the signature fields
+      return res.status(200).json({message: 'Signature updated succesfully',mode:mode,signatureFields:signatureFields});
+    }
+  }
+  return res.status(200).json({message: 'Signature saved succesfully',mode:mode});
 }
 
 // Export functions

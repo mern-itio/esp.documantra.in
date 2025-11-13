@@ -25,9 +25,10 @@ interface SignPadProps {
   envelopeID?: string;
   defaultSign?: string | null;
   onSaveSign?: (fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => void;
-  onSignatureSaved?: (signatureUrl: string) => void;
+  onSignatureSaved?: (signatureUrl: string, fieldId: string) => void;
   selfValue?: string;
   cycleId?:string;
+  mode?: "add" | "update";
 }
 
 export default function SignPad({
@@ -36,12 +37,13 @@ export default function SignPad({
   // activeField,
   currentUserId,
   // documentId,
-  // envelopeID,
+  envelopeID,
   defaultSign = null,
   // onSaveSign,
   onSignatureSaved,
   // selfValue,
   // cycleId
+  mode = "add"
 }: SignPadProps) {
   const [penColor, setPenColor] = useState("blue");
   const [isTab, setIsTab] = useState<"draw" | "upload" | "typed">("draw");
@@ -211,12 +213,22 @@ export default function SignPad({
     try{
       const payload = {
         recipientId: currentUserId,
-        Signature: isSignImg
+        Signature: isSignImg,
+        mode: mode,
+        envelopeId: envelopeID
       }
       const response = await eSignApi.post("/api/e-sign/public/save-signature",payload);
       if(response?.status === 200){
         alert("Signature saved successfully.");
-        onSignatureSaved?.(isSignImg);
+        //onSignatureSaved modify to re-render updated signature to updated signature fields
+        if(response.data.mode === "update" && response.data.signatureFields){
+          for(const field of response.data.signatureFields){
+            onSignatureSaved?.(isSignImg,field._id);
+          }
+        }else{
+          onSignatureSaved?.(isSignImg,"");
+        }
+        onSignatureSaved?.(isSignImg,"");
         setIsSignPad(false);
       }
     } catch (err){
@@ -274,7 +286,9 @@ export default function SignPad({
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold">Add Signature</h3>
+            <h3 className="text-lg font-semibold">
+              {mode === "update" ? "Update Signature" : "Add Signature"}
+            </h3>
             <p className="text-sm text-gray-500">
               Select draw, upload, or type. Your signature will be embedded into the document.
             </p>

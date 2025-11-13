@@ -141,10 +141,13 @@ async function prepareDocumentForFinalSigning(envelopeId, documentId) {
   let pdfBuffer = fs.readFileSync(docRecord.filePath);
   const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
 
-  const sigFields = await SignatureFields.find({ documentId }).sort({ order: 1, _id: 1 }).lean();
+  // fetch ALL fields (signature + non-signature)
+  const allFields = await SignatureFields.find({ documentId }).sort({ order: 1, _id: 1 }).lean();
 
-  for (const f of sigFields) {
-    if (!f.signature) continue;
+  // embed visible values (signature image OR text)
+  for (const f of allFields) {
+    if (!f.signature) continue; // no value → skip
+
     try {
       const pageIndex = Math.max(0, (f.page ? Number(f.page) - 1 : 0));
       const page = pdfDoc.getPages()[pageIndex] || pdfDoc.getPages()[0];
@@ -153,24 +156,47 @@ async function prepareDocumentForFinalSigning(envelopeId, documentId) {
       const h = Number(f.height || 40);
       const topY = Number(f.y || 50);
       const y = page.getHeight() - topY - h;
-      const imageBuffer = Buffer.from((f.signature || '').split(',')[1] || '', 'base64');
-      if (imageBuffer.length === 0) continue;
-      const img = await pdfDoc.embedPng(imageBuffer);
-      page.drawImage(img, { x, y, width: w, height: h });
+
+      if (f.type === 'signature' && f.signature.startsWith('data:image')) {
+        console.log(`Embedding signature image for field ${f._id} on page ${f.page}`);
+        // signature → embed image
+        const base64 = f.signature.split(',')[1];
+        if (!base64) continue;
+        const img = await pdfDoc.embedPng(Buffer.from(base64, 'base64'));
+        page.drawImage(img, { x, y, width: w, height: h });
+      } else {
+        console.log(`Embedding signature image for field ${f._id} on page ${f.page} text ${f.signature}`);
+        // non-signature → draw text
+        page.drawText(String(f.signature), {
+          x: x ,
+          y: y ,
+          size:12,
+          color: rgb(0, 0, 0),
+        });
+      }
     } catch (e) {
-      await AuditTrail.create({ envelopeId, recipientId: f.recipientId, action: 'EMBED_IMAGE_FAILED', details: { error: e.message, fieldId: f._id } }).catch(() => {});
+      await AuditTrail.create({
+        envelopeId,
+        recipientId: f.recipientId,
+        action: 'EMBED_FIELD_FAILED',
+        details: { error: e.message, fieldId: f._id },
+      }).catch(() => {});
     }
   }
 
+  // save normalized PDF (important for crypto signing)
   const normalizedBytes = await pdfDoc.save({ useObjectStreams: false });
   let workingBuffer = Buffer.from(normalizedBytes);
 
+  // now only add placeholders for SIGNATURE fields
+  const sigFields = allFields.filter(f => f.type === 'signature');
   for (const f of sigFields) {
     const targetPage = Math.max(1, Number(f.page || 1));
     const x = Number(f.x || 50);
     const y = Number(f.y || 50);
     const w = Number(f.width || 150);
     const h = Number(f.height || 40);
+
     const placeholderField = {
       page: targetPage,
       x,
@@ -179,16 +205,22 @@ async function prepareDocumentForFinalSigning(envelopeId, documentId) {
       height: h,
       name: `sig_${String(f._id)}`,
       reason: `Signature placeholder for recipient ${f.recipientId}`,
-      // increase reserved bytes here too
-      signatureLength: 65536
+      signatureLength: 65536,
     };
+
     try {
       workingBuffer = await addPlaceholderToPdf(workingBuffer, placeholderField);
     } catch (e) {
-      await AuditTrail.create({ envelopeId, recipientId: f.recipientId, action: 'PLACEHOLDER_ADD_FAILED', details: { error: e.message, fieldId: f._id } }).catch(() => {});
+      await AuditTrail.create({
+        envelopeId,
+        recipientId: f.recipientId,
+        action: 'PLACEHOLDER_ADD_FAILED',
+        details: { error: e.message, fieldId: f._id },
+      }).catch(() => {});
     }
   }
 
+  // save prepared file
   const outName = `prepared_${Date.now()}_${path.basename(docRecord.filePath)}`;
   const preparedDir = path.join(process.cwd(), 'uploads', 'prepared');
   if (!fs.existsSync(preparedDir)) fs.mkdirSync(preparedDir, { recursive: true });
@@ -198,22 +230,39 @@ async function prepareDocumentForFinalSigning(envelopeId, documentId) {
   docRecord.preparedDoc = outPath;
   await docRecord.save();
 
-  await AuditTrail.create({ envelopeId, action: 'DOCUMENT_PREPARED', details: { preparedPath: outPath } }).catch(() => {});
+  await AuditTrail.create({
+    envelopeId,
+    action: 'DOCUMENT_PREPARED',
+    details: { preparedPath: outPath },
+  }).catch(() => {});
 
   return { preparedPath: outPath };
 }
+
 
 async function finalizeSigning(envelopeId, documentId) {
   const docRecord = await Document.findById(documentId);
   if (!docRecord) throw new Error('Document not found');
   if (!docRecord.preparedDoc || !fs.existsSync(docRecord.preparedDoc)) throw new Error('Prepared document not found. Call prepareDocumentForFinalSigning first.');
 
+  // Read the current prepared (or partially-signed) PDF
   let pdfBuffer = fs.readFileSync(docRecord.preparedDoc);
 
-  const sigFields = await SignatureFields.find({ documentId }).sort({ order: 1, _id: 1 });
+  // Only process signature-type fields that are not yet completed
+  const sigFields = await SignatureFields.find({
+    documentId,
+    type: 'signature'
+  }).sort({ order: 1, _id: 1 });
+
+  // Optional: acquire a lock on the envelope/document here to prevent concurrent signing
+  // e.g. using a lightweight DB lock or Redis lock. Not shown here, but recommended.
 
   for (const field of sigFields) {
-    const certDoc = await Certificate.findOne({ recipientId: field.recipientId, envelopeId: envelopeId }).sort({ createdAt: -1 });
+    // The placeholder name must match what prepareDocumentForFinalSigning created:
+    const placeholderName = `sig_${String(field._id)}`;
+
+    // load the certificate for this recipient
+    const certDoc = await Certificate.findOne({ recipientId: field.recipientId, envelopeId }).sort({ createdAt: -1 });
     if (!certDoc) {
       await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'NO_CERT_FOUND', details: { fieldId: field._id } }).catch(() => {});
       continue;
@@ -232,13 +281,35 @@ async function finalizeSigning(envelopeId, documentId) {
     const certPem = normalizePem(rawCertPem);
 
     try {
-      const signedBuffer = await signPdfWithCert(pdfBuffer, privateKeyPem, certPem, envelopeId, field.recipientId);
+      // IMPORTANT: signPdfWithCert MUST accept and use the placeholderName so it signs the specific placeholder
+      // and must perform an incremental/append signature that preserves prior signatures.
+      // I call it with an options object; update signPdfWithCert accordingly if necessary.
+      const signedBuffer = await signPdfWithCert(pdfBuffer, privateKeyPem, certPem, {
+        envelopeId,
+        recipientId: field.recipientId,
+        placeholderName // crucial
+      });
 
+      // compute hash for audit & DB
       const signedHash = hashBuffer(signedBuffer);
 
-      const saved = await saveSignedPdf(envelopeId, documentId, signedBuffer);
-      const relativePath = saved.filePath;
+      // Save an archive copy for this signature (optional but good for audits)
+      // saveSignedPdf might already create a new file; keep that behavior to maintain history
+      const archiveSaved = await saveSignedPdf(envelopeId, documentId, signedBuffer);
 
+      // Overwrite the preparedDoc so the next signer gets the updated PDF (single evolving file)
+      try {
+        // if you want to keep preparedDoc path stable, overwrite it directly
+        fs.writeFileSync(docRecord.preparedDoc, signedBuffer);
+        // ensure any returned save path is used for docRecord.preparedDoc if you prefer that
+        // docRecord.preparedDoc = archiveSaved.filePath || docRecord.preparedDoc;
+        await docRecord.save();
+      } catch (fsErr) {
+        // If overwriting fails, record and continue (but this is serious)
+        await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'PREPARED_OVERWRITE_FAILED', details: { error: fsErr.message, fieldId: field._id } }).catch(() => {});
+      }
+
+      // create DigitalSignature record
       const sigRecord = await DigitalSignature.create({
         envelopeId,
         recipientId: field.recipientId,
@@ -249,6 +320,7 @@ async function finalizeSigning(envelopeId, documentId) {
         pdfHash: signedHash
       });
 
+      // Optional: request TSA token and attach
       try {
         const tsaRes = await requestTimestamp({ digitalSignatureId: sigRecord._id });
         if (tsaRes && tsaRes.token) {
@@ -257,37 +329,53 @@ async function finalizeSigning(envelopeId, documentId) {
           await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'TSA_TOKEN_ATTACHED', details: { signatureId: sigRecord._id } }).catch(() => {});
         }
       } catch (tsaErr) {
-        await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'TSA_REQUEST_FAILED', details: { error: tsaErr.message } }).catch(() => {});
+        await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'TSA_REQUEST_FAILED', details: { error: tsaErr.message }}).catch(()=>{});
       }
 
+      // mark field completed
       field.status = 'completed';
       await field.save();
 
+      // update recipient permission
       const rp = await RecipientPermission.findOne({ envelopeId, recipientId: field.recipientId });
       if (rp) {
         rp.status = 'completed';
         await rp.save();
       }
-      await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'DOC_SIGNED', details: { signatureId: sigRecord._id, savedPath: relativePath, pdfHash: signedHash } }).catch(() => {});
 
+      await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'DOC_SIGNED', details: { signatureId: sigRecord._id, savedPath: archiveSaved?.filePath, pdfHash: signedHash } }).catch(() => {});
+
+      // update pdfBuffer to the newly signed PDF for the next signer
       pdfBuffer = signedBuffer;
+
     } catch (e) {
+      // If signing failed, audit and continue with the next recipient
       await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'SIGNING_FAILED', details: { error: e.message, fieldId: field._id } }).catch(() => {});
       continue;
     }
   }
 
-  const finalSaved = await saveSignedPdf(envelopeId, documentId, pdfBuffer);
-  if (finalSaved) {
-    docRecord.signedFilePath = finalSaved.filePath;
-    docRecord.signedFileName = finalSaved.fileName;
-    docRecord.signedFileSize = finalSaved.size;
-    await docRecord.save();
-    await AuditTrail.create({ envelopeId, action: 'FINAL_SIGNED_SAVED', details: { path: finalSaved.filePath } }).catch(() => {});
+  // All individual signatures attempted — the docRecord.preparedDoc file should now be the latest signed PDF.
+  // If you want a 'final' signed copy (move to signedFilePath), create or save it now:
+  try {
+    const finalSaved = await saveSignedPdf(envelopeId, documentId, fs.readFileSync(docRecord.preparedDoc));
+    if (finalSaved) {
+      docRecord.signedFilePath = finalSaved.filePath;
+      docRecord.signedFileName = finalSaved.fileName;
+      docRecord.signedFileSize = finalSaved.size;
+      // Optionally: clear preparedDoc if you want to mark it as finalized
+      // docRecord.preparedDoc = undefined;
+      await docRecord.save();
+      await AuditTrail.create({ envelopeId, action: 'FINAL_SIGNED_SAVED', details: { path: finalSaved.filePath } }).catch(() => {});
+    }
+  } catch (finalErr) {
+    await AuditTrail.create({ envelopeId, action: 'FINAL_SAVE_FAILED', details: { error: finalErr.message } }).catch(() => {});
   }
 
-  return { finalPath: docRecord.signedFilePath };
+  // Optional: release the lock here (if you implemented locking)
+  return { finalPath: docRecord.signedFilePath || docRecord.preparedDoc };
 }
+
 
 module.exports = {
   initiateRecipientSignature,
