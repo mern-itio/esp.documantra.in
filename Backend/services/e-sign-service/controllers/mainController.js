@@ -664,15 +664,37 @@ const envelopeArchive = async (req, res) => {
 const envelopeDelete = async (req, res) => {
   try {
     const envelopeId = req.params.envelopeId; 
-     // Validate envelopeId is a valid ObjectId
-     console.log(envelopeId);
-    const envelope = await Envelope.findOneAndDelete({_id:envelopeId});
+    // Validate envelopeId is a valid ObjectId
+    console.log(envelopeId);
+    const envelope = await Envelope.findById(envelopeId);
     if(envelope){
+      // Update the status to "deleted" (soft delete)
+      envelope.status = "deleted";
+      await envelope.save();
       return res.status(200).json({ message: "Envelope deleted successfully", envelope });
+    } else {
+      return res.status(404).json({ message: "Envelope not found" });
     }
   } catch (error) {
-    console.error("Error checking envelope existence:", error);
-    return false; // In case of error, assume envelope does not exist
+    console.error("Error deleting envelope:", error);
+    return res.status(500).json({ message: "Failed to delete envelope", error: error.message });
+  }
+}
+
+const envelopePermanentDelete = async (req, res) => {
+  try {
+    const envelopeId = req.params.envelopeId;
+    // Validate envelopeId is a valid ObjectId
+    console.log('Permanently deleting envelope:', envelopeId);
+    const envelope = await Envelope.findOneAndDelete({ _id: envelopeId });
+    if(envelope){
+      return res.status(200).json({ message: "Envelope permanently deleted successfully", envelope });
+    } else {
+      return res.status(404).json({ message: "Envelope not found" });
+    }
+  } catch (error) {
+    console.error("Error permanently deleting envelope:", error);
+    return res.status(500).json({ message: "Failed to permanently delete envelope", error: error.message });
   }
 }
 const envelopeReminder = async (req, res) => {
@@ -1333,6 +1355,7 @@ module.exports = {
   getRecipientByEmail,
   envelopeArchive,
   envelopeDelete,
+  envelopePermanentDelete,
   envelopeReminder,
   duplicateEnvelope,
   activityLogs,

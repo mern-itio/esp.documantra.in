@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil } from 'lucide-react';
+import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
+import Swal from 'sweetalert2';
 
 interface Agreement {
   id: string;
@@ -13,7 +14,7 @@ interface Agreement {
   completedCount: number;
   waitingFor?: string;
   primaryRecipientName?: string;
-  isPowerForm?:boolean;
+  isPowerForm?: boolean;
 }
 
 interface EnvelopeData {
@@ -22,7 +23,7 @@ interface EnvelopeData {
   status: string;
   createdAt: string;
   sentAt: string;
-  isPowerForm?:boolean;
+  isPowerForm?: boolean;
   sender: {
     name: string;
     email: string;
@@ -49,11 +50,11 @@ const AgreementPage: React.FC = () => {
   const [openHeaderMenu, setOpenHeaderMenu] = useState<null | 'date' | 'status' | 'sender' | 'quick' | 'advanced' | 'shared'>(null);
   const [headerMenuPosition, setHeaderMenuPosition] = useState<{ top: number; left: number } | null>(null);
   // header selections
-  const dateOptions = ['All time','Last 12 months','Last 6 months','Last 30 days','Last week','Last 24 hours','Custom'];
-  const statusOptions = ['All','In progress','Completed','Draft','Deleted'];
-  const senderOptions = ['Sent by anyone','Sent by me','Sent to me'];
-  const quickOptions = ['All','Action Required','Waiting for Others','Expiring Soon','Authentication Failed'];
-  const advancedOptions = ['Exclude envelope custom fields','Include envelope custom fields'];
+  const dateOptions = ['All time', 'Last 12 months', 'Last 6 months', 'Last 30 days', 'Last week', 'Last 24 hours', 'Custom'];
+  const statusOptions = ['All', 'In progress', 'Completed', 'Draft', 'Deleted'];
+  const senderOptions = ['Sent by anyone', 'Sent by me', 'Sent to me'];
+  const quickOptions = ['All', 'Action Required', 'Waiting for Others', 'Expiring Soon', 'Authentication Failed'];
+  const advancedOptions = ['Exclude envelope custom fields', 'Include envelope custom fields'];
   const [selectedDateIdx, setSelectedDateIdx] = useState<number>(2);
   const [selectedStatusIdx, setSelectedStatusIdx] = useState<number>(0);
   const [selectedSenderIdx, setSelectedSenderIdx] = useState<number>(0);
@@ -158,15 +159,15 @@ const AgreementPage: React.FC = () => {
       if (tooltipPosition) {
         const newX = e.clientX - dragOffset.x;
         const newY = e.clientY - dragOffset.y;
-        
+
         // Keep tooltip within viewport bounds
         const tooltipWidth = 384; // max-w-sm = 384px
         const tooltipHeight = 200; // approximate height
         const padding = 16;
-        
+
         const constrainedX = Math.max(padding, Math.min(newX, window.innerWidth - tooltipWidth - padding));
         const constrainedY = Math.max(padding, Math.min(newY, window.innerHeight - tooltipHeight - padding));
-        
+
         setTooltipPosition({ x: constrainedX, y: constrainedY });
       }
     };
@@ -187,14 +188,14 @@ const AgreementPage: React.FC = () => {
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault(); // Prevent text selection
     if (!tooltipRef.current) return;
-    
+
     const rect = tooltipRef.current.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
-    
+
     setDragOffset({ x: offsetX, y: offsetY });
     setIsDragging(true);
-    
+
     // Initialize tooltip position with current position if not already set
     if (!tooltipPosition) {
       setTooltipPosition({ x: rect.left, y: rect.top });
@@ -239,7 +240,7 @@ const AgreementPage: React.FC = () => {
     if (path.includes('/all')) return 'all';
     return 'all'; // Default to 'all' tab
   };
-  
+
   const currentTab = getCurrentTab();
 
   // Fetch envelopes data from API
@@ -247,10 +248,10 @@ const AgreementPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await eSignApi.get('/api/e-sign/get-envelopes');
-      
+
       if (response.data && response.data.status === 'success') {
         const envelopes: EnvelopeData[] = response.data.data;
-        
+
         // Map all envelopes to agreement format
         const allEnvelopes = envelopes.map(envelope => ({
           id: envelope.id,
@@ -259,8 +260,8 @@ const AgreementPage: React.FC = () => {
           lastChange: envelope.sentAt || envelope.createdAt,
           createdBy: envelope.sender?.name || 'Unknown',
           recipientCount: envelope.recipients?.length || 0,
-          isPowerForm:envelope.isPowerForm,
-          completedCount: envelope.recipients?.filter(recipient => 
+          isPowerForm: envelope.isPowerForm,
+          completedCount: envelope.recipients?.filter(recipient =>
             recipient.status === 'completed' || recipient.status === 'signed'
           ).length || 0,
           waitingFor: (() => {
@@ -281,7 +282,7 @@ const AgreementPage: React.FC = () => {
             return first?.name || first?.email || undefined;
           })()
         }));
-        
+
         setAgreements(allEnvelopes);
       } else {
         console.error('Failed to fetch envelopes:', response.data?.message);
@@ -539,18 +540,38 @@ const AgreementPage: React.FC = () => {
           await eSignApi.post(`/api/e-sign/envelope/reminder/${id}`);
         }
       }
-      alert('Email(s) queued successfully');
+      Swal.fire({
+        title: 'Success!',
+        text: 'Email(s) queued successfully',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
     } catch (e) {
-      alert('Failed to trigger resend for some items');
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to trigger resend for some items',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     } finally { setBulkResending(false); }
   };
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!window.confirm(`Delete ${ids.length} envelope(s)?`)) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Delete ${ids.length} envelope(s)?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete them!',
+      cancelButtonText: 'Cancel'
+    });
+    if (!result.isConfirmed) return;
     for (const id of ids) {
-      try { await eSignApi.post(`/api/e-sign/envelope/soft-delete/${id}`); } catch (_) {}
+      try { await eSignApi.post(`/api/e-sign/envelope/delete/${id}`); } catch (_) { }
     }
     await fetchEnvelopes();
     clearSelection();
@@ -565,9 +586,19 @@ const AgreementPage: React.FC = () => {
       } else if (s === 'in-progress') {
         await eSignApi.post(`/api/e-sign/envelope/reminder/${agreement.id}`);
       }
-      alert('Email queued successfully');
+      Swal.fire({
+        title: 'Success!',
+        text: 'Email queued successfully',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
     } catch (e) {
-      alert('Failed to trigger email');
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to trigger email',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     } finally {
       setRowResendLoadingId(null);
     }
@@ -584,9 +615,55 @@ const AgreementPage: React.FC = () => {
         envelopeData: { status: 'draft' }
       });
       await fetchEnvelopes();
-      alert('Envelope restored to Draft');
+      Swal.fire({
+        title: 'Success!',
+        text: 'Envelope restored to Draft',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
     } catch (e) {
-      alert('Failed to restore');
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to restore',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
+  };
+
+  const handlePermanentDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: 'Permanently Delete?',
+      text: 'This action cannot be undone! The envelope will be permanently deleted from the system.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete permanently!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await eSignApi.post(`/api/e-sign/envelope/permanent-delete/${id}`);
+        if (response.status === 200) {
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'Envelope has been permanently deleted.',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          });
+          await fetchEnvelopes();
+        }
+      } catch (error) {
+        console.error('Error permanently deleting envelope:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Failed to permanently delete envelope. Please try again.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
     }
   };
 
@@ -633,12 +710,12 @@ const AgreementPage: React.FC = () => {
       const headers = Object.keys(csvData[0]);
       const csvContent = [
         headers.join(','),
-        ...csvData.map(row => 
+        ...csvData.map(row =>
           headers.map(header => {
             const value = row[header as keyof typeof row];
             // Escape commas and quotes in CSV
-            return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
-              ? `"${value.replace(/"/g, '""')}"` 
+            return typeof value === 'string' && (value.includes(',') || value.includes('"'))
+              ? `"${value.replace(/"/g, '""')}"`
               : value;
           }).join(',')
         )
@@ -654,11 +731,16 @@ const AgreementPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       console.log(`Exported ${csvData.length} agreements to CSV`);
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      alert('Failed to export CSV. Please try again.');
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to export CSV. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -679,36 +761,41 @@ const AgreementPage: React.FC = () => {
     return label === 'All' ? 'Status' : label;
   };
 
-  const getSenderButtonLabel = () => {
-    const label = senderOptions[selectedSenderIdx];
-    return label === 'Sent by anyone' ? 'Sender' : label;
-  };
+  // const getSenderButtonLabel = () => {
+  //   const label = senderOptions[selectedSenderIdx];
+  //   return label === 'Sent by anyone' ? 'Sender' : label;
+  // };
 
-  const getQuickViewsButtonLabel = () => {
-    const label = quickOptions[selectedQuickIdx];
-    return label === 'All' ? 'Quick views' : label;
-  };
+  // const getQuickViewsButtonLabel = () => {
+  //   const label = quickOptions[selectedQuickIdx];
+  //   return label === 'All' ? 'Quick views' : label;
+  // };
 
-  const getAdvancedButtonLabel = () => {
-    const label = advancedOptions[selectedAdvancedIdx];
-    return label === 'Exclude envelope custom fields' ? 'Advanced search' : 'Advanced search*';
-  };
+  // const getAdvancedButtonLabel = () => {
+  //   const label = advancedOptions[selectedAdvancedIdx];
+  //   return label === 'Exclude envelope custom fields' ? 'Advanced search' : 'Advanced search*';
+  // };
 
   const handlePrint = () => {
     try {
       // Create a new window for printing
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        alert('Please allow popups to print the agreements list.');
+        Swal.fire({
+          title: 'Popup Blocked',
+          text: 'Please allow popups to print the agreements list.',
+          icon: 'warning',
+          confirmButtonText: 'OK'
+        });
         return;
       }
 
       // Get current tab name for the title
-      const tabName = currentTab === 'all' ? 'All' : 
-                     currentTab === 'completed' ? 'Completed' :
-                     currentTab === 'draft' ? 'Drafts' :
-                     currentTab === 'in-progress' ? 'In-progress' :
-                     currentTab === 'deleted' ? 'Deleted' : 'Agreements';
+      const tabName = currentTab === 'all' ? 'All' :
+        currentTab === 'completed' ? 'Completed' :
+          currentTab === 'draft' ? 'Drafts' :
+            currentTab === 'in-progress' ? 'In-progress' :
+              currentTab === 'deleted' ? 'Deleted' : 'Agreements';
 
       // Create print content
       const printContent = `
@@ -764,17 +851,22 @@ const AgreementPage: React.FC = () => {
       printWindow.document.write(printContent);
       printWindow.document.close();
       printWindow.focus();
-      
+
       // Wait for content to load, then print
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
       }, 250);
-      
+
       console.log(`Printed ${filteredAgreements.length} agreements`);
     } catch (error) {
       console.error('Error printing:', error);
-      alert('Failed to print. Please try again.');
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to print. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -789,30 +881,61 @@ const AgreementPage: React.FC = () => {
           // Implement download functionality
           try {
             console.log('Downloading envelope:', agreementId);
-            
-            // Fetch envelope details to get document IDs
-            const response = await eSignApi.get(`/api/e-sign/envelope/${agreementId}`);
-            if (response.status === 200 && response.data.status === 'success') {
-              
-              const documents = (response.data.data.documents as { id: string }[]).map(doc => doc.id);
-              
-              if (documents.length === 0) {
-                alert('No documents found for this agreement.');
-                return;
-              }else{
-                // alert(agreementId);
-                // alert(documents);
-                window.open(`/e-sign/signer/${agreementId}/${documents}`, '_blank');
-                return;
-              }
-              
-             
+
+            // Use the download-all endpoint to get all signed documents as a zip
+            const response = await eSignApi.get(
+              `/api/e-sign/signatures/download-all/${agreementId}`,
+              { responseType: 'blob' }
+            );
+
+            if (response.status === 200 && response.data) {
+              // response.data is already a Blob when responseType is 'blob'
+              const blob = response.data instanceof Blob
+                ? response.data
+                : new Blob([response.data], { type: 'application/zip' });
+
+              const url = window.URL.createObjectURL(blob);
+
+              // Create a temporary anchor element and trigger download
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `signed_documents_${agreementId}.zip`;
+              document.body.appendChild(link);
+              link.click();
+
+              // Clean up
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
             } else {
-              alert('Failed to fetch envelope details for download.');
+              Swal.fire({
+                title: 'No Documents',
+                text: 'No signed documents found for this agreement.',
+                icon: 'info',
+                confirmButtonText: 'OK'
+              });
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error downloading envelope:', error);
-            alert('Failed to download documents. Please try again.');
+            // Try to extract error message from blob response if available
+            let errorMessage = 'Failed to download documents. Please try again.';
+            if (error.response?.data instanceof Blob) {
+              // If error response is a blob, try to read it as text
+              try {
+                const text = await error.response.data.text();
+                const parsed = JSON.parse(text);
+                errorMessage = parsed.message || errorMessage;
+              } catch {
+                // If parsing fails, use default message
+              }
+            } else if (error.response?.data?.message) {
+              errorMessage = error.response.data.message;
+            }
+            Swal.fire({
+              title: 'Error',
+              text: errorMessage,
+              icon: 'error',
+              confirmButtonText: 'OK'
+            });
           }
           break;
         case 'edit':
@@ -821,19 +944,39 @@ const AgreementPage: React.FC = () => {
           break;
         case 'delete':
           // Implement soft delete functionality
-          if (window.confirm('Are you sure you want to delete this agreement? This will move it to the deleted tab.')) {
+          const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'Are you sure you want to delete this agreement? This will move it to the deleted tab.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+          });
+          if (result.isConfirmed) {
             try {
               // Call soft delete API to update status to "deleted"
-              const response = await eSignApi.post(`/api/e-sign/envelope/soft-delete/${agreementId}`);
+              const response = await eSignApi.post(`/api/e-sign/envelope/delete/${agreementId}`);
               if (response.status === 200) {
                 console.log('Envelope status updated to deleted:', agreementId);
-                alert('Agreement deleted successfully. It has been moved to the deleted tab.');
+                Swal.fire({
+                  title: 'Success!',
+                  text: 'Agreement deleted successfully. It has been moved to the deleted tab.',
+                  icon: 'success',
+                  confirmButtonText: 'OK'
+                });
                 // Refresh the list after deletion
                 await fetchEnvelopes();
               }
             } catch (error) {
               console.error('Error deleting envelope:', error);
-              alert('Failed to delete agreement. Please try again.');
+              Swal.fire({
+                title: 'Error',
+                text: 'Failed to delete agreement. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+              });
             }
           }
           break;
@@ -900,34 +1043,32 @@ const AgreementPage: React.FC = () => {
 
       {/* Search + filter bar to match screenshot */}
       {selectedIds.size === 0 && (
-      <div className="mb-6">
-        <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between" data-tour="filter-bar">
-          <div className="flex-1">
-            <div className="relative max-w-lg">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search Envelopes"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                data-tour="search-input"
-              />
+        <div className="mb-6">
+          <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between" data-tour="filter-bar">
+            <div className="flex-1">
+              <div className="relative max-w-4xl">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search Envelopes"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  data-tour="search-input"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={(e) => openHeaderDropdown('date', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getDateButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
+              <button onClick={(e) => openHeaderDropdown('status', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getStatusButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
+              
+              <button onClick={handleClearFilters} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-sm text-sm hover:bg-gray-200">Clear</button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={(e) => openHeaderDropdown('date', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getDateButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
-            <button onClick={(e) => openHeaderDropdown('status', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getStatusButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
-            <button onClick={(e) => openHeaderDropdown('sender', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getSenderButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
-            <button onClick={(e) => openHeaderDropdown('quick', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getQuickViewsButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
-            <button onClick={(e) => openHeaderDropdown('advanced', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getAdvancedButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
-            <button onClick={handleClearFilters} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-sm text-sm hover:bg-gray-200">Clear</button>
-          </div>
         </div>
-      </div>
       )}
 
-      
+
 
       {/* Agreements Table */}
       <div className="relative" data-tour="agreements-table">
@@ -959,14 +1100,14 @@ const AgreementPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        
+
                         <div>
                           <button
                             onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
                             className="text-left text-sm font-medium text-indigo-700 hover:underline"
                             title="View envelope details"
                           >
-                             {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
+                            {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
                           </button>
                           <div className="text-sm text-gray-500">To: {agreement.primaryRecipientName || '-'}</div>
                         </div>
@@ -978,7 +1119,7 @@ const AgreementPage: React.FC = () => {
                           <div className="relative h-[4px] bg-gray-200 rounded-full">
                             <span className="absolute -top-[2px] left-0 w-1.5 h-1.5 bg-gray-600 rounded-full"></span>
                             <span className="absolute -top-[2px] right-0 w-1.5 h-1.5 bg-gray-600 rounded-full"></span>
-                          
+
                           </div>
                           <div className="mt-2 text-sm text-gray-900 underline decoration-dotted">
                             {`Waiting for ${agreement.waitingFor || 'recipient'}`}
@@ -1022,7 +1163,7 @@ const AgreementPage: React.FC = () => {
                           <button
                             onClick={() => handleRowResend(agreement)}
                             disabled={rowResendLoadingId === agreement.id}
-                            className={`px-3 py-1.5 border border-gray-300 rounded-sm text-sm ${rowResendLoadingId===agreement.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'} inline-flex items-center gap-2`}
+                            className={`px-3 py-1.5 border border-gray-300 rounded-sm text-sm ${rowResendLoadingId === agreement.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'} inline-flex items-center gap-2`}
                           >
                             {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                           </button>
@@ -1045,30 +1186,50 @@ const AgreementPage: React.FC = () => {
                           </button>
                         )}
                         {agreement.status === 'deleted' && (
-                          <button
-                            onClick={() => handleRestore(agreement.id)}
-                            className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
-                          >
-                            Restore
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleRestore(agreement.id)}
+                              className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
+                            >
+                              Restore
+                            </button>
+                            <button
+                              onClick={() => handlePermanentDelete(agreement.id)}
+                              className="px-3 py-1.5 border border-red-300 rounded-sm text-sm text-red-700 hover:bg-red-50 inline-flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete Permanently
+                            </button>
+                          </>
                         )}
-                        <button
+
+                        {agreement.status !== 'deleted' && (
+                          <button
                           onClick={(e) => {
                             const target = e.currentTarget as HTMLElement;
                             const rect = target.getBoundingClientRect();
                             const menuWidth = 224;
+                            const menuHeight = 180; // approximate menu height (adjust as needed)
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
+                          
                             const left = Math.max(8, rect.right - menuWidth + window.scrollX);
-                            const top = rect.bottom + window.scrollY + 8;
+                            const top = openUpward
+                              ? rect.top + window.scrollY - menuHeight - 8 // open upward
+                              : rect.bottom + window.scrollY + 8; // open downward
+                          
                             setMenuPosition({ top, left });
                             setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
                           }}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-sm"
-                          title="More options"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-sm"
+                            title="More options"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        )}
+
                         {openMenuId === agreement.id && menuPosition && (
-                          <div className="fixed inset-0 z-40" onClick={() => { setOpenMenuId(null); setMenuPosition(null); }} />
+                          <div className="fixed inset-0 z-1" onClick={() => { setOpenMenuId(null); setMenuPosition(null); }} />
                         )}
                       </div>
                     </td>
@@ -1121,7 +1282,7 @@ const AgreementPage: React.FC = () => {
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  
+
                   {/* Page numbers */}
                   {getPaginationPages().map((page, index) => {
                     if (page === '...') {
@@ -1139,17 +1300,16 @@ const AgreementPage: React.FC = () => {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          pageNum === currentPage
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pageNum === currentPage
                             ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                             : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
                     );
                   })}
-                  
+
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
@@ -1158,7 +1318,7 @@ const AgreementPage: React.FC = () => {
                     <ChevronRight className="h-5 w-5" />
                   </button>
                 </nav>
-                
+
                 {/* Page jump input */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-700">Go to</span>
@@ -1206,12 +1366,12 @@ const AgreementPage: React.FC = () => {
           const tooltipHeight = 200; // approximate height
           const spacing = 12; // space between tooltip and target
           const padding = 16; // padding from viewport edges
-          
+
           // Use manual position if dragging, otherwise calculate position
           let tooltipLeft: number;
           let tooltipTop: number;
           const targetCenterX = targetRect.left + (targetRect.width / 2);
-          
+
           if (tooltipPosition) {
             // Use manual position from dragging
             tooltipLeft = tooltipPosition.x;
@@ -1225,27 +1385,27 @@ const AgreementPage: React.FC = () => {
             } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
               tooltipLeft = window.innerWidth - tooltipWidth - padding;
             }
-            
+
             // Calculate vertical position - prefer below, but show above if not enough space
             const spaceBelow = window.innerHeight - targetRect.bottom - spacing;
             const spaceAbove = targetRect.top - spacing;
             const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
-            
-            tooltipTop = showAbove 
+
+            tooltipTop = showAbove
               ? targetRect.top - tooltipHeight - spacing
               : targetRect.bottom + spacing;
           }
-          
+
           // Calculate arrow position (centered on target element) - only show if not manually positioned
           const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
           const arrowPadding = 20;
           const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
-          
+
           // Determine arrow direction
           const spaceBelow = window.innerHeight - targetRect.bottom - spacing;
           const spaceAbove = targetRect.top - spacing;
           const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
-          
+
           return (
             <>
               {/* Tooltip - styled like the tooltip UI */}
@@ -1261,7 +1421,7 @@ const AgreementPage: React.FC = () => {
                 {/* Tooltip box */}
                 <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
                   {/* Draggable header */}
-                  <div 
+                  <div
                     className="px-4 py-3 font-semibold cursor-move select-none"
                     onMouseDown={handleDragStart}
                     style={{ userSelect: 'none' }}
@@ -1275,7 +1435,7 @@ const AgreementPage: React.FC = () => {
                     <div className="text-xs text-white-900">Step {tourStepIndex + 1} of {tourSteps.length}</div>
                     <div className="flex items-center gap-2">
                       <button onClick={closeTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
-                      <button onClick={prevStep} disabled={tourStepIndex===0} className={`px-3 py-1.5 border border-white-900 rounded-sm text-sm ${tourStepIndex===0 ? 'cursor-not-allowed text-white-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                      <button onClick={prevStep} disabled={tourStepIndex === 0} className={`px-3 py-1.5 border border-white-900 rounded-sm text-sm ${tourStepIndex === 0 ? 'cursor-not-allowed text-white-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
                       {tourStepIndex < tourSteps.length - 1 ? (
                         <button onClick={nextStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
                       ) : (
@@ -1285,9 +1445,9 @@ const AgreementPage: React.FC = () => {
                   </div>
                   {/* Arrow pointing to target - only show if not manually positioned */}
                   {!tooltipPosition && (
-                    <div 
+                    <div
                       className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
-                      style={{ 
+                      style={{
                         left: `${constrainedArrowLeft}px`,
                         transform: 'translateX(-50%)'
                       }}
@@ -1326,7 +1486,7 @@ const AgreementPage: React.FC = () => {
                             }}
                             className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left"
                           >
-                            <span className={`inline-block w-4 h-4 rounded-full border ${selectedDateIdx===idx?'border-purple-600 ring-4 ring-purple-200':'border-gray-400'}`}></span>
+                            <span className={`inline-block w-4 h-4 rounded-full border ${selectedDateIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
                             <span>{label}</span>
                           </button>
                         </li>
@@ -1365,7 +1525,7 @@ const AgreementPage: React.FC = () => {
                     {statusOptions.map((label, idx) => (
                       <li key={label}>
                         <button onClick={() => { setSelectedStatusIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedStatusIdx===idx?'border-purple-600 ring-4 ring-purple-200':'border-gray-400'}`}></span>
+                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedStatusIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
                           <span>{label}</span>
                         </button>
                       </li>
@@ -1377,7 +1537,7 @@ const AgreementPage: React.FC = () => {
                     {senderOptions.map((label, idx) => (
                       <li key={label}>
                         <button onClick={() => { setSelectedSenderIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedSenderIdx===idx?'border-purple-600 ring-4 ring-purple-200':'border-gray-400'}`}></span>
+                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedSenderIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
                           <span>{label}</span>
                         </button>
                       </li>
@@ -1389,7 +1549,7 @@ const AgreementPage: React.FC = () => {
                     {quickOptions.map((label, idx) => (
                       <li key={label}>
                         <button onClick={() => { setSelectedQuickIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedQuickIdx===idx?'border-purple-600 ring-4 ring-purple-200':'border-gray-400'}`}></span>
+                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedQuickIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
                           <span>{label}</span>
                         </button>
                       </li>
@@ -1401,7 +1561,7 @@ const AgreementPage: React.FC = () => {
                     {advancedOptions.map((label, idx) => (
                       <li key={label}>
                         <button onClick={() => { setSelectedAdvancedIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedAdvancedIdx===idx?'border-purple-600 ring-4 ring-purple-200':'border-gray-400'}`}></span>
+                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedAdvancedIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
                           <span>{label}</span>
                         </button>
                       </li>
@@ -1416,13 +1576,13 @@ const AgreementPage: React.FC = () => {
             </div>
           ) : (
             <div className="p-2 w-80">
-              <button onClick={() => { setSelectedShared('user'); closeHeaderMenu(); }} className={`w-full px-2 py-2 flex items-center gap-2 rounded-sm ${selectedShared==='user' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>
-                {selectedShared==='user' && <Check className="w-4 h-4" />}<span>{currentUserName || 'Current User'}</span>
+              <button onClick={() => { setSelectedShared('user'); closeHeaderMenu(); }} className={`w-full px-2 py-2 flex items-center gap-2 rounded-sm ${selectedShared === 'user' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>
+                {selectedShared === 'user' && <Check className="w-4 h-4" />}<span>{currentUserName || 'Current User'}</span>
               </button>
               <div className="mt-2 px-2 py-1 text-[10px] tracking-wide text-gray-500">SHARED ACCESS</div>
-              <button onClick={() => { setSelectedShared('viewAll'); closeHeaderMenu(); setIsSharedWithMeOpen(true); }} className={`w-full text-left px-2 py-2 rounded-sm ${selectedShared==='viewAll' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>View All</button>
+              <button onClick={() => { setSelectedShared('viewAll'); closeHeaderMenu(); setIsSharedWithMeOpen(true); }} className={`w-full text-left px-2 py-2 rounded-sm ${selectedShared === 'viewAll' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>View All</button>
               <div className="mt-2 px-2 py-1 text-[10px] tracking-wide text-gray-500">SHARED ENVELOPES (LEGACY)</div>
-              <button onClick={() => { setSelectedShared('selectUser'); closeHeaderMenu(); setIsSharedEnvelopesOpen(true); }} className={`w-full text-left px-2 py-2 rounded-sm ${selectedShared==='selectUser' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>Select User</button>
+              <button onClick={() => { setSelectedShared('selectUser'); closeHeaderMenu(); setIsSharedEnvelopesOpen(true); }} className={`w-full text-left px-2 py-2 rounded-sm ${selectedShared === 'selectUser' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>Select User</button>
             </div>
           )}
         </div>
@@ -1483,8 +1643,8 @@ const AgreementPage: React.FC = () => {
             <button onClick={() => setShowMoveDialog(false)} className="absolute right-6 top-6 text-2xl text-[#3E2B66]">✕</button>
             <h3 className="text-[22px] font-semibold text-[#3E2B66] mb-6">Move to Folder</h3>
             <div className="space-y-2 mb-6">
-              {['Inbox','Sent','test'].map((f) => (
-                <button key={f} onClick={() => setSelectedFolder(f)} className={`w-full text-left px-4 py-3 rounded-sm border ${selectedFolder===f ? 'bg-gray-100 border-gray-300' : 'border-transparent hover:bg-gray-50'}`}>{f}</button>
+              {['Inbox', 'Sent', 'test'].map((f) => (
+                <button key={f} onClick={() => setSelectedFolder(f)} className={`w-full text-left px-4 py-3 rounded-sm border ${selectedFolder === f ? 'bg-gray-100 border-gray-300' : 'border-transparent hover:bg-gray-50'}`}>{f}</button>
               ))}
             </div>
             <div className="flex items-center justify-between">

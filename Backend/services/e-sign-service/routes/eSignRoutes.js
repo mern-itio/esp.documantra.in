@@ -10,6 +10,7 @@ const {
          getRecipientByEmail,
          envelopeArchive,
          envelopeDelete,
+         envelopePermanentDelete,
          envelopeReminder,
          duplicateEnvelope,
          activityLogs,
@@ -53,6 +54,7 @@ router.post('/send-envelope/:envelopeId',sendEnvelope);
 router.get('/get-recipient/:email',getRecipientByEmail);
 router.post('/envelope/archive/:envelopeId',envelopeArchive);
 router.post('/envelope/delete/:envelopeId',envelopeDelete);
+router.post('/envelope/permanent-delete/:envelopeId',envelopePermanentDelete);
 router.post('/envelope/reminder/:envelopeId',envelopeReminder);
 router.get('/envelope/duplicate/:envelopeId', duplicateEnvelope);
 router.get('/envelope/activity-log/:envelopeId', activityLogs);
