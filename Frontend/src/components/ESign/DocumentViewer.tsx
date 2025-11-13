@@ -6,7 +6,7 @@ import { eSignApi } from "../../services/apiHelper";
 import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
-import { Upload, Stamp as StampIcon, X } from "lucide-react";
+import { Upload, Stamp as StampIcon, X, Pencil } from "lucide-react";
 
 interface Props {
   // Backward compatible single document
@@ -71,6 +71,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
+  const [isEditingSignature, setIsEditingSignature] = useState<boolean>(false);
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
   const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
@@ -341,13 +342,25 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
   // click-to-sign behavior removed dependency on page concept; keep disabled to avoid unintended opens on scroll viewport clicks
 
-  const handleFieldClick = (field: any) => {
+  const handleFieldClick = (fieldOrId: any, options?: { isEdit?: boolean }) => {
+    let field = fieldOrId;
+    if (typeof fieldOrId === "string") {
+      field =
+        signatureFields.find(
+          (f: any) => (f._id || f.fieldId)?.toString?.() === fieldOrId
+        ) || null;
+    }
+    if (!field) return;
+
+    setIsEditingSignature(!!options?.isEdit);
+
     const af: ActiveField = {
       ...field,
       status: "pending",
     };
     const idx = actionableFields.findIndex(
-      (af) => af._id === field._id || af.fieldId === field.fieldId
+      (candidate) =>
+        candidate._id === field._id || candidate.fieldId === field.fieldId
     );
     if (idx >= 0) setCurrentActionableIndex(idx);
     setActiveField(af);
@@ -917,7 +930,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     selfSigner: any[];
     localSignedMap: Record<string, string>;
     recipientSignature: string | null;
-    onFieldClick: (field: any) => void;
+    onFieldClick: (field: any, options?: { isEdit?: boolean }) => void;
     normalizePage: (field: any) => number;
     pageWidth: number;
     pageScale: number;
@@ -1111,9 +1124,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   left: 0,
                                   width: scaledWidth,
                                   height: scaledHeight,
-                                  pointerEvents: allowSigning ? "auto" : "none",
+                                  pointerEvents: isSigned ? "auto" : allowSigning ? "auto" : "none",
                                   fontSize: fieldFontSize,
-                                  padding: `${boxPaddingY}px ${boxPaddingX}px`,
+                                  padding: `0px ${boxPaddingX-15}px`,
                                 }}
                                 className={`flex items-center justify-center font-semibold rounded border-2 ${isSigned
                                   ? "border-green-500"
@@ -1140,11 +1153,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     <span>Signing...</span>
                                   </div>
                                 ) : isSigned ? (
-                                  <img
-                                    src={signedImage as string}
-                                    alt="Signed"
-                                    className="h-full w-full object-contain"
-                                  />
+                                  <div className="relative w-full h-full">
+                                    <img
+                                      src={signedImage as string}
+                                      alt="Signed"
+                                      className="h-full w-full object-contain rounded"
+                                    />
+                                    <button
+                                      type="button"
+                                      className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg border-2 border-white p-1.5 hover:scale-105 focus:scale-105 transition-transform focus:outline-none"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onFieldClick(field, { isEdit: true });
+                                      }}
+                                      aria-label="Edit signature"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 ) : !allFilled ? (
                                   "Fill all other fields first"
                                 ) : isCurrentUser && recipientSignature ? (
@@ -1873,16 +1899,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         <SignPad
           isSignPad={!!activeField}
           setIsSignPad={(open: boolean) => {
-            if (!open) setActiveField(null);
+            if (!open){
+               setActiveField(null);
+               setIsEditingSignature(false);
+            }
           }}
           activeField={activeField}
           currentUserId={currentUserId}
           documentId={(activeField as any)?.documentId || (activeField as any)?.docId || (document && (document as any).id) || ""}
           envelopeID={envelopeID}
           defaultSign={null}
+          mode={isEditingSignature ? "update" : "add"}
           selfValue={selfValue || ""}
           cycleId={cycleId || ""}
-          onSignatureSaved={(signatureUrl: string) => {
+          onSignatureSaved={(signatureUrl: string,fieldId: string) => {
+            if(fieldId){
+              // for updating multiple signature fields with same signature
+              setLocalSignedMap((p) => ({ ...(p || {}), [fieldId]: signatureUrl }));
+            }
             setRecipientSignature(signatureUrl);
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
