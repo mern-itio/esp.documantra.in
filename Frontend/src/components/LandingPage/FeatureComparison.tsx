@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 const FeatureComparison = () => {
   const competitors = [
-    { name: 'DraftnSign', color: 'bg-primary-600' },
+    { name: 'DraftnSign', color: 'bg-[#260559]' },
     { name: 'DocuSign', color: 'bg-gray-400' },
     { name: 'HelloSign', color: 'bg-gray-400' },
     { name: 'Adobe Sign', color: 'bg-gray-400' }
@@ -87,7 +87,7 @@ const FeatureComparison = () => {
 
         <div className="text-center mt-8">
           <Link to="/feature-comparison">
-            <button className="btn-primary text-lg px-8 py-4">
+            <button className="bg-[#260559] text-white text-lg px-8 py-4 rounded-md">
               See Full Comparison
             </button>
           </Link>

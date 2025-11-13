@@ -146,10 +146,10 @@ const ComprehensivePlatform = () => {
           <div className="grid md:grid-cols-4 gap-8">
             {workflowSteps.map((step, index) => (
               <div key={index} className="text-center relative">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <step.icon className="h-8 w-8 text-primary-600" />
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"   style={{ backgroundColor: 'rgba(38, 5, 89, 0.1)' }}>
+                  <step.icon className="h-8 w-8 text-[#260559]" />
                 </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                <div className="absolute -top-2 -right-2 w-8 h-8 text-white rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: '#260559' }}>
                   {step.step}
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-2">{step.title}</h4>
@@ -170,8 +170,8 @@ const ComprehensivePlatform = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {benefits.map((benefit, index) => (
             <div key={index} className=" cursor-pointer border border-transparent hover:border-blue-500 text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <benefit.icon className="h-6 w-6 text-primary-600" />
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgba(38, 5, 89, 0.1)' }}>
+                <benefit.icon className="h-6 w-6 text-[#260559]" />
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">{benefit.title}</h4>
               <p className="text-gray-600 text-sm">{benefit.description}</p>
@@ -180,7 +180,8 @@ const ComprehensivePlatform = () => {
         </div>
 
         {/* Team Sharing Feature Highlight */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 mb-12 text-white">
+      <div className="p-8 mb-12 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
+
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -248,7 +249,7 @@ const ComprehensivePlatform = () => {
                   </div>
                 </div>
                 <Link to="/login">
-                  <button className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                  <button className="w-full text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors" style={{ backgroundColor: '#260559' }}>
                     + Invite Team Member
                   </button>
 
@@ -260,7 +261,8 @@ const ComprehensivePlatform = () => {
         </div>
 
         {/* Free Plan Highlight */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-center text-white">
+     <div className="p-8 mb-12 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
+
           <div className="max-w-3xl mx-auto">
             <h3 className="text-2xl font-bold mb-4">
               Start with Our Free Forever Plan
@@ -288,7 +290,7 @@ const ComprehensivePlatform = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {/* Primary Filled (White with Icon) */}
               <Link to="/signup">
-               <button className="flex items-center justify-center gap-2 bg-white text-blue-600 hover:bg-gray-100 font-semibold text-base px-6 py-3 rounded-md shadow-md transition-all duration-200">
+               <button className="flex items-center justify-center gap-2 bg-white text-[#260559] hover:bg-gray-100 font-semibold text-base px-6 py-3 rounded-md shadow-md transition-all duration-200">
                 Start Free Forever
                 <ArrowRight className="h-4 w-4 align-middle" />
               </button>

@@ -155,7 +155,7 @@ app.post('/webhook', (req, res) => {
     <div className="min-h-screen bg-gray-50 mt-8 pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 mb-8 text-white">
+        <div className="bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white rounded-2xl shadow-lg p-8 mb-8 text-white">
           <div className="max-w-4xl">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">API Documentation</h1>
             <p className="text-xl text-primary-100 mb-6">
@@ -198,7 +198,7 @@ app.post('/webhook', (req, res) => {
                 <button
                   onClick={() => setActiveSidebar('introduction')}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'introduction' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+                    activeSidebar === 'introduction' ? 'bg-[#260559]-50 text-[#260559]' : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   Introduction
@@ -272,19 +272,19 @@ app.post('/webhook', (req, res) => {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="font-medium text-gray-900 mb-3 text-sm">Resources</h3>
                 <div className="space-y-2">
-                  <a href="#" className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm">
+                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
                     <FileText className="h-4 w-4" />
                     <span>API Reference</span>
                   </a>
-                  <a href="#" className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm">
+                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
                     <Code className="h-4 w-4" />
                     <span>Code Examples</span>
                   </a>
-                  <a href="#" className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm">
+                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
                     <Terminal className="h-4 w-4" />
                     <span>CLI Reference</span>
                   </a>
-                  <a href="#" className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm">
+                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
                     <ExternalLink className="h-4 w-4" />
                     <span>API Status</span>
                   </a>
@@ -301,7 +301,7 @@ app.post('/webhook', (req, res) => {
                 <button
                   onClick={() => setActiveTab('overview')}
                   className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'overview' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-600 hover:text-gray-900'
+                    activeTab === 'overview' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Overview
@@ -309,7 +309,7 @@ app.post('/webhook', (req, res) => {
                 <button
                   onClick={() => setActiveTab('reference')}
                   className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'reference' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-600 hover:text-gray-900'
+                    activeTab === 'reference' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   API Reference
@@ -317,7 +317,7 @@ app.post('/webhook', (req, res) => {
                 <button
                   onClick={() => setActiveTab('guides')}
                   className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'guides' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-600 hover:text-gray-900'
+                    activeTab === 'guides' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Guides
@@ -325,7 +325,7 @@ app.post('/webhook', (req, res) => {
                 <button
                   onClick={() => setActiveTab('examples')}
                   className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'examples' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-600 hover:text-gray-900'
+                    activeTab === 'examples' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Examples
@@ -403,8 +403,8 @@ app.post('/webhook', (req, res) => {
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Send className="h-5 w-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
+                          <Send className="h-5 w-5 text-white" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">Prepare Envelopes</h3>
@@ -412,8 +412,8 @@ app.post('/webhook', (req, res) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Code className="h-5 w-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
+                          <Code className="h-5 w-5 text-white" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">Template Integration</h3>
@@ -423,8 +423,8 @@ app.post('/webhook', (req, res) => {
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <BarChart3 className="h-5 w-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
+                          <BarChart3 className="h-5 w-5 text-white" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">Status Tracking</h3>
@@ -432,8 +432,8 @@ app.post('/webhook', (req, res) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Webhook className="h-5 w-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
+                          <Webhook className="h-5 w-5 text-white" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">Webhook Events</h3>
@@ -512,7 +512,7 @@ app.post('/webhook', (req, res) => {
                     </table>
                   </div>
                   <div className="mt-6 text-center">
-                    <Link to="/pricing" className="text-primary-600 hover:text-primary-700 font-medium">
+                    <Link to="/pricing" className="text-[#260559]-600 hover:text-primary-700 font-medium">
                       View full pricing details →
                     </Link>
                   </div>
@@ -835,7 +835,7 @@ app.post('/webhook', (req, res) => {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 mt-12 text-white">
+        <div className="bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white rounded-2xl shadow-lg p-8 mt-12 text-white">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <h2 className="text-2xl font-bold mb-4">Ready to Integrate?</h2>
@@ -843,10 +843,10 @@ app.post('/webhook', (req, res) => {
                 Get started with the Draft&Sign API today. Sign up for a free account to receive your API key and start building.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl">
+                <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl">
                   Get Your API Key
                 </Link>
-                <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-6 rounded-lg transition-colors">
+                <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-6 rounded-lg transition-colors">
                   Contact Developer Support
                 </Link>
               </div>

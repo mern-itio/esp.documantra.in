@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 const CTASection = () => {
   return (
-    <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-800 text-white">
+    <section className="p-8 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
       <div className="container-max">
         <div className="text-center max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
@@ -15,7 +15,7 @@ const CTASection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link to="/signup">
-            <button className="flex items-center justify-center gap-2 bg-white text-blue-600 hover:bg-gray-100 font-semibold text-base px-6 py-3 rounded-md shadow-md hover:shadow-lg transition duration-200">
+            <button className="flex items-center justify-center gap-2 bg-white text-[#260559] hover:bg-gray-100 font-semibold text-base px-6 py-3 rounded-md shadow-md hover:shadow-lg transition duration-200">
               Start Free Forever
               <ArrowRight className="h-4 w-4 align-middle" />
             </button>

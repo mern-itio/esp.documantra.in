@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SubscriptionService, SubscriptionStorage } from '../services/subscriptionService';
 import type { SubscriptionPlan } from '../types';
+import { useAuth } from '../components/AuthService/AuthContext';
 
 interface SubscriptionContextType {
   userPlan: SubscriptionPlan | null;
@@ -34,9 +35,17 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const [userPlan, setUserPlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   // Fetch subscription plan from API
   const refreshPlan = async () => {
+    // Only fetch plan if user is authenticated
+    if (!isAuthenticated) {
+      setLoading(false);
+      setUserPlan(null);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -48,6 +57,14 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch subscription plan';
       setError(errorMessage);
       console.error('Error refreshing subscription plan:', err);
+      // If 403 or 401, user is not authenticated, clear plan
+      if (err && typeof err === 'object' && 'response' in err) {
+        const httpError = err as { response?: { status?: number } };
+        if (httpError.response?.status === 403 || httpError.response?.status === 401) {
+          setUserPlan(null);
+          SubscriptionStorage.clearPlan();
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -134,6 +151,14 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   // Load subscription plan from localStorage on mount, then fetch from API if needed
   useEffect(() => {
     const loadInitialPlan = async () => {
+      // If user is not authenticated, don't try to fetch plan
+      if (!isAuthenticated) {
+        setLoading(false);
+        setUserPlan(null);
+        SubscriptionStorage.clearPlan();
+        return;
+      }
+
       // First, try to load from localStorage
       const storedPlan = SubscriptionStorage.getPlan();
       if (storedPlan) {
@@ -145,8 +170,19 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
           setUserPlan(plan);
           SubscriptionStorage.savePlan(plan);
         } catch (err) {
-          // If refresh fails, keep using stored plan
-          console.warn('Failed to refresh subscription plan, using stored plan:', err);
+          // If refresh fails (e.g., 403), clear stored plan
+          if (err && typeof err === 'object' && 'response' in err) {
+            const httpError = err as { response?: { status?: number } };
+            if (httpError.response?.status === 403 || httpError.response?.status === 401) {
+              setUserPlan(null);
+              SubscriptionStorage.clearPlan();
+            } else {
+              // Other errors, keep using stored plan
+              console.warn('Failed to refresh subscription plan, using stored plan:', err);
+            }
+          } else {
+            console.warn('Failed to refresh subscription plan, using stored plan:', err);
+          }
         }
       } else {
         // No stored plan, fetch from API
@@ -155,7 +191,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     };
 
     loadInitialPlan();
-  }, []);
+  }, [isAuthenticated]);
 
   const value: SubscriptionContextType = {
     userPlan,

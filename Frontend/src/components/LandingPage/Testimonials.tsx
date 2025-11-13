@@ -65,8 +65,8 @@ const Testimonials = () => {
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <stat.icon className="h-8 w-8 text-primary-600" />
+                <div className="w-16 h-16 bg-[#260559]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <stat.icon className="h-8 w-8 text-[#260559]" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
                 <div className="text-gray-600">{stat.label}</div>
@@ -92,7 +92,7 @@ const Testimonials = () => {
               </p>
               
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 bg-[#260559]/60 rounded-full flex items-center justify-center text-white font-bold">
                   {testimonial.avatar}
                 </div>
                 <div>

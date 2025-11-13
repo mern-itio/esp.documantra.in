@@ -26,6 +26,10 @@ const userAuthProviderRoutes = require('./src/routes/userAuthProviderRoutes');
 // Internal route used by auth-service to create free plan (no auth)
 app.post('/user-plan/create-free', createFreePlanForUser);
 
+// Public route for listing plans (no auth required) - for landing page pricing
+const { listPlans } = require('./src/controllers/plansController');
+app.get('/user-plan/public/all', listPlans);
+
 // User plan routes - require user token
 app.use('/user-plan', verifyJWT('user'));
 app.use('/user-plan', userPlanRoutes);

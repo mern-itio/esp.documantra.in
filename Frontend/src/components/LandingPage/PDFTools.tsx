@@ -113,7 +113,7 @@ const PDFTools = () => {
                   key={key}
                   onClick={() => setActiveTab(key as keyof ToolCategories)}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${activeTab === key
-                    ? 'bg-primary-600 text-white shadow-lg'
+                    ? 'bg-[#260559] text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
@@ -143,10 +143,10 @@ const PDFTools = () => {
                     className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-primary-300 transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                        <FileText className="h-5 w-5 text-primary-600" />
+                      <div className="w-10 h-10 bg-[#260559]/10 rounded-lg flex items-center justify-center group-hover:bg-[#260559]/20 transition-colors">
+                        <FileText className="h-5 w-5 text-[#260559]" />
                       </div>
-                      <span className="font-medium text-gray-900 group-hover:text-primary-600 transition-colors">
+                      <span className="font-medium text-gray-900 group-hover:text-[#260559]/60 transition-colors">
                         {tool}
                       </span>
                     </div>
@@ -175,7 +175,7 @@ const PDFTools = () => {
             📝 Tools are free to use; users must sign up to download edited files.
           </p>
           <button
-            className="btn-primary text-lg px-8 py-4"
+            className="bg-[#260559] text-white text-lg px-8 py-4 rounded-sm"
             onClick={() => setShowAllTools(prev => !prev)}
           >
             {showAllTools ? 'Back to Tabs' : 'View All Tools'}

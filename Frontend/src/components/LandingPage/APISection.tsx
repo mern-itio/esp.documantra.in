@@ -107,7 +107,7 @@ app.post('/webhook', (req, res) => {
             <div className="grid sm:grid-cols-2 gap-6">
               {features.map((feature, index) => (
                 <div key={index} className="space-y-3">
-                  <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-[#260559]/60 rounded-lg flex items-center justify-center">
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="font-semibold text-white">{feature.title}</h3>
@@ -137,10 +137,10 @@ app.post('/webhook', (req, res) => {
 
             <div className="flex gap-4">
               <Link to='/api-documentation'>
-                <button className="btn-primary">View API Docs</button>
+                <button className="bg-[#260559] text-white rounded-sm px-4 py-4">View API Docs</button>
               </Link>
               <Link to='/login'>
-                <button className="btn-secondary">Get Your API Key</button>
+                <button className="border border-[#260559] bg-white text-[#260559] font-semibold rounded-sm px-4 py-4">Get Your API Key</button>
               </Link>
             </div>
           </div>

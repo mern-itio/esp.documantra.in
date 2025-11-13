@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Globe, Shield, Search, ChevronDown, Check, Award, MapPin, FileText, Edit, Send, Archive, Zap, ArrowRight, CheckCircle, AlertCircle, Scale, FileCheck, UserCheck, ShieldCheck, Database, Copy } from 'lucide-react'
+import { Globe, Shield, Search, ChevronDown, Check, Award, MapPin, FileText, Edit, Send, Archive, Zap, CheckCircle, AlertCircle, Scale, FileCheck, UserCheck, ShieldCheck, Database, Copy, ChevronRight } from 'lucide-react'
 
 const Compliance = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -192,7 +192,7 @@ const Compliance = () => {
           </div>
         </div>
       ),
-      color: 'bg-blue-100 text-blue-800'
+      color: 'bg-[#260559]/5 text-[#260559]'
     },
     {
       name: '21 CFR Part 11',
@@ -508,14 +508,14 @@ const Compliance = () => {
 
           {/* User Location Banner */}
           {userCountry && (
-            <div className="bg-primary-100 border border-primary-200 rounded-lg p-4 max-w-md mx-auto mb-8">
-              <div className="flex items-center justify-center gap-2 text-primary-800">
+            <div className="bg-[#260559]/10 border border-[#260559]/20 rounded-lg p-4 max-w-md mx-auto mb-8">
+              <div className="flex items-center justify-center gap-2 text-[#260559]/80">
                 <MapPin className="h-5 w-5" />
                 <span className="font-medium">
                   Based on your location: {userCountry}
                 </span>
               </div>
-              <p className="text-sm text-primary-700 mt-1">
+              <p className="text-sm text-[#260559]/80 mt-1">
                 Your country's compliance information is highlighted below
               </p>
             </div>
@@ -524,7 +524,7 @@ const Compliance = () => {
           {/* Trust Badges */}
           <div className="flex flex-wrap justify-center gap-6 mb-8">
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
-              <Globe className="h-5 w-5 text-blue-600" />
+              <Globe className="h-5 w-5 text-[#260559]" />
               <span className="text-sm font-medium text-gray-700">15+ Countries Covered</span>
             </div>
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
@@ -572,7 +572,7 @@ const Compliance = () => {
                     <div
                       key={index}
                       className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                        index === activeStep ? 'bg-primary-600 w-8' : 'bg-gray-300'
+                        index === activeStep ? 'bg-[#260559]/90 w-8' : 'bg-gray-300'
                       }`}
                     />
                   ))}
@@ -649,15 +649,15 @@ const Compliance = () => {
                   onClick={() => setActiveStep((prev) => (prev - 1 + documentLifecycle.length) % documentLifecycle.length)}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
-                  <ArrowRight className="h-4 w-4 rotate-180" />
+                  <ChevronRight className="h-4 w-4 rotate-180" />
                   Previous
                 </button>
                 <button
                   onClick={() => setActiveStep((prev) => (prev + 1) % documentLifecycle.length)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#260559]/90 hover:bg-[#260559]/80 text-white rounded-lg transition-colors"
                 >
                   Next
-                  <ArrowRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -690,7 +690,7 @@ const Compliance = () => {
             </div>
 
             {/* Key Benefits */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white">
+           <div className="p-8 mb-12 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
               <h4 className="text-2xl font-bold text-center mb-8">
                 Why Choose Draft&Sign for Legal Compliance?
               </h4>
@@ -729,7 +729,7 @@ const Compliance = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === tab.id
-                  ? 'bg-primary-600 text-white shadow-lg'
+                  ? 'bg-[#260559]/90 text-white shadow-lg'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -877,7 +877,7 @@ const Compliance = () => {
 
         {/* CTA Section */}
         <div className="text-center">
-          <button className="btn-primary text-lg px-8 py-4 mb-4">
+          <button className="bg-[#260559] text-white rounded-sm px-8 py-4 mb-4">
             View Complete Compliance Guide
           </button>
           <p className="text-gray-600 text-sm">

@@ -78,7 +78,10 @@ const ModernDocumentFeatures = () => {
         </div>
 
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
+          <div
+            className="inline-flex items-center gap-2 text-[#260559] px-4 py-2 rounded-full text-sm font-medium mb-6"
+            style={{ backgroundColor: 'rgba(38, 5, 89, 0.1)' }} // 10% opacity of #260559
+          >
             <Zap className="h-4 w-4" />
             All features included in every plan
           </div>

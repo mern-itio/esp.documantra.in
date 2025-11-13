@@ -53,8 +53,8 @@ const ESignature = () => {
             <div className="grid sm:grid-cols-2 gap-6">
               {features.map((feature, index) => (
                 <div key={index} className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="h-6 w-6 text-primary-600" />
+                  <div className="w-12 h-12 bg-[#260559]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <feature.icon className="h-6 w-6 text-[#260559]" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
@@ -64,7 +64,7 @@ const ESignature = () => {
               ))}
             </div>
             <Link to="/login" className="inline-block mt-4">
-              <button className="btn-primary text-lg px-8 py-4">
+              <button className="bg-[#260559] text-white text-lg px-8 py-4 rounded-sm">
                 Send Your First Envelope Free
               </button>
             </Link>
@@ -130,7 +130,7 @@ const ESignature = () => {
               </div>
 
              <Link to="/login">
-              <button className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors">
+              <button className="w-full bg-[#260559] text-white py-3 rounded-lg font-medium hover:bg-[#260559]/80 transition-colors">
                 Continue Signing Process
               </button>
               </Link>

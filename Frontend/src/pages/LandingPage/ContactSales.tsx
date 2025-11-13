@@ -146,10 +146,10 @@ const ContactSales: React.FC = () => {
                   {errors.description && <p className="text-red-600 text-xs mt-1">{errors.description}</p>}
                 </div>
 
-                <button type="submit" className="btn-primary w-full md:w-auto px-6 py-3">Submit</button>
+                <button type="submit" className="bg-[#260559] text-white rounded-md w-full md:w-auto px-6 py-3">Submit</button>
 
                 <div className="text-xs text-gray-500 mt-3">
-                  By submitting, you agree to our <Link to="/terms" className="text-primary-600">Terms</Link> and <Link to="/privacy" className="text-primary-600">Privacy Policy</Link>.
+                  By submitting, you agree to our <Link to="/terms" className="text-[#260559]">Terms</Link> and <Link to="/privacy" className="text-[#260559]">Privacy Policy</Link>.
                 </div>
               </form>
             )}

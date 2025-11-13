@@ -114,7 +114,7 @@ const Hero = () => {
             )}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/login" className='inline-block'>
-                <button className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base px-6 py-3 rounded-md shadow-md transition">
+                <button className="flex items-center justify-center gap-2 text-white font-semibold text-base px-6 py-3 rounded-md shadow-md transition" style={{backgroundColor: '#260559'}}>
                   {currentSlideData.primaryCTA}
                   <ArrowRight className="h-4 w-4 align-middle" />
                 </button>
@@ -126,7 +126,7 @@ const Hero = () => {
                     navigate("/login");
                   }
                 }}
-                className="flex items-center justify-center gap-2 border border-blue-600 text-blue-600 font-semibold text-base px-6 py-3 rounded-md hover:bg-blue-50 transition"
+                className="flex items-center justify-center gap-2 border text-blue-600 font-semibold text-base px-6 py-3 rounded-md hover:bg-blue-50 transition" style = {{borderColor: '#260559', color: '#260559'}}
               >
                 {currentSlideData.secondaryCTA === "Watch Demo" && (
                   <Play className="h-4 w-4 align-middle" />

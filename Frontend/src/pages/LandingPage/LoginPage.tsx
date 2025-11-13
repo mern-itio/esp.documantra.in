@@ -152,7 +152,7 @@ const LoginPage = () => {
                   />
                   <span className="text-sm text-gray-700">Remember me</span>
                 </label>
-                <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700">
+                <Link to="/forgot-password" className="text-sm text-[#260559]-600 hover:text-[#260559]-700">
                   Forgot password?
                 </Link>
               </div>
@@ -160,7 +160,7 @@ const LoginPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-base font-semibold px-4 py-2 rounded-md shadow-sm transition duration-200"
+                className="w-full flex items-center justify-center gap-2 bg-[#260559] hover:bg-[#260559]/80 disabled:bg-blue-400 text-white text-base font-semibold px-4 py-2 rounded-md shadow-sm transition duration-200"
               >
                 <span className="flex items-center">
                   {isLoading ? 'Signing In...' : 'Sign In'}
@@ -174,7 +174,7 @@ const LoginPage = () => {
             <div className="mt-6 text-center">
               <p className="text-gray-600">
                 Don't have an account?{' '}
-                <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
+                <Link to="/signup" className="text-[#260559]-600 hover:text-[#260559]-700 font-medium">
                   Sign up for free
                 </Link>
               </p>

@@ -246,19 +246,19 @@ const LegalTemplates = () => {
           {/* Stats */}
           <div className="flex flex-wrap justify-center gap-8 mb-8">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-600">500K+</div>
+              <div className="text-2xl font-bold text-[#260559]/60">500K+</div>
               <div className="text-sm text-gray-600">Documents Created</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-600">4.9★</div>
+              <div className="text-2xl font-bold text-[#260559]/60">4.9★</div>
               <div className="text-sm text-gray-600">Average Rating</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-600">45+</div>
+              <div className="text-2xl font-bold text-[#260559]/60">45+</div>
               <div className="text-sm text-gray-600">Legal Templates</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-600">24/7</div>
+              <div className="text-2xl font-bold text-[#260559]/60">24/7</div>
               <div className="text-sm text-gray-600">Expert Support</div>
             </div>
           </div>
@@ -318,7 +318,7 @@ const LegalTemplates = () => {
                       onClick={() => setSelectedCategory(category.id)}
                       className={`w-full flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${
                         selectedCategory === category.id
-                          ? 'bg-primary-50 border-2 border-primary-200'
+                          ? 'bg-[#260559]/10 border-2 border-[#260559]/20'
                           : 'hover:bg-gray-50 border-2 border-transparent'
                       }`}
                     >
@@ -353,7 +353,7 @@ const LegalTemplates = () => {
                     onClick={() => setSelectedTemplate(template.id)}
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                       selectedTemplate === template.id
-                        ? 'border-primary-500 bg-primary-50'
+                        ? 'border-[#260559]/50 bg-[#260559]/10'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
@@ -422,14 +422,14 @@ const LegalTemplates = () => {
               <h3 className="font-semibold text-gray-900 mb-4">Fill Template Details</h3>
               
               {/* Template Info */}
-              <div className="bg-blue-50 rounded-lg p-4 mb-6">
+              <div className="bg-[#260559]/10 rounded-lg p-4 mb-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-900">{currentTemplate.name}</span>
+                  <FileText className="h-5 w-5 text-[#260559]/60" />
+                  <span className="font-medium text-[#260559]">{currentTemplate.name}</span>
                 </div>
-                <p className="text-sm text-blue-700 mb-3">{currentTemplate.description}</p>
+                <p className="text-sm text-[#260559]/70 mb-3">{currentTemplate.description}</p>
                 
-                <div className="flex items-center gap-4 text-xs text-blue-600">
+                <div className="flex items-center gap-4 text-xs text-[#260559]/70">
                   <div className="flex items-center gap-1">
                     <Star className="h-3 w-3 text-yellow-500 fill-current" />
                     <span>{currentTemplate.rating}</span>
@@ -567,10 +567,10 @@ const LegalTemplates = () => {
               
               <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
                 <div className="flex gap-3">
-                  <button className="flex-1 btn-secondary text-sm">
+                  <button className="flex-1 btn-secondary text-sm" style={{borderColor: '#260559', color: '#260559'}}>
                     Save as Template
                   </button>
-                  <button className="flex-1 btn-primary text-sm">
+                  <button className="flex-1 bg-[#260559] text-white rounded-sm text-sm">
                     Download PDF
                   </button>
                 </div>
@@ -584,7 +584,8 @@ const LegalTemplates = () => {
 
         {/* Bottom CTA */}
         <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white">
+        <div className="p-8 mb-12 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
+
             <h3 className="text-2xl font-bold mb-4">
               Need a Custom Legal Document?
             </h3>
@@ -594,12 +595,12 @@ const LegalTemplates = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/contact-sales">
-                <button className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
+                <button className="bg-white text-[#260559]/80 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
                   Request Custom Document
                 </button>
               </Link>
               <Link to="/contact-sales">
-                <button className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
+                <button className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-all duration-200">
                   Schedule Consultation
                 </button>
               </Link>

@@ -54,11 +54,11 @@ const WorkspacePage = () => {
               Powerful analytics and management tools to run your document operations at scale.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/signup" className="btn-primary inline-flex items-center justify-center gap-2">
+              <Link to="/signup" className="btn-primary inline-flex items-center justify-center gap-2" style={{backgroundColor: '#260559'}}>
                 Start Free Forever
                 <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link to="/contact-sales" className="btn-secondary inline-flex items-center justify-center">
+              <Link to="/contact-sales" className="btn-secondary inline-flex items-center justify-center" style={{borderColor: '#260559', color: '#260559'}}>
                 Talk to Sales
               </Link>
             </div>
@@ -78,9 +78,9 @@ const WorkspacePage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {analyticsInsights.map((item, index) => (
-              <div id={slugify(item.title)} key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
-                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-                  <item.icon className="h-6 w-6 text-primary-600" />
+              <div id={slugify(item.title)} key={index} className="border border-gray-100 card-hover hover:border-[#260559] hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
+                <div className="w-12 h-12 bg-[#260559] rounded-lg flex items-center justify-center mb-4">
+                  <item.icon className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
                 <p className="text-gray-600">{item.description}</p>
@@ -102,9 +102,9 @@ const WorkspacePage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {managementTools.map((item, index) => (
-              <div id={slugify(item.title)} key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
-                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-                  <item.icon className="h-6 w-6 text-primary-600" />
+              <div id={slugify(item.title)} key={index} className="border border-gray-100 card-hover hover:border-[#260559] hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
+                <div className="w-12 h-12 bg-[#260559] rounded-lg flex items-center justify-center mb-4">
+                  <item.icon className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
                 <p className="text-gray-600">{item.description}</p>
@@ -115,7 +115,7 @@ const WorkspacePage = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-700 text-white">
+      <section className="py-20 bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Bring your workspace to the next level</h2>
@@ -123,7 +123,7 @@ const WorkspacePage = () => {
               Get full visibility and control over your documents, teams, and workflows.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
               <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">

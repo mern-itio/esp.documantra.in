@@ -83,11 +83,11 @@ const UseCasesPage = () => {
               Real-world ways teams use Draft&Sign to create, manage, and sign documents faster.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/signup" className="btn-primary inline-flex items-center justify-center gap-2">
+              <Link to="/signup" className="btn-primary inline-flex items-center justify-center gap-2" style={{backgroundColor: '#260559'}}>
                 Start Free Forever
                 <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link to="/contact-sales" className="btn-secondary inline-flex items-center justify-center">
+              <Link to="/contact-sales" className="btn-secondary inline-flex items-center justify-center" style={{borderColor: '#260559', color: '#260559'}}>
                 Talk to Sales
               </Link>
             </div>
@@ -112,8 +112,8 @@ const UseCasesPage = () => {
                 <div className="space-y-4">
                   {group.items.map((item, i) => (
                     <div key={i} className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <item.icon className="h-6 w-6 text-primary-600" />
+                      <div className="w-10 h-10 bg-[#E6E0F0] rounded-lg flex items-center justify-center flex-shrink-0">
+                        <item.icon className="h-6 w-6 text-[#260559]" />
                       </div>
                       <div>
                         <div className="font-medium text-gray-900">{item.title}</div>
@@ -141,8 +141,8 @@ const UseCasesPage = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {useCases.map((uc, index) => (
               <div id={slugify(uc.title)} key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
-                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-                  <uc.icon className="h-6 w-6 text-primary-600" />
+                <div className="w-12 h-12 bg-[#E6E0F0] rounded-lg flex items-center justify-center mb-4">
+                  <uc.icon className="h-6 w-6 text-[#260559]" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{uc.title}</h3>
                 <p className="text-gray-600">{uc.description}</p>
@@ -153,18 +153,18 @@ const UseCasesPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-700 text-white">
+      <section className="py-20 bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to streamline your workflows?</h2>
-            <p className="text-xl text-primary-100 mb-8 leading-relaxed">
+            <p className="text-xl text-[#CBB9FF] mb-8 leading-relaxed">
               Join thousands using Draft&Sign across industries to complete documents faster and more securely.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
+              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
                 Schedule Demo
               </Link>
             </div>

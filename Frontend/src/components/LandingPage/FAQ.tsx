@@ -83,7 +83,7 @@ const FAQ = () => {
         <div className="text-center mt-12">
           <p className="text-gray-600 mb-4">Still have questions?</p>
           <Link to="/contact-sales">
-            <button className="btn-secondary">
+            <button className="btn-secondary border" style={{borderColor: '#260559', color: '#260559'}}>
               Contact Support
             </button>
           </Link>

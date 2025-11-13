@@ -329,7 +329,7 @@ const Header = () => {
       }`}>
       <Toast />
       {/* Top Navigation Bar */}
-      <div className="bg-primary-600 text-white">
+      <div className="text-white" style={{backgroundColor: '#260559'}}>
         <div className="container-max">
           <div className="flex items-center justify-between h-10 text-sm">
             {/* Left side - Promotional message */}
@@ -374,7 +374,7 @@ const Header = () => {
               >
                 <button
                   ref={pdfToolsButtonRef}
-                  className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center text-gray-700 hover:text-[#260559]-600 transition-colors"
                 >
                   PDF Tools <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -451,7 +451,7 @@ const Header = () => {
                         </div>
                         <button
                           onClick={() => scrollToSection('pdf-tools')}
-                          className="bg-primary-600 text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
+                          className="bg-[#260559] text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-[#260559]/80 transition-colors"
                         >
                           View All Tools
                         </button>
@@ -468,7 +468,7 @@ const Header = () => {
                 onMouseLeave={handleDropdownLeave}
               >
                 <button
-                  className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center text-gray-700 hover:text-[#260559]-600  transition-colors"
                 >
                   Why DraftnSign <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -492,7 +492,7 @@ const Header = () => {
                                 onClick={() => setActiveDropdown(null)}
                                 className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                               >
-                                <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                                <item.icon className="h-5 w-5 text-[#260559]-600 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
@@ -514,7 +514,7 @@ const Header = () => {
                 onMouseLeave={handleDropdownLeave}
               >
                 <button
-                  className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center text-gray-700 hover:text-[#260559]-600  transition-colors"
                 >
                   Use Cases <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -538,7 +538,7 @@ const Header = () => {
                                 onClick={() => setActiveDropdown(null)}
                                 className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                               >
-                                <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                                <item.icon className="h-5 w-5 text-[#260559]-600  mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
@@ -560,7 +560,7 @@ const Header = () => {
                             onClick={() => setActiveDropdown(null)}
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                           >
-                            <useCase.icon className="h-5 w-5 text-primary-600" />
+                            <useCase.icon className="h-5 w-5 text-[#260559]-600" />
                             <div>
                               <div className="font-medium text-gray-900 text-sm">{useCase.name}</div>
                               <div className="text-xs text-gray-500">{useCase.description}</div>
@@ -580,7 +580,7 @@ const Header = () => {
                 onMouseLeave={handleDropdownLeave}
               >
                 <button
-                  className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center text-gray-700 hover:text-[#260559]-600 transition-colors"
                 >
                   Resources <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -604,7 +604,7 @@ const Header = () => {
                                 key={index}
                                 className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                               >
-                                <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                                <item.icon className="h-5 w-5 text-[#260559]-600 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
@@ -626,7 +626,7 @@ const Header = () => {
                 onMouseLeave={handleDropdownLeave}
               >
                 <button
-                  className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center text-gray-700 hover:text-[#260559]-600  transition-colors"
                 >
                   Developer <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -650,7 +650,7 @@ const Header = () => {
                                 onClick={() => setActiveDropdown(null)}
                                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                               >
-                                <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                                <item.icon className="h-5 w-5 text-[#260559]-600 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
@@ -672,7 +672,7 @@ const Header = () => {
                 onMouseLeave={handleDropdownLeave}
               >
                 <button
-                  className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center text-gray-700 hover:text-[#260559]-600  transition-colors"
                 >
                   Workspace <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -696,7 +696,7 @@ const Header = () => {
                                 onClick={() => setActiveDropdown(null)}
                                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                               >
-                                <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                                <item.icon className="h-5 w-5 text-[#260559]-600 mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>
@@ -716,7 +716,7 @@ const Header = () => {
                 className="relative group"
                 onMouseEnter={() => handleDropdownEnter('industries')}
                 onMouseLeave={handleDropdownLeave}
-              >
+              > 
                 <button
                   className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
                 >
@@ -762,7 +762,7 @@ const Header = () => {
                 onMouseLeave={handleDropdownLeave}
               >
                 <button
-                  className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center text-gray-700 hover:text-[#260559]-600  transition-colors"
                 >
                   Features <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -786,7 +786,7 @@ const Header = () => {
                                 onClick={handleToolClick}
                                 className="flex items-start gap-3 w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                               >
-                                <item.icon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                                <item.icon className="h-5 w-5 text-[#260559]-600  mt-0.5 flex-shrink-0" />
                                 <div>
                                   <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                                   <div className="text-xs text-gray-500 mt-1">{item.description}</div>

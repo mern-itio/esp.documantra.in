@@ -520,7 +520,7 @@ const Footer = () => {
                 />
                 <button
                   type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-lg transition-colors"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#260559] hover:bg-[#260559]/80 text-white p-2 rounded-lg transition-colors"
                 >
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -554,7 +554,7 @@ const Footer = () => {
 
           {/* All Countries Link */}
           <div className="text-center">
-            <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+            <button className="bg-[#260559] hover:bg-[#260559]/80 text-white px-6 py-3 rounded-lg font-medium transition-colors">
               View All Countries & Laws
             </button>
           </div>
@@ -886,7 +886,7 @@ const Footer = () => {
                   placeholder="Enter your email"
                   className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-white placeholder-gray-400"
                 />
-                <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                <button className="bg-[#260559] hover:bg-[#260559]/80 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                   Subscribe
                 </button>
               </div>

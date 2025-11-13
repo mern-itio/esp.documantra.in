@@ -155,7 +155,7 @@ const WhyDocuSignerPage = () => {
             <div className="flex flex-wrap justify-center gap-4">
               <Link
                 to="/signup"
-                className="btn-primary inline-flex items-center justify-center gap-2"
+                className="btn-primary inline-flex items-center justify-center gap-2" style={{backgroundColor: '#260559'}}
               >
                 Start Free Forever
                 <ArrowRight className="h-5 w-5" />
@@ -163,7 +163,7 @@ const WhyDocuSignerPage = () => {
 
               <Link
                 to="/pricing"
-                className="btn-secondary inline-flex items-center justify-center"
+                className="btn-secondary inline-flex items-center justify-center" style={{borderColor: '#260559', color: '#260559'}}
               >
                 View Pricing
               </Link>
@@ -187,9 +187,9 @@ const WhyDocuSignerPage = () => {
 
           <div className="grid md:grid-cols-2 gap-8">
             {keyFeatures.map((feature, index) => (
-              <Link to={feature.path} id={slugify(feature.title)} key={index} className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all block">
-                <div className={`w-16 h-16 rounded-lg flex items-center justify-center mb-6 bg-primary-100`}>
-                  <feature.icon className="h-8 w-8 text-primary-600" />
+              <Link to={feature.path} id={slugify(feature.title)} key={index} className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 hover:border-[#260559] hover:shadow-xl cursor-pointer transition-all block">
+                <div className={`w-16 h-16 rounded-lg flex items-center justify-center mb-6 bg-[#E6E0F0]`}>
+                  <feature.icon className="h-8 w-8 text-[#260559]" />
                 </div>
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
                 <p className="text-gray-600 mb-6">{feature.description}</p>
@@ -208,7 +208,7 @@ const WhyDocuSignerPage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700 text-white">
+      <section className="py-16 bg-gradient-to-r from-[#260559] to-[#3a0a7e] text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -237,8 +237,8 @@ const WhyDocuSignerPage = () => {
             {competitiveAdvantages.map((advantage, index) => (
               <div id={slugify(advantage.title)} key={index} className="bg-white hover:border-primary-500 hover:shadow-xl cursor-pointer rounded-xl p-6 shadow-md border border-gray-100 card-hover">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <advantage.icon className="h-6 w-6 text-primary-600" />
+                  <div className="w-12 h-12 bg-[#E6E0F0] rounded-full flex items-center justify-center">
+                    <advantage.icon className="h-6 w-6 text-[#260559]" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900">{advantage.title}</h3>
                 </div>
@@ -248,7 +248,7 @@ const WhyDocuSignerPage = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <Link to="/draft-n-sign-vs-docusign" className="inline-flex items-center text-primary-600 font-medium hover:text-primary-700">
+            <Link to="/draft-n-sign-vs-docusign" className="inline-flex items-center text-[#260559] font-medium hover:text-[#3a0a7e]">
               See detailed comparisons with competitors
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
@@ -428,8 +428,8 @@ const WhyDocuSignerPage = () => {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-gray-50 rounded-xl p-8">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                  <Lock className="h-6 w-6 text-primary-600" />
+                <div className="w-12 h-12 bg-[#E6E0F0] rounded-full flex items-center justify-center">
+                  <Lock className="h-6 w-6 text-[#260559]" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">Security Features</h3>
               </div>
@@ -467,8 +467,8 @@ const WhyDocuSignerPage = () => {
 
             <div className="bg-gray-50 rounded-xl p-8">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                  <Globe className="h-6 w-6 text-primary-600" />
+                <div className="w-12 h-12 bg-[#E6E0F0] rounded-full flex items-center justify-center">
+                  <Globe className="h-6 w-6 text-[#260559]" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">Compliance Certifications</h3>
               </div>
@@ -506,7 +506,7 @@ const WhyDocuSignerPage = () => {
           </div>
 
           <div className="mt-8 text-center">
-            <Link to="/security-overview" className="inline-flex items-center text-primary-600 font-medium hover:text-primary-700">
+            <Link to="/security-overview" className="inline-flex items-center text-[#260559] font-medium hover:text-[#3a0a7e]">
               Learn more about our security measures
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
@@ -515,7 +515,7 @@ const WhyDocuSignerPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-700 text-white">
+      <section className="py-20 bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
@@ -527,7 +527,7 @@ const WhyDocuSignerPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
               <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
