@@ -41,7 +41,7 @@ export default function SignPad({
   defaultSign = null,
   // onSaveSign,
   onSignatureSaved,
-  // selfValue,
+  selfValue,
   // cycleId
   mode = "add"
 }: SignPadProps) {
@@ -215,7 +215,8 @@ export default function SignPad({
         recipientId: currentUserId,
         Signature: isSignImg,
         mode: mode,
-        envelopeId: envelopeID
+        envelopeId: envelopeID,
+        selfValue: selfValue || ""
       }
       const response = await eSignApi.post("/api/e-sign/public/save-signature",payload);
       if(response?.status === 200){

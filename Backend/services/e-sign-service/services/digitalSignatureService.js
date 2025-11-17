@@ -116,6 +116,25 @@ async function initiateRecipientSignature({fieldId, envelopeId, documentId, reci
         if (rp) {
           rp.signature = signatureImageBase64;
           rp.status = 'submitted';
+          
+          // Update signatureFields array to mark this field as signed
+          if (fieldId && sField) {
+            const existingFieldEntry = rp.signatureFields.find(
+              (sf) => sf.fieldId && sf.fieldId.toString() === sField._id.toString()
+            );
+            
+            if (existingFieldEntry) {
+              existingFieldEntry.state = 'signed';
+              existingFieldEntry.signedAt = new Date();
+            } else {
+              rp.signatureFields.push({
+                fieldId: sField._id,
+                state: 'signed',
+                signedAt: new Date()
+              });
+            }
+          }
+          
           await rp.save();
           await AuditTrail.create({ envelopeId, recipientId, action: 'VISUAL_SIGNATURE_SAVED', details: { signaturePresent: true } }).catch(() => {});
         }

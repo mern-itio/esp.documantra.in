@@ -58,14 +58,11 @@ const DocumentViewerContent: React.FC<Props> = ({
   allRecipients,
   setSignatureFields
 }) => {
-  const curRecipientSignature = allRecipients?.find(r => r.id === currentUserId)?.signature || null;
-
-  const [recipientSignature, setRecipientSignature] = useState<string | null>(curRecipientSignature);
-
-  useEffect(() => {
-    setRecipientSignature(curRecipientSignature);
-  }, [curRecipientSignature]);
-
+  // All self Signer Required
+  console.log("Signature Fields:", signatureFields);
+  console.log("Current User ID:", currentUserId);
+  console.log("All Recipients:", allRecipients);
+  console.log("Cycle ID:", cycleId);
 
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
@@ -73,6 +70,30 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
   const [isEditingSignature, setIsEditingSignature] = useState<boolean>(false);
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
+
+  // Get signature from selfSigner if in self-signer mode, otherwise from recipients
+  const getInitialSignature = () => {
+    if (selfValue === "1") {
+      const matchedSigner = (selfSigner || []).find(
+        (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
+      );
+      return matchedSigner?.signature || null;
+    }
+    return allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+  };
+
+  const [recipientSignature, setRecipientSignature] = useState<string | null>(getInitialSignature());
+
+  useEffect(() => {
+    if (selfValue === "1") {
+      const matchedSigner = (selfSigner || []).find(
+        (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
+      );
+      setRecipientSignature(matchedSigner?.signature || null);
+    } else {
+      setRecipientSignature(allRecipients?.find(r => r.id === currentUserId)?.signature || null);
+    }
+  }, [selfSigner, allRecipients, currentUserId, selfValue]);
   const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const [pageWidth, setPageWidth] = useState<number>(BASE_PAGE_WIDTH);
@@ -160,6 +181,16 @@ const DocumentViewerContent: React.FC<Props> = ({
       field?.pageNo ??
       0
     );
+  
+  // Helper to get value from selfSigner.data (handles both Map and plain object)
+  const getDataValueFromSigner = (data: any, key: string): any => {
+    if (!data) return undefined;
+    if (data instanceof Map) {
+      return data.get(key);
+    }
+    return data[key];
+  };
+  
   // returns whether one non-signature field is considered filled
 const isFieldFilled = (f: any): boolean => {
   const key = f._id || f.fieldId;
@@ -173,8 +204,10 @@ const isFieldFilled = (f: any): boolean => {
   // respect existing selfValue/selfSigner fallback if you use it for prefill
   if (selfValue === "1") {
     const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === f.slotId);
-    if (matched) {
-      const val = matched.role === "creator" ? matched.data?.name : matched.data?.[f.label];
+    if (matched && matched.data) {
+      const val = matched.role === "creator" 
+        ? (getDataValueFromSigner(matched.data, 'name') || getDataValueFromSigner(matched.data, 'Name'))
+        : getDataValueFromSigner(matched.data, f.label);
       if (f.type === "checkbox") return !!val;
       return val !== undefined && val !== null && String(val).trim().length > 0;
     }
@@ -234,9 +267,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     // self mode: read from signer data by label
     if (selfValue === '1') {
       const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-      if (matched) {
-        if (field.type === 'checkbox') return !!matched.data?.[field.label];
-        const v = matched.role === 'creator' ? matched.data?.name : matched.data?.[field.label];
+      if (matched && matched.data) {
+        if (field.type === 'checkbox') {
+          const val = getDataValueFromSigner(matched.data, field.label);
+          return !!val;
+        }
+        const v = matched.role === 'creator' 
+          ? (getDataValueFromSigner(matched.data, 'name') || getDataValueFromSigner(matched.data, 'Name'))
+          : getDataValueFromSigner(matched.data, field.label);
         return v !== undefined && v !== null && String(v).trim().length > 0;
       }
     }
@@ -261,7 +299,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
           isCurrentUser = matchedSigner ? matchedSigner._id?.toString?.() === currentUserId?.toString?.() : false;
           if (field.type === 'signature') {
-            isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            // Check if this specific field is signed by checking signatureFields array in selfSigner
+            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+              const fieldEntry = matchedSigner.signatureFields.find(
+                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+              );
+              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+            } else {
+              // Fallback to checking if signature exists in selfSigner
+              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            }
           } else {
             isCompleted = isNonSignatureCompleted(field);
           }
@@ -687,7 +734,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       if (response?.status === 200) {
         const key = fieldKey;
         setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
-         triggerConfetti();
+        triggerConfetti();
+        
+        // In self-signer mode, refresh selfSigner data to get updated signatureFields
+        if (selfValue === "1" && cycleId) {
+          getSelfSigner();
+        }
+        
         if(response?.data?.fieldRemmaning===false){
           navigate("/e-sign/signer/thank-you");
         }
@@ -994,8 +1047,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           isCurrentUser = matched
                             ? matched._id?.toString?.() === currentUserId?.toString?.()
                             : false;
-                          isSigned = matched ? !!matched.signature : false;
-                          signedImage = matched?.signature ?? null;
+                          
+                          // Check if this specific field is signed by checking signatureFields array
+                          if (isSignatureType && matched && matched.signatureFields && Array.isArray(matched.signatureFields)) {
+                            const fieldEntry = matched.signatureFields.find(
+                              (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+                            );
+                            if (fieldEntry && fieldEntry.state === 'signed' && matched.signature) {
+                              isSigned = true;
+                              signedImage = matched.signature;
+                            } else {
+                              isSigned = false;
+                              signedImage = null;
+                            }
+                          } else {
+                            // Fallback: check if signature exists in selfSigner (for backward compatibility)
+                            isSigned = matched ? !!matched.signature : false;
+                            signedImage = matched?.signature ?? null;
+                          }
                         } else {
                           isCurrentUser = field.recipientId === currentUserId;
                           isSigned =
@@ -1052,12 +1121,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             const matched = (selfSigner || []).find(
                               (s: any) => s && s.signerSlotId === field.slotId
                             );
+                            console.log(matched);
                             if (matched) {
                               const primary =
-                                matched?.data?.name || matched?.name || matched?.data?.email;
+                                matched?.data?.Name;
                               const secondary =
-                                matched?.data?.name && matched?.data?.email
-                                  ? matched.data.email
+                                matched?.data?.Email
+                                  ? matched.data.Email
                                   : undefined;
                               return {
                                 primary: primary || "Recipient",
@@ -1248,6 +1318,15 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         const fieldLable = field.label;
                         const fieldId = field._id;
 
+                        // Helper to get value from selfSigner.data (handles both Map and plain object)
+                        const getDataValue = (data: any, key: string): any => {
+                          if (!data) return undefined;
+                          if (data instanceof Map) {
+                            return data.get(key);
+                          }
+                          return data[key];
+                        };
+
                         // Prefill value priority: ref (most recent) -> state -> signer.data -> field.value -> label
                         let value: any = fieldValuesRef.current[keyId];
                         if (value === undefined) {
@@ -1258,16 +1337,39 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             const matchedSigner = selfSigner?.find(
                               (s: any) => s && s.signerSlotId === field.slotId
                             );
-                            if (matchedSigner && typeof matchedSigner.data === "object") {
+                            if (matchedSigner && matchedSigner.data) {
                               if (matchedSigner.role === "creator") {
-                                value = matchedSigner.data?.name ?? value;
-                              } else if (fieldLable && matchedSigner.data[fieldLable] !== undefined) {
-                                value = matchedSigner.data[fieldLable];
+                                value = getDataValue(matchedSigner.data, 'name') ?? getDataValue(matchedSigner.data, 'Name') ?? value;
+                              } else if (fieldLable) {
+                                value = getDataValue(matchedSigner.data, fieldLable) ?? value;
                               }
                             }
                           }
                           if (value === undefined) value = field.value ?? "";
                         }
+                        
+                        // Check if field has a value in selfSigner.data (for read-only check)
+                        const hasValueInSelfSigner = selfValue === "1" && (() => {
+                          const matchedSigner = selfSigner?.find(
+                            (s: any) => s && s.signerSlotId === field.slotId
+                          );
+                          if (matchedSigner && matchedSigner.data) {
+                            if (matchedSigner.role === "creator") {
+                              return !!(getDataValue(matchedSigner.data, 'name') || getDataValue(matchedSigner.data, 'Name'));
+                            } else if (fieldLable) {
+                              return !!getDataValue(matchedSigner.data, fieldLable);
+                            }
+                          }
+                          return false;
+                        })();
+                        
+                        // Determine if field is completed (has value)
+                        const isFieldCompleted = (() => {
+                          if (value !== undefined && value !== null && String(value).trim().length > 0) {
+                            return field.type === 'checkbox' ? !!value : true;
+                          }
+                          return hasValueInSelfSigner;
+                        })();
 
                         const setValue = (newVal: any, updateState: boolean = false) => {
                           try {
@@ -1361,10 +1463,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           }, 500);
                         };
 
-                        const editable = isCurrentUser;
+                        // In self-signer mode, if field has value in selfSigner.data, make it read-only
+                        const editable = isCurrentUser && !(selfValue === "1" && hasValueInSelfSigner);
                         const commonBox =
                           "w-full h-full flex items-center justify-center rounded border " +
-                          ( isSigned? "border-green-500" :editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
+                          ( isFieldCompleted ? "border-green-500" : editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
 
                         const inputBaseStyle: React.CSSProperties = {
                           height: scaledHeight,
@@ -1405,7 +1508,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   key={`field-${keyId}`}
                                   type="date"
                                   className={commonBox + " outline-none"}
-                                  defaultValue={value || ""}
+                                  value={value || ""}
                                   onChange={(e) => {
                                     setValue(e.target.value, false); // false = don't update state
                                   }}
@@ -1436,7 +1539,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   type={field.type === 'number' ? 'number' : 'text'}
                                   className={commonBox + " outline-none"}
                                   placeholder={fieldLable || field.type}
-                                  defaultValue={value || ""}
+                                  value={value || ""}
                                   onChange={(e) => {
                                     // Only update ref (no re-render)
                                     const newValue = e.target.value;
@@ -1476,7 +1579,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   maxLength={3}
                                   className={commonBox + " tracking-widest outline-none"}
                                   placeholder="Init"
-                                  defaultValue={value || ""}
+                                  value={value || ""}
                                   onChange={(e) => {
                                     const newValue = e.target.value.toUpperCase();
                                     e.target.value = newValue; // Update immediately
@@ -1602,7 +1705,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               }}
                             >
                               {
-                                isSigned ? (
+                                isFieldCompleted ? (
                                   <div
                                     className={commonBox}
                                     style={{
@@ -1611,74 +1714,77 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       padding: `${boxPaddingY}px ${boxPaddingX}px`,
                                     }}
                                   >
-                                    {field.signature}
+                                    {field.type === 'checkbox' ? (value ? '✓' : '') : (value || field.signature || '')}
                                   </div>
                                 ) : renderInput()
                               }
                               
                             </div>
                           }
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: labelTop,
-                                left: 0,
-                                width: scaledWidth,
-                                pointerEvents: 'none',
-                                textAlign: 'center',
-                                fontSize: labelFontSize,
-                                lineHeight: 1.1,
-                              }}
-                              className="text-[10px] text-gray-600"
-                            >
-                              {recipientDisplay.decorated ? (
-                                <div
-                                  style={{
-                                    display: "inline-flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    backgroundColor: "rgba(148, 163, 184, 0.35)",
-                                    borderRadius: recipientBadgeRadius,
-                                    padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
-                                    gap: recipientBadgeGap,
-                                  }}
-                                >
+                            {/* Only show label for non-signature fields if they are not completed */}
+                            {!isFieldCompleted && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: labelTop,
+                                  left: 0,
+                                  width: scaledWidth,
+                                  pointerEvents: 'none',
+                                  textAlign: 'center',
+                                  fontSize: labelFontSize,
+                                  lineHeight: 1.1,
+                                }}
+                                className="text-[10px] text-gray-600"
+                              >
+                                {recipientDisplay.decorated ? (
+                                  <div
+                                    style={{
+                                      display: "inline-flex",
+                                      flexDirection: "column",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      backgroundColor: "rgba(148, 163, 184, 0.35)",
+                                      borderRadius: recipientBadgeRadius,
+                                      padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
+                                      gap: recipientBadgeGap,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        fontSize: labelFontSize,
+                                        fontWeight: 600,
+                                        color: "#1f2937",
+                                        lineHeight: 1.1,
+                                      }}
+                                    >
+                                      {recipientDisplay.primary}
+                                    </span>
+                                    {recipientDisplay.secondary ? (
+                                      <span
+                                        style={{
+                                          fontSize: recipientSecondaryFont,
+                                          color: "#1f2937",
+                                          lineHeight: 1.05,
+                                        }}
+                                      >
+                                        {recipientDisplay.secondary}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                ) : (
                                   <span
                                     style={{
                                       fontSize: labelFontSize,
-                                      fontWeight: 600,
-                                      color: "#1f2937",
+                                      fontWeight: 500,
+                                      color: "#4b5563",
                                       lineHeight: 1.1,
                                     }}
                                   >
                                     {recipientDisplay.primary}
                                   </span>
-                                  {recipientDisplay.secondary ? (
-                                    <span
-                                      style={{
-                                        fontSize: recipientSecondaryFont,
-                                        color: "#1f2937",
-                                        lineHeight: 1.05,
-                                      }}
-                                    >
-                                      {recipientDisplay.secondary}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <span
-                                  style={{
-                                    fontSize: labelFontSize,
-                                    fontWeight: 500,
-                                    color: "#4b5563",
-                                    lineHeight: 1.1,
-                                  }}
-                                >
-                                  {recipientDisplay.primary}
-                                </span>
-                              )}
-                            </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -1918,6 +2024,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               setLocalSignedMap((p) => ({ ...(p || {}), [fieldId]: signatureUrl }));
             }
             setRecipientSignature(signatureUrl);
+            
+            // In self-signer mode, refresh selfSigner data to get updated signatureFields
+            if (selfValue === "1" && cycleId) {
+              getSelfSigner();
+            }
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
             // When selfValue === "1" update the signer entry and trigger confetti reliably
