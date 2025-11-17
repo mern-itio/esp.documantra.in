@@ -86,8 +86,9 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
   
   // Update signature when selfSigner changes (self-signer mode)
+  // Skip this update if we're currently refreshing to avoid re-render loops
   useEffect(() => {
-    if (selfValue === "1" && selfSigner.length > 0) {
+    if (selfValue === "1" && selfSigner.length > 0 && !isRefreshingSelfSignerRef.current) {
       const matchedSigner = selfSigner.find(
         (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
       );
@@ -174,6 +175,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   const lastButtonPositionRef = useRef<{ top: number; left: number } | null>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isNavigatingRef = useRef<boolean>(false);
+  const isRefreshingSelfSignerRef = useRef<boolean>(false);
+  const pendingNavigationRef = useRef<boolean>(false);
 
   const normalizePage = (field: any) =>
     Number(
@@ -284,7 +287,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
           isCurrentUser = matchedSigner ? matchedSigner._id?.toString?.() === currentUserId?.toString?.() : false;
           if (field.type === 'signature') {
-            isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            // Check signatureFields array to see if this specific field is signed
+            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+              const fieldEntry = matchedSigner.signatureFields.find(
+                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+              );
+              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+            } else {
+              // Fallback: check if signature exists in selfSigner
+              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            }
           } else {
             isCompleted = isNonSignatureCompleted(field);
           }
@@ -390,7 +402,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   };
 
   const getSelfSigner = async (): Promise<void> => {
+    // Prevent multiple simultaneous calls
+    if (isRefreshingSelfSignerRef.current) {
+      return Promise.resolve();
+    }
+    
     try {
+      isRefreshingSelfSignerRef.current = true;
       setIsLoading(true);
       if (!cycleId) {
         console.warn("No cycleId provided");
@@ -404,6 +422,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           (signer: SignerData) =>
             signer && typeof signer === "object" && signer.signerSlotId
         );
+        // Batch state update
         setSelfSigner(validSigners);
       } else {
         setSelfSigner([]);
@@ -413,6 +432,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       setSelfSigner([]);
     } finally {
       setIsLoading(false);
+      // Allow useEffect to run after a short delay
+      setTimeout(() => {
+        isRefreshingSelfSignerRef.current = false;
+        
+        // If navigation was pending, trigger it now
+        if (pendingNavigationRef.current) {
+          pendingNavigationRef.current = false;
+          setTimeout(() => {
+            goToNext();
+          }, 100);
+        }
+      }, 100);
     }
   };
 
@@ -582,7 +613,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         if (field.type === 'signature') {
           if (selfValue === '1') {
             const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-            isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            // Check signatureFields array to see if this specific field is signed
+            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+              const fieldEntry = matchedSigner.signatureFields.find(
+                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+              );
+              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+            } else {
+              // Fallback: check if signature exists in selfSigner
+              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            }
           } else {
             isCompleted = !!field.signature || !!localSignedMap[key];
           }
@@ -629,7 +669,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       if (currentField.type === 'signature') {
         if (selfValue === '1') {
           const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-          isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+          // Check signatureFields array to see if this specific field is signed
+          if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+            const fieldEntry = matchedSigner.signatureFields.find(
+              (sf: any) => sf.fieldId && (sf.fieldId.toString() === (currentField._id || currentField.fieldId)?.toString())
+            );
+            isCurrentCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+          } else {
+            // Fallback: check if signature exists in selfSigner
+            isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+          }
         } else {
           isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
         }
@@ -714,12 +763,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         
         // In self-signer mode, refresh selfSigner data to get updated signatureFields
         if (selfValue === "1" && cycleId) {
-          getSelfSigner().then(() => {
-            // Navigate to next field after refresh
-            setTimeout(() => {
-              goToNext();
-            }, 300);
-          });
+          // Mark navigation as pending
+          pendingNavigationRef.current = true;
+          // Wait a bit for the backend to update, then refresh
+          setTimeout(() => {
+            getSelfSigner();
+            // Navigation will be triggered in getSelfSigner's finally block
+          }, 500);
         } else {
           // Recipient mode: navigate to next field
           setTimeout(() => {
@@ -887,8 +937,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   // IMPORTANT: Never scroll automatically - only adjust index silently
   // Don't adjust if user is currently typing or navigating to avoid interrupting them
   useEffect(() => {
-    // Don't make any changes if user is typing or we're navigating
-    if (isUserTypingRef.current || isNavigatingRef.current) {
+    // Don't make any changes if user is typing, we're navigating, or refreshing selfSigner
+    if (isUserTypingRef.current || isNavigatingRef.current || isRefreshingSelfSignerRef.current) {
       return;
     }
     
@@ -1901,7 +1951,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             if (currentField.type === 'signature') {
               if (selfValue === '1') {
                 const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-                isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+                // Check signatureFields array to see if this specific field is signed
+                if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+                  const fieldEntry = matchedSigner.signatureFields.find(
+                    (sf: any) => sf.fieldId && (sf.fieldId.toString() === (currentField._id || currentField.fieldId)?.toString())
+                  );
+                  isCurrentCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+                } else {
+                  // Fallback: check if signature exists in selfSigner
+                  isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+                }
               } else {
                 isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
               }
@@ -2038,36 +2097,31 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             
             // In self-signer mode, refresh selfSigner data to get updated signatureFields
             if (selfValue === "1" && cycleId) {
-              getSelfSigner().then(() => {
-                // Navigate to next field after refresh
-                setTimeout(() => {
-                  goToNext();
-                }, 300);
-              });
+              // Mark navigation as pending
+              pendingNavigationRef.current = true;
+              // Wait a bit for the backend to update, then refresh
+              setTimeout(() => {
+                getSelfSigner();
+                // Navigation will be triggered in getSelfSigner's finally block
+              }, 500);
             }
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
             // When selfValue === "1" update the signer entry and trigger confetti reliably
             if (selfValue === "1") {
-              setSelfSigner((prev) => {
-                const updated = (prev || []).map((s: any) =>
-                  s && s.signerSlotId === activeField?.slotId
-                    ? { ...s, signature: signatureUrl }
-                    : s
-                );
-                // immediate feedback
-                triggerConfetti();
-                return updated;
-              });
+              // Don't update selfSigner optimistically - let getSelfSigner handle it
+              // This prevents double updates and re-render loops
+              triggerConfetti();
               
               // Refresh selfSigner data to get updated signatureFields
               if (cycleId) {
-                getSelfSigner().then(() => {
-                  // Navigate to next field after refresh
-                  setTimeout(() => {
-                    goToNext();
-                  }, 300);
-                });
+                // Mark navigation as pending
+                pendingNavigationRef.current = true;
+                // Wait a bit for the backend to update, then refresh
+                setTimeout(() => {
+                  getSelfSigner();
+                  // Navigation will be triggered in getSelfSigner's finally block
+                }, 500);
               }
             } else {
               // non-self: optimistic local update so UI shows signed image immediately
