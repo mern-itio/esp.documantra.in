@@ -6426,7 +6426,7 @@ const EnvelopeCreator: React.FC = () => {
                                 {/* Signer Info */}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-900">{p.order}.</span>
+                                    <span className="text-sm font-medium text-gray-900">{index + 1}.</span>
                                     <span className="text-sm font-medium text-gray-900">{p.name}</span>
                                   </div>
                                   <div className="text-xs text-gray-500 mt-0.5">{p.email}</div>
