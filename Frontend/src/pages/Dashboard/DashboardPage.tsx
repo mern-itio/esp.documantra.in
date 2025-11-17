@@ -314,7 +314,7 @@ const DashboardPage: React.FC = () => {
               <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-green-50 text-green-700 uppercase tracking-wide">Done</span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Completed</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Completed Envelopes</p>
               <p className="text-3xl font-bold text-slate-900 mb-1">
                 {envStatesLoading ? '—' : envelopeStats?.completedEnvelopes || 0}
               </p>
@@ -337,7 +337,7 @@ const DashboardPage: React.FC = () => {
               <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 uppercase tracking-wide">In queue</span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pending</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pending Envelopes</p>
               <p className="text-3xl font-bold text-slate-900 mb-1">
                 {envStatesLoading ? '—' : (envelopeStats?.pendingEnvelopes ?? 0)}
               </p>
