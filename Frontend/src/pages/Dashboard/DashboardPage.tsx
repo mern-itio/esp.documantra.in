@@ -8,9 +8,17 @@ import {
   ArrowRight, 
   CreditCard,
   Zap,
-  Loader2
+  Loader2,
+  FileText,
+  CheckCircle2,
+  Clock,
+  BarChart3,
+  Plus,
+  FolderOpen,
+  Activity,
+  ArrowUpRight
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -189,6 +197,21 @@ const DashboardPage: React.FC = () => {
     return totals;
   }, [usage]);
 
+  // Calculate completion rate
+  const completionRate = useMemo(() => {
+    if (!envelopeStats?.totalEnvelopes || envelopeStats.totalEnvelopes === 0) return 0;
+    return Math.round((envelopeStats.completedEnvelopes / envelopeStats.totalEnvelopes) * 100);
+  }, [envelopeStats]);
+
+  // Prepare data for pie chart (usage by module)
+  const pieChartData = useMemo(() => {
+    return Object.entries(moduleTotals)
+      .filter(([_, total]) => total > 0)
+      .map(([name, value]) => ({ name, value }));
+  }, [moduleTotals]);
+
+  const PIE_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6b7280'];
+
   return (
     <div className="space-y-8">
       {/* Advanced Tutorial Modal */}
@@ -235,13 +258,13 @@ const DashboardPage: React.FC = () => {
         </div>
       )}
       {/* Top banner */}
-      <div className="rounded-sm bg-gradient-to-r from-[#1D2D80] via-[#2759A5] to-[#4AB6E4] text-white p-6 shadow-md">
+      {/* <div className="rounded-sm bg-gradient-to-r from-[#1D2D80] via-[#2759A5] to-[#4AB6E4] text-white p-6 shadow-md">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Dashboard</h1>
             <p className="text-white/80 text-sm mt-1">Welcome to Draft & Sign - manage envelopes and documents at a glance.</p>
           </div>
-          {/* <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/e-sign/create')}
               className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm transition-colors"
@@ -254,122 +277,162 @@ const DashboardPage: React.FC = () => {
             >
               Open E‑Sign
             </button>
-          </div> */}
+          </div>
         </div>
-      </div>
+      </div> */}
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card */}
-        <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">📄</div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Total Envelopes</p>
-                <p className="text-2xl font-semibold text-slate-900 mt-1">
-                  {envStatesLoading ? '—' : envelopeStats?.totalEnvelopes}
-                </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Total Envelopes Card */}
+        <div className="group relative bg-white rounded-xl border border-slate-200 p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="relative">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                <FileText className="w-5 h-5 text-white" />
               </div>
+              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 uppercase tracking-wide">All time</span>
             </div>
-            <span className="text-[10px] px-2 py-1 rounded-full bg-blue-50 text-blue-600">All time</span>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Total Envelopes</p>
+              <p className="text-3xl font-bold text-slate-900 mb-1">
+                {envStatesLoading ? '—' : envelopeStats?.totalEnvelopes || 0}
+              </p>
+              <p className="text-xs text-slate-400">All documents</p>
+            </div>
           </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-green-50 text-green-600">✅</div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Completed Envelopes</p>
-                <p className="text-2xl font-semibold text-slate-900 mt-1">
-                  {envStatesLoading ? '—' : envelopeStats?.completedEnvelopes}
-                </p>
+        {/* Completed Envelopes Card */}
+        <div className="group relative bg-white rounded-xl border border-slate-200 p-6 hover:border-green-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-50 to-green-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="relative">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-green-50 text-green-700 uppercase tracking-wide">Done</span>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Completed</p>
+              <p className="text-3xl font-bold text-slate-900 mb-1">
+                {envStatesLoading ? '—' : envelopeStats?.completedEnvelopes || 0}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-3 h-3 text-green-600" />
+                <p className="text-xs text-green-600 font-medium">{completionRate}% completion rate</p>
               </div>
             </div>
-            <span className="text-[10px] px-2 py-1 rounded-full bg-green-50 text-green-600">Done</span>
           </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-yellow-50 text-yellow-700">⏳</div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Pending Envelopes</p>
-                <p className="text-2xl font-semibold text-slate-900 mt-1">
-                  {envStatesLoading ? '—' : (envelopeStats?.pendingEnvelopes ?? 0)}
-                </p>
+        {/* Pending Envelopes Card */}
+        <div className="group relative bg-white rounded-xl border border-slate-200 p-6 hover:border-amber-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="relative">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                <Clock className="w-5 h-5 text-white" />
               </div>
+              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 uppercase tracking-wide">In queue</span>
             </div>
-            <span className="text-[10px] px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">In queue</span>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pending</p>
+              <p className="text-3xl font-bold text-slate-900 mb-1">
+                {envStatesLoading ? '—' : (envelopeStats?.pendingEnvelopes ?? 0)}
+              </p>
+              <p className="text-xs text-slate-400">Awaiting action</p>
+            </div>
           </div>
         </div>
 
-        {/* Card */}
-        <Link to="/credits-usage">
-          <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-fuchsia-50 text-fuchsia-600">📊</div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Credits Balance</p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1">{loading ? '—' : (balance ?? 0)}</p>
+        {/* Credits Balance Card */}
+        <Link to="/credits-usage" className="group block">
+          <div className="relative bg-white rounded-xl border border-slate-200 p-6 hover:border-purple-300 hover:shadow-lg transition-all duration-300 cursor-pointer h-full overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 uppercase tracking-wide">Billing</span>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Credits Balance</p>
+                <p className="text-3xl font-bold text-slate-900 mb-1">{loading ? '—' : (balance ?? 0)}</p>
+                <div className="flex items-center gap-1.5">
+                  <ArrowUpRight className="w-3 h-3 text-purple-600" />
+                  <p className="text-xs text-slate-400">Available credits</p>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-1 rounded-full bg-fuchsia-50 text-fuchsia-600">Billing</span>
             </div>
           </div>
         </Link>
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button onClick={() => navigate('/e-sign/create')} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 hover:shadow transition-shadow">
-          <span className="text-indigo-600 text-lg">✍️</span>
-          <div className="text-left">
-            <p className="text-sm font-semibold text-slate-800">Create Envelope</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <button 
+          onClick={() => navigate('/e-sign/create')} 
+          className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 text-left"
+        >
+          <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
+            <Plus className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900 mb-0.5">Create Envelope</p>
             <p className="text-xs text-slate-500">Upload docs and add recipients</p>
           </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
-        <button onClick={() => navigate('/e-sign/aggrement')} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 hover:shadow transition-shadow">
-          <span className="text-emerald-600 text-lg">📬</span>
-          <div className="text-left">
-            <p className="text-sm font-semibold text-slate-800">Manage Envelopes</p>
+        <button 
+          onClick={() => navigate('/e-sign/aggrement')} 
+          className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 text-left"
+        >
+          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
+            <FolderOpen className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900 mb-0.5">Manage Envelopes</p>
             <p className="text-xs text-slate-500">Track progress & resend</p>
           </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
-        <button onClick={() => navigate('/credits-usage')} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 hover:shadow transition-shadow">
-          <span className="text-fuchsia-600 text-lg">💳</span>
-          <div className="text-left">
-            <p className="text-sm font-semibold text-slate-800">Credits & Billing</p>
+        <button 
+          onClick={() => navigate('/credits-usage')} 
+          className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-purple-300 hover:shadow-lg transition-all duration-300 text-left"
+        >
+          <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
+            <CreditCard className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900 mb-0.5">Credits & Billing</p>
             <p className="text-xs text-slate-500">See usage and balance</p>
           </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
       </div>
 
       {/* Recent credit usage */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300">
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-slate-100">
+        <div className="px-6 pt-6 pb-5 border-b border-slate-200 bg-gradient-to-r from-slate-50/50 to-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50">
-                <CreditCard className="w-5 h-5 text-indigo-600" />
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm">
+                <CreditCard className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Recent Credit Usage</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Track your credit transactions</p>
+                <h2 className="text-xl font-bold text-slate-900">Credit Usage Analytics</h2>
+                <p className="text-sm text-slate-500 mt-0.5">Track your credit transactions and usage patterns</p>
               </div>
             </div>
             <Link 
               to="/credits-usage" 
-              className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors group"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700 font-semibold transition-all hover:bg-indigo-50 rounded-lg group"
             >
               <span>View details</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -391,120 +454,161 @@ const DashboardPage: React.FC = () => {
             </div>
           ) : chartData.length > 0 ? (
             <div className="space-y-6">
-              {/* Chart */}
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorUsed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#6b7280"
-                      style={{ fontSize: '12px' }}
-                    />
-                    <YAxis 
-                      stroke="#6b7280"
-                      style={{ fontSize: '12px' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        padding: '12px'
-                      }}
-                      formatter={(value: any, name: string) => {
-                        if (name === 'used') return [`${value} credits`, 'Credits Used'];
-                        if (name === 'added') return [`${value} credits`, 'Credits Added'];
-                        return [value, name];
-                      }}
-                      labelFormatter={(label) => `Date: ${label}`}
-                    />
-                    <Legend 
-                      formatter={(value) => {
-                        if (value === 'used') return 'Credits Used';
-                        if (value === 'added') return 'Credits Added';
-                        return value;
-                      }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="used" 
-                      stroke="#ef4444" 
-                      fillOpacity={1} 
-                      fill="url(#colorUsed)"
-                      strokeWidth={2}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="added" 
-                      stroke="#10b981" 
-                      fillOpacity={1} 
-                      fill="url(#colorAdded)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+              {/* Charts Grid - Area Chart (Left, Wider) and Pie Chart (Right, Narrower) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Area Chart - Credit Usage Trend (Left, Wider) */}
+                <div className="lg:col-span-2">
+                  <div className="mb-4">
+                    <h3 className="text-sm font-bold text-slate-900 mb-1">Usage Trend (Last 7 Days)</h3>
+                    <p className="text-xs text-slate-500">Credits used and added over time</p>
+                  </div>
+                  <div className="h-80 bg-gradient-to-br from-slate-50/30 to-white rounded-lg p-4 border border-slate-100">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                        <defs>
+                          <linearGradient id="colorUsed" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#64748b"
+                          style={{ fontSize: '11px', fontWeight: 500 }}
+                          tickLine={false}
+                        />
+                        <YAxis 
+                          stroke="#64748b"
+                          style={{ fontSize: '11px', fontWeight: 500 }}
+                          tickLine={false}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'white', 
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '10px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            padding: '10px 14px'
+                          }}
+                          formatter={(value: any, name: string) => {
+                            if (name === 'used') return [`${value} credits`, 'Credits Used'];
+                            if (name === 'added') return [`${value} credits`, 'Credits Added'];
+                            return [value, name];
+                          }}
+                          labelFormatter={(label) => `Date: ${label}`}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '10px' }}
+                          iconType="circle"
+                          formatter={(value) => {
+                            if (value === 'used') return 'Credits Used';
+                            if (value === 'added') return 'Credits Added';
+                            return value;
+                          }}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="used" 
+                          stroke="#ef4444" 
+                          fillOpacity={1} 
+                          fill="url(#colorUsed)"
+                          strokeWidth={2.5}
+                          name="used"
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="added" 
+                          stroke="#10b981" 
+                          fillOpacity={1} 
+                          fill="url(#colorAdded)"
+                          strokeWidth={2.5}
+                          name="added"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Pie Chart - Usage by Module (Right, Narrower) */}
+                {pieChartData.length > 0 && (
+                  <div>
+                    <div className="mb-4">
+                      <h3 className="text-sm font-bold text-slate-900 mb-1">Usage by Module</h3>
+                      <p className="text-xs text-slate-500">Credit distribution</p>
+                    </div>
+                    <div className="h-80 bg-gradient-to-br from-slate-50/30 to-white rounded-lg p-4 border border-slate-100 flex items-center justify-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieChartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={90}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {pieChartData.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'white', 
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '10px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                              padding: '10px 14px'
+                            }}
+                            formatter={(value: any) => `${value} credits`}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Summary Stats */}
-              <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="space-y-5 pt-5 border-t border-slate-200">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-red-50">
-                      <TrendingDown className="w-4 h-4 text-red-600" />
+                  <div className="bg-gradient-to-br from-red-50 to-red-100/30 rounded-lg p-4 border border-red-200/50 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-red-500">
+                        <TrendingDown className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Total Used</p>
+                        <p className="text-2xl font-bold text-red-900 mt-0.5">
+                          {chartData.reduce((sum: number, d: any) => sum + d.used, 0)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Total Used</p>
-                      <p className="text-lg font-semibold text-slate-900">
-                        {chartData.reduce((sum: number, d: any) => sum + d.used, 0)}
-                      </p>
-                    </div>
+                    <p className="text-xs text-red-600/80 ml-12">credits consumed</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-green-50">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
+                  <div className="bg-gradient-to-br from-green-50 to-green-100/30 rounded-lg p-4 border border-green-200/50 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-green-500">
+                        <TrendingUp className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Total Added</p>
+                        <p className="text-2xl font-bold text-green-900 mt-0.5">
+                          {chartData.reduce((sum: number, d: any) => sum + d.added, 0)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Total Added</p>
-                      <p className="text-lg font-semibold text-slate-900">
-                        {chartData.reduce((sum: number, d: any) => sum + d.added, 0)}
-                      </p>
-                    </div>
+                    <p className="text-xs text-green-600/80 ml-12">credits purchased</p>
                   </div>
                 </div>
                 
-                {/* Module Breakdown */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {Object.entries(moduleTotals).map(([module, total]) => {
-                    if (total === 0) return null;
-                    const colors: Record<string, { bg: string; text: string }> = {
-                      'E-Sign': { bg: 'bg-blue-50', text: 'text-blue-600' },
-                      'PDF Tools': { bg: 'bg-green-50', text: 'text-green-600' },
-                      'Document': { bg: 'bg-purple-50', text: 'text-purple-600' },
-                      'Authentication': { bg: 'bg-amber-50', text: 'text-amber-600' },
-                      'Other': { bg: 'bg-slate-50', text: 'text-slate-600' }
-                    };
-                    const color = colors[module] || colors['Other'];
-                    
-                    return (
-                      <div key={module} className={`p-3 rounded-lg ${color.bg} border border-slate-100`}>
-                        <p className="text-xs font-medium text-slate-600 mb-1">{module}</p>
-                        <p className={`text-base font-semibold ${color.text}`}>{total}</p>
-                      </div>
-                    );
-                  })}
-                </div>
+               
               </div>
             </div>
           ) : (
@@ -520,10 +624,10 @@ const DashboardPage: React.FC = () => {
 
         {/* Footer */}
         {!loading && usage.length > 0 && (
-          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
+          <div className="px-6 py-4 bg-gradient-to-r from-slate-50/50 to-white border-t border-slate-200">
             <Link 
               to="/credits-usage"
-              className="flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors group"
+              className="flex items-center justify-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group"
             >
               <span>View all credit transactions</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
