@@ -4,6 +4,7 @@ export interface SignerData {
   signature?: string;
   role?: string;
   data?: Record<string, string>;
+  signatureFields?: ActiveField[];
 }
 
 export interface ActiveField {
@@ -17,6 +18,9 @@ export interface ActiveField {
   status: string;
   slotId?: string;
   recipientId?: string;
+  fieldId?: string;
+  signature?: string;
+  state?: string;
 }
 
 export interface SignatureField {
