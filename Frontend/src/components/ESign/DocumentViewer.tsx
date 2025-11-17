@@ -58,42 +58,44 @@ const DocumentViewerContent: React.FC<Props> = ({
   allRecipients,
   setSignatureFields
 }) => {
-  // All self Signer Required
-  console.log("Signature Fields:", signatureFields);
-  console.log("Current User ID:", currentUserId);
-  console.log("All Recipients:", allRecipients);
-  console.log("Cycle ID:", cycleId);
-
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
-  const [activeField, setActiveField] = useState<ActiveField | null>(null);
-  const [isEditingSignature, setIsEditingSignature] = useState<boolean>(false);
-  const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
 
-  // Get signature from selfSigner if in self-signer mode, otherwise from recipients
+  // Get signature - from selfSigner if in self-signer mode, otherwise from recipients
   const getInitialSignature = () => {
     if (selfValue === "1") {
-      const matchedSigner = (selfSigner || []).find(
-        (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
-      );
-      return matchedSigner?.signature || null;
+      // Will be set after selfSigner loads
+      return null;
     }
     return allRecipients?.find(r => r.id === currentUserId)?.signature || null;
   };
 
   const [recipientSignature, setRecipientSignature] = useState<string | null>(getInitialSignature());
 
+  // Update signature when recipients change (recipient mode)
   useEffect(() => {
-    if (selfValue === "1") {
-      const matchedSigner = (selfSigner || []).find(
+    if (selfValue !== "1") {
+      const sig = allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+      setRecipientSignature(sig);
+    }
+  }, [allRecipients, currentUserId, selfValue]);
+
+  const [activeField, setActiveField] = useState<ActiveField | null>(null);
+  const [isEditingSignature, setIsEditingSignature] = useState<boolean>(false);
+  const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
+  
+  // Update signature when selfSigner changes (self-signer mode)
+  useEffect(() => {
+    if (selfValue === "1" && selfSigner.length > 0) {
+      const matchedSigner = selfSigner.find(
         (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
       );
-      setRecipientSignature(matchedSigner?.signature || null);
-    } else {
-      setRecipientSignature(allRecipients?.find(r => r.id === currentUserId)?.signature || null);
+      if (matchedSigner?.signature) {
+        setRecipientSignature(matchedSigner.signature);
+      }
     }
-  }, [selfSigner, allRecipients, currentUserId, selfValue]);
+  }, [selfSigner, currentUserId, selfValue]);
   const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const [pageWidth, setPageWidth] = useState<number>(BASE_PAGE_WIDTH);
@@ -181,16 +183,6 @@ const DocumentViewerContent: React.FC<Props> = ({
       field?.pageNo ??
       0
     );
-  
-  // Helper to get value from selfSigner.data (handles both Map and plain object)
-  const getDataValueFromSigner = (data: any, key: string): any => {
-    if (!data) return undefined;
-    if (data instanceof Map) {
-      return data.get(key);
-    }
-    return data[key];
-  };
-  
   // returns whether one non-signature field is considered filled
 const isFieldFilled = (f: any): boolean => {
   const key = f._id || f.fieldId;
@@ -204,10 +196,8 @@ const isFieldFilled = (f: any): boolean => {
   // respect existing selfValue/selfSigner fallback if you use it for prefill
   if (selfValue === "1") {
     const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === f.slotId);
-    if (matched && matched.data) {
-      const val = matched.role === "creator" 
-        ? (getDataValueFromSigner(matched.data, 'name') || getDataValueFromSigner(matched.data, 'Name'))
-        : getDataValueFromSigner(matched.data, f.label);
+    if (matched) {
+      const val = matched.role === "creator" ? matched.data?.name : matched.data?.[f.label];
       if (f.type === "checkbox") return !!val;
       return val !== undefined && val !== null && String(val).trim().length > 0;
     }
@@ -267,14 +257,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     // self mode: read from signer data by label
     if (selfValue === '1') {
       const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-      if (matched && matched.data) {
-        if (field.type === 'checkbox') {
-          const val = getDataValueFromSigner(matched.data, field.label);
-          return !!val;
-        }
-        const v = matched.role === 'creator' 
-          ? (getDataValueFromSigner(matched.data, 'name') || getDataValueFromSigner(matched.data, 'Name'))
-          : getDataValueFromSigner(matched.data, field.label);
+      if (matched) {
+        if (field.type === 'checkbox') return !!matched.data?.[field.label];
+        const v = matched.role === 'creator' ? matched.data?.name : matched.data?.[field.label];
         return v !== undefined && v !== null && String(v).trim().length > 0;
       }
     }
@@ -299,16 +284,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
           isCurrentUser = matchedSigner ? matchedSigner._id?.toString?.() === currentUserId?.toString?.() : false;
           if (field.type === 'signature') {
-            // Check if this specific field is signed by checking signatureFields array in selfSigner
-            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
-              const fieldEntry = matchedSigner.signatureFields.find(
-                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
-              );
-              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
-            } else {
-              // Fallback to checking if signature exists in selfSigner
-              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
-            }
+            isCompleted = matchedSigner ? !!matchedSigner.signature : false;
           } else {
             isCompleted = isNonSignatureCompleted(field);
           }
@@ -413,12 +389,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     setActiveField(af);
   };
 
-  const getSelfSigner = async () => {
+  const getSelfSigner = async (): Promise<void> => {
     try {
       setIsLoading(true);
       if (!cycleId) {
         console.warn("No cycleId provided");
-        return;
+        return Promise.resolve();
       }
       const response = await eSignApi.get(
         `/api/e-sign/public/envelope/self-signer/${cycleId}`
@@ -738,7 +714,17 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         
         // In self-signer mode, refresh selfSigner data to get updated signatureFields
         if (selfValue === "1" && cycleId) {
-          getSelfSigner();
+          getSelfSigner().then(() => {
+            // Navigate to next field after refresh
+            setTimeout(() => {
+              goToNext();
+            }, 300);
+          });
+        } else {
+          // Recipient mode: navigate to next field
+          setTimeout(() => {
+            goToNext();
+          }, 300);
         }
         
         if(response?.data?.fieldRemmaning===false){
@@ -1048,7 +1034,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             ? matched._id?.toString?.() === currentUserId?.toString?.()
                             : false;
                           
-                          // Check if this specific field is signed by checking signatureFields array
+                          // For signature fields, check signatureFields array to see if this specific field is signed
                           if (isSignatureType && matched && matched.signatureFields && Array.isArray(matched.signatureFields)) {
                             const fieldEntry = matched.signatureFields.find(
                               (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
@@ -1061,7 +1047,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               signedImage = null;
                             }
                           } else {
-                            // Fallback: check if signature exists in selfSigner (for backward compatibility)
+                            // Fallback: check if signature exists in selfSigner
                             isSigned = matched ? !!matched.signature : false;
                             signedImage = matched?.signature ?? null;
                           }
@@ -1121,13 +1107,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             const matched = (selfSigner || []).find(
                               (s: any) => s && s.signerSlotId === field.slotId
                             );
-                            console.log(matched);
                             if (matched) {
                               const primary =
-                                matched?.data?.Name;
+                                matched?.data?.name || matched?.name || matched?.data?.email;
                               const secondary =
-                                matched?.data?.Email
-                                  ? matched.data.Email
+                                matched?.data?.name && matched?.data?.email
+                                  ? matched.data.email
                                   : undefined;
                               return {
                                 primary: primary || "Recipient",
@@ -1327,7 +1312,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           return data[key];
                         };
 
-                        // Prefill value priority: ref (most recent) -> state -> signer.data -> field.value -> label
+                        // Prefill value priority: ref (most recent) -> state -> signer.data -> field.value
                         let value: any = fieldValuesRef.current[keyId];
                         if (value === undefined) {
                           value = localFieldValues[keyId];
@@ -1344,11 +1329,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 value = getDataValue(matchedSigner.data, fieldLable) ?? value;
                               }
                             }
+                          } else {
+                            // Recipient mode: get value from field.value or field.signature
+                            value = field.value ?? field.signature ?? "";
                           }
-                          if (value === undefined) value = field.value ?? "";
+                          if (value === undefined) value = "";
                         }
                         
-                        // Check if field has a value in selfSigner.data (for read-only check)
+                        // Check if field has a value in selfSigner.data (for read-only check in self-signer mode only)
                         const hasValueInSelfSigner = selfValue === "1" && (() => {
                           const matchedSigner = selfSigner?.find(
                             (s: any) => s && s.signerSlotId === field.slotId
@@ -1363,12 +1351,23 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           return false;
                         })();
                         
-                        // Determine if field is completed (has value)
+                        // Determine if field is completed (only for self-signer mode with values in selfSigner.data)
+                        // For recipient mode, non-signature fields are never "completed" (always editable)
                         const isFieldCompleted = (() => {
-                          if (value !== undefined && value !== null && String(value).trim().length > 0) {
-                            return field.type === 'checkbox' ? !!value : true;
+                          if (selfValue === "1") {
+                            // Self-signer mode: check if has value in selfSigner.data
+                            if (hasValueInSelfSigner) {
+                              return true;
+                            }
+                            // Also check if value exists in state/ref
+                            if (value !== undefined && value !== null && String(value).trim().length > 0) {
+                              return field.type === 'checkbox' ? !!value : true;
+                            }
+                            return false;
+                          } else {
+                            // Recipient mode: non-signature fields are never "completed" (always editable)
+                            return false;
                           }
-                          return hasValueInSelfSigner;
                         })();
 
                         const setValue = (newVal: any, updateState: boolean = false) => {
@@ -1464,10 +1463,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         };
 
                         // In self-signer mode, if field has value in selfSigner.data, make it read-only
+                        // For recipient mode, fields are always editable if currentUser
                         const editable = isCurrentUser && !(selfValue === "1" && hasValueInSelfSigner);
                         const commonBox =
                           "w-full h-full flex items-center justify-center rounded border " +
-                          ( isFieldCompleted ? "border-green-500" : editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
+                          ( (isFieldCompleted && selfValue === "1") || isSigned ? "border-green-500" : editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
 
                         const inputBaseStyle: React.CSSProperties = {
                           height: scaledHeight,
@@ -1508,7 +1508,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   key={`field-${keyId}`}
                                   type="date"
                                   className={commonBox + " outline-none"}
-                                  value={value || ""}
+                                  defaultValue={value || ""}
                                   onChange={(e) => {
                                     setValue(e.target.value, false); // false = don't update state
                                   }}
@@ -1539,7 +1539,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   type={field.type === 'number' ? 'number' : 'text'}
                                   className={commonBox + " outline-none"}
                                   placeholder={fieldLable || field.type}
-                                  value={value || ""}
+                                  defaultValue={value || ""}
                                   onChange={(e) => {
                                     // Only update ref (no re-render)
                                     const newValue = e.target.value;
@@ -1579,7 +1579,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   maxLength={3}
                                   className={commonBox + " tracking-widest outline-none"}
                                   placeholder="Init"
-                                  value={value || ""}
+                                  defaultValue={value || ""}
                                   onChange={(e) => {
                                     const newValue = e.target.value.toUpperCase();
                                     e.target.value = newValue; // Update immediately
@@ -1705,7 +1705,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               }}
                             >
                               {
-                                isFieldCompleted ? (
+                                (isFieldCompleted && selfValue === "1") ? (
                                   <div
                                     className={commonBox}
                                     style={{
@@ -1716,13 +1716,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   >
                                     {field.type === 'checkbox' ? (value ? '✓' : '') : (value || field.signature || '')}
                                   </div>
+                                ) : isSigned ? (
+                                  <div
+                                    className={commonBox}
+                                    style={{
+                                      fontSize: fieldFontSize,
+                                      minHeight: scaledHeight,
+                                      padding: `${boxPaddingY}px ${boxPaddingX}px`,
+                                    }}
+                                  >
+                                    {field.signature}
+                                  </div>
                                 ) : renderInput()
                               }
                               
                             </div>
                           }
-                            {/* Only show label for non-signature fields if they are not completed */}
-                            {!isFieldCompleted && (
+                            {/* Only show label for non-signature fields if they are not completed (self-signer mode only) */}
+                            {!(isFieldCompleted && selfValue === "1") && (
                               <div
                                 style={{
                                   position: "absolute",
@@ -2027,7 +2038,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             
             // In self-signer mode, refresh selfSigner data to get updated signatureFields
             if (selfValue === "1" && cycleId) {
-              getSelfSigner();
+              getSelfSigner().then(() => {
+                // Navigate to next field after refresh
+                setTimeout(() => {
+                  goToNext();
+                }, 300);
+              });
             }
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
@@ -2043,6 +2059,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 triggerConfetti();
                 return updated;
               });
+              
+              // Refresh selfSigner data to get updated signatureFields
+              if (cycleId) {
+                getSelfSigner().then(() => {
+                  // Navigate to next field after refresh
+                  setTimeout(() => {
+                    goToNext();
+                  }, 300);
+                });
+              }
             } else {
               // non-self: optimistic local update so UI shows signed image immediately
               const key = activeField?._id;
@@ -2050,7 +2076,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
               }
               // immediate feedback
-               triggerConfetti();
+              triggerConfetti();
+              
+              // Navigate to next field
+              setTimeout(() => {
+                goToNext();
+              }, 300);
+              
               if(fieldRemmaning===false){
                 navigate("/e-sign/signer/thank-you");
               }
