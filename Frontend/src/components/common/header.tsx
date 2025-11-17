@@ -15,7 +15,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const { user, logout } = useAuth();
   const { userPlan, isFreePlan } = useSubscription();
   const navigate = useNavigate();
-  
+
   // Check if user has a paid plan
   const isPaidPlan = userPlan && !isFreePlan();
 
@@ -49,7 +49,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       const balance = (response as any).data?.data?.creditsBalance ?? null;
       const n = Number(balance);
       setCredits(Number.isFinite(n) ? n : null);
-      
+
       // Also update localStorage for consistency
       if (Number.isFinite(n)) {
         SubscriptionStorage.updateCredits(n);
@@ -90,7 +90,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     window.addEventListener('credits-updated', handleCreditsUpdated);
     // Also listen for storage events (for cross-tab updates)
     window.addEventListener('storage', handleCreditsUpdated);
-    
+
     return () => {
       window.removeEventListener('credits-updated', handleCreditsUpdated);
       window.removeEventListener('storage', handleCreditsUpdated);
@@ -229,15 +229,20 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
 
         <div className="flex items-center space-x-4">
           {/* Credits pill */}
-          <button
-            onClick={() => navigate('/credits-usage')}
-            className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${lowCredits ? 'border-red-200 bg-red-50 text-red-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}
-            title="View credits usage"
-          >
-            <span className="font-medium">{creditsLoading ? '—' : (credits != null ? credits : '—')}</span>
-            <span className="text-xs opacity-80">credits</span>
-            {lowCredits && <span className="ml-1 h-2 w-2 rounded-full bg-red-500" />}
-          </button>
+          {location.pathname !== "/dashboard" && (
+            <button
+              onClick={() => navigate('/credits-usage')}
+              className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${lowCredits ? 'border-red-200 bg-red-50 text-red-700' : 'border-purple-200 bg-purple-50 text-purple-700'
+                }`}
+              title="View credits usage"
+            >
+              <span className="font-medium">
+                {creditsLoading ? '—' : (credits != null ? credits : '—')}
+              </span>
+              <span className="text-xs opacity-80">credits</span>
+              {lowCredits && <span className="ml-1 h-2 w-2 rounded-full bg-red-500" />}
+            </button>
+          )}
 
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
@@ -291,9 +296,8 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       {notifications.slice(0, 3).map((notification) => (
                         <div
                           key={notification._id}
-                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${
-                            !notification.isRead ? 'bg-blue-50' : ''
-                          }`}
+                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.isRead ? 'bg-blue-50' : ''
+                            }`}
                           onClick={() => {
                             navigate('/notifications');
                             setShowNotif(false);
@@ -329,7 +333,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             >
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">{formatName((user as any)?.fullname)}</p>
-              
+
               </div>
               <div className="relative">
                 <div className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center">

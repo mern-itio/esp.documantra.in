@@ -42,6 +42,7 @@ type EditorSignatureFieldExt = EditorSignatureField & {
 };
 import type { AxiosProgressEvent } from 'axios';
 import { Card } from '../../components/DocumentService/ui/card';
+import toast from 'react-hot-toast';
 // type FieldType = "signature" | "text" | "email" | "number" | "id";
 // --- add this type near the other types at the top of the file ---
 type Party = {
@@ -76,7 +77,13 @@ const PowerFormCreate: React.FC = () => {
   const [selectedPartyId, setSelectedPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
   const [firstSigningPartyId, setFirstSigningPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
 
-  const [currentStep, setCurrentStep] = useState(1);
+  // Initialize currentStep from URL to prevent button from disappearing
+  const getInitialStep = () => {
+    const params = new URLSearchParams(location.search);
+    const step = params.get('step');
+    return step ? Number(step) : 1;
+  };
+  const [currentStep, setCurrentStep] = useState(getInitialStep());
   const [envelopeData, setEnvelopeData] = useState({
     subject: '',
     message: '',
@@ -167,65 +174,6 @@ const PowerFormCreate: React.FC = () => {
   const bulkRoleRef = useRef<HTMLButtonElement | null>(null);
   const bulkCustomizeRef = useRef<HTMLButtonElement | null>(null);
 
-  // Guided tour for Envelope Creator
-  const [isCreatorTourOpen, setIsCreatorTourOpen] = useState<boolean>(false);
-  const [creatorTourIndex, setCreatorTourIndex] = useState<number>(0);
-  const creatorTourSteps = [
-    { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Drag and drop or browse to upload PDF documents for signing.' },
-    { id: 'recipients', selector: '[data-tour="ec-recipients-toggle"]', title: 'Add Recipients', content: 'Open the recipients section to specify who needs to sign.' },
-    { id: 'addRecipient', selector: '[data-tour="ec-add-recipient"]', title: 'Create Recipient', content: 'Add at least one recipient and provide their name and email.' },
-    { id: 'message', selector: '[data-tour="ec-message-toggle"]', title: 'Subject & Message', content: 'Set an email subject and an optional message for your recipients.' },
-    { id: 'subjectInput', selector: '[data-tour="ec-subject-input"]', title: 'Subject', content: 'Enter a clear subject. It appears in the email sent to recipients.' },
-    { id: 'type', selector: '[data-tour="ec-envelope-type"]', title: 'Envelope Type', content: 'Choose an envelope type to help organize and track your envelope.' },
-    { id: 'next', selector: '[data-tour="ec-next-button"]', title: 'Next', content: 'Proceed to the next step. You can return later if needed.' },
-    { id: 'send', selector: '[data-tour="ec-send-button"]', title: 'Send', content: 'When everything looks good, send your envelope for signature.' },
-  ] as const;
-  const [creatorTargetRect, setCreatorTargetRect] = useState<DOMRect | null>(null);
-  useEffect(() => {
-    if (!isCreatorTourOpen) return;
-    const step = creatorTourSteps[creatorTourIndex];
-    const el = document.querySelector(step?.selector || '') as HTMLElement | null;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      setCreatorTargetRect(rect);
-      const top = Math.max(0, window.scrollY + rect.top - 140);
-      window.scrollTo({ top, behavior: 'smooth' });
-    } else {
-      setCreatorTargetRect(null);
-    }
-  }, [isCreatorTourOpen, creatorTourIndex]);
-  const closeCreatorTour = () => { setIsCreatorTourOpen(false); setCreatorTourIndex(0); setCreatorTargetRect(null); };
-  const nextCreatorStep = async () => {
-    const step = creatorTourSteps[creatorTourIndex];
-    try {
-      if (step?.id === 'recipients') {
-        setShowRecipients(true);
-      }
-      if (step?.id === 'addRecipient') {
-        if (!recipients || recipients.length === 0) addRecipient();
-      }
-      if (step?.id === 'message') {
-        setShowAddMessage(true);
-      }
-      if (step?.id === 'next') {
-        await handleNext();
-      }
-      if (step?.id === 'send') {
-        if (!sending) await handleSendEnvelope();
-      }
-    } finally {
-      setCreatorTourIndex(i => Math.min(i + 1, creatorTourSteps.length - 1));
-    }
-  };
-  const prevCreatorStep = () => setCreatorTourIndex(i => Math.max(i - 1, 0));
-  const creatorTourStartedRef = useRef<boolean>(false);
-  useEffect(() => {
-    if (!creatorTourStartedRef.current) {
-      creatorTourStartedRef.current = true;
-      setIsCreatorTourOpen(true);
-      setCreatorTourIndex(0);
-    }
-  }, []);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -708,6 +656,30 @@ const PowerFormCreate: React.FC = () => {
   // Envelope Type state
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
+  const [typeSearch, setTypeSearch] = useState<string>('');
+  const [showOtherInputInDropdown, setShowOtherInputInDropdown] = useState<boolean>(false);
+  const [newEnvelopeTypeValue, setNewEnvelopeTypeValue] = useState<string>('');
+  const [savingNewType, setSavingNewType] = useState<boolean>(false);
+  const typeDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Guided tour for Power Form Creator
+  const [isCreatorTourOpen, setIsCreatorTourOpen] = useState<boolean>(false);
+  const [creatorTourIndex, setCreatorTourIndex] = useState<number>(0);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const creatorTourSteps = [
+    { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Upload your PDF documents by dragging and dropping or clicking to browse files.' },
+    { id: 'powerForm', selector: '[data-tour="ec-power-form"]', title: 'Add Power Form', content: 'Select a power form template to use for this envelope. Power forms are reusable templates that can be filled out by different signers.' },
+    { id: 'parties', selector: '[data-tour="ec-parties"]', title: 'Configure Signers', content: 'Set the number of signers and configure which signer signs first. You can also choose which signer you are.' },
+    { id: 'message', selector: '[data-tour="ec-message-toggle"]', title: 'Add Message', content: 'Click to add a subject line and optional message that will be included in the email sent to recipients.' },
+    { id: 'subjectInput', selector: '[data-tour="ec-subject-input"]', title: 'Email Subject', content: 'Enter a clear and descriptive subject line for the email that recipients will receive.' },
+    { id: 'type', selector: '[data-tour="ec-envelope-type"]', title: 'Envelope Type', content: 'Select an envelope type to categorize and organize your documents (e.g., Contract, Agreement, Invoice).' },
+    { id: 'next', selector: '[data-tour="ec-next-button"]', title: 'Next Step', content: 'Click Next to proceed to placing signature fields on your documents. You can return to edit settings later.' },
+  ] as const;
+  const [creatorTargetRect, setCreatorTargetRect] = useState<DOMRect | null>(null);
 
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -1020,10 +992,13 @@ const PowerFormCreate: React.FC = () => {
       });
       if (response.status === 200) {
         setSignatureFields(response.data.data.signatureFields);
-        await navigate(`/e-sign/powerforms?step=${currentStep + 1}&envelopeId=${envelopeId}`);
+        // Navigation is handled by handleNext function
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error saving signature fields:', error);
+      throw error;
     }
   };
 
@@ -1090,30 +1065,250 @@ const PowerFormCreate: React.FC = () => {
       console.error('Error fetching envelope details:', error);
     }
   };
-  const updateEnvelope = async () => {
-    console.log('Updating envelope with data:', envelopeId);
-    if (!envelopeId) return;
+  // const updateEnvelope = async () => {
+  //   console.log('Updating envelope with data:', envelopeId);
+  //   if (!envelopeId) return;
 
-    console.log('Updating envelope data:', envelopeData);
-    try {
-      const response = await eSignApi.post('/api/e-sign/update-envelope', {
-        envelopeId,
-        envelopeData: {
-          ...envelopeData,
-          envelopetype: selectedEnvelopeType || undefined,
-        },
-      });
-      if (response.status === 200) {
-        console.log('Signature type updated successfully:', response.data);
-        await navigate(`/e-sign/powerforms?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
-      }
-    } catch (error) {
-      console.error('Error updating signature type:', error);
-    }
-  };
+  //   console.log('Updating envelope data:', envelopeData);
+  //   try {
+  //     const response = await eSignApi.post('/api/e-sign/update-envelope', {
+  //       envelopeId,
+  //       envelopeData: {
+  //         ...envelopeData,
+  //         envelopetype: selectedEnvelopeType || undefined,
+  //       },
+  //     });
+  //     if (response.status === 200) {
+  //       console.log('Signature type updated successfully:', response.data);
+  //       await navigate(`/e-sign/powerforms?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error updating signature type:', error);
+  //   }
+  // };
   // Update your "Next" button handler:
+  // Validation function to find first missing field and scroll to it
+  const validateAndScrollToField = (): { isValid: boolean; fieldSelector?: string; message?: string } => {
+    if (currentStep === 1) {
+      // Check documents
+      if (!documents || documents.length === 0) {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-upload"]',
+          message: 'Please upload at least one document'
+        };
+      }
+      // Check envelope type
+      if (!selectedEnvelopeType || selectedEnvelopeType.trim() === '') {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-envelope-type"]',
+          message: 'Please select an envelope type'
+        };
+      }
+      // If "Other" is selected, require custom input
+      if (selectedEnvelopeType === 'Other' && (!newEnvelopeTypeValue || newEnvelopeTypeValue.trim() === '')) {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-envelope-type"]',
+          message: 'Please enter an envelope type'
+        };
+      }
+      // Check subject
+      if (!envelopeData.subject || envelopeData.subject.trim() === '') {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-subject-input"]',
+          message: 'Please enter an email subject'
+        };
+      }
+    }
+    if (currentStep === 2) {
+      if (mode === 'power') {
+        // Check if parties exist
+        if (!parties || parties.length === 0) {
+          if (!showPowerForm) {
+            setShowPowerForm(true);
+          }
+          return {
+            isValid: false,
+            fieldSelector: '[data-tour="ec-power-form"]',
+            message: 'Please add at least one signer for the Power Form'
+          };
+        }
+        // Check if selected party is set
+        if (!selectedPartyId) {
+          if (!showPowerForm) {
+            setShowPowerForm(true);
+          }
+          return {
+            isValid: false,
+            fieldSelector: '[data-tour="ec-parties"]',
+            message: 'Please choose which signer you are'
+          };
+        }
+        // Check if first signing party is set
+        if (!firstSigningPartyId) {
+          if (!showPowerForm) {
+            setShowPowerForm(true);
+          }
+          return {
+            isValid: false,
+            fieldSelector: '[data-tour="ec-parties"]',
+            message: 'Please choose which signer signs first'
+          };
+        }
+      } else {
+        // Normal mode - check recipients
+        if (!recipients || recipients.length === 0) {
+          if (!showRecipients) {
+            setShowRecipients(true);
+          }
+          return {
+            isValid: false,
+            fieldSelector: '[data-tour="ec-recipients-toggle"]',
+            message: 'Please add at least one recipient'
+          };
+        }
+        // Check if all recipients have name and email
+        const firstInvalidRecipient = recipients.findIndex(r => !r.name || !r.name.trim() || !r.email || !r.email.trim());
+        if (firstInvalidRecipient !== -1) {
+          if (!showRecipients) {
+            setShowRecipients(true);
+          }
+          const recipient = recipients[firstInvalidRecipient];
+          // Check which field is missing
+          if (!recipient.name || !recipient.name.trim()) {
+            return {
+              isValid: false,
+              fieldSelector: `input[data-recipient-name-id="${recipient.id}"]`,
+              message: 'Please fill in the recipient name'
+            };
+          }
+          if (!recipient.email || !recipient.email.trim()) {
+            return {
+              isValid: false,
+              fieldSelector: `input[data-recipient-email-id="${recipient.id}"]`,
+              message: 'Please fill in the recipient email'
+            };
+          }
+        }
+      }
+    }
+    if (currentStep === 5) {
+      if (!envelopeData.subject || envelopeData.subject.trim() === '') {
+        return {
+          isValid: false,
+          fieldSelector: '[data-tour="ec-subject-input"]',
+          message: 'Please enter an email subject'
+        };
+      }
+    }
+    return { isValid: true };
+  };
+
+  // Scroll to field and show message
+  const scrollToField = (selector: string, message: string) => {
+    // Wait a bit for any state updates (like expanding sections) to complete
+    setTimeout(() => {
+      const element = document.querySelector(selector) as HTMLElement;
+      if (element) {
+        // Scroll to element with more padding to ensure it's centered
+        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        
+        // Get the input field (either the element itself or one inside it)
+        let inputField: HTMLElement | null = null;
+        if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+          inputField = element;
+        } else {
+          inputField = element.querySelector('input, select, textarea, button') as HTMLElement;
+        }
+        
+        if (inputField) {
+          setTimeout(() => {
+            // Scroll the field into view again to ensure it's centered
+            inputField!.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            
+            // Focus the field (this moves the text cursor there and positions the caret)
+            inputField!.focus();
+            
+            // If it's an input, also select the text if any (makes it more obvious where to type)
+            if (inputField instanceof HTMLInputElement || inputField instanceof HTMLTextAreaElement) {
+              // Small delay to ensure focus is complete before selecting
+              setTimeout(() => {
+                inputField!.select();
+              }, 50);
+            }
+            
+            // Highlight the field with prominent red border and animation
+            inputField.style.borderColor = '#ef4444';
+            inputField.style.borderWidth = '2px';
+            inputField.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.2), 0 0 20px rgba(239, 68, 68, 0.3)';
+            inputField.style.transition = 'all 0.3s ease';
+            inputField.style.zIndex = '9999';
+            
+            // Add a pulsing animation to draw attention
+            let pulseCount = 0;
+            const pulseInterval = setInterval(() => {
+              if (pulseCount < 3) {
+                inputField!.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                  inputField!.style.transform = 'scale(1)';
+                }, 200);
+                pulseCount++;
+              } else {
+                clearInterval(pulseInterval);
+              }
+            }, 600);
+            
+            // Remove highlight after 4 seconds
+            setTimeout(() => {
+              inputField!.style.borderColor = '';
+              inputField!.style.borderWidth = '';
+              inputField!.style.boxShadow = '';
+              inputField!.style.transform = '';
+              inputField!.style.zIndex = '';
+              clearInterval(pulseInterval);
+            }, 4000);
+          }, 500);
+        } else {
+          // If no input found, just highlight the container
+          element.style.outline = '3px solid rgba(239, 68, 68, 0.5)';
+          element.style.outlineOffset = '2px';
+          setTimeout(() => {
+            element.style.outline = '';
+            element.style.outlineOffset = '';
+          }, 4000);
+        }
+        
+        // Show toast message
+        toast.error(message, {
+          duration: 4000,
+          position: 'top-center',
+          style: {
+            background: '#ef4444',
+            color: '#fff',
+            fontSize: '16px',
+            padding: '16px 24px',
+          },
+        });
+      }
+    }, 150);
+  };
+
   const handleNext = async () => {
     if (nextLoading) return;
+    
+    // Validate fields first
+    const validation = validateAndScrollToField();
+    if (!validation.isValid) {
+      if (validation.fieldSelector && validation.message) {
+        scrollToField(validation.fieldSelector, validation.message);
+      }
+      setNextLoading(false);
+      return;
+    }
+    
     setNextLoading(true);
     try {
       if (currentStep === 1) {
@@ -1125,62 +1320,36 @@ const PowerFormCreate: React.FC = () => {
       }
       if (currentStep === 2) {
         if (mode === 'normal') {
-          if (recipients.length === 0) {
-            alert('Please add at least one recipient.');
-            setNextLoading(false);
-            return;
-          }
           await insertRecipient();
         } else {
-          // power form: ensure totalSigners is set
-          if (parties.length === 0) {
-            alert('Please add at least one signer for the Power Form.');
+          // power form: save signature fields and go to preview
+          if (signatureFields.length === 0) {
+            toast.error('Please add at least one signature field.');
             setNextLoading(false);
             return;
           }
-          if (!selectedPartyId) {
-            alert('Please choose which signer you are.');
+          // Save signature fields
+          const saved = await saveSignatureFields();
+          if (!saved) {
+            toast.error('Failed to save signature fields. Please try again.');
             setNextLoading(false);
             return;
           }
-          if (!firstSigningPartyId) {
-            alert('Please choose which signer signs first.');
+          // Navigate to preview (envelope detail page)
+          if (envelopeId) {
+            navigate(`/e-sign/envelope/${envelopeId}`);
+          } else {
+            toast.error('Envelope ID not found. Please try again.');
             setNextLoading(false);
             return;
           }
-          // persist slots/config
-          await getEnvelopeDetail(envelopeId || "");
-          const savedId = await savePowerFormSlots(envelopeId);
-          if (!savedId) {
-            alert('Failed to save power form configuration. Try again.');
-            setNextLoading(false);
-            return;
-          }
-          // navigate to next step with returned envelope/template id
-          navigate(`/e-sign/powerforms?step=${currentStep + 1}&envelopeId=${savedId}`);
+          return; // Don't increment step, we're navigating away
         }
       }
-      if (currentStep === 3) {
-        if (signatureFields.length === 0) {
-          alert('Please add at least one signature field.');
-          return;
-        }
-        // Here you can save the signature fields to the server or state
-        await saveSignatureFields();
-      }
-      if (currentStep === 4) {
-        await updateEnvelope();
-      }
-      if (currentStep === 5) {
-        await updateEnvelope();
-      }
-      if (currentStep === 6) {
-        alert('Envelope created successfully, Ready to send!');
-        await navigate(`/e-sign/powerforms?step=${currentStep + 1}&envelopeId=${envelopeId}`);
-      }
-      if (currentStep == 1) {
-        setCurrentStep(prev => Math.min(6, prev + 2));
-      } else {
+      // Only increment step if not in power mode step 2
+      if (currentStep === 1) {
+        setCurrentStep(2);
+      } else if (mode === 'normal') {
         setCurrentStep(prev => Math.min(6, prev + 1));
       }
     } catch (err) {
@@ -1259,28 +1428,6 @@ const PowerFormCreate: React.FC = () => {
   //   setRecipients(prev => prev.filter(recipient => recipient.id !== id));
   // };
 
-  const canProceedToNext = () => {
-    switch (currentStep) {
-      case 1:
-        return documents?.length > 0 && selectedEnvelopeType !== '';
-      case 2:
-        if (mode === 'normal') {
-          return recipients?.length > 0 && recipients.every(r => r.name && r.email);
-        } else {
-          // power mode'
-          return true; // Fields are optional
-        }
-      case 3:
-        return true; // Fields are optional
-      case 4:
-        return true; // Authentication is optional
-      case 5:
-        return envelopeData.subject.trim() !== '';
-      default:
-        return true;
-    }
-  };
-
   // const handleCreateEnvelope = () => {
   //   if (!user) return;
   //   navigate('/e-sign/dashboard');
@@ -1321,6 +1468,156 @@ const PowerFormCreate: React.FC = () => {
     }
   };
 
+  const handleEnvelopeTypeSelect = (value: string) => {
+    if (value === 'Other') {
+      setShowOtherInputInDropdown(true);
+      setNewEnvelopeTypeValue('');
+      // Don't close dropdown, show input instead
+      return;
+    }
+    setSelectedEnvelopeType(value);
+    setShowOtherInputInDropdown(false);
+    setTypeDropdownOpen(false);
+    setTypeSearch('');
+  };
+
+  // Handle saving new envelope type
+  const handleSaveNewEnvelopeType = async () => {
+    if (!newEnvelopeTypeValue.trim()) {
+      return;
+    }
+
+    setSavingNewType(true);
+    try {
+      const response = await eSignApi.post('/api/e-sign/envelope-types', {
+        title: newEnvelopeTypeValue.trim(),
+        description: ''
+      });
+
+      if (response.status === 201) {
+        // Add the new type to the list
+        const newType = response.data.data;
+        setEnvelopeTypes(prev => [...prev, newType]);
+        
+        // Select the newly created type
+        setSelectedEnvelopeType(newType.title);
+        setShowOtherInputInDropdown(false);
+        setNewEnvelopeTypeValue('');
+        setTypeDropdownOpen(false);
+        setTypeSearch('');
+        
+        toast.success('Envelope type created successfully');
+      }
+    } catch (error: any) {
+      console.error('Error creating envelope type:', error);
+      const message = error.response?.data?.message || 'Failed to create envelope type';
+      toast.error(message);
+    } finally {
+      setSavingNewType(false);
+    }
+  };
+
+  // Close type dropdown on outside click
+  useEffect(() => {
+    if (!typeDropdownOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(target)) {
+        setTypeDropdownOpen(false);
+        setShowOtherInputInDropdown(false);
+        setNewEnvelopeTypeValue('');
+        setTypeSearch('');
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+    };
+  }, [typeDropdownOpen]);
+
+  // Tutorial functionality
+  useEffect(() => {
+    if (!isCreatorTourOpen) return;
+    const step = creatorTourSteps[creatorTourIndex];
+    // Wait a bit for any UI changes (like expanding sections) to complete
+    const timeoutId = setTimeout(() => {
+      const el = document.querySelector(step?.selector || '') as HTMLElement | null;
+      if (el) {
+        // Scroll element into view first
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        // Wait for scroll to complete, then get position
+        setTimeout(() => {
+          const rect = el.getBoundingClientRect();
+          setCreatorTargetRect(rect);
+        }, 300);
+      } else {
+        setCreatorTargetRect(null);
+      }
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [isCreatorTourOpen, creatorTourIndex, showPowerForm, showAddMessage]);
+
+  const closeCreatorTour = () => { setIsCreatorTourOpen(false); setCreatorTourIndex(0); setCreatorTargetRect(null); };
+  const nextCreatorStep = async () => {
+    const step = creatorTourSteps[creatorTourIndex];
+    try {
+      if (step?.id === 'powerForm') {
+        setShowPowerForm(true);
+      }
+      if (step?.id === 'message') {
+        setShowAddMessage(true);
+      }
+      if (step?.id === 'next') {
+        await handleNext();
+      }
+    } finally {
+      setCreatorTourIndex(i => Math.min(i + 1, creatorTourSteps.length - 1));
+    }
+  };
+  const prevCreatorStep = () => setCreatorTourIndex(i => Math.max(i - 1, 0));
+  const creatorTourStartedRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (!creatorTourStartedRef.current) {
+      creatorTourStartedRef.current = true;
+      setIsCreatorTourOpen(true);
+      setCreatorTourIndex(0);
+    }
+  }, []);
+
+  const handleTooltipMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (tooltipRef.current) {
+      const rect = tooltipRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+      setIsDragging(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setTooltipPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
+
   const getSteps = async () => {
     try {
       const params = new URLSearchParams(location.search);
@@ -1328,42 +1625,47 @@ const PowerFormCreate: React.FC = () => {
       const envelopeId = params.get('envelopeId');
 
       if (step && envelopeId) {
-        const response = await eSignApi.get('/api/e-sign/get-envelopes');
-        if (response) {
-          switch (Number(step)) {
-            case 1:
-              setCurrentStep(1);
-              setEnvelopeId(envelopeId);
-              if (envelopeId) await getEnvelopeDetail(envelopeId);
-              break;
-            case 2:
-              setCurrentStep(2);
-              setEnvelopeId(envelopeId);
-              await getEnvelopeDetail(envelopeId);
-              break;
-            case 3:
-              console.log('Current step', step);
-              setCurrentStep(3);
-              setEnvelopeId(envelopeId);
-              await getEnvelopeDetail(envelopeId);
-              await getSignatureFields(envelopeId);
-              break;
-            case 4:
-              setCurrentStep(4);
-              setEnvelopeId(envelopeId);
-              break;
-            case 5:
-              setCurrentStep(5);
-              setEnvelopeId(envelopeId);
-              break;
-            case 6:
-              setCurrentStep(6);
-              setEnvelopeId(envelopeId);
-              await getEnvelopeDetail(envelopeId);
-              break;
-            default:
-              setCurrentStep(1);
+        // Set step immediately from URL to prevent button from disappearing
+        const stepNum = Number(step);
+        const urlEnvelopeId = envelopeId; // Rename to avoid confusion
+        // Only update if step actually changed to prevent unnecessary re-renders
+        setCurrentStep(stepNum);
+        setEnvelopeId(urlEnvelopeId);
+        
+        // Then fetch data asynchronously
+        try {
+          const response = await eSignApi.get('/api/e-sign/get-envelopes');
+          if (response) {
+            switch (stepNum) {
+              case 1:
+                if (urlEnvelopeId) await getEnvelopeDetail(urlEnvelopeId);
+                break;
+              case 2:
+                await getEnvelopeDetail(urlEnvelopeId);
+                break;
+              case 3:
+                console.log('Current step', step);
+                await getEnvelopeDetail(urlEnvelopeId);
+                await getSignatureFields(urlEnvelopeId);
+                break;
+              case 4:
+                break;
+              case 5:
+                break;
+              case 6:
+                await getEnvelopeDetail(urlEnvelopeId);
+                break;
+              default:
+                // Only reset if step is invalid
+                if (stepNum < 1 || stepNum > 6) {
+                  setCurrentStep(1);
+                }
+            }
           }
+        } catch (apiError) {
+          // If API call fails, keep the step from URL
+          console.error('Error fetching envelope data:', apiError);
+          // Don't reset step - keep it as set from URL
         }
       } else if (routeEnvelopeId) {
         // Arrived via /e-sign/edit/:envelopeId -> preload envelope on Step 1
@@ -1376,8 +1678,12 @@ const PowerFormCreate: React.FC = () => {
       }
     } catch (error) {
       console.error('Error in getSteps:', error);
-      // Fallback to step 1 on error
-      setCurrentStep(1);
+      // Only reset to step 1 if we don't have a valid step in URL
+      const params = new URLSearchParams(location.search);
+      const step = params.get('step');
+      if (!step) {
+        setCurrentStep(1);
+      }
     }
   }
 
@@ -2060,7 +2366,7 @@ const PowerFormCreate: React.FC = () => {
             <hr className="border-t-2 border-gray-300 my-4" />
             {/* Power Form */}
             <div>
-              <h3 id='ToggleAddMessage' data-tour="ec-message-toggle" onClick={() => setShowPowerForm(prev => !prev)} className="text-lg text-gray-900 cursor-pointer flex items-center justify-between">
+              <h3 id='ToggleAddMessage' onClick={() => setShowPowerForm(prev => !prev)} className="text-lg text-gray-900 cursor-pointer flex items-center justify-between">
                 <span>Add power form</span>
                 {showPowerForm ? (
                   <ChevronUp className="w-5 h-5 text-gray-500" />
@@ -2071,7 +2377,7 @@ const PowerFormCreate: React.FC = () => {
             </div>
             {showPowerForm && (
                /* ======================== POWER FORM MODE ======================== */
-              <Card className="p-6 shadow-sm border border-gray-200 rounded-sm bg-white space-y-6">
+              <Card className="p-6 shadow-sm border border-gray-200 rounded-sm bg-white space-y-6" data-tour="ec-power-form">
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900">Build Power Form</h4>
                   <p className="text-sm text-gray-600">
@@ -2126,7 +2432,7 @@ const PowerFormCreate: React.FC = () => {
                 )}
 
                 {/* Parties Configuration */}
-                <div className="space-y-4">
+                <div className="space-y-4" data-tour="ec-parties">
                   <div className="flex items-center gap-4">
                     <label className="text-sm font-medium text-gray-700">
                       Number of Signer
@@ -2263,21 +2569,118 @@ const PowerFormCreate: React.FC = () => {
                 </label>
 
                 <div className="flex items-center gap-2 w-1/2">
-                  <select
-                    id="envelopeType"
-                    value={selectedEnvelopeType}
-                    onChange={(e) => setSelectedEnvelopeType(e.target.value)}
-                    required
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-sm"
-                    data-tour="ec-envelope-type"
-                  >
-                    <option value="">Select Envelope Type</option>
-                    {envelopeTypes.map((type) => (
-                      <option key={type.title} value={type.title}>
-                        {type.title}
-                      </option>
-                    ))}
-                  </select>
+                  <div ref={typeDropdownRef} className="relative flex-1">
+                    <button
+                      id="envelopeType"
+                      type="button"
+                      onClick={() => {
+                        setTypeDropdownOpen((o) => {
+                          if (!o) {
+                            // Opening dropdown - reset input state
+                            setShowOtherInputInDropdown(false);
+                            setNewEnvelopeTypeValue('');
+                            setTypeSearch('');
+                          }
+                          return !o;
+                        });
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-sm text-left"
+                      data-tour="ec-envelope-type"
+                    >
+                      {selectedEnvelopeType || 'Select Envelope Type'}
+                    </button>
+
+                    {typeDropdownOpen && (
+                      <div className="absolute left-0 bottom-full mb-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                        {!showOtherInputInDropdown ? (
+                          <>
+                            <div className="p-2 border-b border-gray-200">
+                              <input
+                                type="text"
+                                value={typeSearch}
+                                onChange={(e) => setTypeSearch(e.target.value)}
+                                placeholder="Search types..."
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-56 overflow-auto py-1">
+                              {envelopeTypes
+                                .filter((t) => t.title.toLowerCase().includes(typeSearch.toLowerCase()))
+                                .map((type) => (
+                                  <button
+                                    key={type.title}
+                                    type="button"
+                                    onClick={() => handleEnvelopeTypeSelect(type.title)}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedEnvelopeType === type.title ? 'bg-gray-50' : ''}`}
+                                  >
+                                    {type.title}
+                                  </button>
+                                ))}
+                              {/* Always show "Other" option, especially when no matches */}
+                              {envelopeTypes.filter((t) => t.title.toLowerCase().includes(typeSearch.toLowerCase())).length === 0 && typeSearch.trim() !== '' && (
+                                <div className="px-4 py-2 text-sm text-gray-500">
+                                  No matches found
+                                </div>
+                              )}
+                              <div className="border-t border-gray-100 my-1" />
+                              <button
+                                type="button"
+                                onClick={() => handleEnvelopeTypeSelect('Other')}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-blue-600 font-medium"
+                              >
+                                Other
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="p-3">
+                            <div className="mb-2">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Enter New Envelope Type
+                              </label>
+                              <input
+                                type="text"
+                                value={newEnvelopeTypeValue}
+                                onChange={(e) => setNewEnvelopeTypeValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && newEnvelopeTypeValue.trim()) {
+                                    handleSaveNewEnvelopeType();
+                                  } else if (e.key === 'Escape') {
+                                    setShowOtherInputInDropdown(false);
+                                    setNewEnvelopeTypeValue('');
+                                  }
+                                }}
+                                placeholder="Type new envelope type..."
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowOtherInputInDropdown(false);
+                                  setNewEnvelopeTypeValue('');
+                                }}
+                                className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSaveNewEnvelopeType}
+                                disabled={!newEnvelopeTypeValue.trim() || savingNewType}
+                                className="px-3 py-1.5 text-sm bg-[#3E2B66] text-white rounded hover:bg-[#4d3577] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {savingNewType ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Info Icon */}
                   <div
@@ -2298,7 +2701,7 @@ const PowerFormCreate: React.FC = () => {
 
                 {selectedEnvelopeType && (
                   <p className="text-sm text-gray-500 mt-2">
-                    Selected: {envelopeTypes.find((t) => t.title === selectedEnvelopeType)?.title}
+                    Selected: {envelopeTypes.find((t) => t.title === selectedEnvelopeType)?.title || selectedEnvelopeType}
                   </p>
                 )}
               </div>
@@ -2864,19 +3267,28 @@ const PowerFormCreate: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1">
-          <div className="max-w-6xlVV mx-auto">
+          <div className={`max-w-6xlVV mx-auto ${(currentStep === 2 && mode === 'power') ? 'pb-20' : ''}`}>
             {renderStepContent()}
 
-            {/* Navigation (hidden on step 2; footer lives inside SigningEditorStep) */}
+            {/* Navigation (hidden on step 2; it has its own fixed footer) */}
             {currentStep !== 2 && (
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200" id='clearBoth'>
                <button
                  onClick={() => {
-                   setCurrentStep(1);
-                   if (envelopeId) {
-                     navigate(`/e-sign/powerforms?step=1&envelopeId=${envelopeId}`);
+                   if (currentStep > 1) {
+                     setCurrentStep(prev => prev - 1);
+                     if (envelopeId) {
+                       navigate(`/e-sign/powerforms?step=${currentStep - 1}&envelopeId=${envelopeId}`);
+                     } else {
+                       navigate(`/e-sign/powerforms?step=${currentStep - 1}`);
+                     }
                    } else {
-                     navigate(`/e-sign/powerforms?step=1`);
+                     setCurrentStep(1);
+                     if (envelopeId) {
+                       navigate(`/e-sign/powerforms?step=1&envelopeId=${envelopeId}`);
+                     } else {
+                       navigate(`/e-sign/powerforms?step=1`);
+                     }
                    }
                  }}
                  disabled={currentStep === 1}
@@ -2899,7 +3311,7 @@ const PowerFormCreate: React.FC = () => {
                {currentStep < 2 ? (
                  <button
                    onClick={handleNext}
-                   disabled={!canProceedToNext() || nextLoading}
+                   disabled={nextLoading}
                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                    data-tour="ec-next-button"
                  >
@@ -2926,54 +3338,60 @@ const PowerFormCreate: React.FC = () => {
                )}
              </div>
             )}
+            
+            {/* Navigation for step 2 (SigningEditorStep in power mode) - Fixed at bottom */}
+            {currentStep === 2 && mode === 'power' && (
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between z-50 shadow-lg">
+               <button
+                 onClick={() => {
+                   setCurrentStep(1);
+                   if (envelopeId) {
+                     navigate(`/e-sign/powerforms?step=1&envelopeId=${envelopeId}`);
+                   } else {
+                     navigate(`/e-sign/powerforms?step=1`);
+                   }
+                 }}
+                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
+               >
+                 <ArrowLeft className="w-4 h-4" />
+                 Previous
+               </button>
+
+               <div className="flex items-center space-x-2">
+                 {steps.map((step) => (
+                   <div
+                     key={step.id}
+                     className={`w-2 h-2 rounded-full ${currentStep >= step.id ? 'bg-blue-600' : 'bg-gray-300'
+                       }`}
+                   />
+                 ))}
+               </div>
+
+               <button
+                 onClick={handleNext}
+                 disabled={nextLoading}
+                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                 data-tour="ec-next-button"
+               >
+                 {nextLoading ? (
+                   <>
+                     <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                     </svg>
+                     Processing...
+                   </>
+                 ) : (
+                   <>Preview<Eye className="w-4 h-4" /></>
+                 )}
+               </button>
+             </div>
+            )}
+
           </div>
         </div>
       </div>
 
-    {/* Guided Tour Overlay */}
-    {isCreatorTourOpen && (
-      creatorTargetRect && (
-        <>
-          {/* Highlight box with dimming via huge box-shadow */}
-          <div
-            className="fixed border-2 border-indigo-500 rounded-md shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] z-50 pointer-events-none"
-            style={{
-              left: `${creatorTargetRect.left}px`,
-              top: `${creatorTargetRect.top}px`,
-              width: `${creatorTargetRect.width}px`,
-              height: `${creatorTargetRect.height}px`
-            }}
-          />
-          {/* Tooltip */}
-          <div
-            className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-xl max-w-sm"
-            style={{
-              left: `${Math.min(Math.max(16, creatorTargetRect.left), window.innerWidth - 320)}px`,
-              top: `${Math.min(creatorTargetRect.bottom + 12, window.innerHeight - 180)}px`
-            }}
-          >
-            <div className="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">
-              {creatorTourSteps[creatorTourIndex]?.title}
-            </div>
-            <div className="px-4 py-3 text-sm text-gray-700">
-              {creatorTourSteps[creatorTourIndex]?.content}
-            </div>
-            <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-100">
-              <div className="text-xs text-gray-500">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
-              <div className="flex items-center gap-2">
-                <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Skip</button>
-                <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-gray-300 rounded-sm text-sm ${creatorTourIndex===0 ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}>Back</button>
-                {creatorTourIndex < creatorTourSteps.length - 1 ? (
-                  <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-[#3E2B66] text-white rounded-sm text-sm">Next</button>
-                ) : (
-                  <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-[#3E2B66] text-white rounded-sm text-sm">Done</button>
-                )}
-              </div>
-            </div>
-          </div>
-        </>
-      )
-    )}
       {/* Advanced Options Modal */}
       {showAdvanced && (
         <div className="fixed inset-0 z-50">
@@ -3083,6 +3501,96 @@ const PowerFormCreate: React.FC = () => {
           </div>
         </div>
       )}
+
+    {/* Guided Tour Overlay */}
+    {isCreatorTourOpen && (
+      creatorTargetRect && (() => {
+        // Calculate tooltip position relative to target element
+        const tooltipWidth = 384; // max-w-sm = 384px
+        const tooltipHeight = 200; // approximate height
+        const spacing = 12; // space between tooltip and target
+        const padding = 16; // padding from viewport edges
+        
+        // Calculate horizontal position - center tooltip relative to target, but keep within viewport
+        const targetCenterX = creatorTargetRect.left + (creatorTargetRect.width / 2);
+        let tooltipLeft = targetCenterX - (tooltipWidth / 2);
+        // Keep tooltip within viewport bounds
+        if (tooltipLeft < padding) {
+          tooltipLeft = padding;
+        } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
+          tooltipLeft = window.innerWidth - tooltipWidth - padding;
+        }
+        
+        // Calculate vertical position - prefer below, but show above if not enough space
+        const spaceBelow = window.innerHeight - creatorTargetRect.bottom - spacing;
+        const spaceAbove = creatorTargetRect.top - spacing;
+        const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+        
+        const tooltipTop = showAbove 
+          ? creatorTargetRect.top - tooltipHeight - spacing
+          : creatorTargetRect.bottom + spacing;
+        
+        // Calculate arrow position (centered on target element)
+        // Arrow should point to the center of the target element
+        // Position is relative to tooltip's left edge
+        const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
+        // Constrain arrow to be within tooltip bounds (with some padding)
+        const arrowPadding = 20;
+        const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
+        
+        // Use dragged position if available, otherwise use calculated position
+        const finalLeft = tooltipPosition ? tooltipPosition.x : tooltipLeft;
+        const finalTop = tooltipPosition ? tooltipPosition.y : Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding));
+
+        return (
+          <>
+            {/* Tooltip - styled like the tooltip UI */}
+            <div
+              ref={tooltipRef}
+              className="fixed z-50"
+              style={{
+                left: `${finalLeft}px`,
+                top: `${finalTop}px`
+              }}
+            >
+              {/* Tooltip box */}
+              <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
+              {/* Draggable header */}
+                <div 
+                  className="px-4 py-3 font-semibold cursor-move select-none"
+                  onMouseDown={handleTooltipMouseDown}
+                >
+                  {creatorTourSteps[creatorTourIndex]?.title}
+                </div>
+                <div className="px-4 py-2 text-sm leading-relaxed">
+                  {creatorTourSteps[creatorTourIndex]?.content}
+                </div>
+                <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
+                  <div className="text-xs text-white-900">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
+                    <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${creatorTourIndex===0 ? 'cursor-not-allowed text-white-900' : 'hover:bg-white-700 text-white'}`}>Back</button>
+                    {creatorTourIndex < creatorTourSteps.length - 1 ? (
+                      <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                    ) : (
+                      <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                    )}
+                  </div>
+                </div>
+                {/* Arrow pointing to target - positioned absolutely within tooltip */}
+                <div 
+                  className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                  style={{ 
+                    left: `${constrainedArrowLeft}px`,
+                    transform: 'translateX(-50%)'
+                  }}
+                ></div>
+              </div>
+            </div>
+          </>
+        );
+      })()
+    )}
     </div>
   );
 };

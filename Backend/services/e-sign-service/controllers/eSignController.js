@@ -6,6 +6,37 @@ const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const SignatureField = require('../models/SignatureFields');
 const { logActivity } = require("../services/activityLogService");
+const mongoose = require('mongoose');
+
+// Helper function to parse authentication and return array of valid ObjectIds
+const parseAuthLevel = (authentication) => {
+  if (!authentication) return [];
+  
+  // If it's already a valid ObjectId string, return it as array
+  if (mongoose.Types.ObjectId.isValid(authentication) && typeof authentication === 'string' && authentication.length === 24) {
+    return [authentication];
+  }
+  
+  // Try to parse as JSON (handles stringified arrays)
+  try {
+    const parsed = JSON.parse(authentication);
+    if (Array.isArray(parsed)) {
+      // Filter and return only valid ObjectIds
+      return parsed.filter(auth => mongoose.Types.ObjectId.isValid(auth));
+    }
+    // If parsed but not an array, check if it's a valid ObjectId
+    if (mongoose.Types.ObjectId.isValid(parsed)) {
+      return [parsed];
+    }
+  } catch (e) {
+    // Not JSON, check if it's a valid ObjectId string
+    if (mongoose.Types.ObjectId.isValid(authentication)) {
+      return [authentication];
+    }
+  }
+  
+  return [];
+};
 // Documents Upload 
 const Upload = async (req, res) => {
     const { files } = req;
@@ -98,10 +129,16 @@ const insertRecipient = async (req, res) => {
 
   const recps = await Promise.all(
     recipients.map(async (r) => {
-      let recipient = await Recipient.findOne({ email: r.email });
+      // First try to find recipient by email that belongs to this user
+      let recipient = await Recipient.findOne({ 
+        email: r.email,
+        UserId: userId 
+      });
 
       if (!recipient) {
+        // If not found, create a new recipient with UserId
         recipient = await Recipient.create({
+          UserId: userId,
           name: r.name,
           email: r.email
         });
@@ -121,7 +158,7 @@ const insertRecipient = async (req, res) => {
         // optionally update role/order/authLevel
         existingPermission.role = r.role;
         existingPermission.order = r.order ?? existingPermission.order;
-        existingPermission.authLevel = r.authentication;
+        existingPermission.authLevel = parseAuthLevel(r.authentication);
         await existingPermission.save();
         // Log recipient permission updated
         await logActivity(envelopeId, "RECIPIENT_PERMISSION_UPDATED", "Sender", {
@@ -135,7 +172,7 @@ const insertRecipient = async (req, res) => {
           role: r.role,
           order: r.order,
           status: 'waiting',
-          authLevel: r.authentication
+          authLevel: parseAuthLevel(r.authentication)
         });
         // Log recipient permission created
         await logActivity(envelopeId, "RECIPIENT_PERMISSION_CREATED", "Sender", {
@@ -288,6 +325,9 @@ const updateEnvelope = async (req, res) => {
     envelope.priority = envelopeData.priority || envelope.priority;
     envelope.signingOrder = envelopeData.signingOrder || envelope.signingOrder;
     envelope.expirationDate = envelopeData.expiresAt || envelope.expirationDate;
+    if (typeof envelopeData.expirationAlertDays === 'number') {
+      envelope.expirationAlertDays = envelopeData.expirationAlertDays;
+    }
     envelope.isReminder = envelopeData.reminderEnabled || envelope.isReminder;
     envelope.reminderInterval = envelopeData.reminderInterval || envelope.reminderInterval;
     envelope.isAll = envelopeData.requireAllSignatures || envelope.isAll;

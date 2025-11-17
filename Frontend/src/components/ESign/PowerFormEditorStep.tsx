@@ -54,8 +54,14 @@ export type PowerFormData = {
 };
 
 const RECIPIENT_COLORS = ["#2563eb", "#059669", "#d97706", "#db2777", "#7c3aed", "#f43f5e"];
+const RECIPIENT_BORDER_STYLES = ["dashed", "dotted", "solid", "double", "groove", "ridge"];
+
 function getRecipientColor(idx: number) {
   return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length];
+}
+
+function getRecipientBorderStyle(idx: number) {
+  return RECIPIENT_BORDER_STYLES[idx % RECIPIENT_BORDER_STYLES.length];
 }
 
 export default function PowerFormEditorStep({
@@ -124,6 +130,13 @@ export default function PowerFormEditorStep({
     const map: Record<string, string> = {};
     recipients.forEach((r, idx) => (map[r.id] = getRecipientColor(idx)));
     slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientColor(idx + recipients.length))); // avoid collision
+    return map;
+  }, [recipients, slotsToUse]);
+
+  const recipientBorderStyleMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    recipients.forEach((r, idx) => (map[r.id] = getRecipientBorderStyle(idx)));
+    slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientBorderStyle(idx + recipients.length))); // avoid collision
     return map;
   }, [recipients, slotsToUse]);
 
@@ -476,6 +489,8 @@ export default function PowerFormEditorStep({
                     const assignee = findAssignee(f);
                     const color =
                       recipientColorMap[f.recipientId ?? f.slotId ?? ""] || "#2563eb";
+                    const borderStyle =
+                      recipientBorderStyleMap[f.recipientId ?? f.slotId ?? ""] || "dashed";
                     const isActive =
                       mode === "normal"
                         ? f.recipientId === activeRecipientId
@@ -491,7 +506,7 @@ export default function PowerFormEditorStep({
                             top: f.y,
                             width: f.width,
                             height: f.height,
-                            border: `2px dashed ${color}`,
+                            border: `2px ${borderStyle} ${color}`,
                             background: "#fff",
                             display: "flex",
                             alignItems: "center",
@@ -565,7 +580,7 @@ export default function PowerFormEditorStep({
                       top: dropPreview.y - 20,
                       width: 120,
                       height: 40,
-                      border: `2px dashed ${
+                      border: `2px ${recipientBorderStyleMap[activeAssigneeId ?? ""] || "dashed"} ${
                         recipientColorMap[activeAssigneeId ?? ""] || "#2563eb"
                       }`,
                       background: "#e0e7ff88",

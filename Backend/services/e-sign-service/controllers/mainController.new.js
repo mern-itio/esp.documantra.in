@@ -103,7 +103,15 @@ const envelopesData = async (req, res) => {
             role: recipientPermissions.role || '',
             order: recipientPermissions.order || 0,
             status: recipientPermissions.status || 'pending',
-            authentication: recipientPermissions.authLevel || 'none',
+            authentication: (() => {
+              // Handle authLevel: can be array (new) or single value (old data for backward compatibility)
+              if (!recipientPermissions.authLevel) return 'none';
+              if (Array.isArray(recipientPermissions.authLevel)) {
+                return recipientPermissions.authLevel.length > 0 ? JSON.stringify(recipientPermissions.authLevel) : 'none';
+              }
+              // Old format: single ObjectId - convert to array format for frontend
+              return JSON.stringify([recipientPermissions.authLevel]);
+            })(),
           };
         }),
       };

@@ -1,9 +1,13 @@
 const Recipient = require('../models/Recipient');
 
-// List recipients (optionally by current user in future)
+// List recipients filtered by current user
 exports.listRecipients = async (req, res) => {
   try {
-    const recipients = await Recipient.find().sort({ createdAt: -1 }).lean();
+    const userId = req.user?.data?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const recipients = await Recipient.find({ UserId: userId }).sort({ createdAt: -1 }).lean();
     return res.status(200).json({ data: recipients });
   } catch (err) {
     console.error('listRecipients error', err);
@@ -14,11 +18,24 @@ exports.listRecipients = async (req, res) => {
 // Create recipient
 exports.createRecipient = async (req, res) => {
   try {
+    const userId = req.user?.data?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const { name, email, title = '', company = '', phone = '', address = '', signature = '' } = req.body;
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
-    const created = await Recipient.create({ name, email, title, company, phone, address, signature });
+    const created = await Recipient.create({ 
+      UserId: userId,
+      name, 
+      email, 
+      title, 
+      company, 
+      phone, 
+      address, 
+      signature 
+    });
     return res.status(201).json({ data: created });
   } catch (err) {
     console.error('createRecipient error', err);
@@ -29,16 +46,27 @@ exports.createRecipient = async (req, res) => {
 // Update recipient
 exports.updateRecipient = async (req, res) => {
   try {
+    const userId = req.user?.data?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const { id } = req.params;
     const { name, email, title, company, phone, address, signature } = req.body;
+    
+    // First check if recipient exists and belongs to the user
+    const recipient = await Recipient.findById(id);
+    if (!recipient) {
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
+    if (recipient.UserId && recipient.UserId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'You do not have permission to update this recipient' });
+    }
+    
     const updated = await Recipient.findByIdAndUpdate(
       id,
       { $set: { name, email, title, company, phone, address, signature } },
       { new: true }
     );
-    if (!updated) {
-      return res.status(404).json({ message: 'Recipient not found' });
-    }
     return res.status(200).json({ data: updated });
   } catch (err) {
     console.error('updateRecipient error', err);
@@ -49,11 +77,22 @@ exports.updateRecipient = async (req, res) => {
 // Delete recipient
 exports.deleteRecipient = async (req, res) => {
   try {
+    const userId = req.user?.data?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const { id } = req.params;
-    const deleted = await Recipient.findByIdAndDelete(id);
-    if (!deleted) {
+    
+    // First check if recipient exists and belongs to the user
+    const recipient = await Recipient.findById(id);
+    if (!recipient) {
       return res.status(404).json({ message: 'Recipient not found' });
     }
+    if (recipient.UserId && recipient.UserId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'You do not have permission to delete this recipient' });
+    }
+    
+    const deleted = await Recipient.findByIdAndDelete(id);
     return res.status(200).json({ message: 'Recipient deleted' });
   } catch (err) {
     console.error('deleteRecipient error', err);

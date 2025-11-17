@@ -22,35 +22,43 @@ interface AuthMethod {
 interface AdvancedAuthenticationSelectorProps {
   selectedMethods?: string[];
   onMethodsChange?: (methods: string[]) => void;
-  onMethodSelect?: (methodId: string) => void;
+  onMethodSelect?: (methodId: string | null | string[]) => void; // Updated to support array
+  onSave?: (methodId: string | null | string[]) => void; // Updated to support array
+  onSelectionChange?: (methodIds: string[]) => void; // Updated to always pass array
   riskLevel: 'low' | 'medium' | 'high';
   complianceRequirements?: string[];
+  showSaveButton?: boolean;
+  allowMultiple?: boolean; // New prop to enable multi-select
 }
 
 const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorProps> = ({
   selectedMethods = [],
   onMethodsChange,
   onMethodSelect,
+  onSave,
+  onSelectionChange,
   riskLevel,
-  complianceRequirements = []
+  complianceRequirements = [],
+  showSaveButton = false,
+  allowMultiple = true // Default to multi-select
 }) => {
   const [activeTab, setActiveTab] = useState('recommended');
   const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
-  // single-select mode: keep one selected method id (or null)
-  const [localSelectedMethod, setLocalSelectedMethod] = useState<string | null>(
-    (selectedMethods && selectedMethods.length > 0) ? selectedMethods[0] : null
+  // multi-select mode: keep array of selected method ids
+  const [localSelectedMethods, setLocalSelectedMethods] = useState<string[]>(
+    selectedMethods || []
   );
 
   useEffect(() => {
     fetchAvailableAuthMethods();
   }, []);
 
-  // Update localSelectedMethod when selectedMethods prop changes
+  // Update localSelectedMethods when selectedMethods prop changes
   useEffect(() => {
-    if (selectedMethods && selectedMethods.length > 0) {
-      setLocalSelectedMethod(selectedMethods[0]);
+    if (selectedMethods && Array.isArray(selectedMethods)) {
+      setLocalSelectedMethods(selectedMethods);
     } else {
-      setLocalSelectedMethod(null);
+      setLocalSelectedMethods([]);
     }
   }, [selectedMethods]);
 
@@ -65,15 +73,57 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     }
   };
 
-  // single-select toggle: select or deselect the method
+  // multi-select toggle: add or remove method from selection
   const toggleMethod = (methodId: string) => {
-    const isCurrentlySelected = localSelectedMethod === methodId;
-    const newSelected = isCurrentlySelected ? null : methodId;
-    setLocalSelectedMethod(newSelected);
-    // Keep legacy onMethodsChange signature (array) for compatibility
-    onMethodsChange?.(newSelected ? [newSelected] : []);
-    // Notify parent a single method was selected (or deselected)
-    if (newSelected) onMethodSelect?.(newSelected);
+    let newSelected: string[];
+    const isCurrentlySelected = localSelectedMethods.includes(methodId);
+    
+    if (allowMultiple) {
+      // Multi-select mode: toggle the method in the array
+      if (isCurrentlySelected) {
+        newSelected = localSelectedMethods.filter(id => id !== methodId);
+      } else {
+        newSelected = [...localSelectedMethods, methodId];
+      }
+    } else {
+      // Single-select mode (for backward compatibility)
+      newSelected = isCurrentlySelected ? [] : [methodId];
+    }
+    
+    setLocalSelectedMethods(newSelected);
+    // Notify parent of selection change
+    onMethodsChange?.(newSelected);
+    // Notify parent of selection change (for temporary state when using external save button)
+    onSelectionChange?.(newSelected);
+    
+    // Only call onMethodSelect immediately if we're NOT using a save button (legacy behavior)
+    if (!showSaveButton && !onSelectionChange) {
+      // Legacy behavior: when no save button and no onSelectionChange, call onMethodSelect immediately
+      if (allowMultiple) {
+        onMethodSelect?.(newSelected.length > 0 ? newSelected : null);
+      } else {
+        onMethodSelect?.(newSelected.length > 0 ? newSelected[0] : null);
+      }
+    }
+    // Otherwise, wait for the save button to be clicked (either external or internal)
+  };
+
+  // Handle save button click
+  const handleSave = () => {
+    if (onSave) {
+      if (allowMultiple) {
+        onSave(localSelectedMethods.length > 0 ? localSelectedMethods : null);
+      } else {
+        onSave(localSelectedMethods.length > 0 ? localSelectedMethods[0] : null);
+      }
+    } else if (onMethodSelect) {
+      // Fallback to onMethodSelect if onSave is not provided
+      if (allowMultiple) {
+        onMethodSelect(localSelectedMethods.length > 0 ? localSelectedMethods : null);
+      } else {
+        onMethodSelect(localSelectedMethods.length > 0 ? localSelectedMethods[0] : null);
+      }
+    }
   };
 
   const getSecurityLevelColor = (level: string) => {
@@ -105,7 +155,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
   const renderMethodCard = (method: AuthMethod, isRecommended = false) => {
     console.log('Rendering method:', method);
-    const isSelected = localSelectedMethod === method.id;
+    const isSelected = localSelectedMethods.includes(method.id);
     const IconName = method.icon || 'Shield';
     const Icon = (LucideIcons as any)[IconName];
     return (
@@ -229,22 +279,24 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         </nav>
       </div>
 
-      {/* Selected Method Summary (single-select) */}
-      {localSelectedMethod && (
+      {/* Selected Methods Summary (multi-select) */}
+      {localSelectedMethods.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-blue-900">Method Selected</span>
+            <span className="font-medium text-blue-900">
+              {localSelectedMethods.length} Method{localSelectedMethods.length !== 1 ? 's' : ''} Selected
+            </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {(() => {
-              const method = authMethods.find(m => m.id === localSelectedMethod);
+            {localSelectedMethods.map(methodId => {
+              const method = authMethods.find(m => m.id === methodId);
               return method ? (
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                <span key={methodId} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
                   {method.name}
                 </span>
               ) : null;
-            })()}
+            })}
           </div>
         </div>
       )}
@@ -271,6 +323,18 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Save Button */}
+      {showSaveButton && (
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <button
+            onClick={handleSave}
+            className="px-6 py-2 bg-[#3E2B66] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Save
+          </button>
         </div>
       )}
     </div>

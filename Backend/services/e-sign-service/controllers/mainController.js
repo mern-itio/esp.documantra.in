@@ -135,6 +135,17 @@ const envelopesData = async (req, res) => {
         })),
         recipients: envelope.recipientIds.map((recipient) => {
           const perm = (recipient && Array.isArray(recipient.permissions) && recipient.permissions[0]) || {};
+          // Handle authLevel: can be array (new) or single value (old data for backward compatibility)
+          let authentication = 'none';
+          if (perm.authLevel) {
+            if (Array.isArray(perm.authLevel)) {
+              // New format: array of ObjectIds - stringify for frontend
+              authentication = perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : 'none';
+            } else {
+              // Old format: single ObjectId - convert to array format for frontend
+              authentication = JSON.stringify([perm.authLevel]);
+            }
+          }
           return {
             id: recipient._id,
             name: recipient.name,
@@ -142,7 +153,7 @@ const envelopesData = async (req, res) => {
             role: perm.role || 'signer',
             order: typeof perm.order === 'number' ? perm.order : 0,
             status: perm.status || 'pending',
-            authentication: perm.authLevel || 'none',
+            authentication: authentication,
           };
         }),
       };
@@ -228,7 +239,15 @@ const envelopesDetail = async (req, res) => {
                 role: perm.role,
                 order: perm.order,
                 status: perm.status,
-                authentication: perm.authLevel,
+                authentication: (() => {
+                  // Handle authLevel: can be array (new) or single value (old data for backward compatibility)
+                  if (!perm.authLevel) return null;
+                  if (Array.isArray(perm.authLevel)) {
+                    return perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : null;
+                  }
+                  // Old format: single ObjectId - convert to array format for frontend
+                  return JSON.stringify([perm.authLevel]);
+                })(),
                 signature: recipient.signature
               };
             })
@@ -629,8 +648,12 @@ const addPowerFormSignerSignature = async (req, res) => {
 const getRecipientByEmail  = async (req, res)=>{
  const {email} = req.params;
  try{
-    // Check if recipient exists in the system
-     const existingRecipient = await Recipient.findOne({ email });
+    const userId = req.user?.data?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    // Check if recipient exists for this user
+     const existingRecipient = await Recipient.findOne({ email, UserId: userId });
      if(existingRecipient){
        return res.status(200).json({
         recipient: existingRecipient
@@ -643,6 +666,7 @@ const getRecipientByEmail  = async (req, res)=>{
 
  }catch(err){
   console.log(`Error in fetching recipient by Email: ${err}`)
+  return res.status(500).json({ message: 'Failed to fetch recipient' });
  }
 
 }
@@ -1115,10 +1139,19 @@ const getAllEnvelopeStats = async (req, res) => {
   }
 };
 const getAllRecipients = async (req, res) =>{
-  const recipients = await Recipient.find();
-  return res.status(200).json({
-    recipients
-  })
+  try {
+    const userId = req.user?.data?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const recipients = await Recipient.find({ UserId: userId }).sort({ createdAt: -1 });
+    return res.status(200).json({
+      recipients
+    });
+  } catch (err) {
+    console.error('getAllRecipients error', err);
+    return res.status(500).json({ message: 'Failed to fetch recipients' });
+  }
 }
 const saveTextField = async (req, res) => {
   try {

@@ -665,6 +665,8 @@ const authRoutes = [
   { path: '/e-sign/dashboard', element: <EsignDashboard /> },
   // moved to no-sidebar layout group below
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
+  { path: '/e-sign/create', element: <EnvelopeCreator /> },
+
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },
   { path: '/e-sign/aggrement', element: <AgreementPage /> },
   { path: '/e-sign/aggrement/all', element: <AgreementPage /> },
@@ -679,6 +681,8 @@ const authRoutes = [
   { path: '/e-sign/envelope_types', element: <EnvelopeTypes /> },
   { path: '/e-sign/manage_receipients', element: <ManageRecipients /> },
   { path: '/e-sign/form-list', element: <FormsList /> },
+  { path: '/e-sign/powerforms', element: <PowerFormCreate /> },
+
 
   // Template Routes
   { path: '/template/dashboard', element: <TemplateDashboard /> },
@@ -817,11 +821,9 @@ const router = createBrowserRouter([
         ),
         children: [
           { path: '/e-sign/envelope/:id', element: <EnvelopeDetailPage /> },
-          { path: '/e-sign/create', element: <EnvelopeCreator /> },
           { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
           { path: '/e-sign/guide', element: <EnvelopeGuideSupport /> },
           { path: '/e-sign/form-builder/:id', element: <FormBuilder /> },
-          { path: '/e-sign/powerforms', element: <PowerFormCreate /> },
 
 
         ],
@@ -833,7 +835,7 @@ const router = createBrowserRouter([
           { path: 'e-sign/signer/:id/:recipientId/:cycleId?', element: <PublicSignerPage /> },
           { path: '/template/form-view/:id', element: <FormView /> },
           { path: '/e-sign/power-form/:formId/:envelopeId', element: <PowerForm /> },
-          { path: '/e-sign/signer/thank-you', element: <ThankYouPage/>}
+          { path: '/e-sign/signer/thank-you', element: <ThankYouPage /> }
         ],
       },
       {

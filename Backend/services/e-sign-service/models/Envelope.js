@@ -28,6 +28,7 @@ const EnvelopeSchema = new mongoose.Schema({
   priority: { type: String, enum: ["low", "normal", "high", "urgent","power-form"], default: "normal" },
   signingOrder: { type: String, enum: ["In-Order", "Parallel", "sequential"], default: "In-Order" },
   expirationDate: { type: Date },
+  expirationAlertDays: { type: Number, default: 0 }, // days before expiration to send alert
   isReminder: { type: Boolean, default: false },
   reminderInterval: { type: Number }, // in days
   isAll: { type: Boolean, default: false }, // require all signers to sign

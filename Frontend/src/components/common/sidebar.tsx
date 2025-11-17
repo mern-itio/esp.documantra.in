@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard, ArrowLeft } from 'lucide-react';
 
 interface SidebarProps {
   activeView?: string;
@@ -24,13 +24,94 @@ interface SubMenuItem {
   icon?: React.ComponentType<any>;
 }
 
+// Component for menu item with tooltip
+const MenuItemButton: React.FC<{
+  item: MenuItem;
+  isOpen: boolean;
+  isMainMenuActive: boolean;
+  expandedMenu: string | null;
+  handleMainMenuClick: (item: MenuItem) => void;
+}> = ({ item, isOpen, isMainMenuActive, expandedMenu, handleMainMenuClick }) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!isOpen && buttonRef.current) {
+      const updatePosition = () => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          // Use sidebar width (64px when collapsed) + small margin
+          setTooltipPosition({
+            top: rect.top + rect.height / 2,
+            left: 64 + 8  // Sidebar width (64px) + 8px margin
+          });
+        }
+      };
+      updatePosition();
+      // Update on scroll and resize
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative group">
+      <button
+        ref={buttonRef}
+        onClick={() => handleMainMenuClick(item)}
+        className={`w-full text-[14px] flex items-center justify-between px-2.5 py-2.5 rounded-sm text-left transition-all duration-200 ${isMainMenuActive
+          ? 'bg-[#260559] text-white'
+          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+          }`}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="flex items-center space-x-3">
+          {item.icon && (
+            <item.icon
+              className={`h-5 w-5 ${isMainMenuActive ? 'text-white' : 'text-slate-400'
+                }`}
+            />
+          )}
+          {isOpen && <span className="font-medium">{item.label}</span>}
+        </div>
+        {item.children && isOpen && (
+          expandedMenu === item.id ? (
+            <ChevronDown className={`h-4 w-4 ${isMainMenuActive ? 'text-white' : 'text-slate-400'}`} />
+          ) : (
+            <ChevronRight className={`h-4 w-4 ${isMainMenuActive ? 'text-white' : 'text-slate-400'}`} />
+          )
+        )}
+      </button>
+      
+      {/* Tooltip for collapsed sidebar */}
+      {!isOpen && tooltipPosition.left > 0 && (
+        <div 
+          className="fixed px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          style={{ 
+            top: `${tooltipPosition.top}px`,
+            left: `${tooltipPosition.left}px`,
+            transform: 'translateY(-50%)'
+          }}
+        >
+          {item.label}
+          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Sidebar: React.FC<SidebarProps> = ({
   activeView = 'dashboard',
   setActiveView = () => { },
   isOpen = true,
   setIsOpen = () => { }
 }) => {
-  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+ const [expandedMenu, setExpandedMenu] = useState<string | null>("e-sign");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -86,6 +167,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     const newActiveView = getActiveViewFromRoute(location.pathname);
     setActiveView(newActiveView);
 
+    // Collapse sidebar when on /e-sign/create
+    if (
+      location.pathname.startsWith('/e-sign/create') ||
+      location.pathname.startsWith('/e-sign/powerforms')
+    ) {
+      setIsOpen(false);
+    }
     // Also expand the appropriate parent menu
     const pathname = location.pathname;
     if (pathname.startsWith('/documents/') || pathname === '/all-documents' || pathname === '/recent') {
@@ -99,10 +187,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     } else if (pathname.startsWith('/api-service/')) {
       setExpandedMenu('API-Keys');
     }
-  }, [location.pathname, setActiveView]);
+  }, [location.pathname, setActiveView, setIsOpen]);
 
   const menuItems: MenuItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    // { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     {
       id: 'e-sign',
       label: 'E-Sign',
@@ -207,6 +295,27 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleMainMenuClick = (item: MenuItem) => {
+    // If sidebar is collapsed, expand it first
+    if (!isOpen) {
+      setIsOpen(true);
+      // If it has children, expand the submenu and navigate to first child
+      if (item.children && item.children.length > 0) {
+        setExpandedMenu(item.id);
+        // Small delay to allow sidebar to expand before navigation
+        setTimeout(() => {
+          handleNavigation(item.children![0].path, item.children![0].id);
+        }, 100);
+        return;
+      } else if (item.path) {
+        // Small delay to allow sidebar to expand before navigation
+        setTimeout(() => {
+          handleNavigation(item.path!, item.id);
+        }, 100);
+        return;
+      }
+    }
+    
+    // Normal behavior when sidebar is open
     if (item.children) {
       toggleSubmenu(item.id);
     } else if (item.path) {
@@ -215,14 +324,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className={`bg-white shadow-sm border-r border-slate-200 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full`}>
+    <div className={`bg-white shadow-sm border-r border-slate-200 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
         {isOpen && (
           <div className="flex items-center space-x-2">
             <Building2 className="h-7 w-7 text-indigo-600" />
             <div>
-              <h1 className="text-base font-semibold text-slate-900">Draft&Sign</h1>
+              <Link to="/dashboard"><h1 className="text-base font-semibold text-slate-900">Draft&Sign</h1></Link>
             </div>
           </div>
         )}
@@ -238,80 +347,78 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto min-h-0">
-        {menuItems.map((item) => (
-          <div key={item.id}>
-            <button
-              onClick={() => handleMainMenuClick(item)}
-              className={`w-full text-[14px] flex items-center justify-between px-2.5 py-2.5 rounded-lg text-left transition-all duration-200 ${activeView === item.id
-                ? 'bg-indigo-50 text-indigo-700'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="flex items-center space-x-3">
-                {item.icon && (
-                  <item.icon
-                    className={`h-5 w-5 ${activeView === item.id ? 'text-indigo-600' : 'text-slate-400'
-                      }`}
-                  />
-                )}
-                {isOpen && <span className="font-medium">{item.label}</span>}
-              </div>
-              {item.children && isOpen && (
-                expandedMenu === item.id ? (
-                  <ChevronDown className="h-4 w-4 text-slate-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-slate-400" />
-                )
-              )}
-            </button>
+      <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto min-h-0 overflow-x-visible">
+        {menuItems.map((item) => {
+          // Check if any child is active
+          const hasActiveChild = item.children?.some(child => activeView === child.id) || false;
+          const isMainMenuActive = activeView === item.id || hasActiveChild;
 
-            {/* Submenu */}
-            {item.children && expandedMenu === item.id && isOpen && (
-              <div className="ml-6 mt-1 space-y-1">
-                {item.children.map((sub) => {
+          return (
+            <div key={item.id}>
+              <MenuItemButton 
+                item={item}
+                isOpen={isOpen}
+                isMainMenuActive={isMainMenuActive}
+                expandedMenu={expandedMenu}
+                handleMainMenuClick={handleMainMenuClick}
+              />
 
-                  const isSendEnvelope = sub.id === "create";   // ✅ only for Send Envelope
-                  const isActive = activeView === sub.id;
+              {/* Submenu */}
+              {item.children && expandedMenu === item.id && isOpen && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.children.map((sub) => {
 
-                  return (
-                    <button
-                      key={sub.id}
-                      onClick={() => handleNavigation(sub.path, sub.id)}
-                      className={`
-                          text-xs w-full flex items-center px-2.5 py-2 rounded-md text-sm transition-all duration-200
-                          ${isSendEnvelope
-                          ? "send-envelope text-white hover:bg-brandPurple-900"     // ✅ Dark for only Send Envelope
-                          : isActive
-                            ? "bg-indigo-100 text-indigo-700"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                        }
-                              `}
-                      style={{
-                        cursor: 'pointer',
-                        ...(isSendEnvelope && { backgroundColor: '#260559' })
-                      }}
-                    >
-                      <div className="flex items-center space-x-2">
-                        {sub.icon && (
-                          <sub.icon
-                            className={`h-4 w-4 
-                  ${isSendEnvelope ? "text-white" :
-                                isActive ? "text-indigo-600" : "text-slate-400"}
-                `}
-                          />
+                    const isSendEnvelope = sub.id === "create";   // ✅ only for Send Envelope
+                    const isActive = activeView === sub.id;
+
+                    return (
+                      <div key={sub.id} className="relative group">
+                        <button
+                          onClick={() => handleNavigation(sub.path, sub.id)}
+                          className={`
+                              text-xs w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm relative
+                              ${isSendEnvelope
+                              ? "text-indigo-700 hover:bg-indigo-100 transition-all duration-200"
+                              : isActive
+                                ? "bg-indigo-100 text-indigo-700 transition-all duration-200"
+                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200"
+                            }
+                                  `}
+                          style={{
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {sub.icon && (
+                              <sub.icon
+                                className={`h-4 w-4 
+                      ${isSendEnvelope ? "text-indigo-600" :
+                                    isActive ? "text-black" : "text-black"}
+                    `}
+                              />
+                            )}
+                            <span className={isSendEnvelope ? 'text-indigo-700 font-medium' : 'text-black'}>{sub.label}</span>
+                          </div>
+                          {isSendEnvelope && (
+                            <ArrowLeft className="h-4 w-4 text-indigo-600 animate-point-arrow" />
+                          )}
+                        </button>
+                        
+                        {/* Tooltip for collapsed sidebar submenu items (if visible) */}
+                        {!isOpen && (
+                          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                            {sub.label}
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                          </div>
                         )}
-                        <span>{sub.label}</span>
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-          </div>
-        ))}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Bottom Section - User Profile & Quick Actions */}

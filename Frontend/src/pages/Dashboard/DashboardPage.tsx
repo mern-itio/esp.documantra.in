@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
@@ -6,11 +6,11 @@ import {
   TrendingDown, 
   TrendingUp, 
   ArrowRight, 
-  Clock, 
   CreditCard,
   Zap,
   Loader2
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -85,7 +85,7 @@ const DashboardPage: React.FC = () => {
         setLoading(true);
         const [bRes, uRes] = await Promise.all([
           subscriptionApi.get('/usage/balance'),
-          subscriptionApi.get('/usage/records?limit=5'),
+          subscriptionApi.get('/usage/records?limit=30'),
         ]);
         if (!mounted) return;
         setBalance((bRes as any).data?.data?.creditsBalance ?? null);
@@ -102,6 +102,92 @@ const DashboardPage: React.FC = () => {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // Helper function to categorize module from action
+  const getModuleFromAction = (action: string, toolId?: string): string => {
+    if (!action) return 'Other';
+    const actionLower = action.toLowerCase();
+    
+    if (actionLower.startsWith('esign:') || actionLower.includes('envelope') || actionLower.includes('sign')) {
+      return 'E-Sign';
+    }
+    if (actionLower.startsWith('pdf:') || toolId?.toLowerCase().includes('pdf')) {
+      return 'PDF Tools';
+    }
+    if (actionLower.startsWith('document:') || actionLower.includes('document') || actionLower.includes('share')) {
+      return 'Document';
+    }
+    if (actionLower.startsWith('auth:') || actionLower.includes('auth')) {
+      return 'Authentication';
+    }
+    return 'Other';
+  };
+
+  // Transform usage data for chart
+  const chartData = useMemo(() => {
+    if (!usage.length) return [];
+    
+    // Group by date and module, aggregate
+    const grouped = usage.reduce((acc: any, record: any) => {
+      const date = new Date(record.createdAt);
+      const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const dateTime = date.getTime();
+      const module = getModuleFromAction(record.action, record.toolId);
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = {
+          date: dateKey,
+          dateTime: dateTime,
+          used: 0,
+          added: 0,
+          'E-Sign': 0,
+          'PDF Tools': 0,
+          'Document': 0,
+          'Authentication': 0,
+          'Other': 0,
+          balance: record.balanceAfter,
+          count: 0
+        };
+      }
+      
+      if (record.creditsDelta < 0) {
+        const creditsUsed = Math.abs(record.creditsDelta);
+        acc[dateKey].used += creditsUsed;
+        acc[dateKey][module] = (acc[dateKey][module] || 0) + creditsUsed;
+      } else {
+        acc[dateKey].added += record.creditsDelta;
+      }
+      acc[dateKey].balance = record.balanceAfter;
+      acc[dateKey].count += 1;
+      
+      return acc;
+    }, {});
+    
+    // Convert to array and sort by date
+    return Object.values(grouped)
+      .sort((a: any, b: any) => a.dateTime - b.dateTime)
+      .slice(-7); // Show last 7 days
+  }, [usage]);
+
+  // Calculate module totals for summary
+  const moduleTotals = useMemo(() => {
+    const totals: Record<string, number> = {
+      'E-Sign': 0,
+      'PDF Tools': 0,
+      'Document': 0,
+      'Authentication': 0,
+      'Other': 0
+    };
+    
+    usage.forEach((record) => {
+      if (record.creditsDelta < 0) {
+        const module = getModuleFromAction(record.action, record.toolId);
+        totals[module] = (totals[module] || 0) + Math.abs(record.creditsDelta);
+      }
+    });
+    
+    return totals;
+  }, [usage]);
 
   return (
     <div className="space-y-8">
@@ -155,7 +241,7 @@ const DashboardPage: React.FC = () => {
             <h1 className="text-2xl font-semibold">Dashboard</h1>
             <p className="text-white/80 text-sm mt-1">Welcome to Draft & Sign - manage envelopes and documents at a glance.</p>
           </div>
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/e-sign/create')}
               className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm transition-colors"
@@ -168,14 +254,14 @@ const DashboardPage: React.FC = () => {
             >
               Open E‑Sign
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">📄</div>
@@ -191,12 +277,12 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-green-50 text-green-600">✅</div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Completed Envelopes</p>
                 <p className="text-2xl font-semibold text-slate-900 mt-1">
                   {envStatesLoading ? '—' : envelopeStats?.completedEnvelopes}
                 </p>
@@ -207,12 +293,12 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-yellow-50 text-yellow-700">⏳</div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Pending</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Pending Envelopes</p>
                 <p className="text-2xl font-semibold text-slate-900 mt-1">
                   {envStatesLoading ? '—' : (envelopeStats?.pendingEnvelopes ?? 0)}
                 </p>
@@ -224,7 +310,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Card */}
         <Link to="/credits-usage">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-sm shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-lg bg-fuchsia-50 text-fuchsia-600">📊</div>
@@ -303,77 +389,131 @@ const DashboardPage: React.FC = () => {
               <p className="text-sm font-medium text-slate-700 mb-1">No recent usage</p>
               <p className="text-xs text-slate-500">Your credit transactions will appear here</p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {usage.map((u, idx) => {
-                const isDeduction = u.creditsDelta < 0;
-                const actionName = u.action || 'usage';
-                const toolName = u.toolId ? (toolNameByIdRef.current[u.toolId] || u.toolId) : '';
-                const date = new Date(u.createdAt);
-                const formattedDate = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-                const formattedTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+          ) : chartData.length > 0 ? (
+            <div className="space-y-6">
+              {/* Chart */}
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorUsed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis 
+                      stroke="#6b7280"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        padding: '12px'
+                      }}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'used') return [`${value} credits`, 'Credits Used'];
+                        if (name === 'added') return [`${value} credits`, 'Credits Added'];
+                        return [value, name];
+                      }}
+                      labelFormatter={(label) => `Date: ${label}`}
+                    />
+                    <Legend 
+                      formatter={(value) => {
+                        if (value === 'used') return 'Credits Used';
+                        if (value === 'added') return 'Credits Added';
+                        return value;
+                      }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="used" 
+                      stroke="#ef4444" 
+                      fillOpacity={1} 
+                      fill="url(#colorUsed)"
+                      strokeWidth={2}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="added" 
+                      stroke="#10b981" 
+                      fillOpacity={1} 
+                      fill="url(#colorAdded)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
 
-                return (
-                  <div 
-                    key={idx} 
-                    className="group relative flex items-center gap-4 rounded-xl px-4 py-3.5 bg-gradient-to-r from-slate-50/50 to-white border border-slate-100 hover:border-indigo-200 hover:shadow-sm transition-all duration-200 cursor-pointer"
-                  >
-                    {/* Status Indicator */}
-                    <div className="flex-shrink-0">
-                      <div className={`relative w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isDeduction 
-                          ? 'bg-red-50 group-hover:bg-red-100' 
-                          : 'bg-green-50 group-hover:bg-green-100'
-                      } transition-colors`}>
-                        {isDeduction ? (
-                          <TrendingDown className="w-5 h-5 text-red-600" />
-                        ) : (
-                          <TrendingUp className="w-5 h-5 text-green-600" />
-                        )}
-                        <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                          isDeduction ? 'bg-red-500' : 'bg-green-500'
-                        }`}></div>
-                      </div>
+              {/* Summary Stats */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-red-50">
+                      <TrendingDown className="w-4 h-4 text-red-600" />
                     </div>
-
-                    {/* Action Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold text-slate-900 truncate">
-                          {actionName}
-                        </span>
-                        {toolName && (
-                          <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium">
-                            {toolName}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{formattedDate}</span>
-                        <span className="text-slate-300">•</span>
-                        <span>{formattedTime}</span>
-                      </div>
-                    </div>
-
-                    {/* Credit Amount */}
-                    <div className="flex-shrink-0 flex items-center gap-2">
-                      <div className={`px-3 py-1.5 rounded-lg font-bold text-sm ${
-                        isDeduction
-                          ? 'bg-red-50 text-red-600 group-hover:bg-red-100'
-                          : 'bg-green-50 text-green-600 group-hover:bg-green-100'
-                      } transition-colors`}>
-                        {isDeduction ? '-' : '+'}{Math.abs(u.creditsDelta)}
-                      </div>
-                    </div>
-
-                    {/* Hover Arrow */}
-                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <Link to='/credits-usage'> <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" /></Link> 
+                    <div>
+                      <p className="text-xs text-slate-500">Total Used</p>
+                      <p className="text-lg font-semibold text-slate-900">
+                        {chartData.reduce((sum: number, d: any) => sum + d.used, 0)}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-green-50">
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Total Added</p>
+                      <p className="text-lg font-semibold text-slate-900">
+                        {chartData.reduce((sum: number, d: any) => sum + d.added, 0)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Module Breakdown */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {Object.entries(moduleTotals).map(([module, total]) => {
+                    if (total === 0) return null;
+                    const colors: Record<string, { bg: string; text: string }> = {
+                      'E-Sign': { bg: 'bg-blue-50', text: 'text-blue-600' },
+                      'PDF Tools': { bg: 'bg-green-50', text: 'text-green-600' },
+                      'Document': { bg: 'bg-purple-50', text: 'text-purple-600' },
+                      'Authentication': { bg: 'bg-amber-50', text: 'text-amber-600' },
+                      'Other': { bg: 'bg-slate-50', text: 'text-slate-600' }
+                    };
+                    const color = colors[module] || colors['Other'];
+                    
+                    return (
+                      <div key={module} className={`p-3 rounded-lg ${color.bg} border border-slate-100`}>
+                        <p className="text-xs font-medium text-slate-600 mb-1">{module}</p>
+                        <p className={`text-base font-semibold ${color.text}`}>{total}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="p-4 rounded-full bg-slate-100 mb-3">
+                <Zap className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-700 mb-1">No chart data available</p>
+              <p className="text-xs text-slate-500">Your credit transactions will appear here</p>
             </div>
           )}
         </div>

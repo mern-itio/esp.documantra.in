@@ -33,7 +33,11 @@ import {
   ChevronLeft,
   ExternalLink,
   Phone,
-  Edit
+  Edit,
+  BookOpen,
+  Search,
+  Save,
+  GripVertical
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -46,6 +50,7 @@ import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import { SubscriptionPlansModal } from '../../components/common/SubscriptionPlansModal';
+import { debounce } from '../../components/common/lib/utils';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 // Extend editor field locally to allow optional power-form metadata used during save
 type EditorSignatureFieldExt = EditorSignatureField & {
@@ -176,10 +181,68 @@ const EnvelopeCreator: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalForRecipientId, setAuthModalForRecipientId] = useState<string | null>(null);
   const [authModalForBulk, setAuthModalForBulk] = useState<boolean>(false);
+  const [tempAuthSelection, setTempAuthSelection] = useState<string[] | undefined>(undefined);
+  const [hasUserChangedSelection, setHasUserChangedSelection] = useState<boolean>(false);
+
+  // Helper function to parse authentication (handles both string and JSON array)
+  const parseAuthentication = (auth: string | undefined | null): string[] => {
+    if (!auth) return [];
+    try {
+      // Try to parse as JSON array
+      const parsed = JSON.parse(auth);
+      if (Array.isArray(parsed)) return parsed;
+      // If it's a string, return as single-item array for backward compatibility
+      return [auth];
+    } catch {
+      // If not JSON, treat as single string (backward compatibility)
+      return [auth];
+    }
+  };
+
+  // Helper function to stringify authentication (store as JSON array)
+  const stringifyAuthentication = (auth: string[] | null | undefined): string | null => {
+    if (!auth || auth.length === 0) return null;
+    return JSON.stringify(auth);
+  };
+
+  // Initialize tempAuthSelection when modal opens
+  useEffect(() => {
+    if (showAuthModal && !hasUserChangedSelection) {
+      if (authModalForBulk) {
+        const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
+        if (firstAuth) {
+          const firstAuthArray = parseAuthentication(firstAuth);
+          const allSame = recipients.every(r => {
+            const rAuth = parseAuthentication(r.authentication);
+            return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
+          });
+          setTempAuthSelection(allSame ? firstAuthArray : []);
+        } else {
+          setTempAuthSelection([]);
+        }
+      } else if (authModalForRecipientId) {
+        const recipient = recipients.find(r => r.id === authModalForRecipientId);
+        setTempAuthSelection(parseAuthentication(recipient?.authentication));
+      } else {
+        setTempAuthSelection([]);
+      }
+      setHasUserChangedSelection(false);
+    }
+  }, [showAuthModal, authModalForRecipientId, authModalForBulk]);
+
+  // Reset hasUserChangedSelection when modal closes
+  useEffect(() => {
+    if (!showAuthModal) {
+      setHasUserChangedSelection(false);
+      setTempAuthSelection(undefined);
+    }
+  }, [showAuthModal]);
   const [shouldOpenAuthModalFromTour, setShouldOpenAuthModalFromTour] = useState<boolean>(false);
   // Send confirmation modal state
   const [showSendConfirmationModal, setShowSendConfirmationModal] = useState<boolean>(false);
   const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
+  const [draggedSignerId, setDraggedSignerId] = useState<string | null>(null);
+  const [dragOverSignerId, setDragOverSignerId] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
   const [authMethods, setAuthMethods] = useState<any[]>([]);
   // Help menu / sidebar state
@@ -223,6 +286,23 @@ const EnvelopeCreator: React.FC = () => {
     mobileFriendly: useRef<HTMLDivElement | null>(null),
     comments: useRef<HTMLDivElement | null>(null),
   } as const;
+  
+  // Advanced options state
+  const [advancedOptions, setAdvancedOptions] = useState({
+    // Recipient Privileges
+    canSignOnPaper: true,
+    canDelegate: false,
+    // Reminders (already in envelopeData, but keeping here for consistency)
+    // Expiration
+    expirationDays: 120,
+    expirationAlertDays: 0,
+    expirationType: 'custom' as 'custom' | 'never',
+    alertType: 'custom' as 'custom' | 'never',
+    // Mobile-Friendly
+    responsiveSigning: true,
+    // Comments
+    commentsEnabled: false,
+  });
   // CSV recipient summary state (separate from manual bulk list)
   const [csvRecipientList, setCsvRecipientList] = useState<null | { fileName: string; role: Recipient['role']; items: Array<{ name: string; email: string }> }>(null);
   const [csvRoleDropdownOpen, setCsvRoleDropdownOpen] = useState<boolean>(false);
@@ -232,7 +312,7 @@ const EnvelopeCreator: React.FC = () => {
   const [_csvPrivateMessage, setCsvPrivateMessage] = useState<string | undefined>(undefined);
   const [_openCsvPrivate, setOpenCsvPrivate] = useState<boolean>(false);
   const [showEnvelopeTooltip, setShowEnvelopeTooltip] = useState(false);
-  const [showFrequencyTooltip, setShowFrequencyTooltip] = useState(false);
+  // const [showFrequencyTooltip, setShowFrequencyTooltip] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isDragOverCsv, setIsDragOverCsv] = useState(false);
   const [showCsvExceptions, setShowCsvExceptions] = useState(false);
@@ -482,7 +562,31 @@ const EnvelopeCreator: React.FC = () => {
     if (!bulkBatchName) setBulkBatchName('Bulk Send List');
     // Prevent auto-adding a blank recipient and remove any auto-added empty one
     hasAutoAddedRecipient.current = true;
-    setRecipients(prev => (prev.length === 1 && (!prev[0].name || prev[0].name.trim() === '') && (!prev[0].email || prev[0].email.trim() === '')) ? [] : prev);
+    
+    // Convert bulk recipients to Recipient[] format and add to recipients state
+    setRecipients(prev => {
+      // Remove any empty recipients
+      const filtered = prev.filter(r => r.name && r.name.trim() && r.email && r.email.trim());
+      
+      // Get the next order number
+      const nextOrder = filtered.length > 0 ? Math.max(...filtered.map(r => r.order || 0)) + 1 : 1;
+      
+      // Convert bulk recipients to Recipient[] format
+      const bulkRecipients: Recipient[] = cleaned.map((item, idx) => ({
+        id: `bulk_recipient_${Date.now()}_${idx}`,
+        name: item.name,
+        email: item.email,
+        role: roleToUse,
+        order: nextOrder + idx,
+        status: 'waiting' as const,
+        authentication: '68ee2a18ba0c0738eb275d34' as Recipient['authentication'] // Default: secret email verification
+      }));
+      
+      // Combine and normalize orders
+      const combined = [...filtered, ...bulkRecipients];
+      return normalizeOrders(combined);
+    });
+    
     setShowRecipients(true);
     setShowBulkModal(false);
   };
@@ -882,8 +986,27 @@ const EnvelopeCreator: React.FC = () => {
   const [suggestionsOpenForId, setSuggestionsOpenForId] = useState<string | null>(null);
   const [emailSuggestionsOpenForId, setEmailSuggestionsOpenForId] = useState<string | null>(null);
   const [loadingRecipientSuggestions, setLoadingRecipientSuggestions] = useState(false);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
+  const searchQueryRef = useRef<string>('');
   const suggestionsContainerRef = useRef<HTMLDivElement | null>(null);
   const emailSuggestionsContainerRef = useRef<HTMLDivElement | null>(null);
+  
+  // Recipient list modal state
+  const [showRecipientListModal, setShowRecipientListModal] = useState(false);
+  const [recipientListModalForId, setRecipientListModalForId] = useState<string | null>(null);
+  const [savedRecipients, setSavedRecipients] = useState<Array<{ _id: string; name: string; email: string; title?: string; company?: string; phone?: string; address?: string }>>([]);
+  const [loadingSavedRecipients, setLoadingSavedRecipients] = useState(false);
+  const [recipientListSearch, setRecipientListSearch] = useState('');
+  const [showAddRecipientForm, setShowAddRecipientForm] = useState(false);
+  const [newRecipientForm, setNewRecipientForm] = useState({
+    name: '',
+    email: '',
+    title: '',
+    company: '',
+    phone: '',
+    address: ''
+  });
+  const [savingNewRecipient, setSavingNewRecipient] = useState(false);
   // Access code expanded panels per recipient
   const [openAccessForId, setOpenAccessForId] = useState<Record<string, boolean>>({});
   // Private message expanded panels per recipient
@@ -892,10 +1015,11 @@ const EnvelopeCreator: React.FC = () => {
   // Envelope Type state
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
-  const [showOtherEnvelopeType, setShowOtherEnvelopeType] = useState<boolean>(false);
-  const [otherEnvelopeType, setOtherEnvelopeType] = useState<string>('');
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
   const [typeSearch, setTypeSearch] = useState<string>('');
+  const [showOtherInputInDropdown, setShowOtherInputInDropdown] = useState<boolean>(false);
+  const [newEnvelopeTypeValue, setNewEnvelopeTypeValue] = useState<string>('');
+  const [savingNewType, setSavingNewType] = useState<boolean>(false);
   const typeDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // PDF Preview Modal state
@@ -1049,10 +1173,7 @@ const EnvelopeCreator: React.FC = () => {
       formData.append('subject', envelopeData.subject.trim());
       formData.append('message', (envelopeData.message || '').trim());
       if (selectedEnvelopeType) {
-        const typeToSend = (selectedEnvelopeType === 'Other' && otherEnvelopeType.trim())
-          ? otherEnvelopeType.trim()
-          : selectedEnvelopeType;
-        formData.append('envelopetype', typeToSend);
+        formData.append('envelopetype', selectedEnvelopeType);
       }
 
       try {
@@ -1270,10 +1391,41 @@ const EnvelopeCreator: React.FC = () => {
           ...prev,
           subject: typeof env.subject === 'string' ? env.subject : (prev.subject || ''),
           message: typeof env.message === 'string' ? env.message : (prev.message || ''),
+          reminderEnabled: typeof env.isReminder === 'boolean' ? env.isReminder : prev.reminderEnabled,
+          reminderInterval: typeof env.reminderInterval === 'number' ? env.reminderInterval : prev.reminderInterval,
         }));
         if (typeof env.envelopetype === 'string' && env.envelopetype) {
           setSelectedEnvelopeType(env.envelopetype);
         }
+        
+        // Load advanced options from envelope
+        if (env.expirationDate) {
+          const expirationDate = new Date(env.expirationDate);
+          const now = new Date();
+          const daysDiff = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          setAdvancedOptions(prev => ({
+            ...prev,
+            expirationDays: daysDiff > 0 ? daysDiff : 120,
+            expirationType: 'custom',
+            expirationAlertDays: typeof env.expirationAlertDays === 'number' ? env.expirationAlertDays : prev.expirationAlertDays,
+          }));
+        } else {
+          // If no expiration date, check if expirationAlertDays exists
+          setAdvancedOptions(prev => ({
+            ...prev,
+            expirationAlertDays: typeof env.expirationAlertDays === 'number' ? env.expirationAlertDays : prev.expirationAlertDays,
+          }));
+        }
+        
+        // Load other advanced options if they exist
+        setAdvancedOptions(prev => ({
+          ...prev,
+          canSignOnPaper: typeof env.canSignOnPaper === 'boolean' ? env.canSignOnPaper : prev.canSignOnPaper,
+          canDelegate: typeof env.canDelegate === 'boolean' ? env.canDelegate : prev.canDelegate,
+          responsiveSigning: typeof env.responsiveSigning === 'boolean' ? env.responsiveSigning : prev.responsiveSigning,
+          commentsEnabled: typeof env.commentsEnabled === 'boolean' ? env.commentsEnabled : prev.commentsEnabled,
+        }));
+        
         setEnvelopeId(envelopeId);
       }
     } catch (error) {
@@ -1290,9 +1442,7 @@ const EnvelopeCreator: React.FC = () => {
         envelopeId,
         envelopeData: {
           ...envelopeData,
-          envelopetype: (selectedEnvelopeType === 'Other' && otherEnvelopeType.trim())
-            ? otherEnvelopeType.trim()
-            : (selectedEnvelopeType || undefined),
+          envelopetype: selectedEnvelopeType || undefined,
         },
       });
       if (response.status === 200) {
@@ -1303,6 +1453,57 @@ const EnvelopeCreator: React.FC = () => {
       console.error('Error updating signature type:', error);
     }
   };
+
+  // Save advanced options
+  const saveAdvancedOptions = async () => {
+    if (!envelopeId) {
+      toast.error('Please create an envelope first');
+      return;
+    }
+
+    try {
+      // Calculate expiration date if expiration is enabled
+      let expiresAt: string | undefined = undefined;
+      if (advancedOptions.expirationType === 'custom' && advancedOptions.expirationDays > 0) {
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + advancedOptions.expirationDays);
+        expiresAt = expirationDate.toISOString();
+      }
+
+      // Update envelope with advanced options
+      const response = await eSignApi.post('/api/e-sign/update-envelope', {
+        envelopeId,
+        envelopeData: {
+          ...envelopeData,
+          expiresAt,
+          expirationAlertDays: advancedOptions.expirationAlertDays, // Backend now supports this field
+          reminderEnabled: envelopeData.reminderEnabled,
+          reminderInterval: envelopeData.reminderInterval,
+          // Include advanced options (backend may accept them even if not in model yet)
+          canSignOnPaper: advancedOptions.canSignOnPaper,
+          canDelegate: advancedOptions.canDelegate,
+          responsiveSigning: advancedOptions.responsiveSigning,
+          commentsEnabled: advancedOptions.commentsEnabled,
+        },
+      });
+
+      if (response.status === 200) {
+        toast.success('Advanced options saved successfully');
+        setShowAdvanced(false);
+      }
+    } catch (error: any) {
+      console.error('Error saving advanced options:', error);
+      toast.error(error?.response?.data?.message || 'Failed to save advanced options');
+    }
+  };
+
+  // Load advanced options when opening modal
+  useEffect(() => {
+    if (showAdvanced && envelopeId) {
+      // Load existing envelope data to populate advanced options
+      getEnvelopeDetail(envelopeId);
+    }
+  }, [showAdvanced, envelopeId]);
   // Validation function to find first missing field and scroll to it
   const validateAndScrollToField = (): { isValid: boolean; fieldSelector?: string; message?: string } => {
     if (currentStep === 1) {
@@ -1322,12 +1523,12 @@ const EnvelopeCreator: React.FC = () => {
           message: 'Please select an envelope type'
         };
       }
-      // If "Other" is selected, require custom input
-      if (selectedEnvelopeType === 'Other' && (!otherEnvelopeType || otherEnvelopeType.trim() === '')) {
+      // If "Other" input is open but not saved, require saving
+      if (showOtherInputInDropdown && !newEnvelopeTypeValue.trim()) {
         return {
           isValid: false,
-          fieldSelector: '[data-tour="ec-envelope-type-other"]',
-          message: 'Please enter an envelope type'
+          fieldSelector: '[data-tour="ec-envelope-type"]',
+          message: 'Please save the new envelope type or select an existing one'
         };
       }
     }
@@ -1587,7 +1788,7 @@ const EnvelopeCreator: React.FC = () => {
       role: 'signer',
       order: (recipients?.length || 0) + 1 + base,
       status: 'waiting',
-      authentication: undefined
+      authentication: '68ee2a18ba0c0738eb275d34' // Default: secret email verification
     };
     setRecipients(prev => {
       const updated = [...prev, newRecipient];
@@ -1699,16 +1900,23 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   // Handle authentication method selection
-  const handleAuthMethodSelect = async (methodId: string) => {
+  const handleAuthMethodSelect = async (methodIds: string | null | string[]) => {
     try {
-      // If no method selected, set to null
-      const normalizedMethod = methodId && methodId.trim().length > 0 ? methodId : null;
+      // Normalize to array: handle both single string and array
+      let normalizedMethods: string[] = [];
+      if (Array.isArray(methodIds)) {
+        normalizedMethods = methodIds.filter(id => id && id.trim().length > 0);
+      } else if (methodIds && typeof methodIds === 'string' && methodIds.trim().length > 0) {
+        normalizedMethods = [methodIds];
+      }
+      
+      const authString = stringifyAuthentication(normalizedMethods);
 
       if (authModalForBulk) {
         // Apply to all recipients in bulk list
         const newRecipients = recipients.map(recipient => ({
           ...recipient,
-          authentication: normalizedMethod || undefined
+          authentication: authString || undefined
         }));
         setRecipients(newRecipients);
         
@@ -1729,14 +1937,14 @@ const EnvelopeCreator: React.FC = () => {
           
           if (resp.status === 200) {
             await getEnvelopeDetail(envelopeId);
-            toast.success(normalizedMethod ? 'Authentication method applied to all recipients' : 'Cleared authentication for all recipients');
+            toast.success(normalizedMethods.length > 0 ? `${normalizedMethods.length} authentication method(s) applied to all recipients` : 'Cleared authentication for all recipients');
           }
         } else {
-          toast.success(normalizedMethod ? 'Authentication method will be saved when recipients are added' : 'Authentication cleared (will save with recipients)');
+          toast.success(normalizedMethods.length > 0 ? 'Authentication methods will be saved when recipients are added' : 'Authentication cleared (will save with recipients)');
         }
       } else if (authModalForRecipientId) {
         // Apply to specific recipient
-        updateRecipient(authModalForRecipientId, { authentication: normalizedMethod || undefined });
+        updateRecipient(authModalForRecipientId, { authentication: authString || undefined });
         
         // If we have an envelopeId, persist the recipient authentication in DB
         if (envelopeId) {
@@ -1747,7 +1955,7 @@ const EnvelopeCreator: React.FC = () => {
               email: recipient.email,
               role: recipient.role,
               order: recipient.order,
-              authentication: normalizedMethod || null
+              authentication: authString || null
             }];
             
             const resp = await eSignApi.post('/api/e-sign/add-recipients', {
@@ -1757,11 +1965,11 @@ const EnvelopeCreator: React.FC = () => {
             
             if (resp.status === 200) {
               await getEnvelopeDetail(envelopeId);
-              toast.success(normalizedMethod ? 'Authentication method applied to recipient' : 'Cleared authentication for recipient');
+              toast.success(normalizedMethods.length > 0 ? `${normalizedMethods.length} authentication method(s) applied to recipient` : 'Cleared authentication for recipient');
             }
           }
         } else {
-          toast.success(normalizedMethod ? 'Authentication method will be saved when recipient is added' : 'Authentication cleared (will save with recipient)');
+          toast.success(normalizedMethods.length > 0 ? 'Authentication methods will be saved when recipient is added' : 'Authentication cleared (will save with recipient)');
         }
       }
       
@@ -2034,18 +2242,22 @@ const EnvelopeCreator: React.FC = () => {
           // Include all recipients with authentication, including email verification
           const recipientsWithAuth = recipients.filter(r => r.authentication);
           if (recipientsWithAuth.length > 0) {
-            await Promise.all(recipientsWithAuth.map(recipient => {
-              const authMethod = authMethods.find(m => m.id === recipient.authentication);
-              const cost = authMethod?.cost || 0;
-              if (cost > 0) {
-                return subscriptionApi.post('/usage/consume', {
-                  action: 'esign:envelopeSend',
-                  credits: cost,
-                  authId: recipient.authentication,
-                  toolId: 'esign',
-                  reason: `Envelope ${envelopeId} sent to ${recipient.email}`,
-                });
-              }
+            await Promise.all(recipientsWithAuth.flatMap(recipient => {
+              const authArray = parseAuthentication(recipient.authentication);
+              return authArray.map(authId => {
+                const authMethod = authMethods.find(m => m.id === authId);
+                const cost = authMethod?.cost || 0;
+                if (cost > 0) {
+                  return subscriptionApi.post('/usage/consume', {
+                    action: 'esign:envelopeSend',
+                    credits: cost,
+                    authId: authId,
+                    toolId: 'esign',
+                    reason: `Envelope ${envelopeId} sent to ${recipient.email}`,
+                  });
+                }
+                return null;
+              }).filter(Boolean);
             }));
             
             // Update credits in localStorage
@@ -2107,10 +2319,13 @@ const EnvelopeCreator: React.FC = () => {
     let total = 0;
     recipients.forEach(recipient => {
       if (recipient.authentication) {
-        const authMethod = authMethods.find(m => m.id === recipient.authentication);
-        if (authMethod) {
-          total += authMethod.cost || 0;
-        }
+        const authArray = parseAuthentication(recipient.authentication);
+        authArray.forEach(authId => {
+          const authMethod = authMethods.find(m => m.id === authId);
+          if (authMethod) {
+            total += authMethod.cost || 0;
+          }
+        });
       }
     });
     return total;
@@ -2137,15 +2352,52 @@ const EnvelopeCreator: React.FC = () => {
 
   // Handle envelope type selection (including "Other")
   const handleEnvelopeTypeSelect = (value: string) => {
-    setSelectedEnvelopeType(value);
     if (value === 'Other') {
-      setShowOtherEnvelopeType(true);
-    } else {
-      setShowOtherEnvelopeType(false);
-      setOtherEnvelopeType('');
+      setShowOtherInputInDropdown(true);
+      setNewEnvelopeTypeValue('');
+      // Don't close dropdown, show input instead
+      return;
     }
+    setSelectedEnvelopeType(value);
+    setShowOtherInputInDropdown(false);
     setTypeDropdownOpen(false);
     setTypeSearch('');
+  };
+
+  // Handle saving new envelope type
+  const handleSaveNewEnvelopeType = async () => {
+    if (!newEnvelopeTypeValue.trim()) {
+      return;
+    }
+
+    setSavingNewType(true);
+    try {
+      const response = await eSignApi.post('/api/e-sign/envelope-types', {
+        title: newEnvelopeTypeValue.trim(),
+        description: ''
+      });
+
+      if (response.status === 201) {
+        // Add the new type to the list
+        const newType = response.data.data;
+        setEnvelopeTypes(prev => [...prev, newType]);
+        
+        // Select the newly created type
+        setSelectedEnvelopeType(newType.title);
+        setShowOtherInputInDropdown(false);
+        setNewEnvelopeTypeValue('');
+        setTypeDropdownOpen(false);
+        setTypeSearch('');
+        
+        toast.success('Envelope type created successfully');
+      }
+    } catch (error: any) {
+      console.error('Error creating envelope type:', error);
+      const message = error.response?.data?.message || 'Failed to create envelope type';
+      toast.error(message);
+    } finally {
+      setSavingNewType(false);
+    }
   };
 
   // Close type dropdown on outside click
@@ -2155,6 +2407,9 @@ const EnvelopeCreator: React.FC = () => {
       const target = e.target as Node;
       if (typeDropdownRef.current && !typeDropdownRef.current.contains(target)) {
         setTypeDropdownOpen(false);
+        setShowOtherInputInDropdown(false);
+        setNewEnvelopeTypeValue('');
+        setTypeSearch('');
       }
     };
     document.addEventListener('mousedown', onDocClick);
@@ -2223,7 +2478,7 @@ const EnvelopeCreator: React.FC = () => {
     }
   }
 
-  // Load unique recipient suggestions aggregated from user's envelopes
+  // Load unique recipient suggestions aggregated from user's envelopes and saved recipients
   const loadRecipientSuggestions = async (forceReload = false) => {
     if (!forceReload && (recipientSuggestions.length > 0 || loadingRecipientSuggestions)) return;
     setLoadingRecipientSuggestions(true);
@@ -2233,17 +2488,47 @@ const EnvelopeCreator: React.FC = () => {
       const email = (r?.email || '').trim();
       if (!email) return;
       const key = email.toLowerCase();
-      if (!map.has(key)) map.set(key, { name: name || email, email });
+      // Prefer name from saved recipients if available, otherwise use envelope recipient name
+      if (!map.has(key)) {
+        map.set(key, { name: name || email, email });
+      } else {
+        // Update name if current entry doesn't have a name but new one does
+        const existing = map.get(key);
+        if (existing && (!existing.name || existing.name === existing.email) && name && name !== email) {
+          map.set(key, { name, email });
+        }
+      }
     };
     try {
-      const response = await eSignApi.get('/api/e-sign/get-envelopes');
-      const envelopes = response?.data?.data || response?.data?.envelopes || response?.data || [];
-      if (Array.isArray(envelopes)) {
-        envelopes.forEach((env: any) => {
-          const recs = env?.recipients || env?.recipientIds || [];
-          if (Array.isArray(recs)) recs.forEach(addIfValid);
-        });
+      // Fetch from both sources in parallel
+      const [envelopesResponse, savedRecipientsResponse] = await Promise.allSettled([
+        eSignApi.get('/api/e-sign/get-envelopes'),
+        eSignApi.get('/api/e-sign/recipients')
+      ]);
+
+      // Add recipients from envelopes
+      if (envelopesResponse.status === 'fulfilled') {
+        const response = envelopesResponse.value;
+        const envelopes = response?.data?.data || response?.data?.envelopes || response?.data || [];
+        if (Array.isArray(envelopes)) {
+          envelopes.forEach((env: any) => {
+            const recs = env?.recipients || env?.recipientIds || [];
+            if (Array.isArray(recs)) recs.forEach(addIfValid);
+          });
+        }
       }
+
+      // Add saved recipients from database (user-filtered by backend)
+      if (savedRecipientsResponse.status === 'fulfilled') {
+        const response = savedRecipientsResponse.value;
+        const savedRecipients = response?.data?.data || [];
+        if (Array.isArray(savedRecipients)) {
+          savedRecipients.forEach((r: any) => {
+            addIfValid({ name: r.name, email: r.email });
+          });
+        }
+      }
+
       // Always include logged-in user's email in suggestions
       if (user?.email) {
         const userEmail = user.email.toLowerCase();
@@ -2256,7 +2541,7 @@ const EnvelopeCreator: React.FC = () => {
       }
       setRecipientSuggestions(Array.from(map.values()));
     } catch (err) {
-      console.warn('Failed to load recipient suggestions; defaulting to empty list');
+      console.warn('Failed to load recipient suggestions; defaulting to empty list', err);
       // Still include logged-in user's email even on error
       if (user?.email) {
         setRecipientSuggestions([{
@@ -2268,6 +2553,156 @@ const EnvelopeCreator: React.FC = () => {
       }
     } finally {
       setLoadingRecipientSuggestions(false);
+    }
+  };
+
+  // Debounced search function
+  const debouncedSearch = useRef(
+    debounce((query: string) => {
+      setDebouncedSearchQuery(query);
+    }, 250)
+  ).current;
+
+  // Fetch saved recipients from the API
+  const fetchSavedRecipients = async () => {
+    setLoadingSavedRecipients(true);
+    try {
+      // Fetch from both sources in parallel (same as loadRecipientSuggestions)
+      const [envelopesResponse, savedRecipientsResponse] = await Promise.allSettled([
+        eSignApi.get('/api/e-sign/get-envelopes'),
+        eSignApi.get('/api/e-sign/recipients')
+      ]);
+
+      // Use a Map to deduplicate by email (prefer saved recipients over envelope recipients)
+      const recipientsMap = new Map<string, { _id: string; name: string; email: string; title?: string; company?: string; phone?: string; address?: string }>();
+
+      // First, add saved recipients (these have full details)
+      if (savedRecipientsResponse.status === 'fulfilled') {
+        const response = savedRecipientsResponse.value;
+        const savedRecipients = response?.data?.data || [];
+        if (Array.isArray(savedRecipients)) {
+          savedRecipients.forEach((r: any) => {
+            if (r?.email) {
+              const email = r.email.toLowerCase();
+              recipientsMap.set(email, {
+                _id: r._id || r.id,
+                name: r.name || '',
+                email: r.email,
+                title: r.title,
+                company: r.company,
+                phone: r.phone,
+                address: r.address
+              });
+            }
+          });
+        }
+      }
+
+      // Then, add recipients from envelopes (only if not already in map)
+      if (envelopesResponse.status === 'fulfilled') {
+        const response = envelopesResponse.value;
+        const envelopes = response?.data?.data || response?.data?.envelopes || response?.data || [];
+        if (Array.isArray(envelopes)) {
+          envelopes.forEach((env: any) => {
+            const recs = env?.recipients || env?.recipientIds || [];
+            if (Array.isArray(recs)) {
+              recs.forEach((r: any) => {
+                if (r?.email) {
+                  const email = r.email.toLowerCase();
+                  // Only add if not already in map (saved recipients take priority)
+                  if (!recipientsMap.has(email)) {
+                    recipientsMap.set(email, {
+                      _id: r.id || r._id || email,
+                      name: r.name || r.email,
+                      email: r.email,
+                      title: r.title,
+                      company: r.company,
+                      phone: r.phone,
+                      address: r.address
+                    });
+                  }
+                }
+              });
+            }
+          });
+        }
+      }
+
+      setSavedRecipients(Array.from(recipientsMap.values()));
+    } catch (err) {
+      console.error('Failed to fetch saved recipients', err);
+      setSavedRecipients([]);
+    } finally {
+      setLoadingSavedRecipients(false);
+    }
+  };
+
+  // Open recipient list modal
+  const openRecipientListModal = (recipientId: string) => {
+    setRecipientListModalForId(recipientId);
+    setRecipientListSearch('');
+    setShowRecipientListModal(true);
+    fetchSavedRecipients();
+    // Also refresh suggestions to include any newly added recipients
+    loadRecipientSuggestions(true);
+  };
+
+  // Select recipient from list
+  const selectRecipientFromList = (savedRecipient: { name: string; email: string; title?: string; company?: string; phone?: string; address?: string }) => {
+    if (recipientListModalForId) {
+      updateRecipient(recipientListModalForId, {
+        name: savedRecipient.name,
+        email: savedRecipient.email
+      });
+      setShowRecipientListModal(false);
+      setRecipientListModalForId(null);
+      setShowAddRecipientForm(false);
+      setNewRecipientForm({ name: '', email: '', title: '', company: '', phone: '', address: '' });
+    }
+  };
+
+  // Handle add new recipient
+  const handleAddNewRecipient = async () => {
+    if (!newRecipientForm.name.trim() || !newRecipientForm.email.trim()) {
+      alert('Name and Email are required');
+      return;
+    }
+    setSavingNewRecipient(true);
+    try {
+      const res = await eSignApi.post('/api/e-sign/recipients', newRecipientForm);
+      if (res.status === 201) {
+        // Add the new recipient to the list
+        const newRecipient = res.data.data || {
+          _id: res.data._id || Date.now().toString(),
+          ...newRecipientForm
+        };
+        setSavedRecipients(prev => [newRecipient, ...prev]);
+        
+        // Also add to recipient suggestions so it shows up when typing
+        setRecipientSuggestions(prev => {
+          const emailKey = newRecipient.email.toLowerCase();
+          const existing = prev.find(r => r.email.toLowerCase() === emailKey);
+          if (!existing) {
+            return [{ name: newRecipient.name, email: newRecipient.email }, ...prev];
+          }
+          // Update existing if name is better
+          return prev.map(r => 
+            r.email.toLowerCase() === emailKey && (!r.name || r.name === r.email)
+              ? { name: newRecipient.name, email: r.email }
+              : r
+          );
+        });
+        
+        // Automatically select the new recipient
+        selectRecipientFromList(newRecipient);
+        toast.success('Recipient added successfully');
+      }
+    } catch (err: any) {
+      console.error('Failed to add recipient', err);
+      const message = err?.response?.data?.message || 'Failed to add recipient';
+      alert(message);
+    } finally {
+      setSavingNewRecipient(false);
     }
   };
 
@@ -2448,468 +2883,291 @@ const EnvelopeCreator: React.FC = () => {
 
             {showDocuments && (
               <div className="space-y-6">
-                {/* Layout: Previews + Upload. If multiple docs, show upload below previews */}
-                {documents && documents.length > 1 ? (
-                  <div className="flex flex-col gap-4">
-                    {/* Previews grid (wraps, no horizontal scroll) */}
-                    <div
-                      className="grid gap-3 py-1"
-                      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
-                    >
-                      {documents.map((doc) => (
-                        <div key={doc.id} className="w-full relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '220px' }}>
-                          {/* Close button at top right */}
-                          {!doc.isUploading && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeDocument(doc.id);
-                              }}
-                              className="absolute top-2 right-2 z-10 w-6 h-6 bg-black bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all"
-                            >
-                              <X className="w-3 h-3 text-white" />
-                            </button>
-                          )}
+                {/* Unified responsive grid layout for documents and upload box */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-1">
+                  {/* Document Cards */}
+                  {documents && documents.map((doc) => {
+                    const docCount = documents.length;
+                    // Calculate sizes based on document count
+                    const previewMinHeight = docCount === 1 ? '220px' : docCount === 2 ? '180px' : docCount === 3 ? '150px' : '120px';
+                    const pdfWidth = docCount === 1 ? 150 : docCount === 2 ? 150 : docCount === 3 ? 120 : 100;
+                    const paddingClass = docCount === 1 ? 'p-1 sm:p-2' : docCount === 2 ? 'p-2 sm:p-3' : 'p-2';
+                    const fontSizeClass = docCount === 1 ? 'text-xs sm:text-sm' : 'text-xs';
+                    const closeButtonSize = docCount >= 4 ? 'w-5 h-5' : 'w-6 h-6';
+                    const closeIconSize = docCount >= 4 ? 'w-2.5 h-2.5' : 'w-3 h-3';
+                    
+                    return (
+                      <div key={doc.id} className="w-full h-auto relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
+                        {/* Close button at top right */}
+                        {!doc.isUploading && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeDocument(doc.id);
+                            }}
+                            className={`absolute top-2 right-2 z-10 ${closeButtonSize} bg-black bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all`}
+                          >
+                            <X className={`${closeIconSize} text-white`} />
+                          </button>
+                        )}
 
-                          {/* PDF Preview/Thumbnail */}
-                          {!doc.isUploading && doc.url && (
-                            <div 
-                              className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
-                            >
-                              {/* React-PDF thumbnail (first page) */}
-                              <div className="w-full h-full flex items-center justify-center bg-white">
-                                <PDFDocument file={doc.url}>
-                                  <PDFPage pageNumber={1} width={150} renderTextLayer={false} renderAnnotationLayer={false} />
-                                </PDFDocument>
-                              </div>
-                              {/* View Button - appears on hover */}
-                              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedPdfForPreview(doc);
-                                    setPdfPreviewModalOpen(true);
-                                  }}
-                                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span className="text-sm font-medium">View</span>
-                                </button>
-                              </div>
+                        {/* PDF Preview/Thumbnail */}
+                        {!doc.isUploading && doc.url && (
+                          <div 
+                            className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
+                            style={{ minHeight: previewMinHeight }}
+                          >
+                            {/* React-PDF thumbnail (first page) */}
+                            <div className="w-full h-full flex items-center justify-center bg-white">
+                              <PDFDocument file={doc.url}>
+                                <PDFPage pageNumber={1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
+                              </PDFDocument>
                             </div>
-                          )}
-
-                          {/* File Info Section */}
-                          {!doc.isUploading ? (
-                            <div className="p-2">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  {/* File Name */}
-                                  <p className="font-semibold text-gray-900 text-xs mb-1 truncate" title={doc.name}>
-                                    {doc.name}
-                                  </p>
-                                  {/* Page Count with three dots menu */}
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-xs text-gray-600">
-                                      {doc.pages} page{doc.pages !== 1 ? 's' : ''}
-                                    </p>
-
-                                    {/* Three Dots Menu */}
-                                    <div className="relative flex-shrink-0 document-menu-container z-30">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                          setMenuPos({ x: rect.left, y: rect.bottom + window.scrollY });
-                                          setOpenMenuId(openMenuId === doc.id ? null : doc.id);
-                                        }}
-                                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                      >
-                                        <MoreVertical className="w-4 h-4 text-gray-600" />
-                                      </button>
-
-                                      {/* Context Menu */}
-                                      {openMenuId === doc.id && (
-                                        <>
-                                          {/* backdrop to close on outside click */}
-                                          <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
-                                          <div className="fixed z-[1000] w-44 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
-                                            <div className="py-1">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenMenuId(null);
-                                                  // Handle Apply Templates
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
-                                              >
-                                                Apply Templates
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenMenuId(null);
-                                                  // Handle Replace
-                                                  fileInputRef.current?.click();
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                                              >
-                                                Replace
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenMenuId(null);
-                                                  // Handle Download Document
-                                                  if (doc.url) {
-                                                    const link = document.createElement('a');
-                                                    link.href = doc.url;
-                                                    link.download = doc.name;
-                                                    link.click();
-                                                  }
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                              >
-                                                <Download className="w-4 h-4" />
-                                                Download Document
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenMenuId(null);
-                                                  // Handle Rename Document
-                                                  const newName = prompt('Enter new name:', doc.name);
-                                                  if (newName && newName.trim()) {
-                                                    setDocuments(prev => prev.map(d =>
-                                                      d.id === doc.id ? { ...d, name: newName.trim() } : d
-                                                    ));
-                                                  }
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                              >
-                                                <FileEdit className="w-4 h-4" />
-                                                Rename Document
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenMenuId(null);
-                                                  // Handle Delete Document
-                                                  if (window.confirm(`Are you sure you want to delete ${doc.name}?`)) {
-                                                    removeDocument(doc.id);
-                                                  }
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
-                                              >
-                                                <Trash2 className="w-4 h-4" />
-                                                Delete Document
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenMenuId(null);
-                                                  // Handle View Document
-                                                  if (doc.url) {
-                                                    window.open(doc.url, '_blank');
-                                                  }
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                              >
-                                                <Eye className="w-4 h-4" />
-                                                View Document
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            /* Uploading state */
-                            <div className="p-4">
-                              <p className="font-medium text-gray-900 text-xs mb-2">{doc.name} — Uploading...</p>
-                              <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
-                                <div
-                                  className="h-full bg-blue-500 transition-all"
-                                  style={{ width: `${doc.uploadProgress ?? 0}%` }}
-                                />
-                              </div>
-                              <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Upload area below when multiple docs */}
-                    <div className="flex-1" data-tour="ec-upload">
-                      <div
-                        onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
-                        onDragOver={handleDragOver}
-                        onDragEnter={handleDragEnter}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`bg-gray-100 transition-colors ${isDragOver ? 'border-2 border-blue-400 bg-blue-50' : 'border border-gray-200'} p-6 ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''}`}
-                      >
-                        {/* Hidden file input */}
-                        <input ref={fileInputRef} type="file" multiple accept=".pdf" onChange={handleFileUpload} className="hidden" />
-                        <div
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex flex-col items-center justify-center h-full cursor-pointer text-gray-500 hover:text-gray-700"
-                        >
-                          <div className="flex flex-col items-center justify-center space-y-4">
-                            <div className="bg-gray-700 rounded-lg p-3">
-                              <Upload className="w-6 h-6 text-white" />
-                            </div>
-                            <p className="text-sm text-gray-700">Drop your files here or</p>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                              style={{ backgroundColor: '#260559' }}
-                            >
-                              <span>Upload</span>
-                              <ArrowDown className="w-4 h-4 text-white" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-6 items-start">
-                    {/* Left: Document Preview Cards */}
-                    {documents && documents.length > 0 && (
-                      <div className="flex gap-4 overflow-x-auto py-1">
-                        {documents.map((doc) => (
-                          <div key={doc.id} className="w-80 flex-shrink-0 relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: documents.length === 1 ? '260px' : '320px' }}>
-                            {/* Close button at top right */}
-                            {!doc.isUploading && (
+                            {/* View Button - appears on hover */}
+                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  removeDocument(doc.id);
+                                  setSelectedPdfForPreview(doc);
+                                  setPdfPreviewModalOpen(true);
                                 }}
-                                className="absolute top-2 right-2 z-10 w-6 h-6 bg-black bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all"
+                                className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
                               >
-                                <X className="w-3 h-3 text-white" />
+                                <Eye className="w-4 h-4" />
+                                <span className="text-sm font-medium">View</span>
                               </button>
-                            )}
+                            </div>
+                          </div>
+                        )}
 
-                            {/* PDF Preview/Thumbnail */}
-                            {!doc.isUploading && doc.url && (
-                              <div 
-                                className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
-                                onMouseEnter={() => {}}
-                                onMouseLeave={() => {}}
-                              >
-                                <object
-                                  data={doc.url}
-                                  type="application/pdf"
-                                  className="w-full h-full"
-                                  title={`Preview of ${doc.name}`}
-                                >
-                                  <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <FileText className="w-12 h-12 mb-2" />
-                                    <p className="text-sm text-center">PDF Preview</p>
-                                  </div>
-                                </object>
-                                {/* View Button - appears on hover */}
-                                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        {/* File Info Section */}
+                        {!doc.isUploading ? (
+                          <div className={paddingClass}>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                {/* File Name */}
+                                <p className={`font-semibold text-gray-900 ${fontSizeClass} mb-1 truncate`} title={doc.name}>
+                                  {doc.name}
+                                </p>
+                              {/* Page Count with three dots menu */}
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs text-gray-600">
+                                  {doc.pages} page{doc.pages !== 1 ? 's' : ''}
+                                </p>
+
+                                {/* Three Dots Menu */}
+                                <div className="relative flex-shrink-0 document-menu-container z-30">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setSelectedPdfForPreview(doc);
-                                      setPdfPreviewModalOpen(true);
+                                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                      setMenuPos({ x: rect.left, y: rect.bottom + window.scrollY });
+                                      setOpenMenuId(openMenuId === doc.id ? null : doc.id);
                                     }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
+                                    className="p-1 hover:bg-gray-100 rounded transition-colors"
                                   >
-                                    <Eye className="w-4 h-4" />
-                                    <span className="text-sm font-medium">View</span>
+                                    <MoreVertical className="w-4 h-4 text-gray-600" />
                                   </button>
-                                </div>
-                              </div>
-                            )}
 
-                            {/* File Info Section */}
-                            {!doc.isUploading ? (
-                              <div className="p-4">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    {/* File Name */}
-                                    <p className="font-bold text-gray-900 text-base mb-1 truncate" title={doc.name}>
-                                      {doc.name}
-                                    </p>
-                                    {/* Page Count with three dots menu */}
-                                    <div className="flex items-center justify-between">
-                                      <p className="text-sm text-gray-600">
-                                        {doc.pages} page{doc.pages !== 1 ? 's' : ''}
-                                      </p>
-
-                                      {/* Three Dots Menu */}
-                                      <div className="relative flex-shrink-0 document-menu-container z-30">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                            setMenuPos({ x: rect.left, y: rect.bottom + window.scrollY });
-                                            setOpenMenuId(openMenuId === doc.id ? null : doc.id);
-                                          }}
-                                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                        >
-                                          <MoreVertical className="w-5 h-5 text-gray-600" />
-                                        </button>
-
-                                        {/* Context Menu */}
-                                        {openMenuId === doc.id && (
-                                          <>
-                                            {/* backdrop to close on outside click */}
-                                            <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
-                                            <div className="fixed z-[1000] w-48 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
-                                              <div className="py-1">
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenuId(null);
-                                                    // Handle Apply Templates
-                                                  }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
-                                                >
-                                                  Apply Templates
-                                                </button>
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenuId(null);
-                                                    // Handle Replace
-                                                    fileInputRef.current?.click();
-                                                  }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                                >
-                                                  Replace
-                                                </button>
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenuId(null);
-                                                    // Handle Download Document
-                                                    if (doc.url) {
-                                                      const link = document.createElement('a');
-                                                      link.href = doc.url;
-                                                      link.download = doc.name;
-                                                      link.click();
-                                                    }
-                                                  }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                                >
-                                                  <Download className="w-4 h-4" />
-                                                  Download Document
-                                                </button>
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenuId(null);
-                                                    // Handle Rename Document
-                                                    const newName = prompt('Enter new name:', doc.name);
-                                                    if (newName && newName.trim()) {
-                                                      setDocuments(prev => prev.map(d =>
-                                                        d.id === doc.id ? { ...d, name: newName.trim() } : d
-                                                      ));
-                                                    }
-                                                  }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                                >
-                                                  <FileEdit className="w-4 h-4" />
-                                                  Rename Document
-                                                </button>
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenuId(null);
-                                                    // Handle Delete Document
-                                                    if (window.confirm(`Are you sure you want to delete ${doc.name}?`)) {
-                                                      removeDocument(doc.id);
-                                                    }
-                                                  }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
-                                                >
-                                                  <Trash2 className="w-4 h-4" />
-                                                  Delete Document
-                                                </button>
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenuId(null);
-                                                    // Handle View Document
-                                                    if (doc.url) {
-                                                      window.open(doc.url, '_blank');
-                                                    }
-                                                  }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                                >
-                                                  <Eye className="w-4 h-4" />
-                                                  View Document
-                                                </button>
-                                              </div>
-                                            </div>
-                                          </>
-                                        )}
+                                  {/* Context Menu */}
+                                  {openMenuId === doc.id && (
+                                    <>
+                                      {/* backdrop to close on outside click */}
+                                      <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
+                                      <div className="fixed z-[1000] w-44 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
+                                        <div className="py-1">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMenuId(null);
+                                              // Handle Apply Templates
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                                          >
+                                            Apply Templates
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMenuId(null);
+                                              // Handle Replace
+                                              fileInputRef.current?.click();
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                          >
+                                            Replace
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMenuId(null);
+                                              // Handle Download Document
+                                              if (doc.url) {
+                                                const link = document.createElement('a');
+                                                link.href = doc.url;
+                                                link.download = doc.name;
+                                                link.click();
+                                              }
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                          >
+                                            <Download className="w-4 h-4" />
+                                            Download Document
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMenuId(null);
+                                              // Handle Rename Document
+                                              const newName = prompt('Enter new name:', doc.name);
+                                              if (newName && newName.trim()) {
+                                                setDocuments(prev => prev.map(d =>
+                                                  d.id === doc.id ? { ...d, name: newName.trim() } : d
+                                                ));
+                                              }
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                          >
+                                            <FileEdit className="w-4 h-4" />
+                                            Rename Document
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMenuId(null);
+                                              // Handle Delete Document
+                                              if (window.confirm(`Are you sure you want to delete ${doc.name}?`)) {
+                                                removeDocument(doc.id);
+                                              }
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete Document
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMenuId(null);
+                                              // Handle View Document
+                                              if (doc.url) {
+                                                window.open(doc.url, '_blank');
+                                              }
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                          >
+                                            <Eye className="w-4 h-4" />
+                                            View Document
+                                          </button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </div>
+                                    </>
+                                  )}
                                 </div>
                               </div>
-                            ) : (
-                              /* Uploading state */
-                              <div className="p-4">
-                                <p className="font-medium text-gray-900 text-sm mb-2">{doc.name} — Uploading...</p>
-                                <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
-                                  <div
-                                    className="h-full bg-blue-500 transition-all"
-                                    style={{ width: `${doc.uploadProgress ?? 0}%` }}
-                                  />
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
-                              </div>
-                            )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      ) : (
+                        /* Uploading state */
+                        <div className={paddingClass}>
+                          <p className={`font-medium text-gray-900 ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
+                          <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500 transition-all"
+                              style={{ width: `${doc.uploadProgress ?? 0}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+                        </div>
+                      )}
+                    </div>
+                    );
+                  })}
 
-                    {/* Right: Upload Dropzone - matches image design */}
-                    <div className="flex-1" data-tour="ec-upload">
-                      <div
-                        onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
-                        onDragOver={handleDragOver}
-                        onDragEnter={handleDragEnter}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`bg-gray-100 transition-colors ${isDragOver
-                          ? 'border-2 border-blue-400 bg-blue-50'
-                          : 'border border-gray-200'
-                          } ${documents && documents.length > 0 ? 'p-6' : 'p-12'
-                          } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''}`}
-                        style={{ height: documents && documents.length > 0 ? (documents.length === 1 ? '260px' : '320px') : 'auto' }}
-                      >
-                        {/* Hidden file input */}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          multiple
-                          accept=".pdf"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
+                  {/* Upload Box - dynamically fills remaining space based on document count */}
+                  {(() => {
+                    const docCount = documents?.length || 0;
+                    let colSpanClasses = '';
+                    
+                    if (docCount === 0) {
+                      // No documents: full width
+                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
+                    } else if (docCount >= 4) {
+                      // 4+ documents: wraps to new row, full width
+                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
+                    } else if (docCount === 1) {
+                      // 1 document: fill remaining space (1 col on small, 2 on medium, 3 on large)
+                      colSpanClasses = 'col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-3';
+                    } else if (docCount === 2) {
+                      // 2 documents: on small screens they fill the row (2 cols), so upload wraps and takes full width (2 cols)
+                      // On medium: 2 docs take 2 cols, upload takes remaining 1 col
+                      // On large: 2 docs take 2 cols, upload takes remaining 2 cols
+                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2';
+                    } else if (docCount === 3) {
+                      // 3 documents: on small screens they wrap, upload takes full width (2 cols)
+                      // On medium: 3 docs fill the row (3 cols), so upload wraps and takes full width (3 cols)
+                      // On large: 3 docs take 3 cols, upload takes remaining 1 col
+                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1';
+                    }
+                    
+                    return (
+                      <div className={`w-full h-auto ${colSpanClasses}`} data-tour="ec-upload">
+                    <div
+                      onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
+                      onDragOver={handleDragOver}
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`bg-gray-100 transition-colors ${isDragOver
+                        ? 'border-2 border-blue-400 bg-blue-50'
+                        : 'border border-gray-200'
+                        } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
+                        } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[200px] flex items-center justify-center`}
+                    >
+                      {/* Hidden file input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".pdf"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
 
-                        {/* CTA when no documents - matches image exactly */}
-                        {(!documents || documents.length === 0) ? (
-                          <div className="flex flex-col items-center justify-center space-y-4 h-full">
+                      {/* CTA when no documents */}
+                      {(!documents || documents.length === 0) ? (
+                        <div className="flex flex-col items-center justify-center space-y-4 w-full">
+                          {/* Upload icon in dark grey square box */}
+                          <div className="bg-gray-700 rounded-lg p-3">
+                            <ArrowUpToLine className="w-6 h-6 text-white" />
+                          </div>
+
+                          {/* Text */}
+                          <p className="text-sm text-gray-700">Drop your files here or</p>
+
+                          {/* Purple Upload button with dropdown arrow */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRef.current?.click();
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            style={{ backgroundColor: '#260559' }}
+                          >
+                            <span>Upload</span>
+                            <Triangle className="w-3 h-2 fill-white rotate-180" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex flex-col items-center justify-center w-full cursor-pointer text-gray-500 hover:text-gray-700"
+                        >
+                          <div className="flex flex-col items-center justify-center space-y-4">
                             {/* Upload icon in dark grey square box */}
                             <div className="bg-gray-700 rounded-lg p-3">
-                              <ArrowUpToLine className="w-6 h-6 text-white" />
+                              <Upload className="w-6 h-6 text-white" />
                             </div>
 
                             {/* Text */}
@@ -2925,42 +3183,16 @@ const EnvelopeCreator: React.FC = () => {
                               style={{ backgroundColor: '#260559' }}
                             >
                               <span>Upload</span>
-                              <Triangle className="w-3 h-2 fill-white rotate-180" />
+                              <ArrowDown className="w-4 h-4 text-white" />
                             </button>
                           </div>
-                        ) : (
-                          <div
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex flex-col items-center justify-center h-full cursor-pointer text-gray-500 hover:text-gray-700"
-                          >
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                              {/* Upload icon in dark grey square box */}
-                              <div className="bg-gray-700 rounded-lg p-3">
-                                <Upload className="w-6 h-6 text-white" />
-                              </div>
-
-                              {/* Text */}
-                              <p className="text-sm text-gray-700">Drop your files here or</p>
-
-                              {/* Purple Upload button with dropdown arrow */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  fileInputRef.current?.click();
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                                style={{ backgroundColor: '#260559' }}
-                              >
-                                <span>Upload</span>
-                                <ArrowDown className="w-4 h-4 text-white" />
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             )}
             <hr className="border-t-2 border-gray-300 my-4" />
@@ -3010,7 +3242,7 @@ const EnvelopeCreator: React.FC = () => {
                               role: 'signer',
                               order: 1,
                               status: 'waiting',
-                              authentication: undefined
+                              authentication: '68ee2a18ba0c0738eb275d34' // Default: secret email verification
                             }]);
                           } else {
                             // Clear recipients when unchecked
@@ -3037,8 +3269,7 @@ const EnvelopeCreator: React.FC = () => {
                             transition duration-200 z-50
                           "
                           >
-                            As the only signer, you can place fields and sign your document.
-                            Once you're done, it'll be saved in your account.
+                           You'll be the only signer. Add your fields and finish the signing.
 
                           </div>
                         </span>
@@ -3089,7 +3320,7 @@ const EnvelopeCreator: React.FC = () => {
                                       role: bulkList.role,
                                       order: idx + 1,
                                       status: 'waiting' as const,
-                                      authentication: undefined as Recipient['authentication']
+                                      authentication: '68ee2a18ba0c0738eb275d34' as Recipient['authentication'] // Default: secret email verification
                                     }))
                                   );
                                   setShowBulkModal(true);
@@ -3760,37 +3991,65 @@ const EnvelopeCreator: React.FC = () => {
                             }}
                           />
                           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-                            <button
-                              onClick={() => {
-                                setShowAuthModal(false);
-                                setAuthModalForRecipientId(null);
-                                setAuthModalForBulk(false);
-                              }}
-                              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                            <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
-                              Select Authentication Method
-                            </h2>
+                            <div className="flex items-center justify-between mb-6">
+                              <h2 className="text-[20px] font-semibold text-[#3E2B66]">
+                                Select Authentication Method
+                              </h2>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => {
+                                    const methodToSave = tempAuthSelection === undefined ? null : tempAuthSelection;
+                                    handleAuthMethodSelect(methodToSave);
+                                  }}
+                                  className="px-5 py-2 bg-[#3E2B66] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowAuthModal(false);
+                                    setAuthModalForRecipientId(null);
+                                    setAuthModalForBulk(false);
+                                    setTempAuthSelection(undefined);
+                    setHasUserChangedSelection(false);
+                                  }}
+                                  className="text-[#3E2B66] hover:text-gray-800 z-10"
+                                >
+                                  <X className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
                             <div className="mt-8">
                               <AdvancedAuthenticationSelector
                                 selectedMethods={(() => {
+                                  // If user has made a change, always use tempAuthSelection
+                                  if (hasUserChangedSelection) {
+                                    return tempAuthSelection || [];
+                                  }
+                                  // Otherwise, use the current recipient's authentication
                                   if (authModalForBulk) {
                                     // For bulk, check if all recipients have the same authentication
                                     const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
                                     if (!firstAuth) return [];
-                                    const allSame = recipients.every(r => r.authentication === firstAuth);
-                                    return allSame && firstAuth ? [firstAuth] : [];
+                                    const firstAuthArray = parseAuthentication(firstAuth);
+                                    const allSame = recipients.every(r => {
+                                      const rAuth = parseAuthentication(r.authentication);
+                                      return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
+                                    });
+                                    return allSame ? firstAuthArray : [];
                                   } else if (authModalForRecipientId) {
                                     // For individual recipient, get their authentication
                                     const recipient = recipients.find(r => r.id === authModalForRecipientId);
-                                    const auth = recipient?.authentication;
-                                    return auth ? [auth] : [];
+                                    return parseAuthentication(recipient?.authentication);
                                   }
                                   return [];
                                 })()}
                                 onMethodSelect={handleAuthMethodSelect}
+                                onSelectionChange={(methodIds) => {
+                                  setTempAuthSelection(methodIds);
+                                  setHasUserChangedSelection(true);
+                                }}
+                                showSaveButton={false}
                                 riskLevel="medium"
                                 complianceRequirements={[]}
                               />
@@ -4176,11 +4435,18 @@ const EnvelopeCreator: React.FC = () => {
                                               value={recipient.name}
                                               data-recipient-name-id={recipient.id}
                                               onChange={(e) => {
-                                                updateRecipient(recipient.id, { name: e.target.value });
+                                                const value = e.target.value;
+                                                updateRecipient(recipient.id, { name: value });
+                                                // Update search query ref immediately
+                                                searchQueryRef.current = value;
+                                                // Debounce the search query update
+                                                debouncedSearch(value);
                                                 // Show suggestions if user is typing
-                                                if (e.target.value.trim().length > 0) {
+                                                if (value.trim().length > 0) {
                                                   setSuggestionsOpenForId(recipient.id);
                                                   loadRecipientSuggestions();
+                                                } else {
+                                                  setDebouncedSearchQuery('');
                                                 }
                                               }}
                                               onBlur={() => {
@@ -4192,20 +4458,27 @@ const EnvelopeCreator: React.FC = () => {
                                               onFocus={() => { setSuggestionsOpenForId(recipient.id); loadRecipientSuggestions(); }}
                                               onDragStart={(e) => e.stopPropagation()}
                                               draggable="false"
-                                              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                                              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
                                               placeholder="Full name"
                                             />
+                                            <button
+                                              type="button"
+                                              onClick={() => openRecipientListModal(recipient.id)}
+                                              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                                              title="Open recipient list"
+                                            >
+                                              <BookOpen className="w-5 h-5" style={{ color: '#260559' }} />
+                                            </button>
                                             {suggestionsOpenForId === recipient.id && (
                                               <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
                                                 {loadingRecipientSuggestions ? (
                                                   <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
                                                 ) : (() => {
-                                                  // Filter suggestions: initially show only logged-in user's name, then show matching suggestions
-                                                  const userName = user?.fullname?.toLowerCase() || '';
-                                                  const currentName = recipient.name.toLowerCase().trim();
+                                                  const currentName = recipient.name.trim();
                                                   
                                                   // If no input, show only logged-in user's name
                                                   if (!currentName) {
+                                                    const userName = user?.fullname?.toLowerCase() || '';
                                                     const userSuggestion = recipientSuggestions.find(s => 
                                                       s.name.toLowerCase() === userName || 
                                                       s.email.toLowerCase() === (user?.email?.toLowerCase() || '')
@@ -4235,17 +4508,58 @@ const EnvelopeCreator: React.FC = () => {
                                                     return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
                                                   }
                                                   
-                                                  // Filter suggestions that match the typed name
-                                                  const matchingSuggestions = recipientSuggestions.filter(s => 
-                                                    s.name.toLowerCase().includes(currentName) || 
-                                                    s.email.toLowerCase().includes(currentName)
-                                                  );
+                                                  // Use debounced search query for filtering (200-300ms debounce)
+                                                  // If debounce hasn't fired yet, use current input for immediate feedback
+                                                  const query = (debouncedSearchQuery.trim() || currentName).toLowerCase();
                                                   
-                                                  if (matchingSuggestions.length === 0) {
-                                                    return <div className="px-3 py-2 text-sm text-gray-500">No matching suggestions</div>;
+                                                  if (!query) {
+                                                    return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
                                                   }
                                                   
-                                                  return matchingSuggestions.map((s) => (
+                                                  // Exact matches: 
+                                                  // 1. Whole string match (entire name or email equals query exactly)
+                                                  // 2. Starts with query (name or email starts with the query - prefix match)
+                                                  const exactMatches = recipientSuggestions.filter(s => {
+                                                    const nameLower = s.name.trim().toLowerCase();
+                                                    const emailLower = s.email.trim().toLowerCase();
+                                                    
+                                                    // Whole string exact match
+                                                    const nameExact = nameLower === query;
+                                                    const emailExact = emailLower === query;
+                                                    
+                                                    // Starts with query (prefix match) - this makes "sne" match "sneha"
+                                                    const nameStartsWith = nameLower.startsWith(query);
+                                                    const emailStartsWith = emailLower.startsWith(query);
+                                                    
+                                                    return nameExact || emailExact || nameStartsWith || emailStartsWith;
+                                                  });
+                                                  
+                                                  // Broad matches: contains query anywhere (case-insensitive), excluding exact matches
+                                                  // Examples: "ha" in "sneha", "gmail" in email addresses, etc.
+                                                  const exactMatchEmails = new Set(exactMatches.map(s => s.email.toLowerCase()));
+                                                  const broadMatches = recipientSuggestions.filter(s => {
+                                                    // Skip if already in exact matches
+                                                    if (exactMatchEmails.has(s.email.toLowerCase())) {
+                                                      return false;
+                                                    }
+                                                    // Check if name or email contains the query anywhere
+                                                    // Trim and lowercase for consistent matching
+                                                    const nameLower = s.name.trim().toLowerCase();
+                                                    const emailLower = s.email.trim().toLowerCase();
+                                                    const nameContains = nameLower.includes(query);
+                                                    const emailContains = emailLower.includes(query);
+                                                    return nameContains || emailContains;
+                                                  });
+                                                  
+                                                  // Render results
+                                                  const hasExactMatches = exactMatches.length > 0;
+                                                  const hasBroadMatches = broadMatches.length > 0;
+                                                  
+                                                  if (!hasExactMatches && !hasBroadMatches) {
+                                                    return <div className="px-3 py-2 text-sm text-gray-500">No results found</div>;
+                                                  }
+                                                  
+                                                  const renderSuggestion = (s: { name: string; email: string }) => (
                                                     <button
                                                       key={s.email}
                                                       type="button"
@@ -4264,7 +4578,38 @@ const EnvelopeCreator: React.FC = () => {
                                                       <div className="font-medium text-gray-900">{s.name || s.email}</div>
                                                       <div className="text-xs text-gray-600">{s.email}</div>
                                                     </button>
-                                                  ));
+                                                  );
+                                                  
+                                                  return (
+                                                    <>
+                                                      {/* Exact Matches Section */}
+                                                      {hasExactMatches && (
+                                                        <>
+                                                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
+                                                            Exact Matches
+                                                          </div>
+                                                          {exactMatches.map(renderSuggestion)}
+                                                        </>
+                                                      )}
+                                                      
+                                                      {/* No exact match message */}
+                                                      {!hasExactMatches && (
+                                                        <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                                                          No exact match found
+                                                        </div>
+                                                      )}
+                                                      
+                                                      {/* Broad Matches Section */}
+                                                      {hasBroadMatches && (
+                                                        <>
+                                                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
+                                                            Broad Matches
+                                                          </div>
+                                                          {broadMatches.map(renderSuggestion)}
+                                                        </>
+                                                      )}
+                                                    </>
+                                                  );
                                                 })()}
                                               </div>
                                             )}
@@ -4799,40 +5144,97 @@ const EnvelopeCreator: React.FC = () => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-sm text-left"
                       data-tour="ec-envelope-type"
                     >
-                      {selectedEnvelopeType
-                        ? (selectedEnvelopeType === 'Other' && otherEnvelopeType.trim()
-                            ? otherEnvelopeType
-                            : selectedEnvelopeType)
-                        : 'Select Envelope Type'}
+                      {selectedEnvelopeType || 'Select Envelope Type'}
                     </button>
 
                     {typeDropdownOpen && (
                       <div className="absolute left-0 bottom-full mb-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                        <div className="p-2 border-b border-gray-200">
-                          <input
-                            type="text"
-                            value={typeSearch}
-                            onChange={(e) => setTypeSearch(e.target.value)}
-                            placeholder="Search types..."
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
-                          />
-                        </div>
-                        <div className="max-h-56 overflow-auto py-1">
-                          {envelopeTypes
-                            .filter((t) => t.title.toLowerCase().includes(typeSearch.toLowerCase()))
-                            .map((type) => (
+                        {!showOtherInputInDropdown ? (
+                          <>
+                            <div className="p-2 border-b border-gray-200">
+                              <input
+                                type="text"
+                                value={typeSearch}
+                                onChange={(e) => setTypeSearch(e.target.value)}
+                                placeholder="Search types..."
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-56 overflow-auto py-1">
+                              {envelopeTypes
+                                .filter((t) => t.title.toLowerCase().includes(typeSearch.toLowerCase()))
+                                .map((type) => (
+                                  <button
+                                    key={type.title}
+                                    type="button"
+                                    onClick={() => handleEnvelopeTypeSelect(type.title)}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedEnvelopeType === type.title ? 'bg-gray-50' : ''}`}
+                                  >
+                                    {type.title}
+                                  </button>
+                                ))}
+                              {/* Always show "Other" option, especially when no matches */}
+                              {envelopeTypes.filter((t) => t.title.toLowerCase().includes(typeSearch.toLowerCase())).length === 0 && typeSearch.trim() !== '' && (
+                                <div className="px-4 py-2 text-sm text-gray-500">
+                                  No matches found
+                                </div>
+                              )}
+                              <div className="border-t border-gray-100 my-1" />
                               <button
-                                key={type.title}
                                 type="button"
-                                onClick={() => handleEnvelopeTypeSelect(type.title)}
-                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedEnvelopeType === type.title ? 'bg-gray-50' : ''}`}
+                                onClick={() => handleEnvelopeTypeSelect('Other')}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-blue-600 font-medium"
                               >
-                                {type.title}
+                                Other
                               </button>
-                            ))}
-                          <div className="border-t border-gray-100 my-1" />
-                          
-                        </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="p-3">
+                            <div className="mb-2">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Enter New Envelope Type
+                              </label>
+                              <input
+                                type="text"
+                                value={newEnvelopeTypeValue}
+                                onChange={(e) => setNewEnvelopeTypeValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && newEnvelopeTypeValue.trim()) {
+                                    handleSaveNewEnvelopeType();
+                                  } else if (e.key === 'Escape') {
+                                    setShowOtherInputInDropdown(false);
+                                    setNewEnvelopeTypeValue('');
+                                  }
+                                }}
+                                placeholder="Type new envelope type..."
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowOtherInputInDropdown(false);
+                                  setNewEnvelopeTypeValue('');
+                                }}
+                                className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSaveNewEnvelopeType}
+                                disabled={!newEnvelopeTypeValue.trim() || savingNewType}
+                                className="px-3 py-1.5 text-sm bg-[#3E2B66] text-white rounded hover:bg-[#4d3577] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {savingNewType ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -4856,29 +5258,13 @@ const EnvelopeCreator: React.FC = () => {
 
                 {selectedEnvelopeType && (
                   <p className="text-sm text-gray-500 mt-2">
-                    Selected: {envelopeTypes.find((t) => t.title === selectedEnvelopeType)?.title}
+                    Selected: {envelopeTypes.find((t) => t.title === selectedEnvelopeType)?.title || selectedEnvelopeType}
                   </p>
-                )}
-
-                {showOtherEnvelopeType && (
-                  <div className="mt-3 w-1/2">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Enter Envelope Type <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={otherEnvelopeType}
-                      onChange={(e) => setOtherEnvelopeType(e.target.value)}
-                      placeholder="Enter custom envelope type"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      data-tour="ec-envelope-type-other"
-                    />
-                  </div>
                 )}
               </div>
 
               {/* Frequency of Reminders */}
-              <div className="relative">
+              {/* <div className="relative">
                 <label className="block text-sm text-gray-300 mb-2">Frequency of Reminders</label>
 
                 <div className="w-50 flex items-center gap-2 w-1/2">
@@ -4904,7 +5290,7 @@ const EnvelopeCreator: React.FC = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </div> */}
 
             </div>
           </div>
@@ -5264,13 +5650,13 @@ const EnvelopeCreator: React.FC = () => {
 
             {/* LEFT — Back + Title */}
             <div className="flex items-center space-x-3">
-              <button
+             <button
                 onClick={() =>
                   window.history.length > 1 ? navigate(-1) : navigate('/e-sign/dashboard')
                 }
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
               </button>
 
               {isEditingTitle ? (
@@ -5682,7 +6068,7 @@ const EnvelopeCreator: React.FC = () => {
                 <button onClick={() => sectionRefs.reminders.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Reminders</button>
                 <button onClick={() => sectionRefs.expiration.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Expiration</button>
                 <button onClick={() => sectionRefs.mobileFriendly.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Mobile-Friendly</button>
-                <button onClick={() => sectionRefs.comments.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Comments</button>
+                {/* <button onClick={() => sectionRefs.comments.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Comments</button> */}
                 </nav>
               </div>
 
@@ -5694,8 +6080,25 @@ const EnvelopeCreator: React.FC = () => {
                   <h3 className="text-2xl text-gray-900">Recipient Privileges</h3>
                   <p className="text-gray-600 mt-2">Give recipients options for how they sign.</p>
                   <div className="mt-6 space-y-4">
-                    <label className="flex items-center gap-3 text-gray-800"><input type="checkbox" className="w-4 h-4" defaultChecked /> Recipients can sign on paper</label>
-                    <label className="flex items-center gap-3 text-gray-400"><input type="checkbox" className="w-4 h-4" disabled /> Recipients can change signing responsibility or assign a delegate</label>
+                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4" 
+                        checked={advancedOptions.canSignOnPaper}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, canSignOnPaper: e.target.checked }))}
+                      /> 
+                      Recipients can sign on paper
+                    </label>
+                    {/* <label className="flex items-center gap-3 text-gray-400 cursor-not-allowed">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4" 
+                        checked={advancedOptions.canDelegate}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, canDelegate: e.target.checked }))}
+                        disabled
+                      /> 
+                      Recipients can change signing responsibility or assign a delegate
+                    </label> */}
                   </div>
                   <hr className="mt-8" />
                 </section>
@@ -5705,11 +6108,29 @@ const EnvelopeCreator: React.FC = () => {
                   <h3 className="text-2xl text-gray-900">Reminders</h3>
                   <p className="text-gray-600 mt-2">Follow up with automatic reminders. Signers will receive emails until they sign or decline the envelope.</p>
                   <div className="mt-6 flex items-center gap-3">
-                    <label className="flex items-center gap-3 text-gray-800">
-                      <input type="checkbox" className="w-5 h-5" />
+                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5" 
+                        checked={envelopeData.reminderEnabled}
+                        onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderEnabled: e.target.checked }))}
+                      />
                       Turn on auto reminders
                     </label>
                   </div>
+                  {envelopeData.reminderEnabled && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Reminder interval (days)</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        max="30"
+                        className="w-full border rounded px-3 py-2" 
+                        value={envelopeData.reminderInterval}
+                        onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderInterval: parseInt(e.target.value) || 3 }))}
+                      />
+                    </div>
+                  )}
                   <hr className="mt-8" />
                 </section>
 
@@ -5720,23 +6141,53 @@ const EnvelopeCreator: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Days until envelope expires</label>
-                      <select className="w-full border rounded px-3 py-2">
-                        <option>Custom days</option>
+                      <select 
+                        className="w-full border rounded px-3 py-2"
+                        value={advancedOptions.expirationType}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationType: e.target.value as 'custom' | 'never' }))}
+                      >
+                        <option value="custom">Custom days</option>
+                        <option value="never">Never expire</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
-                      <input className="w-full border rounded px-3 py-2" defaultValue={120} />
+                      <input 
+                        type="number" 
+                        min="1" 
+                        max="365"
+                        className={`w-full border rounded px-3 py-2 ${
+                          advancedOptions.expirationType === 'never' ? 'cursor-not-allowed bg-gray-100' : ''
+                        }`}
+                        value={advancedOptions.expirationDays}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationDays: parseInt(e.target.value) || 120 }))}
+                        disabled={advancedOptions.expirationType === 'never'}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Send alert</label>
-                      <select className="w-full border rounded px-3 py-2">
-                        <option>Custom days</option>
+                      <select 
+                        className="w-full border rounded px-3 py-2"
+                        value={advancedOptions.alertType}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, alertType: e.target.value as 'custom' | 'never' }))}
+                      >
+                        <option value="custom">Custom days</option>
+                        <option value="never">Never</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
-                      <input className="w-full border rounded px-3 py-2" defaultValue={0} />
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="365"
+                        className={`w-full border rounded px-3 py-2 ${
+                          advancedOptions.expirationType === 'never' ? 'cursor-not-allowed bg-gray-100' : ''
+                        }`}
+                        value={advancedOptions.expirationAlertDays}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationAlertDays: parseInt(e.target.value) || 0 }))}
+                        disabled={advancedOptions.alertType === 'never'}
+                      />
                     </div>
                   </div>
                   <hr className="mt-8" />
@@ -5747,24 +6198,46 @@ const EnvelopeCreator: React.FC = () => {
                   <h3 className="text-2xl text-gray-900">Mobile-Friendly Viewing with Responsive Signing</h3>
                   <p className="text-gray-600 mt-2">View your document in preview mode to see how it looks on a mobile device</p>
                   <div className="mt-6">
-                    <label className="flex items-center gap-3 text-gray-800">
-                      <input type="checkbox" className="w-5 h-5" defaultChecked />
+                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5" 
+                        checked={advancedOptions.responsiveSigning}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, responsiveSigning: e.target.checked }))}
+                      />
                       Enable Responsive Signing for this envelope
                     </label>
                   </div>
-                  <hr className="mt-8" />
+                  {/* <hr className="mt-8" /> */}
                 </section>
 
                 {/* Comments */}
-                <section ref={sectionRefs.comments}>
+                {/* <section ref={sectionRefs.comments}>
                   <h3 className="text-2xl text-gray-900">Comments</h3>
                   <p className="text-gray-600 mt-2">Allow comments on documents. Both senders and recipients can comment.</p>
-                </section>
+                  <div className="mt-6">
+                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5" 
+                        checked={advancedOptions.commentsEnabled}
+                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, commentsEnabled: e.target.checked }))}
+                      />
+                      Enable comments for this envelope
+                    </label>
+                  </div>
+                </section> */}
               </div>
 
                 {/* Footer */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end">
-                  <button onClick={() => setShowAdvanced(false)} className="px-6 py-2 rounded text-white" style={{ backgroundColor: '#5015FF' }}>Save</button>
+                  <button 
+                    onClick={saveAdvancedOptions} 
+                    className="px-6 py-2 rounded text-white hover:opacity-90 transition-opacity" 
+                    style={{ backgroundColor: '#5015FF' }}
+                  >
+                    Save
+                  </button>
                 </div>
               </div>
             </div>
@@ -5777,12 +6250,22 @@ const EnvelopeCreator: React.FC = () => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-xs"
-            onClick={() => !sending && setShowSendConfirmationModal(false)}
+            onClick={() => {
+              if (!sending) {
+                setShowSendConfirmationModal(false);
+                setDraggedSignerId(null);
+                setDragOverSignerId(null);
+              }
+            }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 z-[10000]">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto p-6 z-[10000]">
             {!sending && (
               <button
-                onClick={() => setShowSendConfirmationModal(false)}
+                onClick={() => {
+                  setShowSendConfirmationModal(false);
+                  setDraggedSignerId(null);
+                  setDragOverSignerId(null);
+                }}
                 className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
               >
                 <X className="w-4 h-4" />
@@ -5809,9 +6292,14 @@ const EnvelopeCreator: React.FC = () => {
             {/* Step 1: Signing Order Diagram */}
             {sendModalStep === 1 && (
               <div>
-                <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
-                  Review Signing Order
-                </h2>
+                <div className="mb-2">
+                  <h2 className="text-[24px] font-semibold text-[#3E2B66] mb-1">
+                    Review Signing Order
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Drag & drop to reorder signers
+                  </p>
+                </div>
                 <div className="mb-6">
                   {(() => {
                     const getInitials = (name?: string, email?: string) => {
@@ -5838,86 +6326,146 @@ const EnvelopeCreator: React.FC = () => {
                     }));
 
                     return (
-                      <div className="grid grid-cols-12 gap-6">
-                        <div className="col-span-4 text-sm text-gray-600">
-                          <div className="h-20 flex items-center font-semibold">SENDER</div>
-                          {ordered.map((p) => {
-                            // const recipient = recipients.find(r => r.id === p.key);
-                            return (
-                              <div 
-                                key={`lbl-${p.key}`} 
-                                className="h-24 flex items-center gap-2 group cursor-move"
-                                draggable
-                                onDragStart={(e) => {
-                                  e.dataTransfer.setData('recipientId', p.key);
-                                }}
-                                onDragOver={(e) => {
-                                  e.preventDefault();
-                                  e.currentTarget.classList.add('bg-gray-50');
-                                }}
-                                onDragLeave={(e) => {
-                                  e.currentTarget.classList.remove('bg-gray-50');
-                                }}
-                                onDrop={(e) => {
-                                  e.preventDefault();
-                                  e.currentTarget.classList.remove('bg-gray-50');
-                                  const draggedId = e.dataTransfer.getData('recipientId');
-                                  if (draggedId && draggedId !== p.key) {
-                                    const draggedRecipient = recipients.find(r => r.id === draggedId);
-                                    const targetRecipient = recipients.find(r => r.id === p.key);
-                                    if (draggedRecipient && targetRecipient) {
-                                      const tempOrder = draggedRecipient.order;
-                                      updateRecipient(draggedId, { order: targetRecipient.order });
-                                      updateRecipient(p.key, { order: tempOrder });
-                                      // Normalize orders after swap
-                                      setTimeout(() => {
-                                        setRecipients(prev => normalizeOrders(prev));
-                                      }, 0);
-                                    }
-                                  }
-                                }}
-                              >
-                                <ArrowUpToLine className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <span className="font-bold">{p.order}.</span> {p.name}
+                      <div className="relative">
+                        {/* Vertical Timeline Line */}
+                        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 z-0" />
+                        
+                        {/* Sender Row */}
+                        <div className="relative flex items-center py-4 mb-2">
+                          <div className="relative z-10 flex items-center gap-4 w-full">
+                            <div className="flex-shrink-0 w-12 flex justify-center">
+                              <div className="w-10 h-10 rounded-full bg-purple-100 border-2 border-purple-300 flex items-center justify-center font-semibold text-[#3E2B66] text-sm">
+                                {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                               </div>
-                            );
-                          })}
-                          <div className="h-20 flex items-center font-semibold">COMPLETED</div>
-                        </div>
-                        <div className="col-span-8 relative">
-                          <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
-                          <div className="relative h-20 flex justify-center items-center z-10">
-                            <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                            <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
-                              {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold text-gray-700">SENDER</div>
+                              <div className="text-xs text-gray-500">{formatSentenceCase(user?.fullname || user?.email || 'You')}</div>
                             </div>
                           </div>
-                          {ordered.map((p) => (
-                            <div key={p.key} className="relative h-24 flex justify-center items-center z-10">
-                              <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                              <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
-                                {getInitials(p.name, p.email)}
+                        </div>
+
+                        {/* Signer Rows */}
+                        {ordered.map((p, index) => {
+                          const isDragging = draggedSignerId === p.key;
+                          const isDragOver = dragOverSignerId === p.key;
+                          const isCurrent = index === 0; // First signer is current
+                          
+                          return (
+                            <div
+                              key={`signer-${p.key}`}
+                              className={`relative flex items-center py-3 mb-1 rounded-lg transition-all duration-200 ${
+                                isDragging 
+                                  ? 'opacity-50 scale-95 shadow-lg bg-white' 
+                                  : isDragOver 
+                                    ? 'bg-blue-50 border-2 border-blue-200' 
+                                    : 'hover:bg-gray-50'
+                              }`}
+                              draggable
+                              onDragStart={(e) => {
+                                setDraggedSignerId(p.key);
+                                e.dataTransfer.setData('recipientId', p.key);
+                                e.dataTransfer.effectAllowed = 'move';
+                              }}
+                              onDragEnd={() => {
+                                setDraggedSignerId(null);
+                                setDragOverSignerId(null);
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                                if (dragOverSignerId !== p.key) {
+                                  setDragOverSignerId(p.key);
+                                }
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverSignerId === p.key) {
+                                  setDragOverSignerId(null);
+                                }
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                setDragOverSignerId(null);
+                                const draggedId = e.dataTransfer.getData('recipientId');
+                                if (draggedId && draggedId !== p.key) {
+                                  const draggedRecipient = recipients.find(r => r.id === draggedId);
+                                  const targetRecipient = recipients.find(r => r.id === p.key);
+                                  if (draggedRecipient && targetRecipient) {
+                                    const tempOrder = draggedRecipient.order;
+                                    updateRecipient(draggedId, { order: targetRecipient.order });
+                                    updateRecipient(p.key, { order: tempOrder });
+                                    setTimeout(() => {
+                                      setRecipients(prev => normalizeOrders(prev));
+                                    }, 0);
+                                  }
+                                }
+                              }}
+                            >
+                              <div className="relative z-10 flex items-center gap-4 w-full">
+                                {/* Timeline Circle */}
+                                <div className="flex-shrink-0 w-12 flex justify-center">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm border-2 ${
+                                    isCurrent 
+                                      ? 'bg-[#3E2B66] border-[#3E2B66] text-white' 
+                                      : 'bg-gray-100 border-gray-300 text-gray-600'
+                                  }`}>
+                                    {getInitials(p.name, p.email)}
+                                  </div>
+                                </div>
+                                
+                                {/* Drag Handle */}
+                                <div 
+                                  className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
+                                  title="Drag to reorder"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                  <GripVertical className="w-5 h-5" />
+                                </div>
+                                
+                                {/* Signer Info */}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-900">{p.order}.</span>
+                                    <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-0.5">{p.email}</div>
+                                </div>
                               </div>
                             </div>
-                          ))}
-                          <div className="relative h-20 flex justify-center items-center z-10">
-                            <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
+                          );
+                        })}
+
+                        {/* Completed Row */}
+                        <div className="relative flex items-center py-4 mt-2">
+                          <div className="relative z-10 flex items-center gap-4 w-full">
+                            <div className="flex-shrink-0 w-12 flex justify-center">
+                              <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-green-600">
+                                <Check className="w-5 h-5" />
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold text-gray-700">COMPLETED</div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     );
                   })()}
                 </div>
-                <div className="flex justify-end gap-3 mt-6">
+                <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
                   <button
-                    onClick={() => setShowSendConfirmationModal(false)}
-                    className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    onClick={() => {
+                      setShowSendConfirmationModal(false);
+                      setDraggedSignerId(null);
+                      setDragOverSignerId(null);
+                    }}
+                    className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => setSendModalStep(2)}
-                    className="px-5 py-2 bg-[#3E2B66] text-white rounded-md hover:opacity-90"
+                    className="px-6 py-2.5 bg-[#3E2B66] text-white rounded-lg hover:bg-[#4d3577] font-medium transition-colors"
                   >
                     Next
                   </button>
@@ -5993,8 +6541,15 @@ const EnvelopeCreator: React.FC = () => {
                 <div className="space-y-4 mb-6">
                   <h3 className="font-semibold text-gray-900">Recipients & Authentication Methods</h3>
                   {recipients.map((recipient) => {
-                    const authMethod = authMethods.find(m => m.id === recipient.authentication);
-                    const cost = authMethod?.cost || 0;
+                    // Parse authentication - can be JSON stringified array or single value
+                    const authArray = parseAuthentication(recipient.authentication);
+                    const authMethodList = authArray.map(authId => 
+                      authMethods.find(m => m.id === authId)
+                    ).filter(Boolean);
+                    const totalCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
+                    const authDisplay = authMethodList.length > 0 
+                      ? authMethodList.map(m => m?.name).join(', ')
+                      : 'No Authentication Method selected';
                     return (
                       <div key={recipient.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center justify-between">
@@ -6005,7 +6560,7 @@ const EnvelopeCreator: React.FC = () => {
                             <p className="text-sm text-gray-600">{recipient.email}</p>
                             <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
                               <span>
-                                Authentication: <span className="font-medium">{authMethod?.name || 'No Authentication Method selected'}</span>
+                                Authentication: <span className="font-medium">{authDisplay}</span>
                               </span>
                               <button
                                 type="button"
@@ -6024,7 +6579,7 @@ const EnvelopeCreator: React.FC = () => {
                           <div className="text-right">
                             <p className="text-sm text-gray-600">Cost</p>
                             <p className="text-lg font-semibold text-[#3E2B66]">
-                              {cost > 0 ? `${cost} credits` : 'Free'}
+                              {totalCost > 0 ? `${totalCost} credits` : 'Free'}
                             </p>
                           </div>
                         </div>
@@ -6124,41 +6679,295 @@ const EnvelopeCreator: React.FC = () => {
               setShowAuthModal(false);
               setAuthModalForRecipientId(null);
               setAuthModalForBulk(false);
+              setTempAuthSelection(undefined);
+              setHasUserChangedSelection(false);
             }}
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-            <button
-              onClick={() => {
-                setShowAuthModal(false);
-                setAuthModalForRecipientId(null);
-                setAuthModalForBulk(false);
-              }}
-              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
-              Select Authentication Method
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[20px] font-semibold text-[#3E2B66]">
+                Select Authentication Method
+              </h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    const methodsToSave = tempAuthSelection || [];
+                    handleAuthMethodSelect(methodsToSave);
+                  }}
+                  className="px-5 py-2 bg-[#3E2B66] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAuthModal(false);
+                    setAuthModalForRecipientId(null);
+                    setAuthModalForBulk(false);
+                    setTempAuthSelection(undefined);
+                    setHasUserChangedSelection(false);
+                  }}
+                  className="text-[#3E2B66] hover:text-gray-800 z-10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
             <div className="mt-2">
               <AdvancedAuthenticationSelector
                 selectedMethods={(() => {
+                  // If user has made a change, always use tempAuthSelection
+                  if (hasUserChangedSelection) {
+                    return tempAuthSelection || [];
+                  }
+                  // Otherwise, use the current recipient's authentication
                   if (authModalForBulk) {
                     const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
                     if (!firstAuth) return [];
-                    const allSame = recipients.every(r => r.authentication === firstAuth);
-                    return allSame && firstAuth ? [firstAuth] : [];
+                    const firstAuthArray = parseAuthentication(firstAuth);
+                    const allSame = recipients.every(r => {
+                      const rAuth = parseAuthentication(r.authentication);
+                      return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
+                    });
+                    return allSame ? firstAuthArray : [];
                   } else if (authModalForRecipientId) {
                     const recipient = recipients.find(r => r.id === authModalForRecipientId);
-                    const auth = recipient?.authentication;
-                    return auth ? [auth] : [];
+                    return parseAuthentication(recipient?.authentication);
                   }
                   return [];
                 })()}
                 onMethodSelect={handleAuthMethodSelect}
+                onSelectionChange={(methodIds) => {
+                  setTempAuthSelection(methodIds);
+                  setHasUserChangedSelection(true);
+                }}
+                showSaveButton={false}
                 riskLevel="medium"
                 complianceRequirements={[]}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recipient List Modal */}
+      {showRecipientListModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+            onClick={() => {
+              setShowRecipientListModal(false);
+              setRecipientListModalForId(null);
+              setRecipientListSearch('');
+            }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-[20px] font-semibold text-[#3E2B66]">
+                Select Recipient
+              </h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowAddRecipientForm(!showAddRecipientForm);
+                    if (showAddRecipientForm) {
+                      setNewRecipientForm({ name: '', email: '', title: '', company: '', phone: '', address: '' });
+                    }
+                  }}
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {showAddRecipientForm ? 'Cancel' : 'Add New'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRecipientListModal(false);
+                    setRecipientListModalForId(null);
+                    setRecipientListSearch('');
+                    setShowAddRecipientForm(false);
+                    setNewRecipientForm({ name: '', email: '', title: '', company: '', phone: '', address: '' });
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Add Recipient Form */}
+            {showAddRecipientForm && (
+              <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newRecipientForm.name}
+                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Full name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={newRecipientForm.email}
+                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={newRecipientForm.title}
+                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Job title"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                    <input
+                      type="text"
+                      value={newRecipientForm.company}
+                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, company: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Company name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="text"
+                      value={newRecipientForm.phone}
+                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input
+                      type="text"
+                      value={newRecipientForm.address}
+                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, address: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Address"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end mt-4">
+                  <button
+                    onClick={handleAddNewRecipient}
+                    disabled={savingNewRecipient || !newRecipientForm.name.trim() || !newRecipientForm.email.trim()}
+                    className="inline-flex items-center px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingNewRecipient ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save & Select
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Search Input */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={recipientListSearch}
+                  onChange={(e) => setRecipientListSearch(e.target.value)}
+                  placeholder="Search recipients..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+            </div>
+
+            {/* Recipient List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingSavedRecipients ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin h-8 w-8 text-purple-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                  </div>
+                </div>
+              ) : (() => {
+                // Filter recipients based on search
+                const filteredRecipients = savedRecipients.filter(r => {
+                  const searchLower = recipientListSearch.toLowerCase();
+                  const nameMatch = r.name.toLowerCase().includes(searchLower);
+                  const emailMatch = r.email.toLowerCase().includes(searchLower);
+                  const companyMatch = r.company?.toLowerCase().includes(searchLower);
+                  const titleMatch = r.title?.toLowerCase().includes(searchLower);
+                  return nameMatch || emailMatch || companyMatch || titleMatch;
+                });
+
+                if (filteredRecipients.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {recipientListSearch ? 'No recipients found' : 'No recipients saved'}
+                      </h3>
+                      <p className="text-gray-500">
+                        {recipientListSearch ? 'Try adjusting your search terms' : 'Go to Manage Recipients to add recipients'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2">
+                    {filteredRecipients.map((recipient) => (
+                      <button
+                        key={recipient._id}
+                        onClick={() => selectRecipientFromList(recipient)}
+                        className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 mb-1">
+                              {recipient.name}
+                            </div>
+                            <div className="text-sm text-gray-600 mb-1">
+                              {recipient.email}
+                            </div>
+                            {(recipient.title || recipient.company) && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {recipient.title && <span>{recipient.title}</span>}
+                                {recipient.title && recipient.company && <span> • </span>}
+                                {recipient.company && <span>{recipient.company}</span>}
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <Check className="w-5 h-5 text-purple-600 opacity-0 group-hover:opacity-100" />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

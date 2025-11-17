@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useState, useRef, useCallba
 import {
   FileText, X, Undo2, Redo2, Save, Printer, RefreshCw,
   HelpCircle, Search, ChevronDown, Trash2, FileSignature, PenLine,
-  Stamp, Calendar, Building2, Briefcase, Hash, Check, User, Type, 
+  Stamp, Calendar, Building2, Briefcase, Hash, Check, User, Type,
   SaveAll,
   SquareMousePointer,
   RectangleHorizontal,
@@ -69,8 +69,14 @@ export type PowerFormData = {
 };
 
 const RECIPIENT_COLORS = ["#2563eb", "#059669", "#d97706", "#db2777", "#7c3aed", "#f43f5e"];
+const RECIPIENT_BORDER_STYLES = ["dashed", "dotted", "solid", "double", "groove", "ridge"];
+
 function getRecipientColor(idx: number) {
   return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length];
+}
+
+function getRecipientBorderStyle(idx: number) {
+  return RECIPIENT_BORDER_STYLES[idx % RECIPIENT_BORDER_STYLES.length];
 }
 
 function hexToRgba(hex: string | undefined | null, alpha: number) {
@@ -148,7 +154,7 @@ export default function SigningEditorStep({
         // Assign to window
         window.pdfjsLib = pdfjsLib;
       }
-      
+
       return window.pdfjsLib;
     } catch (error) {
       console.error('Error loading PDF.js:', error);
@@ -177,7 +183,7 @@ export default function SigningEditorStep({
   const [leftPanel, setLeftPanel] = useState<'powerForm' | 'standard' | 'custom' | 'pen'>(
     mode === 'power' ? 'powerForm' : 'standard'
   );
-  
+
   // Field properties sidebar state
   const [selectedField, setSelectedField] = useState<SignatureField | null>(null);
   const [showPropertiesSidebar, setShowPropertiesSidebar] = useState(false);
@@ -189,6 +195,12 @@ export default function SigningEditorStep({
   const [thumbnailCanvases, setThumbnailCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   
+  // History for undo/redo
+  const [fieldHistory, setFieldHistory] = useState<SignatureField[][]>([signatureFields]);
+  const [historyIndex, setHistoryIndex] = useState<number>(0);
+  const [_copiedFields, setCopiedFields] = useState<SignatureField[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   // Guided tour state
   const [isEditorTourOpen, setIsEditorTourOpen] = useState<boolean>(false);
   const [editorTourIndex, setEditorTourIndex] = useState<number>(0);
@@ -205,32 +217,32 @@ export default function SigningEditorStep({
   const [editorDragOffset, setEditorDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [editorTooltipPosition, setEditorTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const editorTooltipRef = useRef<HTMLDivElement | null>(null);
-  
+
   // Separate effect to handle UI state updates (preview/panel visibility)
   // Only runs when step changes, not when state changes (prevents infinite loops)
   useEffect(() => {
     if (!isEditorTourOpen) return;
     const step = editorTourSteps[editorTourIndex];
     if (!step) return;
-    
+
     // Ensure preview is visible for preview-related steps
     if ((step.id === 'previewToggle' || step.id === 'previewClick') && !showRightSidebar) {
       setShowRightSidebar(true);
     }
-    
+
     // Ensure standard panel is active for standard fields step
     if (step.id === 'standardFields' && leftPanel !== 'standard') {
       setLeftPanel('standard');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditorTourOpen, editorTourIndex]);
-  
+
   // Use useLayoutEffect to run synchronously before browser paint, so position updates with text
   useLayoutEffect(() => {
     if (!isEditorTourOpen) return;
     const step = editorTourSteps[editorTourIndex];
     if (!step) return;
-    
+
     // Find element immediately for instant position update (synchronous)
     const el = document.querySelector(step.selector || '') as HTMLElement | null;
     if (el) {
@@ -264,7 +276,7 @@ export default function SigningEditorStep({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditorTourOpen, editorTourIndex]);
-  
+
   // Handle dragging for editor tour
   useEffect(() => {
     if (!isEditorDragging) return;
@@ -273,15 +285,15 @@ export default function SigningEditorStep({
       if (editorTooltipPosition) {
         const newX = e.clientX - editorDragOffset.x;
         const newY = e.clientY - editorDragOffset.y;
-        
+
         // Keep tooltip within viewport bounds
         const tooltipWidth = 384; // max-w-sm = 384px
         const tooltipHeight = 200; // approximate height
         const padding = 16;
-        
+
         const constrainedX = Math.max(padding, Math.min(newX, window.innerWidth - tooltipWidth - padding));
         const constrainedY = Math.max(padding, Math.min(newY, window.innerHeight - tooltipHeight - padding));
-        
+
         setEditorTooltipPosition({ x: constrainedX, y: constrainedY });
       }
     };
@@ -302,14 +314,14 @@ export default function SigningEditorStep({
   const handleEditorDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault(); // Prevent text selection
     if (!editorTooltipRef.current) return;
-    
+
     const rect = editorTooltipRef.current.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
-    
+
     setEditorDragOffset({ x: offsetX, y: offsetY });
     setIsEditorDragging(true);
-    
+
     // Initialize tooltip position with current position if not already set
     if (!editorTooltipPosition) {
       setEditorTooltipPosition({ x: rect.left, y: rect.top });
@@ -351,7 +363,7 @@ export default function SigningEditorStep({
     // Reset tooltip position when moving to previous step
     setEditorTooltipPosition(null);
   };
-  
+
   // Auto-start tour on mount
   const editorTourStartedRef = useRef<boolean>(false);
   useEffect(() => {
@@ -387,6 +399,13 @@ export default function SigningEditorStep({
     return map;
   }, [recipients, slotsToUse]);
 
+  const recipientBorderStyleMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    recipients.forEach((r, idx) => (map[r.id] = getRecipientBorderStyle(idx)));
+    slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientBorderStyle(idx + recipients.length))); // avoid collision
+    return map;
+  }, [recipients, slotsToUse]);
+
   // initialize when docs/recipients/slots change
   useEffect(() => {
     if (!activeDocId && documents.length) setActiveDocId(documents[0].id);
@@ -414,6 +433,305 @@ export default function SigningEditorStep({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showRecipientDropdown, showDocDropdown]);
+
+  // Track if we're doing undo/redo to prevent saving to history
+  const isUndoRedoRef = useRef(false);
+
+  // Helper function to save state to history
+  const saveToHistory = useCallback((fields: SignatureField[]) => {
+    if (isUndoRedoRef.current) return; // Don't save during undo/redo
+    
+    setFieldHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push([...fields]); // Create a deep copy
+      // Limit history to 50 entries
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        setHistoryIndex(newHistory.length - 1);
+      } else {
+        setHistoryIndex(newHistory.length - 1);
+      }
+      return newHistory;
+    });
+  }, [historyIndex]);
+
+  // Keyboard shortcuts handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs, textareas, or modals
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        showShortcutsModal
+      ) {
+        // Allow some shortcuts even in inputs
+        if (e.key === 'Delete' && selectedField) {
+          e.preventDefault();
+          removeSignatureField(selectedField);
+        }
+        return;
+      }
+
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isShift = e.shiftKey;
+
+      // Navigate: Move Between Panels (Ctrl+Shift+L)
+      if (isCtrl && isShift && e.key === 'L') {
+        e.preventDefault();
+        if (mode === 'power') {
+          setLeftPanel(prev => prev === 'powerForm' ? 'standard' : 'powerForm');
+        }
+        return;
+      }
+
+      // Fields: Add Field (Enter, Space)
+      if ((e.key === 'Enter' || e.key === ' ') && !isCtrl && !isShift) {
+        e.preventDefault();
+        if (!activeDocId) return;
+        const pageEl = getPageElement(currentPage);
+        const pageRect = pageEl?.getBoundingClientRect();
+        if (!pageRect) return;
+
+        const width = 200;
+        const height = 40;
+        const left = (pageRect.width - width) / 2;
+        const top = (pageRect.height - height) / 2;
+
+        const newField: SignatureField = {
+          id: `${Date.now()}`,
+          docId: activeDocId,
+          recipientId: mode === "normal" ? activeRecipientId ?? undefined : undefined,
+          slotId: mode === "power" ? activeSlotId ?? undefined : undefined,
+          page: currentPage,
+          x: left,
+          y: top,
+          width,
+          height,
+          type: "signature",
+        };
+
+        const updatedFields = [...signatureFields, newField];
+        setSignatureFields(updatedFields);
+        if (onFieldsChange) onFieldsChange(updatedFields);
+        setSelectedField(newField);
+        saveToHistory(updatedFields);
+        return;
+      }
+
+      // Fields: Duplicate Field (Ctrl+D)
+      if (isCtrl && e.key === 'd' && selectedField) {
+        e.preventDefault();
+        const duplicatedField: SignatureField = {
+          ...selectedField,
+          id: `${Date.now()}`,
+          _id: undefined,
+          x: selectedField.x + 20,
+          y: selectedField.y + 20,
+        };
+        const updatedFields = [...signatureFields, duplicatedField];
+        setSignatureFields(updatedFields);
+        if (onFieldsChange) onFieldsChange(updatedFields);
+        setSelectedField(duplicatedField);
+        saveToHistory(updatedFields);
+        return;
+      }
+
+      // Fields: Select Fields on Current Page (Ctrl+G)
+      if (isCtrl && e.key === 'g' && !isShift) {
+        e.preventDefault();
+        const fieldsOnPage = signatureFields.filter(
+          f => (f.docId ?? f.documentId) === activeDocId && f.page === currentPage
+        );
+        if (fieldsOnPage.length > 0) {
+          setSelectedField(fieldsOnPage[0]);
+          setShowPropertiesSidebar(true);
+        }
+        return;
+      }
+
+      // Fields: Delete Field (Delete)
+      if (e.key === 'Delete' && selectedField) {
+        e.preventDefault();
+        removeSignatureField(selectedField);
+        setSelectedField(null);
+        setShowPropertiesSidebar(false);
+        return;
+      }
+
+      // Fields: Search fields (Ctrl+Shift+S)
+      if (isCtrl && isShift && e.key === 'S') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      // Fields: Change Recipient for Field (Ctrl+Shift+, and Ctrl+Shift+.)
+      if (isCtrl && isShift && selectedField) {
+        if (e.key === ',' || e.key === '<') {
+          e.preventDefault();
+          const currentIdx = mode === "normal"
+            ? recipients.findIndex(r => r.id === activeRecipientId)
+            : slotsToUse.findIndex(s => s.slotId === activeSlotId);
+          const prevIdx = currentIdx > 0 ? currentIdx - 1 : (mode === "normal" ? recipients.length - 1 : slotsToUse.length - 1);
+          if (mode === "normal" && recipients[prevIdx]) {
+            setActiveRecipientId(recipients[prevIdx].id);
+            const updatedFields = signatureFields.map(f =>
+              (f.id ?? f._id) === (selectedField.id ?? selectedField._id)
+                ? { ...f, recipientId: recipients[prevIdx].id }
+                : f
+            );
+            setSignatureFields(updatedFields);
+            if (onFieldsChange) onFieldsChange(updatedFields);
+            saveToHistory(updatedFields);
+          } else if (mode === "power" && slotsToUse[prevIdx]) {
+            setActiveSlotId(slotsToUse[prevIdx].slotId);
+            const updatedFields = signatureFields.map(f =>
+              (f.id ?? f._id) === (selectedField.id ?? selectedField._id)
+                ? { ...f, slotId: slotsToUse[prevIdx].slotId }
+                : f
+            );
+            setSignatureFields(updatedFields);
+            if (onFieldsChange) onFieldsChange(updatedFields);
+            saveToHistory(updatedFields);
+          }
+          return;
+        }
+        if (e.key === '.' || e.key === '>') {
+          e.preventDefault();
+          const currentIdx = mode === "normal"
+            ? recipients.findIndex(r => r.id === activeRecipientId)
+            : slotsToUse.findIndex(s => s.slotId === activeSlotId);
+          const nextIdx = currentIdx < (mode === "normal" ? recipients.length - 1 : slotsToUse.length - 1) ? currentIdx + 1 : 0;
+          if (mode === "normal" && recipients[nextIdx]) {
+            setActiveRecipientId(recipients[nextIdx].id);
+            const updatedFields = signatureFields.map(f =>
+              (f.id ?? f._id) === (selectedField.id ?? selectedField._id)
+                ? { ...f, recipientId: recipients[nextIdx].id }
+                : f
+            );
+            setSignatureFields(updatedFields);
+            if (onFieldsChange) onFieldsChange(updatedFields);
+            saveToHistory(updatedFields);
+          } else if (mode === "power" && slotsToUse[nextIdx]) {
+            setActiveSlotId(slotsToUse[nextIdx].slotId);
+            const updatedFields = signatureFields.map(f =>
+              (f.id ?? f._id) === (selectedField.id ?? selectedField._id)
+                ? { ...f, slotId: slotsToUse[nextIdx].slotId }
+                : f
+            );
+            setSignatureFields(updatedFields);
+            if (onFieldsChange) onFieldsChange(updatedFields);
+            saveToHistory(updatedFields);
+          }
+          return;
+        }
+      }
+
+      // Common Actions: Save (Ctrl+S)
+      if (isCtrl && e.key === 's' && !isShift) {
+        e.preventDefault();
+        if (envelopeId) {
+          eSignApi.post('/api/e-sign/save-signature-fields', {
+            envelopeId,
+            signatureFields: signatureFields.map(f => ({
+              _id: f._id,
+              documentId: f.docId ?? f.documentId,
+              recipientId: f.recipientId || null,
+              slotId: f.slotId || null,
+              page: f.page,
+              x: f.x,
+              y: f.y,
+              width: f.width,
+              height: f.height,
+              type: f.type,
+              status: 'pending',
+              label: f.label || '',
+              option: f.options || [],
+              fieldId: f.fieldId || null,
+            })),
+          }).then(() => {
+            toast.success('Fields saved successfully');
+          }).catch((error: any) => {
+            toast.error(error?.response?.data?.message || 'Failed to save fields');
+          });
+        }
+        return;
+      }
+
+      // Common Actions: Undo (Ctrl+Z)
+      if (isCtrl && e.key === 'z' && !isShift) {
+        e.preventDefault();
+        if (historyIndex > 0) {
+          isUndoRedoRef.current = true;
+          const newIndex = historyIndex - 1;
+          setHistoryIndex(newIndex);
+          const previousFields = [...fieldHistory[newIndex]];
+          setSignatureFields(previousFields);
+          if (onFieldsChange) onFieldsChange(previousFields);
+          setTimeout(() => { isUndoRedoRef.current = false; }, 100);
+        }
+        return;
+      }
+
+      // Common Actions: Redo (Ctrl+Y)
+      if (isCtrl && e.key === 'y') {
+        e.preventDefault();
+        if (historyIndex < fieldHistory.length - 1) {
+          isUndoRedoRef.current = true;
+          const newIndex = historyIndex + 1;
+          setHistoryIndex(newIndex);
+          const nextFields = [...fieldHistory[newIndex]];
+          setSignatureFields(nextFields);
+          if (onFieldsChange) onFieldsChange(nextFields);
+          setTimeout(() => { isUndoRedoRef.current = false; }, 100);
+        }
+        return;
+      }
+
+      // Common Actions: Select all (Ctrl+A)
+      if (isCtrl && e.key === 'a' && !isShift) {
+        e.preventDefault();
+        const fieldsOnCurrentDoc = signatureFields.filter(
+          f => (f.docId ?? f.documentId) === activeDocId
+        );
+        if (fieldsOnCurrentDoc.length > 0) {
+          // Select the first field (could be enhanced to select all)
+          setSelectedField(fieldsOnCurrentDoc[0]);
+          setShowPropertiesSidebar(true);
+        }
+        return;
+      }
+
+      // Common Actions: Copy (Ctrl+C)
+      if (isCtrl && e.key === 'c' && !isShift && selectedField) {
+        e.preventDefault();
+        setCopiedFields([selectedField]);
+        toast.success('Field copied');
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    selectedField,
+    activeDocId,
+    currentPage,
+    activeRecipientId,
+    activeSlotId,
+    signatureFields,
+    recipients,
+    slotsToUse,
+    mode,
+    historyIndex,
+    fieldHistory,
+    showShortcutsModal,
+    envelopeId,
+    onFieldsChange,
+    leftPanel
+  ]);
   console.log("activeRecipientId3", activeRecipientId);
   // auto-select activeSlot from selected recipient when activeSlot is empty
   useEffect(() => {
@@ -750,10 +1068,10 @@ export default function SigningEditorStep({
   // Remove signature field from database and frontend
   const removeSignatureField = async (field: SignatureField) => {
     const fieldId = field._id || field.id;
-    
+
     // Check if field has a database ID (MongoDB ObjectId is 24 hex chars)
     const isDbRecord = field._id && /^[a-fA-F0-9]{24}$/.test(field._id);
-    
+
     if (isDbRecord) {
       try {
         await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${field._id}`);
@@ -764,7 +1082,7 @@ export default function SigningEditorStep({
         return; // Don't remove from frontend if DB deletion failed
       }
     }
-    
+
     // Remove from frontend state
     setSignatureFields(prev => prev.filter(f => (f.id ?? f._id) !== fieldId));
     if (onFieldsChange) {
@@ -783,12 +1101,12 @@ export default function SigningEditorStep({
     setIsSavingField(true);
     try {
       // Update local state first
-      const updatedFields = signatureFields.map(f => 
+      const updatedFields = signatureFields.map(f =>
         (f.id ?? f._id) === (selectedField.id ?? selectedField._id)
           ? { ...f, label: fieldLabel }
           : f
       );
-      
+
       setSignatureFields(updatedFields);
       if (onFieldsChange) onFieldsChange(updatedFields);
 
@@ -880,7 +1198,7 @@ export default function SigningEditorStep({
       const currentY = e.clientY - pageTop - (moveOffset?.y ?? 0);
       const fieldX = field.x;
       const fieldY = field.y;
-      
+
       if (Math.abs(currentX - fieldX) > 3 || Math.abs(currentY - fieldY) > 3) {
         fieldWasDraggedRef.current = true;
       }
@@ -962,7 +1280,7 @@ export default function SigningEditorStep({
   // active assignee id for preview color
   const activeAssigneeId = mode === "normal" ? activeRecipientId : activeSlotId;
   console.log("activeAssigneeId7", activeAssigneeId);
-  
+
   // Get active recipient/slot color
   const activeColor = (activeRecipientId ? recipientColorMap[activeRecipientId] : (activeSlotId ? recipientColorMap[activeSlotId] : null)) || "#2563eb";
 
@@ -1013,6 +1331,16 @@ export default function SigningEditorStep({
 
   return (
     <div className="h-screen min-h-0 flex flex-col overflow-hidden bg-gray-100" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      <style>{`
+        .field-container:hover .field-remove-btn {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+        .field-remove-btn:hover {
+          background: #dc2626 !important;
+          transform: scale(1.1);
+        }
+      `}</style>
 
       <div className="bg-gray-50 border-b border-gray-200 h-12 flex items-center px-4 w-full">
         <div className="flex items-center flex-1 min-w-0">
@@ -1032,17 +1360,17 @@ export default function SigningEditorStep({
                           title={r.email || r.name}
                           data-tour="editor-recipient"
                         >
-                          <div 
+                          <div
                             className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 border"
-                            style={{ 
-                              backgroundColor: hexToRgba(recipientColor, 0.1), 
+                            style={{
+                              backgroundColor: hexToRgba(recipientColor, 0.1),
                               borderColor: recipientColor || "#2563eb"
                             }}
                           >
                             <User className="w-3 h-3" style={{ color: recipientColor || "#2563eb" }} />
                           </div>
                           <span
-                            className="text-xs font-medium leading-tight truncate max-w-[140px]"
+                            className={`text-xs font-medium leading-tight truncate max-w-[140px] ${isActive ? 'p-2' : 'p-0'}`}
                             style={{ fontSize: "12px", color: "#301934" }}
                           >
                             {r.name || r.email}
@@ -1060,10 +1388,10 @@ export default function SigningEditorStep({
                     >
                       {/* LEFT BLOCK — icon + name */}
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 border"
-                          style={{ 
-                            backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1), 
+                          style={{
+                            backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1),
                             borderColor: activeColor || "#2563eb"
                           }}
                         >
@@ -1098,10 +1426,10 @@ export default function SigningEditorStep({
                               }}
                               className={`w-full text-left px-4 py-2 flex items-center gap-2 ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
                             >
-                              <div 
+                              <div
                                 className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
-                                style={{ 
-                                  backgroundColor: hexToRgba(recipientColor, 0.1), 
+                                style={{
+                                  backgroundColor: hexToRgba(recipientColor, 0.1),
                                   borderColor: recipientColor || "#2563eb"
                                 }}
                               >
@@ -1125,10 +1453,10 @@ export default function SigningEditorStep({
                   onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
                   className="w-full flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
                 >
-                  <div 
+                  <div
                     className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
-                    style={{ 
-                      backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1), 
+                    style={{
+                      backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1),
                       borderColor: activeColor || "#2563eb"
                     }}
                   >
@@ -1153,10 +1481,10 @@ export default function SigningEditorStep({
                           }}
                           className={`w-full text-left px-4 py-2 flex items-center gap-2 ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
                         >
-                          <div 
+                          <div
                             className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
-                            style={{ 
-                              backgroundColor: hexToRgba(slotColor, 0.1), 
+                            style={{
+                              backgroundColor: hexToRgba(slotColor, 0.1),
                               borderColor: slotColor || "#2563eb"
                             }}
                           >
@@ -1218,13 +1546,73 @@ export default function SigningEditorStep({
         </div>
         {/* Middle Icons */}
         <div className="flex items-center justify-center flex-1">
-          <button className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors">
+          <button
+            onClick={() => {
+              if (historyIndex > 0) {
+                isUndoRedoRef.current = true;
+                const newIndex = historyIndex - 1;
+                setHistoryIndex(newIndex);
+                const previousFields = [...fieldHistory[newIndex]];
+                setSignatureFields(previousFields);
+                if (onFieldsChange) onFieldsChange(previousFields);
+                setTimeout(() => { isUndoRedoRef.current = false; }, 100);
+              }
+            }}
+            disabled={historyIndex === 0}
+            className={`p-1.5 rounded transition-colors ${historyIndex === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200'}`}
+            title="Undo (Ctrl+Z)"
+          >
             <Undo2 className="w-4 h-4" />
           </button>
-          <button className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors">
+          <button
+            onClick={() => {
+              if (historyIndex < fieldHistory.length - 1) {
+                isUndoRedoRef.current = true;
+                const newIndex = historyIndex + 1;
+                setHistoryIndex(newIndex);
+                const nextFields = [...fieldHistory[newIndex]];
+                setSignatureFields(nextFields);
+                if (onFieldsChange) onFieldsChange(nextFields);
+                setTimeout(() => { isUndoRedoRef.current = false; }, 100);
+              }
+            }}
+            disabled={historyIndex >= fieldHistory.length - 1}
+            className={`p-1.5 rounded transition-colors ${historyIndex >= fieldHistory.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200'}`}
+            title="Redo (Ctrl+Y)"
+          >
             <Redo2 className="w-4 h-4" />
           </button>
-          <button className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors">
+          <button
+            onClick={() => {
+              if (envelopeId) {
+                eSignApi.post('/api/e-sign/save-signature-fields', {
+                  envelopeId,
+                  signatureFields: signatureFields.map(f => ({
+                    _id: f._id,
+                    documentId: f.docId ?? f.documentId,
+                    recipientId: f.recipientId || null,
+                    slotId: f.slotId || null,
+                    page: f.page,
+                    x: f.x,
+                    y: f.y,
+                    width: f.width,
+                    height: f.height,
+                    type: f.type,
+                    status: 'pending',
+                    label: f.label || '',
+                    option: f.options || [],
+                    fieldId: f.fieldId || null,
+                  })),
+                }).then(() => {
+                  toast.success('Fields saved successfully');
+                }).catch((error: any) => {
+                  toast.error(error?.response?.data?.message || 'Failed to save fields');
+                });
+              }
+            }}
+            className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors"
+            title="Save (Ctrl+S)"
+          >
             <Save className="w-4 h-4" />
           </button>
           <button className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors">
@@ -1280,20 +1668,25 @@ export default function SigningEditorStep({
         {/* Left Side Panel */}
         <div className="w-[300px] bg-white border-r border-gray-200 flex flex-shrink-0 h-full">
           {/* Vertical Tabs - Extreme Left Edge */}
-          <div className="flex flex-col border-r border-gray-200 flex-shrink-0 h-full">
-            <button
-              onClick={() => setLeftPanel('powerForm')}
-              className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'powerForm' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
-            >
-              <FormInput className="w-3.5 h-3.5 text-gray-700"/>
-            </button>
-            <button
-              onClick={() => setLeftPanel('standard')}
-              className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'standard' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
-            >
-              <RectangleHorizontal className="w-3.5 h-3.5 text-gray-700" />
-            </button>
-            {/* <button
+          {mode === 'power' && (
+            <div className="flex flex-col border-r border-gray-200 flex-shrink-0 h-full">
+
+              <button
+                onClick={() => setLeftPanel('powerForm')}
+                className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'powerForm' ? 'bg-purple-50' : 'hover:bg-gray-50'
+                  }`}
+              >
+                <FormInput className="w-3.5 h-3.5 text-gray-700" />
+              </button>
+
+              <button
+                onClick={() => setLeftPanel('standard')}
+                className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'standard' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+              >
+                <RectangleHorizontal className="w-3.5 h-3.5 text-gray-700" />
+              </button>
+
+              {/* <button
               onClick={() => setLeftPanel(prev => (prev === 'custom' ? 'standard' : 'custom'))}
               className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'custom' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
             >
@@ -1305,35 +1698,35 @@ export default function SigningEditorStep({
             >
               <Pen className="w-3.5 h-3.5 text-gray-500" />
             </button> */}
-          </div>
-
+            </div>
+          )}
           {/* Search and Fields */}
           <div className="flex-1 overflow-hidden flex flex-col min-w-0 h-full">
-            {leftPanel === 'powerForm' &&(
-                <div className="flex-1 overflow-y-auto min-h-0">
-                  <div className="p-3">
-                    <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide" style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>
-                      POWER FORM FIELDS
-                    </h3>
-                    <div className="space-y-1">
-                      {mode === "power" && (powerFormData?.fields ?? []).length > 0 && (
-                        <div className="flex flex-col gap-2">
-                          {powerFormData!.fields!.map(field => (
-                            <div
-                              key={field._id}
-                              draggable
-                              onDragStart={e => handleDragStart(e, { type: field.type, label: field.label, id: field._id })}
-                              onDragEnd={handleDragEnd}
-                              className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gray-50 cursor-grab"
-                            >
-                              {field.label} ({field.type})
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+            {leftPanel === 'powerForm' && (
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="p-3">
+                  <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide" style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>
+                    POWER FORM FIELDS
+                  </h3>
+                  <div className="space-y-1">
+                    {mode === "power" && (powerFormData?.fields ?? []).length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        {powerFormData!.fields!.map(field => (
+                          <div
+                            key={field._id}
+                            draggable
+                            onDragStart={e => handleDragStart(e, { type: field.type, label: field.label, id: field._id })}
+                            onDragEnd={handleDragEnd}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gray-50 cursor-grab"
+                          >
+                            {field.label} ({field.type})
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
             )}
             {leftPanel === 'standard' && (
               <>
@@ -1342,6 +1735,7 @@ export default function SigningEditorStep({
                   <div className="relative px-1.5 py-2">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     <input
+                      ref={searchInputRef}
                       type="text"
                       placeholder="Search Fields"
                       value={searchQuery}
@@ -1380,7 +1774,7 @@ export default function SigningEditorStep({
                               onDragEnd={handleDragEnd}
                               draggable
                               className="w-full flex items-center gap-3 px-2 py-2 rounded text-left transition-colors cursor-grab active:cursor-grabbing"
-                              style={{ 
+                              style={{
                                 backgroundColor: 'transparent'
                               }}
                               onMouseEnter={(e) => {
@@ -1390,10 +1784,10 @@ export default function SigningEditorStep({
                                 e.currentTarget.style.backgroundColor = 'transparent';
                               }}
                             >
-                              <div 
-                                className="w-5 h-5 flex items-center justify-center border rounded flex-shrink-0" 
-                                style={{ 
-                                  backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1), 
+                              <div
+                                className="w-5 h-5 flex items-center justify-center border rounded flex-shrink-0"
+                                style={{
+                                  backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1),
                                   borderColor: activeColor || "#2563eb",
                                   color: activeColor || "#2563eb"
                                 }}
@@ -1435,7 +1829,7 @@ export default function SigningEditorStep({
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded border" style={{ background: '#b9e6f2', borderColor: '#93c5fd' }}>
                           <SquareMousePointer className="w-3.5 h-3.5 text-gray-700" />
                         </span>
-                        <span className="text-sm truncate" style={{ color: '#301934' }}>Stamp {String(signatureFields[0]?.id || '').slice(0,6)}</span>
+                        <span className="text-sm truncate" style={{ color: '#301934' }}>Stamp {String(signatureFields[0]?.id || '').slice(0, 6)}</span>
                       </button>
                     </div>
                   </details>
@@ -1574,6 +1968,8 @@ export default function SigningEditorStep({
                           const assignee = findAssignee(f);
                           const color =
                             recipientColorMap[f.recipientId ?? f.slotId ?? ""] || "#2563eb";
+                          const borderStyle =
+                            recipientBorderStyleMap[f.recipientId ?? f.slotId ?? ""] || "dashed";
                           const isActive =
                             mode === "normal"
                               ? f.recipientId === activeRecipientId
@@ -1583,15 +1979,16 @@ export default function SigningEditorStep({
                             <React.Fragment key={f.id ?? f._id}>
                               {/* Signature/Field Box */}
                               <div
+                                className="field-container"
                                 style={{
                                   position: "absolute",
                                   left: f.x,
                                   top: f.y,
                                   width: f.width,
                                   height: f.height,
-                                  border: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) 
-                                    ? `3px solid ${color}` 
-                                    : `2px dashed ${color}`,
+                                  border: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id)
+                                    ? `3px solid ${color}`
+                                    : `2px ${borderStyle} ${color}`,
                                   background: (f.type === "text" || f.type === "email" || f.type === "dropdown" || f.type === "input" || f.type === "checkbox" || f.type === "phone" || f.type === "stamp") ? "#f8fafc" : "#fff",
                                   display: "flex",
                                   alignItems: "center",
@@ -1601,8 +1998,8 @@ export default function SigningEditorStep({
                                   opacity: isActive ? 1 : 0.9,
                                   boxSizing: "border-box",
                                   zIndex: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) ? 50 : (isActive ? 30 : 20),
-                                  boxShadow: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) 
-                                    ? `0 0 0 2px ${color}40` 
+                                  boxShadow: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id)
+                                    ? `0 0 0 2px ${color}40`
                                     : 'none',
                                 }}
                                 onMouseDown={(e) => {
@@ -1629,27 +2026,20 @@ export default function SigningEditorStep({
                                             : f.label
                                 }
                               >
-                                {/* Remove button */}
+                                {/* Remove button - only shows on hover */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     removeSignatureField(f);
                                   }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = "#dc2626";
-                                    e.currentTarget.style.transform = "scale(1.1)";
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = "#ef4444";
-                                    e.currentTarget.style.transform = "scale(1)";
-                                  }}
+                                  className="field-remove-btn"
                                   style={{
                                     position: "absolute",
-                                    top: -8,
-                                    right: -8,
+                                    top: 4,
+                                    right: 4,
                                     width: 20,
                                     height: 20,
-                                    borderRadius: "50%",
+                                    borderRadius: "4px",
                                     background: "#ef4444",
                                     color: "white",
                                     border: "none",
@@ -1657,15 +2047,15 @@ export default function SigningEditorStep({
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    fontSize: "12px",
-                                    fontWeight: "bold",
                                     zIndex: 40,
                                     boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                                    transition: "all 0.2s ease"
+                                    transition: "all 0.2s ease",
+                                    opacity: 0,
+                                    pointerEvents: "none",
                                   }}
                                   title="Remove field"
                                 >
-                                  ×
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                                 {/* Field text stays inside box */}
                                 <div
@@ -1739,7 +2129,7 @@ export default function SigningEditorStep({
                             top: dropPreview.y - 20,
                             width: 120,
                             height: 40,
-                            border: `2px dashed ${recipientColorMap[activeAssigneeId ?? ""] || "#2563eb"
+                            border: `2px ${recipientBorderStyleMap[activeAssigneeId ?? ""] || "dashed"} ${recipientColorMap[activeAssigneeId ?? ""] || "#2563eb"
                               }`,
                             background: "#e0e7ff88",
                             display: "flex",
@@ -1804,7 +2194,7 @@ export default function SigningEditorStep({
                 <div className="flex justify-end">
                   <button
                     onClick={() => setCompanyInfo({ visible: false, top: companyInfo.top })}
-                    className="px-5 py-2 rounded  text-white transition-colors"  style={{ backgroundColor: '#260559' }}
+                    className="px-5 py-2 rounded  text-white transition-colors" style={{ backgroundColor: '#260559' }}
                   >
                     Got It
                   </button>
@@ -1891,11 +2281,10 @@ export default function SigningEditorStep({
                 <button
                   onClick={saveFieldLabel}
                   disabled={isSavingField || !fieldLabel.trim()}
-                  className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isSavingField || !fieldLabel.trim()
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
+                  className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${isSavingField || !fieldLabel.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                 >
                   {isSavingField ? 'Saving...' : 'Save Label'}
                 </button>
@@ -1950,62 +2339,9 @@ export default function SigningEditorStep({
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center justify-between mt-1 px-1">
+                      <div className="flex items-center justify-center mt-1 px-1">
                         <p className="text-[11px] text-gray-600">{pageNum}</p>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPageCanvases(prev => {
-                                const newMap = new Map(prev);
-                                newMap.delete(pageNum);
-                                return newMap;
-                              });
-                              setThumbnailCanvases(prev => {
-                                const newMap = new Map(prev);
-                                newMap.delete(pageNum);
-                                return newMap;
-                              });
-                            }}
-                            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                            title="Refresh"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              // Get all fields on this page to delete from DB
-                              const fieldsToDelete = signatureFields.filter(
-                                f => (f.docId ?? f.documentId) === activeDocId && f.page === pageNum
-                              );
-                              
-                              // Delete each field from database
-                              for (const field of fieldsToDelete) {
-                                const isDbRecord = field._id && /^[a-fA-F0-9]{24}$/.test(field._id);
-                                if (isDbRecord) {
-                                  try {
-                                    await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${field._id}`);
-                                  } catch (error: any) {
-                                    console.error(`Failed to delete field ${field._id} from DB:`, error);
-                                    toast.error(`Failed to delete some fields from database`);
-                                  }
-                                }
-                              }
-                              
-                              // Remove from frontend state
-                              setSignatureFields(prev => prev.filter(f => (f.docId ?? f.documentId) !== activeDocId || f.page !== pageNum));
-                              if (onFieldsChange) {
-                                const updatedFields = signatureFields.filter(f => (f.docId ?? f.documentId) !== activeDocId || f.page !== pageNum);
-                                onFieldsChange(updatedFields);
-                              }
-                            }}
-                            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                            title="Clear fields"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
+
                       </div>
                     </div>
                   );
@@ -2026,7 +2362,7 @@ export default function SigningEditorStep({
           {onBack && (
             <button
               onClick={onBack}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 px-5 py-2 rounded-sm border border-[#260559]-300 text-gray-700 hover:bg-gray-50"
             >
               Previous
             </button>
@@ -2041,10 +2377,15 @@ export default function SigningEditorStep({
               }
             }}
             disabled={!!sending}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${sending ? 'bg-blue-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+            className={`flex items-center gap-2 px-6 py-2 rounded-sm transition-colors 
+    ${sending
+                ? 'bg-[#260559] cursor-not-allowed text-white'
+                : 'bg-[#260559] hover:bg-blue-700 text-white'
+              }`}
           >
-            {sending ? 'Sending...' : 'Send'}
+            {sending ? 'Sending...' : 'Review'}
           </button>
+
         </div>
       )}
 
@@ -2270,12 +2611,12 @@ export default function SigningEditorStep({
           const tooltipHeight = 200; // approximate height
           const spacing = 12; // space between tooltip and target
           const padding = 16; // padding from viewport edges
-          
+
           // Use manual position if dragging, otherwise calculate position
           let tooltipLeft: number;
           let tooltipTop: number;
           const targetCenterX = editorTargetRect.left + (editorTargetRect.width / 2);
-          
+
           if (editorTooltipPosition) {
             // Use manual position from dragging
             tooltipLeft = editorTooltipPosition.x;
@@ -2289,27 +2630,27 @@ export default function SigningEditorStep({
             } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
               tooltipLeft = window.innerWidth - tooltipWidth - padding;
             }
-            
+
             // Calculate vertical position - prefer below, but show above if not enough space
             const spaceBelow = window.innerHeight - editorTargetRect.bottom - spacing;
             const spaceAbove = editorTargetRect.top - spacing;
             const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
-            
-            tooltipTop = showAbove 
+
+            tooltipTop = showAbove
               ? editorTargetRect.top - tooltipHeight - spacing
               : editorTargetRect.bottom + spacing;
           }
-          
+
           // Calculate arrow position (centered on target element) - only show if not manually positioned
           const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
           const arrowPadding = 20;
           const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
-          
+
           // Determine arrow direction
           const spaceBelow = window.innerHeight - editorTargetRect.bottom - spacing;
           const spaceAbove = editorTargetRect.top - spacing;
           const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
-          
+
           return (
             <>
               {/* Tooltip - styled like the tooltip UI */}
@@ -2325,7 +2666,7 @@ export default function SigningEditorStep({
                 {/* Tooltip box */}
                 <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
                   {/* Draggable header */}
-                  <div 
+                  <div
                     className="px-4 py-3 font-semibold cursor-move select-none"
                     onMouseDown={handleEditorDragStart}
                     style={{ userSelect: 'none' }}
@@ -2339,7 +2680,7 @@ export default function SigningEditorStep({
                     <div className="text-xs text-white-900">Step {editorTourIndex + 1} of {editorTourSteps.length}</div>
                     <div className="flex items-center gap-2">
                       <button onClick={closeEditorTour} className="px-3 py-1.5 text-sm text-white-300 hover:text-white">Skip</button>
-                      <button onClick={prevEditorStep} disabled={editorTourIndex===0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${editorTourIndex===0 ? ' cursor-not-allowed text-white-500' : 'hover:bg-white-700 text-white'}`}>Back</button>
+                      <button onClick={prevEditorStep} disabled={editorTourIndex === 0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${editorTourIndex === 0 ? ' cursor-not-allowed text-white-500' : 'hover:bg-white-700 text-white'}`}>Back</button>
                       {editorTourIndex < editorTourSteps.length - 1 ? (
                         <button onClick={nextEditorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
                       ) : (
@@ -2349,9 +2690,9 @@ export default function SigningEditorStep({
                   </div>
                   {/* Arrow pointing to target - only show if not manually positioned */}
                   {!editorTooltipPosition && (
-                    <div 
+                    <div
                       className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
-                      style={{ 
+                      style={{
                         left: `${constrainedArrowLeft}px`,
                         transform: 'translateX(-50%)'
                       }}

@@ -258,6 +258,24 @@
   100% { background-color: transparent; }
 }
 
+/* Pointing arrow animation for Create Envelope button */
+@keyframes pointArrow {
+  0% { 
+    transform: translateX(0);
+  }
+  50% { 
+    transform: translateX(-6px);
+  }
+  100% { 
+    transform: translateX(0);
+  }
+}
+
+.animate-point-arrow {
+  animation: pointArrow 1.5s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* Custom prose styles for document preview */
 .prose {
   color: #374151;

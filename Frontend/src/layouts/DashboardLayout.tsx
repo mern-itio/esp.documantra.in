@@ -9,7 +9,7 @@ const DashboardLayout: React.FC = () => {
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const [activeView, setActiveView] = React.useState('dashboard');
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-visible">
       <Sidebar 
         activeView={activeView}
         setActiveView={setActiveView}
