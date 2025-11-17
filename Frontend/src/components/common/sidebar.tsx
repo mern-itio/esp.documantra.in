@@ -295,24 +295,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleMainMenuClick = (item: MenuItem) => {
-    // If sidebar is collapsed, expand it first
+    // If sidebar is collapsed, ONLY expand it and expand submenu if it has children
+    // Do NOT navigate - user must click on submenu items to navigate
     if (!isOpen) {
       setIsOpen(true);
-      // If it has children, expand the submenu and navigate to first child
+      // If it has children, expand the submenu but don't navigate
       if (item.children && item.children.length > 0) {
         setExpandedMenu(item.id);
-        // Small delay to allow sidebar to expand before navigation
-        setTimeout(() => {
-          handleNavigation(item.children![0].path, item.children![0].id);
-        }, 100);
-        return;
-      } else if (item.path) {
-        // Small delay to allow sidebar to expand before navigation
-        setTimeout(() => {
-          handleNavigation(item.path!, item.id);
-        }, 100);
-        return;
       }
+      // Don't navigate when sidebar is collapsed - just expand it
+      return;
     }
     
     // Normal behavior when sidebar is open
