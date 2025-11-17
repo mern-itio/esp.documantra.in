@@ -2285,18 +2285,11 @@ const EnvelopeCreator: React.FC = () => {
         }
       }
       
-      // Close modal before showing success alert
+      // Close modal before navigation
       setShowSendConfirmationModal(false);
       
-      // Show success alert before navigation
-      await Swal.fire({
-        title: "Envelope Sent!",
-        text: "Envelope Sent Successfully",
-        icon: "success",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#ffc107",
-      });
-      navigate('/e-sign/aggrement');
+      // Navigate to agreement page with success parameter
+      navigate('/e-sign/aggrement?sent=true');
     } catch (err) {
       console.error(err);
       // Close modal before showing error alert
@@ -5929,7 +5922,7 @@ const EnvelopeCreator: React.FC = () => {
                  <button
                    onClick={handleNext}
                    disabled={nextLoading}
-                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                   className="flex items-center gap-2 px-6 py-2 bg-[#260559] text-white rounded-lg hover:bg-[#260559]/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                    data-tour="ec-next-button"
                  >
                    {nextLoading ? (
@@ -6273,19 +6266,27 @@ const EnvelopeCreator: React.FC = () => {
             )}
 
             {/* Step Indicator */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className={`flex items-center gap-2 ${sendModalStep >= 1 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${sendModalStep >= 1 ? 'bg-[#3E2B66] text-white' : 'bg-gray-200 text-gray-500'}`}>
+            <div className="flex items-center gap-3 mb-8 pb-6 border-b border-gray-100">
+              <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 1 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                  sendModalStep >= 1 
+                    ? 'bg-[#3E2B66] text-white shadow-sm' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
                   {sendModalStep > 1 ? <Check className="w-5 h-5" /> : '1'}
                 </div>
-                <span className="font-medium">Signing Order</span>
+                <span className="font-semibold text-sm">Signing Order</span>
               </div>
-              <div className="flex-1 h-px bg-gray-300" />
-              <div className={`flex items-center gap-2 ${sendModalStep >= 2 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${sendModalStep >= 2 ? 'bg-[#3E2B66] text-white' : 'bg-gray-200 text-gray-500'}`}>
+              <div className={`flex-1 h-0.5 transition-colors ${sendModalStep >= 2 ? 'bg-[#3E2B66]' : 'bg-gray-200'}`} />
+              <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 2 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                  sendModalStep >= 2 
+                    ? 'bg-[#3E2B66] text-white shadow-sm' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
                   2
                 </div>
-                <span className="font-medium">Authentication & Credits</span>
+                <span className="font-semibold text-sm">Authentication & Credits</span>
               </div>
             </div>
 
@@ -6509,37 +6510,46 @@ const EnvelopeCreator: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-6">
-                      Authentication Methods & Credit Details
-                    </h2>
+                    <div className="mb-8">
+                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                        Authentication Methods & Credit Details
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Review authentication methods and credit costs before sending
+                      </p>
+                    </div>
                     
                     {/* Credit Balance Summary */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Current Balance</p>
-                      <p className="text-2xl font-bold text-[#3E2B66]">
-                        {subscriptionPlan?.creditsBalance || 0} credits
-                      </p>
+                    <div className="bg-gray-50/50 border border-gray-200 rounded-md p-2.5 mb-4">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-500 mb-0.5">Current Balance</p>
+                          <p className="text-sm font-semibold text-[#3E2B66]">
+                            {subscriptionPlan?.creditsBalance || 0} <span className="text-[10px] font-normal text-gray-500">credits</span>
+                          </p>
+                        </div>
+                        <div className="text-center border-x border-gray-200 px-3">
+                          <p className="text-[10px] font-medium text-gray-500 mb-0.5">Total Cost</p>
+                          <p className="text-sm font-semibold text-red-600">
+                            {calculateTotalCost()} <span className="text-[10px] font-normal text-gray-500">credits</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-medium text-gray-500 mb-0.5">Remaining Balance</p>
+                          <p className={`text-sm font-semibold ${
+                            ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`}>
+                            {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} <span className="text-[10px] font-normal text-gray-500">credits</span>
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Total Cost</p>
-                      <p className="text-2xl font-bold text-red-600">
-                        -{calculateTotalCost()} credits
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Remaining Balance</p>
-                      <p className={`text-2xl font-bold ${((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} credits
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Recipients with Authentication Methods */}
-                <div className="space-y-4 mb-6">
-                  <h3 className="font-semibold text-gray-900">Recipients & Authentication Methods</h3>
+                <div className="space-y-3 mb-8">
+                  <h3 className="text-base font-semibold text-gray-900 mb-4">Recipients & Authentication Methods</h3>
                   {recipients.map((recipient) => {
                     // Parse authentication - can be JSON stringified array or single value
                     const authArray = parseAuthentication(recipient.authentication);
@@ -6551,17 +6561,21 @@ const EnvelopeCreator: React.FC = () => {
                       ? authMethodList.map(m => m?.name).join(', ')
                       : 'No Authentication Method selected';
                     return (
-                      <div key={recipient.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">
-                              {recipient.order}. {recipient.name || recipient.email}
-                            </p>
-                            <p className="text-sm text-gray-600">{recipient.email}</p>
-                            <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                              <span>
-                                Authentication: <span className="font-medium">{authDisplay}</span>
-                              </span>
+                      <div key={recipient.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-semibold text-gray-400">{recipient.order}.</span>
+                              <p className="text-base font-semibold text-gray-900 truncate">
+                                {recipient.name || recipient.email}
+                              </p>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3 truncate">{recipient.email}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+                                <span className="text-xs font-medium text-gray-500">Authentication:</span>
+                                <span className="text-xs font-semibold text-gray-700">{authDisplay}</span>
+                              </div>
                               <button
                                 type="button"
                                 title="Edit authentication method"
@@ -6570,17 +6584,18 @@ const EnvelopeCreator: React.FC = () => {
                                   setAuthModalForBulk(false);
                                   setShowAuthModal(true);
                                 }}
-                                className="inline-flex items-center px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 text-gray-600 transition-colors"
                               >
                                 <Edit className='w-4 h-4' />
                               </button>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-600">Cost</p>
-                            <p className="text-lg font-semibold text-[#3E2B66]">
-                              {totalCost > 0 ? `${totalCost} credits` : 'Free'}
+                          <div className="flex-shrink-0 text-right pl-4 border-l border-gray-200">
+                            <p className="text-xs font-medium text-gray-500 mb-1">Cost</p>
+                            <p className="text-xl font-bold text-[#3E2B66]">
+                              {totalCost > 0 ? `${totalCost}` : '0'}
                             </p>
+                            <p className="text-xs text-gray-500">credits</p>
                           </div>
                         </div>
                       </div>
@@ -6588,11 +6603,11 @@ const EnvelopeCreator: React.FC = () => {
                   })}
                 </div>
 
-                    <div className="flex justify-end gap-3 mt-6">
+                    <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-gray-200">
                       <button
                         onClick={() => setSendModalStep(1)}
                         disabled={sending}
-                        className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Previous
                       </button>
@@ -6615,12 +6630,12 @@ const EnvelopeCreator: React.FC = () => {
                           }
                         }}
                         disabled={sending}
-                        className={`px-5 py-2 rounded-md text-white flex items-center gap-2 ${
+                        className={`px-6 py-2.5 rounded-lg text-white font-medium transition-all flex items-center gap-2 ${
                           (subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
-                            ? 'bg-gray-400 cursor-pointer'
+                            ? 'bg-gray-400 cursor-not-allowed'
                             : sending
-                            ? 'bg-[#3E2B66] cursor-wait'
-                            : 'bg-[#3E2B66] hover:opacity-90'
+                            ? 'bg-[#3E2B66] cursor-wait opacity-90'
+                            : 'bg-[#3E2B66] hover:bg-[#4d3577] shadow-sm hover:shadow-md'
                         }`}
                       >
                         {sending && (

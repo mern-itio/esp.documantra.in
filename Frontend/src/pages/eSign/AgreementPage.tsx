@@ -300,6 +300,28 @@ const AgreementPage: React.FC = () => {
     fetchEnvelopes();
   }, []);
 
+  // Check for success parameter and show success modal
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sent = params.get('sent');
+    
+    if (sent === 'true') {
+      // Remove the query parameter from URL
+      navigate(location.pathname, { replace: true });
+      
+      // Show success modal after a brief delay to ensure page is loaded
+      setTimeout(() => {
+        Swal.fire({
+          title: "Envelope Sent!",
+          text: "Envelope Sent Successfully",
+          icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#ffc107",
+        });
+      }, 300);
+    }
+  }, [location.search, navigate, location.pathname]);
+
   // Read current user name from localStorage
   useEffect(() => {
     try {

@@ -2380,7 +2380,7 @@ export default function SigningEditorStep({
             className={`flex items-center gap-2 px-6 py-2 rounded-sm transition-colors 
     ${sending
                 ? 'bg-[#260559] cursor-not-allowed text-white'
-                : 'bg-[#260559] hover:bg-blue-700 text-white'
+                : 'bg-[#260559] hover:bg-[#260559]/70 text-white'
               }`}
           >
             {sending ? 'Sending...' : 'Review'}
