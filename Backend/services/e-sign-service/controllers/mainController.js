@@ -181,7 +181,7 @@ const envelopesDetail = async (req, res) => {
             .populate("documentIds")   // fetch docs
             .populate({
                         path: 'recipientIds',           // populate recipients
-                        select: 'name email UserId signature',    // only global info
+                        select: 'name email UserId signature initials',    // only global info
                         populate: {
                           path: 'permissions',          // populate envelope-specific permissions
                           model: 'RecipientPermission',
@@ -236,6 +236,7 @@ const envelopesDetail = async (req, res) => {
                 id: recipient._id,
                 name: recipient.name,
                 email: recipient.email,
+                initials: recipient.initials || '',
                 role: perm.role,
                 order: perm.order,
                 status: perm.status,
@@ -443,7 +444,7 @@ const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuf
 
 const addSignature = async (req, res) => {
   console.log("Add Signature Started...");
-  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue,cycleId } = req.body;
+  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue,cycleId, initials } = req.body;
 
   if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
     return res.status(400).json({ message: 'All parameters are required' });
@@ -463,6 +464,26 @@ const addSignature = async (req, res) => {
     console.log('Failed to initiate recipient signature');
     return res.status(500).json({ message: 'Failed to initiate signature' });
   }
+  
+  // Save initials if provided
+  if(initials !== undefined && initials !== null && initials.trim() !== ''){
+    if(selfValue === "1" || selfValue === 1){
+      // Self-signer mode
+      const selfSignerUpdate = await selfSigner.findById(recipientId);
+      if(selfSignerUpdate){
+        selfSignerUpdate.initials = initials.trim().toUpperCase();
+        await selfSignerUpdate.save();
+      }
+    } else {
+      // Recipient mode
+      const RecipientUpdate = await Recipient.findById(recipientId);
+      if(RecipientUpdate){
+        RecipientUpdate.initials = initials.trim().toUpperCase();
+        await RecipientUpdate.save();
+      }
+    }
+  }
+  
   // Check pending recipients and send email to next recipient
     if(selfValue !== "1" && selfValue !== 1){ 
         try {
@@ -1419,7 +1440,7 @@ const saveNonSignatureField = async (req, res) => {
   return res.status(200).json({message: 'Field saved succesfully'});
 }
 const saveupdateSignature = async (req, res) =>{
-  const {recipientId, Signature, mode, envelopeId, selfValue} = req.body;
+  const {recipientId, Signature, mode, envelopeId, selfValue, initials} = req.body;
   if(!recipientId && !Signature){
     return res.status(401).json({message: 'Recipient and Signature is required.'});
   }
@@ -1433,6 +1454,10 @@ const saveupdateSignature = async (req, res) =>{
     
     // Update signature in selfSigner
     selfSignerUpdate.signature = Signature;
+    // Update initials if provided
+    if(initials !== undefined && initials !== null && initials.trim() !== ''){
+      selfSignerUpdate.initials = initials.trim().toUpperCase();
+    }
     await selfSignerUpdate.save();
 
     if(mode === 'update'){
@@ -1488,6 +1513,10 @@ const saveupdateSignature = async (req, res) =>{
     return res.status(404).json({message: 'Recipient not found.'});
   }
   RecipientUpdate.signature = Signature;
+  // Update initials if provided
+  if(initials !== undefined && initials !== null && initials.trim() !== ''){
+    RecipientUpdate.initials = initials.trim().toUpperCase();
+  }
   await RecipientUpdate.save();
   if(mode === 'update'){
     //find all signature fields and update existing signature fields
