@@ -58,21 +58,45 @@ const DocumentViewerContent: React.FC<Props> = ({
   allRecipients,
   setSignatureFields
 }) => {
-  const curRecipientSignature = allRecipients?.find(r => r.id === currentUserId)?.signature || null;
-
-  const [recipientSignature, setRecipientSignature] = useState<string | null>(curRecipientSignature);
-
-  useEffect(() => {
-    setRecipientSignature(curRecipientSignature);
-  }, [curRecipientSignature]);
-
-
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
+
+  // Get signature - from selfSigner if in self-signer mode, otherwise from recipients
+  const getInitialSignature = () => {
+    if (selfValue === "1") {
+      // Will be set after selfSigner loads
+      return null;
+    }
+    return allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+  };
+
+  const [recipientSignature, setRecipientSignature] = useState<string | null>(getInitialSignature());
+
+  // Update signature when recipients change (recipient mode)
+  useEffect(() => {
+    if (selfValue !== "1") {
+      const sig = allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+      setRecipientSignature(sig);
+    }
+  }, [allRecipients, currentUserId, selfValue]);
+
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
   const [isEditingSignature, setIsEditingSignature] = useState<boolean>(false);
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
+  
+  // Update signature when selfSigner changes (self-signer mode)
+  // Skip this update if we're currently refreshing to avoid re-render loops
+  useEffect(() => {
+    if (selfValue === "1" && selfSigner.length > 0 && !isRefreshingSelfSignerRef.current) {
+      const matchedSigner = selfSigner.find(
+        (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
+      );
+      if (matchedSigner?.signature) {
+        setRecipientSignature(matchedSigner.signature);
+      }
+    }
+  }, [selfSigner, currentUserId, selfValue]);
   const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const [pageWidth, setPageWidth] = useState<number>(BASE_PAGE_WIDTH);
@@ -151,6 +175,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   const lastButtonPositionRef = useRef<{ top: number; left: number } | null>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isNavigatingRef = useRef<boolean>(false);
+  const isRefreshingSelfSignerRef = useRef<boolean>(false);
+  const pendingNavigationRef = useRef<boolean>(false);
 
   const normalizePage = (field: any) =>
     Number(
@@ -261,7 +287,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
           isCurrentUser = matchedSigner ? matchedSigner._id?.toString?.() === currentUserId?.toString?.() : false;
           if (field.type === 'signature') {
-            isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            // Check signatureFields array to see if this specific field is signed
+            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+              const fieldEntry = matchedSigner.signatureFields.find(
+                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+              );
+              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+            } else {
+              // Fallback: check if signature exists in selfSigner
+              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            }
           } else {
             isCompleted = isNonSignatureCompleted(field);
           }
@@ -366,12 +401,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     setActiveField(af);
   };
 
-  const getSelfSigner = async () => {
+  const getSelfSigner = async (): Promise<void> => {
+    // Prevent multiple simultaneous calls
+    if (isRefreshingSelfSignerRef.current) {
+      return Promise.resolve();
+    }
+    
     try {
+      isRefreshingSelfSignerRef.current = true;
       setIsLoading(true);
       if (!cycleId) {
         console.warn("No cycleId provided");
-        return;
+        return Promise.resolve();
       }
       const response = await eSignApi.get(
         `/api/e-sign/public/envelope/self-signer/${cycleId}`
@@ -381,6 +422,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           (signer: SignerData) =>
             signer && typeof signer === "object" && signer.signerSlotId
         );
+        // Batch state update
         setSelfSigner(validSigners);
       } else {
         setSelfSigner([]);
@@ -390,6 +432,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       setSelfSigner([]);
     } finally {
       setIsLoading(false);
+      // Allow useEffect to run after a short delay
+      setTimeout(() => {
+        isRefreshingSelfSignerRef.current = false;
+        
+        // If navigation was pending, trigger it now
+        if (pendingNavigationRef.current) {
+          pendingNavigationRef.current = false;
+          setTimeout(() => {
+            goToNext();
+          }, 100);
+        }
+      }, 100);
     }
   };
 
@@ -559,7 +613,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         if (field.type === 'signature') {
           if (selfValue === '1') {
             const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-            isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            // Check signatureFields array to see if this specific field is signed
+            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+              const fieldEntry = matchedSigner.signatureFields.find(
+                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+              );
+              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+            } else {
+              // Fallback: check if signature exists in selfSigner
+              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+            }
           } else {
             isCompleted = !!field.signature || !!localSignedMap[key];
           }
@@ -606,7 +669,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       if (currentField.type === 'signature') {
         if (selfValue === '1') {
           const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-          isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+          // Check signatureFields array to see if this specific field is signed
+          if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+            const fieldEntry = matchedSigner.signatureFields.find(
+              (sf: any) => sf.fieldId && (sf.fieldId.toString() === (currentField._id || currentField.fieldId)?.toString())
+            );
+            isCurrentCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+          } else {
+            // Fallback: check if signature exists in selfSigner
+            isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+          }
         } else {
           isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
         }
@@ -687,7 +759,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       if (response?.status === 200) {
         const key = fieldKey;
         setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
-         triggerConfetti();
+        triggerConfetti();
+        
+        // In self-signer mode, refresh selfSigner data to get updated signatureFields
+        if (selfValue === "1" && cycleId) {
+          // Mark navigation as pending
+          pendingNavigationRef.current = true;
+          // Wait a bit for the backend to update, then refresh
+          setTimeout(() => {
+            getSelfSigner();
+            // Navigation will be triggered in getSelfSigner's finally block
+          }, 500);
+        } else {
+          // Recipient mode: navigate to next field
+          setTimeout(() => {
+            goToNext();
+          }, 300);
+        }
+        
         if(response?.data?.fieldRemmaning===false){
           navigate("/e-sign/signer/thank-you");
         }
@@ -848,8 +937,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   // IMPORTANT: Never scroll automatically - only adjust index silently
   // Don't adjust if user is currently typing or navigating to avoid interrupting them
   useEffect(() => {
-    // Don't make any changes if user is typing or we're navigating
-    if (isUserTypingRef.current || isNavigatingRef.current) {
+    // Don't make any changes if user is typing, we're navigating, or refreshing selfSigner
+    if (isUserTypingRef.current || isNavigatingRef.current || isRefreshingSelfSignerRef.current) {
       return;
     }
     
@@ -994,8 +1083,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           isCurrentUser = matched
                             ? matched._id?.toString?.() === currentUserId?.toString?.()
                             : false;
-                          isSigned = matched ? !!matched.signature : false;
-                          signedImage = matched?.signature ?? null;
+                          
+                          // For signature fields, check signatureFields array to see if this specific field is signed
+                          if (isSignatureType && matched && matched.signatureFields && Array.isArray(matched.signatureFields)) {
+                            const fieldEntry = matched.signatureFields.find(
+                              (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+                            );
+                            if (fieldEntry && fieldEntry.state === 'signed' && matched.signature) {
+                              isSigned = true;
+                              signedImage = matched.signature;
+                            } else {
+                              isSigned = false;
+                              signedImage = null;
+                            }
+                          } else {
+                            // Fallback: check if signature exists in selfSigner
+                            isSigned = matched ? !!matched.signature : false;
+                            signedImage = matched?.signature ?? null;
+                          }
                         } else {
                           isCurrentUser = field.recipientId === currentUserId;
                           isSigned =
@@ -1248,7 +1353,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         const fieldLable = field.label;
                         const fieldId = field._id;
 
-                        // Prefill value priority: ref (most recent) -> state -> signer.data -> field.value -> label
+                        // Helper to get value from selfSigner.data (handles both Map and plain object)
+                        const getDataValue = (data: any, key: string): any => {
+                          if (!data) return undefined;
+                          if (data instanceof Map) {
+                            return data.get(key);
+                          }
+                          return data[key];
+                        };
+
+                        // Prefill value priority: ref (most recent) -> state -> signer.data -> field.value
                         let value: any = fieldValuesRef.current[keyId];
                         if (value === undefined) {
                           value = localFieldValues[keyId];
@@ -1258,16 +1372,53 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             const matchedSigner = selfSigner?.find(
                               (s: any) => s && s.signerSlotId === field.slotId
                             );
-                            if (matchedSigner && typeof matchedSigner.data === "object") {
+                            if (matchedSigner && matchedSigner.data) {
                               if (matchedSigner.role === "creator") {
-                                value = matchedSigner.data?.name ?? value;
-                              } else if (fieldLable && matchedSigner.data[fieldLable] !== undefined) {
-                                value = matchedSigner.data[fieldLable];
+                                value = getDataValue(matchedSigner.data, 'name') ?? getDataValue(matchedSigner.data, 'Name') ?? value;
+                              } else if (fieldLable) {
+                                value = getDataValue(matchedSigner.data, fieldLable) ?? value;
                               }
                             }
+                          } else {
+                            // Recipient mode: get value from field.value or field.signature
+                            value = field.value ?? field.signature ?? "";
                           }
-                          if (value === undefined) value = field.value ?? "";
+                          if (value === undefined) value = "";
                         }
+                        
+                        // Check if field has a value in selfSigner.data (for read-only check in self-signer mode only)
+                        const hasValueInSelfSigner = selfValue === "1" && (() => {
+                          const matchedSigner = selfSigner?.find(
+                            (s: any) => s && s.signerSlotId === field.slotId
+                          );
+                          if (matchedSigner && matchedSigner.data) {
+                            if (matchedSigner.role === "creator") {
+                              return !!(getDataValue(matchedSigner.data, 'name') || getDataValue(matchedSigner.data, 'Name'));
+                            } else if (fieldLable) {
+                              return !!getDataValue(matchedSigner.data, fieldLable);
+                            }
+                          }
+                          return false;
+                        })();
+                        
+                        // Determine if field is completed (only for self-signer mode with values in selfSigner.data)
+                        // For recipient mode, non-signature fields are never "completed" (always editable)
+                        const isFieldCompleted = (() => {
+                          if (selfValue === "1") {
+                            // Self-signer mode: check if has value in selfSigner.data
+                            if (hasValueInSelfSigner) {
+                              return true;
+                            }
+                            // Also check if value exists in state/ref
+                            if (value !== undefined && value !== null && String(value).trim().length > 0) {
+                              return field.type === 'checkbox' ? !!value : true;
+                            }
+                            return false;
+                          } else {
+                            // Recipient mode: non-signature fields are never "completed" (always editable)
+                            return false;
+                          }
+                        })();
 
                         const setValue = (newVal: any, updateState: boolean = false) => {
                           try {
@@ -1361,10 +1512,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           }, 500);
                         };
 
-                        const editable = isCurrentUser;
+                        // In self-signer mode, if field has value in selfSigner.data, make it read-only
+                        // For recipient mode, fields are always editable if currentUser
+                        const editable = isCurrentUser && !(selfValue === "1" && hasValueInSelfSigner);
                         const commonBox =
                           "w-full h-full flex items-center justify-center rounded border " +
-                          ( isSigned? "border-green-500" :editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
+                          ( (isFieldCompleted && selfValue === "1") || isSigned ? "border-green-500" : editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
 
                         const inputBaseStyle: React.CSSProperties = {
                           height: scaledHeight,
@@ -1602,7 +1755,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               }}
                             >
                               {
-                                isSigned ? (
+                                (isFieldCompleted && selfValue === "1") ? (
+                                  <div
+                                    className={commonBox}
+                                    style={{
+                                      fontSize: fieldFontSize,
+                                      minHeight: scaledHeight,
+                                      padding: `${boxPaddingY}px ${boxPaddingX}px`,
+                                    }}
+                                  >
+                                    {field.type === 'checkbox' ? (value ? '✓' : '') : (value || field.signature || '')}
+                                  </div>
+                                ) : isSigned ? (
                                   <div
                                     className={commonBox}
                                     style={{
@@ -1618,67 +1782,70 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               
                             </div>
                           }
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: labelTop,
-                                left: 0,
-                                width: scaledWidth,
-                                pointerEvents: 'none',
-                                textAlign: 'center',
-                                fontSize: labelFontSize,
-                                lineHeight: 1.1,
-                              }}
-                              className="text-[10px] text-gray-600"
-                            >
-                              {recipientDisplay.decorated ? (
-                                <div
-                                  style={{
-                                    display: "inline-flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    backgroundColor: "rgba(148, 163, 184, 0.35)",
-                                    borderRadius: recipientBadgeRadius,
-                                    padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
-                                    gap: recipientBadgeGap,
-                                  }}
-                                >
+                            {/* Only show label for non-signature fields if they are not completed (self-signer mode only) */}
+                            {!(isFieldCompleted && selfValue === "1") && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: labelTop,
+                                  left: 0,
+                                  width: scaledWidth,
+                                  pointerEvents: 'none',
+                                  textAlign: 'center',
+                                  fontSize: labelFontSize,
+                                  lineHeight: 1.1,
+                                }}
+                                className="text-[10px] text-gray-600"
+                              >
+                                {recipientDisplay.decorated ? (
+                                  <div
+                                    style={{
+                                      display: "inline-flex",
+                                      flexDirection: "column",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      backgroundColor: "rgba(148, 163, 184, 0.35)",
+                                      borderRadius: recipientBadgeRadius,
+                                      padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
+                                      gap: recipientBadgeGap,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        fontSize: labelFontSize,
+                                        fontWeight: 600,
+                                        color: "#1f2937",
+                                        lineHeight: 1.1,
+                                      }}
+                                    >
+                                      {recipientDisplay.primary}
+                                    </span>
+                                    {recipientDisplay.secondary ? (
+                                      <span
+                                        style={{
+                                          fontSize: recipientSecondaryFont,
+                                          color: "#1f2937",
+                                          lineHeight: 1.05,
+                                        }}
+                                      >
+                                        {recipientDisplay.secondary}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                ) : (
                                   <span
                                     style={{
                                       fontSize: labelFontSize,
-                                      fontWeight: 600,
-                                      color: "#1f2937",
+                                      fontWeight: 500,
+                                      color: "#4b5563",
                                       lineHeight: 1.1,
                                     }}
                                   >
                                     {recipientDisplay.primary}
                                   </span>
-                                  {recipientDisplay.secondary ? (
-                                    <span
-                                      style={{
-                                        fontSize: recipientSecondaryFont,
-                                        color: "#1f2937",
-                                        lineHeight: 1.05,
-                                      }}
-                                    >
-                                      {recipientDisplay.secondary}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <span
-                                  style={{
-                                    fontSize: labelFontSize,
-                                    fontWeight: 500,
-                                    color: "#4b5563",
-                                    lineHeight: 1.1,
-                                  }}
-                                >
-                                  {recipientDisplay.primary}
-                                </span>
-                              )}
-                            </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -1784,7 +1951,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             if (currentField.type === 'signature') {
               if (selfValue === '1') {
                 const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-                isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+                // Check signatureFields array to see if this specific field is signed
+                if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+                  const fieldEntry = matchedSigner.signatureFields.find(
+                    (sf: any) => sf.fieldId && (sf.fieldId.toString() === (currentField._id || currentField.fieldId)?.toString())
+                  );
+                  isCurrentCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+                } else {
+                  // Fallback: check if signature exists in selfSigner
+                  isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
+                }
               } else {
                 isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
               }
@@ -1918,20 +2094,35 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               setLocalSignedMap((p) => ({ ...(p || {}), [fieldId]: signatureUrl }));
             }
             setRecipientSignature(signatureUrl);
+            
+            // In self-signer mode, refresh selfSigner data to get updated signatureFields
+            if (selfValue === "1" && cycleId) {
+              // Mark navigation as pending
+              pendingNavigationRef.current = true;
+              // Wait a bit for the backend to update, then refresh
+              setTimeout(() => {
+                getSelfSigner();
+                // Navigation will be triggered in getSelfSigner's finally block
+              }, 500);
+            }
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
             // When selfValue === "1" update the signer entry and trigger confetti reliably
             if (selfValue === "1") {
-              setSelfSigner((prev) => {
-                const updated = (prev || []).map((s: any) =>
-                  s && s.signerSlotId === activeField?.slotId
-                    ? { ...s, signature: signatureUrl }
-                    : s
-                );
-                // immediate feedback
-                triggerConfetti();
-                return updated;
-              });
+              // Don't update selfSigner optimistically - let getSelfSigner handle it
+              // This prevents double updates and re-render loops
+              triggerConfetti();
+              
+              // Refresh selfSigner data to get updated signatureFields
+              if (cycleId) {
+                // Mark navigation as pending
+                pendingNavigationRef.current = true;
+                // Wait a bit for the backend to update, then refresh
+                setTimeout(() => {
+                  getSelfSigner();
+                  // Navigation will be triggered in getSelfSigner's finally block
+                }, 500);
+              }
             } else {
               // non-self: optimistic local update so UI shows signed image immediately
               const key = activeField?._id;
@@ -1939,7 +2130,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
               }
               // immediate feedback
-               triggerConfetti();
+              triggerConfetti();
+              
+              // Navigate to next field
+              setTimeout(() => {
+                goToNext();
+              }, 300);
+              
               if(fieldRemmaning===false){
                 navigate("/e-sign/signer/thank-you");
               }
