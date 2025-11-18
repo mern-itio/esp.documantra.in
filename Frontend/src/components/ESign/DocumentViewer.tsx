@@ -95,8 +95,36 @@ const DocumentViewerContent: React.FC<Props> = ({
       if (matchedSigner?.signature) {
         setRecipientSignature(matchedSigner.signature);
       }
+      
+      // Clear cached values for initial fields when selfSigner updates (so updated initials are shown)
+      const initialFields = signatureFields.filter((f: any) => f.type === "initial");
+      initialFields.forEach((field: any) => {
+        const keyId = field._id || field.fieldId;
+        if (keyId) {
+          // Clear from ref so it re-evaluates with updated initials
+          delete fieldValuesRef.current[keyId];
+          // Remove from auto-filled set
+          autoFilledDateFieldsRef.current.delete(keyId);
+        }
+      });
     }
-  }, [selfSigner, currentUserId, selfValue]);
+  }, [selfSigner, currentUserId, selfValue, signatureFields]);
+  
+  // Clear cached values for initial fields when allRecipients updates (recipient mode)
+  useEffect(() => {
+    if (selfValue !== "1" && allRecipients) {
+      const initialFields = signatureFields.filter((f: any) => f.type === "initial");
+      initialFields.forEach((field: any) => {
+        const keyId = field._id || field.fieldId;
+        if (keyId) {
+          // Clear from ref so it re-evaluates with updated initials
+          delete fieldValuesRef.current[keyId];
+          // Remove from auto-filled set
+          autoFilledDateFieldsRef.current.delete(keyId);
+        }
+      });
+    }
+  }, [allRecipients, selfValue, signatureFields]);
   const [_isLoading, setIsLoading] = useState(selfValue === "1");
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const [pageWidth, setPageWidth] = useState<number>(BASE_PAGE_WIDTH);
@@ -745,6 +773,23 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     try{
       console.log(field);
       const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
+      
+      // Get initials from recipient or selfSigner
+      let initialsValue = "";
+      if (selfValue === "1") {
+        const matchedSigner = selfSigner.find(
+          (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
+        );
+        if (matchedSigner) {
+          initialsValue = (matchedSigner as any).initials || "";
+        }
+      } else {
+        const recipient = allRecipients?.find(r => r.id === currentUserId);
+        if (recipient) {
+          initialsValue = recipient.initials || "";
+        }
+      }
+      
       const payload = {
         fieldId: fieldKey,
         signatureImageBase64: recipientSignature,
@@ -754,7 +799,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         certificateId, 
         signerName: "John Doe", // adjust dynamically if you have a real name
         selfValue: selfValue || "",
-        cycleId:cycleId || ""
+        cycleId:cycleId || "",
+        initials: initialsValue || undefined
       };
       const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
       if (response?.status === 200) {
@@ -1265,17 +1311,20 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       alt="Signed"
                                       className="h-full w-full object-contain rounded"
                                     />
-                                    <button
-                                      type="button"
-                                      className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg border-2 border-white p-1.5 hover:scale-105 focus:scale-105 transition-transform focus:outline-none"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onFieldClick(field, { isEdit: true });
-                                      }}
-                                      aria-label="Edit signature"
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </button>
+                                    {/* Only show edit button for current user's signed fields */}
+                                    {isCurrentUser && (
+                                      <button
+                                        type="button"
+                                        className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg border-2 border-white p-1.5 hover:scale-105 focus:scale-105 transition-transform focus:outline-none"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onFieldClick(field, { isEdit: true });
+                                        }}
+                                        aria-label="Edit signature"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                   </div>
                                 ) : !allFilled ? (
                                   "Fill all other fields first"
@@ -1392,20 +1441,43 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           value = localFieldValues[keyId];
                         }
                         if (value === undefined) {
-                          if (selfValue === "1") {
-                            const matchedSigner = selfSigner?.find(
-                              (s: any) => s && s.signerSlotId === field.slotId
-                            );
-                            if (matchedSigner && matchedSigner.data) {
-                              if (matchedSigner.role === "creator") {
-                                value = getDataValue(matchedSigner.data, 'name') ?? getDataValue(matchedSigner.data, 'Name') ?? value;
-                              } else if (fieldLable) {
-                                value = getDataValue(matchedSigner.data, fieldLable) ?? value;
+                          // For initial fields, check saved initials first (before generating from name)
+                          if (field.type === "initial") {
+                            if (selfValue === "1") {
+                              const matchedSigner = selfSigner?.find(
+                                (s: any) => s && s.signerSlotId === field.slotId
+                              );
+                              if (matchedSigner?.initials) {
+                                value = matchedSigner.initials;
+                              }
+                            } else {
+                              // Recipient mode: check saved initials
+                              const recipient = allRecipients?.find(
+                                (r: any) => r.id === field.recipientId
+                              );
+                              if (recipient?.initials) {
+                                value = recipient.initials;
                               }
                             }
-                          } else {
-                            // Recipient mode: get value from field.value or field.signature
-                            value = field.value ?? field.signature ?? "";
+                          }
+                          
+                          // If still no value, check other sources (signer.data or field.value)
+                          if (value === undefined) {
+                            if (selfValue === "1") {
+                              const matchedSigner = selfSigner?.find(
+                                (s: any) => s && s.signerSlotId === field.slotId
+                              );
+                              if (matchedSigner && matchedSigner.data) {
+                                if (matchedSigner.role === "creator") {
+                                  value = getDataValue(matchedSigner.data, 'name') ?? getDataValue(matchedSigner.data, 'Name') ?? value;
+                                } else if (fieldLable) {
+                                  value = getDataValue(matchedSigner.data, fieldLable) ?? value;
+                                }
+                              }
+                            } else {
+                              // Recipient mode: get value from field.value or field.signature
+                              value = field.value ?? field.signature ?? "";
+                            }
                           }
                           if (value === undefined) value = "";
                           
@@ -1446,6 +1518,94 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 }
                                 
                                 // Submit the date field automatically for recipient mode
+                                if (selfValue !== "1" && field.recipientId) {
+                                  submitSingleField(field.recipientId, field._id, value);
+                                }
+                              }, 0);
+                            }
+                          }
+                          
+                          // Auto-fill initials fields (only if no saved initials exist)
+                          if (field.type === "initial" && (!value || String(value).trim() === "")) {
+                            let initialsValue = "";
+                            
+                            if (selfValue === "1") {
+                              // Self-signer mode: get initials from selfSigner or generate from name
+                              const matchedSigner = selfSigner?.find(
+                                (s: any) => s && s.signerSlotId === field.slotId
+                              );
+                              if (matchedSigner) {
+                                // Only generate from name if no saved initials exist
+                                if (!matchedSigner.initials) {
+                                  console.log("No Initials");
+                                  // Generate from name in data.Name or data.name
+                                  const getName = () => {
+                                    if (!matchedSigner.data) return "";
+                                    if (matchedSigner.data instanceof Map) {
+                                      return matchedSigner.data.get('Name') || matchedSigner.data.get('name') || "";
+                                    }
+                                    return matchedSigner.data.Name || matchedSigner.data.name || "";
+                                  };
+                                  const name = getName();
+                                  if (name && name.trim().length >= 2) {
+                                    // Get first two letters of name
+                                    initialsValue = name.trim().substring(0, 2).toUpperCase();
+                                  }
+                                }
+                                // If saved initials exist, they should already be in value from above check
+                              }
+                            } else {
+                              // Recipient mode: get initials from recipient or generate from name
+                              const recipient = allRecipients?.find(
+                                (r: any) => r.id === field.recipientId
+                              );
+                              if (recipient) {
+                                // Only generate from name if no saved initials exist
+                                if (!recipient.initials && recipient.name && recipient.name.trim().length >= 2) {
+                                    console.log("No Initials");
+                                  // Generate from name - first two letters
+                                  initialsValue = recipient.name.trim().substring(0, 2).toUpperCase();
+                                }
+                                // If saved initials exist, they should already be in value from above check
+                              }
+                            }
+                            
+                            // Only auto-fill if we generated initials and haven't already auto-filled this field
+                            if (initialsValue && !autoFilledDateFieldsRef.current.has(keyId)) {
+                              value = initialsValue;
+                              // Mark as auto-filled to prevent re-running
+                              autoFilledDateFieldsRef.current.add(keyId);
+                              // Set the value in ref immediately (no re-render)
+                              fieldValuesRef.current[keyId] = value;
+                              
+                              // Update state after render to avoid side effects during render
+                              setTimeout(() => {
+                                setLocalFieldValues((prev) => {
+                                  // Only update if not already set to avoid unnecessary re-renders
+                                  if (prev[keyId] === undefined || prev[keyId] === "" || prev[keyId] === null) {
+                                    return { ...prev, [keyId]: value };
+                                  }
+                                  return prev;
+                                });
+                                
+                                // For self-signer mode, also update selfSigner structure
+                                if (selfValue === "1") {
+                                  setSelfSigner((prev) => {
+                                    return (prev || []).map((s: any) =>
+                                      s && s.signerSlotId === field.slotId
+                                        ? {
+                                            ...s,
+                                            data: {
+                                              ...(typeof s.data === 'object' ? s.data : {}),
+                                              ...(fieldLable ? { [fieldLable]: value } : {}),
+                                            },
+                                          }
+                                        : s
+                                    );
+                                  });
+                                }
+                                
+                                // Submit the initials field automatically for recipient mode
                                 if (selfValue !== "1" && field.recipientId) {
                                   submitSingleField(field.recipientId, field._id, value);
                                 }
@@ -2163,6 +2323,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             }
             setRecipientSignature(signatureUrl);
             
+            // Clear cached values for initial fields so they can be re-evaluated with updated initials
+            const initialFields = signatureFields.filter((f: any) => f.type === "initial");
+            initialFields.forEach((field: any) => {
+              const keyId = field._id || field.fieldId;
+              if (keyId) {
+                // Clear from ref
+                delete fieldValuesRef.current[keyId];
+                // Clear from state
+                setLocalFieldValues((prev) => {
+                  const next = { ...prev };
+                  delete next[keyId];
+                  return next;
+                });
+                // Remove from auto-filled set so it can be re-evaluated
+                autoFilledDateFieldsRef.current.delete(keyId);
+              }
+            });
+            
             // In self-signer mode, refresh selfSigner data to get updated signatureFields
             if (selfValue === "1" && cycleId) {
               // Mark navigation as pending
@@ -2175,6 +2353,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             }
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
+            // Clear cached values for initial fields so they can be re-evaluated with updated initials
+            const initialFields = signatureFields.filter((f: any) => f.type === "initial");
+            initialFields.forEach((field: any) => {
+              const keyId = field._id || field.fieldId;
+              if (keyId) {
+                // Clear from ref
+                delete fieldValuesRef.current[keyId];
+                // Clear from state
+                setLocalFieldValues((prev) => {
+                  const next = { ...prev };
+                  delete next[keyId];
+                  return next;
+                });
+                // Remove from auto-filled set so it can be re-evaluated
+                autoFilledDateFieldsRef.current.delete(keyId);
+              }
+            });
+            
             // When selfValue === "1" update the signer entry and trigger confetti reliably
             if (selfValue === "1") {
               // Don't update selfSigner optimistically - let getSelfSigner handle it
