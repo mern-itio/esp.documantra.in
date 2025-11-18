@@ -38,7 +38,6 @@ interface ColumnConfig {
 }
 
 const defaultColumns: ColumnConfig[] = [
-  { id: 'checkbox', label: 'Checkbox', visible: true, order: 0, sortable: false },
   { id: 'name', label: 'Name', visible: true, order: 1, sortable: true },
   { id: 'owner', label: 'Owner', visible: true, order: 2, sortable: true },
   { id: 'createdDate', label: 'Created Date', visible: true, order: 3, sortable: true },
@@ -54,7 +53,6 @@ export const FormsList: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
-  const [selectedForms, setSelectedForms] = useState<Set<string>>(new Set());
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const dropdownRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
   const dropdownButtonRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
@@ -69,7 +67,7 @@ export const FormsList: React.FC = () => {
   // Advanced search state
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [selectedSearchType, setSelectedSearchType] = useState<string>('templateName');
-  const [tempSearchType, setTempSearchType] = useState<string>('templateName'); // Temporary selection before Apply
+  const [_tempSearchType, _setTempSearchType] = useState<string>('templateName'); // Temporary selection before Apply
   const advancedSearchContainerRef = React.useRef<HTMLDivElement | null>(null);
   
   // Items per page dropdown state
@@ -374,24 +372,6 @@ export const FormsList: React.FC = () => {
     }
   };
 
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedForms(new Set(paginatedForms.map(f => f._id)));
-    } else {
-      setSelectedForms(new Set());
-    }
-  };
-
-  const handleSelectForm = (formId: string) => {
-    const newSelected = new Set(selectedForms);
-    if (newSelected.has(formId)) {
-      newSelected.delete(formId);
-    } else {
-      newSelected.add(formId);
-    }
-    setSelectedForms(newSelected);
-  };
-
   const handleUse = (formId: string) => {
     navigate(`/e-sign/form-builder/${formId}`);
   };
@@ -446,12 +426,6 @@ export const FormsList: React.FC = () => {
         if (response) {
           // Remove the form from the list
           setForms(prev => prev.filter(f => f._id !== formId));
-          // Clear selection if deleted form was selected
-          setSelectedForms(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(formId);
-            return newSet;
-          });
           
           // Show success alert
           Swal.fire({
@@ -702,82 +676,7 @@ export const FormsList: React.FC = () => {
           )}
         </div>
         
-        <div className="relative" ref={advancedSearchContainerRef}>
-          <div
-            className="px-4 py-2 border rounded flex items-center gap-2 cursor-pointer"
-            style={{
-              borderColor: '#D0D0D0',
-              borderRadius: '6px',
-              color: '#28004D'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!showAdvancedSearch) {
-                // When opening, sync temp with current selection
-                setTempSearchType(selectedSearchType);
-              }
-              setShowAdvancedSearch(!showAdvancedSearch);
-              setShowDateDropdown(false);
-              setShowItemsPerPageDropdown(false);
-            }}
-          >
-            <span>Advanced search</span>
-            <ChevronDown className="w-4 h-4" />
-          </div>
-          
-          {/* Advanced Search Dropdown */}
-          {showAdvancedSearch && (
-            <div
-              className="absolute top-full mt-2 left-0 bg-white border rounded-lg shadow-lg z-50 min-w-[250px]"
-              style={{
-                borderColor: '#D0D0D0',
-                borderRadius: '8px'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-2">
-                {[
-                  { value: 'templateName', label: 'Template name' },
-                  { value: 'templateId', label: 'Template ID' },
-                  { value: 'ownerNameEmail', label: 'Owner name and email' },
-                  { value: 'recipientNameEmail', label: 'Recipient name and email' }
-                ].map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
-                    style={{ color: '#28004D' }}
-                  >
-                    <input
-                      type="radio"
-                      name="searchType"
-                      value={option.value}
-                      checked={tempSearchType === option.value}
-                      onChange={(e) => setTempSearchType(e.target.value)}
-                      className="w-4 h-4"
-                      style={{ accentColor: '#4D0080' }}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="p-3 border-t" style={{ borderColor: '#D0D0D0' }}>
-                <button
-                  onClick={() => {
-                    setSelectedSearchType(tempSearchType);
-                    setShowAdvancedSearch(false);
-                  }}
-                  className="w-full px-4 py-2 rounded-lg font-medium text-white"
-                  style={{
-                    backgroundColor: '#4D0080',
-                    borderRadius: '6px'
-                  }}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+      
         
         {/* Clear button - only show when filters are active */}
         {(searchTerm || selectedDateFilter !== 'all' || selectedSearchType !== 'templateName') && (
@@ -793,8 +692,7 @@ export const FormsList: React.FC = () => {
               setSelectedDateFilter('all');
               setTempDateFilter('all');
               setSelectedSearchType('templateName');
-              setTempSearchType('templateName');
-              setSelectedForms(new Set());
+              // setTempSearchType('templateName');
               setCurrentPage(1);
             }}
           >
@@ -852,18 +750,7 @@ export const FormsList: React.FC = () => {
           <thead>
             <tr className="border-b" style={{ borderColor: '#D0D0D0' }}>
               {visibleColumns.map((col) => {
-                if (col.id === 'checkbox') {
-                  return (
-                    <th key={col.id} className="px-4 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        checked={paginatedForms.length > 0 && paginatedForms.every(f => selectedForms.has(f._id))}
-                        onChange={handleSelectAll}
-                        className="w-4 h-4"
-                      />
-                    </th>
-                  );
-                }
+              
                 const sortFieldMap: Record<string, SortField> = {
                   'name': 'name',
                   'owner': 'owner',
@@ -909,18 +796,6 @@ export const FormsList: React.FC = () => {
                     style={{ borderColor: '#D0D0D0' }}
                   >
                     {visibleColumns.map((col) => {
-                      if (col.id === 'checkbox') {
-                        return (
-                          <td key={col.id} className="px-4 py-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedForms.has(form._id)}
-                              onChange={() => handleSelectForm(form._id)}
-                              className="w-4 h-4"
-                            />
-                          </td>
-                        );
-                      }
                       if (col.id === 'name') {
                         return (
                           <td key={col.id} className="px-4 py-3">

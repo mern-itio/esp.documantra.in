@@ -69,7 +69,7 @@ export type PowerFormData = {
 };
 
 const RECIPIENT_COLORS = ["#2563eb", "#059669", "#d97706", "#db2777", "#7c3aed", "#f43f5e"];
-const RECIPIENT_BORDER_STYLES = ["dashed", "dotted", "solid", "double", "groove", "ridge"];
+const RECIPIENT_BORDER_STYLES = ["dashed", "dotted", "solid", "double", "inset", "outset"];
 
 function getRecipientColor(idx: number) {
   return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length];
@@ -394,15 +394,19 @@ export default function SigningEditorStep({
   // color map for recipients & slots
   const recipientColorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    recipients.forEach((r, idx) => (map[r.id] = getRecipientColor(idx)));
-    slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientColor(idx + recipients.length))); // avoid collision
+    // Sort recipients by order to ensure consistent color assignment
+    const sortedRecipients = [...recipients].sort((a, b) => (a.order || 0) - (b.order || 0));
+    sortedRecipients.forEach((r, idx) => (map[r.id] = getRecipientColor(idx)));
+    slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientColor(idx + sortedRecipients.length))); // avoid collision
     return map;
   }, [recipients, slotsToUse]);
 
   const recipientBorderStyleMap = useMemo(() => {
     const map: Record<string, string> = {};
-    recipients.forEach((r, idx) => (map[r.id] = getRecipientBorderStyle(idx)));
-    slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientBorderStyle(idx + recipients.length))); // avoid collision
+    // Sort recipients by order to ensure consistent border style assignment
+    const sortedRecipients = [...recipients].sort((a, b) => (a.order || 0) - (b.order || 0));
+    sortedRecipients.forEach((r, idx) => (map[r.id] = getRecipientBorderStyle(idx)));
+    slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientBorderStyle(idx + sortedRecipients.length))); // avoid collision
     return map;
   }, [recipients, slotsToUse]);
 
@@ -1988,7 +1992,9 @@ export default function SigningEditorStep({
                                   height: f.height,
                                   border: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id)
                                     ? `3px solid ${color}`
-                                    : `2px ${borderStyle} ${color}`,
+                                    : (borderStyle === "double" || borderStyle === "inset" || borderStyle === "outset")
+                                      ? `3px ${borderStyle} ${color}`
+                                      : `2px ${borderStyle} ${color}`,
                                   background: (f.type === "text" || f.type === "email" || f.type === "dropdown" || f.type === "input" || f.type === "checkbox" || f.type === "phone" || f.type === "stamp") ? "#f8fafc" : "#fff",
                                   display: "flex",
                                   alignItems: "center",
@@ -1998,9 +2004,18 @@ export default function SigningEditorStep({
                                   opacity: isActive ? 1 : 0.9,
                                   boxSizing: "border-box",
                                   zIndex: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) ? 50 : (isActive ? 30 : 20),
-                                  boxShadow: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id)
-                                    ? `0 0 0 2px ${color}40`
-                                    : 'none',
+                                  boxShadow: (() => {
+                                    if (selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id)) {
+                                      return `0 0 0 2px ${color}40`;
+                                    }
+                                    if (borderStyle === "inset" || borderStyle === "outset") {
+                                      return `0 0 0 1px ${color}40, inset 0 0 4px ${color}20`;
+                                    }
+                                    if (borderStyle === "double") {
+                                      return `0 0 0 1px ${color}30`;
+                                    }
+                                    return 'none';
+                                  })(),
                                 }}
                                 onMouseDown={(e) => {
                                   // Allow dragging for all fields
@@ -2129,8 +2144,11 @@ export default function SigningEditorStep({
                             top: dropPreview.y - 20,
                             width: 120,
                             height: 40,
-                            border: `2px ${recipientBorderStyleMap[activeAssigneeId ?? ""] || "dashed"} ${recipientColorMap[activeAssigneeId ?? ""] || "#2563eb"
-                              }`,
+                            borderStyle: recipientBorderStyleMap[activeAssigneeId ?? ""] || "dashed",
+                            borderWidth: (recipientBorderStyleMap[activeAssigneeId ?? ""] === "double" || 
+                                          recipientBorderStyleMap[activeAssigneeId ?? ""] === "inset" || 
+                                          recipientBorderStyleMap[activeAssigneeId ?? ""] === "outset") ? "3px" : "2px",
+                            borderColor: recipientColorMap[activeAssigneeId ?? ""] || "#2563eb",
                             background: "#e0e7ff88",
                             display: "flex",
                             alignItems: "center",

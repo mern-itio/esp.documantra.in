@@ -67,6 +67,7 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [envStatesLoading, setEnvStatesLoading] = React.useState(true);
   const [envelopeStats, setEnvelopeStats] = React.useState<any>(null);
+  const [userPlan, setUserPlan] = React.useState<any>(null);
 
   React.useEffect(() => {
     // get All envelope stats
@@ -91,9 +92,10 @@ const DashboardPage: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        const [bRes, uRes] = await Promise.all([
+        const [bRes, uRes, planRes] = await Promise.all([
           subscriptionApi.get('/usage/balance'),
           subscriptionApi.get('/usage/records?limit=30'),
+          subscriptionApi.get('/user-plan/me').catch(() => null), // Fetch plan info, ignore errors
         ]);
         if (!mounted) return;
         setBalance((bRes as any).data?.data?.creditsBalance ?? null);
@@ -102,6 +104,10 @@ const DashboardPage: React.FC = () => {
           toolNameByIdRef.current = raw ? JSON.parse(raw) : {};
         } catch { toolNameByIdRef.current = {}; }
         setUsage(((uRes as any).data?.data?.records || []).map((r: any) => ({ action: r.action, creditsDelta: r.creditsDelta, balanceAfter: r.balanceAfter, createdAt: r.createdAt, toolId: r.toolId })));
+        // Store user plan if available
+        if (planRes && (planRes as any).data?.data) {
+          setUserPlan((planRes as any).data.data);
+        }
       } catch {
         if (!mounted) return;
       } finally {
@@ -133,17 +139,18 @@ const DashboardPage: React.FC = () => {
 
   // Transform usage data for chart
   const chartData = useMemo(() => {
-    if (!usage.length) return [];
-    
     // Group by date and module, aggregate
-    const grouped = usage.reduce((acc: any, record: any) => {
+    const grouped: Record<string, any> = {};
+    
+    // First, process all usage records
+    usage.forEach((record: any) => {
       const date = new Date(record.createdAt);
       const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const dateTime = date.getTime();
       const module = getModuleFromAction(record.action, record.toolId);
       
-      if (!acc[dateKey]) {
-        acc[dateKey] = {
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = {
           date: dateKey,
           dateTime: dateTime,
           used: 0,
@@ -160,22 +167,55 @@ const DashboardPage: React.FC = () => {
       
       if (record.creditsDelta < 0) {
         const creditsUsed = Math.abs(record.creditsDelta);
-        acc[dateKey].used += creditsUsed;
-        acc[dateKey][module] = (acc[dateKey][module] || 0) + creditsUsed;
+        grouped[dateKey].used += creditsUsed;
+        grouped[dateKey][module] = (grouped[dateKey][module] || 0) + creditsUsed;
       } else {
-        acc[dateKey].added += record.creditsDelta;
+        grouped[dateKey].added += record.creditsDelta;
       }
-      acc[dateKey].balance = record.balanceAfter;
-      acc[dateKey].count += 1;
+      grouped[dateKey].balance = record.balanceAfter;
+      grouped[dateKey].count += 1;
+    });
+    
+    // Add plan upgrade credits if periodStart is within last 7 days
+    if (userPlan?.periodStart && userPlan?.conversionsLimit) {
+      const periodStartDate = new Date(userPlan.periodStart);
+      const now = new Date();
+      const daysDiff = Math.floor((now.getTime() - periodStartDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      return acc;
-    }, {});
+      // If periodStart is within the last 7 days, add plan credits as "added"
+      if (daysDiff >= 0 && daysDiff < 7) {
+        const upgradeDateKey = periodStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const upgradeDateTime = periodStartDate.getTime();
+        const planCredits = userPlan.conversionsLimit || 0;
+        
+        if (!grouped[upgradeDateKey]) {
+          grouped[upgradeDateKey] = {
+            date: upgradeDateKey,
+            dateTime: upgradeDateTime,
+            used: 0,
+            added: 0,
+            'E-Sign': 0,
+            'PDF Tools': 0,
+            'Document': 0,
+            'Authentication': 0,
+            'Other': 0,
+            balance: userPlan.creditsBalance || 0,
+            count: 0
+          };
+        }
+        
+        // Add plan credits as "added" credits on the upgrade date
+        grouped[upgradeDateKey].added += planCredits;
+      }
+    }
     
     // Convert to array and sort by date
-    return Object.values(grouped)
+    const result = Object.values(grouped)
       .sort((a: any, b: any) => a.dateTime - b.dateTime)
       .slice(-7); // Show last 7 days
-  }, [usage]);
+    
+    return result;
+  }, [usage, userPlan]);
 
   // Calculate module totals for summary
   const moduleTotals = useMemo(() => {
@@ -541,16 +581,16 @@ const DashboardPage: React.FC = () => {
                       <h3 className="text-sm font-bold text-slate-900 mb-1">Usage by Module</h3>
                       <p className="text-xs text-slate-500">Credit distribution</p>
                     </div>
-                    <div className="h-80 bg-gradient-to-br from-slate-50/30 to-white rounded-lg p-4 border border-slate-100 flex items-center justify-center">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-80 bg-gradient-to-br from-slate-50/30 to-white rounded-lg p-4 border border-slate-100 flex flex-col items-center justify-center">
+                      <ResponsiveContainer width="100%" height="85%">
                         <PieChart>
                           <Pie
                             data={pieChartData}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={90}
+                            label={({ percent }: any) => `${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -566,10 +606,23 @@ const DashboardPage: React.FC = () => {
                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                               padding: '10px 14px'
                             }}
-                            formatter={(value: any) => `${value} credits`}
+                            formatter={(value: any, name: string) => [`${value} credits`, name]}
                           />
                         </PieChart>
                       </ResponsiveContainer>
+                      <div className="w-full mt-2 flex flex-wrap items-center justify-center gap-3 px-2">
+                        {pieChartData.map((entry: any, index: number) => (
+                          <div key={entry.name} className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                            />
+                            <span className="text-xs font-medium text-slate-700 whitespace-nowrap">
+                              {entry.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

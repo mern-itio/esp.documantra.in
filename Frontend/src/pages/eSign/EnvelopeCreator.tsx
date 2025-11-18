@@ -129,6 +129,7 @@ const EnvelopeCreator: React.FC = () => {
   const [isOnlySigner, setIsOnlySigner] = useState(false);
   const [showRecipients, setShowRecipients] = useState(false);
   const [showAddMessage, setShowAddMessage] = useState(false);
+  const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
 
   // Initialize title when documents are uploaded (only once, not when subject changes)
   useEffect(() => {
@@ -334,8 +335,7 @@ const EnvelopeCreator: React.FC = () => {
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const creatorTourSteps = [
-    { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Upload your PDF documents by dragging and dropping or clicking to browse files.' },
-    { id: 'editTitle', selector: '[data-tour="ec-edit-title"]', title: 'Edit Document Title', content: 'Click the edit icon to customize the document title. After uploading a document, you can change the title to something more descriptive. Press Enter to save or Escape to cancel.' },
+    { id: 'upload', selector: '[data-tour="ec-upload"]', title: 'Upload Documents', content: 'Upload your PDF documents by dragging and dropping or clicking to upload button.' },
     { id: 'recipients', selector: '[data-tour="ec-recipients-toggle"]', title: 'Add Recipients', content: 'Click to expand the recipients section and add people who need to sign the document.' },
     { id: 'addRecipient', selector: '[data-tour="ec-add-recipient"]', title: 'Add Recipient', content: 'Click this button to add a new recipient. Enter their full name and email address.' },
     { id: 'customize', selector: '[data-tour="ec-customize"]', title: 'Customize Options', content: 'Click the Customize button to set authentication methods for recipients. You can add security measures like access codes, SMS verification, or other authentication methods to ensure the right person signs the document.' },
@@ -584,7 +584,16 @@ const EnvelopeCreator: React.FC = () => {
       
       // Combine and normalize orders
       const combined = [...filtered, ...bulkRecipients];
-      return normalizeOrders(combined);
+      const normalized = normalizeOrders(combined);
+      
+      // If total recipients exceed 3, set the first bulk recipient as active
+      if (normalized.length > 3 && bulkRecipients.length > 0) {
+        setActiveRecipientId(bulkRecipients[0].id);
+      } else if (normalized.length <= 3) {
+        setActiveRecipientId(null);
+      }
+      
+      return normalized;
     });
     
     setShowRecipients(true);
@@ -1019,12 +1028,12 @@ const EnvelopeCreator: React.FC = () => {
   const [typeSearch, setTypeSearch] = useState<string>('');
   const [showOtherInputInDropdown, setShowOtherInputInDropdown] = useState<boolean>(false);
   const [newEnvelopeTypeValue, setNewEnvelopeTypeValue] = useState<string>('');
-  const [savingNewType, setSavingNewType] = useState<boolean>(false);
   const typeDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // PDF Preview Modal state
   const [pdfPreviewModalOpen, setPdfPreviewModalOpen] = useState<boolean>(false);
   const [selectedPdfForPreview, setSelectedPdfForPreview] = useState<ESDocument | null>(null);
+  const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
 
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
@@ -1383,8 +1392,15 @@ const EnvelopeCreator: React.FC = () => {
         }));
         setDocuments(apiDocs);
         console.log('Fetched documents:', apiDocs);
-        setRecipients(response.data.data.recipients);
-        console.log('Fetched recipients:', response.data.data.recipients);
+        const loadedRecipients = response.data.data.recipients || [];
+        setRecipients(loadedRecipients);
+        console.log('Fetched recipients:', loadedRecipients);
+        // If more than 3 recipients, set the first one as active (others will show as pills)
+        if (loadedRecipients.length > 3 && loadedRecipients.length > 0) {
+          setActiveRecipientId(loadedRecipients[0].id);
+        } else {
+          setActiveRecipientId(null);
+        }
         // Prefill subject/message when returning to earlier steps
         const env = response.data.data;
         setEnvelopeData(prev => ({
@@ -1795,6 +1811,10 @@ const EnvelopeCreator: React.FC = () => {
       // Normalize orders to ensure they're sequential
       return normalizeOrders(updated);
     });
+    // If this is the 4th+ recipient, set it as active (others will collapse to pills)
+    if (recipients.length >= 3) {
+      setActiveRecipientId(newRecipient.id);
+    }
   };
 
   // Normalize orders to be sequential (1, 2, 3, ...)
@@ -2092,7 +2112,23 @@ const EnvelopeCreator: React.FC = () => {
     setRecipients(prev => {
       const removed = prev.filter(recipient => recipient.id !== id);
       // Normalize orders after removal
-      return normalizeOrders(removed);
+      const normalized = normalizeOrders(removed);
+      
+      // Handle active recipient state
+      if (id === activeRecipientId) {
+        // If we removed the active recipient, set the first remaining as active (if any)
+        if (normalized.length > 0 && normalized.length > 3) {
+          setActiveRecipientId(normalized[0].id);
+        } else {
+          // If we now have 3 or fewer, clear active state (all will show as cards)
+          setActiveRecipientId(null);
+        }
+      } else if (normalized.length <= 3) {
+        // If we now have 3 or fewer recipients, clear active state
+        setActiveRecipientId(null);
+      }
+      
+      return normalized;
     });
   };
 
@@ -2332,6 +2368,16 @@ const EnvelopeCreator: React.FC = () => {
     fetchEnvelopeTypes();
   }, []);
 
+  // Auto-set active recipient when recipients exceed 3 and none is active
+  useEffect(() => {
+    if (recipients.length > 3 && !activeRecipientId && recipients.length > 0) {
+      const sorted = [...recipients].sort((a, b) => (a.order || 0) - (b.order || 0));
+      setActiveRecipientId(sorted[0].id);
+    } else if (recipients.length <= 3) {
+      setActiveRecipientId(null);
+    }
+  }, [recipients.length, activeRecipientId]);
+
   const fetchEnvelopeTypes = async () => {
     try {
       const response = await eSignApi.get('/api/e-sign/envelope-types');
@@ -2357,40 +2403,18 @@ const EnvelopeCreator: React.FC = () => {
     setTypeSearch('');
   };
 
-  // Handle saving new envelope type
-  const handleSaveNewEnvelopeType = async () => {
+  // Handle saving new envelope type (only for current envelope, not saved to DB)
+  const handleSaveNewEnvelopeType = () => {
     if (!newEnvelopeTypeValue.trim()) {
       return;
     }
 
-    setSavingNewType(true);
-    try {
-      const response = await eSignApi.post('/api/e-sign/envelope-types', {
-        title: newEnvelopeTypeValue.trim(),
-        description: ''
-      });
-
-      if (response.status === 201) {
-        // Add the new type to the list
-        const newType = response.data.data;
-        setEnvelopeTypes(prev => [...prev, newType]);
-        
-        // Select the newly created type
-        setSelectedEnvelopeType(newType.title);
-        setShowOtherInputInDropdown(false);
-        setNewEnvelopeTypeValue('');
-        setTypeDropdownOpen(false);
-        setTypeSearch('');
-        
-        toast.success('Envelope type created successfully');
-      }
-    } catch (error: any) {
-      console.error('Error creating envelope type:', error);
-      const message = error.response?.data?.message || 'Failed to create envelope type';
-      toast.error(message);
-    } finally {
-      setSavingNewType(false);
-    }
+    // Set the custom type for this envelope only (not saved to database)
+    setSelectedEnvelopeType(newEnvelopeTypeValue.trim());
+    setShowOtherInputInDropdown(false);
+    setNewEnvelopeTypeValue('');
+    setTypeDropdownOpen(false);
+    setTypeSearch('');
   };
 
   // Close type dropdown on outside click
@@ -3387,13 +3411,13 @@ const EnvelopeCreator: React.FC = () => {
                                   </div>
 
                                   <div className="absolute bottom-4 right-4 flex items-center justify-end gap-3 bg-white">
-                                    <button
+                                    {/* <button
                                       onClick={downloadSampleCsv}
                                       className="px-4 py-2 border rounded-md text-[#3E2B66] border-[#3E2B66] flex items-center gap-2"
                                     >
                                       <ArrowDownToLine className="w-4 h-4" />
                                       Sample CSV
-                                    </button>
+                                    </button> */}
 
 
                                     <button
@@ -3466,7 +3490,7 @@ const EnvelopeCreator: React.FC = () => {
 
                                 <div className="flex items-center justify-end mt-8">
                                   <div className="flex items-center gap-3">
-                                    <button onClick={() => setBulkMethod('csv')} className="px-4 py-2 border rounded-sm">Upload CSV</button>
+                                    {/* <button onClick={() => setBulkMethod('csv')} className="px-4 py-2 border rounded-sm">Upload CSV</button> */}
                                     <button onClick={applyBulkRecipients} className="px-4 py-2 text-white rounded-sm" style={{ backgroundColor: '#260559' }}>Save</button>
                                   </div>
                                 </div>
@@ -4322,9 +4346,125 @@ const EnvelopeCreator: React.FC = () => {
                           return orderA - orderB;
                         });
 
+                        // Determine if we should use pill/card mode (when more than 3 recipients)
+                        const usePillMode = sortedRecipients.length > 3;
+
                         return (
                           <div className="space-y-4 transition-all duration-500 ease-in-out">
+                            {/* Pills row - show when in pill mode and there are inactive recipients */}
+                            {usePillMode && (
+                              <div className="flex flex-wrap gap-2 mb-4">
+                                {sortedRecipients
+                                  .filter(r => r.id !== activeRecipientId)
+                                  .map((recipient, index) => {
+                                    const base = bulkList ? 1 : 0;
+                                    const displayOrder = (recipient.order || (index + 1 + base));
+                                    const originalIndex = recipients.findIndex(r => r.id === recipient.id);
+                                    const isDraggingPill = draggedRecipientId === recipient.id;
+                                    const isDragOverPill = dragOverRecipientId === recipient.id;
+                                    return (
+                                      <button
+                                        key={recipient.id}
+                                        type="button"
+                                        onClick={() => setActiveRecipientId(recipient.id)}
+                                        draggable
+                                        onDragStart={(e) => {
+                                          setDraggedRecipientId(recipient.id);
+                                          e.dataTransfer.effectAllowed = 'move';
+                                          e.dataTransfer.setData('text/plain', recipient.id);
+                                          e.dataTransfer.setDragImage(new Image(), 0, 0);
+                                        }}
+                                        onDragOver={(e) => {
+                                          if (draggedRecipientId && draggedRecipientId !== recipient.id) {
+                                            e.preventDefault();
+                                            e.dataTransfer.dropEffect = 'move';
+                                            setDragOverRecipientId(recipient.id);
+                                          }
+                                        }}
+                                        onDragLeave={() => {
+                                          if (dragOverRecipientId === recipient.id) {
+                                            setDragOverRecipientId(null);
+                                          }
+                                        }}
+                                        onDrop={(e) => {
+                                          e.preventDefault();
+                                          if (draggedRecipientId && draggedRecipientId !== recipient.id) {
+                                            // Reorder recipients
+                                            setRecipients(prev => {
+                                              const draggedRecipient = prev.find(r => r.id === draggedRecipientId);
+                                              const targetRecipient = prev.find(r => r.id === recipient.id);
+                                              
+                                              if (!draggedRecipient || !targetRecipient) return prev;
+
+                                              const draggedOrder = draggedRecipient.order || prev.findIndex(r => r.id === draggedRecipientId) + 1;
+                                              const targetOrder = targetRecipient.order || prev.findIndex(r => r.id === recipient.id) + 1;
+
+                                              // Swap orders
+                                              const updated = prev.map(r => {
+                                                if (r.id === draggedRecipientId) {
+                                                  return { ...r, order: targetOrder };
+                                                }
+                                                if (r.id === recipient.id) {
+                                                  return { ...r, order: draggedOrder };
+                                                }
+                                                return r;
+                                              });
+
+                                              // Normalize orders to ensure they're sequential
+                                              const normalized = normalizeOrders(updated);
+                                              
+                                              // Save order to backend if envelope exists
+                                              if (envelopeId) {
+                                                const recipientPayload = normalized.map(r => ({
+                                                  id: r.id,
+                                                  name: r.name,
+                                                  email: r.email,
+                                                  role: r.role,
+                                                  order: r.order,
+                                                  authentication: r.authentication
+                                                }));
+                                                eSignApi.post('/api/e-sign/update-envelope', {
+                                                  envelopeId,
+                                                  envelopeData: { recipients: recipientPayload }
+                                                }).catch(err => console.error('Failed to update recipient order:', err));
+                                              }
+                                              
+                                              return normalized;
+                                            });
+                                          }
+                                          setDraggedRecipientId(null);
+                                          setDragOverRecipientId(null);
+                                        }}
+                                        onDragEnd={() => {
+                                          setDraggedRecipientId(null);
+                                          setDragOverRecipientId(null);
+                                        }}
+                                        className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full hover:border-purple-500 hover:bg-purple-50 transition-all shadow-sm cursor-grab active:cursor-grabbing ${
+                                          isDraggingPill ? 'opacity-50 scale-95' : ''
+                                        } ${isDragOverPill ? 'border-purple-600 scale-105 shadow-md' : ''}`}
+                                        style={{
+                                          borderLeft: `4px solid ${RECIPIENT_COLORS[originalIndex % RECIPIENT_COLORS.length]}`
+                                        }}
+                                      >
+                                        <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                        <span className="text-sm font-medium text-gray-600">{displayOrder}.</span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                          {recipient.name || 'Unnamed Recipient'}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                          {recipient.email || 'No email'}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                            )}
+                            
                             {sortedRecipients.map((recipient, index) => {
+                              // In pill mode, only show the active recipient as a card
+                              if (usePillMode && recipient.id !== activeRecipientId) {
+                                return null;
+                              }
                               const base = bulkList ? 1 : 0;
                               const displayOrder = (recipient.order || (index + 1 + base));
                               const isDragging = draggedRecipientId === recipient.id;
@@ -5220,10 +5360,10 @@ const EnvelopeCreator: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={handleSaveNewEnvelopeType}
-                                disabled={!newEnvelopeTypeValue.trim() || savingNewType}
+                                disabled={!newEnvelopeTypeValue.trim()}
                                 className="px-3 py-1.5 text-sm bg-[#3E2B66] text-white rounded hover:bg-[#4d3577] disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                {savingNewType ? 'Saving...' : 'Save'}
+                                Use
                               </button>
                             </div>
                           </div>
@@ -6658,15 +6798,26 @@ const EnvelopeCreator: React.FC = () => {
 
       {/* PDF Preview Modal */}
       {pdfPreviewModalOpen && selectedPdfForPreview && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]" onClick={() => setPdfPreviewModalOpen(false)}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]" onClick={() => {
+          setPdfPreviewModalOpen(false);
+          setPdfNumPages(null);
+        }}>
           <div className="bg-white rounded-lg shadow-xl w-[90vw] h-[90vh] max-w-6xl flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 truncate flex-1 mr-4">
-                {selectedPdfForPreview.name}
-              </h2>
+              <div className="flex-1 mr-4">
+                <h2 className="text-lg font-semibold text-gray-900 truncate">
+                  {selectedPdfForPreview.name}
+                </h2>
+                {pdfNumPages && (
+                  <p className="text-sm text-gray-500 mt-0.5">{pdfNumPages} {pdfNumPages === 1 ? 'page' : 'pages'}</p>
+                )}
+              </div>
               <button
-                onClick={() => setPdfPreviewModalOpen(false)}
+                onClick={() => {
+                  setPdfPreviewModalOpen(false);
+                  setPdfNumPages(null);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-gray-600" />
@@ -6675,10 +6826,33 @@ const EnvelopeCreator: React.FC = () => {
             
             {/* PDF Viewer (React-PDF with local worker) */}
             <div className="flex-1 overflow-hidden bg-gray-100">
-              <div className="w-full h-full overflow-auto flex items-start justify-center p-4">
-                <PDFDocument file={selectedPdfForPreview.url}>
-                  <PDFPage pageNumber={1} width={900} />
+              <div className="w-full h-full overflow-auto flex flex-col items-center p-4 gap-4">
+                <PDFDocument 
+                  file={selectedPdfForPreview.url}
+                  onLoadSuccess={({ numPages }) => {
+                    setPdfNumPages(numPages);
+                  }}
+                  onLoadError={(error) => {
+                    console.error('Error loading PDF:', error);
+                    setPdfNumPages(null);
+                  }}
+                >
+                  {pdfNumPages && [...Array(pdfNumPages)].map((_, index) => (
+                    <PDFPage 
+                      key={`page_${index + 1}`}
+                      pageNumber={index + 1} 
+                      width={900}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="mb-4 shadow-lg"
+                    />
+                  ))}
                 </PDFDocument>
+                {!pdfNumPages && (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-gray-500">Loading PDF...</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

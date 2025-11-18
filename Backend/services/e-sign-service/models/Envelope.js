@@ -24,6 +24,7 @@ const PartySlotSchema = new mongoose.Schema({
 const EnvelopeSchema = new mongoose.Schema({
   subject: { type: String },
   message: { type: String },
+  envelopetype: { type: String },
   sender: { type: mongoose.Schema.Types.ObjectId, required: true },
   priority: { type: String, enum: ["low", "normal", "high", "urgent","power-form"], default: "normal" },
   signingOrder: { type: String, enum: ["In-Order", "Parallel", "sequential"], default: "In-Order" },
