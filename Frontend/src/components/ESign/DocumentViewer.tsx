@@ -111,6 +111,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [signingFieldIds, setSigningFieldIds] = useState<Record<string, boolean>>({});
   // Use refs to store values without causing re-renders
   const fieldValuesRef = useRef<Record<string, any>>({});
+  const autoFilledDateFieldsRef = useRef<Set<string>>(new Set());
 
   // PDF.js worker setup
   useEffect(() => {
@@ -1362,6 +1363,29 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           return data[key];
                         };
 
+                        // Helper function to check if date label is specific (should not auto-fill)
+                        const isSpecificDateLabel = (label: string | undefined): boolean => {
+                          if (!label) return false;
+                          const lowerLabel = label.toLowerCase().trim();
+                          const specificPatterns = [
+                            'dob', 'date of birth', 'birth date', 'birthday',
+                            'birth date', 'date of birth', 'd.o.b', 'd.o.b.',
+                            'expiry', 'expiration', 'expire date', 'expiration date',
+                            'start date', 'end date', 'from date', 'to date',
+                            'effective date', 'issued date', 'issue date'
+                          ];
+                          return specificPatterns.some(pattern => lowerLabel.includes(pattern));
+                        };
+
+                        // Helper function to get current date in YYYY-MM-DD format
+                        const getCurrentDate = (): string => {
+                          const today = new Date();
+                          const year = today.getFullYear();
+                          const month = String(today.getMonth() + 1).padStart(2, '0');
+                          const day = String(today.getDate()).padStart(2, '0');
+                          return `${year}-${month}-${day}`;
+                        };
+
                         // Prefill value priority: ref (most recent) -> state -> signer.data -> field.value
                         let value: any = fieldValuesRef.current[keyId];
                         if (value === undefined) {
@@ -1384,6 +1408,50 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             value = field.value ?? field.signature ?? "";
                           }
                           if (value === undefined) value = "";
+                          
+                          // Auto-fill date fields with current date if empty and label is not specific
+                          if (field.type === "date" && (!value || String(value).trim() === "")) {
+                            if (!isSpecificDateLabel(fieldLable) && !autoFilledDateFieldsRef.current.has(keyId)) {
+                              value = getCurrentDate();
+                              // Mark as auto-filled to prevent re-running
+                              autoFilledDateFieldsRef.current.add(keyId);
+                              // Set the value in ref immediately (no re-render)
+                              fieldValuesRef.current[keyId] = value;
+                              
+                              // Update state after render to avoid side effects during render
+                              setTimeout(() => {
+                                setLocalFieldValues((prev) => {
+                                  // Only update if not already set to avoid unnecessary re-renders
+                                  if (prev[keyId] === undefined || prev[keyId] === "" || prev[keyId] === null) {
+                                    return { ...prev, [keyId]: value };
+                                  }
+                                  return prev;
+                                });
+                                
+                                // For self-signer mode, also update selfSigner structure
+                                if (selfValue === "1") {
+                                  setSelfSigner((prev) => {
+                                    return (prev || []).map((s: any) =>
+                                      s && s.signerSlotId === field.slotId
+                                        ? {
+                                            ...s,
+                                            data: {
+                                              ...(typeof s.data === 'object' ? s.data : {}),
+                                              ...(fieldLable ? { [fieldLable]: value } : {}),
+                                            },
+                                          }
+                                        : s
+                                    );
+                                  });
+                                }
+                                
+                                // Submit the date field automatically for recipient mode
+                                if (selfValue !== "1" && field.recipientId) {
+                                  submitSingleField(field.recipientId, field._id, value);
+                                }
+                              }, 0);
+                            }
+                          }
                         }
                         
                         // Check if field has a value in selfSigner.data (for read-only check in self-signer mode only)
