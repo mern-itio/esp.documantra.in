@@ -208,6 +208,8 @@ const envelopesDetail = async (req, res) => {
         const formattedEnvelope = {
             id: envelope._id,
             subject: envelope.subject,
+            message: envelope.message,
+            envelopetype: envelope.envelopetype,
             status: envelope.status,
             priority: envelope.priority,
             createdAt: envelope.createdAt,
@@ -546,39 +548,12 @@ const addSignature = async (req, res) => {
             status: 'pending',
             recipientId:recipientId
           });
+          
           if(pendingFields.length === 0){
+            // Recipient has completed all their signature fields
             const envelope = await Envelope.findById(envelopeId);
-              if (envelope) {
-                await sendToRecipients(envelope._id,envelope.subject,envelope.message);
-                // Log individual field signature
-                await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
-                  subject:envelope.subject,
-                  message:envelope.message
-                });
-                console.log('Envelope sent to next recipient');
-                return res.status(200).json({
-                  status: 'success',
-                  message: 'Signature added with compliance',
-                  fieldRemmaning: false
-                });
-              }
-          }else{
-            return res.status(200).json({
-              status: 'success',
-              message: 'Signature added with compliance',
-              fieldRemmaning:true
-            });
-          }
-          const envelope = await Envelope.findById(envelopeId);
             if (envelope) {
-              await sendToRecipients(envelope._id,envelope.subject,envelope.message);
-              // Log individual field signature
-              await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
-                subject:envelope.subject,
-                message:envelope.message
-              });
-              
-              // Create notification for envelope creator when recipient signs
+              // Create notification for envelope creator when recipient completes signing
               try {
                 const recipient = await Recipient.findById(recipientId);
                 if (recipient && envelope.sender) {
@@ -596,12 +571,26 @@ const addSignature = async (req, res) => {
                 console.error('Error creating notification:', notifErr);
               }
               
+              await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+              // Log individual field signature
+              await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
+                subject:envelope.subject,
+                message:envelope.message
+              });
               console.log('Envelope sent to next recipient');
               return res.status(200).json({
                 status: 'success',
-                message: 'Signature added with compliance'
+                message: 'Signature added with compliance',
+                fieldRemmaning: false
               });
             }
+          }else{
+            return res.status(200).json({
+              status: 'success',
+              message: 'Signature added with compliance',
+              fieldRemmaning:true
+            });
+          }
         }
       } catch (err) {
         return res.status(500).json({ message: err.message });

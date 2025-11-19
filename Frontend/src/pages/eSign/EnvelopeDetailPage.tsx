@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
-import { Download, Printer, ChevronLeft, ExternalLink, CheckCircle2, PenLine, ListOrdered, Info, ArrowLeft } from 'lucide-react';
+import { Download, Printer, ChevronLeft, ExternalLink, CheckCircle2, PenLine, ListOrdered, Info, ArrowLeft, Copy, Check } from 'lucide-react';
 
 declare global {
     interface Window { pdfjsLib: any }
@@ -26,7 +26,7 @@ interface EnvelopeDetailsResponse {
     powerFormId?:string;
     sender?: { name?: string; email?: string };
     recipients?: Recipient[];
-    customFields?: Array<{ name: string; value: string }>;
+    envelopetype?: string;
     documents?: Array<{ id: string; name?: string }>;
     message?: string;
 }
@@ -66,6 +66,9 @@ const EnvelopeDetailPage: React.FC = () => {
   const moreBtnRef = useRef<HTMLButtonElement>(null);
   const resendBtnRef = useRef<HTMLButtonElement>(null);
   const [resendLoading, setResendLoading] = useState<boolean>(false);
+  const [showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
+  const [copiedEmbedUrl, setCopiedEmbedUrl] = useState<boolean>(false);
+  const [copiedEmbedCode, setCopiedEmbedCode] = useState<boolean>(false);
 
     // scaling handled below with baseW/baseH for signer view
     // Preview now uses signer iframe; canvas kept for future
@@ -81,7 +84,12 @@ const EnvelopeDetailPage: React.FC = () => {
             try {
                 const res = await eSignApi.get(`/api/e-sign/envelope/${id}`);
                 if (res?.status === 200 && res.data?.status === 'success') {
-                    setEnvelope(res.data.data as EnvelopeDetailsResponse);
+                    const envelopeData = res.data.data as EnvelopeDetailsResponse;
+                    setEnvelope(envelopeData);
+                    // Show embed URL if powerFormId exists (already configured)
+                    if (envelopeData.isPowerForm && envelopeData.powerFormId) {
+                        setShowEmbedUrl(true);
+                    }
                 } else {
                     setError(res?.data?.message || 'Failed to load envelope');
                 }
@@ -562,25 +570,119 @@ const EnvelopeDetailPage: React.FC = () => {
                         <>
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-[15px] font-semibold text-gray-900">Power Form</h2>
-                                <button
-                                type="button"
-                                onClick={() => setShowSigningOrder(true)}
-                                className="flex items-center gap-2 text-gray-900 font-semibold tracking-wide hover:underline"
-                                >
-                                <ListOrdered className="w-4 h-4" /> SIGNING ORDER
-                                </button>
                             </div>
-                        <div className="p-6 text-center">
-                        <h3 className="text-[#D600AA] font-semibold mb-2">Power Form</h3>
-                        <button
-                            onClick={() =>
-                            navigate(`/e-sign/power-form-embed/${envelope.powerFormId}/${envelope.id}`)
-                            }
-                            className="px-5 py-2 bg-[#D600AA] text-white text-sm font-semibold rounded-md hover:bg-[#b30088] transition"
-                        >
-                            Embed Power Form
-                        </button>
-                        </div>
+                            {showEmbedUrl && envelope.powerFormId ? (
+                                <div className="py-3 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-700">Embed URL:</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                        <code className="flex-1 text-sm text-gray-800 break-all">
+                                            {`${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`}
+                                        </code>
+                                        <button
+                                            onClick={async () => {
+                                                const url = `${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`;
+                                                try {
+                                                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                                                        await navigator.clipboard.writeText(url);
+                                                    } else {
+                                                        const ta = document.createElement('textarea');
+                                                        ta.value = url;
+                                                        ta.style.position = 'fixed';
+                                                        ta.style.left = '-9999px';
+                                                        document.body.appendChild(ta);
+                                                        ta.select();
+                                                        document.execCommand('copy');
+                                                        document.body.removeChild(ta);
+                                                    }
+                                                    setCopiedEmbedUrl(true);
+                                                    setTimeout(() => setCopiedEmbedUrl(false), 2000);
+                                                } catch (e) {
+                                                    console.error('Failed to copy:', e);
+                                                }
+                                            }}
+                                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                        >
+                                            {copiedEmbedUrl ? (
+                                                <>
+                                                    <Check className="w-4 h-4 text-green-600" />
+                                                    <span>Copied</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-4 h-4" />
+                                                    <span>Copy</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-xs font-medium text-blue-900">Embed Code:</p>
+                                            <button
+                                                onClick={async () => {
+                                                    const embedCode = `<iframe src="${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`;
+                                                    try {
+                                                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                                                            await navigator.clipboard.writeText(embedCode);
+                                                        } else {
+                                                            const ta = document.createElement('textarea');
+                                                            ta.value = embedCode;
+                                                            ta.style.position = 'fixed';
+                                                            ta.style.left = '-9999px';
+                                                            document.body.appendChild(ta);
+                                                            ta.select();
+                                                            document.execCommand('copy');
+                                                            document.body.removeChild(ta);
+                                                        }
+                                                        setCopiedEmbedCode(true);
+                                                        setTimeout(() => setCopiedEmbedCode(false), 2000);
+                                                    } catch (e) {
+                                                        console.error('Failed to copy:', e);
+                                                    }
+                                                }}
+                                                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+                                            >
+                                                {copiedEmbedCode ? (
+                                                    <>
+                                                        <Check className="w-3 h-3 text-green-600" />
+                                                        <span>Copied</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="w-3 h-3" />
+                                                        <span>Copy Code</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                        <code className="text-xs text-blue-800 break-all block">
+                                            {`<iframe src="${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`}
+                                        </code>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3 py-3">
+                                    <button
+                                        onClick={() => {
+                                            if (envelope.powerFormId) {
+                                                setShowEmbedUrl(true);
+                                            } else {
+                                                // If powerFormId doesn't exist, navigate to embed page
+                                                navigate(`/e-sign/power-form-embed/${envelope.powerFormId}/${envelope.id}`);
+                                            }
+                                        }}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#D600AA] text-white text-sm font-medium rounded-md hover:bg-[#b30088] transition-colors"
+                                    >
+                                        <PenLine className="w-4 h-4" />
+                                        Generate Embed URL
+                                    </button>
+                                    <span className="text-sm text-gray-600">
+                                        Generate embed URL for this power form
+                                    </span>
+                                </div>
+                            )}
                         </>
                     ) : (
                         <>
@@ -637,11 +739,11 @@ const EnvelopeDetailPage: React.FC = () => {
                                     <span>{rightTitle}</span>
                                     </div>
                                     <div className="text-sm text-gray-600">on {rightTime}</div>
-                                    {isSigned && (
+                                    {/* {isSigned && (
                                     <a href="#" className="text-indigo-600 text-sm hover:underline">
                                         Signed in location
                                     </a>
-                                    )}
+                                    )} */}
                                 </div>
                                 </div>
                             );
@@ -655,14 +757,10 @@ const EnvelopeDetailPage: React.FC = () => {
                     <hr className="border-gray-300 mb-6" />
                     {/* Custom fields */}
                     <div className="mb-8">
-                        <h2 className="text-[15px] font-semibold text-gray-900 mb-3">Envelope Custom Fields</h2>
+                        <h2 className="text-[15px] font-semibold text-gray-900 mb-3">Envelope Type</h2>
                         <div className="p-4 text-sm text-gray-800">
-                            {envelope.customFields && envelope.customFields.length > 0 ? (
-                                <ul className="list-disc pl-5 space-y-1">
-                                    {envelope.customFields.map((f, i) => (
-                                        <li key={i}><span className="font-medium">{f.name}:</span> {f.value}</li>
-                                    ))}
-                                </ul>
+                            {envelope.envelopetype && envelope.envelopetype.length > 0 ? (
+                                <p>• {envelope.envelopetype}</p>
                             ) : (
                                 <div className="text-gray-600">No custom fields</div>
                             )}
