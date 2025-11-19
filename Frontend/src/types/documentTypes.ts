@@ -5,6 +5,7 @@ export interface SignerData {
   role?: string;
   data?: Record<string, string>;
   signatureFields?: ActiveField[];
+  initials?: string;
 }
 
 export interface ActiveField {

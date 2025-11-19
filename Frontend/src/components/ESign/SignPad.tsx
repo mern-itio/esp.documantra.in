@@ -50,6 +50,7 @@ export default function SignPad({
   const [typedSignature, setTypedSignature] = useState("");
   const [fontSelect, setFontSelect] = useState("Fasthand");
   const [isSignImg, setIsSignImg] = useState<string>(defaultSign || "");
+  const [initials, setInitials] = useState<string>("");
   const canvasRef = useRef<SignatureCanvas | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -216,7 +217,8 @@ export default function SignPad({
         Signature: isSignImg,
         mode: mode,
         envelopeId: envelopeID,
-        selfValue: selfValue || ""
+        selfValue: selfValue || "",
+        initials: initials.trim().toUpperCase() || undefined
       }
       const response = await eSignApi.post("/api/e-sign/public/save-signature",payload);
       if(response?.status === 200){
@@ -437,6 +439,27 @@ export default function SignPad({
                 <img src={isSignImg} alt="signature-preview" className="h-28 object-contain border rounded p-1 bg-white" />
               </div>
             )}
+            
+            {/* Initials Input */}
+            <div className="mt-4 w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Initials (Optional)
+              </label>
+              <input
+                type="text"
+                value={initials}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase().slice(0, 3);
+                  setInitials(value);
+                }}
+                placeholder="Enter your initials (max 3 characters)"
+                className="w-full border p-2 rounded text-center tracking-widest"
+                disabled={isSubmitting}
+                maxLength={3}
+                style={{ letterSpacing: "0.35em" }}
+              />
+              <p className="text-xs text-gray-500 mt-1">Your initials will be saved with your signature</p>
+            </div>
           </div>
 
           {/* Action Row */}

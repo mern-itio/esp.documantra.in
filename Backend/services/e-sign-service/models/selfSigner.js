@@ -9,6 +9,7 @@ const SelfSignerSchema = new mongoose.Schema({
   signingOrder: { type: Number, default: 0 },
   role: { type: String },
   signature: { type: String, default: null },
+  initials: { type: String, default: null },
   signatureFields: {
     type: [
         {
