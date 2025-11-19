@@ -318,6 +318,24 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className={`bg-white shadow-sm border-r border-slate-200 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
       {/* Header */}
+         {/* <div className="bg-[#260559] flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
+        {isOpen && (
+          <div className=" flex items-center space-x-2">
+            <div>
+              <Link to="/dashboard"><img src='../l4.png' alt="Draft&Sign Logo" className="mx-auto" style={{width: '120px', height: 'auto'}}/></Link>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-1 rounded-md hover:bg-slate-100 transition-colors duration-200"
+        >
+          <ChevronLeft
+            className={`h-5 w-5 text-slate-500 transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''
+              }`}
+          />
+        </button>
+      </div> */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
         {isOpen && (
           <div className="flex items-center space-x-2">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Check } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Check, Building, Locate } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
 
 const SignupPage = () => {
@@ -17,6 +17,8 @@ const SignupPage = () => {
     firstName: '',
     phone: '',
     email: '',
+    company: '',
+    address: '',
     password: '',
     confirmPassword: '',
     agreeToTerms: false,
@@ -90,6 +92,8 @@ const SignupPage = () => {
         fullname: formData.firstName,
         email: formData.email,
         phone: formData.phone,
+        company: formData.company,
+        address: formData.address,
         password: formData.password
       })
       navigate('/dashboard')
@@ -256,7 +260,42 @@ const SignupPage = () => {
                 </div>
                 {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
               </div>
-             
+             <div>
+                  <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                    Company Name
+                  </label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="company"
+                      name="company"
+                      value={formData.company}
+                      onChange={handleInputChange}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.company ? 'border-red-400' : 'border-gray-300'}`}
+                      placeholder="Enter Company Name"
+                      required
+                    />
+                  </div>
+                </div>
+             <div>
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                    Address
+                  </label>
+                  <div className="relative">
+                    <Locate className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.address ? 'border-red-400' : 'border-gray-300'}`}
+                      placeholder="Enter Address"
+                      required
+                    />
+                  </div>
+                </div>
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                     Password

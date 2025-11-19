@@ -13,6 +13,7 @@ interface Recipient {
     email: string;
     role?: string;
     status: string; // e.g. completed, delivered, sent
+    order?: number; // signing order
 }
 
 interface EnvelopeDetailsResponse {
@@ -815,76 +816,98 @@ const EnvelopeDetailPage: React.FC = () => {
                 </aside>
             </div>
             {/* Signing Order Modal */}
-            {showSigningOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-xs"
-                        onClick={() => setShowSigningOrder(false)}
-                    />
+            {showSigningOrder && (() => {
+                // Get all recipients sorted by order (excluding CC recipients)
+                const signers = (envelope?.recipients || [])
+                    .filter(r => (r.role || '').toLowerCase() !== 'cc' && (r.role || '').toLowerCase() !== 'carbon_copy')
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
+                
+                const totalSteps = signers.length + 2; // sender + recipients + completed
+                const rowHeight = Math.max(80, 400 / totalSteps);
 
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-4">
-                        <button
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
                             onClick={() => setShowSigningOrder(false)}
-                            className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800"
-                        >
-                            ✕
-                        </button>
+                        />
 
-                        <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-8">
-                            Signing Order Diagram
-                        </h2>
-
-                        <div className="grid grid-cols-12 gap-6">
-                            <div className="col-span-4 grid grid-rows-[80px_120px_80px] text-sm text-gray-600">
-                                <div className="flex items-center font-semibold">SENT BY</div>
-                                <div className="flex items-center">
-                                    {((envelope.recipients || [])[0] as any)?.order ?? 1}
-                                </div>
-                                <div className="flex items-center font-semibold">COMPLETED</div>
-                            </div>
-                            <div className="col-span-8 relative grid grid-rows-[80px_120px_80px]">
-                                <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
-                                <div className="relative flex justify-center items-center z-10">
-                                    <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                                    <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
-                                        {((envelope.sender?.name || envelope.sender?.email || "?")
-                                            .match(/\b\w/g) || [])
-                                            .slice(0, 2)
-                                            .join("")
-                                            .toUpperCase()}
-                                    </div>
-                                </div>
-                                <div className="relative flex justify-center items-center z-10">
-                                    <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                                    <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
-                                        {(((envelope.recipients || [])[0]?.name ||
-                                            (envelope.recipients || [])[0]?.email ||
-                                            "?")
-                                            .match(/\b\w/g) || [])
-                                            .slice(0, 2)
-                                            .join("")
-                                            .toUpperCase()}
-                                    </div>
-                                </div>
-                                <div className="relative flex justify-center items-center z-10">
-                                    <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
-                                        ✓
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-10 text-right">
+                        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
                             <button
                                 onClick={() => setShowSigningOrder(false)}
-                                className="border border-[#3E2B66] text-[#3E2B66] px-5 py-2 rounded-md"
+                                className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800"
                             >
-                                Close
+                                ✕
                             </button>
+
+                            <h2 className="text-[20px] font-semibold text-[#3E2B66] mb-8">
+                                Signing Order Diagram
+                            </h2>
+
+                            <div className="grid grid-cols-12 gap-6">
+                                <div className="col-span-4 flex flex-col text-sm text-gray-600">
+                                    <div className="flex items-center font-semibold mb-4" style={{ minHeight: `${rowHeight}px` }}>
+                                        SENDER
+                                    </div>
+                                    {signers.map((recipient, idx) => (
+                                        <div key={recipient.id} className="flex items-center mb-4" style={{ minHeight: `${rowHeight}px` }}>
+                                            {recipient.order ?? idx + 1}. {recipient.name || recipient.email || 'Unnamed'}
+                                        </div>
+                                    ))}
+                                    <div className="flex items-center font-semibold mt-4" style={{ minHeight: `${rowHeight}px` }}>COMPLETED</div>
+                                </div>
+                                <div className="col-span-8 relative flex flex-col">
+                                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
+                                    
+                                    {/* Sender */}
+                                    <div className="relative flex justify-center items-center z-10 mb-4" style={{ minHeight: `${rowHeight}px` }}>
+                                        <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                        <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                            {((envelope.sender?.name || envelope.sender?.email || "?")
+                                                .match(/\b\w/g) || [])
+                                                .slice(0, 2)
+                                                .join("")
+                                                .toUpperCase()}
+                                        </div>
+                                    </div>
+
+                                    {/* Recipients */}
+                                    {signers.map((recipient, idx) => (
+                                        <div key={recipient.id} className="relative flex justify-center items-center z-10 mb-4" style={{ minHeight: `${rowHeight}px` }}>
+                                            {idx < signers.length - 1 && (
+                                                <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                            )}
+                                            <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                                {((recipient.name || recipient.email || "?")
+                                                    .match(/\b\w/g) || [])
+                                                    .slice(0, 2)
+                                                    .join("")
+                                                    .toUpperCase()}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Completed */}
+                                    <div className="relative flex justify-center items-center z-10 mt-4" style={{ minHeight: `${rowHeight}px` }}>
+                                        <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                            ✓
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-10 text-right">
+                                <button
+                                    onClick={() => setShowSigningOrder(false)}
+                                    className="border border-[#3E2B66] text-[#3E2B66] px-5 py-2 rounded-md"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Move to Folder Modal */}
             {showMoveDialog && (
@@ -914,8 +937,6 @@ const EnvelopeDetailPage: React.FC = () => {
                     </div>
                 </div>
             )}
-
-
         </div>
     );
 };

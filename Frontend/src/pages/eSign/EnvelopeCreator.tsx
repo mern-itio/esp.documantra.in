@@ -4368,6 +4368,7 @@ const EnvelopeCreator: React.FC = () => {
                                         type="button"
                                         onClick={() => setActiveRecipientId(recipient.id)}
                                         draggable
+                                        title="Drag to reorder"
                                         onDragStart={(e) => {
                                           setDraggedRecipientId(recipient.id);
                                           e.dataTransfer.effectAllowed = 'move';
@@ -4481,6 +4482,7 @@ const EnvelopeCreator: React.FC = () => {
                                     isThisReordering ? 'transform transition-all duration-500 ease-in-out' : ''
                                   }`}
                                   draggable={setSigningOrder}
+                                  title={setSigningOrder ? "Drag to reorder" : undefined}
                                   onDragStart={(e) => handleRecipientDragStart(e, recipient.id)}
                                   onDragOver={(e) => handleRecipientDragOver(e, recipient.id)}
                                   onDragLeave={handleRecipientDragLeave}

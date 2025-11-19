@@ -9,6 +9,8 @@ interface User {
   fullname: string;
   type: string;
   plan: string;
+  address?: string;
+  company?: string;
   phone?: string;
   isFirstLogin?: boolean;
 }
@@ -19,7 +21,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (userData: { fullname: string; email: string; phone: string; password: string }) => Promise<void>;
+  signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,20 +52,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const parsedUser = JSON.parse(userData);
 
-        // Try to enrich missing fields from JWT payload (fullname/phone)
+        // Try to enrich missing fields from JWT payload (fullname/phone/address/company)
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           const jwtFullname = payload?.data?.fullname || payload?.fullname;
           const jwtPhone = payload?.data?.phone || payload?.phone;
+          const jwtAddress = payload?.data?.address || payload?.address;
+          const jwtCompany = payload?.data?.company || payload?.company;
 
           const needsFullname = !parsedUser.fullname || parsedUser.fullname === parsedUser.email?.split('@')[0];
           const needsPhone = !parsedUser.phone && !!jwtPhone;
+          const needsAddress = !parsedUser.address && !!jwtAddress;
+          const needsCompany = !parsedUser.company && !!jwtCompany;
 
-          if ((needsFullname && jwtFullname) || needsPhone) {
+          if ((needsFullname && jwtFullname) || needsPhone || needsAddress || needsCompany) {
             const updatedUser = {
               ...parsedUser,
               fullname: needsFullname && jwtFullname ? jwtFullname : parsedUser.fullname,
               phone: needsPhone ? jwtPhone : parsedUser.phone,
+              address: needsAddress ? jwtAddress : parsedUser.address,
+              company: needsCompany ? jwtCompany : parsedUser.company,
             };
             localStorage.setItem('userData', JSON.stringify(updatedUser));
             setUser(updatedUser);
@@ -120,9 +128,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
       
-      // Decode JWT token to get fullname
+      // Decode JWT token to get fullname, phone, address, company
       let fullname = email.split('@')[0]; // fallback
       let phone: string | undefined = undefined;
+      let address: string | undefined = undefined;
+      let company: string | undefined = undefined;
       
       try {
         const token = data.token;
@@ -131,33 +141,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const payload = JSON.parse(atob(token.split('.')[1]));
           fullname = payload.data?.fullname || payload.fullname || fullname;
           phone = payload.data?.phone || payload.phone || phone;
+          address = payload.data?.address || payload.address || address;
+          company = payload.data?.company || payload.company || company;
         }
       } catch (jwtError) {
         console.warn('Could not decode JWT token:', jwtError);
         // Keep the fallback fullname
       }
 
-      // Store authentication data, including isFirstLogin
-      localStorage.setItem('accessToken', data.token);
-      localStorage.setItem('userData', JSON.stringify({
-        id: data.user_id,
-        email: email,
-        fullname: fullname,
-        type: data.type,
-        plan: data.plan || 'free',
-        phone: data.phone || phone,
-        isFirstLogin: data.isFirstLogin
-      }));
+      // Get address and company from API response or JWT, with fallback to empty string
+      const userAddress = data.address || address || '';
+      const userCompany = data.company || company || '';
 
-      setUser({
+      // Store authentication data, including isFirstLogin
+      const initialUserData = {
         id: data.user_id,
         email: email,
         fullname: fullname,
         type: data.type,
         plan: data.plan || 'free',
-        phone: data.phone || phone,
+        phone: data.phone || phone || '',
+        address: userAddress,
+        company: userCompany,
         isFirstLogin: data.isFirstLogin
-      });
+      };
+
+      localStorage.setItem('accessToken', data.token);
+      localStorage.setItem('userData', JSON.stringify(initialUserData));
+
+      setUser(initialUserData);
       setIsAuthenticated(true);
 
       // Fetch and store subscription plan data right after login
@@ -165,15 +177,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const subscriptionPlan = await SubscriptionService.getUserPlan();
         SubscriptionStorage.savePlan(subscriptionPlan);
         
-        // Update user plan in userData localStorage and state
+        // Update user plan in userData localStorage and state, preserving all existing fields
         const updatedUserData = {
-          id: data.user_id,
-          email: email,
-          fullname: fullname,
-          type: data.type,
-          plan: subscriptionPlan.name || subscriptionPlan.type || 'free',
-          phone: data.phone || phone,
-          isFirstLogin: data.isFirstLogin
+          ...initialUserData,
+          plan: subscriptionPlan.name || subscriptionPlan.type || 'free'
         };
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUser(updatedUserData);
@@ -198,7 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAuthenticated(false);
   };
 
-  const signup = async (userData: { fullname: string; email: string; phone: string; password: string }) => {
+  const signup = async (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string }) => {
     try {
       await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
         method: 'POST',

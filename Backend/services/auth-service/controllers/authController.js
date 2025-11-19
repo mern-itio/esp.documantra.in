@@ -67,7 +67,7 @@ const login = async (req, res) => {
 
 // Register Controller
 const register = async (req, res) => {
-  const { fullname, email, phone, password } = req.body;
+  const { fullname, email, phone, password, company, address } = req.body;
 
   if (!fullname || !email || !phone || !password) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -79,7 +79,7 @@ const register = async (req, res) => {
 
   try {
     // Default plan is free on first registration
-    const user = await User.create({ fullname, email, phone, password, plan: 'free' });
+    const user = await User.create({ fullname, email, phone, password, company, address, plan: 'free' });
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (error) {
     if (error.code === 11000) {
@@ -98,6 +98,8 @@ async function generateAccessTokenUser(user, expireIn) {
     email: user.email,
     fullname: user.fullname,
     phone: user.phone,
+    company: user.company,
+    address: user.address,
     type: 'user'
   };
 
@@ -144,6 +146,8 @@ const getMe = async (req, res) => {
         email: user.email,
         fullname: user.fullname,
         phone: user.phone,
+        company: user.company,
+        address: user.address,
         plan: user.plan || 'free',
         status: user.status,
         createdAt: user.createdAt,
