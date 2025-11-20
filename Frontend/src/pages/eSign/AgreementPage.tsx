@@ -629,6 +629,9 @@ const AgreementPage: React.FC = () => {
   const handleContinue = (id: string) => {
     navigate(`/e-sign/edit/${id}`);
   };
+  const handleView = (id: string) => {
+    navigate(`/e-sign/signer-cycles/${id}`);
+  };
 
   const handleRestore = async (id: string) => {
     try {
@@ -1190,14 +1193,19 @@ const AgreementPage: React.FC = () => {
                             {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                           </button>
                         )}
-                        {agreement.status === 'draft' && (
-                          <button
-                            onClick={() => handleContinue(agreement.id)}
-                            className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
-                          >
-                            Continue
-                          </button>
-                        )}
+                          {agreement.status === "draft" && (
+                            <button
+                              onClick={() =>
+                                agreement?.isPowerForm
+                                  ? handleView(agreement.id)
+                                  : handleContinue(agreement.id)
+                              }
+                              className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
+                            >
+                              {agreement.isPowerForm ? "View" : "Continue"}
+                            </button>
+                          )}
+
                         {agreement.status === 'completed' && (
                           <button
                             onClick={() => handleManageAction('download', agreement.id)}

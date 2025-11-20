@@ -202,6 +202,7 @@ import PowerFormCreate from '../pages/eSign/PowerFormCreate';
 import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
 import ThankYouPage from '../pages/eSign/ThankYou';
 import NotificationsPage from '../pages/Notifications/NotificationsPage';
+import SignerCycle from '../pages/eSign/SignerCycle';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -682,6 +683,7 @@ const authRoutes = [
   { path: '/e-sign/manage_receipients', element: <ManageRecipients /> },
   { path: '/e-sign/form-list', element: <FormsList /> },
   { path: '/e-sign/powerforms', element: <PowerFormCreate /> },
+  { path: '/e-sign/signer-cycles/:id', element: <SignerCycle /> },
 
 
   // Template Routes
