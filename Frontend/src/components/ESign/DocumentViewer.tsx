@@ -273,10 +273,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   }
 };
 
-
-
-
-
   // Determine if a non-signature field is completed
   const isNonSignatureCompleted = (field: any): boolean => {
     const key = field._id || field.fieldId;
@@ -1525,93 +1521,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             }
                           }
                           
-                          // Auto-fill initials fields (only if no saved initials exist)
-                          if (field.type === "initial" && (!value || String(value).trim() === "")) {
-                            let initialsValue = "";
-                            
-                            if (selfValue === "1") {
-                              // Self-signer mode: get initials from selfSigner or generate from name
-                              const matchedSigner = selfSigner?.find(
-                                (s: any) => s && s.signerSlotId === field.slotId
-                              );
-                              if (matchedSigner) {
-                                // Only generate from name if no saved initials exist
-                                if (!matchedSigner.initials) {
-                                  console.log("No Initials");
-                                  // Generate from name in data.Name or data.name
-                                  const getName = () => {
-                                    if (!matchedSigner.data) return "";
-                                    if (matchedSigner.data instanceof Map) {
-                                      return matchedSigner.data.get('Name') || matchedSigner.data.get('name') || "";
-                                    }
-                                    return matchedSigner.data.Name || matchedSigner.data.name || "";
-                                  };
-                                  const name = getName();
-                                  if (name && name.trim().length >= 2) {
-                                    // Get first two letters of name
-                                    initialsValue = name.trim().substring(0, 2).toUpperCase();
-                                  }
-                                }
-                                // If saved initials exist, they should already be in value from above check
-                              }
-                            } else {
-                              // Recipient mode: get initials from recipient or generate from name
-                              const recipient = allRecipients?.find(
-                                (r: any) => r.id === field.recipientId
-                              );
-                              if (recipient) {
-                                // Only generate from name if no saved initials exist
-                                if (!recipient.initials && recipient.name && recipient.name.trim().length >= 2) {
-                                    console.log("No Initials");
-                                  // Generate from name - first two letters
-                                  initialsValue = recipient.name.trim().substring(0, 2).toUpperCase();
-                                }
-                                // If saved initials exist, they should already be in value from above check
-                              }
-                            }
-                            
-                            // Only auto-fill if we generated initials and haven't already auto-filled this field
-                            if (initialsValue && !autoFilledDateFieldsRef.current.has(keyId)) {
-                              value = initialsValue;
-                              // Mark as auto-filled to prevent re-running
-                              autoFilledDateFieldsRef.current.add(keyId);
-                              // Set the value in ref immediately (no re-render)
-                              fieldValuesRef.current[keyId] = value;
-                              
-                              // Update state after render to avoid side effects during render
-                              setTimeout(() => {
-                                setLocalFieldValues((prev) => {
-                                  // Only update if not already set to avoid unnecessary re-renders
-                                  if (prev[keyId] === undefined || prev[keyId] === "" || prev[keyId] === null) {
-                                    return { ...prev, [keyId]: value };
-                                  }
-                                  return prev;
-                                });
-                                
-                                // For self-signer mode, also update selfSigner structure
-                                if (selfValue === "1") {
-                                  setSelfSigner((prev) => {
-                                    return (prev || []).map((s: any) =>
-                                      s && s.signerSlotId === field.slotId
-                                        ? {
-                                            ...s,
-                                            data: {
-                                              ...(typeof s.data === 'object' ? s.data : {}),
-                                              ...(fieldLable ? { [fieldLable]: value } : {}),
-                                            },
-                                          }
-                                        : s
-                                    );
-                                  });
-                                }
-                                
-                                // Submit the initials field automatically for recipient mode
-                                if (selfValue !== "1" && field.recipientId) {
-                                  submitSingleField(field.recipientId, field._id, value);
-                                }
-                              }, 0);
-                            }
-                          }
                         }
                         
                         // Check if field has a value in selfSigner.data (for read-only check in self-signer mode only)
@@ -1771,9 +1680,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     type="checkbox"
                                     defaultChecked={!!value}
                                     onChange={(e) => {
+                                      const newValue = e.target.value;
                                       e.stopPropagation();
                                       setValue(e.target.checked, true); // Checkboxes update state immediately
+                                      submitSingleField(field.recipientId,field._id,newValue);
                                     }}
+
                                     disabled={!editable}
                                   />
                                   <span> {fieldLable || "Checkbox"}</span>
@@ -1791,8 +1703,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     setValue(e.target.value, false); // false = don't update state
                                   }}
                                   onBlur={(e) => {
-                                    setValue(e.target.value, true); // true = update state on blur
+                                    const newValue = e.target.value;
+                                    setValue(newValue, true); // true = update state on blur
                                     handleBlur();
+                                    submitSingleField(field.recipientId,field._id,newValue);
                                   }}
                                   onKeyDown={handleKeyDown}
                                   onFocus={handleFocus}
@@ -1810,6 +1724,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             case "title":
                             case "text":
                             case "number":
+                            case "initial":
                               return (
                                 <input
                                   id={`field-${keyId}`}
@@ -1844,44 +1759,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   style={{
                                     ...inputBaseStyle,
                                     pointerEvents: editable ? "auto" : "none",
-                                  }}
-                                  autoComplete="off"
-                                />
-                              );
-                            case "initial":
-                              return (
-                                <input
-                                  id={`field-${keyId}`}
-                                  key={`field-${keyId}`}
-                                  type="text"
-                                  maxLength={3}
-                                  className={commonBox + " tracking-widest outline-none"}
-                                  placeholder="Init"
-                                  defaultValue={value || ""}
-                                  onChange={(e) => {
-                                    const newValue = e.target.value.toUpperCase();
-                                    e.target.value = newValue; // Update immediately
-                                    setValue(newValue, false); // false = don't update state
-                                  }}
-                                  onBlur={(e) => {
-                                    const newValue = e.target.value.toUpperCase();
-                                    setValue(newValue, true); // true = update state
-                                    handleBlur();
-                                  }}
-                                  onKeyDown={(e) => {
-                                    handleKeyDown(e);
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      return false;
-                                    }
-                                  }}
-                                  onFocus={handleFocus}
-                                  disabled={!editable}
-                                  style={{
-                                    ...inputBaseStyle,
-                                    pointerEvents: editable ? "auto" : "none",
-                                    letterSpacing: "0.35em",
                                   }}
                                   autoComplete="off"
                                 />
