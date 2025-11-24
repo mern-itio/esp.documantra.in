@@ -23,8 +23,8 @@ interface EnvelopeDetailsResponse {
     createdAt?: string;
     sentAt?: string;
     updatedAt?: string;
-    isPowerForm?:boolean;
-    powerFormId?:string;
+    isPowerForm?: boolean;
+    powerFormId?: string;
     sender?: { name?: string; email?: string };
     recipients?: Recipient[];
     envelopetype?: string;
@@ -60,16 +60,16 @@ const EnvelopeDetailPage: React.FC = () => {
     const [showIdPopover, setShowIdPopover] = useState<boolean>(false);
     const idRef = useRef<HTMLButtonElement>(null);
     const [copiedId, setCopiedId] = useState<boolean>(false);
-  const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
-  const [showMoveDialog, setShowMoveDialog] = useState<boolean>(false);
-  const [selectedFolder, setSelectedFolder] = useState<string>('Inbox');
-  const moreMenuRef = useRef<HTMLDivElement>(null);
-  const moreBtnRef = useRef<HTMLButtonElement>(null);
-  const resendBtnRef = useRef<HTMLButtonElement>(null);
-  const [resendLoading, setResendLoading] = useState<boolean>(false);
-  const [showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
-  const [copiedEmbedUrl, setCopiedEmbedUrl] = useState<boolean>(false);
-  const [copiedEmbedCode, setCopiedEmbedCode] = useState<boolean>(false);
+    const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
+    const [showMoveDialog, setShowMoveDialog] = useState<boolean>(false);
+    const [selectedFolder, setSelectedFolder] = useState<string>('Inbox');
+    const moreMenuRef = useRef<HTMLDivElement>(null);
+    const moreBtnRef = useRef<HTMLButtonElement>(null);
+    const resendBtnRef = useRef<HTMLButtonElement>(null);
+    const [resendLoading, setResendLoading] = useState<boolean>(false);
+    const [showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
+    const [copiedEmbedUrl, setCopiedEmbedUrl] = useState<boolean>(false);
+    const [copiedEmbedCode, setCopiedEmbedCode] = useState<boolean>(false);
 
     // scaling handled below with baseW/baseH for signer view
     // Preview now uses signer iframe; canvas kept for future
@@ -155,22 +155,22 @@ const EnvelopeDetailPage: React.FC = () => {
         return () => document.removeEventListener('mousedown', onClick);
     }, [showIdPopover]);
 
-  // Close More menu on outside click only
-  useEffect(() => {
-    if (!showMoreMenu) return;
-    const onMouseDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const insideMenu = moreMenuRef.current && moreMenuRef.current.contains(target);
-      const onTrigger = moreBtnRef.current && moreBtnRef.current.contains(target);
-      if (!insideMenu && !onTrigger) {
-        setShowMoreMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', onMouseDown);
-    return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [showMoreMenu]);
+    // Close More menu on outside click only
+    useEffect(() => {
+        if (!showMoreMenu) return;
+        const onMouseDown = (e: MouseEvent) => {
+            const target = e.target as Node;
+            const insideMenu = moreMenuRef.current && moreMenuRef.current.contains(target);
+            const onTrigger = moreBtnRef.current && moreBtnRef.current.contains(target);
+            if (!insideMenu && !onTrigger) {
+                setShowMoreMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', onMouseDown);
+        return () => document.removeEventListener('mousedown', onMouseDown);
+    }, [showMoreMenu]);
 
-  // no dropdown for resend; single click
+    // no dropdown for resend; single click
 
     // Fit iframe to container (keep it small and crisp)
     useEffect(() => {
@@ -219,43 +219,43 @@ const EnvelopeDetailPage: React.FC = () => {
     };
 
     const recipients = useMemo(() => envelope?.recipients || [], [envelope]);
-  const isCompleted = useMemo(() => {
-      const s = (envelope?.status || '').toLowerCase();
-      if (s === 'completed') return true;
-      const anyIncomplete = (envelope?.recipients || []).some(r => (r.status || '').toLowerCase() !== 'completed');
-      return !anyIncomplete ? true : false;
-  }, [envelope]);
+    const isCompleted = useMemo(() => {
+        const s = (envelope?.status || '').toLowerCase();
+        if (s === 'completed') return true;
+        const anyIncomplete = (envelope?.recipients || []).some(r => (r.status || '').toLowerCase() !== 'completed');
+        return !anyIncomplete ? true : false;
+    }, [envelope]);
 
-  const handleCorrect = () => {
-      if (!id) return;
-      const url = `/e-sign/edit/${id}`;
-      try { setTimeout(() => navigate(url), 0); } catch (_) {}
-      // Hard fallback to guarantee navigation
-      setTimeout(() => { window.location.href = url; }, 0);
-  };
+    const handleCorrect = () => {
+        if (!id) return;
+        const url = `/e-sign/edit/${id}`;
+        try { setTimeout(() => navigate(url), 0); } catch (_) { }
+        // Hard fallback to guarantee navigation
+        setTimeout(() => { window.location.href = url; }, 0);
+    };
 
-  const handleResendAll = async () => {
-      if (!id) return;
-      try {
-          setResendLoading(true);
-          const status = (envelope?.status || '').toLowerCase();
-          if (status === 'draft') {
-              await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
-          } else if (status === 'in-progress' || status === 'waiting' || status === 'pending') {
-              await eSignApi.post(`/api/e-sign/envelope/reminder/${id}`);
-          } else {
-              alert(`Envelope is '${envelope?.status}'. Resend not applicable.`);
-              return;
-          }
-          alert('Email queued successfully');
-      } catch (e) {
-          alert('Failed to trigger email');
-      } finally {
-          setResendLoading(false);
-      }
-  };
+    const handleResendAll = async () => {
+        if (!id) return;
+        try {
+            setResendLoading(true);
+            const status = (envelope?.status || '').toLowerCase();
+            if (status === 'draft') {
+                await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+            } else if (status === 'in-progress' || status === 'waiting' || status === 'pending') {
+                await eSignApi.post(`/api/e-sign/envelope/reminder/${id}`);
+            } else {
+                alert(`Envelope is '${envelope?.status}'. Resend not applicable.`);
+                return;
+            }
+            alert('Email queued successfully');
+        } catch (e) {
+            alert('Failed to trigger email');
+        } finally {
+            setResendLoading(false);
+        }
+    };
 
-  // reserved for future per-recipient resend
+    // reserved for future per-recipient resend
 
     if (loading) {
         return (
@@ -440,60 +440,60 @@ const EnvelopeDetailPage: React.FC = () => {
 
                         const chipClass =
                             kind === 'power form'
-                            ? 'bg-[#FFE6FF] text-xs text-[#D600AA] border border-[#FFB3E6]' // magenta theme
-                            : kind === 'waiting for others'
-                            ? 'bg-gray-100 text-xs text-gray-900 border border-gray-300'
-                            : kind === 'completed'
-                            ? 'bg-green-50 text-xs text-green-700 border border-green-200'
-                            : kind === 'in progress'
-                            ? 'bg-yellow-50 text-xs text-yellow-800 border border-yellow-200'
-                            : 'bg-gray-100 text-xs text-gray-900 border border-gray-300';
+                                ? 'bg-amber-50 text-xs text-amber-600 border border-amber-200' // magenta theme
+                                : kind === 'waiting for others'
+                                    ? 'bg-gray-100 text-xs text-gray-900 border border-gray-300'
+                                    : kind === 'completed'
+                                        ? 'bg-green-50 text-xs text-green-700 border border-green-200'
+                                        : kind === 'in progress'
+                                            ? 'bg-yellow-50 text-xs text-yellow-800 border border-yellow-200'
+                                            : 'bg-gray-100 text-xs text-gray-900 border border-gray-300';
 
                         const dotClass =
                             kind === 'power form'
-                            ? 'bg-[#D600AA]'
-                            : kind === 'waiting for others'
-                            ? 'bg-gray-600'
-                            : kind === 'completed'
-                            ? 'bg-green-500'
-                            : kind === 'in progress'
-                            ? 'bg-yellow-500'
-                            : 'bg-gray-600';
+                                ? 'bg-amber-600'
+                                : kind === 'waiting for others'
+                                    ? 'bg-gray-600'
+                                    : kind === 'completed'
+                                        ? 'bg-green-500'
+                                        : kind === 'in progress'
+                                            ? 'bg-yellow-500'
+                                            : 'bg-gray-600';
 
                         return (
                             <div
-                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm mb-6 ${chipClass}`}
+                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm mb-6 ${chipClass}`}
                             >
-                            <span className={`w-2 h-2 rounded-full ${dotClass}`}></span>
-                            {label}
+                                <span className={`w-2 h-2 rounded-full ${dotClass}`}></span>
+                                {label}
                             </div>
                         );
-                        })()}
+                    })()}
 
 
-                     {/* Actions */}
-                     <div className="flex justify-between items-center mb-6 relative w-full">
+                    {/* Actions */}
+                    <div className="flex justify-between items-center mb-6 relative w-full">
 
                         {/* LEFT GROUP — MOVE + MORE */}
                         <div className="flex items-center gap-3">
-                             {/* Correct and Resend (only if not completed) */}
-                             {!isCompleted && (
-                                 <>
-                                     <button
-                                         onClick={handleCorrect}
-                                         className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold"
-                                     >
-                                         CORRECT
-                                     </button>
-                                     <button
-                                         ref={resendBtnRef}
-                                         onClick={() => { if (!resendLoading) handleResendAll(); }}
-                                         className={`px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold ${resendLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                     >
-                                         {resendLoading ? 'RESENDING…' : 'RESEND'}
-                                     </button>
-                                 </>
-                             )}
+                            {/* Correct and Resend (only if not completed) */}
+                            {!isCompleted && (
+                                <>
+                                    <button
+                                        onClick={handleCorrect}
+                                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold"
+                                    >
+                                        CORRECT
+                                    </button>
+                                    <button
+                                        ref={resendBtnRef}
+                                        onClick={() => { if (!resendLoading) handleResendAll(); }}
+                                        className={`px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold ${resendLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                    >
+                                        {resendLoading ? 'RESENDING…' : 'RESEND'}
+                                    </button>
+                                </>
+                            )}
                             {/* Move button */}
                             {/* <div className="relative">
                                 <button
@@ -563,73 +563,33 @@ const EnvelopeDetailPage: React.FC = () => {
 
                     <hr className="border-gray-300 mb-6" />
                     {/* Recipients */}
-                    
+
                     <div className="mb-8">
 
 
-                    {envelope.isPowerForm ? (
-                        <>
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-[15px] font-semibold text-gray-900">Power Form</h2>
-                            </div>
-                            {showEmbedUrl && envelope.powerFormId ? (
-                                <div className="py-3 space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-gray-700">Embed URL:</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                                        <code className="flex-1 text-sm text-gray-800 break-all">
-                                            {`${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`}
-                                        </code>
-                                        <button
-                                            onClick={async () => {
-                                                const url = `${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`;
-                                                try {
-                                                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                                                        await navigator.clipboard.writeText(url);
-                                                    } else {
-                                                        const ta = document.createElement('textarea');
-                                                        ta.value = url;
-                                                        ta.style.position = 'fixed';
-                                                        ta.style.left = '-9999px';
-                                                        document.body.appendChild(ta);
-                                                        ta.select();
-                                                        document.execCommand('copy');
-                                                        document.body.removeChild(ta);
-                                                    }
-                                                    setCopiedEmbedUrl(true);
-                                                    setTimeout(() => setCopiedEmbedUrl(false), 2000);
-                                                } catch (e) {
-                                                    console.error('Failed to copy:', e);
-                                                }
-                                            }}
-                                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                                        >
-                                            {copiedEmbedUrl ? (
-                                                <>
-                                                    <Check className="w-4 h-4 text-green-600" />
-                                                    <span>Copied</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy className="w-4 h-4" />
-                                                    <span>Copy</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p className="text-xs font-medium text-blue-900">Embed Code:</p>
+                        {envelope.isPowerForm ? (
+                            <>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-[15px] font-semibold text-gray-900">Power Form</h2>
+                                </div>
+                                {showEmbedUrl && envelope.powerFormId ? (
+                                    <div className="py-3 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-gray-700">Embed URL:</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                            <code className="flex-1 text-sm text-gray-800 break-all">
+                                                {`${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`}
+                                            </code>
                                             <button
                                                 onClick={async () => {
-                                                    const embedCode = `<iframe src="${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`;
+                                                    const url = `${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`;
                                                     try {
                                                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                                                            await navigator.clipboard.writeText(embedCode);
+                                                            await navigator.clipboard.writeText(url);
                                                         } else {
                                                             const ta = document.createElement('textarea');
-                                                            ta.value = embedCode;
+                                                            ta.value = url;
                                                             ta.style.position = 'fixed';
                                                             ta.style.left = '-9999px';
                                                             document.body.appendChild(ta);
@@ -637,122 +597,162 @@ const EnvelopeDetailPage: React.FC = () => {
                                                             document.execCommand('copy');
                                                             document.body.removeChild(ta);
                                                         }
-                                                        setCopiedEmbedCode(true);
-                                                        setTimeout(() => setCopiedEmbedCode(false), 2000);
+                                                        setCopiedEmbedUrl(true);
+                                                        setTimeout(() => setCopiedEmbedUrl(false), 2000);
                                                     } catch (e) {
                                                         console.error('Failed to copy:', e);
                                                     }
                                                 }}
-                                                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+                                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                                             >
-                                                {copiedEmbedCode ? (
+                                                {copiedEmbedUrl ? (
                                                     <>
-                                                        <Check className="w-3 h-3 text-green-600" />
+                                                        <Check className="w-4 h-4 text-green-600" />
                                                         <span>Copied</span>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Copy className="w-3 h-3" />
-                                                        <span>Copy Code</span>
+                                                        <Copy className="w-4 h-4" />
+                                                        <span>Copy</span>
                                                     </>
                                                 )}
                                             </button>
                                         </div>
-                                        <code className="text-xs text-blue-800 break-all block">
-                                            {`<iframe src="${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`}
-                                        </code>
+                                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-xs font-medium text-blue-900">Embed Code:</p>
+                                                <button
+                                                    onClick={async () => {
+                                                        const embedCode = `<iframe src="${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`;
+                                                        try {
+                                                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                                                await navigator.clipboard.writeText(embedCode);
+                                                            } else {
+                                                                const ta = document.createElement('textarea');
+                                                                ta.value = embedCode;
+                                                                ta.style.position = 'fixed';
+                                                                ta.style.left = '-9999px';
+                                                                document.body.appendChild(ta);
+                                                                ta.select();
+                                                                document.execCommand('copy');
+                                                                document.body.removeChild(ta);
+                                                            }
+                                                            setCopiedEmbedCode(true);
+                                                            setTimeout(() => setCopiedEmbedCode(false), 2000);
+                                                        } catch (e) {
+                                                            console.error('Failed to copy:', e);
+                                                        }
+                                                    }}
+                                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+                                                >
+                                                    {copiedEmbedCode ? (
+                                                        <>
+                                                            <Check className="w-3 h-3 text-green-600" />
+                                                            <span>Copied</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy className="w-3 h-3" />
+                                                            <span>Copy Code</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <code className="text-xs text-blue-800 break-all block">
+                                                {`<iframe src="${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`}
+                                            </code>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3 py-3">
-                                    <button
-                                        onClick={() => {
-                                            if (envelope.powerFormId) {
-                                                setShowEmbedUrl(true);
-                                            } else {
-                                                // If powerFormId doesn't exist, navigate to embed page
-                                                navigate(`/e-sign/power-form-embed/${envelope.powerFormId}/${envelope.id}`);
-                                            }
-                                        }}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#D600AA] text-white text-sm font-medium rounded-md hover:bg-[#b30088] transition-colors"
-                                    >
-                                        <PenLine className="w-4 h-4" />
-                                        Generate Embed URL
-                                    </button>
-                                    <span className="text-sm text-gray-600">
-                                        Generate embed URL for this power form
-                                    </span>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-[15px] font-semibold text-gray-900">Recipients</h2>
-                            <button
-                            type="button"
-                            onClick={() => setShowSigningOrder(true)}
-                            className="flex items-center gap-2 text-gray-900 font-semibold tracking-wide hover:underline"
-                            >
-                            <ListOrdered className="w-4 h-4" /> SIGNING ORDER
-                            </button>
-                        </div>
-                        <div className="divide-y">
-                        {recipients.length === 0 ? (
-                            <div className="p-4 text-gray-600">No recipients</div>
+                                ) : (
+                                    <div className="flex items-center gap-3 py-3">
+                                        <button
+                                            onClick={() => {
+                                                if (envelope.powerFormId) {
+                                                    setShowEmbedUrl(true);
+                                                } else {
+                                                    // If powerFormId doesn't exist, navigate to embed page
+                                                    navigate(`/e-sign/power-form-embed/${envelope.powerFormId}/${envelope.id}`);
+                                                }
+                                            }}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#D600AA] text-white text-sm font-medium rounded-md hover:bg-[#b30088] transition-colors"
+                                        >
+                                            <PenLine className="w-4 h-4" />
+                                            Generate Embed URL
+                                        </button>
+                                        <span className="text-sm text-gray-600">
+                                            Generate embed URL for this power form
+                                        </span>
+                                    </div>
+                                )}
+                            </>
                         ) : (
-                            recipients.map((r, idx) => {
-                            const status = (r.status || '').toLowerCase();
-                            const isSigned = status === 'signed' || status === 'completed';
-                            const isWaiting =
-                                status === 'waiting' || status === 'needs to sign' || status === 'pending';
-                            const isCopy =
-                                (r.role || '').toLowerCase() === 'cc' ||
-                                (r.role || '').toLowerCase() === 'copy';
-                            const rightTitle = isCopy
-                                ? 'Copy Received'
-                                : isWaiting
-                                ? 'Needs to Sign'
-                                : isSigned
-                                ? 'Signed'
-                                : status.charAt(0).toUpperCase() + status.slice(1);
-                            const rightTime = formatDateTime(
-                                envelope.updatedAt || envelope.sentAt || envelope.createdAt
-                            );
-
-                            return (
-                                <div key={r.id || idx} className="flex items-start justify-between p-4">
-                                <div className="flex items-start gap-3">
-                                    {isSigned ? (
-                                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
-                                    ) : (
-                                    <span className="w-4 h-4 mt-1 inline-block"></span>
-                                    )}
-                                    <div>
-                                    <div className="font-semibold text-gray-900">{r.name || r.email}</div>
-                                    <div className="text-sm text-gray-600">{r.email}</div>
-                                    </div>
+                            <>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-[15px] font-semibold text-gray-900">Recipients</h2>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSigningOrder(true)}
+                                        className="flex items-center gap-2 text-gray-900 font-semibold tracking-wide hover:underline"
+                                    >
+                                        <ListOrdered className="w-4 h-4" /> SIGNING ORDER
+                                    </button>
                                 </div>
-                                <div className="text-right min-w-[220px]">
-                                    <div className="flex items-center justify-end gap-2 text-gray-900 font-semibold">
-                                    {!isCopy && <PenLine className="w-4 h-4" />}
-                                    {isCopy && <span className="text-gray-700">CC</span>}
-                                    <span>{rightTitle}</span>
-                                    </div>
-                                    <div className="text-sm text-gray-600">on {rightTime}</div>
-                                    {/* {isSigned && (
+                                <div className="divide-y">
+                                    {recipients.length === 0 ? (
+                                        <div className="p-4 text-gray-600">No recipients</div>
+                                    ) : (
+                                        recipients.map((r, idx) => {
+                                            const status = (r.status || '').toLowerCase();
+                                            const isSigned = status === 'signed' || status === 'completed';
+                                            const isWaiting =
+                                                status === 'waiting' || status === 'needs to sign' || status === 'pending';
+                                            const isCopy =
+                                                (r.role || '').toLowerCase() === 'cc' ||
+                                                (r.role || '').toLowerCase() === 'copy';
+                                            const rightTitle = isCopy
+                                                ? 'Copy Received'
+                                                : isWaiting
+                                                    ? 'Needs to Sign'
+                                                    : isSigned
+                                                        ? 'Signed'
+                                                        : status.charAt(0).toUpperCase() + status.slice(1);
+                                            const rightTime = formatDateTime(
+                                                envelope.updatedAt || envelope.sentAt || envelope.createdAt
+                                            );
+
+                                            return (
+                                                <div key={r.id || idx} className="flex items-start justify-between p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        {isSigned ? (
+                                                            <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                                                        ) : (
+                                                            <span className="w-4 h-4 mt-1 inline-block"></span>
+                                                        )}
+                                                        <div>
+                                                            <div className="font-semibold text-gray-900">{r.name || r.email}</div>
+                                                            <div className="text-sm text-gray-600">{r.email}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right min-w-[220px]">
+                                                        <div className="flex items-center justify-end gap-2 text-gray-900 font-semibold">
+                                                            {!isCopy && <PenLine className="w-4 h-4" />}
+                                                            {isCopy && <span className="text-gray-700">CC</span>}
+                                                            <span>{rightTitle}</span>
+                                                        </div>
+                                                        <div className="text-sm text-gray-600">on {rightTime}</div>
+                                                        {/* {isSigned && (
                                     <a href="#" className="text-indigo-600 text-sm hover:underline">
                                         Signed in location
                                     </a>
                                     )} */}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
-                                </div>
-                            );
-                            })
+                            </>
                         )}
-                        </div>
-                        </>
-                    )}
                     </div>
 
                     <hr className="border-gray-300 mb-6" />
@@ -821,7 +821,7 @@ const EnvelopeDetailPage: React.FC = () => {
                 const signers = (envelope?.recipients || [])
                     .filter(r => (r.role || '').toLowerCase() !== 'cc' && (r.role || '').toLowerCase() !== 'carbon_copy')
                     .sort((a, b) => (a.order || 0) - (b.order || 0));
-                
+
                 const totalSteps = signers.length + 2; // sender + recipients + completed
                 const rowHeight = Math.max(80, 400 / totalSteps);
 
@@ -858,7 +858,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                 </div>
                                 <div className="col-span-8 relative flex flex-col">
                                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
-                                    
+
                                     {/* Sender */}
                                     <div className="relative flex justify-center items-center z-10 mb-4" style={{ minHeight: `${rowHeight}px` }}>
                                         <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
@@ -917,11 +917,11 @@ const EnvelopeDetailPage: React.FC = () => {
                         <button onClick={() => setShowMoveDialog(false)} className="absolute right-6 top-6 text-2xl text-[#3E2B66]">✕</button>
                         <h3 className="text-[22px] font-semibold text-[#3E2B66] mb-6">Move to Folder</h3>
                         <div className="space-y-2 mb-6">
-                            {['Inbox','Sent','test'].map((f) => (
+                            {['Inbox', 'Sent', 'test'].map((f) => (
                                 <button
                                     key={f}
                                     onClick={() => setSelectedFolder(f)}
-                                    className={`w-full text-left px-4 py-3 rounded-md border ${selectedFolder===f ? 'bg-gray-100 border-gray-300' : 'border-transparent hover:bg-gray-50'}`}
+                                    className={`w-full text-left px-4 py-3 rounded-md border ${selectedFolder === f ? 'bg-gray-100 border-gray-300' : 'border-transparent hover:bg-gray-50'}`}
                                 >
                                     {f}
                                 </button>

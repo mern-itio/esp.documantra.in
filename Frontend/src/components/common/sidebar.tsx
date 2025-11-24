@@ -203,7 +203,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'esignCompleted', label: 'Completed', path: '/e-sign/aggrement/completed', icon: CheckCircle },
         { id: 'esignDeleted', label: 'Deleted', path: '/e-sign/aggrement/deleted', icon: Trash2Icon },
         // { id: 'sent', label: 'Add Envelope', path: '/e-sign/sent', icon: MailPlus },
-        { id: 'powerforms', label: 'PowerForms', path: '/e-sign/powerforms', icon: FormInput },
+        { id: 'powerforms', label: 'PowerForms', path: '/e-sign/powerform', icon: FormInput },
         { id: 'form-list', label: 'Templates', path: '/e-sign/form-list', icon: Send },
         // { id: 'aggrement', label: 'Aggrement', path: '/e-sign/aggrement', icon: FileSignature },
         // { id: 'manage_receipients', label: 'Manage Receipients', path: '/e-sign/manage_receipients', icon: MailIcon },
@@ -458,7 +458,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* Help Section */}
           <div className="px-2 pb-3 pt-2 border-t border-slate-200">
 
-            <Link to='/contact-sales'>  
+            <Link to='/help-support'>  
             <button
               className="w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-500 hover:text-slate-700 rounded-md transition-colors"
             >

@@ -40,8 +40,19 @@ const createForm = async (req, res) => {
 
 const getAllForm = async (req, res) => {
   try{
-    const form = await Form.find().sort({ createdAt: -1 });
-    if(!form) return res.status(404).json({error:'Form not found.'});
+    // Extract user ID from authenticated user (same pattern as createForm)
+    const userId = req.user?.data?.id || req.user?.id || req.user?._id || null;
+    
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not authenticated"
+      });
+    }
+    
+    // Filter forms by ownerId to show only user's own templates
+    const form = await Form.find({ ownerId: userId }).sort({ createdAt: -1 });
+    
     return res.status(200).json({
       status:"success",
       form:form
@@ -58,9 +69,16 @@ const getAllForm = async (req, res) => {
 const getFormDetail = async(req, res) => {
   try {
     const { id } = req.params;
+    // Extract user ID from authenticated user
+    const userId = req.user?.data?.id || req.user?.id || req.user?._id || null;
 
     const form = await Form.findById(id);
     if (!form) return res.status(404).json({ error: "Form not found" });
+
+    // Verify user owns the form (only if ownerId exists)
+    if (form.ownerId && userId && form.ownerId !== userId) {
+      return res.status(403).json({ error: "You don't have permission to access this form" });
+    }
 
     const fields = await FormFields.find({ formId: id }).sort('order');
    return res.json({ ...form.toObject(), fields });
@@ -222,11 +240,11 @@ const deleteForm = async (req, res) => {
       return res.status(404).json({ error: "Form not found" });
     }
 
-    // Optional: Check if user is the owner (if you want to restrict deletion)
-    // const ownerId = req.user?.data?.id || req.user?.id || req.user?._id;
-    // if (form.ownerId && form.ownerId !== ownerId) {
-    //   return res.status(403).json({ error: "You don't have permission to delete this form" });
-    // }
+    // Check if user is the owner (restrict deletion to owner only)
+    const ownerId = req.user?.data?.id || req.user?.id || req.user?._id || null;
+    if (form.ownerId && ownerId && form.ownerId !== ownerId) {
+      return res.status(403).json({ error: "You don't have permission to delete this form" });
+    }
 
     // Delete all associated data
     await Promise.all([

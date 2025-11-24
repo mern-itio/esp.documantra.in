@@ -50,7 +50,7 @@ const CreditsUsagePage: React.FC = () => {
 
   // Calculate statistics
   const totalUsed = rows.filter(r => r.creditsDelta < 0).reduce((sum, r) => sum + Math.abs(r.creditsDelta), 0);
-  const totalAdded = rows.filter(r => r.creditsDelta > 0).reduce((sum, r) => sum + r.creditsDelta, 0);
+  // const totalAdded = rows.filter(r => r.creditsDelta > 0).reduce((sum, r) => sum + r.creditsDelta, 0);
   const successCount = rows.filter(r => r.success !== false).length;
 
   return (
@@ -98,7 +98,7 @@ const CreditsUsagePage: React.FC = () => {
           </div>
 
           {/* Total Added Pill */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-full shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          {/* <div className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-full shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="p-1.5 rounded-full bg-green-100">
               <TrendingUp className="w-3.5 h-3.5 text-green-600" />
             </div>
@@ -106,7 +106,7 @@ const CreditsUsagePage: React.FC = () => {
               <span className="text-base font-bold text-gray-900">{totalAdded}</span>
               <span className="text-xs text-gray-500">Added</span>
             </div>
-          </div>
+          </div> */}
 
           {/* Success Rate Pill */}
           <div className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-full shadow-sm border border-gray-200 hover:shadow-md transition-shadow">

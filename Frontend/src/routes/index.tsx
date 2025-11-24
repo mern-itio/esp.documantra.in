@@ -197,6 +197,7 @@ import AgreementPage from '../pages/eSign/AgreementPage';
 import EnvelopeTypes from '../pages/eSign/EnvelopeTypes';
 import ManageRecipients from '../pages/eSign/ManageRecipients';
 import EnvelopeGuideSupport from '../pages/eSign/EnvelopeGuideSupport';
+import HelpSupportPage from '../pages/LandingPage/HelpSupportPage';
 // import { elements } from 'chart.js';
 import PowerFormCreate from '../pages/eSign/PowerFormCreate';
 import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
@@ -538,6 +539,7 @@ const guestRoutes = [
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },
   { path: '/contact-sales', element: <ContactSales /> },
+  { path: '/help-support', element: <HelpSupportPage /> },
   { path: '/oauth-callback', element: <OAuthCallback /> },
   { path: '/why-draft-sign', element: <WhyDocuSignerPage /> },
   // { path: '/accessibility', element: <AccessibilityPage /> },
@@ -675,6 +677,12 @@ const authRoutes = [
   { path: '/e-sign/aggrement/draft', element: <AgreementPage /> },
   { path: '/e-sign/aggrement/in-progress', element: <AgreementPage /> },
   { path: '/e-sign/aggrement/deleted', element: <AgreementPage /> },
+  { path: '/e-sign/powerform', element: <AgreementPage /> },
+  { path: '/e-sign/powerform/all', element: <AgreementPage /> },
+  { path: '/e-sign/powerform/completed', element: <AgreementPage /> },
+  { path: '/e-sign/powerform/draft', element: <AgreementPage /> },
+  { path: '/e-sign/powerform/in-progress', element: <AgreementPage /> },
+  { path: '/e-sign/powerform/deleted', element: <AgreementPage /> },
   { path: '/e-sign/settings', element: <EsignSettings /> },
   { path: '/e-sign/enterprise', element: <EsignEnterpriseSettings /> },
   { path: '/e-sign/admin', element: <EsignESignatureAdmin /> },

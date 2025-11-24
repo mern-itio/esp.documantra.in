@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2 } from 'lucide-react';
+import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
@@ -67,6 +67,8 @@ const AgreementPage: React.FC = () => {
   const [isSharedWithMeOpen, setIsSharedWithMeOpen] = useState<boolean>(false);
   const [isSharedEnvelopesOpen, setIsSharedEnvelopesOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const dateButtonRef = useRef<HTMLButtonElement | null>(null);
+  const statusButtonRef = useRef<HTMLButtonElement | null>(null);
   const itemsPerPage = 10;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkMenu, setShowBulkMenu] = useState<boolean>(false);
@@ -230,6 +232,12 @@ const AgreementPage: React.FC = () => {
     }
   }, [loading]);
 
+  // Check if we're on a powerform route
+  const isPowerFormRoute = () => {
+    const path = location.pathname;
+    return path.includes('/powerform') || path.includes('/power-form');
+  };
+
   // Get current tab from URL path or default to all
   const getCurrentTab = () => {
     const path = location.pathname;
@@ -242,6 +250,7 @@ const AgreementPage: React.FC = () => {
   };
 
   const currentTab = getCurrentTab();
+  const isPowerForm = isPowerFormRoute();
 
   // Fetch envelopes data from API
   const fetchEnvelopes = async () => {
@@ -304,11 +313,11 @@ const AgreementPage: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sent = params.get('sent');
-    
+
     if (sent === 'true') {
       // Remove the query parameter from URL
       navigate(location.pathname, { replace: true });
-      
+
       // Show success modal after a brief delay to ensure page is loaded
       setTimeout(() => {
         Swal.fire({
@@ -342,7 +351,17 @@ const AgreementPage: React.FC = () => {
   // Close any open row menu on outside click or ESC
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // Don't close if clicking on dropdown trigger buttons
+      const isClickOnDateButton = dateButtonRef.current && dateButtonRef.current.contains(target);
+      const isClickOnStatusButton = statusButtonRef.current && statusButtonRef.current.contains(target);
+      
+      if (isClickOnDateButton || isClickOnStatusButton) {
+        return; // Don't close menu if clicking the button itself - let the button's onClick handle it
+      }
+      
+      // Close menus if clicking outside
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setOpenMenuId(null);
         setMenuPosition(null);
         setOpenHeaderMenu(null);
@@ -357,10 +376,11 @@ const AgreementPage: React.FC = () => {
         setHeaderMenuPosition(null);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use click event (bubbling phase) so button onClick fires first
+    document.addEventListener('click', handleClickOutside);
     document.addEventListener('keydown', handleEsc);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('keydown', handleEsc);
     };
   }, []);
@@ -368,6 +388,15 @@ const AgreementPage: React.FC = () => {
   useEffect(() => {
     // Filter agreements based on current tab and search term
     let filtered = agreements;
+
+    // First, filter by powerform if on powerform route
+    if (isPowerForm) {
+      filtered = filtered.filter(agreement => agreement.isPowerForm === true);
+    } else {
+      // On regular agreement routes, exclude powerforms (or show all, depending on your preference)
+      // If you want to show both, remove this filter
+      // filtered = filtered.filter(agreement => agreement.isPowerForm !== true);
+    }
 
     // Filter by status based on current tab
     if (currentTab === 'all') {
@@ -418,7 +447,7 @@ const AgreementPage: React.FC = () => {
 
     setFilteredAgreements(filtered);
     setCurrentPage(1); // Reset to first page when filtering
-  }, [agreements, searchTerm, currentTab, selectedStatusIdx, selectedDateIdx, customDateFrom, customDateTo]);
+  }, [agreements, searchTerm, currentTab, selectedStatusIdx, selectedDateIdx, customDateFrom, customDateTo, isPowerForm]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredAgreements.length / itemsPerPage);
@@ -693,26 +722,36 @@ const AgreementPage: React.FC = () => {
   };
 
   const openHeaderDropdown = (type: 'date' | 'status' | 'sender' | 'quick' | 'advanced' | 'shared', e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = type === 'shared' ? 336 : 360;
-    const left = Math.min(window.innerWidth - width - 8, Math.max(8, rect.left + window.scrollX));
-    const top = rect.bottom + window.scrollY + 8;
-    setHeaderMenuPosition({ top, left });
-    setOpenHeaderMenu(type === openHeaderMenu ? null : type);
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling to document click handler
+    
+    if (openHeaderMenu === type) {
+      // If clicking the same button, close the menu
+      setOpenHeaderMenu(null);
+      setHeaderMenuPosition(null);
+    } else {
+      // Open the menu for the clicked type
+      const rect = e.currentTarget.getBoundingClientRect();
+      const width = type === 'shared' ? 336 : 360;
+      const left = Math.min(window.innerWidth - width - 8, Math.max(8, rect.left + window.scrollX));
+      const top = rect.bottom + window.scrollY + 8;
+      setHeaderMenuPosition({ top, left });
+      setOpenHeaderMenu(type);
+    }
   };
 
-  const handleResetHeader = () => {
-    setSelectedDateIdx(2);
-    setSelectedStatusIdx(0);
-    setSelectedSenderIdx(0);
-    setSelectedQuickIdx(0);
-    setSelectedAdvancedIdx(0);
-  };
+  // const handleResetHeader = () => {
+  //   setSelectedDateIdx(2);
+  //   setSelectedStatusIdx(0);
+  //   setSelectedSenderIdx(0);
+  //   setSelectedQuickIdx(0);
+  //   setSelectedAdvancedIdx(0);
+  // };
 
-  const handleApplyHeader = () => {
-    setOpenHeaderMenu(null);
-    setHeaderMenuPosition(null);
-  };
+  // const handleApplyHeader = () => {
+  //   setOpenHeaderMenu(null);
+  //   setHeaderMenuPosition(null);
+  // };
 
   const closeHeaderMenu = () => {
     setOpenHeaderMenu(null);
@@ -1075,7 +1114,7 @@ const AgreementPage: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search Envelopes"
+                  placeholder={isPowerForm ? "Search Power Forms" : "Search Envelopes"}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1083,11 +1122,37 @@ const AgreementPage: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={(e) => openHeaderDropdown('date', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getDateButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
-              <button onClick={(e) => openHeaderDropdown('status', e)} className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50">{getStatusButtonLabel()} <ChevronDown className="w-4 h-4" /></button>
-              
-              <button onClick={handleClearFilters} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-sm text-sm hover:bg-gray-200">Clear</button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button 
+                ref={dateButtonRef}
+                onClick={(e) => openHeaderDropdown('date', e)} 
+                className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {getDateButtonLabel()} <ChevronDown className="w-4 h-4" />
+              </button>
+              <button 
+                ref={statusButtonRef}
+                onClick={(e) => openHeaderDropdown('status', e)} 
+                className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {getStatusButtonLabel()} <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {/* Clear button - only show when search has value or filters are selected */}
+              {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
+                <button onClick={handleClearFilters} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-sm text-sm hover:bg-gray-200">Clear</button>
+              )}
+
+              {/* Create PowerForm Button - Only visible on powerform routes */}
+              {isPowerForm && (
+                <button
+                  onClick={() => navigate('/e-sign/powerforms')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm" style={{ backgroundColor: '#260559' }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Create PowerForm
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1101,7 +1166,7 @@ const AgreementPage: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                {!isPowerForm && (<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>)}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Change</th>
@@ -1120,9 +1185,11 @@ const AgreementPage: React.FC = () => {
               ) : (
                 currentAgreements.map((agreement) => (
                   <tr key={agreement.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
-                    </td>
+                    {!isPowerForm && (
+                      <td className="px-6 py-4">
+                        <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
 
@@ -1134,7 +1201,7 @@ const AgreementPage: React.FC = () => {
                           >
                             {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
                           </button>
-                          <div className="text-sm text-gray-500">To: {agreement.primaryRecipientName || '-'}</div>
+                          {!isPowerForm && (<div className="text-sm text-gray-500">To: {agreement.primaryRecipientName || '-'}</div>)}
                         </div>
                       </div>
                     </td>
@@ -1166,11 +1233,12 @@ const AgreementPage: React.FC = () => {
                           )}
 
                           {agreement.isPowerForm && (
-                            <div className="flex items-center gap-2 text-[#FF00FF]"> {/* Magenta */}
-                              <Pencil className="w-5 h-5 text-[#FF00FF]" />
+                            <div className="flex items-center gap-2 text-amber-600 ">
+                              <ShieldCheck className="w-5 h-5" />
                               <span className="text-sm">Power Form</span>
                             </div>
                           )}
+
                           {agreement.status === 'deleted' && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               Deleted
@@ -1193,18 +1261,18 @@ const AgreementPage: React.FC = () => {
                             {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                           </button>
                         )}
-                          {agreement.status === "draft" && (
-                            <button
-                              onClick={() =>
-                                agreement?.isPowerForm
-                                  ? handleView(agreement.id)
-                                  : handleContinue(agreement.id)
-                              }
-                              className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
-                            >
-                              {agreement.isPowerForm ? "View" : "Continue"}
-                            </button>
-                          )}
+                        {agreement.status === "draft" && (
+                          <button
+                            onClick={() =>
+                              agreement?.isPowerForm
+                                ? handleView(agreement.id)
+                                : handleContinue(agreement.id)
+                            }
+                            className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
+                          >
+                            {agreement.isPowerForm ? "View" : "Continue"}
+                          </button>
+                        )}
 
                         {agreement.status === 'completed' && (
                           <button
@@ -1235,22 +1303,22 @@ const AgreementPage: React.FC = () => {
 
                         {agreement.status !== 'deleted' && (
                           <button
-                          onClick={(e) => {
-                            const target = e.currentTarget as HTMLElement;
-                            const rect = target.getBoundingClientRect();
-                            const menuWidth = 224;
-                            const menuHeight = 180; // approximate menu height (adjust as needed)
-                            const spaceBelow = window.innerHeight - rect.bottom;
-                            const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
-                          
-                            const left = Math.max(8, rect.right - menuWidth + window.scrollX);
-                            const top = openUpward
-                              ? rect.top + window.scrollY - menuHeight - 8 // open upward
-                              : rect.bottom + window.scrollY + 8; // open downward
-                          
-                            setMenuPosition({ top, left });
-                            setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
-                          }}
+                            onClick={(e) => {
+                              const target = e.currentTarget as HTMLElement;
+                              const rect = target.getBoundingClientRect();
+                              const menuWidth = 224;
+                              const menuHeight = 180; // approximate menu height (adjust as needed)
+                              const spaceBelow = window.innerHeight - rect.bottom;
+                              const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
+
+                              const left = Math.max(8, rect.right - menuWidth + window.scrollX);
+                              const top = openUpward
+                                ? rect.top + window.scrollY - menuHeight - 8 // open upward
+                                : rect.bottom + window.scrollY + 8; // open downward
+
+                              setMenuPosition({ top, left });
+                              setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
+                            }}
                             className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-sm"
                             title="More options"
                           >
@@ -1331,8 +1399,8 @@ const AgreementPage: React.FC = () => {
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pageNum === currentPage
-                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                           }`}
                       >
                         {pageNum}
@@ -1598,10 +1666,6 @@ const AgreementPage: React.FC = () => {
                     ))}
                   </ul>
                 )}
-              </div>
-              <div className="flex items-center justify-end gap-3 mt-6">
-                <button onClick={handleResetHeader} className="px-4 py-2 bg-gray-100 rounded-sm">Reset</button>
-                <button onClick={handleApplyHeader} className="px-4 py-2 bg-blue-700 text-white rounded-sm">Apply</button>
               </div>
             </div>
           ) : (

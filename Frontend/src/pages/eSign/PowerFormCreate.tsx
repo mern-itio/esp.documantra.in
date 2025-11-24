@@ -192,466 +192,8 @@ const PowerFormCreate: React.FC = () => {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [bulkRoleDropdownOpen, bulkCustomizeOpen, csvRoleDropdownOpen, csvCustomizeOpen]);
 
-  // const addBulkRow = () => {
-  //   if (bulkRows.length >= 10) return;
-  //   setBulkRows(prev => [...prev, { id: `row_${Date.now()}`, name: '', email: '' }]);
-  // };
-  // const removeBulkRow = (id: string) => {
-  //   setBulkRows(prev => prev.filter(r => r.id !== id));
-  // };
-  // const downloadSampleCsv = async () => {
-  //   try {
-  //     // Fetch the CSV file from public folder
-  //     const response = await fetch('/Sample-Bulk-Recipient.csv');
-  //     if (!response.ok) {
-  //       throw new Error('Failed to fetch sample CSV');
-  //     }
-  //     const blob = await response.blob();
-  //     const url = URL.createObjectURL(blob);
-  //     const a = document.createElement('a');
-  //     a.href = url;
-  //     a.download = 'Sample-Bulk-Recipient.csv';
-  //     document.body.appendChild(a);
-  //     a.click();
-  //     document.body.removeChild(a);
-  //     URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error downloading sample CSV:', error);
-  //     // Fallback to generated CSV if file not found
-  //     const header = ['role', 'name', 'email'];
-  //     const rows = [
-  //       ['signer', 'Alice Smith', 'alice@example.com'],
-  //       ['signer', 'Bob Lee', 'bob@example.com'],
-  //     ];
-  //     const csv = [header, ...rows].map(r => r.join(',')).join('\n');
-  //     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  //     const url = URL.createObjectURL(blob);
-  //     const a = document.createElement('a');
-  //     a.href = url;
-  //     a.download = 'bulk_recipients_sample.csv';
-  //     document.body.appendChild(a);
-  //     a.click();
-  //     document.body.removeChild(a);
-  //     URL.revokeObjectURL(url);
-  //   }
-  // };
-  // const applyBulkRecipients = () => {
-  //   const roleToUse = (bulkSharedRole || 'signer') as Recipient['role'];
-  //   const cleaned = bulkRows
-  //     .map(r => ({ name: (r.name || '').trim(), email: (r.email || '').trim() }))
-  //     .filter(r => r.name && r.email);
-  //   if (cleaned.length === 0) {
-  //     setShowBulkModal(false);
-  //     return;
-  //   }
-  //   setBulkList({ role: roleToUse, items: cleaned });
-  //   if (!bulkBatchName) setBulkBatchName('Bulk Send List');
-  //   // Prevent auto-adding a blank recipient and remove any auto-added empty one
-  //   hasAutoAddedRecipient.current = true;
-  //   setRecipients(prev => (prev.length === 1 && (!prev[0].name || prev[0].name.trim() === '') && (!prev[0].email || prev[0].email.trim() === '')) ? [] : prev);
-  //   setShowRecipients(true);
-  //   setShowBulkModal(false);
-  // };
-
-  // const handleCsvFileSelect = (file: File) => {
-  //   if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-  //     alert('Please select a CSV file');
-  //     return;
-  //   }
-  //   setCsvFile(file);
-  //   parseCsvFile(file);
-  // };
-
-  // const parseCsvFile = async (file: File) => {
-  //   try {
-  //     const text = await file.text();
-  //     const lines = text.split('\n').filter(line => line.trim());
-  //     if (lines.length === 0) {
-  //       setShowCsvExceptions(true);
-  //       setUnmatchedColumns(['CSV file is empty']);
-  //       setCsvHeaders([]);
-  //       return;
-  //     }
-
-  //     // Parse CSV (handling quoted values)
-  //     const parseCsvLine = (line: string): string[] => {
-  //       const result: string[] = [];
-  //       let current = '';
-  //       let inQuotes = false;
-  //       for (let i = 0; i < line.length; i++) {
-  //         const char = line[i];
-  //         if (char === '"') {
-  //           inQuotes = !inQuotes;
-  //         } else if (char === ',' && !inQuotes) {
-  //           result.push(current.trim());
-  //           current = '';
-  //         } else {
-  //           current += char;
-  //         }
-  //       }
-  //       result.push(current.trim());
-  //       return result;
-  //     };
-
-  //     // Get original headers (case-sensitive)
-  //     const originalHeaders = parseCsvLine(lines[0]);
-  //     setCsvHeaders(originalHeaders);
-
-  //     // Get normalized headers for matching
-  //     const headers = originalHeaders.map(h => h.toLowerCase().trim());
-  //     const nameIdx = headers.findIndex(h => h === 'name' || h === 'full name');
-  //     const emailIdx = headers.findIndex(h => h === 'email' || h === 'email address');
-  //     const roleIdx = headers.findIndex(h => h === 'role');
-
-  //     // Define expected/matched columns
-  //     const expectedColumns = new Set<string>();
-  //     if (nameIdx !== -1) expectedColumns.add(originalHeaders[nameIdx].toLowerCase());
-  //     if (emailIdx !== -1) expectedColumns.add(originalHeaders[emailIdx].toLowerCase());
-  //     if (roleIdx !== -1) expectedColumns.add(originalHeaders[roleIdx].toLowerCase());
-
-  //     // Find unmatched columns
-  //     const unmatched: string[] = [];
-  //     originalHeaders.forEach((header) => {
-  //       const normalized = header.toLowerCase().trim();
-  //       if (!expectedColumns.has(normalized)) {
-  //         unmatched.push(header);
-  //       }
-  //     });
-
-  //     if (nameIdx === -1 || emailIdx === -1) {
-  //       setShowCsvExceptions(true);
-  //       setUnmatchedColumns(unmatched.length > 0 ? unmatched : ['Missing required columns: name and email']);
-  //       return;
-  //     }
-
-  //     const parsedRows: Array<{ name: string; email: string; role?: string }> = [];
-  //     for (let i = 1; i < lines.length; i++) {
-  //       const values = parseCsvLine(lines[i]);
-  //       const name = values[nameIdx]?.trim() || '';
-  //       const email = values[emailIdx]?.trim() || '';
-  //       const role = roleIdx !== -1 ? values[roleIdx]?.trim() : undefined;
-
-  //       if (name && email) {
-  //         parsedRows.push({ name, email, role });
-  //       }
-  //     }
-
-  //     if (parsedRows.length === 0) {
-  //       setShowCsvExceptions(true);
-  //       setUnmatchedColumns(unmatched.length > 0 ? unmatched : ['No valid rows found in CSV']);
-  //       return;
-  //     }
-
-  //     // Parse ALL rows with ALL columns for recipients editor
-  //     const allRowsData: Array<Record<string, string>> = [];
-  //     for (let i = 1; i < lines.length; i++) {
-  //       const values = parseCsvLine(lines[i]);
-  //       const rowData: Record<string, string> = {};
-  //       originalHeaders.forEach((header, idx) => {
-  //         rowData[header] = values[idx]?.trim() || '';
-  //       });
-  //       allRowsData.push(rowData);
-  //     }
-  //     setCsvRecipientsData(allRowsData);
-
-  //     // If there are unmatched columns, show exceptions page
-  //     if (unmatched.length > 0) {
-  //       setShowCsvExceptions(true);
-  //       setUnmatchedColumns(unmatched);
-  //       // Still parse the data so user can accept if they want
-  //       const rows = parsedRows.map((row, idx) => ({
-  //         id: `csv_row_${Date.now()}_${idx}`,
-  //         name: row.name,
-  //         email: row.email
-  //       }));
-  //       setBulkRows(rows);
-  //       return;
-  //     }
-
-  //     // Set the first role if found, otherwise keep current
-  //     if (parsedRows[0].role && !bulkSharedRole) {
-  //       const roleMap: Record<string, Recipient['role']> = {
-  //         'signer': 'signer',
-  //         'needs to sign': 'signer',
-  //         'in person signer': 'in_person_signer',
-  //         'carbon copy': 'carbon_copy',
-  //         'receives a copy': 'carbon_copy',
-  //         'approver': 'approver',
-  //         'needs to view': 'needs_to_view'
-  //       };
-  //       const mappedRole = roleMap[parsedRows[0].role.toLowerCase()];
-  //       if (mappedRole) setBulkSharedRole(mappedRole);
-  //     }
-
-  //     // Parse ALL rows with ALL columns for recipients editor (even when no unmatched columns)
-  //     const allRowsDataComplete: Array<Record<string, string>> = [];
-  //     for (let i = 1; i < lines.length; i++) {
-  //       const values = parseCsvLine(lines[i]);
-  //       const rowData: Record<string, string> = {};
-  //       originalHeaders.forEach((header, idx) => {
-  //         rowData[header] = values[idx]?.trim() || '';
-  //       });
-  //       allRowsDataComplete.push(rowData);
-  //     }
-  //     setCsvRecipientsData(allRowsDataComplete);
-
-  //     // Convert to bulkRows format
-  //     const rows = parsedRows.map((row, idx) => ({
-  //       id: `csv_row_${Date.now()}_${idx}`,
-  //       name: row.name,
-  //       email: row.email
-  //     }));
-
-  //     setBulkRows(rows);
-  //     setShowCsvExceptions(false);
-  //   } catch (error) {
-  //     console.error('Error parsing CSV:', error);
-  //     setShowCsvExceptions(true);
-  //     setUnmatchedColumns(['Error parsing CSV file. Please check the format.']);
-  //     setCsvHeaders([]);
-  //   }
-  // };
-
-  // const handleDragOverCsv = (e: React.DragEvent) => {
-  //   e.preventDefault();
-  //   setIsDragOverCsv(true);
-  // };
-
-  // const handleDragLeaveCsv = (e: React.DragEvent) => {
-  //   e.preventDefault();
-  //   setIsDragOverCsv(false);
-  // };
-
-  // const handleDropCsv = (e: React.DragEvent) => {
-  //   e.preventDefault();
-  //   setIsDragOverCsv(false);
-  //   const file = e.dataTransfer.files[0];
-  //   if (file) {
-  //     handleCsvFileSelect(file);
-  //   }
-  // };
-
-  // const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (file) {
-  //     handleCsvFileSelect(file);
-  //   }
-  // };
-
-  // const applyCsvRecipients = () => {
-  //   if (bulkRows.length === 0) {
-  //     alert('Please upload a CSV file with recipient data');
-  //     return;
-  //   }
-  //   const roleToUse = (bulkSharedRole || 'signer') as Recipient['role'];
-  //   const cleaned = bulkRows
-  //     .map(r => ({ name: (r.name || '').trim(), email: (r.email || '').trim() }))
-  //     .filter(r => r.name && r.email);
-  //   if (cleaned.length === 0) {
-  //     alert('No valid recipients found in CSV');
-  //     return;
-  //   }
-  //   setBulkList({ role: roleToUse, items: cleaned });
-  //   // Mirror CSV UI even if user doesn't open the editor: set csvRecipientList and batch name from file
-  //   setCsvRecipientList({
-  //     fileName: csvFile?.name || 'bulk_recipients.csv',
-  //     role: roleToUse,
-  //     items: cleaned
-  //   });
-  //   setBulkBatchName(csvFile?.name || 'Bulk Send List');
-  //   hasAutoAddedRecipient.current = true;
-  //   // Use CSV roles, clear any existing individual recipients to avoid duplicate first card
-  //   setRecipients([]);
-  //   setShowRecipients(true);
-  //   setShowBulkModal(false);
-  //   setCsvFile(null);
-  //   setShowCsvExceptions(false);
-  //   setUnmatchedColumns([]);
-  // };
-
-  // const handleAcceptCsvExceptions = () => {
-  //   // Open recipients editor to allow user to edit CSV data
-  //   setShowCsvExceptions(false);
-  //   setShowRecipientsEditor(true);
-  //   // Ensure we're on the right step and method
-  //   setBulkStep(2);
-  //   // Ensure csvHeaders and csvRecipientsData are preserved
-  //   // (they should already be set from CSV parsing, but make sure)
-  // };
-
-  // Validate recipient data
-  // const validateRecipient = (recipient: Record<string, string>, headers: string[]): { hasErrors: boolean; errors: Record<string, string> } => {
-  //   const errors: Record<string, string> = {};
-  //   let hasErrors = false;
-
-  //   // Find email and name columns
-  //   const emailHeader = headers.find(h => h.toLowerCase().includes('email'));
-  //   // const nameHeader = headers.find(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('email'));
-  //   const identificationHeader = headers.find(h => h.toLowerCase().includes('identification'));
-
-  //   if (emailHeader && !recipient[emailHeader]?.trim()) {
-  //     errors[emailHeader] = 'Email address required';
-  //     hasErrors = true;
-  //   }
-
-  //   if (emailHeader && recipient[emailHeader]?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient[emailHeader].trim())) {
-  //     errors[emailHeader] = 'Invalid email format';
-  //     hasErrors = true;
-  //   }
-
-  //   // Validate Identification field - only show error when user has started typing
-  //   if (identificationHeader && recipient[identificationHeader]?.trim()) {
-  //     const identificationValue = recipient[identificationHeader].trim().toLowerCase();
-  //     // Supported authentication types (case-insensitive matching)
-  //     const supportedTypes = [
-  //       'phone',
-  //       'sms',
-  //       'access code',
-  //       'accesscode',
-  //       'docusign id verification',
-  //       'docusignidverification',
-  //       'docusign'
-  //     ];
-
-  //     // Normalize both the input and supported types for comparison
-  //     const normalizedInput = identificationValue.replace(/\s+/g, ' ').trim();
-  //     const isValidType = supportedTypes.some(type => {
-  //       const normalizedType = type.toLowerCase().replace(/\s+/g, ' ').trim();
-  //       return normalizedInput === normalizedType;
-  //     });
-
-  //     // Show error only if the value doesn't match any supported type
-  //     if (!isValidType) {
-  //       errors[identificationHeader] = 'Supported authentication types are phone, SMS, access code, or Docusign ID Verification';
-  //       hasErrors = true;
-  //     }
-  //   }
-
-  //   // Check for required fields
-  //   headers.forEach(header => {
-  //     if ((header.toLowerCase().includes('email') || header.toLowerCase().includes('name')) && !recipient[header]?.trim()) {
-  //       if (!errors[header]) {
-  //         errors[header] = 'Required field missing';
-  //         hasErrors = true;
-  //       }
-  //     }
-  //   });
-
-  //   return { hasErrors, errors };
-  // };
-
-  // const getRecipientsWithErrors = () => {
-  //   return csvRecipientsData.map((recipient, idx) => {
-  //     const validation = validateRecipient(recipient, csvHeaders);
-  //     return { ...recipient, index: idx, errors: validation.errors, hasErrors: validation.hasErrors };
-  //   }).filter(r => r.hasErrors);
-  // };
-
-  // const updateRecipientField = (recipientIndex: number, field: string, value: string) => {
-  //   setCsvRecipientsData(prev => prev.map((recipient, idx) =>
-  //     idx === recipientIndex ? { ...recipient, [field]: value } : recipient
-  //   ));
-  // };
-
-
-
-  // const handleSaveRecipients = () => {
-  //   // Convert CSV recipients data to bulkRows format
-  //   const emailHeader = csvHeaders.find(h => h.toLowerCase().includes('email'));
-  //   const nameHeader = csvHeaders.find(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('email'));
-
-  //   const cleaned = csvRecipientsData
-  //     .map((recipient, idx) => ({
-  //       id: `csv_row_${Date.now()}_${idx}`,
-  //       name: nameHeader ? (recipient[nameHeader] || '').trim() : '',
-  //       email: emailHeader ? (recipient[emailHeader] || '').trim() : ''
-  //     }))
-  //     .filter(r => r.name && r.email);
-
-  //   if (cleaned.length === 0) {
-  //     alert('No valid recipients found');
-  //     return;
-  //   }
-
-  //   setBulkRows(cleaned);
-  //   const roleToUse = (bulkSharedRole || 'signer') as Recipient['role'];
-  //   setBulkList({ role: roleToUse, items: cleaned.map(r => ({ name: r.name, email: r.email })) });
-  //   // Also set CSV recipient summary card
-  //   setCsvRecipientList({
-  //     fileName: csvFile?.name || 'bulk_recipients.csv',
-  //     role: roleToUse,
-  //     items: cleaned.map(r => ({ name: r.name, email: r.email }))
-  //   });
-  //   // Always reflect CSV filename into the batch name to mirror desired UI
-  //   setBulkBatchName(csvFile?.name || 'Bulk Send List');
-  //   hasAutoAddedRecipient.current = true;
-  //   // Use CSV roles, clear any existing individual recipients to avoid duplicate first card
-  //   setRecipients([]);
-  //   setShowRecipients(true);
-  //   setShowBulkModal(false);
-  //   setShowRecipientsEditor(false);
-  //   setCsvFile(null);
-  // };
-
-  // const clearCsvRecipientList = () => {
-  //   setCsvRecipientList(null);
-  //   setCsvAccessCode(undefined);
-  //   setCsvPrivateMessage(undefined);
-  //   setOpenCsvAccess(false);
-  //   setOpenCsvPrivate(false);
-  // };
-
-  // const handleBackToUpload = () => {
-  //   setShowRecipientsEditor(false);
-  //   setShowCsvExceptions(true);
-  // };
-
-  // const handleDiscardCsv = () => {
-  //   // Discard the CSV and go back to upload page
-  //   setCsvFile(null);
-  //   setBulkRows([
-  //     { id: `row_${Date.now()}`, name: '', email: '' },
-  //     { id: `row_${Date.now() + 1}`, name: '', email: '' },
-  //     { id: `row_${Date.now() + 2}`, name: '', email: '' },
-  //   ]);
-  //   setShowCsvExceptions(false);
-  //   setUnmatchedColumns([]);
-  //   setCsvHeaders([]);
-  //   if (csvFileInputRef.current) {
-  //     csvFileInputRef.current.value = '';
-  //   }
-  // };
-
-  // const clearBulkList = () => {
-  //   // Clear manual bulk list
-  //   setBulkList(null);
-  //   // Clear CSV-derived list and related panels
-  //   setCsvRecipientList(null);
-  //   setCsvAccessCode(undefined);
-  //   setCsvPrivateMessage(undefined);
-  //   setOpenCsvAccess(false);
-  //   setOpenCsvPrivate(false);
-  //   // Reset CSV parsing state
-  //   setCsvFile(null);
-  //   setCsvHeaders([]);
-  //   setCsvRecipientsData([]);
-  //   setShowCsvExceptions(false);
-  //   setUnmatchedColumns([]);
-  //   // Reset inline bulk rows to initial empty rows
-  //   setBulkRows([
-  //     { id: `row_${Date.now()}`, name: '', email: '' },
-  //     { id: `row_${Date.now() + 1}`, name: '', email: '' },
-  //     { id: `row_${Date.now() + 2}`, name: '', email: '' },
-  //   ]);
-  // };
-  // const [recipientSuggestions, setRecipientSuggestions] = useState<Array<{ name: string; email: string }>>([]);
-  const [suggestionsOpenForId, setSuggestionsOpenForId] = useState<string | null>(null);
-  // const [loadingRecipientSuggestions, setLoadingRecipientSuggestions] = useState(false);
+ const [suggestionsOpenForId, setSuggestionsOpenForId] = useState<string | null>(null);
   const suggestionsContainerRef = useRef<HTMLDivElement | null>(null);
-  // Access code expanded panels per recipient
-  // const [openAccessForId, setOpenAccessForId] = useState<Record<string, boolean>>({});
-  // // Private message expanded panels per recipient
-  // const [openPrivateForId, setOpenPrivateForId] = useState<Record<string, boolean>>({});
 
   // Envelope Type state
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
@@ -874,26 +416,7 @@ const PowerFormCreate: React.FC = () => {
 
     if (loopEnvelopeId) {
       setEnvelopeId(loopEnvelopeId);
-      // Persist any valid recipients captured on Step 1 before moving on
-      // try {
-      //   const validRecipients = (recipients || []).filter(r => (r?.name || '').trim() && (r?.email || '').trim());
-      //   if (validRecipients.length > 0) {
-      //     const recipientPayload = validRecipients.map(r => ({
-      //       name: r.name,
-      //       email: r.email,
-      //       role: r.role,
-      //       order: r.order,
-      //       status: r.status,
-      //       // authentication: r.authentication
-      //     }));
-      //     await eSignApi.post('/api/e-sign/add-recipients', {
-      //       envelopeId: loopEnvelopeId,
-      //       recipients: recipientPayload
-      //     });
-      //   }
-      // } catch (err) {
-      //   console.error('Failed to save recipients from Step 1:', err);
-      // }
+    
       await savePowerFormSlots(loopEnvelopeId);
       await getEnvelopeDetail(loopEnvelopeId);
       navigate(`/e-sign/powerforms?step=2&envelopeId=${loopEnvelopeId}`);
@@ -933,8 +456,19 @@ const PowerFormCreate: React.FC = () => {
   }
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const formId = e.target.value;
+      
+      // Check if "Create Template" option was selected
+      if (formId === 'create_template') {
+        navigate('/e-sign/form-list');
+        return;
+      }
+      
       setSelectedForm(formId);       // ✅ update selected
-      getFormDetails(formId);        // ✅ fetch details
+      if (formId) {
+        getFormDetails(formId);        // ✅ fetch details
+      } else {
+        setPowerFormData(null); // Clear form data if no form selected
+      }
   };
   // Get Power Form Template
   const getPowerForm = async () => {
@@ -957,11 +491,6 @@ const PowerFormCreate: React.FC = () => {
       setPowerFormData(response.data);
     }
   }
-  // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-  //   const formId = e.target.value;
-  //   setSelectedForm(formId);       // ✅ update selected
-  //   getFormDetails(formId);        // ✅ fetch details
-  // };
   //Step 3: Save Signature fields 
   const saveSignatureFields = async () => {
     if (!envelopeId || signatureFields.length === 0) return;
@@ -1065,29 +594,6 @@ const PowerFormCreate: React.FC = () => {
       console.error('Error fetching envelope details:', error);
     }
   };
-  // const updateEnvelope = async () => {
-  //   console.log('Updating envelope with data:', envelopeId);
-  //   if (!envelopeId) return;
-
-  //   console.log('Updating envelope data:', envelopeData);
-  //   try {
-  //     const response = await eSignApi.post('/api/e-sign/update-envelope', {
-  //       envelopeId,
-  //       envelopeData: {
-  //         ...envelopeData,
-  //         envelopetype: selectedEnvelopeType || undefined,
-  //       },
-  //     });
-  //     if (response.status === 200) {
-  //       console.log('Signature type updated successfully:', response.data);
-  //       await navigate(`/e-sign/powerforms?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error updating signature type:', error);
-  //   }
-  // };
-  // Update your "Next" button handler:
-  // Validation function to find first missing field and scroll to it
   const validateAndScrollToField = (): { isValid: boolean; fieldSelector?: string; message?: string } => {
     if (currentStep === 1) {
       // Check documents
@@ -1389,49 +895,6 @@ const PowerFormCreate: React.FC = () => {
     setRecipients(prev => [...prev, newRecipient]);
   };
 
-  // const updateRecipient = (id: string, updates: Partial<Recipient>) => {
-  //   setRecipients(prev => prev.map(recipient =>
-  //     recipient.id === id ? { ...recipient, ...updates } : recipient
-  //   ));
-  // };
-  // const handleEmailOnBlur = async (id: string, email: string) => {
-  //   if (!email || !envelopeId) return;
-  //   try {
-  //     const response = await eSignApi.get(`/api/e-sign/get-recipient/${email}`);
-  //     if (response.status == 200) {
-  //       const { recipient } = response.data;
-  //       updateRecipient(id, {
-  //         name: recipient.name,
-  //         email: recipient.email
-  //       })
-  //       console.log('Fetched and updated');
-  //     }
-  //   } catch (err) {
-  //     console.log(`Handle email on Blur`);
-  //   }
-  // }
-
-  // const removeRecipient = async (id: string) => {
-  //   // Check if coming from db and delete from db too
-
-  //   // Heuristic: If the ID is a MongoDB ObjectId (24 hex chars), treat it as DB record
-  //   const isDbRecord = /^[a-fA-F0-9]{24}$/.test(id);
-
-  //   if (isDbRecord) {
-  //     try {
-  //       await eSignApi.post(`/api/e-sign/envelope/remove-recipient/${id}/${envelopeId}`);// Adjust API path if needed
-  //       console.log(`Recipient ${id} deleted from DB successfully.`);
-  //     } catch (error) {
-  //       console.error('Failed to delete recipient from DB:', error);
-  //     }
-  //   }
-  //   setRecipients(prev => prev.filter(recipient => recipient.id !== id));
-  // };
-
-  // const handleCreateEnvelope = () => {
-  //   if (!user) return;
-  //   navigate('/e-sign/dashboard');
-  // };
 
   const handleSendEnvelope = async () => {
     if (!envelopeId) return;
@@ -1687,35 +1150,6 @@ const PowerFormCreate: React.FC = () => {
     }
   }
 
-  // Load unique recipient suggestions aggregated from user's envelopes
-  // const loadRecipientSuggestions = async (forceReload = false) => {
-  //   if (!forceReload && (recipientSuggestions.length > 0 || loadingRecipientSuggestions)) return;
-  //   setLoadingRecipientSuggestions(true);
-  //   const map = new Map<string, { name: string; email: string }>();
-  //   const addIfValid = (r: any) => {
-  //     const name = (r?.name || '').trim();
-  //     const email = (r?.email || '').trim();
-  //     if (!email) return;
-  //     const key = email.toLowerCase();
-  //     if (!map.has(key)) map.set(key, { name: name || email, email });
-  //   };
-  //   try {
-  //     const response = await eSignApi.get('/api/e-sign/get-envelopes');
-  //     const envelopes = response?.data?.data || response?.data?.envelopes || response?.data || [];
-  //     if (Array.isArray(envelopes)) {
-  //       envelopes.forEach((env: any) => {
-  //         const recs = env?.recipients || env?.recipientIds || [];
-  //         if (Array.isArray(recs)) recs.forEach(addIfValid);
-  //       });
-  //     }
-  //     setRecipientSuggestions(Array.from(map.values()));
-  //   } catch (err) {
-  //     console.warn('Failed to load recipient suggestions; defaulting to empty list');
-  //     setRecipientSuggestions([]);
-  //   } finally {
-  //     setLoadingRecipientSuggestions(false);
-  //   }
-  // };
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -2390,19 +1824,49 @@ const PowerFormCreate: React.FC = () => {
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     Select Power Form
                   </label>
-                  <select
-                    id="powerForm"
-                    value={selectedForm}
-                    onChange={handleChange}
-                    className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">-- Choose a Form --</option>
-                    {powerForms.map((form) => (
-                      <option key={form._id} value={form._id}>
-                        {form.title}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <select
+                        id="powerForm"
+                        value={selectedForm}
+                        onChange={handleChange}
+                        className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 appearance-none"
+                      >
+                        <option value="">-- Choose a Form --</option>
+                        {powerForms.map((form) => (
+                          <option key={form._id} value={form._id}>
+                            {form.title}
+                          </option>
+                        ))}
+                        {powerForms.length > 0 && (
+                          <option value="create_template" disabled>────────────</option>
+                        )}
+                        <option value="create_template">+ Create New Template</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                    
+                    {/* Create Template Button - Always visible for better UX */}
+                    {/* <div className="flex items-center gap-3">
+                      <div className="flex-1 border-t border-gray-200"></div>
+                      <span className="text-xs text-gray-500">or</span>
+                      <div className="flex-1 border-t border-gray-200"></div>
+                    </div>
+                    
+                    <button
+                      onClick={() => navigate('/e-sign/form-list')}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 bg-white shadow-sm hover:shadow-md"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create New Template
+                    </button> */}
+                    
+                    {powerForms.length === 0 && (
+                      <p className="text-xs text-gray-500 text-center">
+                        No templates available. Create your first template to get started.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Power Form Preview */}
@@ -3080,7 +2544,7 @@ const PowerFormCreate: React.FC = () => {
                 }
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
               </button>
 
               <h1 className="text-base font-medium text-gray-900">
@@ -3312,7 +2776,7 @@ const PowerFormCreate: React.FC = () => {
                  <button
                    onClick={handleNext}
                    disabled={nextLoading}
-                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                   className="flex items-center bg-[#260559] gap-2 px-6 py-2 text-white rounded-lg hover:bg-[#260559]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                    data-tour="ec-next-button"
                  >
                    {nextLoading ? (
@@ -3494,7 +2958,7 @@ const PowerFormCreate: React.FC = () => {
 
                 {/* Footer */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end">
-                  <button onClick={() => setShowAdvanced(false)} className="px-6 py-2 rounded text-white" style={{ backgroundColor: '#5015FF' }}>Save</button>
+                  <button onClick={() => setShowAdvanced(false)} className="px-6 py-2 rounded text-white" style={{ backgroundColor: '#260559' }}>Save</button>
                 </div>
               </div>
             </div>

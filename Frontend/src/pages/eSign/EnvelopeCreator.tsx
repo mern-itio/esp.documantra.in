@@ -5874,14 +5874,14 @@ const EnvelopeCreator: React.FC = () => {
                       Basic steps to send an envelope
                     </button>
                     <button
-                      onClick={() => { setHelpMenuOpen(false); window.open('contact-sales', '_blank'); }}
+                      onClick={() => { setHelpMenuOpen(false); window.open('help-support', '_blank'); }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-t border-gray-100"
                     >
                       <span className="text-blue-700">Visit the Draft&Sign Support Center</span> for helpful articles, guides, videos, and more.
                     </button>
                     <div className="p-4 border-t border-gray-100">
                       <button
-                        onClick={() => window.open('/contact-sales', '_blank')}
+                        onClick={() => window.open('/help-support', '_blank')}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md text-white"
                       style={{ backgroundColor: '#260559' }}
                       >
@@ -5941,21 +5941,21 @@ const EnvelopeCreator: React.FC = () => {
               {/* Bottom links */}
               <div className="pt-6 border-t border-gray-200 space-y-5 text-[14px]">
                 <button
-                  onClick={() => window.open('/contact-sales', '_blank')}
+                  onClick={() => window.open('/help-support', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
                 >
                   <span>Support Center</span>
                   <ExternalLink className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => window.open('/contact-sales', '_blank')}
+                {/* <button
+                  onClick={() => window.open('/help-support', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
                 >
                   <span>Community</span>
                   <ExternalLink className="w-4 h-4" />
-                </button>
+                </button> */}
                 <button
-                  onClick={() => window.open('/contact-sales', '_blank')}
+                  onClick={() => window.open('/help-support', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
                 >
                   <span>Contact Us</span>
@@ -6369,7 +6369,7 @@ const EnvelopeCreator: React.FC = () => {
                   <button 
                     onClick={saveAdvancedOptions} 
                     className="px-6 py-2 rounded text-white hover:opacity-90 transition-opacity" 
-                    style={{ backgroundColor: '#5015FF' }}
+                    style={{ backgroundColor: '#260559' }}
                   >
                     Save
                   </button>
