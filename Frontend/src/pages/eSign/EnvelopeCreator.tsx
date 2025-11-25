@@ -5194,28 +5194,53 @@ const EnvelopeCreator: React.FC = () => {
                   )}
 
                   {/* Add Recipient Button - only show when not only signer */}
-                  {!isOnlySigner && (
-                    <button
-                      onClick={addRecipient}
-                      className="flex items-center border border-black-300 rounded-sm overflow-hidden"
-                      data-tour="ec-add-recipient"
-                    >
-                      {/* Left section */}
-                      <div className="flex items-center gap-2 px-4 py-2 bg-white">
-                        <UserRoundPlus className="w-4 h-4 text-[#2C2441]" />
-                        <span className="text-sm text-[#2C2441]">Add Recipient</span>
+                  {!isOnlySigner && (() => {
+                    // Check if all recipients have name and email filled
+                    const allRecipientsFilled = recipients.every(r => 
+                      r.name && r.name.trim() !== '' && 
+                      r.email && r.email.trim() !== ''
+                    );
+                    
+                    return (
+                      <div className="relative group">
+                        <button
+                          onClick={allRecipientsFilled ? addRecipient : undefined}
+                          disabled={!allRecipientsFilled}
+                          className={`flex items-center border border-black-300 rounded-sm overflow-hidden transition-opacity ${
+                            allRecipientsFilled 
+                              ? 'cursor-pointer hover:opacity-90' 
+                              : 'cursor-not-allowed opacity-50'
+                          }`}
+                          data-tour="ec-add-recipient"
+                          // title={!allRecipientsFilled ? "Fill all detail of the recipient to add new" : ""}
+                        >
+                          {/* Left section */}
+                          <div className="flex items-center gap-2 px-4 py-2 bg-white">
+                            <UserRoundPlus className="w-4 h-4 text-[#2C2441]" />
+                            <span className="text-sm text-[#2C2441]">Add Recipient</span>
+                          </div>
+
+                          {/* Divider */}
+                          <div className="w-px h-8 bg-black" />
+
+                          {/* Right section */}
+                          <div className="px-3 py-2 bg-white flex items-center">
+                            <ChevronDown className="w-4 h-4 text-[#2C2441]" />
+                          </div>
+                        </button>
+                        
+                        {/* Tooltip on hover when disabled */}
+                        {!allRecipientsFilled && (
+                          <div className="absolute bottom-full left-1/9 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                            Fill all detail of the recipient to add new
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                              <div className="border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Divider */}
-                      <div className="w-px h-8 bg-black" />
-
-                      {/* Right section */}
-                      <div className="px-3 py-2 bg-white flex items-center">
-                        <ChevronDown className="w-4 h-4 text-[#2C2441]" />
-                      </div>
-                    </button>
-
-                  )}
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -6428,7 +6453,7 @@ const EnvelopeCreator: React.FC = () => {
                 }`}>
                   2
                 </div>
-                <span className="font-semibold text-sm">Authentication & Credits</span>
+                <span className="font-semibold text-sm">Summary</span>
               </div>
             </div>
 
@@ -6652,98 +6677,140 @@ const EnvelopeCreator: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="mb-8">
-                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                        Authentication Methods & Credit Details
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        Review authentication methods and credit costs before sending
-                      </p>
-                    </div>
-                    
-                    {/* Credit Balance Summary */}
-                    <div className="bg-gray-50/50 border border-gray-200 rounded-md p-2.5 mb-4">
-                      <div className="grid grid-cols-3 gap-3">
+                    {/* Invoice Header */}
+                    <div className="mb-8 pb-6 border-b-2 border-gray-300">
+                      <div className="flex justify-between items-start mb-4">
                         <div>
-                          <p className="text-[10px] font-medium text-gray-500 mb-0.5">Current Balance</p>
-                          <p className="text-sm font-semibold text-[#3E2B66]">
-                            {subscriptionPlan?.creditsBalance || 0} <span className="text-[10px] font-normal text-gray-500">credits</span>
-                          </p>
-                        </div>
-                        <div className="text-center border-x border-gray-200 px-3">
-                          <p className="text-[10px] font-medium text-gray-500 mb-0.5">Total Cost</p>
-                          <p className="text-sm font-semibold text-red-600">
-                            {calculateTotalCost()} <span className="text-[10px] font-normal text-gray-500">credits</span>
-                          </p>
+                          <h2 className="text-3xl font-bold text-gray-900 mb-1">Envelope Summary</h2>
+                          {/* <p className="text-sm text-gray-500">Transaction Summary</p> */}
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-medium text-gray-500 mb-0.5">Remaining Balance</p>
-                          <p className={`text-sm font-semibold ${
-                            ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
-                            {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} <span className="text-[10px] font-normal text-gray-500">credits</span>
+                          <p className="text-xs text-gray-500 mb-1">Date</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                {/* Recipients with Authentication Methods */}
-                <div className="space-y-3 mb-8">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Recipients & Authentication Methods</h3>
-                  {recipients.map((recipient) => {
-                    // Parse authentication - can be JSON stringified array or single value
-                    const authArray = parseAuthentication(recipient.authentication);
-                    const authMethodList = authArray.map(authId => 
-                      authMethods.find(m => m.id === authId)
-                    ).filter(Boolean);
-                    const totalCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
-                    const authDisplay = authMethodList.length > 0 
-                      ? authMethodList.map(m => m?.name).join(', ')
-                      : 'No Authentication Method selected';
-                    return (
-                      <div key={recipient.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-sm font-semibold text-gray-400">{recipient.order}.</span>
-                              <p className="text-base font-semibold text-gray-900 truncate">
-                                {recipient.name || recipient.email}
-                              </p>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-3 truncate">{recipient.email}</p>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
-                                <span className="text-xs font-medium text-gray-500">Authentication:</span>
-                                <span className="text-xs font-semibold text-gray-700">{authDisplay}</span>
-                              </div>
-                              <button
-                                type="button"
-                                title="Edit authentication method"
-                                onClick={() => {
-                                  setAuthModalForRecipientId(recipient.id);
-                                  setAuthModalForBulk(false);
-                                  setShowAuthModal(true);
-                                }}
-                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 text-gray-600 transition-colors"
-                              >
-                                <Edit className='w-4 h-4' />
-                              </button>
-                            </div>
+                    {/* Insufficient Credits Warning */}
+                    {((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) < 0 && (
+                      <div className="bg-red-50 border-2 border-red-200 rounded-lg p-5 mb-6">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center mt-0.5">
+                            <span className="text-white text-xs font-bold">!</span>
                           </div>
-                          <div className="flex-shrink-0 text-right pl-4 border-l border-gray-200">
-                            <p className="text-xs font-medium text-gray-500 mb-1">Cost</p>
-                            <p className="text-xl font-bold text-[#3E2B66]">
-                              {totalCost > 0 ? `${totalCost}` : '0'}
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-red-900 mb-2">Insufficient Credits</h3>
+                            <p className="text-sm text-red-700 mb-3">
+                              You need <span className="font-bold">{calculateTotalCost()}</span> credits but only have{' '}
+                              <span className="font-bold">{subscriptionPlan?.creditsBalance || 0}</span> credits available.
                             </p>
-                            <p className="text-xs text-gray-500">credits</p>
+                            <p className="text-sm text-red-600">
+                              Please upgrade your plan or add credits to proceed with sending this envelope.
+                            </p>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+
+                    {/* Invoice Line Items */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Line Items</h3>
+                      
+                      {/* Table Header */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-t-lg overflow-hidden">
+                        <div className="grid grid-cols-12 gap-4 px-4 py-3">
+                          <div className="col-span-1 text-xs font-semibold text-gray-600">#</div>
+                          <div className="col-span-4 text-xs font-semibold text-gray-600">Recipient</div>
+                          <div className="col-span-4 text-xs font-semibold text-gray-600">Authentication Method</div>
+                          <div className="col-span-2 text-xs font-semibold text-gray-600 text-right">Rate</div>
+                          <div className="col-span-1 text-xs font-semibold text-gray-600 text-right">Amount</div>
+                        </div>
+                      </div>
+
+                      {/* Table Body */}
+                      <div className="border border-gray-200 border-t-0 rounded-b-lg overflow-hidden">
+                        {recipients.map((recipient, index) => {
+                          // Parse authentication - can be JSON stringified array or single value
+                          const authArray = parseAuthentication(recipient.authentication);
+                          const authMethodList = authArray.map(authId => 
+                            authMethods.find(m => m.id === authId)
+                          ).filter(Boolean);
+                          const totalCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
+                          const authDisplay = authMethodList.length > 0 
+                            ? authMethodList.map(m => m?.name).join(', ')
+                            : 'No Authentication';
+                          
+                          return (
+                            <div 
+                              key={recipient.id} 
+                              className={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors ${
+                                index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                              }`}
+                            >
+                              <div className="col-span-1 text-sm font-medium text-gray-500">{recipient.order}</div>
+                              <div className="col-span-4">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {recipient.name || recipient.email}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">{recipient.email}</p>
+                              </div>
+                              <div className="col-span-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-700">{authDisplay}</span>
+                                  <button
+                                    type="button"
+                                    title="Edit authentication method"
+                                    onClick={() => {
+                                      setAuthModalForRecipientId(recipient.id);
+                                      setAuthModalForBulk(false);
+                                      setShowAuthModal(true);
+                                    }}
+                                    className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0"
+                                  >
+                                    <Edit className='w-3 h-3' />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="col-span-2 text-sm text-gray-600 text-right">
+                                {totalCost > 0 ? `${totalCost}` : '0'} <span className="text-xs text-gray-500">credits</span>
+                              </div>
+                              <div className="col-span-1 text-sm font-semibold text-[#3E2B66] text-right">
+                                {totalCost > 0 ? `${totalCost}` : '0'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Invoice Summary */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+                      <div className=" space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">Current Balance:</span>
+                          <span className="font-semibold text-gray-900">{subscriptionPlan?.creditsBalance || 0} credits</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">Deduction:</span>
+                          <span className="font-semibold text-red-600">- {calculateTotalCost()} credits</span>
+                        </div>
+                        <div className="border-t border-gray-300 pt-3 mt-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-base font-semibold text-gray-900">Remaining Balance:</span>
+                            <span className={`text-xl font-bold ${
+                              ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} credits
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
 
                     <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-gray-200">
                       <button

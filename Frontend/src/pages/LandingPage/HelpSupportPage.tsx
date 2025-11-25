@@ -553,21 +553,21 @@ const HelpSupportPage: React.FC = () => {
                 Popular Resources
               </h3>
               <div className="space-y-3">
-                <Link to="/api-documentation" className="flex items-center gap-3 p-3 bg-white rounded-lg hover:shadow-md transition-shadow">
+                <Link to="/api-documentation" className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
                   <Book className="w-5 h-5 text-blue-600" />
                   <div>
                     <div className="font-medium text-gray-900">API Documentation</div>
                     <div className="text-xs text-gray-600">Complete API reference</div>
                   </div>
                 </Link>
-                <Link to="/contact-sales" className="flex items-center gap-3 p-3 bg-white rounded-lg hover:shadow-md transition-shadow">
+                <Link to="/contact-sales" className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
                   <Users className="w-5 h-5 text-green-600" />
                   <div>
                     <div className="font-medium text-gray-900">Enterprise Support</div>
                     <div className="text-xs text-gray-600">Priority support for teams</div>
                   </div>
                 </Link>
-                <Link to="/security-overview" className="flex items-center gap-3 p-3 bg-white rounded-lg hover:shadow-md transition-shadow">
+                <Link to="/security-overview" className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
                   <Shield className="w-5 h-5 text-purple-600" />
                   <div>
                     <div className="font-medium text-gray-900">Security & Compliance</div>

@@ -106,7 +106,7 @@ const ComprehensivePlatform = () => {
             Complete Document Lifecycle Management
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-            From creation to signature, DocuSigner handles every aspect of your document workflow.
+            From creation to signature, Draft&Sign handles every aspect of your document workflow.
             Prepare, generate, edit, compare, sign, and distribute - all with enterprise-grade security and compliance.
           </p>
         </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { subscriptionApi } from '../../services/apiHelper';
-import { ArrowLeft, CreditCard, TrendingUp, TrendingDown, CheckCircle2, XCircle, Clock, Zap } from 'lucide-react';
+import { ArrowLeft, CreditCard, TrendingUp, TrendingDown, CheckCircle2, XCircle, Clock, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface UsageRow {
   _id?: string;
@@ -16,42 +16,97 @@ interface UsageRow {
 
 const CreditsUsagePage: React.FC = () => {
   const [balance, setBalance] = React.useState<number | null>(null);
-  const [rows, setRows] = React.useState<UsageRow[]>([]);
-  const [limit] = React.useState(20);
+  const [allRows, setAllRows] = React.useState<UsageRow[]>([]);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [limit] = React.useState(10);
   const [loading, setLoading] = React.useState(true);
   const toolNameByIdRef = React.useRef<Record<string, string>>({});
 
-  const load = React.useCallback(async (p: number) => {
+  const load = React.useCallback(async () => {
     setLoading(true);
     try {
       const [bRes, rRes] = await Promise.all([
         subscriptionApi.get('/usage/balance'),
-        subscriptionApi.get(`/usage/records?page=${p}&limit=${limit}`),
+        subscriptionApi.get('/usage/records'),
       ]);
       setBalance((bRes as any).data?.data?.creditsBalance ?? null);
       const payload = (rRes as any).data?.data || {};
       const recs = (payload.records || []) as UsageRow[];
      
-      setRows(recs);
+      setAllRows(recs);
     } finally {
       setLoading(false);
     }
-  }, [limit]);
+  }, []);
 
   React.useEffect(() => {
     try {
       const raw = localStorage.getItem('toolCatalogNameMap');
       toolNameByIdRef.current = raw ? JSON.parse(raw) : {};
     } catch {}
-    load(1);
+    load();
   }, [load]);
 
+  // Calculate pagination
+  const totalPages = Math.ceil(allRows.length / limit);
+  const startIndex = (currentPage - 1) * limit;
+  const endIndex = startIndex + limit;
+  const rows = allRows.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      // Show all pages if total is less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+      
+      if (currentPage <= 3) {
+        // Near the start
+        for (let i = 2; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        // Near the end
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // In the middle
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
 
-  // Calculate statistics
-  const totalUsed = rows.filter(r => r.creditsDelta < 0).reduce((sum, r) => sum + Math.abs(r.creditsDelta), 0);
-  // const totalAdded = rows.filter(r => r.creditsDelta > 0).reduce((sum, r) => sum + r.creditsDelta, 0);
-  const successCount = rows.filter(r => r.success !== false).length;
+
+  // Calculate statistics (based on all rows, not just current page)
+  const totalUsed = allRows.filter(r => r.creditsDelta < 0).reduce((sum, r) => sum + Math.abs(r.creditsDelta), 0);
+  // const totalAdded = allRows.filter(r => r.creditsDelta > 0).reduce((sum, r) => sum + r.creditsDelta, 0);
+  const successCount = allRows.filter(r => r.success !== false).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-6">
@@ -132,7 +187,13 @@ const CreditsUsagePage: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Usage History</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">{rows.length} {rows.length === 1 ? 'record' : 'records'}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {allRows.length > 0 ? (
+                      <>Showing {startIndex + 1} - {Math.min(endIndex, allRows.length)} of {allRows.length} {allRows.length === 1 ? 'record' : 'records'}</>
+                    ) : (
+                      <>No records found</>
+                    )}
+                  </p>
                 </div>
               </div>
             </div>
@@ -227,6 +288,62 @@ const CreditsUsagePage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || loading}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {getPageNumbers().map((page, index) => {
+                    if (page === '...') {
+                      return (
+                        <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-500">
+                          ...
+                        </span>
+                      );
+                    }
+                    const pageNum = page as number;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        disabled={loading}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages || loading}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

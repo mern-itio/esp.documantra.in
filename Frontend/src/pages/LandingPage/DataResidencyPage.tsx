@@ -120,7 +120,7 @@ const DataResidencyPage = () => {
     <div className="min-h-screen bg-gray-50 pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 mb-8 text-white">
+        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="md:w-2/3">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">Data Residency</h1>
@@ -292,7 +292,7 @@ const DataResidencyPage = () => {
         </div>
 
         {/* Enterprise Options */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-lg p-8 mb-8 text-white">
+        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
               <h2 className="text-2xl font-bold mb-4">Enterprise Data Residency Options</h2>
@@ -421,16 +421,16 @@ const DataResidencyPage = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 text-white text-center">
+        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Control Your Data Residency?</h2>
           <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
             Join thousands of organizations that trust DocuSigner for secure, compliant document management with flexible data residency options.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+            <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
               Start Free Trial
             </Link>
-            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
               Contact Sales
             </Link>
           </div>

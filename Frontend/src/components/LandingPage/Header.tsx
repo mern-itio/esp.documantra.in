@@ -340,7 +340,7 @@ const Header = () => {
 
             {/* Right side - Utility links + Login */}
             <div className="flex items-center space-x-6">
-              <a href="#" className="hover:text-primary-200 transition-colors">Blog</a>
+              <Link to="/blog" className="hover:text-primary-200 transition-colors">Blog</Link>
               <a href="#" className="hover:text-primary-200 transition-colors">Docs</a>
               {/* <a href="#" className="hover:text-primary-200 transition-colors">Get Support</a> */}
               <Link to="/contact-sales" className="hover:text-primary-200 transition-colors">Contact Sales</Link>

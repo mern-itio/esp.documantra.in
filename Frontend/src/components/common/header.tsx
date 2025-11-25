@@ -2,9 +2,10 @@ import React from 'react';
 import { useAuth } from '../AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { Bell, LogOut, Menu, Search, User, Crown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import { subscriptionApi, eSignApi } from '../../services/apiHelper';
+import Swal from 'sweetalert2';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -15,6 +16,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const { user, logout } = useAuth();
   const { userPlan, isFreePlan } = useSubscription();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Check if user has a paid plan
   const isPaidPlan = userPlan && !isFreePlan();
@@ -170,10 +172,59 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-    } finally {
-      navigate('/login');
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to log out?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#260559',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, log out',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      focusCancel: true,
+      customClass: {
+        popup: 'rounded-xl',
+        confirmButton: 'px-5 py-2.5 rounded-lg font-medium',
+        cancelButton: 'px-5 py-2.5 rounded-lg font-medium'
+      }
+    });
+
+    // Only proceed if user confirmed
+    if (result.isConfirmed) {
+      try {
+        await logout();
+        // Show success message briefly before navigating
+        await Swal.fire({
+          title: 'Logged out!',
+          text: 'You have been successfully logged out.',
+          icon: 'success',
+          confirmButtonColor: '#260559',
+          confirmButtonText: 'OK',
+          timer: 1500,
+          timerProgressBar: true,
+          customClass: {
+            popup: 'rounded-xl',
+            confirmButton: 'px-5 py-2.5 rounded-lg font-medium'
+          }
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Failed to log out. Please try again.',
+          icon: 'error',
+          confirmButtonColor: '#DC2626',
+          confirmButtonText: 'OK',
+          customClass: {
+            popup: 'rounded-xl',
+            confirmButton: 'px-5 py-2.5 rounded-lg font-medium'
+          }
+        });
+      } finally {
+        navigate('/login');
+      }
     }
   };
 

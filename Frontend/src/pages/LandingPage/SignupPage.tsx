@@ -212,7 +212,7 @@ const SignupPage = () => {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.firstName ? 'border-red-400' : 'border-gray-300'}`}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg ${errors.firstName ? 'border-red-400' : 'border-gray-300'}`}
                       placeholder="Enter Name"
                       required
                     />
@@ -230,7 +230,7 @@ const SignupPage = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.phone ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-3 border rounded-lg ${errors.phone ? 'border-red-400' : 'border-gray-300'}`}
                     inputMode="numeric"
                     pattern="\d{10}"
                     maxLength={10}
@@ -253,7 +253,7 @@ const SignupPage = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.email ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg ${errors.email ? 'border-red-400' : 'border-gray-300'}`}
                     placeholder="Enter your email"
                     required
                   />
@@ -272,7 +272,7 @@ const SignupPage = () => {
                       name="company"
                       value={formData.company}
                       onChange={handleInputChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.company ? 'border-red-400' : 'border-gray-300'}`}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg ${errors.company ? 'border-red-400' : 'border-gray-300'}`}
                       placeholder="Enter Company Name"
                       required
                     />
@@ -290,7 +290,7 @@ const SignupPage = () => {
                       name="address"
                       value={formData.address}
                       onChange={handleInputChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.address ? 'border-red-400' : 'border-gray-300'}`}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg ${errors.address ? 'border-red-400' : 'border-gray-300'}`}
                       placeholder="Enter Address"
                       required
                     />
@@ -310,7 +310,7 @@ const SignupPage = () => {
                       onChange={handleInputChange}
                       onFocus={() => setPasswordFocused(true)}
                       onBlur={() => setPasswordFocused(false)}
-                      className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.password ? 'border-red-400' : 'border-gray-300'}`}
+                      className={`w-full pl-10 pr-12 py-3 border rounded-lg ${errors.password ? 'border-red-400' : 'border-gray-300'}`}
                       placeholder="Create a password"
                       required
                     />
@@ -365,7 +365,7 @@ const SignupPage = () => {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.confirmPassword ? 'border-red-400' : 'border-gray-300'}`}
+                      className={`w-full pl-10 pr-12 py-3 border rounded-lg ${errors.confirmPassword ? 'border-red-400' : 'border-gray-300'}`}
                       placeholder="Confirm password"
                       required
                     />
@@ -389,16 +389,16 @@ const SignupPage = () => {
                     name="agreeToTerms"
                     checked={formData.agreeToTerms}
                     onChange={handleInputChange}
-                    className="mt-1 text-primary-600 focus:ring-primary-500"
+                    className="mt-1 text-[#260559]/100 focus:ring-[#260559]/80"
                     required
                   />
                   <span className="text-xs text-gray-700">
                     I agree to the{' '}
-                    <Link to="/terms-of-service" className="text-primary-600 hover:text-primary-700">
+                    <Link to="/terms-of-service" className="text-[#260559]/100 hover:text-[#260559]/80">
                       Terms of Service
                     </Link>{' '}
                     and{' '}
-                    <Link to="/privacy-policy" className="text-primary-600 hover:text-primary-700">
+                    <Link to="/privacy-policy" className="text-[#260559]/100 hover:text-[#260559]/80">
                       Privacy Policy
                     </Link>
                   </span>
@@ -410,7 +410,7 @@ const SignupPage = () => {
                     name="subscribeNewsletter"
                     checked={formData.subscribeNewsletter}
                     onChange={handleInputChange}
-                    className="mt-1 text-primary-600 focus:ring-primary-500"
+                    className="mt-1 text-[#260559]/100 focus:ring-[#260559]/80"
                   />
                   <span className="text-xs text-gray-700">
                     Send me product updates and tips (optional)
@@ -420,7 +420,7 @@ const SignupPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full btn-primary text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full btn-primary text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" style={{backgroundColor: '#260559'}}
               >
                 {isLoading ? (
                   "Creating Account..."
@@ -435,7 +435,7 @@ const SignupPage = () => {
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-600">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+                <Link to="/login" className="text-[#260559]/100 hover:text-[#260559]/80 font-medium">
                   Sign in
                 </Link>
               </p>

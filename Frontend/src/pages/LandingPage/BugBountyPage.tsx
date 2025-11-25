@@ -131,8 +131,8 @@ const BugBountyPage = () => {
     <div className="min-h-screen bg-gray-50 pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 mb-8 text-white">
-          <div className="flex flex-col md:flex-row items-center gap-8">
+       <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
+   <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="md:w-2/3">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">Bug Bounty Program</h1>
               <p className="text-xl text-primary-100 mb-6">
@@ -418,15 +418,15 @@ const BugBountyPage = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Legal Safe Harbor</h2>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+          <div className="bg-[#260559]/10 border border-[#260559]/20 rounded-lg p-6 mb-6">
             <div className="flex items-start gap-3">
-              <Shield className="h-6 w-6 text-blue-600 mt-0.5" />
+              <Shield className="h-6 w-6 text-[#260559]-600 mt-0.5" />
               <div>
-                <h3 className="text-lg font-semibold text-blue-800 mb-2">Safe Harbor Protection</h3>
-                <p className="text-blue-700">
-                  DocuSigner provides "Safe Harbor" for security researchers who:
+                <h3 className="text-lg font-semibold text-[#260559]-800 mb-2">Safe Harbor Protection</h3>
+                <p className="text-[#260559]-700">
+                  Draft&Sign provides "Safe Harbor" for security researchers who:
                 </p>
-                <ul className="list-disc pl-6 mt-2 space-y-1 text-blue-700">
+                <ul className="list-disc pl-6 mt-2 space-y-1 text-[#260559]-700">
                   <li>Make a good faith effort to avoid privacy violations, destruction of data, and interruption or degradation of our services</li>
                   <li>Only interact with accounts you own or with explicit permission of the account holder</li>
                   <li>Do not exploit a security issue you discover for any reason other than testing</li>
@@ -473,7 +473,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Contact Information */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 text-white">
+        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 text-white">
           <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
           
           <div className="grid md:grid-cols-2 gap-8">
@@ -602,9 +602,9 @@ const BugBountyPage = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 mt-8 text-white text-center">
+        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mt-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Start Hunting?</h2>
-          <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-white max-w-3xl mx-auto mb-8">
             Join our bug bounty program today and help us make DocuSigner more secure while earning rewards for your findings.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -612,7 +612,7 @@ const BugBountyPage = () => {
               href="https://hackerone.com/docusigner" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg"
+              className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg"
             >
               Join Our Program <ArrowRight className="ml-2 h-5 w-5 inline" />
             </a>

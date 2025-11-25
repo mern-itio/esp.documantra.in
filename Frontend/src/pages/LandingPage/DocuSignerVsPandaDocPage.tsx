@@ -207,7 +207,7 @@ const DocuSignerVsPandaDocPage = () => {
       <div className="container-max">
         {/* Hero Section */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-white">
+          <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 p-8 text-white">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Draft&Sign vs PandaDoc: The Complete Comparison</h1>
             <p className="text-xl text-primary-100 max-w-3xl">
               Discover why Draft&Sign offers superior value with more features and lower prices than PandaDoc.
@@ -581,7 +581,7 @@ const DocuSignerVsPandaDocPage = () => {
           </div>
           
           <div className="mt-6 text-center">
-            <Link to="/contact" className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+            <Link to="/contact" className="inline-flex items-center gap-2 bg-[#260559] hover:bg-[#260559] text-white font-semibold py-3 px-6 rounded-lg transition-colors">
               Schedule Migration Consultation
               <ArrowRight className="h-5 w-5" />
             </Link>
@@ -651,16 +651,16 @@ const DocuSignerVsPandaDocPage = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 text-white text-center">
+        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Save Money and Get More Features?</h2>
           <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
             Join thousands of businesses that have switched from PandaDoc to Draft&Sign for better features at lower prices.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+            <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
               Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
             </Link>
-            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
               Schedule Demo
             </Link>
           </div>

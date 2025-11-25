@@ -75,6 +75,8 @@ import SharedDocument from '../pages/SharedDocument';
 // import HowItWorksPage from '../pages/LandingPage/HowItWorks';
 import StatusPage from '../pages/LandingPage/StatusPage';
 import ContactSales from '../pages/LandingPage/ContactSales';
+import BlogPage from '../pages/LandingPage/BlogPage';
+import AboutPage from '../pages/LandingPage/AboutPage';
 import WhyDocuSignerPage from '../pages/LandingPage/WhyDocuSignerPage';
 import LoginPage from '../pages/LandingPage/LoginPage';
 import SignupPage from '../pages/LandingPage/SignupPage';
@@ -188,7 +190,7 @@ import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 import { PowerForm } from '../pages/eSign/PowerForm';
 import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
-import { AllInOnePlatformPage, APIDocumentationPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
+import { AccessibilityPage, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
 import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
 import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
 import EnvelopeDetailPage from '../pages/eSign/EnvelopeDetailPage';
@@ -540,6 +542,8 @@ const guestRoutes = [
   { path: '/status', element: <StatusPage /> },
   { path: '/contact-sales', element: <ContactSales /> },
   { path: '/help-support', element: <HelpSupportPage /> },
+  { path: '/blog', element: <BlogPage /> },
+  { path: '/about', element: <AboutPage /> },
   { path: '/oauth-callback', element: <OAuthCallback /> },
   { path: '/why-draft-sign', element: <WhyDocuSignerPage /> },
   // { path: '/accessibility', element: <AccessibilityPage /> },
@@ -551,6 +555,9 @@ const guestRoutes = [
   { path: '/all-in-one', element: <AllInOnePlatformPage /> },
   { path: '/ai-powered-features', element: <AIPoweredFeaturesPage /> },
   { path: '/api-documentation', element: <APIDocumentationPage /> },
+  { path: '/bug-bounty', element: <BugBountyPage /> },
+  { path: '/data-residency', element:<DataResidencyPage /> },
+  { path: '/accessibility', element:<AccessibilityPage /> },
 
   // Public Shared Document Route (No Authentication Required)
 

@@ -43,7 +43,7 @@ const FeatureComparisonPage = () => {
   return (
     <div className="min-h-screen bg-white pt-24">
       {/* Hero */}
-      <section className="py-16 bg-gradient-to-br from-primary-50 to-white">
+      <section className="py-16 bg-gradient-to-br from-[#260559]/10 to-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Detailed Feature Comparison</h1>
@@ -51,10 +51,10 @@ const FeatureComparisonPage = () => {
               See how Draft&Sign compares to DocuSign, HelloSign, Adobe Sign, and PandaDoc across features and pricing.
             </p>
             <div className="flex gap-3 justify-center mt-8 flex-wrap">
-              <Link to="/draft-n-sign-vs-docusign" className="btn-secondary">Draft&Sign vs DocuSign</Link>
-              <Link to="/draft-n-sign-vs-hellosign" className="btn-secondary">Draft&Sign vs HelloSign</Link>
-              <Link to="/draft-n-sign-vs-adobesign" className="btn-secondary">Draft&Sign vs Adobe Sign</Link>
-              <Link to="/draft-n-sign-vs-pandadoc" className="btn-secondary">Draft&Sign vs PandaDoc</Link>
+              <Link to="/draft-n-sign-vs-docusign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs DocuSign</Link>
+              <Link to="/draft-n-sign-vs-hellosign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs HelloSign</Link>
+              <Link to="/draft-n-sign-vs-adobesign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs Adobe Sign</Link>
+              <Link to="/draft-n-sign-vs-pandadoc" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs PandaDoc</Link>
             </div>
           </div>
         </div>
@@ -135,16 +135,16 @@ const FeatureComparisonPage = () => {
       {/* CTA */}
       <section className="py-16">
         <div className="container-max px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 text-white text-center">
+          <div className="bg-gradient-to-r from-[#260559]/90 to-[#260559]/80 rounded-2xl shadow-lg p-8 text-white text-center">
             <h2 className="text-2xl font-bold mb-4">Ready to get started?</h2>
             <p className="text-primary-100 max-w-3xl mx-auto mb-6">
               Start free, explore all features, and see why teams switch to Draft&Sign.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
                 Start Free <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
                 Talk to Sales
               </Link>
             </div>

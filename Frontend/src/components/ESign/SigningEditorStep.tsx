@@ -1287,6 +1287,14 @@ export default function SigningEditorStep({
 
   // Get active recipient/slot color
   const activeColor = (activeRecipientId ? recipientColorMap[activeRecipientId] : (activeSlotId ? recipientColorMap[activeSlotId] : null)) || "#2563eb";
+  
+  // Get active recipient/slot border style
+  const activeBorderStyle = (activeRecipientId ? recipientBorderStyleMap[activeRecipientId] : (activeSlotId ? recipientBorderStyleMap[activeSlotId] : null)) || "dashed";
+  
+  // Calculate border width based on border style
+  const getBorderWidth = (style: string) => {
+    return (style === "double" || style === "inset" || style === "outset") ? "3px" : "2px";
+  };
 
   // Standard fields list for left sidebar
   const standardFields = [
@@ -1355,12 +1363,23 @@ export default function SigningEditorStep({
                   <div className="flex items-center gap-2">
                     {recipients.map((r, idx) => {
                       const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx) || "#2563eb";
+                      const recipientBorderStyle = recipientBorderStyleMap[r.id] || getRecipientBorderStyle(idx) || "dashed";
                       const isActive = r.id === activeRecipientId;
+                      const borderWidth = getBorderWidth(recipientBorderStyle);
                       return (
                         <button
                           key={r.id}
                           onClick={() => setActiveRecipientId(r.id)}
-                          className={`flex items-center gap-2 px-3 py-1 rounded border transition-colors ${isActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:bg-gray-100'}`}
+                          className={`flex items-center gap-2 px-3 py-1 rounded transition-colors ${isActive ? '' : 'border-gray-300 hover:bg-gray-100'}`}
+                          style={isActive ? {
+                            borderWidth: borderWidth,
+                            borderStyle: recipientBorderStyle as React.CSSProperties['borderStyle'],
+                            borderColor: recipientColor || "#2563eb",
+                            backgroundColor: hexToRgba(recipientColor, 0.1)
+                          } : {
+                            borderWidth: '2px',
+                            borderStyle: 'solid'
+                          }}
                           title={r.email || r.name}
                           data-tour="editor-recipient"
                         >
@@ -1387,7 +1406,16 @@ export default function SigningEditorStep({
                   <>
                     <button
                       onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
-                      className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-white-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                      className={`w-60 flex items-center justify-between gap-2 px-3 py-1 rounded transition-colors ${activeRecipientId ? '' : 'bg-white-100 hover:bg-gray-200 border-gray-300'}`}
+                      style={activeRecipientId ? {
+                        borderWidth: getBorderWidth(activeBorderStyle),
+                        borderStyle: activeBorderStyle as React.CSSProperties['borderStyle'],
+                        borderColor: activeColor || "#2563eb",
+                        backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1)
+                      } : {
+                        borderWidth: '2px',
+                        borderStyle: 'solid'
+                      }}
                       data-tour="editor-recipient"
                     >
                       {/* LEFT BLOCK — icon + name */}
@@ -1420,7 +1448,9 @@ export default function SigningEditorStep({
                       <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
                         {recipients.map((r, idx) => {
                           const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx) || "#2563eb";
+                          const recipientBorderStyle = recipientBorderStyleMap[r.id] || getRecipientBorderStyle(idx) || "dashed";
                           const isActive = r.id === activeRecipientId;
+                          const borderWidth = getBorderWidth(recipientBorderStyle);
                           return (
                             <button
                               key={r.id}
@@ -1428,7 +1458,13 @@ export default function SigningEditorStep({
                                 setActiveRecipientId(r.id);
                                 setShowRecipientDropdown(false);
                               }}
-                              className={`w-full text-left px-4 py-2 flex items-center gap-2 ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                              className={`w-full text-left px-4 py-2 flex items-center gap-2 border-l-4 transition-colors ${isActive ? '' : 'hover:bg-gray-50 border-l-transparent'}`}
+                              style={isActive ? {
+                                backgroundColor: hexToRgba(recipientColor, 0.1),
+                                borderLeftWidth: borderWidth,
+                                borderLeftStyle: recipientBorderStyle as React.CSSProperties['borderLeftStyle'],
+                                borderLeftColor: recipientColor || "#2563eb"
+                              } : {}}
                             >
                               <div
                                 className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"

@@ -195,7 +195,7 @@ const StatusPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-24 mt-8 pb-16">
       <div className="container-max">
         {/* Current Status Overview */}
         <div className={`bg-white rounded-2xl shadow-lg p-8 mb-8 border-l-4 ${
@@ -221,7 +221,7 @@ const StatusPage = () => {
               </button>
               <Link 
                 to="/subscribe-status" 
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-[#260559] hover:bg-[#260559]-700 text-white rounded-lg transition-colors"
               >
                 <span>Subscribe to Updates</span>
               </Link>
@@ -562,7 +562,7 @@ const StatusPage = () => {
         )}
 
         {/* Status Subscription */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-8 mb-8 text-white">
+        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <h2 className="text-2xl font-bold mb-4">Stay Informed</h2>
@@ -619,7 +619,7 @@ const StatusPage = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-white text-primary-600 hover:bg-primary-50 font-semibold py-3 px-4 rounded-lg transition-colors"
+                  className="w-full bg-white text-[#260559] hover:bg-primary-50 font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
                   Subscribe
                 </button>

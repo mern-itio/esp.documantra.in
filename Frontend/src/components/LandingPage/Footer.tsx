@@ -566,52 +566,52 @@ const Footer = () => {
             <h3 className="font-semibold text-white mb-4">Product</h3>
             <ul className="space-y-3">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/login"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   eSignature
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/login"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   PDF Tools
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/login"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Legal Templates
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/login"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   API
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/login"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   AI Assistant
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/login"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Mobile App
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -619,73 +619,73 @@ const Footer = () => {
             <h3 className="font-semibold text-white mb-4">Company</h3>
             <ul className="space-y-3">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/about"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   About
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/blog"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Blog
-                </a>
+                </Link>
               </li>
-              <li>
+              {/* <li>
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Careers
                 </a>
-              </li>
-              <li>
+              </li> */}
+              {/* <li>
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Partners
                 </a>
-              </li>
+              </li> */}
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/contact-sales"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
-                  Contact
-                </a>
+                  Contact Sales
+                </Link>
               </li>
-              <li>
+              {/* <li>
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Press Kit
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
           <div>
             <h3 className="font-semibold text-white mb-4">Resources</h3>
             <ul className="space-y-3">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/help-support"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Help Center
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/api-documentation"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   API Docs
-                </a>
+                </Link>
               </li>
               <li>
                 <a
@@ -695,30 +695,22 @@ const Footer = () => {
                   Whitepapers
                 </a>
               </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Blog
-                </a>
-              </li>
-              <li>
+              {/* <li>
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Webinars
                 </a>
-              </li>
-              <li>
+              </li> */}
+              {/* <li>
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Templates
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
           <div>
@@ -741,12 +733,12 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/cookie-policy"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   Cookie Policy
-                </a>
+                </Link>
               </li>
               <li>
                 <a
@@ -832,7 +824,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li>
                 <Link
-                  to="/docusigner-vs-docusign"
+                  to="/draft-n-sign-vs-docusign"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   DraftnSign vs DocuSign
@@ -840,7 +832,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/docusigner-vs-hellosign"
+                  to="/draft-n-sign-vs-hellosign"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   DraftnSign vs HelloSign
@@ -848,7 +840,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/docusigner-vs-adobe-sign"
+                  to="/draft-n-sign-vs-adobesign"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   DraftnSign vs Adobe Sign
@@ -856,19 +848,19 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/docusigner-vs-pandadoc"
+                  to="/draft-n-sign-vs-pandadoc"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   DraftnSign vs PandaDoc
                 </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/feature-comparison"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   All Comparisons
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -908,13 +900,12 @@ const Footer = () => {
         </div>
 
         {/* Mobile App Download Section */}
-        <div className="py-8 border-t border-gray-800">
+        {/* <div className="py-8 border-t border-gray-800">
           <div className="text-center mb-6">
             <h3 className="text-lg font-semibold text-white mb-2">Download Our Mobile App</h3>
             <p className="text-gray-400 text-sm">Sign documents on the go with our mobile apps</p>
           </div>
           <div className="flex justify-center gap-4">
-            {/* iOS App Store */}
             <a
               href="#"
               className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded-lg transition-colors"
@@ -929,8 +920,6 @@ const Footer = () => {
                 <div className="text-sm font-semibold text-white">App Store</div>
               </div>
             </a>
-
-            {/* Google Play Store */}
             <a
               href="#"
               className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded-lg transition-colors"
@@ -946,7 +935,7 @@ const Footer = () => {
               </div>
             </a>
           </div>
-        </div>
+        </div> */}
 
         {/* Bottom Footer */}
         <div className="py-8 border-t border-gray-800">
