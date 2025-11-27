@@ -1251,7 +1251,7 @@ const AgreementPage: React.FC = () => {
                       {formatDate(agreement.lastChange)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
-                      <div className="flex items-center justify-end gap-2 relative" ref={menuRef}>
+                      <div className="flex items-center justify-end gap-2 relative">
                         {agreement.status === 'in-progress' && (
                           <button
                             onClick={() => handleRowResend(agreement)}
@@ -1304,6 +1304,7 @@ const AgreementPage: React.FC = () => {
                         {agreement.status !== 'deleted' && (
                           <button
                             onClick={(e) => {
+                              e.stopPropagation();
                               const target = e.currentTarget as HTMLElement;
                               const rect = target.getBoundingClientRect();
                               const menuWidth = 224;
@@ -1324,10 +1325,6 @@ const AgreementPage: React.FC = () => {
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
-                        )}
-
-                        {openMenuId === agreement.id && menuPosition && (
-                          <div className="fixed inset-0 z-1" onClick={() => { setOpenMenuId(null); setMenuPosition(null); }} />
                         )}
                       </div>
                     </td>

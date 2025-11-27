@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Upload,
@@ -31,13 +31,15 @@ import {
   AlertTriangle,
   CircleQuestionMark,
   ChevronLeft,
+  ChevronRight,
   ExternalLink,
   Phone,
   Edit,
   BookOpen,
   Search,
   Save,
-  GripVertical
+  GripVertical,
+  Mail
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -143,7 +145,15 @@ const EnvelopeCreator: React.FC = () => {
       }
     }
   }, [documents]);
+
+  // Reset stacked doc index when documents change
+  useEffect(() => {
+    if (documents && documents.length > 0) {
+      setStackedDocIndex(prev => Math.max(0, Math.min(prev, documents.length - 1)));
+    }
+  }, [documents?.length]);
   const [showDocuments, setShowDocuments] = useState(true);
+  const [stackedDocIndex, setStackedDocIndex] = useState(0); // Index of top document in stacked view
   const [openRoleDropdownId, setOpenRoleDropdownId] = useState<string | null>(null);
   const [openCustomizeDropdownId, setOpenCustomizeDropdownId] = useState<string | null>(null);
   const [setSigningOrder, setSetSigningOrder] = useState(false);
@@ -160,6 +170,8 @@ const EnvelopeCreator: React.FC = () => {
   const [_isReordering, setIsReordering] = useState(false);
   // Track which recipient is being reordered
   const [reorderingRecipientId, setReorderingRecipientId] = useState<string | null>(null);
+  // Track recently reordered pills for animation effect
+  const [reorderedPillIds, setReorderedPillIds] = useState<Set<string>>(new Set());
   // Bulk send modal state
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkStep, setBulkStep] = useState<1 | 2>(1);
@@ -253,6 +265,29 @@ const EnvelopeCreator: React.FC = () => {
   const helpButtonRef = useRef<HTMLButtonElement | null>(null);
   // Subscription modal state
   const [showSubscriptionModal, setShowSubscriptionModal] = useState<boolean>(false);
+  // Summary section state
+  const [showSummary, setShowSummary] = useState<boolean>(false);
+  
+  // Check if there are any recipients with authentication methods
+  const hasRecipientsWithAuth = useMemo(() => {
+    return recipients.some((recipient) => {
+      const authArray = parseAuthentication(recipient.authentication);
+      const authMethodList = authArray.map(authId => 
+        authMethods.find(m => m.id === authId)
+      ).filter(Boolean);
+      return authMethodList.length > 0;
+    });
+  }, [recipients, authMethods]);
+  
+  // Auto-expand summary when there are no recipients with authentication in the table
+  // Collapse it when there are recipients with authentication in the table
+  useEffect(() => {
+    if (!hasRecipientsWithAuth && recipients.length > 0) {
+      setShowSummary(true);
+    } else if (hasRecipientsWithAuth) {
+      setShowSummary(false);
+    }
+  }, [hasRecipientsWithAuth, recipients.length]);
   
   // Close help menu when clicking outside
   useEffect(() => {
@@ -2899,9 +2934,259 @@ const EnvelopeCreator: React.FC = () => {
             </div>
 
             {showDocuments && (
-              <div className="space-y-6">
-                {/* Unified responsive grid layout for documents and upload box */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-1">
+              <div className="space-y-6 overflow-visible">
+                {/* Stacked layout for 4+ documents OR grid layout for 0-3 documents */}
+                {documents && documents.length > 3 ? (
+                  <div className="flex gap-4 items-stretch py-1 overflow-visible">
+                    {/* Stacked Documents Container */}
+                    <div className="w-1/3 relative" style={{ overflow: 'visible', paddingRight: '60px', paddingBottom: '50px' }}>
+                      <div className="relative w-full h-full" style={{ minHeight: '150px', overflow: 'visible' }}>
+                        {documents.map((doc, index) => {
+                          // Calculate relative position: 0 is on top (stackedDocIndex), others are below
+                          const position = index - stackedDocIndex;
+                          const absPosition = position < 0 ? documents.length + position : position;
+                          
+                          const previewMinHeight = '180px';
+                          const pdfWidth = 100;
+                          const paddingClass = 'p-2';
+                          const fontSizeClass = 'text-xs';
+                          const closeButtonSize = 'w-5 h-5';
+                          const closeIconSize = 'w-2.5 h-2.5';
+                          // Subtle vertical offset to show bottom edges (primary offset is horizontal)
+                          const verticalOffset = 10; // Subtle downward offset for each card
+                          // Prominent horizontal offset to make right edges clearly visible
+                          const horizontalOffset = absPosition === 0 ? 0 : 20 + (absPosition * 6); // Progressive horizontal offset: 20px, 26px, 32px, 38px
+                          
+                          // Only show top 4 cards in stack
+                          if (absPosition >= 4) return null;
+                          
+                          // Calculate scale - minimal scaling for cleaner look
+                          const scale = absPosition === 0 ? 1 : Math.max(0.98 - absPosition * 0.01, 0.95);
+                          
+                          // Color scheme for stacked cards - different colors for visual appeal
+                          const cardColors = [
+                            { border: '#260559', shadow: 'rgba(38, 5, 89, 0.2)', accent: '#6366f1' }, // Purple for top card
+                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#8b5cf6' }, // Indigo for second
+                            { border: '#8b5cf6', shadow: 'rgba(139, 92, 246, 0.12)', accent: '#a78bfa' }, // Purple for third
+                            { border: '#a78bfa', shadow: 'rgba(167, 139, 250, 0.1)', accent: '#c4b5fd' } // Light purple for fourth
+                          ];
+                          const cardColor = cardColors[Math.min(absPosition, 3)];
+                          
+                          return (
+                            <div
+                              key={doc.id}
+                              className="absolute top-0 left-0 w-full bg-white rounded-lg flex flex-col transition-all duration-500 ease-in-out overflow-hidden"
+                              style={{
+                                transform: `translate(${horizontalOffset}px, ${absPosition * verticalOffset}px) scale(${scale})`,
+                                transformOrigin: 'top left',
+                                zIndex: 10 - absPosition,
+                                border: `1px solid ${absPosition === 0 ? cardColor.border : 'rgba(0, 0, 0, 0.1)'}`,
+                                borderLeft: absPosition === 0 ? `2px solid ${cardColor.border}` : `1px solid rgba(0, 0, 0, 0.1)`, // Subtle left edge
+                                boxShadow: absPosition === 0
+                                  ? `0 4px 12px -2px ${cardColor.shadow}, 0 2px 4px -1px rgba(0, 0, 0, 0.1)`
+                                  : `0 2px 6px -1px ${cardColor.shadow}, 0 1px 2px rgba(0, 0, 0, 0.06)`,
+                                opacity: absPosition < 4 ? Math.max(1 - absPosition * 0.05, 0.85) : 0,
+                                pointerEvents: absPosition === 0 ? 'auto' : 'none',
+                                willChange: 'transform, opacity',
+                                background: '#ffffff' // Clean white background like in the image
+                              }}
+                            >
+                              {/* Close button at top right */}
+                              {!doc.isUploading && absPosition === 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeDocument(doc.id);
+                                  }}
+                                  className={`absolute top-2 right-2 z-30 ${closeButtonSize} bg-black bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all`}
+                                  onMouseEnter={(e) => e.stopPropagation()}
+                                >
+                                  <X className={`${closeIconSize} text-white`} />
+                                </button>
+                              )}
+
+                              {/* PDF Preview/Thumbnail */}
+                              {!doc.isUploading && doc.url && (
+                                <div 
+                                  className="w-full flex-1 border-b overflow-hidden bg-gradient-to-br from-gray-50 to-white min-h-0 relative group"
+                                  style={{ 
+                                    minHeight: previewMinHeight,
+                                    borderBottomColor: absPosition === 0 ? cardColor.border + '40' : 'rgba(0, 0, 0, 0.1)'
+                                  }}
+                                >
+                                  {/* Subtle gradient overlay */}
+                                  <div 
+                                    className="absolute inset-0 opacity-30 pointer-events-none"
+                                    style={{
+                                      background: `linear-gradient(135deg, ${cardColor.accent}15 0%, transparent 50%)`
+                                    }}
+                                  />
+                                  <div className="w-full h-full flex items-center justify-center bg-transparent relative z-10 p-2">
+                                    <div className="rounded-md shadow-sm border border-gray-200/50 bg-white p-1">
+                                      <PDFDocument file={doc.url}>
+                                        <PDFPage pageNumber={1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
+                                      </PDFDocument>
+                                    </div>
+                                  </div>
+                                  {absPosition === 0 && (
+                                    <div 
+                                      className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-sm group-hover:opacity-100 transition-all duration-300 flex items-center justify-center opacity-0 z-20"
+                                      style={{ pointerEvents: 'none' }}
+                                    >
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedPdfForPreview(doc);
+                                          setPdfPreviewModalOpen(true);
+                                        }}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-900 rounded-lg shadow-xl hover:bg-gray-50 transition-all hover:scale-105 font-medium"
+                                        style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)', pointerEvents: 'auto' }}
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                        <span className="text-sm">View</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* File Info Section */}
+                              {!doc.isUploading ? (
+                                <div className={paddingClass} style={{ background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 1))' }}>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`font-semibold ${fontSizeClass} mb-1 truncate`} 
+                                         style={{ color: absPosition === 0 ? cardColor.border : '#374151' }}
+                                         title={doc.name}>
+                                        {doc.name}
+                                      </p>
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-xs font-medium" style={{ color: absPosition === 0 ? cardColor.accent : '#6b7280' }}>
+                                          {doc.pages} page{doc.pages !== 1 ? 's' : ''}
+                                        </p>                                        
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className={paddingClass}>
+                                  <p className={`font-medium text-gray-900 ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
+                                  <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
+                                    <div
+                                      className="h-full bg-blue-500 transition-all"
+                                      style={{ width: `${doc.uploadProgress ?? 0}%` }}
+                                    />
+                                  </div>
+                                  <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Navigation Buttons - Left and Right of Document */}
+                        {documents.length > 1 && (
+                          <>
+                            {/* Left Arrow */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setStackedDocIndex((prev) => (prev - 1 + documents.length) % documents.length);
+                              }}
+                              className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 z-30 p-2.5 transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+                              style={{ left: '10px' }}
+                              title="Previous document"
+                            >
+                              <ChevronLeft className="w-6 h-6" style={{ color: '#260559' }} />
+                            </button>
+                            
+                            {/* Right Arrow */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setStackedDocIndex((prev) => (prev + 1) % documents.length);
+                              }}
+                              className="absolute right-0 top-1/2 translate-x-full -translate-y-1/2 z-30 p-2.5 transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+                              style={{ right: '10px' }}
+                              title="Next document"
+                            >
+                              <ChevronRight className="w-6 h-6" style={{ color: '#260559' }} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Upload Box - same line as stacked documents */}
+                    <div className="w-2/3 flex-shrink-0" data-tour="ec-upload">
+                      <div
+                        onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
+                        onDragOver={handleDragOver}
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`bg-gray-100 transition-colors ${isDragOver
+                          ? 'border-2 border-blue-400 bg-blue-50'
+                          : 'border border-gray-200'
+                          } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
+                          } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[250px] flex items-center justify-center`}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          accept=".pdf"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        {(!documents || documents.length === 0) ? (
+                          <div className="flex flex-col items-center justify-center space-y-4 w-full">
+                            <div className="bg-gray-700 rounded-lg p-3">
+                              <ArrowUpToLine className="w-6 h-6 text-white" />
+                            </div>
+                            <p className="text-sm text-gray-700">Drop your files here or</p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                fileInputRef.current?.click();
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                              style={{ backgroundColor: '#260559' }}
+                            >
+                              <span>Upload</span>
+                              <Triangle className="w-3 h-2 fill-white rotate-180" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex flex-col items-center justify-center w-full cursor-pointer text-gray-500 hover:text-gray-700"
+                          >
+                            <div className="flex flex-col items-center justify-center space-y-4">
+                              <div className="bg-gray-700 rounded-lg p-3">
+                                <Upload className="w-6 h-6 text-white" />
+                              </div>
+                              <p className="text-sm text-gray-700">Drop your files here or</p>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  fileInputRef.current?.click();
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                style={{ backgroundColor: '#260559' }}
+                              >
+                                <span>Upload</span>
+                                <ArrowDown className="w-4 h-4 text-white" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Default grid layout for 0-3 documents */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-1">
                   {/* Document Cards */}
                   {documents && documents.map((doc) => {
                     const docCount = documents.length;
@@ -2966,14 +3251,14 @@ const EnvelopeCreator: React.FC = () => {
                                 <p className={`font-semibold text-gray-900 ${fontSizeClass} mb-1 truncate`} title={doc.name}>
                                   {doc.name}
                                 </p>
-                              {/* Page Count with three dots menu */}
-                              <div className="flex items-center justify-between">
-                                <p className="text-xs text-gray-600">
-                                  {doc.pages} page{doc.pages !== 1 ? 's' : ''}
-                                </p>
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs text-gray-600">
+                                    {doc.pages} page{doc.pages !== 1 ? 's' : ''}
+                                  </p>
+                                </div>
 
-                                {/* Three Dots Menu */}
-                                <div className="relative flex-shrink-0 document-menu-container z-30">
+                              {/* Three Dots Menu */}
+                              <div className="relative flex-shrink-0 document-menu-container z-30">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -3084,7 +3369,6 @@ const EnvelopeCreator: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                        </div>
                       ) : (
                         /* Uploading state */
                         <div className={paddingClass}>
@@ -3209,7 +3493,8 @@ const EnvelopeCreator: React.FC = () => {
                       </div>
                     );
                   })()}
-                </div>
+                  </div>
+                )}
               </div>
             )}
             <hr className="border-t-2 border-gray-300 my-4" />
@@ -4362,6 +4647,7 @@ const EnvelopeCreator: React.FC = () => {
                                     const originalIndex = recipients.findIndex(r => r.id === recipient.id);
                                     const isDraggingPill = draggedRecipientId === recipient.id;
                                     const isDragOverPill = dragOverRecipientId === recipient.id;
+                                    const isReorderedPill = reorderedPillIds.has(recipient.id);
                                     return (
                                       <button
                                         key={recipient.id}
@@ -4390,6 +4676,19 @@ const EnvelopeCreator: React.FC = () => {
                                         onDrop={(e) => {
                                           e.preventDefault();
                                           if (draggedRecipientId && draggedRecipientId !== recipient.id) {
+                                            // Trigger reorder animation for both pills
+                                            setReorderedPillIds(prev => new Set([...prev, draggedRecipientId, recipient.id]));
+                                            
+                                            // Remove animation class after animation completes
+                                            setTimeout(() => {
+                                              setReorderedPillIds(prev => {
+                                                const next = new Set(prev);
+                                                next.delete(draggedRecipientId);
+                                                next.delete(recipient.id);
+                                                return next;
+                                              });
+                                            }, 600); // Match animation duration
+                                            
                                             // Reorder recipients
                                             setRecipients(prev => {
                                               const draggedRecipient = prev.find(r => r.id === draggedRecipientId);
@@ -4440,11 +4739,23 @@ const EnvelopeCreator: React.FC = () => {
                                           setDraggedRecipientId(null);
                                           setDragOverRecipientId(null);
                                         }}
-                                        className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full hover:border-purple-500 hover:bg-purple-50 transition-all shadow-sm cursor-grab active:cursor-grabbing ${
-                                          isDraggingPill ? 'opacity-50 scale-95' : ''
-                                        } ${isDragOverPill ? 'border-purple-600 scale-105 shadow-md' : ''}`}
+                                        className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 shadow-sm cursor-grab active:cursor-grabbing ${
+                                          isDraggingPill 
+                                            ? 'opacity-60 scale-110 rotate-2 shadow-xl z-50 border-purple-500 bg-purple-100' 
+                                            : ''
+                                        } ${
+                                          isDragOverPill 
+                                            ? 'border-purple-600 scale-110 shadow-lg ring-2 ring-purple-300 ring-opacity-50 bg-purple-50' 
+                                            : ''
+                                        } ${
+                                          isReorderedPill 
+                                            ? 'animate-reorder-pill' 
+                                            : ''
+                                        }`}
                                         style={{
-                                          borderLeft: `4px solid ${RECIPIENT_COLORS[originalIndex % RECIPIENT_COLORS.length]}`
+                                          borderLeft: `4px solid ${RECIPIENT_COLORS[originalIndex % RECIPIENT_COLORS.length]}`,
+                                          transform: isReorderedPill ? undefined : (isDraggingPill ? 'scale(1.1) rotate(2deg)' : isDragOverPill ? 'scale(1.1)' : undefined),
+                                          zIndex: isDraggingPill ? 50 : isReorderedPill ? 40 : undefined
                                         }}
                                       >
                                         <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -4865,12 +5176,12 @@ const EnvelopeCreator: React.FC = () => {
                                           <label className="block text-sm font-medium text-gray-900 mb-2 invisible">Customize</label>
                                           <button
                                             onClick={() => setOpenCustomizeDropdownId(openCustomizeDropdownId === recipient.id ? null : recipient.id)}
-                                            className="w-full px-2 py-2 bg-gray-100 font-bold text-black-700 rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300"
-                                            style={{ height: '42px' }}
+                                            className="w-full px-2 py-2 font-bold text-white-700 rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300 animate-shine relative overflow-hidden"
+                                            style={{ height: '42px', backgroundColor: '#260559' }}
                                             data-tour="ec-customize"
                                           >
-                                            <span className="text-sm text-black-900">Customize</span>
-                                            <ChevronDown className="w-4 h-4 mt-1 text-black-700 flex-shrink-0" />
+                                            <span className="text-sm text-white relative z-10">Customize</span>
+                                            <ChevronDown className="w-4 h-4 mt-1 text-white flex-shrink-0 relative z-10" />
                                           </button>
 
                                           {/* Customize Dropdown Menu */}
@@ -6433,7 +6744,7 @@ const EnvelopeCreator: React.FC = () => {
             )}
 
             {/* Step Indicator */}
-            <div className="flex items-center gap-3 mb-8 pb-6 border-b border-gray-100">
+            <div className="flex items-center gap-3 mt-4 mb-8 pb-6 border-b border-gray-100">
               <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 1 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                   sendModalStep >= 1 
@@ -6645,33 +6956,144 @@ const EnvelopeCreator: React.FC = () => {
             {sendModalStep === 2 && (
               <div>
                 {sending ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <div className="relative mb-6">
-                      <div className="w-20 h-20 border-4 border-[#3E2B66] border-t-transparent rounded-full animate-spin"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 bg-[#3E2B66]/10 rounded-full flex items-center justify-center">
-                          <div className="w-6 h-6 bg-[#3E2B66] rounded-full"></div>
+                  <div className="flex flex-col items-center justify-center py-16">
+                    {/* Envelope Sending Animation */}
+                    <div className="relative mb-8 w-full max-w-md">
+                      {/* Animated Envelope */}
+                      <div className="envelope-sending-container relative flex items-center justify-center">
+                        {/* Main Envelope */}
+                        <div className="relative z-20 envelope-flying">
+                          <div className="relative">
+                            {/* Envelope Body */}
+                            <div className="relative w-28 h-20 bg-gradient-to-br from-[#3E2B66] to-[#5a3f8a] rounded-sm shadow-2xl envelope-body overflow-hidden">
+                              {/* Envelope Flap (Triangle shape) */}
+                              <div className="absolute -top-4 left-0 w-full h-8 bg-gradient-to-br from-[#4d3577] to-[#3E2B66] envelope-flap" 
+                                   style={{
+                                     clipPath: 'polygon(0 100%, 50% 0, 100% 100%)',
+                                     transformOrigin: 'center bottom'
+                                   }}>
+                              </div>
+                              {/* Envelope Content Area */}
+                              <div className="absolute inset-0 flex items-center justify-center pt-2">
+                                <Mail className="w-10 h-10 text-white/90 relative z-10" />
+                              </div>
+                              {/* Shine Effect */}
+                              <div className="absolute inset-0 envelope-shine rounded-sm"></div>
+                              {/* Envelope Border/Outline */}
+                              <div className="absolute inset-0 border-2 border-[#2a1a4a] rounded-sm"></div>
+                            </div>
+                            {/* Particles/Trail - Left side */}
+                            <div className="absolute -left-6 top-1/2 -translate-y-1/2">
+                              <div className="particle particle-1"></div>
+                              <div className="particle particle-2"></div>
+                              <div className="particle particle-3"></div>
+                            </div>
+                            {/* Particles/Trail - Right side */}
+                            <div className="absolute -right-6 top-1/2 -translate-y-1/2">
+                              <div className="particle particle-4"></div>
+                              <div className="particle particle-5"></div>
+                              <div className="particle particle-6"></div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Small Envelopes - Flying around */}
+                        {/* Small Envelope 1 - Top Left */}
+                        <div className="absolute top-8 left-12 small-envelope-1">
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
+                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center pt-1">
+                              <Mail className="w-4 h-4 text-white/80" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Small Envelope 2 - Top Right */}
+                        <div className="absolute top-6 right-16 small-envelope-2">
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
+                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center pt-1">
+                              <Mail className="w-4 h-4 text-white/80" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Small Envelope 3 - Bottom Left */}
+                        <div className="absolute bottom-8 left-16 small-envelope-3">
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
+                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center pt-1">
+                              <Mail className="w-4 h-4 text-white/80" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Small Envelope 4 - Bottom Right */}
+                        <div className="absolute bottom-6 right-12 small-envelope-4">
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
+                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center pt-1">
+                              <Mail className="w-4 h-4 text-white/80" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Small Envelope 5 - Top Center */}
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 small-envelope-5">
+                          <div className="relative w-10 h-7 bg-gradient-to-br from-[#3E2B66]/70 to-[#5a3f8a]/70 rounded-sm shadow-md overflow-hidden">
+                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70" 
+                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center pt-0.5">
+                              <Mail className="w-3 h-3 text-white/70" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Small Envelope 6 - Bottom Center */}
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 small-envelope-6">
+                          <div className="relative w-10 h-7 bg-gradient-to-br from-[#3E2B66]/70 to-[#5a3f8a]/70 rounded-sm shadow-md overflow-hidden">
+                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70" 
+                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center pt-0.5">
+                              <Mail className="w-3 h-3 text-white/70" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Destination Indicators */}
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 opacity-40">
+                          <div className="w-4 h-4 bg-[#3E2B66] rounded-full animate-ping"></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-[#3E2B66] rounded-full"></div>
+                        </div>
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-40">
+                          <div className="w-4 h-4 bg-[#3E2B66] rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-[#3E2B66] rounded-full"></div>
                         </div>
                       </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-[#3E2B66] mb-2">Sending Envelope...</h3>
-                    <p className="text-gray-600 text-center max-w-md mb-4">
+                    
+                    <h3 className="text-2xl font-semibold text-[#3E2B66] mb-3">Sending Envelope...</h3>
+                    <p className="text-gray-600 text-center max-w-md mb-6">
                       Please wait while we send your envelope to all recipients. This may take a few moments.
                     </p>
-                    <div className="mt-6 flex items-center gap-3 text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                        <span>Processing recipients</span>
+                    <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#3E2B66] rounded-full animate-pulse"></div>
+                        <span className="font-medium">Processing recipients</span>
                       </div>
                       <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
-                        <span>Consuming credits</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#3E2B66] rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
+                        <span className="font-medium">Consuming credits</span>
                       </div>
                       <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
-                        <span>Sending emails</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#3E2B66] rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
+                        <span className="font-medium">Sending emails</span>
                       </div>
                     </div>
                   </div>
@@ -6716,99 +7138,189 @@ const EnvelopeCreator: React.FC = () => {
 
                     {/* Invoice Line Items */}
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Line Items</h3>
+                      {/* <h3 className="text-lg font-semibold text-gray-900 mb-4">Line Items</h3> */}
                       
-                      {/* Table Header */}
-                      <div className="bg-gray-50 border border-gray-200 rounded-t-lg overflow-hidden">
-                        <div className="grid grid-cols-12 gap-4 px-4 py-3">
-                          <div className="col-span-1 text-xs font-semibold text-gray-600">#</div>
-                          <div className="col-span-4 text-xs font-semibold text-gray-600">Recipient</div>
-                          <div className="col-span-4 text-xs font-semibold text-gray-600">Authentication Method</div>
-                          <div className="col-span-2 text-xs font-semibold text-gray-600 text-right">Rate</div>
-                          <div className="col-span-1 text-xs font-semibold text-gray-600 text-right">Amount</div>
+                      {/* Table Header - Only show when there are recipients with authentication */}
+                      {hasRecipientsWithAuth && (
+                        <div className="bg-gradient-to-r from-[#260559]/100 to-[#3E2B66] border border-[#260559] rounded-t-lg overflow-hidden">
+                          <div className="grid grid-cols-12 gap-4 px-4 py-3">
+                            <div className="col-span-1 text-xs font-semibold text-white">#</div>
+                            <div className="col-span-4 text-xs font-semibold text-white">Recipient</div>
+                            <div className="col-span-5 text-xs font-semibold text-white">Authentication Method</div>
+                            <div className="col-span-2 text-xs font-semibold text-white text-right">Cost</div>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Table Body */}
-                      <div className="border border-gray-200 border-t-0 rounded-b-lg overflow-hidden">
-                        {recipients.map((recipient, index) => {
-                          // Parse authentication - can be JSON stringified array or single value
+                      {/* Table Body - Only show recipients with authentication methods */}
+                      <div className={`border border-gray-200 ${hasRecipientsWithAuth ? 'rounded-b-lg' : 'rounded-lg'} overflow-hidden`}>
+                        {recipients
+                          .filter((recipient) => {
+                            const authArray = parseAuthentication(recipient.authentication);
+                            const authMethodList = authArray.map(authId => 
+                              authMethods.find(m => m.id === authId)
+                            ).filter(Boolean);
+                            return authMethodList.length > 0;
+                          })
+                          .map((recipient, index) => {
+                            // Parse authentication - can be JSON stringified array or single value
+                            const authArray = parseAuthentication(recipient.authentication);
+                            const authMethodList = authArray.map(authId => 
+                              authMethods.find(m => m.id === authId)
+                            ).filter(Boolean);
+                            const totalCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
+                            const authDisplay = authMethodList.map(m => m?.name).join(', ');
+                            
+                            return (
+                              <div 
+                                key={recipient.id} 
+                                className={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-200 last:border-b-0 hover:bg-purple-50 transition-colors ${
+                                  index % 2 === 0 ? 'bg-white' : 'bg-purple-50/30'
+                                }`}
+                              >
+                                <div className="col-span-1 text-sm font-medium text-gray-700 flex items-center">{recipient.order}</div>
+                                <div className="col-span-4">
+                                  <p className="text-sm font-semibold text-gray-900 truncate">
+                                    {recipient.name || recipient.email}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">{recipient.email}</p>
+                                </div>
+                                <div className="col-span-5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-700 font-medium">{authDisplay}</span>
+                                    <button
+                                      type="button"
+                                      title="Edit authentication method"
+                                      onClick={() => {
+                                        setAuthModalForRecipientId(recipient.id);
+                                        setAuthModalForBulk(false);
+                                        setShowAuthModal(true);
+                                      }}
+                                      className="edit-icon-animated group relative inline-flex items-center justify-center w-7 h-7 rounded-md hover:to-purple-50 text-purple-600 transition-all duration-300 flex-shrink-0 shadow-sm hover:shadow-lg hover:shadow-purple-300/60 hover:scale-110 hover:border-purple-500 active:scale-95 hover:-translate-y-0.5"
+                                    >
+                                      <div className="absolute inset-0 rounded-md bg-purple-400 opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 z-0"></div>
+                                      <Edit className='w-3.5 h-3.5 relative z-10 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-0 group-active:scale-100' />
+                                      <div className="absolute inset-0 rounded-md ring-2 ring-purple-300 ring-offset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="col-span-2 text-sm font-semibold text-purple-700 text-right flex items-center justify-end">
+                                  {totalCost > 0 ? `${totalCost}` : '0'} <span className="text-xs text-gray-500 ml-1">credits</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {recipients.filter((recipient) => {
                           const authArray = parseAuthentication(recipient.authentication);
                           const authMethodList = authArray.map(authId => 
                             authMethods.find(m => m.id === authId)
                           ).filter(Boolean);
-                          const totalCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
-                          const authDisplay = authMethodList.length > 0 
-                            ? authMethodList.map(m => m?.name).join(', ')
-                            : 'No Authentication';
-                          
-                          return (
-                            <div 
-                              key={recipient.id} 
-                              className={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors ${
-                                index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                              }`}
-                            >
-                              <div className="col-span-1 text-sm font-medium text-gray-500">{recipient.order}</div>
-                              <div className="col-span-4">
-                                <p className="text-sm font-semibold text-gray-900 truncate">
-                                  {recipient.name || recipient.email}
-                                </p>
-                                <p className="text-xs text-gray-500 truncate">{recipient.email}</p>
-                              </div>
-                              <div className="col-span-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-700">{authDisplay}</span>
-                                  <button
-                                    type="button"
-                                    title="Edit authentication method"
-                                    onClick={() => {
-                                      setAuthModalForRecipientId(recipient.id);
-                                      setAuthModalForBulk(false);
-                                      setShowAuthModal(true);
-                                    }}
-                                    className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0"
-                                  >
-                                    <Edit className='w-3 h-3' />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="col-span-2 text-sm text-gray-600 text-right">
-                                {totalCost > 0 ? `${totalCost}` : '0'} <span className="text-xs text-gray-500">credits</span>
-                              </div>
-                              <div className="col-span-1 text-sm font-semibold text-[#3E2B66] text-right">
-                                {totalCost > 0 ? `${totalCost}` : '0'}
-                              </div>
-                            </div>
-                          );
-                        })}
+                          return authMethodList.length === 0;
+                        }).length === 0 && recipients.filter((recipient) => {
+                          const authArray = parseAuthentication(recipient.authentication);
+                          const authMethodList = authArray.map(authId => 
+                            authMethods.find(m => m.id === authId)
+                          ).filter(Boolean);
+                          return authMethodList.length > 0;
+                        }).length === 0 && (
+                          <div className="px-4 py-8 text-center text-gray-500">
+                            <p className="text-sm">No recipients with authentication methods</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Invoice Summary */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
-                      <div className=" space-y-3">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">Current Balance:</span>
-                          <span className="font-semibold text-gray-900">{subscriptionPlan?.creditsBalance || 0} credits</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">Deduction:</span>
-                          <span className="font-semibold text-red-600">- {calculateTotalCost()} credits</span>
-                        </div>
-                        <div className="border-t border-gray-300 pt-3 mt-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-base font-semibold text-gray-900">Remaining Balance:</span>
-                            <span className={`text-xl font-bold ${
-                              ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }`}>
-                              {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} credits
-                            </span>
+                    {/* Invoice Summary - Collapsible */}
+                    <div className="mb-6">
+                      <button
+                        type="button"
+                        onClick={() => setShowSummary(!showSummary)}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-l-lg"
+                      >
+                        <ChevronDown
+                          className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`}
+                        />
+                        <span className="text-gray-700 font-medium">View Summary</span>
+                      </button>
+
+                      {showSummary && (
+                        <div className="mt-4 bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+                          {/* Recipients without authentication */}
+                          {recipients.filter((recipient) => {
+                            const authArray = parseAuthentication(recipient.authentication);
+                            const authMethodList = authArray.map(authId => 
+                              authMethods.find(m => m.id === authId)
+                            ).filter(Boolean);
+                            return authMethodList.length === 0;
+                          }).length > 0 && (
+                            <div className="mb-6">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                                Recipients Without Authentication
+                              </h4>
+                              <div className="space-y-2">
+                                {recipients
+                                  .filter((recipient) => {
+                                    const authArray = parseAuthentication(recipient.authentication);
+                                    const authMethodList = authArray.map(authId => 
+                                      authMethods.find(m => m.id === authId)
+                                    ).filter(Boolean);
+                                    return authMethodList.length === 0;
+                                  })
+                                  .map((recipient) => (
+                                    <div
+                                      key={recipient.id}
+                                      className="flex items-center justify-between p-3 bg-white border border-yellow-200 rounded-lg hover:border-yellow-300 transition-colors"
+                                    >
+                                      <div className="flex-1">
+                                        <p className="text-sm font-semibold text-gray-900">
+                                          {recipient.name || recipient.email}
+                                        </p>
+                                        <p className="text-xs text-gray-500">{recipient.email}</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAuthModalForRecipientId(recipient.id);
+                                          setAuthModalForBulk(false);
+                                          setShowAuthModal(true);
+                                        }}
+                                        className="inline-flex items-center gap-2 px-2 py-1 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-400 rounded-full text-xs font-semibold text-yellow-900 hover:from-yellow-100 hover:via-amber-100 hover:to-yellow-100 hover:border-yellow-500 transition-all duration-200 shadow-md hover:shadow-xl hover:scale-105 animate-golden-shine relative group"
+                                      >
+                                        <LockKeyhole className="w-4 h-4 relative z-10 text-yellow-700 group-hover:text-yellow-800 transition-colors" />
+                                        <span className="relative z-10">Select Authentication</span>
+                                      </button>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Balance Summary */}
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-gray-600">Current Balance:</span>
+                              <span className="font-semibold text-gray-900">{subscriptionPlan?.creditsBalance || 0} credits</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-gray-600">Deduction:</span>
+                              <span className="font-semibold text-red-600">- {calculateTotalCost()} credits</span>
+                            </div>
+                            <div className="border-t border-gray-300 pt-3 mt-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-base font-semibold text-gray-900">Remaining Balance:</span>
+                                <span className={`text-xl font-bold ${
+                                  ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 
+                                    ? 'text-green-600' 
+                                    : 'text-red-600'
+                                }`}>
+                                  {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} credits
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
 

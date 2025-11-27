@@ -598,6 +598,7 @@ const authRoutes = [
   { path: '/compliance', element: <CompliancePage /> },
   { path: '/risk-management', element: <RiskManagementPage /> },
   { path: '/subscription-management', element: <SubscriptionManagementPage /> },
+  // { path: '/test', element: <DocumentUploadSection /> },
 
   //Document Management Module
   {

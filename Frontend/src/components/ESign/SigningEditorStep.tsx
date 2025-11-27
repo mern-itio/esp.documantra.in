@@ -1829,7 +1829,9 @@ export default function SigningEditorStep({
                                 style={{
                                   backgroundColor: hexToRgba(activeColor || "#2563eb", 0.1),
                                   borderColor: activeColor || "#2563eb",
-                                  color: activeColor || "#2563eb"
+                                  borderWidth: getBorderWidth(activeBorderStyle),
+                                  borderStyle: activeBorderStyle as React.CSSProperties['borderStyle'],
+                                  color: activeColor || "#2563eb",
                                 }}
                               >
                                 <Icon className="w-3.5 h-3.5" style={{ color: activeColor || "#2563eb" }} />
