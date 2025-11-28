@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
 
@@ -355,11 +355,11 @@ const AgreementPage: React.FC = () => {
       // Don't close if clicking on dropdown trigger buttons
       const isClickOnDateButton = dateButtonRef.current && dateButtonRef.current.contains(target);
       const isClickOnStatusButton = statusButtonRef.current && statusButtonRef.current.contains(target);
-      
+
       if (isClickOnDateButton || isClickOnStatusButton) {
         return; // Don't close menu if clicking the button itself - let the button's onClick handle it
       }
-      
+
       // Close menus if clicking outside
       if (menuRef.current && !menuRef.current.contains(target)) {
         setOpenMenuId(null);
@@ -724,7 +724,7 @@ const AgreementPage: React.FC = () => {
   const openHeaderDropdown = (type: 'date' | 'status' | 'sender' | 'quick' | 'advanced' | 'shared', e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling to document click handler
-    
+
     if (openHeaderMenu === type) {
       // If clicking the same button, close the menu
       setOpenHeaderMenu(null);
@@ -1109,39 +1109,56 @@ const AgreementPage: React.FC = () => {
       {selectedIds.size === 0 && (
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between" data-tour="filter-bar">
-            <div className="flex-1">
-              <div className="relative max-w-4xl">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <div className="flex-1">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder={isPowerForm ? "Search Power Forms" : "Search Envelopes"}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  data-tour="search-input"
+                  placeholder="Search..."
+                  className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] transition-all duration-200 bg-white hover:border-gray-400"
                 />
+
+                {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 hover:scale-110 transition-all duration-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
+
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button 
+              <button
                 ref={dateButtonRef}
-                onClick={(e) => openHeaderDropdown('date', e)} 
-                className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50"
+                onClick={(e) => openHeaderDropdown('date', e)}
+                className="group inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                {getDateButtonLabel()} <ChevronDown className="w-4 h-4" />
-              </button>
-              <button 
-                ref={statusButtonRef}
-                onClick={(e) => openHeaderDropdown('status', e)} 
-                className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-sm text-sm text-gray-700 hover:bg-gray-50"
-              >
-                {getStatusButtonLabel()} <ChevronDown className="w-4 h-4" />
+                {getDateButtonLabel()} <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
               </button>
 
+              <button
+                ref={statusButtonRef}
+                onClick={(e) => openHeaderDropdown('status', e)}
+                className="group inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                {getStatusButtonLabel()} <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
+              </button>
+              <Link to="/e-sign/create">
+                <button
+                  className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
+                >
+                  <Plus className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" /> Create Envelope
+                </button>
+              </Link>
+
               {/* Clear button - only show when search has value or filters are selected */}
-              {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
+              {/* {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
                 <button onClick={handleClearFilters} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-sm text-sm hover:bg-gray-200">Clear</button>
-              )}
+              )} */}
 
               {/* Create PowerForm Button - Only visible on powerform routes */}
               {isPowerForm && (
@@ -1164,13 +1181,13 @@ const AgreementPage: React.FC = () => {
       <div className="relative" data-tour="agreements-table">
         <div className="overflow-x-auto relative">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                {!isPowerForm && (<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>)}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Change</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                {!isPowerForm && (<th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"></th>)}
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Change</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -1184,7 +1201,7 @@ const AgreementPage: React.FC = () => {
                 </tr>
               ) : (
                 currentAgreements.map((agreement) => (
-                  <tr key={agreement.id} className="hover:bg-gray-50">
+                  <tr key={agreement.id} className="group hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#3E2B66]">
                     {!isPowerForm && (
                       <td className="px-6 py-4">
                         <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
@@ -1196,39 +1213,39 @@ const AgreementPage: React.FC = () => {
                         <div>
                           <button
                             onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
-                            className="text-left text-sm font-medium text-indigo-700 hover:underline"
+                            className="text-left text-sm font-semibold text-[#3E2B66] hover:text-[#260559] hover:underline transition-colors duration-200"
                             title="View envelope details"
                           >
                             {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
                           </button>
-                          {!isPowerForm && (<div className="text-sm text-gray-500">To: {agreement.primaryRecipientName || '-'}</div>)}
+                          {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {agreement.status === 'in-progress' ? (
-                        <div className="min-w-[220px]">
-                          <div className="relative h-[4px] bg-gray-200 rounded-full">
-                            <span className="absolute -top-[2px] left-0 w-1.5 h-1.5 bg-gray-600 rounded-full"></span>
-                            <span className="absolute -top-[2px] right-0 w-1.5 h-1.5 bg-gray-600 rounded-full"></span>
-
+                        <div >
+                          <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#3E2B66]/20 to-[#3E2B66]/40 rounded-full progress-bar-animate"></div>
+                            <span className="absolute  left-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
+                            <span className="absolute  right-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
                           </div>
-                          <div className="mt-2 text-sm text-gray-900 underline decoration-dotted">
+                          <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
                             {`Waiting for ${agreement.waitingFor || 'recipient'}`}
                           </div>
                         </div>
                       ) : (
                         <>
                           {agreement.status === 'completed' && (
-                            <div className="flex items-center gap-2 text-green-700">
-                              <CheckCircle className="w-5 h-5 text-green-700" />
-                              <span className="text-sm">Completed</span>
+                            <div className="flex items-center gap-2 text-green-600 group/status">
+                              <CheckCircle className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform duration-200" />
+                              <span className="text-sm font-medium">Completed</span>
                             </div>
                           )}
                           {agreement.status === 'draft' && !agreement.isPowerForm && (
-                            <div className="flex items-center gap-2 text-[#3E2B66]">
-                              <Pencil className="w-5 h-5 text-[#3E2B66]" />
-                              <span className="text-sm">Draft</span>
+                            <div className="flex items-center gap-2 text-[#3E2B66] group/status">
+                              <Pencil className="w-5 h-5 text-[#3E2B66] group-hover/status:rotate-12 transition-transform duration-200" />
+                              <span className="text-sm font-medium">Draft</span>
                             </div>
                           )}
 
@@ -1256,7 +1273,11 @@ const AgreementPage: React.FC = () => {
                           <button
                             onClick={() => handleRowResend(agreement)}
                             disabled={rowResendLoadingId === agreement.id}
-                            className={`px-3 py-1.5 border border-gray-300 rounded-sm text-sm ${rowResendLoadingId === agreement.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'} inline-flex items-center gap-2`}
+                            className={`px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${
+                              rowResendLoadingId === agreement.id 
+                                ? 'opacity-60 cursor-not-allowed' 
+                                : 'hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] hover:shadow-md active:scale-95'
+                            } inline-flex items-center gap-2`}
                           >
                             {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                           </button>
@@ -1268,7 +1289,7 @@ const AgreementPage: React.FC = () => {
                                 ? handleView(agreement.id)
                                 : handleContinue(agreement.id)
                             }
-                            className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
+                            className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                           >
                             {agreement.isPowerForm ? "View" : "Continue"}
                           </button>
@@ -1277,7 +1298,7 @@ const AgreementPage: React.FC = () => {
                         {agreement.status === 'completed' && (
                           <button
                             onClick={() => handleManageAction('download', agreement.id)}
-                            className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50 inline-flex items-center gap-2"
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                           >
                             <Download className="w-4 h-4" />
                             Download
@@ -1287,13 +1308,13 @@ const AgreementPage: React.FC = () => {
                           <>
                             <button
                               onClick={() => handleRestore(agreement.id)}
-                              className="px-3 py-1.5 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
+                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                             >
                               Restore
                             </button>
                             <button
                               onClick={() => handlePermanentDelete(agreement.id)}
-                              className="px-3 py-1.5 border border-red-300 rounded-sm text-sm text-red-700 hover:bg-red-50 inline-flex items-center gap-2"
+                              className="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                             >
                               <Trash2 className="w-4 h-4" />
                               Delete Permanently
@@ -1320,10 +1341,10 @@ const AgreementPage: React.FC = () => {
                               setMenuPosition({ top, left });
                               setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
                             }}
-                            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-sm"
+                            className="p-2 text-gray-600 hover:text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-all duration-200 group/menu"
                             title="More options"
                           >
-                            <MoreVertical className="w-4 h-4" />
+                            <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
                           </button>
                         )}
                       </div>
@@ -1373,7 +1394,7 @@ const AgreementPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
@@ -1395,9 +1416,9 @@ const AgreementPage: React.FC = () => {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pageNum === currentPage
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
+                          ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66]'
                           }`}
                       >
                         {pageNum}
@@ -1408,7 +1429,7 @@ const AgreementPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>

@@ -11,9 +11,6 @@ import {
   Award,
   ArrowDown,
   Info,
-  MoreVertical,
-  Download,
-  FileEdit,
   Trash2,
   ChevronDown,
   ChevronUp,
@@ -158,7 +155,7 @@ const EnvelopeCreator: React.FC = () => {
   const [openCustomizeDropdownId, setOpenCustomizeDropdownId] = useState<string | null>(null);
   const [setSigningOrder, setSetSigningOrder] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  // const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const RECIPIENT_COLORS = ["#789ceaff", "#87ecccff", "#f0c089ff", "#eea1c3ff", "#b99aeeff", "#f7b1bcff"];
   const [showSigningOrder, setShowSigningOrder] = useState(false);
   // Drag and drop state for recipient reordering
@@ -3257,115 +3254,6 @@ const EnvelopeCreator: React.FC = () => {
                                   </p>
                                 </div>
 
-                              {/* Three Dots Menu */}
-                              <div className="relative flex-shrink-0 document-menu-container z-30">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                      setMenuPos({ x: rect.left, y: rect.bottom + window.scrollY });
-                                      setOpenMenuId(openMenuId === doc.id ? null : doc.id);
-                                    }}
-                                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                  >
-                                    <MoreVertical className="w-4 h-4 text-gray-600" />
-                                  </button>
-
-                                  {/* Context Menu */}
-                                  {openMenuId === doc.id && (
-                                    <>
-                                      {/* backdrop to close on outside click */}
-                                      <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
-                                      <div className="fixed z-[1000] w-44 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
-                                        <div className="py-1">
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setOpenMenuId(null);
-                                              // Handle Apply Templates
-                                            }}
-                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
-                                          >
-                                            Apply Templates
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setOpenMenuId(null);
-                                              // Handle Replace
-                                              fileInputRef.current?.click();
-                                            }}
-                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                                          >
-                                            Replace
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setOpenMenuId(null);
-                                              // Handle Download Document
-                                              if (doc.url) {
-                                                const link = document.createElement('a');
-                                                link.href = doc.url;
-                                                link.download = doc.name;
-                                                link.click();
-                                              }
-                                            }}
-                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                          >
-                                            <Download className="w-4 h-4" />
-                                            Download Document
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setOpenMenuId(null);
-                                              // Handle Rename Document
-                                              const newName = prompt('Enter new name:', doc.name);
-                                              if (newName && newName.trim()) {
-                                                setDocuments(prev => prev.map(d =>
-                                                  d.id === doc.id ? { ...d, name: newName.trim() } : d
-                                                ));
-                                              }
-                                            }}
-                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                          >
-                                            <FileEdit className="w-4 h-4" />
-                                            Rename Document
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setOpenMenuId(null);
-                                              // Handle Delete Document
-                                              if (window.confirm(`Are you sure you want to delete ${doc.name}?`)) {
-                                                removeDocument(doc.id);
-                                              }
-                                            }}
-                                            className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                            Delete Document
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setOpenMenuId(null);
-                                              // Handle View Document
-                                              if (doc.url) {
-                                                window.open(doc.url, '_blank');
-                                              }
-                                            }}
-                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                                          >
-                                            <Eye className="w-4 h-4" />
-                                            View Document
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
                               </div>
                             </div>
                           </div>

@@ -183,8 +183,8 @@ const SignerCycle: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          <p className="text-gray-600">Loading signer cycles...</p>
+          <Loader2 className="w-8 h-8 text-[#3E2B66] animate-spin" />
+          <p className="text-gray-600 animate-pulse">Loading signer cycles...</p>
         </div>
       </div>
     );
@@ -192,16 +192,19 @@ const SignerCycle: React.FC = () => {
 
   if (cycles.length === 0) {
     return (
-      <div className="p-6">
+      <div className="p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen">
         <button
           onClick={() => navigate("/e-sign/aggrement")}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors group"
+          className="flex items-center gap-2 text-gray-600 hover:text-[#3E2B66] mb-6 transition-all duration-300 group px-4 py-2 rounded-lg hover:bg-purple-50"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+       
         </button>
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-          <Users className="w-16 h-16 text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Signer Cycles</h3>
+        <div className="flex flex-col items-center justify-center min-h-[400px] animate-fade-in">
+          <div className="p-6 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full mb-6 animate-pulse">
+            <Users className="w-16 h-16 text-[#3E2B66]" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] bg-clip-text text-transparent">No Signer Cycles</h3>
           <p className="text-gray-600 text-center max-w-md">
             There are no signer cycles available for this envelope.
           </p>
@@ -211,25 +214,25 @@ const SignerCycle: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-white h-full">
+    <div className="p-6 max-w-7xl mx-auto bg-gradient-to-br from-gray-50 via-white to-purple-50/30 min-h-screen">
       {/* Header with Back Button */}
-      <div className="mb-8">
-
+      <div className="mb-8 animate-fade-in">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-             <button
-                onClick={() => navigate("/e-sign/aggrement")}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors group"
-              >
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              </button>
+          <div className="flex items-center gap-3 flex-1">
+            <button
+              onClick={() => navigate("/e-sign/aggrement")}
+              className="flex items-center gap-2 text-gray-600 hover:text-[#3E2B66] transition-all duration-300 group px-4 py-2 rounded-lg hover:bg-purple-50 hover:shadow-md"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+         
+            </button>
             <div>
-              <h1 className="text-2xl text-gray-900">Signer Cycle</h1>
-              <p className="text-sm text-gray-500 mt-1">Manage and track signer progress</p>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#260559] to-[#3E2B66] bg-clip-text text-transparent">Signer Cycle</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage and track signer progress</p>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <span className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-semibold">
+            <span className="px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               {cycles.length} {cycles.length === 1 ? "Cycle" : "Cycles"}
             </span>
           </div>
@@ -250,9 +253,9 @@ const SignerCycle: React.FC = () => {
             <div key={cycle._id} className="overflow-hidden">
               {/* Cycle Header - Interactive */}
               <button
-                className={`w-full flex justify-between items-center px-6 py-5 text-left transition-all duration-300 ${isOpen
-                    ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-600"
-                    : "bg-white hover:bg-gray-50 border-l-4 border-transparent hover:border-blue-300"
+                className={`w-full flex justify-between items-center px-6 py-5 text-left transition-all duration-300 rounded-xl shadow-md ${isOpen
+                    ? "bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border-l-4 border-[#3E2B66] shadow-lg scale-[1.01]"
+                    : "bg-white hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-indigo-50/50 border-l-4 border-transparent hover:border-purple-300 hover:shadow-lg hover:scale-[1.01]"
                   }`}
                 onClick={() => setOpenCycle(isOpen ? null : cycle._id)}
                 onMouseEnter={() => { }}
@@ -265,36 +268,38 @@ const SignerCycle: React.FC = () => {
                     {cycleIndex + 1}
                   </div> */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className={`font-bold text-lg transition-colors ${isOpen ? "text-blue-900" : "text-gray-900"
+                    <div className="flex items-center gap-3 mb-1 flex-wrap">
+                      <span className={`font-bold text-xl transition-all duration-300 ${isOpen 
+                          ? "text-[#3E2B66] scale-105" 
+                          : "text-gray-900"
                         }`}>
                         Cycle {cycleIndex + 1}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-100 to-indigo-100 text-[#3E2B66] border border-purple-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                         <Users className="w-3.5 h-3.5" />
                         {signers.length} {signers.length === 1 ? "Signer" : "Signers"}
                       </span>
                       {completedCount > 0 && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-700">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           {completedCount} Completed
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>{completedCount} of {signers.length} signers completed</span>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
+                      <span className="font-medium">{completedCount} of {signers.length} signers completed</span>
                       {signers.length > 0 && (
                         <span className="text-gray-400">•</span>
                       )}
-                      <span className="capitalize">{signers.length > 0 ? signers[0]?.role || "Signer" : "No signers"}</span>
+                      <span className="capitalize text-[#3E2B66] font-semibold">{signers.length > 0 ? signers[0]?.role || "Signer" : "No signers"}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   {isOpen ? (
-                    <ChevronUp className="w-5 h-5 text-blue-600 transition-transform" />
+                    <ChevronUp className="w-5 h-5 text-[#3E2B66] transition-all duration-300 rotate-180" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400 transition-transform" />
+                    <ChevronDown className="w-5 h-5 text-gray-400 transition-all duration-300 hover:text-[#3E2B66]" />
                   )}
                 </div>
               </button>
@@ -302,12 +307,14 @@ const SignerCycle: React.FC = () => {
               {/* Signers Content - Smooth Expand/Collapse */}
               <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
                 }`}>
-                <div className="px-6 py-4 bg-gray-50/50 border-l-4 border-blue-200">
+                <div className="px-6 py-4 bg-gradient-to-br from-purple-50/30 via-indigo-50/20 to-blue-50/30 border-l-4 border-purple-300 rounded-b-xl">
                   <div className="space-y-2">
                     {signers.length === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
-                        <User className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">No signers in this cycle</p>
+                      <div className="text-center py-12 text-gray-500 animate-fade-in">
+                        <div className="p-4 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full w-fit mx-auto mb-4">
+                          <User className="w-16 h-16 text-[#3E2B66]" />
+                        </div>
+                        <p className="text-lg font-semibold text-gray-700">No signers in this cycle</p>
                       </div>
                     ) : (
                       signers.map((signer: any, index: number) => {
@@ -324,9 +331,9 @@ const SignerCycle: React.FC = () => {
                         return (
                           <div
                             key={signerId}
-                            className={`px-5 py-4 rounded-lg transition-all duration-300 ${isHovered
-                                ? "bg-white shadow-lg border-2 border-blue-300 transform scale-[1.02]"
-                                : "bg-white shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200"
+                            className={`px-5 py-4 rounded-xl transition-all duration-300 ${isHovered
+                                ? "bg-gradient-to-br from-white to-purple-50/50 shadow-xl border-2 border-[#3E2B66] transform scale-[1.02]"
+                                : "bg-white shadow-md border border-gray-200 hover:shadow-lg hover:border-purple-300 hover:bg-gradient-to-br hover:from-white hover:to-purple-50/30"
                               }`}
                             onMouseEnter={() => setHoveredSigner(signerId)}
                             onMouseLeave={() => setHoveredSigner(null)}
@@ -336,12 +343,12 @@ const SignerCycle: React.FC = () => {
                                 {/* Avatar with Status */}
                                 <div className="relative flex-shrink-0">
                                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm transition-all duration-300 ${isHovered
-                                      ? "bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg scale-105"
-                                      : "bg-gradient-to-br from-blue-500 to-blue-600 shadow-md"
+                                      ? "bg-gradient-to-br from-[#260559] to-[#3E2B66] shadow-xl scale-110 ring-4 ring-purple-200"
+                                      : "bg-gradient-to-br from-[#3E2B66] to-[#4d3577] shadow-lg hover:scale-105"
                                     }`}>
                                     {index + 1}
                                   </div>
-                                  <div className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 ${statusConfig.dotColor} rounded-full border-2 border-white flex items-center justify-center shadow-md transition-transform ${isHovered ? "scale-110" : ""
+                                  <div className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 ${statusConfig.dotColor} rounded-full border-2 border-white flex items-center justify-center shadow-lg transition-all duration-300 ${isHovered ? "scale-125 ring-2 ring-white" : ""
                                     }`}>
                                     <StatusIcon className="w-3 h-3 text-white" />
                                   </div>
@@ -350,11 +357,13 @@ const SignerCycle: React.FC = () => {
                                 {/* Signer Details */}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                    <h4 className={`text-xl font-bold text-gray-900 truncate transition-colors ${isHovered ? "text-blue-700" : ""
+                                    <h4 className={`text-xl font-bold truncate transition-all duration-300 ${isHovered 
+                                        ? "text-[#3E2B66] scale-105" 
+                                        : "text-gray-900"
                                       }`}>
                                       {name}
                                     </h4>
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${isHovered ? "scale-105" : ""
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-300 ${isHovered ? "scale-110 shadow-md" : ""
                                       } ${statusConfig.badgeClass}`}>
                                       <span className={`w-2 h-2 rounded-full ${statusConfig.dotColor} animate-pulse`}></span>
                                       {statusConfig.label}
@@ -364,22 +373,30 @@ const SignerCycle: React.FC = () => {
                                   <div className="space-y-2.5">
                                     {email !== "N/A" && (
                                       <div className="flex items-center gap-3 text-sm text-gray-700 group/item">
-                                        <Mail className={`w-4 h-4 transition-colors ${isHovered ? "text-blue-600" : "text-gray-400"
+                                        <Mail className={`w-4 h-4 transition-all duration-300 ${isHovered 
+                                            ? "text-[#3E2B66] scale-110" 
+                                            : "text-gray-400"
                                           }`} />
-                                        <span className="truncate hover:text-blue-600 transition-colors">{email}</span>
+                                        <span className="truncate hover:text-[#3E2B66] transition-colors font-medium">{email}</span>
                                       </div>
                                     )}
                                     {phone !== "N/A" && (
                                       <div className="flex items-center gap-3 text-sm text-gray-700 group/item">
-                                        <Phone className={`w-4 h-4 transition-colors ${isHovered ? "text-blue-600" : "text-gray-400"
+                                        <Phone className={`w-4 h-4 transition-all duration-300 ${isHovered 
+                                            ? "text-[#3E2B66] scale-110" 
+                                            : "text-gray-400"
                                           }`} />
-                                        <span className="hover:text-blue-600 transition-colors">{phone}</span>
+                                        <span className="hover:text-[#3E2B66] transition-colors font-medium">{phone}</span>
                                       </div>
                                     )}
                                     <div className="flex items-center gap-3 text-sm">
-                                      <User className={`w-4 h-4 transition-colors ${isHovered ? "text-blue-600" : "text-gray-400"
+                                      <User className={`w-4 h-4 transition-all duration-300 ${isHovered 
+                                          ? "text-[#3E2B66] scale-110" 
+                                          : "text-gray-400"
                                         }`} />
-                                      <span className={`font-semibold capitalize transition-colors ${isHovered ? "text-blue-700" : "text-gray-700"
+                                      <span className={`font-semibold capitalize transition-colors ${isHovered 
+                                          ? "text-[#3E2B66]" 
+                                          : "text-gray-700"
                                         }`}>{role}</span>
                                     </div>
                                   </div>
@@ -394,12 +411,12 @@ const SignerCycle: React.FC = () => {
                                   signer.role === "creator" && (
                                     <button
                                       onClick={() => handleAddSignature(String(signerId), String(cycleId))}
-                                      className={`flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all duration-300 ${isHovered
-                                          ? "bg-blue-700 shadow-lg transform scale-105"
-                                          : "hover:bg-blue-700 shadow-md hover:shadow-lg"
+                                      className={`flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold text-sm transition-all duration-300 shadow-lg ${isHovered
+                                          ? "from-[#3E2B66] to-[#4d3577] shadow-xl transform scale-110"
+                                          : "hover:from-[#3E2B66] hover:to-[#4d3577] hover:shadow-xl hover:scale-105"
                                         }`}
                                     >
-                                      <Send className="w-4 h-4" />
+                                      <Send className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                                       Add Signature
                                     </button>
                                   )}

@@ -648,6 +648,539 @@
   }
 }
 
+/* Agreement Page Enhancements */
+.progress-bar-animate {
+  animation: progressPulse 2s ease-in-out infinite;
+  background: linear-gradient(90deg, 
+    rgba(62, 43, 102, 0.2) 0%, 
+    rgba(62, 43, 102, 0.4) 50%, 
+    rgba(62, 43, 102, 0.2) 100%);
+  background-size: 200% 100%;
+}
+
+@keyframes progressPulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Table row hover effect */
+.agreement-row-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.agreement-row-hover:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(62, 43, 102, 0.1);
+}
+
+/* Sidebar Animations */
+@keyframes submenu-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-submenu-slide > * {
+  animation: submenu-slide 0.3s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Create Envelope Special Animations */
+@keyframes createEnvelopePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(62, 43, 102, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(62, 43, 102, 0);
+  }
+}
+
+@keyframes createEnvelopeShine {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+@keyframes createEnvelopeGlow {
+  0%, 100% {
+    opacity: 0.3;
+    box-shadow: 0 0 10px rgba(62, 43, 102, 0.3);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 20px rgba(62, 43, 102, 0.6);
+  }
+}
+
+@keyframes createEnvelopeBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.create-envelope-special {
+  animation: createEnvelopeBounce 3s ease-in-out infinite;
+}
+
+.create-envelope-btn {
+  animation: createEnvelopePulse 2s ease-in-out infinite;
+}
+
+.create-envelope-btn:hover {
+  animation: none;
+}
+.font-brush {
+  font-family: "Brush Script MT", cursive;
+}
+
+/* Field Completed Glow Animation */
+.field-completed {
+  animation: field-glow 2s ease-in-out infinite;
+  /* text-shadow: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3); */
+  color: #260559;
+  position: relative;
+}
+
+.field-completed::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  /* background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.3)); */
+  border-radius: 8px;
+  opacity: 0;
+  animation: field-glow-pulse 2s ease-in-out infinite;
+  z-index: -1;
+  filter: blur(8px);
+}
+
+@keyframes field-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(139, 92, 246, 0.7), 0 0 30px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes field-glow-pulse {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+/* Book Opening Animation */
+.book-container {
+  transform-style: preserve-3d;
+}
+
+.book-page-left,
+.book-page-right {
+  transform-style: preserve-3d;
+  transition: transform 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.book-page-left {
+  transform-origin: right center;
+  transform: rotateY(-90deg);
+}
+
+.book-page-right {
+  transform-origin: left center;
+  transform: rotateY(90deg);
+}
+
+.book-page-left.book-open-left {
+  transform: rotateY(0deg);
+}
+
+.book-page-right.book-open-right {
+  transform: rotateY(0deg);
+}
+
+.book-page-inner {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* Add shadow effect during opening */
+.book-page-left:not(.book-open-left) .book-page-inner,
+.book-page-right:not(.book-open-right) .book-page-inner {
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.book-page-left.book-open-left .book-page-inner,
+.book-page-right.book-open-right .book-page-inner {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 1.2s ease-in-out;
+}
+
+.create-envelope-shine {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: createEnvelopeShine 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.create-envelope-glow {
+  background: radial-gradient(circle, rgba(62, 43, 102, 0.2) 0%, transparent 70%);
+  animation: createEnvelopeGlow 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.create-envelope-icon {
+  animation: createEnvelopeBounce 2s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.create-envelope-text {
+  text-shadow: 0 1px 2px rgba(62, 43, 102, 0.1);
+}
+
+.create-envelope-arrow {
+  animation: createEnvelopeBounce 2s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* Header Animations */
+@keyframes bell-ring {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: rotate(-10deg);
+  }
+  20%, 40%, 60%, 80% {
+    transform: rotate(10deg);
+  }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 0.5s ease-in-out;
+}
+
+@keyframes notification-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-notification-slide {
+  animation: notification-slide 0.3s ease-out;
+}
+
+@keyframes user-menu-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-user-menu-slide {
+  animation: user-menu-slide 0.3s ease-out;
+}
+
+@keyframes crown-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.8));
+  }
+}
+
+.animate-crown-glow {
+  animation: crown-glow 2s ease-in-out infinite;
+}
+
+@keyframes palette-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-palette-fade-in {
+  animation: palette-fade-in 0.2s ease-out;
+}
+
+@keyframes palette-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-palette-slide {
+  animation: palette-slide 0.3s ease-out;
+}
+
+@keyframes palette-item-fade {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-palette-item-fade {
+  animation: palette-item-fade 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+/* Signup Page Animations */
+@keyframes form-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-form-slide-in {
+  animation: form-slide-in 0.6s ease-out;
+}
+
+@keyframes document-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-document-slide-in {
+  animation: document-slide-in 0.6s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Form Field Animations */
+.form-field-group {
+  position: relative;
+}
+
+.form-field-group input:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(62, 43, 102, 0.15);
+}
+
+.form-field-group input:not(:placeholder-shown) {
+  background-color: #fafafa;
+}
+
+/* Signature Styles */
+.signature-container {
+  position: relative;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.signature-text {
+  font-family: 'Brush Script MT', 'Lucida Handwriting', 'Comic Sans MS', 'Dancing Script', cursive;
+  font-size: 2rem;
+  font-weight: 400;
+  color: #3E2B66;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 2px;
+  transform: rotate(-1.5deg);
+  animation: signature-appear 1s ease-out;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(135deg, #3E2B66 0%, #4d3577 50%, #3E2B66 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 4px rgba(62, 43, 102, 0.3));
+  text-shadow: 0 1px 2px rgba(62, 43, 102, 0.1);
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.signature-text::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -5px;
+  right: -5px;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='100' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 Q25,5 50,10 T100,10' stroke='%233E2B66' stroke-width='0.5' fill='none' opacity='0.1'/%3E%3C/svg%3E") repeat-x;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.signature-line {
+  width: 180px;
+  height: 1px;
+  background: linear-gradient(to right, transparent 0%, #3E2B66 20%, #3E2B66 80%, transparent 100%);
+  margin: 6px 0;
+  opacity: 0.5;
+  animation: signature-line-draw 1.2s ease-out;
+  position: relative;
+}
+
+.signature-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(62, 43, 102, 0.3), transparent);
+  transform: translateY(-50%);
+}
+
+@keyframes signature-appear {
+  0% {
+    opacity: 0;
+    transform: rotate(-1.5deg) translateY(15px) scale(0.7);
+    filter: blur(4px);
+  }
+  50% {
+    transform: rotate(-0.5deg) translateY(8px) scale(0.9);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-1.5deg) translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes signature-line-draw {
+  0% {
+    width: 0;
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    width: 180px;
+    opacity: 0.5;
+    transform: scaleX(1);
+  }
+}
+
+/* Sidebar hover glow effect */
+.sidebar-item-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-item-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(62, 43, 102, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.sidebar-item-hover:hover::before {
+  left: 100%;
+}
+
 /* Custom prose styles for document preview */
 .prose {
   color: #374151;

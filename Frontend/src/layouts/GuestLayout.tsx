@@ -22,15 +22,21 @@ const GuestLayout: React.FC = () => {
     '/unlock-pdf', '/protect-pdf', '/sign-pdf', '/redact-pdf', '/compare-pdf',
   ];
 
+  const HIDE_HEADER_FOOTER_ROUTES: string[] = [
+    '/signup',
+  ];
+
   const shouldHideFooter = HIDE_FOOTER_ROUTES.some((path) => location.pathname.startsWith(path));
+  const shouldHideHeaderFooter = HIDE_HEADER_FOOTER_ROUTES.some((path) => location.pathname === path);
+  
   return (
     <div className="min-h-screen bg-white">
       <ScrollToTop />
-      <Header />
+      {!shouldHideHeaderFooter && <Header />}
       <main>
         <Outlet />
       </main>
-      {!shouldHideFooter && <Footer />}
+      {!shouldHideFooter && !shouldHideHeaderFooter && <Footer />}
     </div>
   );
 };
