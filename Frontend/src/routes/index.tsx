@@ -852,7 +852,7 @@ const router = createBrowserRouter([
         children: [
           { path: 'e-sign/signer/:id/:recipientId/:cycleId?', element: <PublicSignerPage /> },
           { path: '/template/form-view/:id', element: <FormView /> },
-          { path: '/e-sign/power-form/:formId/:envelopeId', element: <PowerForm /> },
+          { path: '/e-sign/power-form/:envelopeId', element: <PowerForm /> },
           { path: '/e-sign/signer/thank-you', element: <ThankYouPage /> }
         ],
       },
