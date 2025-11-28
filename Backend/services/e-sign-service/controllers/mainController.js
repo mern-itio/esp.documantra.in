@@ -268,20 +268,88 @@ const envelopesDetail = async (req, res) => {
     }
 };
 const getSignatureFields = async (req, res) => {
-  const documentId = req.params.id; 
-  console.log("Fetching signature fields for document ID:", documentId);
+  const documentId = req.params.id;
+  console.log("Document ID:", documentId);
+  const isSelf = req.params.mode === "self";
+  console.log("isSelf:", isSelf);
   try {
-    const signatureFields = await SignatureField.find({ documentId:documentId });
+    // 1. Fetch signature fields for the document
+    const signatureFields = await SignatureField.find({ documentId });
     if (!signatureFields) {
-      return res.status(404).json({ message: 'Document not found' });
+      return res.status(404).json({ message: "Document not found" });
     }
-    return res.status(200).json({
-      status: 'success',
-      signatureFields: signatureFields
+
+    // Normal mode returns
+    if (!isSelf) {
+      return res.status(200).json({
+        status: "success",
+        signatureFields
+      });
+    }
+
+    // Self mode must receive envelopeId & cycleId
+    const { envelopeId, cycleId } = req.query;
+    console.log("envelopeId:", envelopeId, "cycleId:", cycleId);
+    if (!envelopeId || !cycleId) {
+      return res.status(400).json({
+        message: "envelopeId and cycleId are required in self mode"
+      });
+    }
+
+    // 2. Fetch cycle
+    const cycle = await Cycle.findOne({ _id: cycleId, envelopeId });
+    console.log(cycle);
+    if (!cycle) {
+      return res.status(404).json({
+        message: "Cycle not found or does not belong to this envelope"
+      });
+    }
+
+    // 3. Fetch only SelfSigners listed in cycle.signers[]
+    const selfSigners = await selfSigner.find({
+      _id: { $in: cycle.signers }
     });
+
+    if (selfSigners.length === 0) {
+      return res.status(200).json({
+        status: "success",
+        signatureFields, // no override
+      });
+    }
+
+    // 4. Merge all their nonSignatureFields into a map
+    const nonSigMap = new Map();
+
+    selfSigners.forEach((signer) => {
+      signer.nonSignatureFields.forEach((field) => {
+        if (field.value) {
+          nonSigMap.set(String(field.fieldId), field.value);
+        }
+      });
+    });
+
+    // 5. Apply overrides
+    const updatedFields = signatureFields.map((field) => {
+      const id = String(field._id);
+
+      if (nonSigMap.has(id)) {
+        const obj = field.toObject();
+        obj.signature = nonSigMap.get(id);
+        return obj;
+      }
+
+      return field;
+    });
+
+    // 6. Final Response
+    return res.status(200).json({
+      status: "success",
+      signatureFields: updatedFields
+    });
+
   } catch (error) {
-    console.error('Error fetching signature fields:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error("Error fetching signature fields:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 const getEnvelopeStats = async (req, res) => {
@@ -944,15 +1012,14 @@ const removeDocSignField = async (req, res) => {
 }
 const connectPowerForm = async (req, res) => {
   try {
-    const { powerFormId, envelopeId, creatorSlotId, firstSigningSlotId, numberOfParties, slots  } = req.body;
-    if (!powerFormId || !envelopeId) {
+    const { envelopeId, creatorSlotId, firstSigningSlotId, numberOfParties, slots  } = req.body;
+    if ( !envelopeId) {
       return res.status(400).json({ message: "PowerForm ID and Envelope ID are required." });
     }
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found." });
     }
-    envelope.powerFormId = powerFormId;
     envelope.isPowerForm = true;
     envelope.creatorSlotId = creatorSlotId;
     envelope.firstSigningSlotId = firstSigningSlotId;
@@ -981,7 +1048,7 @@ const getEnvelopePower = async (req, res) => {
 }
 const signerInitiate = async (req, res) => {
   try {
-    const { envelopeId, formId, data } = req.body;
+    const { envelopeId, data } = req.body;
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found." });
@@ -989,11 +1056,8 @@ const signerInitiate = async (req, res) => {
 
     // create cycleId server-side
     const allSlots = envelope.slots || [];
-    console.log("All Slots:", allSlots);
     const creatorSlot = allSlots.find(s => s.slotId === envelope.creatorSlotId);
-    console.log("Creator Slot:", creatorSlot);
     const firstSlot = allSlots.find(s => s.slotId === envelope.firstSigningSlotId);
-    console.log("First Signer Slot:", firstSlot);
     let slotRecords = [];
 
     for (const slot of allSlots) {
@@ -1009,7 +1073,6 @@ const signerInitiate = async (req, res) => {
       } else if (role === "creator") {
         // Fetch creator details from your auth service
         const creatorDetail = await axios.get(`${process.env.AUTH_URL}/api/user-details/${envelope.sender}`);
-        console.log("Creator Details:", creatorDetail.data);
         slotData = {
           name: creatorDetail.data.data.fullname,
           email: creatorDetail.data.data.email,
@@ -1022,16 +1085,22 @@ const signerInitiate = async (req, res) => {
         fieldId: f._id,
         state: f.status = "pending"
       }));
-
+      const nonSignatureFields = await SignatureField.find({ envelopeId: envelope._id, slotId: slot.slotId, type: { $ne: "signature" } });
+      // Map non-signature fields into the structure for SelfSigner
+      const nonSignatureFieldsForSigner = nonSignatureFields.map(f => ({
+        fieldId: f._id,
+        state: f.status = "pending"
+      }));
+      signatureFieldsForSigner.push(...nonSignatureFieldsForSigner);
       slotRecords.push({
         envelopeId: envelope._id,
-        formId: formId,
         signerSlotId: slot.slotId,
         role: role,
         status: role === "firstSigner" ? "initiated" : "pending",
         signingOrder: slot.index,
         data: slotData,
-        signatureFields:signatureFieldsForSigner
+        signatureFields:signatureFieldsForSigner,
+        nonSignatureFields:nonSignatureFieldsForSigner
       });
     }
 
@@ -1417,7 +1486,7 @@ const markAllNotificationsAsRead = async (req, res) => {
 };
 
 const saveNonSignatureField = async (req, res) => {
-  const {envelopeID, recipientId,fields} = req.body;
+  const {envelopeID, recipientId, fields, selfValue, cycleId} = req.body;
   const nonSignatureField = await SignatureField.findById(fields.fieldId);
   console.log(nonSignatureField);
   if(!nonSignatureField){
@@ -1426,6 +1495,39 @@ const saveNonSignatureField = async (req, res) => {
   nonSignatureField.signature = fields.value;
   nonSignatureField.status = 'completed';
   await nonSignatureField.save();
+  
+  // Handle self-signer mode: update selfSigner's nonSignatureFields array
+  if(selfValue === "1" || selfValue === 1){
+    if(!cycleId || !recipientId){
+      return res.status(400).json({message: 'cycleId and recipientId are required for self-signer mode'});
+    }
+    
+    const selfSignerUpdate = await selfSigner.findById(recipientId);
+    if(!selfSignerUpdate){
+      return res.status(404).json({message: 'SelfSigner not found'});
+    }
+    
+    // Find or create entry in nonSignatureFields array
+    const existingFieldEntry = selfSignerUpdate.nonSignatureFields.find(
+      (nf) => nf.fieldId && nf.fieldId.toString() === fields.fieldId.toString()
+    );
+    
+    if(existingFieldEntry){
+      existingFieldEntry.value = fields.value;
+      existingFieldEntry.state = 'submited';
+      existingFieldEntry.submitedAt = new Date();
+    } else {
+      selfSignerUpdate.nonSignatureFields.push({
+        fieldId: fields.fieldId,
+        value: fields.value,
+        state: 'submited',
+        submitedAt: new Date()
+      });
+    }
+    
+    await selfSignerUpdate.save();
+  }
+  
   return res.status(200).json({message: 'Field saved succesfully'});
 }
 const saveupdateSignature = async (req, res) =>{

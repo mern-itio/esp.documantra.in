@@ -29,6 +29,14 @@ const BASE_PAGE_WIDTH = 800;
 const MIN_FIELD_WIDTH = 16;
 const MIN_FIELD_HEIGHT = 14;
 
+// Mode constants
+const MODE = {
+  SELF_SIGNER: "1",
+  RECIPIENT: "0"
+} as const;
+
+type SigningMode = typeof MODE.SELF_SIGNER | typeof MODE.RECIPIENT;
+
 const toNumber = (value: any): number => {
   if (value === null || value === undefined) return 0;
   if (typeof value === "number") return value;
@@ -61,25 +69,124 @@ const DocumentViewerContent: React.FC<Props> = ({
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
+  const mode: SigningMode = (selfValue === MODE.SELF_SIGNER ? MODE.SELF_SIGNER : MODE.RECIPIENT) as SigningMode;
 
-  // Get signature - from selfSigner if in self-signer mode, otherwise from recipients
-  const getInitialSignature = () => {
-    if (selfValue === "1") {
-      // Will be set after selfSigner loads
-      return null;
+  // ==================== MODE-SPECIFIC HELPER FUNCTIONS ====================
+  
+  // Get initial signature based on mode
+  const getInitialSignature = (): string | null => {
+    switch (mode) {
+      case MODE.SELF_SIGNER:
+        // Will be set after selfSigner loads
+        return null;
+      case MODE.RECIPIENT:
+        return allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+      default:
+        return null;
     }
-    return allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+  };
+
+
+  // Get matched signer for a field (self-signer mode only)
+  const getMatchedSigner = (field: any) => {
+    if (mode !== MODE.SELF_SIGNER) return null;
+    return (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
+  };
+
+  // Get matched recipient for a field (recipient mode only)
+  const getMatchedRecipient = (field: any) => {
+    if (mode !== MODE.RECIPIENT) return null;
+    return allRecipients?.find((r: any) => r.id === field.recipientId);
+  };
+
+  // Check if current user owns this field
+  const isFieldForCurrentUser = (field: any): boolean => {
+    switch (mode) {
+      case MODE.SELF_SIGNER: {
+        const matchedSigner = getMatchedSigner(field);
+        return matchedSigner ? matchedSigner._id?.toString?.() === currentUserId?.toString?.() : false;
+      }
+      case MODE.RECIPIENT:
+        return field.recipientId === currentUserId;
+      default:
+        return false;
+    }
+  };
+
+  // Check if signature field is completed
+  const isSignatureFieldCompleted = (field: any): boolean => {
+    switch (mode) {
+      case MODE.SELF_SIGNER: {
+        const matchedSigner = getMatchedSigner(field);
+        if (!matchedSigner) return false;
+        
+        // Check signatureFields array to see if this specific field is signed
+        if (matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
+          const fieldEntry = matchedSigner.signatureFields.find(
+            (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
+          );
+          return fieldEntry ? fieldEntry.state === 'signed' : false;
+        }
+        // Fallback: check if signature exists in selfSigner
+        return !!matchedSigner.signature;
+      }
+      case MODE.RECIPIENT: {
+        const fieldKey = field._id || field.fieldId;
+        return !!field.signature || !!localSignedMap[fieldKey];
+      }
+      default:
+        return false;
+    }
+  };
+
+  // Get initials value for a field
+  const getInitialsValue = (field: any): string => {
+    switch (mode) {
+      case MODE.SELF_SIGNER: {
+        const matchedSigner = getMatchedSigner(field);
+        return matchedSigner?.initials || "";
+      }
+      case MODE.RECIPIENT: {
+        const recipient = getMatchedRecipient(field);
+        return recipient?.initials || "";
+      }
+      default:
+        return "";
+    }
+  };
+
+  // Get field value ONLY from matchedSigner.nonSignatureFields array
+  const getFieldValueFromNonSignatureFields = (field: any, matchedSigner: any): any => {
+    if (!matchedSigner || !matchedSigner.nonSignatureFields || !Array.isArray(matchedSigner.nonSignatureFields)) {
+      return undefined;
+    }
+    
+    const fieldId = field._id || field.fieldId;
+    if (!fieldId) return undefined;
+    
+    // Find the entry in nonSignatureFields array that matches this field
+    const fieldEntry = matchedSigner.nonSignatureFields.find(
+      (nf: any) => nf && nf.fieldId && (nf.fieldId.toString() === fieldId.toString() || nf.fieldId._id?.toString() === fieldId.toString())
+    );
+    
+    return fieldEntry ? fieldEntry.value : undefined;
   };
 
   const [recipientSignature, setRecipientSignature] = useState<string | null>(getInitialSignature());
 
-  // Update signature when recipients change (recipient mode)
+  // Update signature when data changes based on mode
   useEffect(() => {
-    if (selfValue !== "1") {
-      const sig = allRecipients?.find(r => r.id === currentUserId)?.signature || null;
-      setRecipientSignature(sig);
+    switch (mode) {
+      case MODE.RECIPIENT: {
+        const sig = allRecipients?.find(r => r.id === currentUserId)?.signature || null;
+        setRecipientSignature(sig);
+        break;
+      }
+      case MODE.SELF_SIGNER:
+        // Handled in separate useEffect below
+        break;
     }
-  }, [allRecipients, currentUserId, selfValue]);
+  }, [allRecipients, currentUserId, mode]);
 
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
   const [isEditingSignature, setIsEditingSignature] = useState<boolean>(false);
@@ -88,44 +195,61 @@ const DocumentViewerContent: React.FC<Props> = ({
   // Update signature when selfSigner changes (self-signer mode)
   // Skip this update if we're currently refreshing to avoid re-render loops
   useEffect(() => {
-    if (selfValue === "1" && selfSigner.length > 0 && !isRefreshingSelfSignerRef.current) {
-      const matchedSigner = selfSigner.find(
-        (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
-      );
-      if (matchedSigner?.signature) {
-        setRecipientSignature(matchedSigner.signature);
-      }
-      
-      // Clear cached values for initial fields when selfSigner updates (so updated initials are shown)
-      const initialFields = signatureFields.filter((f: any) => f.type === "initial");
-      initialFields.forEach((field: any) => {
-        const keyId = field._id || field.fieldId;
-        if (keyId) {
-          // Clear from ref so it re-evaluates with updated initials
-          delete fieldValuesRef.current[keyId];
-          // Remove from auto-filled set
-          autoFilledDateFieldsRef.current.delete(keyId);
+    switch (mode) {
+      case MODE.SELF_SIGNER: {
+        if (selfSigner.length > 0 && !isRefreshingSelfSignerRef.current) {
+          const matchedSigner = selfSigner.find(
+            (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
+          );
+          if (matchedSigner?.signature) {
+            setRecipientSignature(matchedSigner.signature);
+          }
+          
+          // Clear cached values for initial fields when selfSigner updates (so updated initials are shown)
+          const initialFields = signatureFields.filter((f: any) => f.type === "initial");
+          initialFields.forEach((field: any) => {
+            const keyId = field._id || field.fieldId;
+            if (keyId) {
+              // Clear from ref so it re-evaluates with updated initials
+              delete fieldValuesRef.current[keyId];
+              // Remove from auto-filled set
+              autoFilledDateFieldsRef.current.delete(keyId);
+            }
+          });
         }
-      });
+        break;
+      }
+      case MODE.RECIPIENT:
+        // Handled in separate useEffect above
+        break;
     }
-  }, [selfSigner, currentUserId, selfValue, signatureFields]);
+  }, [selfSigner, currentUserId, mode, signatureFields]);
   
   // Clear cached values for initial fields when allRecipients updates (recipient mode)
   useEffect(() => {
-    if (selfValue !== "1" && allRecipients) {
-      const initialFields = signatureFields.filter((f: any) => f.type === "initial");
-      initialFields.forEach((field: any) => {
-        const keyId = field._id || field.fieldId;
-        if (keyId) {
-          // Clear from ref so it re-evaluates with updated initials
-          delete fieldValuesRef.current[keyId];
-          // Remove from auto-filled set
-          autoFilledDateFieldsRef.current.delete(keyId);
+    switch (mode) {
+      case MODE.RECIPIENT: {
+        if (allRecipients) {
+          const initialFields = signatureFields.filter((f: any) => f.type === "initial");
+          initialFields.forEach((field: any) => {
+            const keyId = field._id || field.fieldId;
+            if (keyId) {
+              // Clear from ref so it re-evaluates with updated initials
+              delete fieldValuesRef.current[keyId];
+              // Remove from auto-filled set
+              autoFilledDateFieldsRef.current.delete(keyId);
+            }
+          });
         }
-      });
+        break;
+      }
+      case MODE.SELF_SIGNER:
+        // Handled in separate useEffect above
+        break;
     }
-  }, [allRecipients, selfValue, signatureFields]);
-  const [_isLoading, setIsLoading] = useState(selfValue === "1");
+  }, [allRecipients, mode, signatureFields]);
+  
+  const [_isLoading, setIsLoading] = useState(mode === MODE.SELF_SIGNER);
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
   const [pageWidth, setPageWidth] = useState<number>(BASE_PAGE_WIDTH);
   const [pageScale, setPageScale] = useState<number>(1);
@@ -143,9 +267,15 @@ const DocumentViewerContent: React.FC<Props> = ({
 
   // PDF.js worker setup
   useEffect(() => {
-    if (selfValue === "1") {
-      getSelfSigner();
+    switch (mode) {
+      case MODE.SELF_SIGNER:
+        getSelfSigner();
+        break;
+      case MODE.RECIPIENT:
+        // No initialization needed
+        break;
     }
+    
     if (typeof window !== "undefined") {
       try {
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -153,7 +283,7 @@ const DocumentViewerContent: React.FC<Props> = ({
         console.warn("Failed to set PDF.js worker:", err);
       }
     }
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -225,17 +355,26 @@ const isFieldFilled = (f: any): boolean => {
     return String(v).trim().length > 0;
   }
 
-  // respect existing selfValue/selfSigner fallback if you use it for prefill
-  if (selfValue === "1") {
-    const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === f.slotId);
-    if (matched) {
-      const val = matched.role === "creator" ? matched.data?.name : matched.data?.[f.label];
-      if (f.type === "checkbox") return !!val;
-      return val !== undefined && val !== null && String(val).trim().length > 0;
+  // Check mode-specific data sources
+  switch (mode) {
+    case MODE.SELF_SIGNER: {
+      const matched = getMatchedSigner(f);
+      if (matched) {
+        const val = getFieldValueFromNonSignatureFields(f, matched);
+        if (f.type === "checkbox") return !!val;
+        return val !== undefined && val !== null && String(val).trim().length > 0;
+      }
+      break;
     }
+    case MODE.RECIPIENT:
+      // Backend-provided default
+      if (f.signature !== undefined && f.signature !== null) {
+        return String(f.signature).trim().length > 0;
+      }
+      break;
   }
 
-  // backend-provided default
+  // backend-provided default fallback
   if (f.signature !== undefined && f.signature !== null) {
     return String(f.signature).trim().length > 0;
   }
@@ -248,6 +387,14 @@ const areAllNonSignatureFieldsFilledForRecipient = (recipientId: string) => {
   if (fields.length === 0) return true; // no other fields => allow signing
   return fields.every(isFieldFilled);
 };
+
+// returns true only if ALL non-signature fields for that slot (self-signer mode) are filled
+const areAllNonSignatureFieldsFilledForSlot = (slotId: string) => {
+  if (!slotId) return true;
+  const fields = signatureFields.filter((ff: any) => ff.type !== "signature" && ff.slotId === slotId);
+  if (fields.length === 0) return true; // no other fields => allow signing
+  return fields.every(isFieldFilled);
+};
 // Submit non-signature fields 
 // call after you setValue(..., true) (i.e., onBlur / onChange)
 const submitSingleField = async (recipientId: string, fieldId: string, value: any) => {
@@ -257,6 +404,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     envelopeID,
     recipientId,
     fields: { fieldId, value },
+    selfValue: mode === MODE.SELF_SIGNER ? "1" : "0",
+    cycleId: mode === MODE.SELF_SIGNER ? cycleId : undefined,
   };
 
   try {
@@ -267,6 +416,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     setSignatureFields(prev => prev.map(f => 
       (f._id || f.fieldId) === fieldId ? { ...f, signature: value } : f
     ));
+
+    // For self-signer mode, refresh selfSigner data to get updated nonSignatureFields
+    if (mode === MODE.SELF_SIGNER && cycleId) {
+      setTimeout(() => {
+        getSelfSigner();
+      }, 300);
+    }
 
   } catch (e) {
     console.error("Network error while submitting field", e);
@@ -282,19 +438,26 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     if (localVal !== undefined && localVal !== null && String(localVal).length > 0) {
       return field.type === 'checkbox' ? !!localVal : String(localVal).trim().length > 0;
     }
-    // self mode: read from signer data by label
-    if (selfValue === '1') {
-      const matched = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-      if (matched) {
-        if (field.type === 'checkbox') return !!matched.data?.[field.label];
-        const v = matched.role === 'creator' ? matched.data?.name : matched.data?.[field.label];
-        return v !== undefined && v !== null && String(v).trim().length > 0;
+    
+    // Check mode-specific data sources
+    switch (mode) {
+      case MODE.SELF_SIGNER: {
+        const matched = getMatchedSigner(field);
+        if (matched) {
+          const v = getFieldValueFromNonSignatureFields(field, matched);
+          if (field.type === 'checkbox') return !!v;
+          return v !== undefined && v !== null && String(v).trim().length > 0;
+        }
+        break;
       }
+      case MODE.RECIPIENT:
+        // Backend default value
+        if (field.signature !== undefined && field.signature !== null) {
+          return String(field.value).trim().length > 0;
+        }
+        break;
     }
-    // backend default value
-    if (field.signature !== undefined && field.signature !== null) {
-      return String(field.value).trim().length > 0;
-    }
+    
     return false;
   };
 
@@ -305,53 +468,56 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       .map((f) => ({ ...f, pageNum: normalizePage(f) }))
       .filter((field) => {
         // Determine if current user needs to act on this field
-        let isCurrentUser = false;
+        const isCurrentUser = isFieldForCurrentUser(field);
         let isCompleted = false;
 
-        if (selfValue === '1') {
-          const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-          isCurrentUser = matchedSigner ? matchedSigner._id?.toString?.() === currentUserId?.toString?.() : false;
-          if (field.type === 'signature') {
-            // Check signatureFields array to see if this specific field is signed
-            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
-              const fieldEntry = matchedSigner.signatureFields.find(
-                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
-              );
-              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
+        switch (mode) {
+          case MODE.SELF_SIGNER: {
+            if (field.type === 'signature') {
+              // In self-signer mode, exclude signature fields until all non-signature fields for that slot are filled
+              const allFilled = areAllNonSignatureFieldsFilledForSlot(field.slotId);
+              if (!allFilled) {
+                // Don't include signature field in actionableFields if non-signature fields aren't all filled
+                return false;
+              }
+              isCompleted = isSignatureFieldCompleted(field);
             } else {
-              // Fallback: check if signature exists in selfSigner
-              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+              isCompleted = isNonSignatureCompleted(field);
             }
-          } else {
-            isCompleted = isNonSignatureCompleted(field);
+            break;
           }
-        } else {
-          // Regular mode: recipient-based signing
-          isCurrentUser = field.recipientId === currentUserId;
-          if (field.type === 'signature') {
-            // In regular mode, exclude signature fields until all non-signature fields for that recipient are filled
-            const allFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
-            if (!allFilled) {
-              // Don't include signature field in actionableFields if non-signature fields aren't all filled
-              return false;
+          case MODE.RECIPIENT: {
+            if (field.type === 'signature') {
+              // In regular mode, exclude signature fields until all non-signature fields for that recipient are filled
+              const allFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
+              if (!allFilled) {
+                // Don't include signature field in actionableFields if non-signature fields aren't all filled
+                return false;
+              }
+              isCompleted = isSignatureFieldCompleted(field);
+            } else {
+              isCompleted = isNonSignatureCompleted(field);
             }
-            isCompleted = !!field.signature || !!localSignedMap[field._id || field.fieldId];
-          } else {
-            isCompleted = isNonSignatureCompleted(field);
+            break;
           }
         }
         return isCurrentUser && !isCompleted;
       })
       .sort((a, b) => {
         // In regular mode, prioritize non-signature fields first, then signature fields
-        if (selfValue !== '1') {
-          if (a.type === 'signature' && b.type !== 'signature') return 1;
-          if (a.type !== 'signature' && b.type === 'signature') return -1;
+        switch (mode) {
+          case MODE.RECIPIENT:
+            if (a.type === 'signature' && b.type !== 'signature') return 1;
+            if (a.type !== 'signature' && b.type === 'signature') return -1;
+            break;
+          case MODE.SELF_SIGNER:
+            // No special sorting for self-signer mode
+            break;
         }
         // Then sort by page number
         return a.pageNum - b.pageNum;
       });
-  }, [signatureFields, selfSigner, selfValue, currentUserId, localSignedMap, localFieldValues]);
+  }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues]);
 
   // Track if there were fields initially
   useEffect(() => {
@@ -372,24 +538,31 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   useEffect(() => {
     // Only run once when fields first become available, not when they change due to user input
     if (!hasAutoOpened && actionableFields.length > 0) {
-      // In regular mode, find first non-signature field if available
       let firstField = actionableFields[0];
-      if (selfValue !== '1') {
-        const firstNonSignature = actionableFields.find(f => f.type !== 'signature');
-        if (firstNonSignature) {
-          firstField = firstNonSignature;
-          const firstIndex = actionableFields.findIndex(f => f === firstNonSignature);
-          setCurrentActionableIndex(firstIndex);
-          currentFieldIdRef.current = firstField._id || firstField.fieldId;
-        } else {
-          // If no non-signature fields, use first field (should be signature)
+      
+      switch (mode) {
+        case MODE.RECIPIENT: {
+          // In regular mode, find first non-signature field if available
+          const firstNonSignature = actionableFields.find(f => f.type !== 'signature');
+          if (firstNonSignature) {
+            firstField = firstNonSignature;
+            const firstIndex = actionableFields.findIndex(f => f === firstNonSignature);
+            setCurrentActionableIndex(firstIndex);
+            currentFieldIdRef.current = firstField._id || firstField.fieldId;
+          } else {
+            // If no non-signature fields, use first field (should be signature)
+            setCurrentActionableIndex(0);
+            currentFieldIdRef.current = firstField._id || firstField.fieldId;
+          }
+          break;
+        }
+        case MODE.SELF_SIGNER: {
           setCurrentActionableIndex(0);
           currentFieldIdRef.current = firstField._id || firstField.fieldId;
+          break;
         }
-      } else {
-        setCurrentActionableIndex(0);
-        currentFieldIdRef.current = firstField._id || firstField.fieldId;
       }
+      
       setHasAutoOpened(true);
       // Center the first actionable field in view (but don't open sign pad)
       setTimeout(() => {
@@ -398,7 +571,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     }
     // Check actionableFields.length but only trigger once via hasAutoOpened guard
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actionableFields.length, hasAutoOpened]);
+  }, [actionableFields.length, hasAutoOpened, mode]);
 
   // click-to-sign behavior removed dependency on page concept; keep disabled to avoid unintended opens on scroll viewport clicks
 
@@ -593,71 +766,72 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   const findNextIncompleteField = (startIndex: number, prioritizeNonSignature: boolean = false) => {
     if (actionableFields.length === 0) return null;
     
-    // In regular mode, first try to find non-signature fields
-    if (selfValue !== '1' && prioritizeNonSignature) {
-      // First pass: look for non-signature fields
-      for (let i = 0; i < actionableFields.length; i++) {
-        const idx = (startIndex + i) % actionableFields.length;
-        const field = actionableFields[idx];
-        
-        if (!field || field.type === 'signature') continue;
-        
-        const isCompleted = isNonSignatureCompleted(field);
-        
-        if (!isCompleted) {
-          return idx;
-        }
-      }
-      
-      // Second pass: if no incomplete non-signature fields, look for signature fields
-      for (let i = 0; i < actionableFields.length; i++) {
-        const idx = (startIndex + i) % actionableFields.length;
-        const field = actionableFields[idx];
-        
-        if (!field || field.type !== 'signature') continue;
-        
-        const fieldKey = field._id || field.fieldId;
-        const isCompleted = !!field.signature || !!localSignedMap[fieldKey];
-        
-        if (!isCompleted) {
-          return idx;
-        }
-      }
-    } else {
-      // Self mode or no prioritization: search forward from startIndex
-      for (let i = 0; i < actionableFields.length; i++) {
-        const idx = (startIndex + i) % actionableFields.length;
-        const field = actionableFields[idx];
-        
-        if (!field) continue;
-        
-        // Check if this field is still incomplete (check refs too)
-        const key = field._id || field.fieldId;
-        let isCompleted = false;
-        
-        if (field.type === 'signature') {
-          if (selfValue === '1') {
-            const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === field.slotId);
-            // Check signatureFields array to see if this specific field is signed
-            if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
-              const fieldEntry = matchedSigner.signatureFields.find(
-                (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
-              );
-              isCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
-            } else {
-              // Fallback: check if signature exists in selfSigner
-              isCompleted = matchedSigner ? !!matchedSigner.signature : false;
+    switch (mode) {
+      case MODE.RECIPIENT: {
+        if (prioritizeNonSignature) {
+          // First pass: look for non-signature fields
+          for (let i = 0; i < actionableFields.length; i++) {
+            const idx = (startIndex + i) % actionableFields.length;
+            const field = actionableFields[idx];
+            
+            if (!field || field.type === 'signature') continue;
+            
+            const isCompleted = isNonSignatureCompleted(field);
+            
+            if (!isCompleted) {
+              return idx;
             }
-          } else {
-            isCompleted = !!field.signature || !!localSignedMap[key];
+          }
+          
+          // Second pass: if no incomplete non-signature fields, look for signature fields
+          for (let i = 0; i < actionableFields.length; i++) {
+            const idx = (startIndex + i) % actionableFields.length;
+            const field = actionableFields[idx];
+            
+            if (!field || field.type !== 'signature') continue;
+            
+            const isCompleted = isSignatureFieldCompleted(field);
+            
+            if (!isCompleted) {
+              return idx;
+            }
           }
         } else {
-          isCompleted = isNonSignatureCompleted(field);
+          // Search forward from startIndex
+          for (let i = 0; i < actionableFields.length; i++) {
+            const idx = (startIndex + i) % actionableFields.length;
+            const field = actionableFields[idx];
+            
+            if (!field) continue;
+            
+            const isCompleted = field.type === 'signature' 
+              ? isSignatureFieldCompleted(field)
+              : isNonSignatureCompleted(field);
+            
+            if (!isCompleted) {
+              return idx;
+            }
+          }
         }
-        
-        if (!isCompleted) {
-          return idx;
+        break;
+      }
+      case MODE.SELF_SIGNER: {
+        // Self mode: search forward from startIndex
+        for (let i = 0; i < actionableFields.length; i++) {
+          const idx = (startIndex + i) % actionableFields.length;
+          const field = actionableFields[idx];
+          
+          if (!field) continue;
+          
+          const isCompleted = field.type === 'signature' 
+            ? isSignatureFieldCompleted(field)
+            : isNonSignatureCompleted(field);
+          
+          if (!isCompleted) {
+            return idx;
+          }
         }
+        break;
       }
     }
     
@@ -671,10 +845,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     // If not started yet, navigate to first incomplete field and mark as started
     if (!hasStarted) {
       setHasStarted(true);
-      // In regular mode, prioritize non-signature fields first
-      const firstIncomplete = selfValue !== '1' 
-        ? findNextIncompleteField(0, true) // Prioritize non-signature in regular mode
-        : findNextIncompleteField(0);
+      let firstIncomplete: number | null = null;
+      
+      switch (mode) {
+        case MODE.RECIPIENT:
+          // In regular mode, prioritize non-signature fields first
+          firstIncomplete = findNextIncompleteField(0, true);
+          break;
+        case MODE.SELF_SIGNER:
+          firstIncomplete = findNextIncompleteField(0);
+          break;
+      }
+      
       if (firstIncomplete !== null) {
         goToActionableIndex(firstIncomplete);
       } else {
@@ -690,23 +872,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     
     let isCurrentCompleted = false;
     if (currentField) {
-      const key = currentField._id || currentField.fieldId;
       if (currentField.type === 'signature') {
-        if (selfValue === '1') {
-          const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-          // Check signatureFields array to see if this specific field is signed
-          if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
-            const fieldEntry = matchedSigner.signatureFields.find(
-              (sf: any) => sf.fieldId && (sf.fieldId.toString() === (currentField._id || currentField.fieldId)?.toString())
-            );
-            isCurrentCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
-          } else {
-            // Fallback: check if signature exists in selfSigner
-            isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
-          }
-        } else {
-          isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
-        }
+        isCurrentCompleted = isSignatureFieldCompleted(currentField);
       } else {
         isCurrentCompleted = isNonSignatureCompleted(currentField);
       }
@@ -715,35 +882,40 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       isCurrentCompleted = true;
     }
     
-    // In regular mode, prioritize non-signature fields first
-    if (selfValue !== '1') {
-      // If current is completed, start from current index (field was removed, so next field is now at this index)
-      // Otherwise, start from current + 1
-      const startIdx = isCurrentCompleted ? currentActionableIndex : currentActionableIndex + 1;
-      let nextIndex = findNextIncompleteField(startIdx, true);
-      
-      // If not found after current, try from the beginning
-      if (nextIndex === null) {
-        nextIndex = findNextIncompleteField(0, true);
+    // Find next incomplete field based on mode
+    switch (mode) {
+      case MODE.RECIPIENT: {
+        // If current is completed, start from current index (field was removed, so next field is now at this index)
+        // Otherwise, start from current + 1
+        const startIdx = isCurrentCompleted ? currentActionableIndex : currentActionableIndex + 1;
+        let nextIndex = findNextIncompleteField(startIdx, true);
+        
+        // If not found after current, try from the beginning
+        if (nextIndex === null) {
+          nextIndex = findNextIncompleteField(0, true);
+        }
+        
+        // Navigate if we found a field (even if index is same, because the field at that index changed)
+        if (nextIndex !== null) {
+          goToActionableIndex(nextIndex);
+        }
+        break;
       }
-      
-      // Navigate if we found a field (even if index is same, because the field at that index changed)
-      if (nextIndex !== null) {
-        goToActionableIndex(nextIndex);
-      }
-    } else {
-      // Self mode: original behavior
-      const startIdx = isCurrentCompleted ? currentActionableIndex : currentActionableIndex + 1;
-      let nextIndex = findNextIncompleteField(startIdx);
-      
-      // If not found after current, try from the beginning
-      if (nextIndex === null) {
-        nextIndex = findNextIncompleteField(0);
-      }
-      
-      // Navigate if we found a field
-      if (nextIndex !== null) {
-        goToActionableIndex(nextIndex);
+      case MODE.SELF_SIGNER: {
+        // Self mode: original behavior
+        const startIdx = isCurrentCompleted ? currentActionableIndex : currentActionableIndex + 1;
+        let nextIndex = findNextIncompleteField(startIdx);
+        
+        // If not found after current, try from the beginning
+        if (nextIndex === null) {
+          nextIndex = findNextIncompleteField(0);
+        }
+        
+        // Navigate if we found a field
+        if (nextIndex !== null) {
+          goToActionableIndex(nextIndex);
+        }
+        break;
       }
     }
     // If nextIndex is null, all fields are completed - do nothing
@@ -770,19 +942,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       console.log(field);
       const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
       
-      // Get initials from recipient or selfSigner
+      // Get initials from recipient or selfSigner based on mode
       let initialsValue = "";
-      if (selfValue === "1") {
-        const matchedSigner = selfSigner.find(
-          (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
-        );
-        if (matchedSigner) {
-          initialsValue = (matchedSigner as any).initials || "";
+      switch (mode) {
+        case MODE.SELF_SIGNER: {
+          const matchedSigner = selfSigner.find(
+            (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
+          );
+          if (matchedSigner) {
+            initialsValue = (matchedSigner as any).initials || "";
+          }
+          break;
         }
-      } else {
-        const recipient = allRecipients?.find(r => r.id === currentUserId);
-        if (recipient) {
-          initialsValue = recipient.initials || "";
+        case MODE.RECIPIENT: {
+          const recipient = allRecipients?.find(r => r.id === currentUserId);
+          if (recipient) {
+            initialsValue = recipient.initials || "";
+          }
+          break;
         }
       }
       
@@ -804,20 +981,27 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
         triggerConfetti();
         
-        // In self-signer mode, refresh selfSigner data to get updated signatureFields
-        if (selfValue === "1" && cycleId) {
-          // Mark navigation as pending
-          pendingNavigationRef.current = true;
-          // Wait a bit for the backend to update, then refresh
-          setTimeout(() => {
-            getSelfSigner();
-            // Navigation will be triggered in getSelfSigner's finally block
-          }, 500);
-        } else {
-          // Recipient mode: navigate to next field
-          setTimeout(() => {
-            goToNext();
-          }, 300);
+        // Handle post-signature navigation based on mode
+        switch (mode) {
+          case MODE.SELF_SIGNER: {
+            if (cycleId) {
+              // Mark navigation as pending
+              pendingNavigationRef.current = true;
+              // Wait a bit for the backend to update, then refresh
+              setTimeout(() => {
+                getSelfSigner();
+                // Navigation will be triggered in getSelfSigner's finally block
+              }, 500);
+            }
+            break;
+          }
+          case MODE.RECIPIENT: {
+            // Recipient mode: navigate to next field
+            setTimeout(() => {
+              goToNext();
+            }, 300);
+            break;
+          }
         }
         
         if(response?.data?.fieldRemmaning===false){
@@ -1012,9 +1196,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     // Check if current index is out of bounds
     if (currentIdx >= actionableFields.length) {
       // Find the first incomplete field - in regular mode, prioritize non-signature fields
-      const nextIncomplete = selfValue !== '1' 
-        ? findNextIncompleteField(0, true)
-        : findNextIncompleteField(0);
+      let nextIncomplete: number | null = null;
+      switch (mode) {
+        case MODE.RECIPIENT:
+          nextIncomplete = findNextIncompleteField(0, true);
+          break;
+        case MODE.SELF_SIGNER:
+          nextIncomplete = findNextIncompleteField(0);
+          break;
+      }
+      
       if (nextIncomplete !== null) {
         setCurrentActionableIndex(nextIncomplete);
         const field = actionableFields[nextIncomplete];
@@ -1071,8 +1262,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     doc,
     signatureFields,
     currentUserId,
-    selfValue,
-    selfSigner,
+    selfValue: _selfValue,
+    selfSigner: _selfSigner,
     localSignedMap,
     recipientSignature,
     onFieldClick,
@@ -1115,41 +1306,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         const isSignatureType = field.type === "signature";
 
                         // common derived values
-                        let isCurrentUser = false;
+                        const isCurrentUser = isFieldForCurrentUser(field);
                         let isSigned = false;
                         let signedImage: string | null = null;
 
-                        if (selfValue === "1" && selfSigner) {
-                          const matched = selfSigner.find(
-                            (s: any) => s && s.signerSlotId === field.slotId
-                          );
-                          isCurrentUser = matched
-                            ? matched._id?.toString?.() === currentUserId?.toString?.()
-                            : false;
-                          
-                          // For signature fields, check signatureFields array to see if this specific field is signed
-                          if (isSignatureType && matched && matched.signatureFields && Array.isArray(matched.signatureFields)) {
-                            const fieldEntry = matched.signatureFields.find(
-                              (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
-                            );
-                            if (fieldEntry && fieldEntry.state === 'signed' && matched.signature) {
-                              isSigned = true;
-                              signedImage = matched.signature;
-                            } else {
-                              isSigned = false;
-                              signedImage = null;
+                        if (isSignatureType) {
+                          isSigned = isSignatureFieldCompleted(field);
+                          switch (mode) {
+                            case MODE.SELF_SIGNER: {
+                              const matched = getMatchedSigner(field);
+                              signedImage = matched?.signature ?? null;
+                              break;
                             }
-                          } else {
-                            // Fallback: check if signature exists in selfSigner
-                            isSigned = matched ? !!matched.signature : false;
-                            signedImage = matched?.signature ?? null;
+                            case MODE.RECIPIENT: {
+                              const fieldKey = field._id || field.fieldId;
+                              signedImage = localSignedMap[fieldKey] || field.signature || null;
+                              break;
+                            }
                           }
-                        } else {
-                          isCurrentUser = field.recipientId === currentUserId;
-                          isSigned =
-                            !!field.signature || !!localSignedMap[field._id || field.fieldId];
-                          signedImage =
-                            localSignedMap[field._id || field.fieldId] || field.signature || null;
                         }
 
                         const keyId = field._id || field.fieldId;
@@ -1196,43 +1370,45 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
                         // recipient display (best-effort)
                         const recipientDisplay = (() => {
-                          if (selfValue === "1") {
-                            const matched = (selfSigner || []).find(
-                              (s: any) => s && s.signerSlotId === field.slotId
-                            );
-                            if (matched) {
-                              const primary =
-                                matched?.data?.name || matched?.name || matched?.data?.email;
-                              const secondary =
-                                matched?.data?.name && matched?.data?.email
-                                  ? matched.data.email
-                                  : undefined;
-                              return {
-                                primary: primary || "Recipient",
-                                secondary,
-                                decorated: true,
-                              };
+                          switch (mode) {
+                            case MODE.SELF_SIGNER: {
+                              const matched = getMatchedSigner(field);
+                              if (matched) {
+                                const matchedAny = matched as any;
+                                const primary =
+                                  matchedAny?.data?.name || matchedAny?.name || matchedAny?.data?.email;
+                                const secondary =
+                                  matched?.data?.name && matched?.data?.email
+                                    ? matched.data.email
+                                    : undefined;
+                                return {
+                                  primary: primary || "Recipient",
+                                  secondary,
+                                  decorated: true,
+                                };
+                              }
+                              break;
                             }
-                          } else {
-                            const recipient = allRecipients?.find(
-                              (r: any) => r.id === field.recipientId
-                            );
-                            if (recipient) {
-                              return {
-                                primary: recipient.name || recipient.email || "Recipient",
-                                secondary:
-                                  recipient.name && recipient.email ? recipient.email : undefined,
-                                decorated: true,
-                              };
-                            }
-                            if (
-                              field.recipientId &&
-                              String(field.recipientId) === String(currentUserId)
-                            ) {
-                              return {
-                                primary: "You",
-                                decorated: false,
-                              };
+                            case MODE.RECIPIENT: {
+                              const recipient = getMatchedRecipient(field);
+                              if (recipient) {
+                                return {
+                                  primary: recipient.name || recipient.email || "Recipient",
+                                  secondary:
+                                    recipient.name && recipient.email ? recipient.email : undefined,
+                                  decorated: true,
+                                };
+                              }
+                              if (
+                                field.recipientId &&
+                                String(field.recipientId) === String(currentUserId)
+                              ) {
+                                return {
+                                  primary: "You",
+                                  decorated: false,
+                                };
+                              }
+                              break;
                             }
                           }
                           return {
@@ -1250,7 +1426,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         const recipientBadgeGap = Math.max(1, 4 * pageScale);
 
                         if (isSignatureType) {
-                          const allFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
+                          // Mode-aware check: use slotId for self-signer, recipientId for recipient mode
+                          let allFilled = true;
+                          switch (mode) {
+                            case MODE.SELF_SIGNER: {
+                              allFilled = areAllNonSignatureFieldsFilledForSlot(field.slotId);
+                              break;
+                            }
+                            case MODE.RECIPIENT: {
+                              allFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
+                              break;
+                            }
+                          }
                           const allowSigning = isCurrentUser && !isSigned && allFilled && !isSigning;
                           return (
                             <div
@@ -1399,15 +1586,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         const fieldLable = field.label;
                         const fieldId = field._id;
 
-                        // Helper to get value from selfSigner.data (handles both Map and plain object)
-                        const getDataValue = (data: any, key: string): any => {
-                          if (!data) return undefined;
-                          if (data instanceof Map) {
-                            return data.get(key);
-                          }
-                          return data[key];
-                        };
-
                         // Helper function to check if date label is specific (should not auto-fill)
                         const isSpecificDateLabel = (label: string | undefined): boolean => {
                           if (!label) return false;
@@ -1431,7 +1609,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           return `${year}-${month}-${day}`;
                         };
 
-                        // Prefill value priority: ref (most recent) -> state -> signer.data -> field.value
+                        // Prefill value priority: ref (most recent) -> state -> nonSignatureFields -> field.value
                         let value: any = fieldValuesRef.current[keyId];
                         if (value === undefined) {
                           value = localFieldValues[keyId];
@@ -1439,40 +1617,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         if (value === undefined) {
                           // For initial fields, check saved initials first (before generating from name)
                           if (field.type === "initial") {
-                            if (selfValue === "1") {
-                              const matchedSigner = selfSigner?.find(
-                                (s: any) => s && s.signerSlotId === field.slotId
-                              );
-                              if (matchedSigner?.initials) {
-                                value = matchedSigner.initials;
-                              }
-                            } else {
-                              // Recipient mode: check saved initials
-                              const recipient = allRecipients?.find(
-                                (r: any) => r.id === field.recipientId
-                              );
-                              if (recipient?.initials) {
-                                value = recipient.initials;
-                              }
-                            }
+                            value = getInitialsValue(field);
                           }
                           
-                          // If still no value, check other sources (signer.data or field.value)
+                          // If still no value, check other sources (nonSignatureFields or field.value)
                           if (value === undefined) {
-                            if (selfValue === "1") {
-                              const matchedSigner = selfSigner?.find(
-                                (s: any) => s && s.signerSlotId === field.slotId
-                              );
-                              if (matchedSigner && matchedSigner.data) {
-                                if (matchedSigner.role === "creator") {
-                                  value = getDataValue(matchedSigner.data, 'name') ?? getDataValue(matchedSigner.data, 'Name') ?? value;
-                                } else if (fieldLable) {
-                                  value = getDataValue(matchedSigner.data, fieldLable) ?? value;
+                            switch (mode) {
+                              case MODE.SELF_SIGNER: {
+                                const matchedSigner = getMatchedSigner(field);
+                                if (matchedSigner) {
+                                  value = getFieldValueFromNonSignatureFields(field, matchedSigner);
                                 }
+                                break;
                               }
-                            } else {
-                              // Recipient mode: get value from field.value or field.signature
-                              value = field.value ?? field.signature ?? "";
+                              case MODE.RECIPIENT: {
+                                // Recipient mode: get value from field.value or field.signature
+                                value = field.value ?? field.signature ?? "";
+                                break;
+                              }
                             }
                           }
                           if (value === undefined) value = "";
@@ -1496,26 +1658,20 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   return prev;
                                 });
                                 
-                                // For self-signer mode, also update selfSigner structure
-                                if (selfValue === "1") {
-                                  setSelfSigner((prev) => {
-                                    return (prev || []).map((s: any) =>
-                                      s && s.signerSlotId === field.slotId
-                                        ? {
-                                            ...s,
-                                            data: {
-                                              ...(typeof s.data === 'object' ? s.data : {}),
-                                              ...(fieldLable ? { [fieldLable]: value } : {}),
-                                            },
-                                          }
-                                        : s
-                                    );
-                                  });
-                                }
-                                
-                                // Submit the date field automatically for recipient mode
-                                if (selfValue !== "1" && field.recipientId) {
-                                  submitSingleField(field.recipientId, field._id, value);
+                                // Submit the auto-filled date field to backend (for both modes)
+                                switch (mode) {
+                                  case MODE.SELF_SIGNER:
+                                    // Submit to backend so it's stored in nonSignatureFields
+                                    if (field.slotId && currentUserId) {
+                                      submitSingleField(currentUserId, field._id, value);
+                                    }
+                                    break;
+                                  case MODE.RECIPIENT:
+                                    // Submit the date field automatically for recipient mode
+                                    if (field.recipientId) {
+                                      submitSingleField(field.recipientId, field._id, value);
+                                    }
+                                    break;
                                 }
                               }, 0);
                             }
@@ -1523,37 +1679,37 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           
                         }
                         
-                        // Check if field has a value in selfSigner.data (for read-only check in self-signer mode only)
-                        const hasValueInSelfSigner = selfValue === "1" && (() => {
-                          const matchedSigner = selfSigner?.find(
-                            (s: any) => s && s.signerSlotId === field.slotId
-                          );
-                          if (matchedSigner && matchedSigner.data) {
-                            if (matchedSigner.role === "creator") {
-                              return !!(getDataValue(matchedSigner.data, 'name') || getDataValue(matchedSigner.data, 'Name'));
-                            } else if (fieldLable) {
-                              return !!getDataValue(matchedSigner.data, fieldLable);
-                            }
+                        // Check if field has a value in selfSigner.nonSignatureFields (for read-only check in self-signer mode only)
+                        const hasValueInSelfSigner = mode === MODE.SELF_SIGNER && (() => {
+                          const matchedSigner = getMatchedSigner(field);
+                          if (matchedSigner) {
+                            const fieldValue = getFieldValueFromNonSignatureFields(field, matchedSigner);
+                            return fieldValue !== undefined && fieldValue !== null && String(fieldValue).trim().length > 0;
                           }
                           return false;
                         })();
                         
-                        // Determine if field is completed (only for self-signer mode with values in selfSigner.data)
+                        // Determine if field is completed (only for self-signer mode with values in nonSignatureFields)
                         // For recipient mode, non-signature fields are never "completed" (always editable)
                         const isFieldCompleted = (() => {
-                          if (selfValue === "1") {
-                            // Self-signer mode: check if has value in selfSigner.data
-                            if (hasValueInSelfSigner) {
-                              return true;
+                          switch (mode) {
+                            case MODE.SELF_SIGNER: {
+                              // Self-signer mode: check if has value in nonSignatureFields
+                              if (hasValueInSelfSigner) {
+                                return true;
+                              }
+                              // Also check if value exists in state/ref
+                              if (value !== undefined && value !== null && String(value).trim().length > 0) {
+                                return field.type === 'checkbox' ? !!value : true;
+                              }
+                              return false;
                             }
-                            // Also check if value exists in state/ref
-                            if (value !== undefined && value !== null && String(value).trim().length > 0) {
-                              return field.type === 'checkbox' ? !!value : true;
+                            case MODE.RECIPIENT: {
+                              // Recipient mode: non-signature fields are never "completed" (always editable)
+                              return false;
                             }
-                            return false;
-                          } else {
-                            // Recipient mode: non-signature fields are never "completed" (always editable)
-                            return false;
+                            default:
+                              return false;
                           }
                         })();
 
@@ -1577,21 +1733,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               // Update state (this will cause re-render but only on blur)
                               setLocalFieldValues((prev) => ({ ...prev, [keyId]: newVal }));
                               
-                              if (selfValue === "1") {
-                                // Update self signer structure for consistency so prefill works across pages
-                                setSelfSigner((prev) => {
-                                  return (prev || []).map((s: any) =>
-                                    s && s.signerSlotId === field.slotId
-                                      ? {
-                                          ...s,
-                                          data: {
-                                            ...(typeof s.data === 'object' ? s.data : {}),
-                                            ...(fieldLable ? { [fieldLable]: newVal } : {}),
-                                          },
-                                        }
-                                      : s
-                                  );
-                                });
+                              switch (mode) {
+                                case MODE.SELF_SIGNER:
+                                  // Values are stored in nonSignatureFields via backend submission
+                                  // No local updates needed - values come from nonSignatureFields
+                                  break;
+                                case MODE.RECIPIENT:
+                                  // No additional updates needed for recipient mode
+                                  break;
                               }
                               
                               // Restore scroll position after state updates
@@ -1649,12 +1798,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           }, 500);
                         };
 
-                        // In self-signer mode, if field has value in selfSigner.data, make it read-only
+                        // In self-signer mode, if field has value in nonSignatureFields, make it read-only
                         // For recipient mode, fields are always editable if currentUser
-                        const editable = isCurrentUser && !(selfValue === "1" && hasValueInSelfSigner);
+                        const editable = isCurrentUser && !(mode === MODE.SELF_SIGNER && hasValueInSelfSigner);
                         const commonBox =
                           "w-full h-full flex items-center justify-center rounded border " +
-                          ( (isFieldCompleted && selfValue === "1") || isSigned ? "border-green-500" : editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
+                          ( (isFieldCompleted && mode === MODE.SELF_SIGNER) || isSigned ? "border-green-500" : editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
 
                         const inputBaseStyle: React.CSSProperties = {
                           height: scaledHeight,
@@ -1683,7 +1832,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       const newValue = e.target.value;
                                       e.stopPropagation();
                                       setValue(e.target.checked, true); // Checkboxes update state immediately
-                                      submitSingleField(field.recipientId,field._id,newValue);
+                                      const recipientIdForSubmit = mode === MODE.SELF_SIGNER ? currentUserId : field.recipientId;
+                                      submitSingleField(recipientIdForSubmit, field._id, newValue);
                                     }}
 
                                     disabled={!editable}
@@ -1706,7 +1856,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     const newValue = e.target.value;
                                     setValue(newValue, true); // true = update state on blur
                                     handleBlur();
-                                    submitSingleField(field.recipientId,field._id,newValue);
+                                    const recipientIdForSubmit = mode === MODE.SELF_SIGNER ? currentUserId : field.recipientId;
+                                    submitSingleField(recipientIdForSubmit, field._id, newValue);
                                   }}
                                   onKeyDown={handleKeyDown}
                                   onFocus={handleFocus}
@@ -1743,7 +1894,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     const newValue = e.target.value;
                                     setValue(newValue, true); // true = update state
                                     handleBlur();
-                                    submitSingleField(field.recipientId,field._id,newValue);
+                                    const recipientIdForSubmit = mode === MODE.SELF_SIGNER ? currentUserId : field.recipientId;
+                                    submitSingleField(recipientIdForSubmit, field._id, newValue);
                                   }}
                                   onKeyDown={(e) => {
                                     handleKeyDown(e);
@@ -1860,7 +2012,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               }}
                             >
                               {
-                                (isFieldCompleted && selfValue === "1") ? (
+                                (isFieldCompleted && mode === MODE.SELF_SIGNER) ? (
                                   <div
                                     className={commonBox}
                                     style={{
@@ -1888,7 +2040,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             </div>
                           }
                             {/* Only show label for non-signature fields if they are not completed (self-signer mode only) */}
-                            {!(isFieldCompleted && selfValue === "1") && (
+                            {!(isFieldCompleted && mode === MODE.SELF_SIGNER) && (
                               <div
                                 style={{
                                   position: "absolute",
@@ -2051,24 +2203,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         if (hasStarted) {
           // Check if current field exists and is still incomplete
           if (currentField) {
-            const key = currentField._id || currentField.fieldId;
-            
             if (currentField.type === 'signature') {
-              if (selfValue === '1') {
-                const matchedSigner = (selfSigner || []).find((s: any) => s && s.signerSlotId === currentField.slotId);
-                // Check signatureFields array to see if this specific field is signed
-                if (matchedSigner && matchedSigner.signatureFields && Array.isArray(matchedSigner.signatureFields)) {
-                  const fieldEntry = matchedSigner.signatureFields.find(
-                    (sf: any) => sf.fieldId && (sf.fieldId.toString() === (currentField._id || currentField.fieldId)?.toString())
-                  );
-                  isCurrentCompleted = fieldEntry ? fieldEntry.state === 'signed' : false;
-                } else {
-                  // Fallback: check if signature exists in selfSigner
-                  isCurrentCompleted = matchedSigner ? !!matchedSigner.signature : false;
-                }
-              } else {
-                isCurrentCompleted = !!currentField.signature || !!localSignedMap[key];
-              }
+              isCurrentCompleted = isSignatureFieldCompleted(currentField);
             } else {
               isCurrentCompleted = isNonSignatureCompleted(currentField);
             }
@@ -2080,21 +2216,33 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           // Always start searching from current index + 1
           // In regular mode, prioritize non-signature fields
           const startIdx = currentActionableIndex + 1;
-          nextFieldIndex = selfValue !== '1'
-            ? findNextIncompleteField(startIdx, true)
-            : findNextIncompleteField(startIdx);
           
-          // If not found after current, try from the beginning
-          if (nextFieldIndex === null) {
-            nextFieldIndex = selfValue !== '1'
-              ? findNextIncompleteField(0, true)
-              : findNextIncompleteField(0);
+          switch (mode) {
+            case MODE.RECIPIENT:
+              nextFieldIndex = findNextIncompleteField(startIdx, true);
+              // If not found after current, try from the beginning
+              if (nextFieldIndex === null) {
+                nextFieldIndex = findNextIncompleteField(0, true);
+              }
+              break;
+            case MODE.SELF_SIGNER:
+              nextFieldIndex = findNextIncompleteField(startIdx);
+              // If not found after current, try from the beginning
+              if (nextFieldIndex === null) {
+                nextFieldIndex = findNextIncompleteField(0);
+              }
+              break;
           }
         } else {
           // Not started yet - in regular mode, prioritize non-signature fields
-          nextFieldIndex = selfValue !== '1' 
-            ? findNextIncompleteField(0, true) 
-            : findNextIncompleteField(0);
+          switch (mode) {
+            case MODE.RECIPIENT:
+              nextFieldIndex = findNextIncompleteField(0, true);
+              break;
+            case MODE.SELF_SIGNER:
+              nextFieldIndex = findNextIncompleteField(0);
+              break;
+          }
         }
         
         // Show the current field type (or next field if current is completed)
@@ -2219,14 +2367,21 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             });
             
             // In self-signer mode, refresh selfSigner data to get updated signatureFields
-            if (selfValue === "1" && cycleId) {
-              // Mark navigation as pending
-              pendingNavigationRef.current = true;
-              // Wait a bit for the backend to update, then refresh
-              setTimeout(() => {
-                getSelfSigner();
-                // Navigation will be triggered in getSelfSigner's finally block
-              }, 500);
+            switch (mode) {
+              case MODE.SELF_SIGNER:
+                if (cycleId) {
+                  // Mark navigation as pending
+                  pendingNavigationRef.current = true;
+                  // Wait a bit for the backend to update, then refresh
+                  setTimeout(() => {
+                    getSelfSigner();
+                    // Navigation will be triggered in getSelfSigner's finally block
+                  }, 500);
+                }
+                break;
+              case MODE.RECIPIENT:
+                // No additional action needed for recipient mode
+                break;
             }
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
@@ -2248,38 +2403,43 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               }
             });
             
-            // When selfValue === "1" update the signer entry and trigger confetti reliably
-            if (selfValue === "1") {
-              // Don't update selfSigner optimistically - let getSelfSigner handle it
-              // This prevents double updates and re-render loops
-              triggerConfetti();
-              
-              // Refresh selfSigner data to get updated signatureFields
-              if (cycleId) {
-                // Mark navigation as pending
-                pendingNavigationRef.current = true;
-                // Wait a bit for the backend to update, then refresh
+            // Handle post-signature actions based on mode
+            switch (mode) {
+              case MODE.SELF_SIGNER: {
+                // Don't update selfSigner optimistically - let getSelfSigner handle it
+                // This prevents double updates and re-render loops
+                triggerConfetti();
+                
+                // Refresh selfSigner data to get updated signatureFields
+                if (cycleId) {
+                  // Mark navigation as pending
+                  pendingNavigationRef.current = true;
+                  // Wait a bit for the backend to update, then refresh
+                  setTimeout(() => {
+                    getSelfSigner();
+                    // Navigation will be triggered in getSelfSigner's finally block
+                  }, 500);
+                }
+                break;
+              }
+              case MODE.RECIPIENT: {
+                // non-self: optimistic local update so UI shows signed image immediately
+                const key = activeField?._id;
+                if (key) { 
+                  setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
+                }
+                // immediate feedback
+                triggerConfetti();
+                
+                // Navigate to next field
                 setTimeout(() => {
-                  getSelfSigner();
-                  // Navigation will be triggered in getSelfSigner's finally block
-                }, 500);
-              }
-            } else {
-              // non-self: optimistic local update so UI shows signed image immediately
-              const key = activeField?._id;
-              if (key) { 
-                setLocalSignedMap((p) => ({ ...(p || {}), [key]: signatureUrl }));
-              }
-              // immediate feedback
-              triggerConfetti();
-              
-              // Navigate to next field
-              setTimeout(() => {
-                goToNext();
-              }, 300);
-              
-              if(fieldRemmaning===false){
-                navigate("/e-sign/signer/thank-you");
+                  goToNext();
+                }, 300);
+                
+                if(fieldRemmaning===false){
+                  navigate("/e-sign/signer/thank-you");
+                }
+                break;
               }
             }
 

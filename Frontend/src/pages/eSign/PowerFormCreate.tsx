@@ -30,7 +30,7 @@ import {
 import type { Document, Recipient } from '../../types';
 // import AdvancedAuthenticationSelector from '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
-import { eSignApi, templateServiceApi } from '../../services/apiHelper';
+import { eSignApi } from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 // Extend editor field locally to allow optional power-form metadata used during save
@@ -61,9 +61,9 @@ const PowerFormCreate: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Power Form State
   const [mode, setMode] = useState<'normal' | 'power'>('normal');
-  const [powerForms, setPowerForms] = useState<any[]>([]);
-  const [selectedForm, setSelectedForm] = useState<string>("");
-  const [powerFormData, setPowerFormData] = useState<any>(null);
+  // const [powerForms, setPowerForms] = useState<any[]>([]);
+  // const [selectedForm, setSelectedForm] = useState<string>("");
+  // const [powerFormData, setPowerFormData] = useState<any>(null);
   const [slots, setSlots] = useState<any[]>([]);
 
   // Parties & related state.....
@@ -454,43 +454,43 @@ const PowerFormCreate: React.FC = () => {
       console.error('Error inserting recipients:', error);
     }
   }
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const formId = e.target.value;
+  // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //     const formId = e.target.value;
       
-      // Check if "Create Template" option was selected
-      if (formId === 'create_template') {
-        navigate('/e-sign/form-list');
-        return;
-      }
+  //     // Check if "Create Template" option was selected
+  //     if (formId === 'create_template') {
+  //       navigate('/e-sign/form-list');
+  //       return;
+  //     }
       
-      setSelectedForm(formId);       // ✅ update selected
-      if (formId) {
-        getFormDetails(formId);        // ✅ fetch details
-      } else {
-        setPowerFormData(null); // Clear form data if no form selected
-      }
-  };
+  //     setSelectedForm(formId);       // ✅ update selected
+  //     if (formId) {
+  //       getFormDetails(formId);        // ✅ fetch details
+  //     } else {
+  //       setPowerFormData(null); // Clear form data if no form selected
+  //     }
+  // };
   // Get Power Form Template
-  const getPowerForm = async () => {
-    try {
-      const response = await templateServiceApi.get('/api/template/get-form');
-      if (response.status === 200) {
-        //setPowerFormTemplate(response.data.template);
-        setMode('power');
-        console.log('Power Forms:', response.data.form);
-        setPowerForms(response.data.form);
-      }
-    } catch (error) {
-      console.error('Error fetching power form template:', error);
-    }
-  };
-  const getFormDetails = async (formId: string) => {
-    const response = await templateServiceApi.get(`/api/template/get-form-details/${formId}`);
-    if (response.status === 200) {
-      console.log('Power Forms:', response.data);
-      setPowerFormData(response.data);
-    }
-  }
+  // const getPowerForm = async () => {
+  //   try {
+  //     const response = await templateServiceApi.get('/api/template/get-form');
+  //     if (response.status === 200) {
+  //       //setPowerFormTemplate(response.data.template);
+  //       setMode('power');
+  //       console.log('Power Forms:', response.data.form);
+  //       setPowerForms(response.data.form);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching power form template:', error);
+  //   }
+  // };
+  // const getFormDetails = async (formId: string) => {
+  //   const response = await templateServiceApi.get(`/api/template/get-form-details/${formId}`);
+  //   if (response.status === 200) {
+  //     console.log('Power Forms:', response.data);
+  //     setPowerFormData(response.data);
+  //   }
+  // }
   //Step 3: Save Signature fields 
   const saveSignatureFields = async () => {
     if (!envelopeId || signatureFields.length === 0) return;
@@ -917,7 +917,7 @@ const PowerFormCreate: React.FC = () => {
   // Fetch envelope types on component mount
   useEffect(() => {
     fetchEnvelopeTypes();
-    getPowerForm();
+    setMode('power');
   }, []);
 
   const fetchEnvelopeTypes = async () => {
@@ -1270,7 +1270,6 @@ const PowerFormCreate: React.FC = () => {
         creatorSlotId: selectedPartyId,
         firstSigningSlotId: firstSigningPartyId,
         numberOfParties,
-        powerFormId: selectedForm || null,
       };
       const response = await eSignApi.post('/api/e-sign/envelope/connect/powerform', payload);
       if (response?.status === 200 || response?.status === 201) {
@@ -1820,57 +1819,9 @@ const PowerFormCreate: React.FC = () => {
                 </div>
 
                 {/* Power Form Selector */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">
-                    Select Power Form
-                  </label>
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <select
-                        id="powerForm"
-                        value={selectedForm}
-                        onChange={handleChange}
-                        className="block w-full rounded-lg border border-gray-300 bg-white p-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 appearance-none"
-                      >
-                        <option value="">-- Choose a Form --</option>
-                        {powerForms.map((form) => (
-                          <option key={form._id} value={form._id}>
-                            {form.title}
-                          </option>
-                        ))}
-                        {powerForms.length > 0 && (
-                          <option value="create_template" disabled>────────────</option>
-                        )}
-                        <option value="create_template">+ Create New Template</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
-                    
-                    {/* Create Template Button - Always visible for better UX */}
-                    {/* <div className="flex items-center gap-3">
-                      <div className="flex-1 border-t border-gray-200"></div>
-                      <span className="text-xs text-gray-500">or</span>
-                      <div className="flex-1 border-t border-gray-200"></div>
-                    </div>
-                    
-                    <button
-                      onClick={() => navigate('/e-sign/form-list')}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 bg-white shadow-sm hover:shadow-md"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Create New Template
-                    </button> */}
-                    
-                    {powerForms.length === 0 && (
-                      <p className="text-xs text-gray-500 text-center">
-                        No templates available. Create your first template to get started.
-                      </p>
-                    )}
-                  </div>
-                </div>
 
                 {/* Power Form Preview */}
-                {powerFormData && (
+                {/* {powerFormData && (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
                     <div>
                       <h5 className="text-base font-semibold text-gray-900">
@@ -1893,7 +1844,7 @@ const PowerFormCreate: React.FC = () => {
                       </ul>
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {/* Parties Configuration */}
                 <div className="space-y-4" data-tour="ec-parties">
@@ -2212,7 +2163,7 @@ const PowerFormCreate: React.FC = () => {
             signatureFields={signatureFields}
             setSignatureFields={setSignatureFields}
             mode="power"
-            powerFormData={powerFormData}
+            // powerFormData={powerFormData}
             slots={slots}
             onSend={mode === 'normal' ? handleSendEnvelope : undefined}
             sending={sending}
@@ -2236,7 +2187,7 @@ const PowerFormCreate: React.FC = () => {
             signatureFields = {signatureFields} 
             setSignatureFields={setSignatureFields}
             mode="power"
-            powerFormData={powerFormData}
+            // powerFormData={powerFormData}
             slots={slots} 
           />
         );

@@ -6,8 +6,14 @@ export interface SignerData {
   data?: Record<string, string>;
   signatureFields?: ActiveField[];
   initials?: string;
+  nonSignatureFields?: NonSignatureFields[];
 }
-
+export interface NonSignatureFields {
+  fieldId: string;
+  value: string;
+  state?: string;
+  _id: string;
+}
 export interface ActiveField {
   _id: string;
   type: string;
