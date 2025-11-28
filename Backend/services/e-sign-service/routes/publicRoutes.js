@@ -17,7 +17,7 @@ const router = express.Router();
 
 router.get('/health', (_, res) => res.send('E-Sign Public Service is running...'));
 router.get('/envelope/:id', envelopesDetail);
-router.get('/document/signature-fields/:id', getSignatureFields);
+router.get('/document/signature-fields/:id/:mode?', getSignatureFields);
 router.post('/save-signature', saveupdateSignature);
 router.post('/add-signature', addSignature); 
 router.get('/envelope/activity-log/:envelopeId', activityLogs);

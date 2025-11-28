@@ -2,38 +2,25 @@ import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 
-interface FormField {
-  formId?:string;
-  _id:string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  required: boolean;
-  options?: string[];
-}
 
 interface FormPreviewProps {
-  fields: FormField[];
   envelopeId?: String
 }
 
-export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId }) => {
+export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => {
   const isEmbedded = window.self !== window.top;
-  const [formData, setFormData] = useState<Record<string, any>>({});
-  const handleInputChange = (label: string, value:any) => {
-    setFormData(prev => ({
-      ...prev,
-      [label]: value
-    }));
-  };
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
 
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
     try{
      const response =  await eSignApi.post('/api/e-sign/public/envelope/signer-initiate',{
-      formId: fields[0].formId,
       envelopeId:envelopeId,
-      data: formData
+      data:{
+        name,
+        email
+      }
      });
      if(response){
         // after successful POST in PowerFormPreview.handleSubmit
@@ -49,22 +36,9 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
     } catch (err){
       console.log(`Error: ${err}`);
     }
-    console.log('Form Data:', formData);
     alert('Form submitted! Check console for data.');
   };
 
-  if (fields.length === 0) {
-    return (
-      <div>
-        <div className="text-center text-gray-400 mt-16">
-          <p className="text-lg">No fields to preview</p>
-          {!isEmbedded && (
-          <p className="text-sm">Add some fields to see the form preview</p>
-          )}
-        </div>
-       </div>
-    );
-  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -77,82 +51,32 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {fields.map((field) => (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-
-              {field.type === 'text' || field.type === 'email' || field.type === 'phone' ? (
-                <input
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  required={field.required}
-                  value={formData[field.label] || ''}
-                  onChange={(e) => handleInputChange(field.label, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : field.type === 'textarea' ? (
-                <textarea
-                  placeholder={field.placeholder}
-                  required={field.required}
-                  value={formData[field.label] || ''}
-                  onChange={(e) => handleInputChange(field.label, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={4}
-                />
-              ) : field.type === 'date' ? (
-                <input
-                  type="date"
-                  required={field.required}
-                  value={formData[field.label] || ''}
-                  onChange={(e) => handleInputChange(field.label, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : field.type === 'checkbox' ? (
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    required={field.required}
-                    checked={formData[field.label] || false}
-                    onChange={(e) => handleInputChange(field.label, e.target.checked)}
-                    className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">I agree to the terms and conditions</span>
-                </label>
-              ) : field.type === 'radio' ? (
-                <div className="space-y-2">
-                  {field.options?.map((option, index) => (
-                    <label key={index} className="flex items-center">
-                      <input
-                        type="radio"
-                        name={field.label}
-                        value={option}
-                        required={field.required}
-                        checked={formData[field.label] === option}
-                        onChange={(e) => handleInputChange(field.label, e.target.value)}
-                        className="mr-2 border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-gray-700">{option}</span>
-                    </label>
-                  ))}
-                </div>
-              ) : field.type === 'select' ? (
-                <select
-                  required={field.required}
-                  value={formData[field.label] || ''}
-                  onChange={(e) => handleInputChange(field.label, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select an option...</option>
-                  {field.options?.map((option, index) => (
-                    <option key={index} value={option}>{option}</option>
-                  ))}
-                </select>
-              ) : null}
-            </div>
-          ))}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
 
           <div className="pt-6 border-t border-gray-200">
             <button
@@ -160,7 +84,7 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ fields,envelopeId
               className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
             >
               <Send className="w-5 h-5 mr-2" />
-              Submit Form
+              Start Signature
             </button>
           </div>
         </form>
