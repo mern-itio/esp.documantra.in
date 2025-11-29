@@ -1338,3 +1338,115 @@ canvas {
 .ck-editor__editable .ck-powered-by {
   display: none !important;
 }
+
+/* Attractive Download Button Animation */
+.download-btn-attractive {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  isolation: isolate;
+}
+
+/* Animated gradient border - always visible */
+.download-btn-attractive::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    45deg,
+    #3E2B66,
+    #6B46C1,
+    #9333EA,
+    #A855F7,
+    #C084FC,
+    #3E2B66
+  );
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 1;
+  z-index: -1;
+  animation: download-btn-glow 3s ease infinite;
+}
+
+.download-btn-attractive:hover::after {
+  opacity: 1;
+}
+
+/* Shimmer effect - always running */
+.download-btn-shimmer {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  transform: skewX(-20deg);
+  z-index: 1;
+  pointer-events: none;
+  animation: download-btn-shimmer-animation 2s ease-in-out infinite;
+}
+
+@keyframes download-btn-shimmer-animation {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Hover effects - enhanced on hover */
+.download-btn-attractive:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(62, 43, 102, 0.4),
+              0 0 30px rgba(62, 43, 102, 0.3),
+              inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.download-btn-attractive:hover .download-btn-shimmer {
+  animation: download-btn-shimmer-animation 1s ease-in-out infinite;
+}
+
+.download-btn-attractive:hover svg {
+  animation: download-icon-pulse 1s ease-in-out infinite;
+}
+
+.download-btn-attractive:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Animated gradient border */
+@keyframes download-btn-glow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Pulse animation for download icon - always running */
+.download-btn-attractive svg {
+  animation: download-icon-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes download-icon-pulse {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.15) translateY(-3px);
+  }
+}

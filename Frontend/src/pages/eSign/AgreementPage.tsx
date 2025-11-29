@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X } from 'lucide-react';
+import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X, Settings, Clock } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
@@ -21,19 +21,43 @@ interface EnvelopeData {
   id: string;
   subject: string;
   status: string;
+  priority?: string;
   createdAt: string;
   sentAt: string;
   isPowerForm?: boolean;
+  signatureType?: string;
   sender: {
+    id?: string;
     name: string;
     email: string;
+    role?: string;
+    organization?: string;
+    avatar?: string;
   };
   recipients: Array<{
     id: string;
     name: string;
     email: string;
+    role?: string;
+    order?: number;
     status: string;
+    authentication?: string;
   }>;
+  documents?: Array<{
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+  }>;
+  completionCertificate?: any;
+}
+
+interface ColumnConfig {
+  id: string;
+  label: string;
+  visible: boolean;
+  order: number;
+  render: (agreement: Agreement, envelopeData?: EnvelopeData) => React.ReactNode;
 }
 
 const AgreementPage: React.FC = () => {
@@ -76,22 +100,13 @@ const AgreementPage: React.FC = () => {
   const [selectedFolder, setSelectedFolder] = useState<string>('Inbox');
   const [bulkResending, setBulkResending] = useState<boolean>(false);
   const [rowResendLoadingId, setRowResendLoadingId] = useState<string | null>(null);
+  // Column customization state
+  const [envelopesData, setEnvelopesData] = useState<EnvelopeData[]>([]);
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState<boolean>(false);
   // Guided tour state
   const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
   const [tourStepIndex, setTourStepIndex] = useState<number>(0);
   const tourSteps = [
-    {
-      id: 'title',
-      selector: '[data-tour="agreements-title"]',
-      title: 'All Agreements',
-      content: 'This page lists all your envelopes with status and recipients.'
-    },
-    {
-      id: 'shared-access',
-      selector: '[data-tour="shared-access"]',
-      title: 'Shared Access',
-      content: 'Switch between your view and shared access options.'
-    },
     {
       id: 'search',
       selector: '[data-tour="search-input"]',
@@ -103,6 +118,12 @@ const AgreementPage: React.FC = () => {
       selector: '[data-tour="filter-bar"]',
       title: 'Filters',
       content: 'Narrow results by date, status, sender, and more.'
+    },
+    {
+      id: 'customize-columns',
+      selector: '[data-tour="customize-columns"]',
+      title: 'Customize Columns',
+      content: 'Click the settings icon to customize which columns are visible in the table. You can show or hide columns and select up to 3 columns to display at once.'
     },
     {
       id: 'table',
@@ -149,7 +170,17 @@ const AgreementPage: React.FC = () => {
       }, 300);
       return () => clearTimeout(refineTimeout);
     } else {
+      // If element not found, skip to next step after a short delay
       setTargetRect(null);
+      const skipTimeout = setTimeout(() => {
+        if (tourStepIndex < tourSteps.length - 1) {
+          setTourStepIndex(tourStepIndex + 1);
+        } else {
+          // If we've reached the end and still can't find elements, close tour
+          closeTour();
+        }
+      }, 100);
+      return () => clearTimeout(skipTimeout);
     }
   }, [isTourOpen, tourStepIndex, tourSteps]);
 
@@ -252,6 +283,111 @@ const AgreementPage: React.FC = () => {
   const currentTab = getCurrentTab();
   const isPowerForm = isPowerFormRoute();
 
+  // Column render functions (defined after isPowerForm)
+  const columnRenderers = {
+    name: (agreement: Agreement) => (
+      <div className="flex items-center">
+        <div>
+          <button
+            onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
+            className="text-left text-sm font-semibold text-[#3E2B66] hover:text-[#260559] hover:underline transition-colors duration-200"
+            title="View envelope details"
+          >
+            {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
+          </button>
+          {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
+        </div>
+      </div>
+    ),
+    status: (agreement: Agreement) => (
+      agreement.status === 'in-progress' ? (
+        <div className="relative group/status">
+          <div>
+            <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#3E2B66]/20 to-[#3E2B66]/40 rounded-full progress-bar-animate"></div>
+              <span className="absolute left-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
+              <span className="absolute right-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
+            </div>
+            <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
+              {`Waiting for ${agreement.waitingFor || 'recipient'}`}
+            </div>
+          </div>
+          {/* Hover icon - Clock with animation */}
+          <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/status:opacity-100 transition-opacity duration-200 pointer-events-none">
+            <Clock className="w-5 h-5 text-[#3E2B66] animate-spin" style={{ animationDuration: '2s' }} />
+          </div>
+        </div>
+      ) : (
+        <>
+          {agreement.status === 'completed' && (
+            <div className="flex items-center gap-2 text-green-600 group/status">
+              <CheckCircle className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform duration-200" />
+              <span className="text-sm font-medium">Completed</span>
+            </div>
+          )}
+          {agreement.status === 'draft' && !agreement.isPowerForm && (
+            <div className="flex items-center gap-2 text-[#3E2B66] group/status">
+              <Pencil className="w-5 h-5 text-[#3E2B66] group-hover/status:rotate-12 transition-transform duration-200" />
+              <span className="text-sm font-medium">Draft</span>
+            </div>
+          )}
+          {agreement.isPowerForm && (
+            <div className="flex items-center gap-2 text-amber-600">
+              <ShieldCheck className="w-5 h-5" />
+              <span className="text-sm">Power Form</span>
+            </div>
+          )}
+          {agreement.status === 'deleted' && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              Deleted
+            </span>
+          )}
+        </>
+      )
+    ),
+    lastChange: (agreement: Agreement) => (
+      <span className="text-sm text-gray-900">{formatDate(agreement.lastChange)}</span>
+    ),
+    recipient: (_agreement: Agreement, envelopeData?: EnvelopeData) => {
+      const recipient = envelopeData?.recipients?.[0];
+      return <span className="text-sm text-gray-900">{recipient?.name || recipient?.email || '-'}</span>;
+    },
+    sender: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
+      <span className="text-sm text-gray-900">{envelopeData?.sender?.name || '-'}</span>
+    ),
+    priority: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
+      <span className="text-sm text-gray-900 capitalize">{envelopeData?.priority || 'normal'}</span>
+    ),
+    createdAt: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
+      <span className="text-sm text-gray-900">{envelopeData ? formatDate(envelopeData.createdAt) : '-'}</span>
+    ),
+    sentAt: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
+      <span className="text-sm text-gray-900">{envelopeData?.sentAt ? formatDate(envelopeData.sentAt) : '-'}</span>
+    ),
+    signatureType: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
+      <span className="text-sm text-gray-900 capitalize">{envelopeData?.signatureType || '-'}</span>
+    ),
+    recipientCount: (agreement: Agreement) => (
+      <span className="text-sm text-gray-900">{agreement.recipientCount}</span>
+    ),
+  };
+
+  // Initialize column config
+  const getInitialColumnConfig = (): ColumnConfig[] => [
+    { id: 'name', label: 'Name', visible: true, order: 1, render: columnRenderers.name },
+    { id: 'status', label: 'Status', visible: true, order: 2, render: columnRenderers.status },
+    { id: 'lastChange', label: 'Last Change', visible: true, order: 3, render: columnRenderers.lastChange },
+    { id: 'recipient', label: 'Recipient', visible: false, order: 4, render: columnRenderers.recipient },
+    { id: 'sender', label: 'Sender', visible: false, order: 5, render: columnRenderers.sender },
+    { id: 'priority', label: 'Priority', visible: false, order: 6, render: columnRenderers.priority },
+    { id: 'createdAt', label: 'Created At', visible: false, order: 7, render: columnRenderers.createdAt },
+    { id: 'sentAt', label: 'Sent At', visible: false, order: 8, render: columnRenderers.sentAt },
+    { id: 'signatureType', label: 'Signature Type', visible: false, order: 9, render: columnRenderers.signatureType },
+    { id: 'recipientCount', label: 'Recipient Count', visible: false, order: 10, render: columnRenderers.recipientCount },
+  ];
+
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(getInitialColumnConfig());
+
   // Fetch envelopes data from API
   const fetchEnvelopes = async () => {
     try {
@@ -260,6 +396,9 @@ const AgreementPage: React.FC = () => {
 
       if (response.data && response.data.status === 'success') {
         const envelopes: EnvelopeData[] = response.data.data;
+
+        // Store full envelope data
+        setEnvelopesData(envelopes);
 
         // Map all envelopes to agreement format
         const allEnvelopes = envelopes.map(envelope => ({
@@ -683,6 +822,46 @@ const AgreementPage: React.FC = () => {
         confirmButtonText: 'OK'
       });
     }
+  };
+
+  // Get visible columns (max 3)
+  const getVisibleColumns = (): ColumnConfig[] => {
+    return columnConfig
+      .filter(col => col.visible)
+      .sort((a, b) => a.order - b.order)
+      .slice(0, 3);
+  };
+
+  // Toggle column visibility
+  const toggleColumn = (columnId: string) => {
+    setColumnConfig(prev => {
+      const updated = prev.map(col => {
+        if (col.id === columnId) {
+          const newVisible = !col.visible;
+          // If enabling, check if we already have 3 visible columns
+          if (newVisible) {
+            const visibleCount = prev.filter(c => c.visible).length;
+            if (visibleCount >= 3) {
+              // Don't allow more than 3 visible columns
+              return col;
+            }
+          }
+          return { ...col, visible: newVisible };
+        }
+        return col;
+      });
+      return updated;
+    });
+  };
+
+  // Reset columns to default
+  const resetColumns = () => {
+    setColumnConfig(getInitialColumnConfig());
+  };
+
+  // Get envelope data for an agreement
+  const getEnvelopeData = (agreementId: string): EnvelopeData | undefined => {
+    return envelopesData.find(e => e.id === agreementId);
   };
 
   const handlePermanentDelete = async (id: string) => {
@@ -1109,7 +1288,7 @@ const AgreementPage: React.FC = () => {
       {selectedIds.size === 0 && (
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between" data-tour="filter-bar">
-              <div className="flex-1">
+            <div className="flex-1">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 <input
@@ -1118,6 +1297,7 @@ const AgreementPage: React.FC = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
                   className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] transition-all duration-200 bg-white hover:border-gray-400"
+                  data-tour="search-input"
                 />
 
                 {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
@@ -1154,6 +1334,24 @@ const AgreementPage: React.FC = () => {
                   <Plus className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" /> Create Envelope
                 </button>
               </Link>
+              <div className="flex items-center gap-2">
+                <div className="relative group/tooltip">
+                  <button
+                    onClick={() => setIsColumnModalOpen(true)}
+                    className="inline-flex items-center justify-center p-2.5"
+                    data-tour="customize-columns"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </button>
+                  {/* Tooltip */}
+                  <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                    Customize columns
+                    <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                  </div>
+
+                </div>
+
+              </div>
 
               {/* Clear button - only show when search has value or filters are selected */}
               {/* {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
@@ -1184,173 +1382,125 @@ const AgreementPage: React.FC = () => {
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
                 {!isPowerForm && (<th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"></th>)}
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Change</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider"></th>
+                {getVisibleColumns().map((column) => (
+                  <th key={column.id} className={`py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}>
+                    {column.label}
+                  </th>
+                ))}
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentAgreements.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
+                  <td colSpan={getVisibleColumns().length + (isPowerForm ? 1 : 2)} className="px-6 py-12 text-center">
                     <div className="text-gray-500">
                       {searchTerm ? 'No agreements found matching your search.' : 'No agreements available.'}
                     </div>
                   </td>
                 </tr>
               ) : (
-                currentAgreements.map((agreement) => (
-                  <tr key={agreement.id} className="group hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#3E2B66]">
-                    {!isPowerForm && (
-                      <td className="px-6 py-4">
-                        <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-
-                        <div>
-                          <button
-                            onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
-                            className="text-left text-sm font-semibold text-[#3E2B66] hover:text-[#260559] hover:underline transition-colors duration-200"
-                            title="View envelope details"
-                          >
-                            {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
-                          </button>
-                          {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {agreement.status === 'in-progress' ? (
-                        <div >
-                          <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#3E2B66]/20 to-[#3E2B66]/40 rounded-full progress-bar-animate"></div>
-                            <span className="absolute  left-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
-                            <span className="absolute  right-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
-                          </div>
-                          <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
-                            {`Waiting for ${agreement.waitingFor || 'recipient'}`}
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {agreement.status === 'completed' && (
-                            <div className="flex items-center gap-2 text-green-600 group/status">
-                              <CheckCircle className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform duration-200" />
-                              <span className="text-sm font-medium">Completed</span>
-                            </div>
-                          )}
-                          {agreement.status === 'draft' && !agreement.isPowerForm && (
-                            <div className="flex items-center gap-2 text-[#3E2B66] group/status">
-                              <Pencil className="w-5 h-5 text-[#3E2B66] group-hover/status:rotate-12 transition-transform duration-200" />
-                              <span className="text-sm font-medium">Draft</span>
-                            </div>
-                          )}
-
-                          {agreement.isPowerForm && (
-                            <div className="flex items-center gap-2 text-amber-600 ">
-                              <ShieldCheck className="w-5 h-5" />
-                              <span className="text-sm">Power Form</span>
-                            </div>
-                          )}
-
-                          {agreement.status === 'deleted' && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Deleted
-                            </span>
-                          )}
-                        </>
+                currentAgreements.map((agreement) => {
+                  const envelopeData = getEnvelopeData(agreement.id);
+                  return (
+                    <tr key={agreement.id} className="group hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#3E2B66]">
+                      {!isPowerForm && (
+                        <td className="px-6 py-4">
+                          <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
+                        </td>
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(agreement.lastChange)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
-                      <div className="flex items-center justify-end gap-2 relative">
-                        {agreement.status === 'in-progress' && (
-                          <button
-                            onClick={() => handleRowResend(agreement)}
-                            disabled={rowResendLoadingId === agreement.id}
-                            className={`px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${
-                              rowResendLoadingId === agreement.id 
-                                ? 'opacity-60 cursor-not-allowed' 
-                                : 'hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] hover:shadow-md active:scale-95'
-                            } inline-flex items-center gap-2`}
-                          >
-                            {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
-                          </button>
-                        )}
-                        {agreement.status === "draft" && (
-                          <button
-                            onClick={() =>
-                              agreement?.isPowerForm
-                                ? handleView(agreement.id)
-                                : handleContinue(agreement.id)
-                            }
-                            className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-                          >
-                            {agreement.isPowerForm ? "View" : "Continue"}
-                          </button>
-                        )}
-
-                        {agreement.status === 'completed' && (
-                          <button
-                            onClick={() => handleManageAction('download', agreement.id)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download
-                          </button>
-                        )}
-                        {agreement.status === 'deleted' && (
-                          <>
+                      {getVisibleColumns().map((column) => (
+                        <td key={column.id} className={`py-4 whitespace-nowrap ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}>
+                          {column.render(agreement, envelopeData)}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
+                        <div className="flex items-center justify-end gap-2 relative">
+                          {agreement.status === 'in-progress' && (
                             <button
-                              onClick={() => handleRestore(agreement.id)}
-                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                              onClick={() => handleRowResend(agreement)}
+                              disabled={rowResendLoadingId === agreement.id}
+                              className={`px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${rowResendLoadingId === agreement.id
+                                  ? 'opacity-60 cursor-not-allowed'
+                                  : 'hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] hover:shadow-md active:scale-95'
+                                } inline-flex items-center gap-2`}
                             >
-                              Restore
+                              {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                             </button>
+                          )}
+                          {agreement.status === "draft" && (
                             <button
-                              onClick={() => handlePermanentDelete(agreement.id)}
-                              className="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                              onClick={() =>
+                                agreement?.isPowerForm
+                                  ? handleView(agreement.id)
+                                  : handleContinue(agreement.id)
+                              }
+                              className="px-4 py-2 border border-gray-300 text-black rounded-lg text-sm font-medium hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                             >
-                              <Trash2 className="w-4 h-4" />
-                              Delete Permanently
+                              {agreement.isPowerForm ? "View" : "Continue"}
                             </button>
-                          </>
-                        )}
+                          )}
 
-                        {agreement.status !== 'deleted' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const target = e.currentTarget as HTMLElement;
-                              const rect = target.getBoundingClientRect();
-                              const menuWidth = 224;
-                              const menuHeight = 180; // approximate menu height (adjust as needed)
-                              const spaceBelow = window.innerHeight - rect.bottom;
-                              const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
+                          {agreement.status === 'completed' && (
+                            <button
+                              onClick={() => handleManageAction('download', agreement.id)}
+                              className="download-btn-attractive px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2 relative overflow-hidden"
+                            >
+                              <span className="download-btn-shimmer"></span>
+                              <Download className="w-4 h-4 relative z-10" />
+                              <span className="relative z-10">Download</span>
+                            </button>
+                          )}
+                          {agreement.status === 'deleted' && (
+                            <>
+                              <button
+                                onClick={() => handleRestore(agreement.id)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                              >
+                                Restore
+                              </button>
+                              <button
+                                onClick={() => handlePermanentDelete(agreement.id)}
+                                className="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Delete Permanently
+                              </button>
+                            </>
+                          )}
 
-                              const left = Math.max(8, rect.right - menuWidth + window.scrollX);
-                              const top = openUpward
-                                ? rect.top + window.scrollY - menuHeight - 8 // open upward
-                                : rect.bottom + window.scrollY + 8; // open downward
+                          {agreement.status !== 'deleted' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const target = e.currentTarget as HTMLElement;
+                                const rect = target.getBoundingClientRect();
+                                const menuWidth = 224;
+                                const menuHeight = 180; // approximate menu height (adjust as needed)
+                                const spaceBelow = window.innerHeight - rect.bottom;
+                                const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
 
-                              setMenuPosition({ top, left });
-                              setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
-                            }}
-                            className="p-2 text-gray-600 hover:text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-all duration-200 group/menu"
-                            title="More options"
-                          >
-                            <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                                const left = Math.max(8, rect.right - menuWidth + window.scrollX);
+                                const top = openUpward
+                                  ? rect.top + window.scrollY - menuHeight - 8 // open upward
+                                  : rect.bottom + window.scrollY + 8; // open downward
+
+                                setMenuPosition({ top, left });
+                                setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
+                              }}
+                              className="p-2 text-gray-600 hover:text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-all duration-200 group/menu"
+                              title="More options"
+                            >
+                              <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -1764,6 +1914,88 @@ const AgreementPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button onClick={() => setShowMoveDialog(false)} className="px-4 py-2 bg-gray-100 rounded-sm">Cancel</button>
                 <button onClick={() => setShowMoveDialog(false)} className="px-5 py-2 bg-[#3E2B66] text-white rounded-sm">Move</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customize Columns Modal */}
+      {isColumnModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setIsColumnModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6">
+            <div className="flex items-start justify-between mb-6">
+              <h3 className="text-[22px] font-semibold text-[#3E2B66]">Customize Columns</h3>
+              <button
+                onClick={() => setIsColumnModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> You can select a maximum of 3 columns to display at a time.
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
+              {columnConfig.map((column) => {
+                const visibleCount = columnConfig.filter(c => c.visible).length;
+                const isDisabled = !column.visible && visibleCount >= 3;
+
+                return (
+                  <div
+                    key={column.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${column.visible
+                        ? 'bg-purple-50 border-purple-300'
+                        : isDisabled
+                          ? 'bg-gray-50 border-gray-200 opacity-60'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`}
+                  >
+                    <label className="flex items-center gap-3 cursor-pointer flex-1">
+                      <input
+                        type="checkbox"
+                        checked={column.visible}
+                        onChange={() => toggleColumn(column.id)}
+                        disabled={isDisabled}
+                        className="w-5 h-5 rounded border-gray-300 text-[#3E2B66] focus:ring-[#3E2B66] disabled:cursor-not-allowed"
+                      />
+                      <span className={`text-sm font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
+                        {column.label}
+                      </span>
+                    </label>
+                    {column.visible && (
+                      <span className="text-xs text-purple-600 font-medium">Visible</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+              <button
+                onClick={resetColumns}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Reset to Default
+              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsColumnModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setIsColumnModalOpen(false)}
+                  className="px-5 py-2 text-sm font-medium text-white bg-[#3E2B66] rounded-lg hover:bg-[#4d3577] transition-colors"
+                >
+                  Apply
+                </button>
               </div>
             </div>
           </div>
