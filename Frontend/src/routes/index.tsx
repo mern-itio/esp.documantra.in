@@ -141,9 +141,6 @@ import { FormSubmissions } from '../pages/Template/FormSubmissions';
 import UserProfile from '../pages/Account/UserProfile';
 // Template Pages Ended
 
-// Support Chat Pages
-import AgentLogin from '../pages/SupportChat/AgentLogin';
-import SupportDashboard from '../pages/SupportChat/SupportDashboard';
 
 //PDF Tools Started
 import type { PDFTool, ProcessingStats } from '../types';
@@ -562,8 +559,6 @@ const guestRoutes = [
   { path: '/bug-bounty', element: <BugBountyPage /> },
   { path: '/data-residency', element:<DataResidencyPage /> },
   { path: '/accessibility', element:<AccessibilityPage /> },
-  { path: '/support/login', element: <AgentLogin /> },
-  { path: '/support/dashboard', element: <SupportDashboard /> },
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages
