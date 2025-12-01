@@ -141,6 +141,10 @@ import { FormSubmissions } from '../pages/Template/FormSubmissions';
 import UserProfile from '../pages/Account/UserProfile';
 // Template Pages Ended
 
+// Support Chat Pages
+import AgentLogin from '../pages/SupportChat/AgentLogin';
+import SupportDashboard from '../pages/SupportChat/SupportDashboard';
+
 //PDF Tools Started
 import type { PDFTool, ProcessingStats } from '../types';
 import { mockPDFTools, mockProcessingStats, getActiveMockTools } from '../data/pdfMockData';
@@ -558,7 +562,8 @@ const guestRoutes = [
   { path: '/bug-bounty', element: <BugBountyPage /> },
   { path: '/data-residency', element:<DataResidencyPage /> },
   { path: '/accessibility', element:<AccessibilityPage /> },
-
+  { path: '/support/login', element: <AgentLogin /> },
+  { path: '/support/dashboard', element: <SupportDashboard /> },
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages
@@ -809,6 +814,8 @@ const authRoutes = [
   { path: '/pdf-tools/pdf-bookmarks', element: <PDFToolHeaderWrapper><PdfBookmarksPage /></PDFToolHeaderWrapper> },
   { path: '/pdf-tools/pdf-statistics', element: <PDFToolHeaderWrapper><PdfStatisticsPage /></PDFToolHeaderWrapper> },
   { path: '/shared-document/:linkToken', element: <SharedDocumentPage /> },
+
+  // Support Chat Routes
 
 
 ];
