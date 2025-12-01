@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { Bell, LogOut, Menu, Search, User, Crown } from 'lucide-react';
+import { Bell, LogOut, Menu, Search, Crown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import { subscriptionApi, eSignApi } from '../../services/apiHelper';
@@ -253,6 +253,11 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   }, [paletteQuery, navigate]);
 
   const lowCredits = credits != null && credits <= 10;
+  const getInitials = (fullName = "") => {
+    const parts = fullName.trim().split(" ");
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -260,21 +265,21 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-md hover:bg-gray-100 transition-colors duration-200 lg:hidden"
+            className="group p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all duration-300 lg:hidden hover:scale-110 active:scale-95"
           >
-            <Menu className="h-5 w-5 text-gray-500" />
+            <Menu className="h-5 w-5 text-gray-500 group-hover:text-[#3E2B66] group-hover:rotate-90 transition-all duration-300" />
           </button>
 
           {/* Command palette trigger */}
           <button
             onClick={() => setShowPalette(true)}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600"
+            className="group hidden md:flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:border-[#3E2B66] hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent text-gray-600 transition-all duration-300 hover:shadow-md hover:scale-[1.02] active:scale-100"
             title="Search or jump (Ctrl/Cmd+K)"
           >
-            <Search className="h-4 w-4 text-gray-500" />
-            <span className="text-sm">Search or jump...</span>
-            <span className="ml-2 text-[10px] text-gray-400 border border-gray-200 rounded px-1">Ctrl</span>
-            <span className="text-[10px] text-gray-400 border border-gray-200 rounded px-1">K</span>
+            <Search className="h-4 w-4 text-gray-500 group-hover:text-[#3E2B66] group-hover:scale-110 transition-all duration-300" />
+            <span className="text-sm group-hover:text-[#3E2B66] transition-colors duration-300">Search or jump...</span>
+            <span className="ml-2 text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 group-hover:border-[#3E2B66] group-hover:text-[#3E2B66] transition-all duration-300">Ctrl</span>
+            <span className="text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 group-hover:border-[#3E2B66] group-hover:text-[#3E2B66] transition-all duration-300">K</span>
           </button>
         </div>
 
@@ -283,34 +288,39 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
           {location.pathname !== "/dashboard" && (
             <button
               onClick={() => navigate('/credits-usage')}
-              className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${lowCredits ? 'border-red-200 bg-red-50 text-red-700' : 'border-purple-200 bg-purple-50 text-purple-700'
-                }`}
+              className={`group hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 ${
+                lowCredits 
+                  ? 'border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 hover:from-red-100 hover:to-red-200 hover:border-red-400' 
+                  : 'border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 hover:from-purple-100 hover:to-indigo-100 hover:border-purple-400'
+              }`}
               title="View credits usage"
             >
-              <span className="font-medium">
+              <span className="font-semibold transition-all duration-300 group-hover:scale-110">
                 {creditsLoading ? '—' : (credits != null ? credits : '—')}
               </span>
               <span className="text-xs opacity-80">credits</span>
-              {lowCredits && <span className="ml-1 h-2 w-2 rounded-full bg-red-500" />}
+              {lowCredits && (
+                <span className="ml-1 h-2 w-2 rounded-full bg-red-500 animate-pulse group-hover:scale-125 transition-transform duration-300" />
+              )}
             </button>
           )}
 
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
             <button
-              className="relative p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+              className="group relative p-2 rounded-full hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all duration-300 hover:scale-110 active:scale-95"
               onClick={(e) => { e.stopPropagation(); setShowNotif((s) => !s); setShowUserMenu(false); }}
               aria-haspopup="true"
               aria-expanded={showNotif}
             >
-              <Bell className="h-5 w-5 text-gray-500" />
+              <Bell className={`h-5 w-5 text-gray-500 group-hover:text-[#3E2B66] transition-all duration-300 ${showNotif ? 'animate-bell-ring' : 'group-hover:scale-110 group-hover:rotate-12'}`} />
               {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse ring-2 ring-red-200 group-hover:ring-red-300 group-hover:scale-125 transition-all duration-300"></span>
               )}
             </button>
             {showNotif && (
               <div
-                className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[500px] flex flex-col"
+                className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[500px] flex flex-col animate-notification-slide"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
@@ -319,7 +329,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllAsRead}
-                        className="text-xs text-blue-600 hover:text-blue-700"
+                        className="text-xs text-[#3E2B66] hover:text-[#260559] font-medium hover:underline transition-all duration-200 hover:scale-105"
                       >
                         Mark all as read
                       </button>
@@ -330,7 +340,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                           navigate('/notifications');
                           setShowNotif(false);
                         }}
-                        className="text-xs text-blue-600 hover:text-blue-700"
+                        className="text-xs text-[#3E2B66] hover:text-[#260559] font-medium hover:underline transition-all duration-200 hover:scale-105"
                       >
                         View all
                       </button>
@@ -347,7 +357,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       {notifications.slice(0, 3).map((notification) => (
                         <div
                           key={notification._id}
-                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.isRead ? 'bg-blue-50' : ''
+                          className={`group/notif px-4 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${!notification.isRead ? 'bg-blue-50 border-l-4 border-[#3E2B66]' : ''
                             }`}
                           onClick={() => {
                             navigate('/notifications');
@@ -362,7 +372,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                               </p>
                             </div>
                             {!notification.isRead && (
-                              <div className="h-2 w-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                              <div className="h-2.5 w-2.5 bg-[#3E2B66] rounded-full mt-1 flex-shrink-0 animate-pulse group-hover/notif:scale-125 transition-transform duration-300"></div>
                             )}
                           </div>
                         </div>
@@ -377,29 +387,25 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
           {/* User menu */}
           <div className="relative" ref={userRef}>
             <button
-              className="flex items-center space-x-3"
+              className="group flex items-center space-x-3 transition-all duration-300 hover:scale-110 active:scale-95"
               onClick={(e) => { e.stopPropagation(); setShowUserMenu((s) => !s); setShowNotif(false); }}
               aria-haspopup="true"
               aria-expanded={showUserMenu}
             >
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{formatName((user as any)?.fullname)}</p>
-
-              </div>
               <div className="relative">
-                <div className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
+                <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
+                  {getInitials((user as any)?.fullname)}
                 </div>
                 {isPaidPlan && (
-                  <div className="absolute top-0 right-1 transform translate-x-1/2 -translate-y-1/2 rotate-35 z-10">
-                    <Crown className="h-4 w-4 text-yellow-500  drop-shadow-sm" />
+                  <div className="absolute top-0 right-1 transform translate-x-1/2 -translate-y-1/2 rotate-35 z-10 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300">
+                    <Crown className="h-4 w-4 text-yellow-500 drop-shadow-sm animate-crown-glow" />
                   </div>
                 )}
               </div>
             </button>
             {showUserMenu && (
               <div
-                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden"
+                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-user-menu-slide"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header section */}
@@ -410,7 +416,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                   <p className="text-sm text-gray-600 mt-1">{formatName((user as any)?.fullname)}</p>
                   <button
                     onClick={() => { setShowUserMenu(false); navigate('/account/profile'); }}
-                    className="mt-3 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 w-full"
+                    className="mt-3 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:border-[#3E2B66] hover:text-[#3E2B66] transition-all duration-300 w-full hover:scale-[1.02] active:scale-100"
                   >
                     Manage Profile
                   </button>
@@ -424,10 +430,10 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                   My Preferences
                 </button> */}
                 <button
-                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
+                  className="group/logout w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-red-50 hover:to-transparent flex items-center gap-2 text-red-600 transition-all duration-300 hover:scale-[1.02] active:scale-100"
                   onClick={handleLogout}
                 >
-                  <LogOut className="w-4 h-4" /> Log Out
+                  <LogOut className="w-4 h-4 group-hover/logout:rotate-12 group-hover/logout:scale-110 transition-all duration-300" /> Log Out
                 </button>
               </div>
             )}
@@ -437,30 +443,30 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
 
       {/* Command Palette */}
       {showPalette && (
-        <div className="fixed inset-0 z-[100]">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowPalette(false)} />
-          <div className="relative mx-auto mt-24 max-w-xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-              <Search className="h-4 w-4 text-gray-500" />
+        <div className="fixed inset-0 z-[100] animate-palette-fade-in">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowPalette(false)} />
+          <div className="relative mx-auto mt-24 max-w-xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-palette-slide">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-purple-50/30 to-transparent">
+              <Search className="h-4 w-4 text-[#3E2B66] animate-pulse" />
               <input
                 autoFocus
                 value={paletteQuery}
                 onChange={(e) => setPaletteQuery(e.target.value)}
                 placeholder="Search actions and pages..."
-                className="flex-1 outline-none text-sm text-gray-800 placeholder:text-gray-400"
+                className="flex-1 outline-none text-sm text-gray-800 placeholder:text-gray-400 focus:placeholder:text-gray-300 transition-colors"
               />
-              <button className="text-xs text-gray-500 hover:text-gray-700" onClick={() => setShowPalette(false)}>Esc</button>
+              <button className="text-xs text-gray-500 hover:text-[#3E2B66] hover:scale-110 transition-all duration-200 font-medium" onClick={() => setShowPalette(false)}>Esc</button>
             </div>
             <div className="max-h-80 overflow-y-auto">
               {paletteItems.length === 0 ? (
                 <div className="px-4 py-6 text-sm text-gray-500">No results</div>
               ) : (
                 <ul className="py-1">
-                  {paletteItems.map(item => (
-                    <li key={item.id}>
+                  {paletteItems.map((item, index) => (
+                    <li key={item.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-palette-item-fade">
                       <button
                         onClick={() => { setShowPalette(false); item.action(); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm text-gray-800"
+                        className="group w-full text-left px-4 py-2.5 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent text-sm text-gray-800 transition-all duration-300 hover:text-[#3E2B66] hover:scale-[1.02] active:scale-100"
                       >
                         {item.label}
                       </button>

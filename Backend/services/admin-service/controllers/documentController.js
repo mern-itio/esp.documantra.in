@@ -1,7 +1,6 @@
 const { serviceGet, servicePatch } = require('../utils/apiHelper');
 
 const getDocuments = async (req, res) => {
-//   console.log('🔍 getDocuments called in admin service');
   const filterUserId = req.query.userId; // Optional query param to filter by userId
   try {
     let url = "/admin/fetch/documents";
@@ -11,7 +10,6 @@ const getDocuments = async (req, res) => {
     const result = await serviceGet(req, 'document', {
       url: url
     });
-    console.log('Service result:', result);
     if (result.ok && result.status == 200) {
       // console.log('Documents data:', result.data);
       return res.status(200).json({

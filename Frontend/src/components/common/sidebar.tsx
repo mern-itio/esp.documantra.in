@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard, ArrowLeft } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard } from 'lucide-react';
 
 interface SidebarProps {
   activeView?: string;
@@ -63,26 +63,29 @@ const MenuItemButton: React.FC<{
       <button
         ref={buttonRef}
         onClick={() => handleMainMenuClick(item)}
-        className={`w-full text-[14px] flex items-center justify-between px-2.5 py-2.5 rounded-sm text-left transition-all duration-200 ${isMainMenuActive
-          ? 'bg-[#260559] text-white'
-          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+        className={`group/btn w-full text-[14px] flex items-center justify-between px-2.5 py-2.5 rounded-lg text-left transition-all duration-300 ${isMainMenuActive
+          ? 'bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white shadow-md'
+          : 'text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 hover:shadow-sm'
           }`}
         style={{ cursor: 'pointer' }}
       >
         <div className="flex items-center space-x-3">
           {item.icon && (
             <item.icon
-              className={`h-5 w-5 ${isMainMenuActive ? 'text-white' : 'text-slate-400'
-                }`}
+              className={`h-5 w-5 transition-all duration-300 ${
+                isMainMenuActive 
+                  ? 'text-white group-hover/btn:scale-110 group-hover/btn:rotate-3' 
+                  : 'text-slate-400 group-hover/btn:text-[#3E2B66] group-hover/btn:scale-110 group-hover/btn:rotate-3'
+              }`}
             />
           )}
-          {isOpen && <span className="font-medium">{item.label}</span>}
+          {isOpen && <span className="font-medium transition-all duration-300">{item.label}</span>}
         </div>
         {item.children && isOpen && (
           expandedMenu === item.id ? (
-            <ChevronDown className={`h-4 w-4 ${isMainMenuActive ? 'text-white' : 'text-slate-400'}`} />
+            <ChevronDown className={`h-4 w-4 transition-all duration-300 ${isMainMenuActive ? 'text-white' : 'text-slate-400'} group-hover/btn:scale-110`} />
           ) : (
-            <ChevronRight className={`h-4 w-4 ${isMainMenuActive ? 'text-white' : 'text-slate-400'}`} />
+            <ChevronRight className={`h-4 w-4 transition-all duration-300 ${isMainMenuActive ? 'text-white' : 'text-slate-400'} group-hover/btn:scale-110 group-hover/btn:translate-x-1`} />
           )
         )}
       </button>
@@ -90,7 +93,7 @@ const MenuItemButton: React.FC<{
       {/* Tooltip for collapsed sidebar */}
       {!isOpen && tooltipPosition.left > 0 && (
         <div 
-          className="fixed px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          className="fixed px-3 py-1.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover:scale-100"
           style={{ 
             top: `${tooltipPosition.top}px`,
             left: `${tooltipPosition.left}px`,
@@ -98,7 +101,7 @@ const MenuItemButton: React.FC<{
           }}
         >
           {item.label}
-          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#3E2B66]"></div>
         </div>
       )}
     </div>
@@ -316,7 +319,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className={`bg-white shadow-sm border-r border-slate-200 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
+    <div className={`bg-white shadow-lg border-r border-slate-200 transition-all duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
       {/* Header */}
          {/* <div className="bg-[#260559] flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
         {isOpen && (
@@ -336,12 +339,12 @@ const Sidebar: React.FC<SidebarProps> = ({
           />
         </button>
       </div> */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-white to-slate-50">
         {isOpen && (
-          <div className="flex items-center space-x-2">
-            <Building2 className="h-7 w-7 text-indigo-600" />
+          <div className="flex items-center space-x-2 animate-fade-in">
+            <Building2 className="h-7 w-7 text-[#3E2B66] transition-transform duration-300 hover:scale-110 hover:rotate-6" />
             <div>
-              <Link to="/dashboard"><h1 className="text-base font-semibold text-slate-900">Draft&Sign</h1></Link>
+              <Link to="/dashboard"><h1 className="text-base font-semibold text-slate-900 transition-colors duration-300 hover:text-[#3E2B66]">Draft&Sign</h1></Link>
             </div>
           </div>
         )}
@@ -375,50 +378,61 @@ const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Submenu */}
               {item.children && expandedMenu === item.id && isOpen && (
-                <div className="ml-6 mt-1 space-y-1">
-                  {item.children.map((sub) => {
+                <div className="ml-6 mt-1 space-y-1 animate-submenu-slide">
+                  {item.children.map((sub, index) => {
 
                     const isSendEnvelope = sub.id === "create";   // ✅ only for Send Envelope
                     const isActive = activeView === sub.id;
 
                     return (
-                      <div key={sub.id} className="relative group">
+                      <div key={sub.id} className={`relative group/sub ${isSendEnvelope ? 'create-envelope-special' : ''}`} style={{ animationDelay: `${index * 30}ms` }}>
                         <button
                           onClick={() => handleNavigation(sub.path, sub.id)}
                           className={`
-                              text-xs w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm relative
+                              group/btn text-xs w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm relative
+                              transition-all duration-300 transform active:scale-100 overflow-hidden
                               ${isSendEnvelope
-                              ? "text-indigo-700 hover:bg-indigo-100 transition-all duration-200"
+                              ? "text-[#3E2B66] bg-gradient-to-r from-purple-50 to-indigo-50 hover:border-[#3E2B66] hover:bg-gradient-to-r hover:from-[#3E2B66] hover:to-[#4d3577] hover:text-white hover:shadow-lg hover:scale-[1.05] create-envelope-btn"
                               : isActive
-                                ? "bg-indigo-100 text-indigo-700 transition-all duration-200"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200"
+                                ? "bg-gradient-to-r from-indigo-100 to-purple-50 text-[#3E2B66] shadow-sm border-l-4 border-[#3E2B66] hover:scale-[1.02]"
+                                : "text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 hover:shadow-sm hover:scale-[1.02]"
                             }
                                   `}
                           style={{
                             cursor: 'pointer',
                           }}
                         >
-                          <div className="flex items-center space-x-2">
+                          {/* Special shine effect for Create Envelope */}
+                          {isSendEnvelope && (
+                            <div className="absolute inset-0 create-envelope-shine"></div>
+                          )}
+                          {/* Glow effect */}
+                          {isSendEnvelope && (
+                            <div className="absolute inset-0 create-envelope-glow"></div>
+                          )}
+                          <div className="flex items-center space-x-2 relative z-10">
                             {sub.icon && (
                               <sub.icon
-                                className={`h-4 w-4 
-                      ${isSendEnvelope ? "text-indigo-600" :
-                                    isActive ? "text-black" : "text-black"}
+                                className={`h-4 w-4 transition-all duration-300
+                      ${isSendEnvelope 
+                        ? "text-[#3E2B66] group-hover/btn:text-white group-hover/btn:scale-125 group-hover/btn:rotate-12 create-envelope-icon" 
+                        : isActive 
+                          ? "text-[#3E2B66] scale-110" 
+                          : "text-slate-500 group-hover/btn:text-[#3E2B66] group-hover/btn:scale-110 group-hover/btn:rotate-6"
+                      }
                     `}
                               />
                             )}
-                            <span className={isSendEnvelope ? 'text-indigo-700 font-medium' : 'text-black'}>{sub.label}</span>
+                            <span className={`transition-all duration-300 relative z-10 ${isSendEnvelope ? 'text-[#3E2B66] group-hover/btn:text-white font-bold create-envelope-text' : isActive ? 'font-medium text-[#3E2B66]' : 'font-normal'}`}>{sub.label}</span>
                           </div>
-                          {isSendEnvelope && (
-                            <ArrowLeft className="h-4 w-4 text-indigo-600 animate-point-arrow" />
-                          )}
+                        
                         </button>
                         
                         {/* Tooltip for collapsed sidebar submenu items (if visible) */}
                         {!isOpen && (
-                          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                          <div className="absolute left-full ml-2 px-3 py-1.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover/sub:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover/sub:scale-100" style={{ top: '50%', transform: 'translateY(-50%)' }}>
                             {sub.label}
-                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#3E2B66]"></div>
                           </div>
                         )}
                       </div>
@@ -441,17 +455,17 @@ const Sidebar: React.FC<SidebarProps> = ({
            
             <button
               onClick={() => navigate('/credits-usage')}
-              className="w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-white hover:text-slate-900 rounded-md transition-colors"
+              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
             >
-              <CreditCard className="h-3.5 w-3.5 text-slate-400" />
-              <span>Billing & Usage</span>
+              <CreditCard className="h-3.5 w-3.5 text-slate-400 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
+              <span className="font-medium">Billing & Usage</span>
             </button>
             <button
               onClick={() => navigate('/account/profile')}
-              className="w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-white hover:text-slate-900 rounded-md transition-colors"
+              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
             >
-              <Settings className="h-3.5 w-3.5 text-slate-400" />
-              <span>Settings</span>
+              <Settings className="h-3.5 w-3.5 text-slate-400 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 group-hover/action:rotate-90 transition-all duration-300" />
+              <span className="font-medium">Settings</span>
             </button>
           </div>
 
@@ -460,10 +474,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <Link to='/help-support'>  
             <button
-              className="w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-500 hover:text-slate-700 rounded-md transition-colors"
+              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
             >
-              <HelpCircle className="h-3.5 w-3.5" />
-              <span>Help & Support</span>
+              <HelpCircle className="h-3.5 w-3.5 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
+              <span className="font-medium">Help & Support</span>
             </button>
             </Link>
           </div>

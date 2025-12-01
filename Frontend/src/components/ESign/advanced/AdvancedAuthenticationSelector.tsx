@@ -162,7 +162,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       <div
         key={method.id}
         className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-200 ${isSelected
-            ? 'border-blue-500 bg-blue-50'
+            ? 'border-[#260559]/500 bg-[#260559]/10'
             : 'border-gray-200 hover:border-gray-300 bg-white'
           }`}
         onClick={() => toggleMethod(method.id)}
@@ -174,7 +174,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         )}
 
         <div className="flex items-start space-x-4">
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSelected ? 'bg-[#260559] text-white' : 'bg-gray-100 text-gray-600'
             }`}>
             <Icon className="w-6 h-6" />
           </div>
@@ -182,7 +182,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-900">{method.name}</h3>
-              {isSelected && <CheckCircle className="w-5 h-5 text-blue-600" />}
+              {isSelected && <CheckCircle className="w-5 h-5 text-[#260559]" />}
             </div>
 
             <p className="text-gray-600 mb-4">{method.description}</p>
@@ -259,7 +259,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
           <button
             onClick={() => setActiveTab('recommended')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'recommended'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-[#260559]/500 text-[#260559]'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -270,7 +270,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
           <button
             onClick={() => setActiveTab('all')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'all'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-[#260559]/500 text-[#260559]'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -281,10 +281,10 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
       {/* Selected Methods Summary (multi-select) */}
       {localSelectedMethods.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-[#260559]/10 border border-[#260559]/20 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-blue-900">
+            <CheckCircle className="w-5 h-5 text-[#260559]" />
+            <span className="font-medium text-[#260559]">
               {localSelectedMethods.length} Method{localSelectedMethods.length !== 1 ? 's' : ''} Selected
             </span>
           </div>
@@ -292,7 +292,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
             {localSelectedMethods.map(methodId => {
               const method = authMethods.find(m => m.id === methodId);
               return method ? (
-                <span key={methodId} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                <span key={methodId} className="px-3 py-1 bg-[#260559]/10 text-[#260559] text-sm rounded-full">
                   {method.name}
                 </span>
               ) : null;
