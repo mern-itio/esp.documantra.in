@@ -18,15 +18,22 @@ Or create manually via MongoDB:
 
 ### 2. Agent/Admin Login
 
-Navigate to: `http://localhost:5173/support/login`
+Navigate to: `http://165.22.215.73:8082/`
 
 Use credentials:
 - Email: agent@draftnsign.com
 - Password: agent123
+or use admin credential to manage the agents and tickets
 
 ### 3. Support Dashboard
 
-After login, you'll be redirected to: `http://localhost:5173/support/dashboard`
+After login as agent, you'll be redirected to: `http://165.22.215.73:8082/support`
+After login as admin, you'll be redirected to: `http://165.22.215.73:8082/dashbaord`
+
+### 4. After login guide
+After you logged in as admin go to support management tab here you will find the ticket listing, agent control and analysis
+
+After logged in as agent you will see ticket assigned to you and status of ticket
 
 ## 📁 Files Created
 
@@ -36,8 +43,10 @@ After login, you'll be redirected to: `http://localhost:5173/support/dashboard`
 - ✅ Scripts to create agents
 
 ### Frontend
+In admin end
 - ✅ `Frontend/src/pages/SupportChat/SupportDashboard.tsx` - **Unified Agent/Admin Dashboard**
 - ✅ `Frontend/src/pages/SupportChat/AgentLogin.tsx` - Agent login page
+In user end
 - ✅ `Frontend/src/components/SupportChat/CustomerChatWidget.tsx` - Customer widget
 - ✅ `Frontend/src/context/SupportChatContext.tsx` - Socket.IO context
 - ✅ `Frontend/src/services/supportService.ts` - API service
@@ -109,19 +118,4 @@ The following routes have been added to your router:
 2. Check MongoDB connection
 3. Verify JWT secrets in .env
 
-## 📊 Next Steps
-
-1. **Create Agent Account**: Run the script above
-2. **Test Customer Flow**: Create ticket from customer widget
-3. **Test Agent Flow**: Login as agent and respond
-4. **Test Admin Flow**: Login as admin and view analytics
-
-## 🎨 Customization
-
-The dashboard is designed to work as both agent and admin dashboard. It automatically detects the user role and shows appropriate features.
-
-To customize:
-- Edit `Frontend/src/pages/SupportChat/SupportDashboard.tsx`
-- Colors use `#260559` (your brand color)
-- Components are modular and easy to modify
 

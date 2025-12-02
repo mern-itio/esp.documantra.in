@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
+const path = require('path');
 const { connectDB } = require('./config/db');
 const customerRoutes = require('./routes/customerRoutes');
 const agentRoutes = require('./routes/agentRoutes');
@@ -67,6 +68,10 @@ app.get('/api/support-service/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Serve static files from uploads directory
+const uploadsDir = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 app.use('/api/support-service/customer', customerRoutes);

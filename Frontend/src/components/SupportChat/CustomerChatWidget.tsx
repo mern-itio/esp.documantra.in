@@ -33,6 +33,14 @@ const CustomerChatWidget: React.FC = () => {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<Array<{
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    path: string;
+    uploadedAt?: Date;
+  }>>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -123,19 +131,31 @@ const CustomerChatWidget: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim()) return;
+    if (!currentTicket) return;
     
     // Prevent sending messages to closed tickets
-    if (currentTicket?.status === 'closed') {
+    if (currentTicket.status === 'closed') {
       toast.error('This ticket is closed. Please create a new ticket to continue.');
       setCurrentTicket(null);
       setShowCreateTicket(true);
       return;
     }
     
-    const content = messageInput.trim();
+    // Don't send if there's no message and no attachments
+    if (!messageInput.trim() && pendingAttachments.length === 0) return;
+    
+    const content = messageInput.trim() || (pendingAttachments.length > 0 
+      ? `Uploaded: ${pendingAttachments.map(a => a.originalName).join(', ')}` 
+      : '');
+    
+    const attachmentsToSend = [...pendingAttachments];
+    
+    // Clear input and pending attachments
     setMessageInput('');
-    await sendMessage(content);
+    setPendingAttachments([]);
+    
+    // Send message with attachments
+    await sendMessage(content, attachmentsToSend.length > 0 ? 'file' : 'text', attachmentsToSend);
     setTyping(false);
   };
 
@@ -164,8 +184,9 @@ const CustomerChatWidget: React.FC = () => {
       const response = await supportCustomerApi.uploadFile(currentTicket._id, file);
       if (response.data?.data?.attachment) {
         const attachment = response.data.data.attachment;
-        await sendMessage(`Uploaded: ${attachment.originalName}`, 'file', [attachment]);
-        toast.success('File uploaded successfully');
+        // Add to pending attachments instead of sending immediately
+        setPendingAttachments(prev => [...prev, attachment]);
+        toast.success('File added. Add a message and send when ready.');
       }
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -176,6 +197,10 @@ const CustomerChatWidget: React.FC = () => {
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const handleRemovePendingAttachment = (index: number) => {
+    setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleCreateTicket = async () => {
@@ -395,21 +420,105 @@ const CustomerChatWidget: React.FC = () => {
                               : 'bg-white border'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                          {msg.attachments && msg.attachments.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {msg.attachments.map((att, idx) => (
-                                <a
-                                  key={idx}
-                                  href={`${import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://localhost:2107'}/uploads/${att.path}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs underline flex items-center gap-1"
-                                >
-                                  <Paperclip className="w-3 h-3" />
-                                  {att.originalName}
-                                </a>
-                              ))}
+                          {/* Only show text content if it's not just a file upload notification */}
+                          {msg.content && !(msg.messageType === 'file' && msg.content.startsWith('Uploaded:')) && (
+                            <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                          )}
+                          {msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {msg.attachments.map((att, idx) => {
+                                if (!att || !att.path) return null;
+                                
+                                // Handle both relative and absolute paths
+                                let filePath = att.path;
+                                // If path is absolute, extract relative part
+                                if (filePath.includes('uploads')) {
+                                  const uploadsIndex = filePath.indexOf('uploads');
+                                  filePath = filePath.substring(uploadsIndex + 'uploads'.length);
+                                  if (filePath.startsWith('/') || filePath.startsWith('\\')) {
+                                    filePath = filePath.substring(1);
+                                  }
+                                  // Normalize path separators
+                                  filePath = filePath.replace(/\\/g, '/');
+                                }
+                                
+                                // Ensure path doesn't start with /
+                                if (filePath.startsWith('/')) {
+                                  filePath = filePath.substring(1);
+                                }
+                                
+                                const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://165.22.215.73:2107';
+                                const fileUrl = `${supportServiceUrl}/uploads/${filePath}`;
+                                const isImage = att.mimeType?.startsWith('image/');
+                                
+                                const isCustomerMessage = msg.senderType === 'customer';
+                                
+                                return (
+                                  <div key={idx || `att-${idx}`} className="mt-2">
+                                    {isImage ? (
+                                      <a
+                                        href={fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block mt-2"
+                                      >
+                                        <img
+                                          src={fileUrl}
+                                          alt={att.originalName || 'Image attachment'}
+                                          className={`max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${
+                                            isCustomerMessage 
+                                              ? 'border border-white/30' 
+                                              : 'border border-gray-300'
+                                          }`}
+                                          style={{ maxHeight: '250px', maxWidth: '100%' }}
+                                          onError={(e) => {
+                                            console.error('Failed to load image:', fileUrl);
+                                            // Hide broken image and show fallback link
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            const parent = target.parentElement;
+                                            if (parent) {
+                                              const fallback = document.createElement('a');
+                                              fallback.href = fileUrl;
+                                              fallback.target = '_blank';
+                                              fallback.rel = 'noopener noreferrer';
+                                              fallback.className = isCustomerMessage
+                                                ? 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors text-sm'
+                                                : 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm';
+                                              fallback.innerHTML = `
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                                </svg>
+                                                <span>${att.originalName || 'Download image'}</span>
+                                              `;
+                                              parent.appendChild(fallback);
+                                            }
+                                          }}
+                                        />
+                                      </a>
+                                    ) : (
+                                      <a
+                                        href={fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${
+                                          isCustomerMessage
+                                            ? 'border-white/30 bg-white/10 text-white hover:bg-white/20'
+                                            : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                      >
+                                        <Paperclip className="w-4 h-4" />
+                                        <span className="font-medium">{att.originalName || 'Download file'}</span>
+                                        {att.size && (
+                                          <span className={`text-xs ${isCustomerMessage ? 'opacity-70' : 'text-gray-500'}`}>
+                                            ({(att.size / 1024).toFixed(1)} KB)
+                                          </span>
+                                        )}
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                           <p className="text-xs mt-1 opacity-70">
@@ -509,43 +618,89 @@ const CustomerChatWidget: React.FC = () => {
 
                   {/* Input Area - Only show when ticket is not closed */}
                   {currentTicket?.status !== 'closed' && (
-                    <div className="border-t p-3 bg-white">
-                      <div className="flex gap-2 items-end">
-                        <input
-                          type="text"
-                          value={messageInput}
-                          onChange={handleTyping}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendMessage();
-                            }
-                          }}
-                          placeholder="Type a message..."
-                          className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559]"
-                        />
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          accept="image/*,.pdf,.doc,.docx"
-                        />
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingFile}
-                          className="p-2 text-gray-500 hover:text-[#260559] disabled:opacity-50"
-                          title="Attach file"
-                        >
-                          <Paperclip className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={handleSendMessage}
-                          disabled={!messageInput.trim() || uploadingFile}
-                          className="bg-[#260559] text-white p-2 rounded-lg hover:bg-[#260559]/90 disabled:opacity-50"
-                        >
-                          <Send className="w-5 h-5" />
-                        </button>
+                    <div className="border-t bg-white">
+                      {/* Pending Attachments Preview */}
+                      {pendingAttachments.length > 0 && (
+                        <div className="p-3 border-b bg-gray-50 space-y-2">
+                          <div className="text-xs text-gray-600 mb-2">Attachments ({pendingAttachments.length}):</div>
+                          {pendingAttachments.map((att, idx) => {
+                            const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://165.22.215.73:2107';
+                            const filePath = att.path.startsWith('/') ? att.path.substring(1) : att.path;
+                            const fileUrl = `${supportServiceUrl}/uploads/${filePath}`;
+                            const isImage = att.mimeType?.startsWith('image/');
+                            
+                            return (
+                              <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                                {isImage ? (
+                                  <img
+                                    src={fileUrl}
+                                    alt={att.originalName}
+                                    className="w-12 h-12 object-cover rounded"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                    <Paperclip className="w-6 h-6 text-gray-400" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 truncate">{att.originalName}</div>
+                                  {att.size && (
+                                    <div className="text-xs text-gray-500">{(att.size / 1024).toFixed(1)} KB</div>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleRemovePendingAttachment(idx)}
+                                  className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                  title="Remove attachment"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <div className="flex gap-2 items-end">
+                          <input
+                            type="text"
+                            value={messageInput}
+                            onChange={handleTyping}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                              }
+                            }}
+                            placeholder="Type a message..."
+                            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559]"
+                          />
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            accept="image/*,.pdf,.doc,.docx"
+                          />
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingFile}
+                            className="p-2 text-gray-500 hover:text-[#260559] disabled:opacity-50"
+                            title="Attach file"
+                          >
+                            <Paperclip className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={(!messageInput.trim() && pendingAttachments.length === 0) || uploadingFile}
+                            className="bg-[#260559] text-white p-2 rounded-lg hover:bg-[#260559]/90 disabled:opacity-50"
+                          >
+                            <Send className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}

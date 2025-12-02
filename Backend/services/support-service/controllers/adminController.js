@@ -435,9 +435,6 @@ exports.getAllTickets = async (req, res) => {
         });
       }
     } else if (req.admin && req.admin.role === 'agent') {
-      // Agent can only see their own tickets
-      // req.admin.id is the support-service agent ID (from JWT token)
-      // Tickets are assigned using support-service agent IDs, so direct match works
       if (req.admin.id) {
         try {
           // Convert string ID to ObjectId for proper MongoDB matching

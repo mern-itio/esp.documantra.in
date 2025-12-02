@@ -71,6 +71,7 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
   const currentTicketRef = useRef<Ticket | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize socket connection
   useEffect(() => {
@@ -124,6 +125,9 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return;
       }
       
+      // Check if message is from someone else (not the current user)
+      const isMessageFromOthers = data.message.senderId !== user?.id;
+      
       if (currentTicket && data.ticketId === currentTicket._id) {
         setMessages(prev => {
           // Remove optimistic message with same content from same sender (replace with real message)
@@ -141,13 +145,21 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return withoutOptimistic;
         });
         
-        // Only notify if message is from someone else
-        if (data.message.senderId !== user?.id) {
+        // Only notify if message is from someone else and user is viewing this ticket
+        if (isMessageFromOthers) {
           playNotificationSound();
           showBrowserNotification('New message', data.message.content.substring(0, 100));
         }
       } else {
-        console.log('Message for different ticket, ignoring. Expected:', currentTicket?._id, 'Got:', data.ticketId);
+        // Message is for a different ticket (not currently open)
+        // Still notify if message is from someone else
+        if (isMessageFromOthers) {
+          console.log('Message for different ticket, but triggering notification. Expected:', currentTicket?._id, 'Got:', data.ticketId);
+          playNotificationSound();
+          showBrowserNotification('New message in another ticket', data.message.content.substring(0, 100));
+        } else {
+          console.log('Message for different ticket, ignoring. Expected:', currentTicket?._id, 'Got:', data.ticketId);
+        }
       }
     });
 
@@ -214,17 +226,131 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   }, [isAuthenticated, user]);
 
-  // Play notification sound
-  const playNotificationSound = useCallback(() => {
+  // Initialize audio element on mount
+  useEffect(() => {
+    // Create a persistent audio element for notifications
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgzMGHm7A7+OZUQ0PVKzn77FcGAg+ltryy3UqBSh/zfLZiTYIGWa77+OcTg4OUafk8rZmHQY6k9nzznktBSR3x+/ckEEKEV606OuqVhUKRp/g8r1sIQUxh9Hy0oQzBh5uwO/jmlEOEFWt5++xXBgIPpba8st1KgUof83y2Yk2CBlmu+/jnE4ODlGn5PK2Zh0GOpPZ8855LQUkd8fv3JBBCg=');
+    audio.volume = 0.5;
+    audio.preload = 'auto';
+    
+    // Try to preload the audio
     try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgzMGHm7A7+OZUQ0PVKzn77FcGAg+ltryy3UqBSh/zfLZiTYIGWa77+OcTg4OUafk8rZmHQY6k9nzznktBSR3x+/ckEEKEV606OuqVhUKRp/g8r1sIQUxh9Hy0oQzBh5uwO/jmlEOEFWt5++xXBgIPpba8st1KgUof83y2Yk2CBlmu+/jnE4ODlGn5PK2Zh0GOpPZ8855LQUkd8fv3JBBCg=');
-      audio.volume = 0.3;
-      audio.play().catch(() => {}); // Ignore errors
+      audio.load();
+    } catch (err: any) {
+      console.warn('Could not preload notification sound:', err);
+    }
+    
+    audioRef.current = audio;
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Last resort: Generate beep using Web Audio API
+  const tryWebAudioBeep = useCallback(() => {
+    try {
+      console.log('🔊 Attempting Web Audio API beep...');
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) {
+        console.warn('Web Audio API not supported');
+        return;
+      }
+      
+      const audioContext = new AudioContextClass();
+      
+      // Resume audio context if suspended (required by some browsers)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          console.log('Audio context resumed');
+        });
+      }
+      
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Create a pleasant notification beep (two short beeps)
+      oscillator.frequency.value = 800; // 800 Hz tone
+      oscillator.type = 'sine';
+      
+      // First beep
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + 0.1);
+      
+      // Second beep (after short pause)
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.15);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + 0.25);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+      
+      console.log('✅ Web Audio beep played');
     } catch (error) {
-      // Fallback: use system beep if audio creation fails
-      console.log('Notification sound');
+      console.warn('❌ Could not play Web Audio beep:', error);
     }
   }, []);
+
+  // Fallback: Create new audio element
+  const tryFallbackSound = useCallback(() => {
+    try {
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgzMGHm7A7+OZUQ0PVKzn77FcGAg+ltryy3UqBSh/zfLZiTYIGWa77+OcTg4OUafk8rZmHQY6k9nzznktBSR3x+/ckEEKEV606OuqVhUKRp/g8r1sIQUxh9Hy0oQzBh5uwO/jmlEOEFWt5++xXBgIPpba8st1KgUof83y2Yk2CBlmu+/jnE4ODlGn5PK2Zh0GOpPZ8855LQUkd8fv3JBBCg=');
+      audio.volume = 0.5;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn('Could not play notification sound (fallback):', error);
+          tryWebAudioBeep();
+        });
+      }
+    } catch (error) {
+      console.warn('Error creating fallback audio:', error);
+      tryWebAudioBeep();
+    }
+  }, [tryWebAudioBeep]);
+
+  // Play notification sound
+  const playNotificationSound = useCallback(() => {
+    console.log('🔔 Attempting to play notification sound...');
+    try {
+      // Try using the persistent audio element first
+      if (audioRef.current) {
+        // Reset to beginning if already played
+        audioRef.current.currentTime = 0;
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('✅ Notification sound played successfully (persistent)');
+            })
+            .catch((error) => {
+              console.warn('❌ Could not play notification sound (persistent):', error);
+              // Fallback: try creating a new audio element
+              tryFallbackSound();
+            });
+        } else {
+          console.log('✅ Notification sound played (no promise returned)');
+        }
+        return;
+      }
+      
+      // Fallback: create new audio element if persistent one doesn't exist
+      console.log('⚠️ Persistent audio not available, using fallback');
+      tryFallbackSound();
+    } catch (error) {
+      console.warn('❌ Error playing notification sound:', error);
+      // Last resort: try Web Audio API beep
+      tryWebAudioBeep();
+    }
+  }, [tryFallbackSound, tryWebAudioBeep]);
 
   // Show browser notification
   const showBrowserNotification = useCallback((title: string, body: string) => {

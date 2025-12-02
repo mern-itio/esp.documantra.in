@@ -3,7 +3,7 @@ const Ticket = require('../models/Ticket');
 const Message = require('../models/Message');
 const SupportAgent = require('../models/SupportAgent');
 const Customer = require('../models/Customer');
-const { routeTicketToAgent } = require('../utils/ticketRouter');
+// const { routeTicketToAgent } = require('../utils/ticketRouter');
 
 class SocketService {
   constructor(io) {
@@ -170,19 +170,18 @@ class SocketService {
           return;
         }
       }
-      // For agents/admins: Allow joining any ticket (unified dashboard)
-      // Write operations are restricted in controllers
+      
 
       // Join ticket room
       socket.join(`ticket_${ticketId}`);
-      console.log(`User ${socket.userId} (${socket.userType}) joined ticket room: ticket_${ticketId}`);
+      // console.log(`User ${socket.userId} (${socket.userType}) joined ticket room: ticket_${ticketId}`);
       
       // Load and send recent messages
       const messages = await Message.find({ ticketId })
         .sort({ createdAt: 1 })
         .limit(50);
 
-      console.log(`Sending ${messages.length} messages to user ${socket.userId} for ticket ${ticketId}`);
+      // console.log(`Sending ${messages.length} messages to user ${socket.userId} for ticket ${ticketId}`);
       socket.emit('ticket_messages', { ticketId, messages });
     } catch (error) {
       console.error('Error joining ticket:', error);

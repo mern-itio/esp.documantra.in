@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const AdminUser = require('../models/Admin');
 const { isEmailValid } = require('@draftnsign/validators');
 const mongoose = require('mongoose');
+const SupportAgent = require('../../support-service/models/SupportAgent');
 const getSupportServiceDb = () => {
   if (mongoose.connection.readyState === 1) {
     const currentDbName = mongoose.connection.db.databaseName;
@@ -33,80 +34,6 @@ const getSupportServiceDb = () => {
   }
 };
 
-// SupportAgent model schema (since we share the same database)
-// Match the exact schema from support-service
-const supportAgentSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  fullname: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  avatar: {
-    type: String,
-    default: null
-  },
-  role: {
-    type: String,
-    enum: ['agent', 'admin'],
-    default: 'agent'
-  },
-  status: {
-    type: String,
-    enum: ['online', 'offline', 'away'],
-    default: 'offline'
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  lastActiveAt: {
-    type: Date,
-    default: Date.now
-  },
-  socketId: {
-    type: String,
-    default: null
-  },
-  currentTickets: [{
-    ticketId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' },
-    assignedAt: { type: Date, default: Date.now }
-  }],
-  stats: {
-    totalTicketsHandled: { type: Number, default: 0 },
-    averageResponseTime: { type: Number, default: 0 },
-    totalResponseTime: { type: Number, default: 0 },
-    responseCount: { type: Number, default: 0 },
-    averageRating: { type: Number, default: 0 },
-    totalRatings: { type: Number, default: 0 },
-    ratingSum: { type: Number, default: 0 }
-  }
-}, { timestamps: true }); // Mongoose will use "supportagents" as collection name (pluralized, lowercase)
-
-// Add password comparison method
-supportAgentSchema.methods.isPasswordCorrect = async function(enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-try {
-  if (mongoose.models.SupportAgent) {
-    SupportAgent = mongoose.models.SupportAgent;
-  } else {
-    SupportAgent = mongoose.model('SupportAgent', supportAgentSchema, 'supportagents');
-  }
-} catch (error) {
-  console.error('Error setting up SupportAgent model:', error);
-  SupportAgent = mongoose.model('SupportAgent', supportAgentSchema, 'supportagents');
-}
 
 const adminLogin = async (req, res) => {
   try {

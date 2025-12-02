@@ -77,6 +77,7 @@ exports.uploadFile = async (req, res) => {
   try {
     const { ticketId } = req.params;
     const file = req.file;
+    const path = require('path');
 
     if (!file) {
       return res.status(400).json({
@@ -86,12 +87,20 @@ exports.uploadFile = async (req, res) => {
       });
     }
 
+    // Store relative path instead of absolute path
+    // file.path is like: /path/to/uploads/ticketId/filename.png
+    // We want: ticketId/filename.png
+    const uploadsDir = path.join(__dirname, '../uploads');
+    const relativePath = path.relative(uploadsDir, file.path);
+    // Normalize path separators for cross-platform compatibility
+    const normalizedPath = relativePath.split(path.sep).join('/');
+
     const attachment = {
       filename: file.filename,
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
-      path: file.path,
+      path: normalizedPath, // Store relative path
       uploadedAt: new Date()
     };
 
