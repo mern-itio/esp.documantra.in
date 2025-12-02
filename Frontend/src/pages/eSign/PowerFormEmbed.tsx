@@ -17,7 +17,7 @@ export const PowerFormEmbed: React.FC = () => {
   const { formId } = useParams<{ formId: string }>();
   const { envelopeId } = useParams<{ envelopeId: string }>();
   // const [fields, setFields] = useState<FormField[]>([]);
-  const [formTitle, setFormTitle] = useState("Untitled Form");
+  const [_formTitle, setFormTitle] = useState("Untitled Form");
 
   useEffect(() => {
     if (!formId) return;
@@ -35,11 +35,11 @@ export const PowerFormEmbed: React.FC = () => {
     fetchForm();
   }, [formId]);
 
-  const embedCode = `<iframe src="${window.location.origin}/e-sign/power-form/${formId}/${envelopeId}" width="600" height="800" frameborder="0"></iframe>`;
+  const embedCode = `<iframe src="${window.location.origin}/e-sign/power-form/${envelopeId}" width="100%" height="100%" frameborder="0"></iframe>`;
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Embed Form: {formTitle}</h1>
+      <h1 className="text-2xl font-bold mb-4">Embed Power Form</h1>
 
       {/* <div className="mb-6">
         <p className="mb-2">Preview:</p>

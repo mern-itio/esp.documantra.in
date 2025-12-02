@@ -7,6 +7,7 @@ const RecipientPermission = require('../models/RecipientPermission');
 const SignatureField = require('../models/SignatureFields');
 const { logActivity } = require("../services/activityLogService");
 const mongoose = require('mongoose');
+const axios = require('axios');
 
 // Helper function to parse authentication and return array of valid ObjectIds
 const parseAuthLevel = (authentication) => {
@@ -129,16 +130,29 @@ const insertRecipient = async (req, res) => {
 
   const recps = await Promise.all(
     recipients.map(async (r) => {
-      // First try to find recipient by email that belongs to this user
+      // Check if recipient exists by email
       let recipient = await Recipient.findOne({ 
         email: r.email,
-        UserId: userId 
       });
 
       if (!recipient) {
+        let recUserId = null;
+        //check if user exists in system with same email
+        console.log(`Checking for existing user with email: ${r.email}`);
+        try {
+        const response = await axios.get(`${process.env.AUTH_URL}/api/find-user/${r.email}`, {
+          headers: { Authorization: req.headers.authorization },
+        });
+        if (response.data?.data) {
+          console.log('User found in auth service:', response.data.data);
+          recUserId= response.data.data._id;
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch sender details for ID ${r.email}:`, err.message);
+      }
         // If not found, create a new recipient with UserId
         recipient = await Recipient.create({
-          UserId: userId,
+          UserId: recUserId,
           name: r.name,
           email: r.email
         });
@@ -148,7 +162,7 @@ const insertRecipient = async (req, res) => {
           recipientId: recipient._id,
         });
       }
-      // Step 2: Check if this recipient already has permission for this envelope
+      // Step 2: Check if this   recipient already has permission for this envelope
       let existingPermission = await RecipientPermission.findOne({
         recipientId: recipient._id,
         envelopeId: envelope._id

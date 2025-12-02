@@ -3,6 +3,7 @@ const User  = require('../models/User');
 const { isEmailValid } = require('@draftnsign/validators');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
 const bcrypt = require('bcrypt');
+const axios = require('axios');
 // Login Controller
 const login = async (req, res) => {
   const { email, password } = req.body;
@@ -80,6 +81,10 @@ const register = async (req, res) => {
   try {
     // Default plan is free on first registration
     const user = await User.create({ fullname, email, phone, password, company, address, plan: 'free' });
+      await axios.post(`${process.env.ESING_SERVICE_URL}/api/e-sign/public/link-user-recipient`, {
+        email: email,
+        userId: user._id
+      });
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (error) {
     if (error.code === 11000) {

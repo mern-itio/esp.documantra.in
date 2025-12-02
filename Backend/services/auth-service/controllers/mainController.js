@@ -17,6 +17,22 @@ const userDetails = async (req, res) => {
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
-
+const findUserByEmail = async (req, res) => {
+    const email = req.params.email;
+    console.log(`Finding user by email: ${email}`);
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        return res.status(200).json({
+            status: 'success',
+            data: user,
+        });
+    } catch (error) {
+        console.error('Error fetching user by email:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
 // Correct export
-module.exports = { userDetails };
+module.exports = { userDetails,findUserByEmail };

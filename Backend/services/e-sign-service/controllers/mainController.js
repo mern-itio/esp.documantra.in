@@ -23,75 +23,95 @@ const Notification = require('../models/Notification');
 const envelopesData = async (req, res) => {
   const userId = req?.user?.data?.id;
   const userType = req?.userType;
-  const filterUserId = req.query.userId; // <-- new query param
-  console.log(filterUserId);
+  const filterUserId = req.query.userId; // optional admin filter
 
   try {
-    // Step 1: Build query
-        let query = {};
-        if (userType === 'admin') {
-          // Admin can either see all envelopes or filter by a particular user
-          if (filterUserId) {
-            query.sender = filterUserId; // fetch only this user's envelopes
-          }
-          // else query = {} => fetch all envelopes
-        } else {
-          // Regular user sees only their own envelopes
-          query.sender = userId;
-        }
+    // Determine target user (whose "sent" or "received" we're looking at)
+    const targetUserId = (userType === 'admin' && filterUserId) ? filterUserId : userId;
 
-        // Fetch all envelopes with documents and recipients
-        const envelopes = await Envelope.find(query)
-          .sort({ createdAt: -1 }) // descending by createdAt
-          .populate('documentIds') // documents
-          .populate({
-            path: 'recipientIds',          // recipients
-            model: 'Recipient',            // explicit model
-            select: 'name email UserId',
-          })
-          .lean(); // optional, makes it simple to work with
+    // ----- SENT envelopes query (keep original admin behavior) -----
+    let sentQuery = {};
+    if (userType === 'admin') {
+      if (filterUserId) {
+        sentQuery.sender = filterUserId; // fetch only this user's sent envelopes
+      }
+      // else admin: no sender filter => all envelopes (sentQuery = {})
+    } else {
+      // non-admin: only their own sent envelopes
+      sentQuery.sender = userId;
+    }
 
-        // For each envelope, fetch only the permissions that belong to that envelope
-        // This prevents permission records from other envelopes (same recipient) leaking into results
-        for (const envelope of envelopes) {
-          if (!envelope || !envelope._id || !Array.isArray(envelope.recipientIds)) continue;
+    const sentEnvelopes = await Envelope.find(sentQuery)
+      .sort({ createdAt: -1 })
+      .populate('documentIds')
+      .populate({
+        path: 'recipientIds',
+        model: 'Recipient',
+        select: 'name email UserId',
+      })
+      .lean();
 
-          const envelopeRecipientIds = envelope.recipientIds.map(r => r._id);
+    // ----- Find recipient records for the target user (to get recipientIds for "received") -----
+    const userRecipients = await Recipient.find({ UserId: targetUserId }).select('_id').lean();
+    const userRecipientIds = (userRecipients || []).map(r => r._id);
+    // If user has recipient entries, find permissions that reference them
+    let receivedEnvelopeIds = [];
+    if (userRecipientIds.length > 0) {
+      const permsForUser = await RecipientPermission.find({
+        recipientId: { $in: userRecipientIds }
+      }).select('envelopeId recipientId role order status authLevel').lean();
 
-          // Fetch permissions scoped to this envelope only
-          const envelopePermissions = await RecipientPermission.find({
-            envelopeId: envelope._id,
-            recipientId: { $in: envelopeRecipientIds }
-          }).select('recipientId envelopeId role order status authLevel');
+      receivedEnvelopeIds = [...new Set(permsForUser.map(p => p.envelopeId && p.envelopeId.toString()).filter(Boolean))];
+    }
 
-          // Map permissions by recipientId for quick lookup
-          const permMap = new Map();
-          envelopePermissions.forEach(p => {
-            if (p && p.recipientId) permMap.set(p.recipientId.toString(), p);
-          });
+    // Fetch envelopes that were shared/received by the target user
+    let receivedEnvelopes = [];
+    if (receivedEnvelopeIds.length > 0) {
+      receivedEnvelopes = await Envelope.find({ _id: { $in: receivedEnvelopeIds } })
+        .sort({ createdAt: -1 })
+        .populate('documentIds')
+        .populate({
+          path: 'recipientIds',
+          model: 'Recipient',
+          select: 'name email UserId',
+        })
+        .lean();
+    }
 
-          // Attach only the matching permission to each recipient for this envelope
-          envelope.recipientIds = envelope.recipientIds.map(recipient => {
-            const r = recipient || {};
-            const rid = r._id ? r._id.toString() : null;
-            const permission = rid ? permMap.get(rid) : null;
-            // Keep original recipient fields and add permissions array (to keep downstream code unchanged)
-            return {
-              ...r,
-              permissions: permission ? [permission] : []
-            };
-          });
-        }
+    // Combine sent and received, ensuring uniqueness by _id
+    const envelopesMap = new Map();
+    const allEnvelopesList = [...(sentEnvelopes || []), ...(receivedEnvelopes || [])];
+    for (const env of allEnvelopesList) {
+      if (!env || !env._id) continue;
+      envelopesMap.set(env._id.toString(), env);
+    }
+    const envelopes = Array.from(envelopesMap.values());
 
     if (!envelopes || envelopes.length === 0) {
       return res.status(404).json({ message: 'No envelopes found' });
     }
-    // Step 3: Collect unique sender IDs
+
+    // ----- Fetch all permissions for these envelopes in a single query -----
+    const allEnvelopeIds = envelopes.map(e => e._id);
+    const allPermissions = await RecipientPermission.find({
+      envelopeId: { $in: allEnvelopeIds }
+    }).select('recipientId envelopeId role order status authLevel').lean();
+
+    // Build map: envelopeId -> (recipientId -> permission)
+    const permByEnvelope = new Map();
+    for (const p of allPermissions) {
+      const eid = p.envelopeId?.toString();
+      const rid = p.recipientId?.toString();
+      if (!eid || !rid) continue;
+      if (!permByEnvelope.has(eid)) permByEnvelope.set(eid, new Map());
+      permByEnvelope.get(eid).set(rid, p);
+    }
+
+    // ----- Collect unique sender IDs to fetch user details -----
     const senderIds = [...new Set(envelopes.map(env => env.sender?.toString()).filter(Boolean))];
 
-    // Step 4: Fetch all sender details in parallel
+    // Fetch sender details in parallel (like before)
     const senderDetailsMap = {};
-
     await Promise.all(senderIds.map(async (senderId) => {
       try {
         const response = await axios.get(`${process.env.AUTH_URL}/api/user-details/${senderId}`, {
@@ -105,9 +125,47 @@ const envelopesData = async (req, res) => {
       }
     }));
 
-    // Step 5: Format the response
+    // ----- Format envelopes and attachments -----
     const formattedEnvelopes = envelopes.map((envelope) => {
+      const eid = envelope._id.toString();
       const sender = senderDetailsMap[envelope.sender?.toString()] || {};
+
+      // Determine direction relative to targetUserId
+      const isSender = envelope.sender && envelope.sender.toString() === targetUserId;
+      // isReceiver: check if any recipient in envelope has UserId === targetUserId
+      const isReceiver = Array.isArray(envelope.recipientIds) && envelope.recipientIds.some(r => r && r.UserId && r.UserId.toString() === targetUserId);
+
+
+      let direction = 'Sent';
+      if (isSender && isReceiver) direction = 'sent_and_received';
+      else if (isReceiver && !isSender) direction = 'Received';
+
+      // Attach permissions for recipients from permission map (scoped to this envelope)
+      const envelopePermMap = permByEnvelope.get(eid) || new Map();
+      const recipients = (envelope.recipientIds || []).map((recipient) => {
+        const r = recipient || {};
+        const rid = r._id ? r._id.toString() : null;
+        const perm = rid ? envelopePermMap.get(rid) : null;
+        // convert authLevel (backward compatibility)
+        let authentication = 'none';
+        if (perm && perm.authLevel) {
+          if (Array.isArray(perm.authLevel)) {
+            authentication = perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : 'none';
+          } else {
+            authentication = JSON.stringify([perm.authLevel]);
+          }
+        }
+        return {
+          id: recipient._id,
+          name: recipient.name,
+          email: recipient.email,
+          role: perm?.role || 'signer',
+          order: typeof perm?.order === 'number' ? perm.order : 0,
+          status: perm?.status || 'pending',
+          authentication,
+        };
+      });
+
       return {
         id: envelope._id,
         subject: envelope.subject,
@@ -117,7 +175,8 @@ const envelopesData = async (req, res) => {
         sentAt: envelope.updatedAt,
         expiresAt: envelope.expirationDate,
         isPowerForm: envelope.isPowerForm,
-        completionCertificate:envelope.completionCertificate,
+        completionCertificate: envelope.completionCertificate,
+        // sender info (fallbacks preserved)
         sender: {
           id: sender._id || envelope.sender,
           name: sender.fullname || 'Unknown',
@@ -127,43 +186,22 @@ const envelopesData = async (req, res) => {
           avatar: sender.avatar || '',
         },
         signatureType: envelope.signatureType,
-        documents: envelope.documentIds.map((doc) => ({
+        documents: (envelope.documentIds || []).map((doc) => ({
           id: doc._id,
           name: doc.fileName,
           size: doc.fileSize,
           type: doc.mimeType,
         })),
-        recipients: envelope.recipientIds.map((recipient) => {
-          const perm = (recipient && Array.isArray(recipient.permissions) && recipient.permissions[0]) || {};
-          // Handle authLevel: can be array (new) or single value (old data for backward compatibility)
-          let authentication = 'none';
-          if (perm.authLevel) {
-            if (Array.isArray(perm.authLevel)) {
-              // New format: array of ObjectIds - stringify for frontend
-              authentication = perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : 'none';
-            } else {
-              // Old format: single ObjectId - convert to array format for frontend
-              authentication = JSON.stringify([perm.authLevel]);
-            }
-          }
-          return {
-            id: recipient._id,
-            name: recipient.name,
-            email: recipient.email,
-            role: perm.role || 'signer',
-            order: typeof perm.order === 'number' ? perm.order : 0,
-            status: perm.status || 'pending',
-            authentication: authentication,
-          };
-        }),
+        recipients,
+        direction, // NEW: 'sent' | 'received' | 'sent_and_received'
       };
     });
 
-    // Step 6: Respond
+    // Return combined result
     return res.status(200).json({
       status: 'success',
       data: formattedEnvelopes,
-      totalEnvelopes: envelopes.length,
+      totalEnvelopes: formattedEnvelopes.length,
     });
 
   } catch (error) {
@@ -172,8 +210,10 @@ const envelopesData = async (req, res) => {
   }
 };
 
+
 const envelopesDetail = async (req, res) => {
     const envelopeId = req.params.id;
+    const userId = req?.user?.data?.id;
 
     try {
         // Step 1: Fetch single envelope by ID
@@ -192,7 +232,16 @@ const envelopesDetail = async (req, res) => {
         if (!envelope) {
             return res.status(404).json({ message: 'Envelope not found' });
         }
+        let currentRecipient = envelope.recipientIds.find(r => {
+            return String(r.UserId) === String(userId);
+        });
+        let direction = '';
         const senderId = envelope.sender;
+        if(senderId == userId){
+          direction = 'Sent';
+        }else{
+          direction = 'Received';
+        }
 
         // Step 2: Fetch sender details from User service
         const senderResponse = await axios.get(
@@ -217,6 +266,8 @@ const envelopesDetail = async (req, res) => {
             expiresAt: envelope.expirationDate,
             isPowerForm: envelope.isPowerForm,
             powerFormId:envelope.powerFormId,
+            direction: direction,
+            currRecipient: currentRecipient?._id || null,
             sender: {
                 id: senderDetails?.data?._id,
                 name: senderDetails?.data?.fullname,
@@ -1628,7 +1679,15 @@ const saveupdateSignature = async (req, res) =>{
   }
   return res.status(200).json({message: 'Signature saved succesfully',mode:mode});
 }
-
+const LinkUserRecipient = async (req, res) => {
+  const { email, userId } = req.body;
+  const RecipientData = await Recipient.findOne({ email: email});
+  if(RecipientData){
+    RecipientData.UserId = userId;
+    await RecipientData.save();
+    return res.status(200).json({ message: 'Recipient linked to user successfully', Recipient });
+  }
+}
 // Export functions
 module.exports = {
   getAllRecipients,
@@ -1662,5 +1721,6 @@ module.exports = {
   saveupdateSignature,
   getNotifications,
   markNotificationAsRead,
-  markAllNotificationsAsRead
+  markAllNotificationsAsRead,
+  LinkUserRecipient
 };
