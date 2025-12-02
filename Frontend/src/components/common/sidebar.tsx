@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard, Share } from 'lucide-react';
 
 interface SidebarProps {
   activeView?: string;
@@ -137,6 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       if (pathname.startsWith('/e-sign/aggrement/in-progress')) return 'esignInProgress';
       if (pathname.startsWith('/e-sign/aggrement/completed')) return 'esignCompleted';
       if (pathname.startsWith('/e-sign/aggrement/deleted')) return 'esignDeleted';
+      if (pathname.startsWith('/e-sign/aggrement/shared-with-me')) return 'shared-with-me';
       if (pathname.startsWith('/e-sign/create')) return 'create';
       if (pathname.startsWith('/e-sign/form-list')) return 'form-list';
       // Any other e-sign route - keep e-sign expanded but don't force dashboard
@@ -204,6 +205,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'esignDraft', label: 'Drafts', path: '/e-sign/aggrement/draft', icon: FileEdit },
         { id: 'esignInProgress', label: 'In Progress', path: '/e-sign/aggrement/in-progress', icon: Pencil },
         { id: 'esignCompleted', label: 'Completed', path: '/e-sign/aggrement/completed', icon: CheckCircle },
+        { id: 'shared-with-me', label: 'Shared With Me', path: '/e-sign/aggrement/shared-with-me', icon: Share },
         { id: 'esignDeleted', label: 'Deleted', path: '/e-sign/aggrement/deleted', icon: Trash2Icon },
         // { id: 'sent', label: 'Add Envelope', path: '/e-sign/sent', icon: MailPlus },
         { id: 'powerforms', label: 'PowerForms', path: '/e-sign/powerform', icon: FormInput },

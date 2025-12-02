@@ -30,6 +30,8 @@ interface EnvelopeDetailsResponse {
     envelopetype?: string;
     documents?: Array<{ id: string; name?: string }>;
     message?: string;
+    direction?: string;
+    currRecipient?:string;
 }
 
 const formatDateTime = (value?: string) => {
@@ -113,8 +115,7 @@ const EnvelopeDetailPage: React.FC = () => {
                 if (res?.status === 200 && res.data?.status === 'success') {
                     const docs: Array<{ id: string }> = res.data.data.documents || [];
                     if (docs.length > 0) {
-                        const first = docs[0];
-                        const url = `/e-sign/signer/${id}/${first.id}`;
+                        const url = `/e-sign/signer/${id}/${res?.data?.data?.currRecipient}`;
                         if (!revoked) setPreviewUrl(url);
                         // If backend later provides page count, set it here
                         // setPageCount(res.data.data.documents[0].pages || null);
@@ -478,13 +479,16 @@ const EnvelopeDetailPage: React.FC = () => {
                         <div className="flex items-center gap-3">
                             {/* Correct and Resend (only if not completed) */}
                             {!isCompleted && (
-                                <>
+                                <>  
+                                   {envelope.direction!='Received' && (
+                                    <>
                                     <button
                                         onClick={handleCorrect}
                                         className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold"
                                     >
                                         CORRECT
                                     </button>
+
                                     <button
                                         ref={resendBtnRef}
                                         onClick={() => { if (!resendLoading) handleResendAll(); }}
@@ -492,6 +496,8 @@ const EnvelopeDetailPage: React.FC = () => {
                                     >
                                         {resendLoading ? 'RESENDING…' : 'RESEND'}
                                     </button>
+                                    </>
+                                 )}
                                 </>
                             )}
                             {/* Move button */}

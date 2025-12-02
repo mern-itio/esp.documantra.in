@@ -15,6 +15,11 @@ interface Agreement {
   waitingFor?: string;
   primaryRecipientName?: string;
   isPowerForm?: boolean;
+  direction?: string;
+  sender?: {
+    name: string;
+    email: string;
+  };
 }
 
 interface EnvelopeData {
@@ -24,6 +29,7 @@ interface EnvelopeData {
   createdAt: string;
   sentAt: string;
   isPowerForm?: boolean;
+  direction?: string;
   sender: {
     name: string;
     email: string;
@@ -241,6 +247,7 @@ const AgreementPage: React.FC = () => {
   // Get current tab from URL path or default to all
   const getCurrentTab = () => {
     const path = location.pathname;
+    if (path.includes('/shared-with-me')) return 'shared-with-me';
     if (path.includes('/completed')) return 'completed';
     if (path.includes('/draft')) return 'draft';
     if (path.includes('/in-progress')) return 'in-progress';
@@ -270,6 +277,8 @@ const AgreementPage: React.FC = () => {
           createdBy: envelope.sender?.name || 'Unknown',
           recipientCount: envelope.recipients?.length || 0,
           isPowerForm: envelope.isPowerForm,
+          sender: envelope.sender,
+          direction:envelope.direction,
           completedCount: envelope.recipients?.filter(recipient =>
             recipient.status === 'completed' || recipient.status === 'signed'
           ).length || 0,
@@ -410,8 +419,10 @@ const AgreementPage: React.FC = () => {
       filtered = filtered.filter(agreement => agreement.status === 'in-progress');
     } else if (currentTab === 'deleted') {
       filtered = filtered.filter(agreement => agreement.status === 'deleted');
+    } else if (currentTab === 'shared-with-me') {
+      filtered = filtered.filter(agreement => agreement.direction != 'Sent');
     }
-
+    
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(agreement =>
@@ -1218,7 +1229,8 @@ const AgreementPage: React.FC = () => {
                           >
                             {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
                           </button>
-                          {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
+                          {!agreement.isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
+                          {!agreement.isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">By: {agreement?.sender?.name || '-'}</div>)}
                         </div>
                       </div>
                     </td>
@@ -1233,6 +1245,7 @@ const AgreementPage: React.FC = () => {
                           <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
                             {`Waiting for ${agreement.waitingFor || 'recipient'}`}
                           </div>
+                          {!agreement.isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">{agreement?.direction =="sent_and_received" && 'Sent and Received' || agreement?.direction}</div>)}
                         </div>
                       ) : (
                         <>
@@ -1269,7 +1282,7 @@ const AgreementPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
                       <div className="flex items-center justify-end gap-2 relative">
-                        {agreement.status === 'in-progress' && (
+                        {agreement.status === 'in-progress' && agreement.direction!='Received' && (
                           <button
                             onClick={() => handleRowResend(agreement)}
                             disabled={rowResendLoadingId === agreement.id}
@@ -1282,7 +1295,7 @@ const AgreementPage: React.FC = () => {
                             {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                           </button>
                         )}
-                        {agreement.status === "draft" && (
+                        {agreement.status === "draft" && agreement.direction!='Received' && (
                           <button
                             onClick={() =>
                               agreement?.isPowerForm
@@ -1295,7 +1308,7 @@ const AgreementPage: React.FC = () => {
                           </button>
                         )}
 
-                        {agreement.status === 'completed' && (
+                        {agreement.status === 'completed' && agreement.direction!='Received' && (
                           <button
                             onClick={() => handleManageAction('download', agreement.id)}
                             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
@@ -1304,7 +1317,7 @@ const AgreementPage: React.FC = () => {
                             Download
                           </button>
                         )}
-                        {agreement.status === 'deleted' && (
+                        {agreement.status === 'deleted' && agreement.direction!='Received' && (
                           <>
                             <button
                               onClick={() => handleRestore(agreement.id)}
@@ -1322,7 +1335,7 @@ const AgreementPage: React.FC = () => {
                           </>
                         )}
 
-                        {agreement.status !== 'deleted' && (
+                        {agreement.status !== 'deleted' && agreement.direction!='Received' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1345,6 +1358,14 @@ const AgreementPage: React.FC = () => {
                             title="More options"
                           >
                             <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
+                          </button>
+                        )}
+                        {agreement.direction=='Received' && (
+                          <button
+                            onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
+                            className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                          >
+                            View
                           </button>
                         )}
                       </div>
@@ -1414,7 +1435,7 @@ const AgreementPage: React.FC = () => {
                     const pageNum = page as number;
                     return (
                       <button
-                        key={pageNum}
+                        key={pageNum} 
                         onClick={() => handlePageChange(pageNum)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
                           ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'

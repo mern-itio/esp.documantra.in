@@ -685,6 +685,7 @@ const authRoutes = [
   { path: '/e-sign/aggrement/draft', element: <AgreementPage /> },
   { path: '/e-sign/aggrement/in-progress', element: <AgreementPage /> },
   { path: '/e-sign/aggrement/deleted', element: <AgreementPage /> },
+  { path: '/e-sign/aggrement/shared-with-me', element: <AgreementPage /> },
   { path: '/e-sign/powerform', element: <AgreementPage /> },
   { path: '/e-sign/powerform/all', element: <AgreementPage /> },
   { path: '/e-sign/powerform/completed', element: <AgreementPage /> },
