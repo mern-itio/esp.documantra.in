@@ -8,8 +8,10 @@ import Loader from "./components/common/loader";
 import { AppProvider } from "./context/AppContext";
 import { APIProvider } from '../src/context/ApiContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
+import { SupportChatProvider } from './context/SupportChatContext';
 import { Toaster } from "react-hot-toast"; 
 import SubscriptionPlansModal from './components/common/SubscriptionPlansModal';
+import CustomerChatWidget from './components/SupportChat/CustomerChatWidget';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -24,17 +26,20 @@ const App: React.FC = () => {
   return (
     <APIProvider>
       <AuthProvider>
-        <SubscriptionProvider>
-          <AppProvider>
-            <SidebarProvider>
-              <ThemeConfig>
-                <RouterProvider router={router} />
-                <Toaster />
-                <GlobalPlansModalPortal />
-              </ThemeConfig>
-            </SidebarProvider>
-          </AppProvider>
-        </SubscriptionProvider>
+        <SupportChatProvider>
+          <SubscriptionProvider>
+            <AppProvider>
+              <SidebarProvider>
+                <ThemeConfig>
+                  <RouterProvider router={router} />
+                  <Toaster />
+                  <GlobalPlansModalPortal />
+                  <CustomerChatWidget />
+                </ThemeConfig>
+              </SidebarProvider>
+            </AppProvider>
+          </SubscriptionProvider>
+        </SupportChatProvider>
       </AuthProvider>
     </APIProvider>
   );

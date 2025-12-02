@@ -108,3 +108,17 @@ services:
     command: npm run dev
     env_file:
       - ./services/admin-service/.env
+
+  support-service:
+    build:
+      context: .
+      dockerfile: services/support-service/Dockerfile
+    ports:
+      - "2107:2107"
+    volumes:
+      - ./services/support-service:/app/services/support-service:cached
+      - /app/services/support-service/node_modules
+      - ./services/support-service/uploads:/app/services/support-service/uploads
+    command: npm run dev
+    env_file:
+      - ./services/support-service/.env
