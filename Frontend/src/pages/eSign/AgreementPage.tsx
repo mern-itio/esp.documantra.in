@@ -303,6 +303,7 @@ const AgreementPage: React.FC = () => {
             {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
           </button>
           {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
+          {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">By: {agreement?.sender?.name || '-'}</div>)}
         </div>
       </div>
     ),
@@ -318,6 +319,11 @@ const AgreementPage: React.FC = () => {
             <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
               {`Waiting for ${agreement.waitingFor || 'recipient'}`}
             </div>
+            {!agreement.isPowerForm && agreement.direction && (
+              <div className="text-xs text-gray-500 mt-0.5">
+                {agreement.direction === "sent_and_received" ? 'Sent and Received' : agreement.direction}
+              </div>
+            )}
           </div>
           {/* Hover icon - Clock with animation */}
           <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/status:opacity-100 transition-opacity duration-200 pointer-events-none">
@@ -1413,49 +1419,6 @@ const AgreementPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                currentAgreements.map((agreement) => (
-                  <tr key={agreement.id} className="group hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#3E2B66]">
-                    {!isPowerForm && (
-                      <td className="px-6 py-4">
-                        <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-
-                        <div>
-                          <button
-                            onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
-                            className="text-left text-sm font-semibold text-[#3E2B66] hover:text-[#260559] hover:underline transition-colors duration-200"
-                            title="View envelope details"
-                          >
-                            {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
-                          </button>
-                          {!agreement.isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
-                          {!agreement.isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">By: {agreement?.sender?.name || '-'}</div>)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {agreement.status === 'in-progress' ? (
-                        <div >
-                          <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#3E2B66]/20 to-[#3E2B66]/40 rounded-full progress-bar-animate"></div>
-                            <span className="absolute  left-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
-                            <span className="absolute  right-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
-                          </div>
-                          <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
-                            {`Waiting for ${agreement.waitingFor || 'recipient'}`}
-                          </div>
-                          {!agreement.isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">{agreement?.direction =="sent_and_received" && 'Sent and Received' || agreement?.direction}</div>)}
-                        </div>
-                      ) : (
-                        <>
-                          {agreement.status === 'completed' && (
-                            <div className="flex items-center gap-2 text-green-600 group/status">
-                              <CheckCircle className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform duration-200" />
-                              <span className="text-sm font-medium">Completed</span>
-                            </div>
                 currentAgreements.map((agreement) => {
                   const envelopeData = getEnvelopeData(agreement.id);
                   return (
@@ -1472,32 +1435,33 @@ const AgreementPage: React.FC = () => {
                       ))}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
                         <div className="flex items-center justify-end gap-2 relative">
-                          {agreement.status === 'in-progress' && (
+                          {agreement.status === 'in-progress' && agreement.direction !== 'Received' && (
                             <button
                               onClick={() => handleRowResend(agreement)}
                               disabled={rowResendLoadingId === agreement.id}
-                              className={`px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${rowResendLoadingId === agreement.id
-                                  ? 'opacity-60 cursor-not-allowed'
+                              className={`px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                rowResendLoadingId === agreement.id 
+                                  ? 'opacity-60 cursor-not-allowed' 
                                   : 'hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] hover:shadow-md active:scale-95'
-                                } inline-flex items-center gap-2`}
+                              } inline-flex items-center gap-2`}
                             >
                               {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                             </button>
                           )}
-                          {agreement.status === "draft" && (
+                          {agreement.status === "draft" && agreement.direction !== 'Received' && (
                             <button
                               onClick={() =>
                                 agreement?.isPowerForm
                                   ? handleView(agreement.id)
                                   : handleContinue(agreement.id)
                               }
-                              className="px-4 py-2 border border-gray-300 text-black rounded-lg text-sm font-medium hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                              className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                             >
                               {agreement.isPowerForm ? "View" : "Continue"}
                             </button>
                           )}
 
-                          {agreement.status === 'completed' && (
+                          {agreement.status === 'completed' && agreement.direction !== 'Received' && (
                             <button
                               onClick={() => handleManageAction('download', agreement.id)}
                               className="download-btn-attractive px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2 relative overflow-hidden"
@@ -1507,7 +1471,7 @@ const AgreementPage: React.FC = () => {
                               <span className="relative z-10">Download</span>
                             </button>
                           )}
-                          {agreement.status === 'deleted' && (
+                          {agreement.status === 'deleted' && agreement.direction !== 'Received' && (
                             <>
                               <button
                                 onClick={() => handleRestore(agreement.id)}
@@ -1519,64 +1483,13 @@ const AgreementPage: React.FC = () => {
                                 onClick={() => handlePermanentDelete(agreement.id)}
                                 className="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4" />zz
                                 Delete Permanently
                               </button>
                             </>
                           )}
-                        </>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(agreement.lastChange)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
-                      <div className="flex items-center justify-end gap-2 relative">
-                        {agreement.status === 'in-progress' && agreement.direction!='Received' && (
-                          <button
-                            onClick={() => handleRowResend(agreement)}
-                            disabled={rowResendLoadingId === agreement.id}
-                            className={`px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${
-                              rowResendLoadingId === agreement.id 
-                                ? 'opacity-60 cursor-not-allowed' 
-                                : 'hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] hover:shadow-md active:scale-95'
-                            } inline-flex items-center gap-2`}
-                          >
-                            {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
-                          </button>
-                        )}
-                        {agreement.status === "draft" && agreement.direction!='Received' && (
-                          <button
-                            onClick={() =>
-                              agreement?.isPowerForm
-                                ? handleView(agreement.id)
-                                : handleContinue(agreement.id)
-                            }
-                            className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-                          >
-                            {agreement.isPowerForm ? "View" : "Continue"}
-                          </button>
-                        )}
 
-                        {agreement.status === 'completed' && agreement.direction!='Received' && (
-                          <button
-                            onClick={() => handleManageAction('download', agreement.id)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download
-                          </button>
-                        )}
-                        {agreement.status === 'deleted' && agreement.direction!='Received' && (
-                          <>
-                            <button
-                              onClick={() => handleRestore(agreement.id)}
-                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-                            >
-                              Restore
-                            </button>
-
-                          {agreement.status !== 'deleted' && (
+                          {agreement.status !== 'deleted' && agreement.direction !== 'Received' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1600,46 +1513,14 @@ const AgreementPage: React.FC = () => {
                             >
                               <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
                             </button>
-                          </>
-                        )}
-
-                        {agreement.status !== 'deleted' && agreement.direction!='Received' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const target = e.currentTarget as HTMLElement;
-                              const rect = target.getBoundingClientRect();
-                              const menuWidth = 224;
-                              const menuHeight = 180; // approximate menu height (adjust as needed)
-                              const spaceBelow = window.innerHeight - rect.bottom;
-                              const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
-
-                              const left = Math.max(8, rect.right - menuWidth + window.scrollX);
-                              const top = openUpward
-                                ? rect.top + window.scrollY - menuHeight - 8 // open upward
-                                : rect.bottom + window.scrollY + 8; // open downward
-
-                              setMenuPosition({ top, left });
-                              setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
-                            }}
-                            className="p-2 text-gray-600 hover:text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-all duration-200 group/menu"
-                            title="More options"
-                          >
-                            <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
-                          </button>
-                        )}
-                        {agreement.direction=='Received' && (
-                          <button
-                            onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
-                            className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-                          >
-                            View
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          )}
+                          {agreement.direction === 'Received' && (
+                            <button
+                              onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
+                              className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                            >
+                              View
+                            </button>
                           )}
                         </div>
                       </td>
