@@ -2,6 +2,105 @@
 @import 'react-pdf/dist/Page/TextLayer.css';
 @import 'react-pdf/dist/Page/AnnotationLayer.css';
 
+/* AI Generate Button Animations */
+@keyframes splashWave {
+  0% {
+    transform: translateX(-100%) scaleX(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%) scaleX(1);
+    opacity: 0;
+  }
+}
+
+@keyframes boom {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes colorSplash {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.ai-generate-button {
+  cursor: pointer;
+  position: relative;
+  padding: 10px 24px;
+  font-size: 18px;
+  color: rgb(193, 163, 98);
+  border: 2px solid rgb(193, 163, 98);
+  border-radius: 34px;
+  background-color: transparent;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  overflow: hidden;
+}
+
+.ai-generate-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  scale: 0;
+  z-index: -1;
+  background-color: rgb(250, 218, 148);
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+  transform-origin: center;
+}
+
+.ai-generate-button:hover::before {
+  scale: 1;
+}
+
+.ai-generate-button:hover {
+  color: #212121;
+  scale: 1.1;
+  box-shadow: 0 0px 20px rgba(193, 163, 98, 0.4);
+}
+
+.ai-generate-button:active {
+  scale: 1;
+}
+.premium-ai-button {
+  background: linear-gradient(180deg, #faf5a0 0%, #faf5a0 50%, #B8860B 100%);
+  border: 1px solid rgba(184, 134, 11, 0.4);
+  box-shadow: 0 2px 8px rgba(184, 134, 11, 0.25), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.3),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.premium-ai-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.35),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.premium-ai-button:active {
+  transform: translateY(0);
+}
 /* CKEditor Styles */
 .ck-editor__editable {
   min-height: 120px;
@@ -1339,7 +1438,154 @@ canvas {
   display: none !important;
 }
 
-/* Attractive Download Button Animation */
+/* Download Button with Moving Border Line */
+.download-btn-moving-border {
+  position: relative;
+  background-color: white;
+  border: 2px solid #3E2B66;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  isolation: isolate;
+  z-index: 0;
+  overflow: visible;
+}
+
+/* Download Button with Sparkle Effect */
+.download-btn-sparkle {
+  position: relative;
+  padding: 8px 16px;
+  background: rgb(255, 255, 255);
+  border: 2px solid #3E2B66;
+  border-radius: 8px;
+  box-shadow: 0 0 0 rgba(62, 43, 102, 0.3);
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.download-btn-sparkle:hover {
+  background: transparent;
+  box-shadow: 0 0 25px rgba(62, 43, 102, 0.5);
+}
+
+.download-btn-sparkle:hover .relative.z-10,
+.download-btn-sparkle:hover span.relative.z-10 {
+  color: #3E2B66 !important;
+}
+
+.download-btn-sparkle:active {
+  transform: scale(0.95);
+}
+
+/* Sparkle Star Styles */
+.sparkle-star-1,
+.sparkle-star-2,
+.sparkle-star-3,
+.sparkle-star-4,
+.sparkle-star-5,
+.sparkle-star-6 {
+  position: absolute;
+  width: 25px;
+  height: auto;
+  filter: drop-shadow(0 0 0 #f2efff);
+  z-index: -5;
+  pointer-events: none;
+}
+
+.sparkle-star-1 {
+  top: 20%;
+  left: 20%;
+  transition: all 1s cubic-bezier(0.05, 0.83, 0.43, 0.96);
+}
+
+.sparkle-star-2 {
+  top: 45%;
+  left: 45%;
+  width: 15px;
+  transition: all 1s cubic-bezier(0, 0.4, 0, 1.01);
+}
+
+.sparkle-star-3 {
+  top: 40%;
+  left: 40%;
+  width: 5px;
+  transition: all 1s cubic-bezier(0, 0.4, 0, 1.01);
+}
+
+.sparkle-star-4 {
+  top: 20%;
+  left: 40%;
+  width: 8px;
+  transition: all 0.8s cubic-bezier(0, 0.4, 0, 1.01);
+}
+
+.sparkle-star-5 {
+  top: 25%;
+  left: 45%;
+  width: 15px;
+  transition: all 0.6s cubic-bezier(0, 0.4, 0, 1.01);
+}
+
+.sparkle-star-6 {
+  top: 5%;
+  left: 50%;
+  width: 5px;
+  transition: all 0.8s ease;
+}
+
+/* Hover States for Sparkles */
+.download-btn-sparkle:hover .sparkle-star-1 {
+  top: -80%;
+  left: -30%;
+  width: 25px;
+  filter: drop-shadow(0 0 10px #fffdef);
+  z-index: 2;
+}
+
+.download-btn-sparkle:hover .sparkle-star-2 {
+  top: -25%;
+  left: 10%;
+  width: 15px;
+  filter: drop-shadow(0 0 10px #fffdef);
+  z-index: 2;
+}
+
+.download-btn-sparkle:hover .sparkle-star-3 {
+  top: 55%;
+  left: 25%;
+  width: 5px;
+  filter: drop-shadow(0 0 10px #fffdef);
+  z-index: 2;
+}
+
+.download-btn-sparkle:hover .sparkle-star-4 {
+  top: 30%;
+  left: 80%;
+  width: 8px;
+  filter: drop-shadow(0 0 10px #fffdef);
+  z-index: 2;
+}
+
+.download-btn-sparkle:hover .sparkle-star-5 {
+  top: 25%;
+  left: 115%;
+  width: 15px;
+  filter: drop-shadow(0 0 10px #fffdef);
+  z-index: 2;
+}
+
+.download-btn-sparkle:hover .sparkle-star-6 {
+  top: 5%;
+  left: 60%;
+  width: 5px;
+  filter: drop-shadow(0 0 10px #fffdef);
+  z-index: 2;
+}
+
+.sparkle-fill {
+  fill: #230d34;
+}
+
+/* Attractive Download Button Animation (Legacy - keeping for backward compatibility) */
 .download-btn-attractive {
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1449,4 +1695,341 @@ canvas {
   50% {
     transform: scale(1.15) translateY(-3px);
   }
+}
+
+/* Continue Button with Folder and Pencil Animation */
+.continue-application {
+  --color: #fff;
+  --background: #3E2B66;
+  --background-hover: #4d3577;
+  --background-left: #3E2B66;
+  --folder: #F3E9CB;
+  --folder-inner: #BEB393;
+  --paper: #FFFFFF;
+  --paper-lines: #BBC1E1;
+  --paper-behind: #E1E6F9;
+  --pencil-cap: #fff;
+  --pencil-top: #6B46C1;
+  --pencil-middle: #fff;
+  --pencil-bottom: #9333EA;
+  --shadow: rgba(13, 15, 25, .2);
+
+  border: none;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 8px 16px 8px 45px;
+  transition: background 0.3s;
+  color: var(--color);
+  background: var(--bg, var(--background));
+}
+
+.continue-application > div {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 37px;
+  position: absolute;
+  overflow: hidden;
+  border-radius: 5px 0 0 5px;
+  background: var(--background-left);
+}
+
+.continue-application > div .folder {
+  width: 16px;
+  height: 18px;
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.continue-application > div .folder .top {
+  left: 0;
+  top: 0;
+  z-index: 2;
+  position: absolute;
+  transform: translateX(var(--fx, 0));
+  transition: transform 0.4s ease var(--fd, 0.3s);
+}
+
+.continue-application > div .folder .top svg {
+  width: 16px;
+  height: 18px;
+  display: block;
+  fill: var(--folder);
+  transform-origin: 0 50%;
+  transition: transform 0.3s ease var(--fds, 0.45s);
+  transform: perspective(120px) rotateY(var(--fr, 0deg));
+}
+
+.continue-application > div .folder:before,
+.continue-application > div .folder:after,
+.continue-application > div .folder .paper {
+  content: "";
+  position: absolute;
+  left: var(--l, 0);
+  top: var(--t, 0);
+  width: var(--w, 100%);
+  height: var(--h, 100%);
+  border-radius: 1px;
+  background: var(--b, var(--folder-inner));
+}
+
+.continue-application > div .folder:before {
+  box-shadow: 0 1.5px 3px var(--shadow), 0 2.5px 5px var(--shadow), 0 3.5px 7px var(--shadow);
+  transform: translateX(var(--fx, 0));
+  transition: transform 0.4s ease var(--fd, 0.3s);
+}
+
+.continue-application > div .folder:after,
+.continue-application > div .folder .paper {
+  --l: 1px;
+  --t: 1px;
+  --w: 14px;
+  --h: 16px;
+  --b: var(--paper-behind);
+}
+
+.continue-application > div .folder:after {
+  transform: translate(var(--pbx, 0), var(--pby, 0));
+  transition: transform 0.4s ease var(--pbd, 0s);
+}
+
+.continue-application > div .folder .paper {
+  z-index: 1;
+  --b: var(--paper);
+}
+
+.continue-application > div .folder .paper:before,
+.continue-application > div .folder .paper:after {
+  content: "";
+  width: var(--wp, 10px);
+  height: 1px;
+  border-radius: 1px;
+  transform: scaleY(0.5);
+  left: 2px;
+  top: var(--tp, 2px);
+  position: absolute;
+  background: var(--paper-lines);
+  box-shadow: 0 8px 0 0 var(--paper-lines), 0 16px 0 0 var(--paper-lines);
+}
+
+.continue-application > div .folder .paper:after {
+  --tp: 4px;
+  --wp: 7px;
+}
+
+.continue-application > div .pencil {
+  height: 1px;
+  width: 2px;
+  border-radius: 1px 1px 0 0;
+  top: 50%;
+  left: 105%;
+  position: absolute;
+  z-index: 3;
+  transform-origin: 50% 12px;
+  background: var(--pencil-cap);
+  transform: translateX(var(--pex, 0)) translateY(-50%) rotate(35deg);
+  transition: transform 0.4s ease var(--pbd, 0s);
+}
+
+.continue-application > div .pencil:before,
+.continue-application > div .pencil:after {
+  content: "";
+  position: absolute;
+  display: block;
+  background: var(--b, linear-gradient(var(--pencil-top) 55%, var(--pencil-middle) 55.1%, var(--pencil-middle) 60%, var(--pencil-bottom) 60.1%));
+  width: var(--w, 3px);
+  height: var(--h, 12px);
+  border-radius: var(--br, 2px 2px 0 0);
+  top: var(--t, 1px);
+  left: var(--l, -0.5px);
+}
+
+.continue-application > div .pencil:before {
+  -webkit-clip-path: polygon(0 5%, 3px 5%, 3px 11px, 50% 12px, 0 11px);
+  clip-path: polygon(0 5%, 3px 5%, 3px 11px, 50% 12px, 0 11px);
+}
+
+.continue-application > div .pencil:after {
+  --b: none;
+  --w: 2px;
+  --h: 4px;
+  --br: 0 2px 1px 0;
+  --t: 2px;
+  --l: 2px;
+  border-top: 1px solid var(--pencil-top);
+  border-right: 1px solid var(--pencil-top);
+}
+
+.continue-application:hover {
+  --bg: var(--background-hover);
+  --fx: -28px;
+  --fr: -60deg;
+  --fd: .15s;
+  --fds: 0s;
+  --pbx: 2px;
+  --pby: -2px;
+  --pbd: .15s;
+  --pex: -16px;
+}
+
+/* Resend Button with Envelope Icon */
+.resend-envelope-button {
+  --color: #fff;
+  --color-hover: #fff;
+  --background: #3E2B66;
+  --background-hover: #4d3577;
+  --background-left: #3E2B66;
+  --icon-color: #F3E9CB;
+
+  border: 1px solid #d1d5db;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 8px 16px 8px 45px;
+  transition: all 0.3s ease;
+  color: var(--color);
+  background: var(--bg, var(--background));
+}
+
+.resend-envelope-button:hover:not(.opacity-60) {
+  --bg: var(--background-hover);
+  --color: var(--color-hover);
+  border-color: var(--background-hover);
+  box-shadow: 0 4px 12px rgba(62, 43, 102, 0.2);
+}
+
+.resend-envelope-button:active:not(.opacity-60) {
+  transform: scale(0.95);
+}
+
+.resend-envelope-button > div {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 37px;
+  position: absolute;
+  overflow: hidden;
+  border-radius: 8px 0 0 8px;
+  background: var(--background-left);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.resend-envelope-button:hover {
+  --bg: var(--background-hover);
+}
+.resend-envelope-button > div .envelope-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--icon-color);
+  position: absolute;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.resend-envelope-button > div .envelope-closed {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+.resend-envelope-button > div .envelope-open {
+  opacity: 0;
+}
+
+.resend-envelope-button:hover:not(.opacity-60) > div .envelope-closed {
+  opacity: 0;
+}
+
+.resend-envelope-button:hover:not(.opacity-60) > div .envelope-open {
+  opacity: 1;
+}
+
+/* View Button with Eye Icon */
+.view-eye-button {
+  --color: #fff;
+  --background: #3E2B66;
+  --background-hover: #4d3577;
+  --background-left: #3E2B66;
+  --icon-color: #F3E9CB;
+
+  border: none;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 8px 16px 8px 45px;
+  transition: background 0.3s;
+  color: var(--color);
+  background: var(--bg, var(--background));
+}
+
+.view-eye-button:hover {
+  --bg: var(--background-hover);
+}
+
+.view-eye-button:active {
+  transform: scale(0.95);
+}
+
+.view-eye-button > div {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 37px;
+  position: absolute;
+  overflow: hidden;
+  border-radius: 8px 0 0 8px;
+  background: var(--background-left);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-eye-button > div .eye-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--icon-color);
+  position: absolute;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.view-eye-button > div .eye-closed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.view-eye-button > div .eye-open {
+  opacity: 0;
+  transform: scale(1);
+}
+
+.view-eye-button:hover > div .eye-closed {
+  opacity: 0;
+}
+
+.view-eye-button:hover > div .eye-open {
+  opacity: 1;
+  transform: scale(1.1);
 }

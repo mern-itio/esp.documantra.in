@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X, Settings, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X, Settings, Clock, Mail, Eye, MailOpen, EyeClosed } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
@@ -109,6 +109,16 @@ const AgreementPage: React.FC = () => {
   // Column customization state
   const [envelopesData, setEnvelopesData] = useState<EnvelopeData[]>([]);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState<boolean>(false);
+  // Column resizing state
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('agreement-table-column-widths');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [resizingColumn, setResizingColumn] = useState<string | null>(null);
+  const resizeStartXRef = useRef<number>(0);
+  const resizeStartWidthRef = useRef<number>(0);
+  const resizingColumnRef = useRef<string | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   // Guided tour state
   const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
   const [tourStepIndex, setTourStepIndex] = useState<number>(0);
@@ -119,12 +129,7 @@ const AgreementPage: React.FC = () => {
       title: 'Search',
       content: 'Quickly find envelopes by name or creator.'
     },
-    {
-      id: 'filters',
-      selector: '[data-tour="filter-bar"]',
-      title: 'Filters',
-      content: 'Narrow results by date, status, sender, and more.'
-    },
+  
     {
       id: 'customize-columns',
       selector: '[data-tour="customize-columns"]',
@@ -876,6 +881,65 @@ const AgreementPage: React.FC = () => {
     setColumnConfig(getInitialColumnConfig());
   };
 
+  // Column resizing handlers
+  const handleResizeStart = (e: React.MouseEvent, columnId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingColumn(columnId);
+    resizingColumnRef.current = columnId;
+    resizeStartXRef.current = e.clientX;
+    
+    // Get current width from state or calculate from DOM
+    const currentWidth = columnWidths[columnId] || 
+      (() => {
+        const th = (e.target as HTMLElement).closest('th');
+        return th ? th.offsetWidth : 150;
+      })();
+    resizeStartWidthRef.current = currentWidth;
+  };
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizingColumnRef.current) return;
+    
+    const diff = e.clientX - resizeStartXRef.current;
+    const newWidth = Math.max(50, resizeStartWidthRef.current + diff); // Minimum width of 50px
+    
+    setColumnWidths(prev => {
+      const updated = { ...prev, [resizingColumnRef.current!]: newWidth };
+      localStorage.setItem('agreement-table-column-widths', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const handleResizeEnd = useCallback(() => {
+    setResizingColumn(null);
+    resizingColumnRef.current = null;
+    resizeStartXRef.current = 0;
+    resizeStartWidthRef.current = 0;
+  }, []);
+
+  // Effect to handle mouse move and mouse up for resizing
+  useEffect(() => {
+    if (resizingColumn) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [resizingColumn, handleResizeMove, handleResizeEnd]);
+
+  // Get column width
+  const getColumnWidth = (columnId: string): number | undefined => {
+    return columnWidths[columnId];
+  };
+
   // Get envelope data for an agreement
   const getEnvelopeData = (agreementId: string): EnvelopeData | undefined => {
     return envelopesData.find(e => e.id === agreementId);
@@ -1304,7 +1368,7 @@ const AgreementPage: React.FC = () => {
       {/* Search + filter bar to match screenshot */}
       {selectedIds.size === 0 && (
         <div className="mb-6">
-          <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between" data-tour="filter-bar">
+          <div className="flex flex-col lg:flex-row gap-3 lg:items-center" data-tour="filter-bar">
             <div className="flex-1">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -1313,7 +1377,7 @@ const AgreementPage: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] transition-all duration-200 bg-white hover:border-gray-400"
+                  className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] transition-all duration-200 bg-white hover:border-gray-400 text-sm"
                   data-tour="search-input"
                 />
 
@@ -1328,7 +1392,7 @@ const AgreementPage: React.FC = () => {
               </div>
 
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
               <button
                 ref={dateButtonRef}
                 onClick={(e) => openHeaderDropdown('date', e)}
@@ -1344,13 +1408,6 @@ const AgreementPage: React.FC = () => {
               >
                 {getStatusButtonLabel()} <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
               </button>
-              <Link to="/e-sign/create">
-                <button
-                  className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
-                >
-                  <Plus className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" /> Create Envelope
-                </button>
-              </Link>
               <div className="flex items-center gap-2">
                 <div className="relative group/tooltip">
                   <button
@@ -1369,42 +1426,93 @@ const AgreementPage: React.FC = () => {
                 </div>
 
               </div>
-
-              {/* Clear button - only show when search has value or filters are selected */}
-              {/* {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
-                <button onClick={handleClearFilters} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-sm text-sm hover:bg-gray-200">Clear</button>
-              )} */}
-
-              {/* Create PowerForm Button - Only visible on powerform routes */}
-              {isPowerForm && (
-                <button
-                  onClick={() => navigate('/e-sign/powerforms')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm" style={{ backgroundColor: '#260559' }}
-                >
-                  <Plus className="w-4 h-4" />
-                  Create PowerForm
-                </button>
+              {/* Create Button - Conditional rendering based on powerform route */}
+              {isPowerForm ? (
+                /* Dropdown Menu - Only shows on powerform routes */
+                <div className="relative group">
+                  <button
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
+                  >
+                    <Plus className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" /> Create
+                  </button>
+                  {/* Dropdown Menu - Shows on hover, vertical list layout */}
+                  <div className="absolute top-full right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="flex flex-col gap-2 min-w-[180px]">
+                      {/* Create Envelope Button */}
+                      <Link to="/e-sign/create">
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                        >
+                          <Plus className="w-4 h-4" /> Create Envelope
+                        </button>
+                      </Link>
+                      {/* Create PowerForm Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/e-sign/powerforms');
+                        }}
+                        className="w-full inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#260559] text-[#260559] rounded-lg text-sm font-medium hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Create PowerForm
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Direct Create Envelope Button - Shows on non-powerform routes */
+                <Link to="/e-sign/create">
+                  <button
+                    className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
+                  >
+                    <Plus className="w-4 h-4 transition-transform duration-200 ease-in-out group-hover:rotate-90" />  Create Envelope
+                  </button>
+                </Link>
               )}
             </div>
           </div>
         </div>
       )}
-
-
-
       {/* Agreements Table */}
       <div className="relative" data-tour="agreements-table">
         <div className="overflow-x-auto relative">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table ref={tableRef} className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                {!isPowerForm && (<th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"></th>)}
-                {getVisibleColumns().map((column) => (
-                  <th key={column.id} className={`py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}>
-                    {column.label}
+                {!isPowerForm && (
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style={{ width: '50px' }}>
                   </th>
-                ))}
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                )}
+                {getVisibleColumns().map((column) => {
+                  const columnWidth = getColumnWidth(column.id);
+                  const isResizing = resizingColumn === column.id;
+                  return (
+                    <th 
+                      key={column.id} 
+                      className={`py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider relative group ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
+                      style={{ width: columnWidth ? `${columnWidth}px` : undefined }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{column.label}</span>
+                      </div>
+                      <div
+                        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${
+                          isResizing 
+                            ? 'bg-[#3E2B66] opacity-100' 
+                            : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
+                        }`}
+                        onMouseDown={(e) => handleResizeStart(e, column.id)}
+                        style={{ 
+                          cursor: 'col-resize',
+                          width: isResizing ? '2px' : '1px'
+                        }}
+                      />
+                    </th>
+                  );
+                })}
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider" style={{ width: '200px' }}>
                   Actions
                 </th>
               </tr>
@@ -1428,23 +1536,32 @@ const AgreementPage: React.FC = () => {
                           <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
                         </td>
                       )}
-                      {getVisibleColumns().map((column) => (
-                        <td key={column.id} className={`py-4 whitespace-nowrap ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}>
-                          {column.render(agreement, envelopeData)}
-                        </td>
-                      ))}
+                      {getVisibleColumns().map((column) => {
+                        const columnWidth = getColumnWidth(column.id);
+                        return (
+                          <td 
+                            key={column.id} 
+                            className={`py-4 whitespace-nowrap ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
+                            style={{ width: columnWidth ? `${columnWidth}px` : undefined, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {column.render(agreement, envelopeData)}
+                          </td>
+                        );
+                      })}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
                         <div className="flex items-center justify-end gap-2 relative">
                           {agreement.status === 'in-progress' && agreement.direction !== 'Received' && (
                             <button
                               onClick={() => handleRowResend(agreement)}
                               disabled={rowResendLoadingId === agreement.id}
-                              className={`px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                rowResendLoadingId === agreement.id 
-                                  ? 'opacity-60 cursor-not-allowed' 
-                                  : 'hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] hover:shadow-md active:scale-95'
-                              } inline-flex items-center gap-2`}
+                              className={`resend-envelope-button ${rowResendLoadingId === agreement.id ? 'opacity-60 cursor-not-allowed' : ''}`}
                             >
+                              {!rowResendLoadingId && (
+                                <div>
+                                  <Mail className="envelope-icon envelope-closed" />
+                                  <MailOpen className="envelope-icon envelope-open" />
+                                </div>
+                              )}
                               {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
                             </button>
                           )}
@@ -1455,8 +1572,26 @@ const AgreementPage: React.FC = () => {
                                   ? handleView(agreement.id)
                                   : handleContinue(agreement.id)
                               }
-                              className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                              className={agreement.isPowerForm ? "view-eye-button" : "continue-application"}
                             >
+                              {agreement.isPowerForm ? (
+                                <div>
+                                  <EyeClosed className="eye-icon eye-closed" />
+                                  <Eye className="eye-icon eye-open" />
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="pencil"></div>
+                                  <div className="folder">
+                                    <div className="top">
+                                      <svg viewBox="0 0 24 27">
+                                        <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8.17157288 C24,8.70200585 23.7892863,9.21071368 23.4142136,9.58578644 L20.5857864,12.4142136 C20.2107137,12.7892863 20,13.2979941 20,13.8284271 L20,26 C20,26.5522847 19.5522847,27 19,27 L1,27 C0.44771525,27 6.76353751e-17,26.5522847 0,26 L0,1 C-6.76353751e-17,0.44771525 0.44771525,1.01453063e-16 1,0 Z"></path>
+                                      </svg>
+                                    </div>
+                                    <div className="paper"></div>
+                                  </div>
+                                </div>
+                              )}
                               {agreement.isPowerForm ? "View" : "Continue"}
                             </button>
                           )}
@@ -1464,11 +1599,112 @@ const AgreementPage: React.FC = () => {
                           {agreement.status === 'completed' && agreement.direction !== 'Received' && (
                             <button
                               onClick={() => handleManageAction('download', agreement.id)}
-                              className="download-btn-attractive px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2 relative overflow-hidden"
+                              className="download-btn-sparkle px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 relative overflow-visible"
                             >
-                              <span className="download-btn-shimmer"></span>
-                              <Download className="w-4 h-4 relative z-10" />
-                              <span className="relative z-10">Download</span>
+                              <Download className="w-4 h-4 relative z-10" style={{ color: '#3E2B66' }} />
+                              <span className="relative z-10" style={{ color: '#3E2B66' }}>Download</span>
+                              <div className="sparkle-star-1">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-2">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-3">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-4">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-5">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-6">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
                             </button>
                           )}
                           {agreement.status === 'deleted' && agreement.direction !== 'Received' && (
@@ -1483,7 +1719,7 @@ const AgreementPage: React.FC = () => {
                                 onClick={() => handlePermanentDelete(agreement.id)}
                                 className="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                               >
-                                <Trash2 className="w-4 h-4" />zz
+                                <Trash2 className="w-4 h-4" />
                                 Delete Permanently
                               </button>
                             </>

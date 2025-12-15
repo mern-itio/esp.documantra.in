@@ -8,7 +8,7 @@ interface Message {
   _id: string;
   ticketId: string;
   senderId: string;
-  senderType: 'customer' | 'agent' | 'system';
+  senderType: 'customer' | 'agent' | 'system' | 'ai';
   content: string;
   messageType: 'text' | 'file' | 'image' | 'system';
   attachments?: Array<{

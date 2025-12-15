@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, X, Send, Paperclip, Star, Minimize2, Maximize2, AlertCircle } from 'lucide-react';
+import { MessageSquare, X, Send, Paperclip, Star, Minimize2, Maximize2, AlertCircle, Bot } from 'lucide-react';
 import { useSupportChat } from '../../context/SupportChatContext';
 import { supportCustomerApi } from '../../services/supportService';
 import toast from 'react-hot-toast';
@@ -417,12 +417,23 @@ const CustomerChatWidget: React.FC = () => {
                           className={`max-w-[80%] rounded-lg p-3 ${
                             msg.senderType === 'customer'
                               ? 'bg-[#260559] text-white'
+                              : msg.senderType === 'ai'
+                              ? 'bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200'
                               : 'bg-white border'
                           }`}
                         >
+                          {/* AI Badge */}
+                          {msg.senderType === 'ai' && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <Bot className="w-4 h-4 text-purple-600" />
+                              <span className="text-xs font-semibold text-purple-600">AI Assistant</span>
+                            </div>
+                          )}
                           {/* Only show text content if it's not just a file upload notification */}
                           {msg.content && !(msg.messageType === 'file' && msg.content.startsWith('Uploaded:')) && (
-                            <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                            <p className={`text-sm whitespace-pre-wrap break-words ${
+                              msg.senderType === 'ai' ? 'text-gray-800' : ''
+                            }`}>{msg.content}</p>
                           )}
                           {msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
                             <div className="mt-2 space-y-2">

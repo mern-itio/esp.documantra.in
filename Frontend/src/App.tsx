@@ -12,6 +12,7 @@ import { SupportChatProvider } from './context/SupportChatContext';
 import { Toaster } from "react-hot-toast"; 
 import SubscriptionPlansModal from './components/common/SubscriptionPlansModal';
 import CustomerChatWidget from './components/SupportChat/CustomerChatWidget';
+import AIAssistantButton from './components/AIAssistant/AIAssistantButton';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,7 @@ const App: React.FC = () => {
                   <Toaster />
                   <GlobalPlansModalPortal />
                   <CustomerChatWidget />
+                  <AIAssistantButton />
                 </ThemeConfig>
               </SidebarProvider>
             </AppProvider>

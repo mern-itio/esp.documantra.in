@@ -8,15 +8,15 @@ class WorkflowController {
     try {
       const { documentId } = req.params;
       const userId = req.user.data.id;
-      console.log("userId",userId);
+      // console.log("userId",userId);
 
       // Check if user has access to the document
       const document = await Document.findOne({
         _id: documentId,
         isDeleted: { $ne: true } // Exclude deleted documents
       });
-      console.log("documents -->", document);
-      console.log("documents -->", documentId);
+      // console.log("documents -->", document);
+      // console.log("documents -->", documentId);
       if (!document) {
         return res.status(404).json({ success: false, message: 'Document not found or access denied' });
       }
@@ -24,8 +24,8 @@ class WorkflowController {
       const isOwner = document.ownerId === userId || document.uploadedBy === userId;
       const userEmail = req.user.data.email; // Get email from user object
       const isShared = document.sharedWith.some(share => share.email === userEmail);
-      console.log("isOwner", isOwner);
-      console.log("isShared", isShared);
+      // console.log("isOwner", isOwner);
+      // console.log("isShared", isShared);
       
       if (!isOwner && !isShared) {
         return res.status(403).json({ success: false, message: 'Access denied' });
@@ -83,7 +83,7 @@ class WorkflowController {
 
       // Add workflow assignees as collaborators
       const assigneeEmails = steps.map(step => step.assignee);
-      console.log(`🔍 Workflow creation: Adding collaborators for assignees:`, assigneeEmails);
+      // console.log(`🔍 Workflow creation: Adding collaborators for assignees:`, assigneeEmails);
       await WorkflowController.addWorkflowCollaborators(documentId, assigneeEmails, req.user.data.name || req.user.data.email, req.user.data.email);
 
       // Send email notifications to assignees
@@ -100,7 +100,7 @@ class WorkflowController {
             req.user.data.email // Pass current user's email as sender
           );
         } catch (error) {
-          console.log(`⚠️ Email notification failed for ${step.assignee}:`, error.message);
+          // console.log(`⚠️ Email notification failed for ${step.assignee}:`, error.message);
           // Continue with other steps even if email fails
         }
       }
@@ -705,7 +705,7 @@ class WorkflowController {
         const formattedDate = `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
         const formattedComment = ` ${userName} [${time}, ${formattedDate}] : ${comment.trim()}`;
 
-        console.log(formattedComment);
+        // console.log(formattedComment);
 
 
       // Add comment to step
@@ -736,23 +736,23 @@ class WorkflowController {
     async updateStepActionStatus(req, res) {
     try {
       const { workflowId, stepId } = req.params;
-      console.log('🔹 Backend: updateStepActionStatus called');
-      console.log('Workflow ID:', workflowId);
-      console.log('Step ID:', stepId);
+      // console.log('🔹 Backend: updateStepActionStatus called');
+      // console.log('Workflow ID:', workflowId);
+      // console.log('Step ID:', stepId);
 
       const userEmail = req.user.data.email;
       const userName = req.user.data.name || userEmail;
-      console.log('User email:', userEmail, 'User name:', userName);
+      // console.log('User email:', userEmail, 'User name:', userName);
 
       const { actionStatus, comments, requestRedo } = req.body;
-      console.log('Action status from request:', actionStatus);
-      console.log('Comments from request:', comments);
-      console.log('Request redo:', requestRedo);
+      // console.log('Action status from request:', actionStatus);
+      // console.log('Comments from request:', comments);
+      // console.log('Request redo:', requestRedo);
 
       // Validate action status
       const validStatuses = ['approved', 'rejected', 'dropped'];
       if (!actionStatus || !validStatuses.includes(actionStatus)) {
-        console.log('❌ Invalid action status:', actionStatus);
+        // console.log('❌ Invalid action status:', actionStatus);
         return res.status(400).json({ 
           success: false, 
           message: 'Invalid action status. Must be approved, rejected, or dropped' 
@@ -762,30 +762,30 @@ class WorkflowController {
       // Find workflow
       const workflow = await Workflow.findById(workflowId);
       if (!workflow) {
-        console.log('❌ Workflow not found for ID:', workflowId);
+        // console.log('❌ Workflow not found for ID:', workflowId);
         return res.status(404).json({ 
           success: false, 
           message: 'Workflow not found' 
         });
       }
-      console.log('✅ Workflow found:', workflow.name);
+      // console.log('✅ Workflow found:', workflow.name);
 
       // Find the specific step
       const step = workflow.steps.id(stepId);
       if (!step) {
-        console.log('❌ Step not found in workflow for stepId:', stepId);
+        // console.log('❌ Step not found in workflow for stepId:', stepId);
         return res.status(404).json({ 
           success: false, 
           message: 'Workflow step not found' 
         });
       }
-      console.log('✅ Step found:', step.name, 'Current status:', step.status);
+      // console.log('✅ Step found:', step.name, 'Current status:', step.status);
 
       const now = new Date();
 
       // Timer handling
       if (step.timeTracking && step.timeTracking.isTimerRunning) {
-        console.log('⏱️ Timer running, stopping timer for step');
+        // console.log('⏱️ Timer running, stopping timer for step');
         const sessionDuration = Math.floor(
           (now - new Date(step.timeTracking.lastStartTime)) / 1000
         );
@@ -804,10 +804,10 @@ class WorkflowController {
         _id: workflow.documentId,
         isDeleted: { $ne: true }
       });
-      console.log('📄 Associated document:', document?.name);
+      // console.log('📄 Associated document:', document?.name);
 
       // Handle action
-      console.log(`🔄 Processing action: ${actionStatus} for step: ${step.name}`);
+      // console.log(`🔄 Processing action: ${actionStatus} for step: ${step.name}`);
       
       if (actionStatus === 'approved') {
         step.actionStatus = 'approved';
@@ -820,7 +820,7 @@ class WorkflowController {
         
         const approvalComment = comments?.trim() || 'Step approved and completed by workflow creator';
         step.comments.push(`[APPROVED] ${approvalComment}`);
-        console.log('✅ Step approved with comment:', approvalComment);
+        // console.log('✅ Step approved with comment:', approvalComment);
 
         // Send approval email
         if (document && step.assignee) {
@@ -835,7 +835,7 @@ class WorkflowController {
               step.assignee,
               false  // isRedo = false
             );
-            console.log('✅ Approval email sent');
+            // console.log('✅ Approval email sent');
           } catch (emailError) {
             console.error('⚠️ Failed to send approval email:', emailError);
             // Continue despite email failure
@@ -858,7 +858,7 @@ class WorkflowController {
 
         if (requestRedo) {
           // Admin wants assignee to redo the task
-          console.log('🔄 Manager requested redo for step:', step.name);
+          // console.log('🔄 Manager requested redo for step:', step.name);
           step.status = 'pending';
           step.needsRedo = true;
           step.progressPercentage = 0;
@@ -882,7 +882,7 @@ class WorkflowController {
                 step.assignee,
                 true  // isRedo = true
               );
-              console.log('✅ Redo request email sent');
+              // console.log('✅ Redo request email sent');
             } catch (emailError) {
               console.error('⚠️ Failed to send redo request email:', emailError);
               // Continue despite email failure
@@ -890,7 +890,7 @@ class WorkflowController {
           }
         } else {
           // Standard rejection - task is done, no redo
-          console.log('❌ Manager rejected step without redo request:', step.name);
+          // console.log('❌ Manager rejected step without redo request:', step.name);
           step.status = 'rejected';
           step.completedAt = now;
           step.needsRedo = false;
@@ -913,7 +913,7 @@ class WorkflowController {
                 step.assignee,
                 false  // isRedo = false
               );
-              console.log('✅ Rejection email sent');
+              // console.log('✅ Rejection email sent');
             } catch (emailError) {
               console.error('⚠️ Failed to send rejection email:', emailError);
             }
@@ -922,7 +922,7 @@ class WorkflowController {
         
         if (!step.metadata) step.metadata = {};
         step.metadata.completedBy = userEmail;
-        console.log(`✅ Step rejected with redo: ${requestRedo}`);
+        // console.log(`✅ Step rejected with redo: ${requestRedo}`);
       } 
       else if (actionStatus === 'dropped') {
         step.actionStatus = 'dropped';
@@ -935,7 +935,7 @@ class WorkflowController {
         const dropComment = comments?.trim() || 'No reason provided';
         step.comments.push(`[DROPPED] ${dropComment}`);
         step.metadata.rejectionReason = dropComment;
-        console.log('🗑️ Step dropped with comment:', dropComment);
+        // console.log('🗑️ Step dropped with comment:', dropComment);
 
         // Send drop email
         if (document && step.assignee) {
@@ -950,7 +950,7 @@ class WorkflowController {
               step.assignee,
               false  // isRedo = false
             );
-            console.log('✅ Drop email sent');
+            // console.log('✅ Drop email sent');
           } catch (emailError) {
             console.error('⚠️ Failed to send drop email:', emailError);
           }
@@ -958,7 +958,7 @@ class WorkflowController {
       }
 
       await workflow.save();
-      console.log('💾 Workflow saved successfully');
+      // console.log('💾 Workflow saved successfully');
 
       res.json({ 
         success: true, 
@@ -987,8 +987,8 @@ class WorkflowController {
   // Helper method to add workflow collaborators
   static async addWorkflowCollaborators(documentId, assigneeEmails, inviterName, senderEmail) {
     try {
-      console.log(`🔍 Adding workflow collaborators for document ${documentId}`);
-      console.log(`🔍 Assignee emails:`, assigneeEmails);
+      // console.log(`🔍 Adding workflow collaborators for document ${documentId}`);
+      // console.log(`🔍 Assignee emails:`, assigneeEmails);
       
       const document = await Document.findOne({
         _id: documentId,
@@ -999,7 +999,7 @@ class WorkflowController {
         return;
       }
 
-      console.log(`🔍 Current document sharedWith:`, document.sharedWith);
+      // console.log(`🔍 Current document sharedWith:`, document.sharedWith);
       
       // Check if document.sharedWith exists, if not initialize it
       if (!document.sharedWith) {
@@ -1010,13 +1010,13 @@ class WorkflowController {
 
       // Check for existing collaborators by both userId and email
       const existingCollaborators = document.sharedWith.map(share => share.userId || share.email).filter(Boolean);
-      console.log(`🔍 Existing collaborators:`, existingCollaborators);
+      // console.log(`🔍 Existing collaborators:`, existingCollaborators);
       
       const newCollaborators = assigneeEmails.filter(email => !existingCollaborators.includes(email));
-      console.log(`🔍 New collaborators to add:`, newCollaborators);
+      // console.log(`🔍 New collaborators to add:`, newCollaborators);
 
       if (newCollaborators.length === 0) {
-        console.log(`ℹ️ All assignees are already collaborators for this document`);
+        // console.log(`ℹ️ All assignees are already collaborators for this document`);
         return;
       }
 
@@ -1030,7 +1030,7 @@ class WorkflowController {
           createdAt: new Date()
         });
 
-        console.log(`✅ Added collaborator: ${email}`);
+        // console.log(`✅ Added collaborator: ${email}`);
 
         // Send collaborator invitation email
         try {
@@ -1043,13 +1043,13 @@ class WorkflowController {
             senderEmail // Pass current user's email as sender
           );
         } catch (error) {
-          console.log(`⚠️ Collaborator invitation email failed for ${email}:`, error.message);
+          // console.log(`⚠️ Collaborator invitation email failed for ${email}:`, error.message);
           // Continue even if email fails
         }
       }
 
       await document.save();
-      console.log(`✅ Added ${newCollaborators.length} new collaborators to document ${documentId}`);
+      // console.log(`✅ Added ${newCollaborators.length} new collaborators to document ${documentId}`);
     } catch (error) {
       console.error('Error adding workflow collaborators:', error);
     }

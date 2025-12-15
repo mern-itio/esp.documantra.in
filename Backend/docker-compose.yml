@@ -122,3 +122,19 @@ services:
     command: npm run dev
     env_file:
       - ./services/support-service/.env
+
+  ai-assistant-service:
+    build:
+      context: .
+      dockerfile: services/ai-assistant-service/Dockerfile
+    ports:
+      - "2108:2108"
+    volumes:
+      - ./services/ai-assistant-service:/app/services/ai-assistant-service:cached
+      - /app/services/ai-assistant-service/node_modules
+    command: npm run dev
+    env_file:
+      - ./services/ai-assistant-service/.env
+    environment:
+      - DOCUMENT_SERVICE_URL=http://document-service:2102
+      - ESIGN_SERVICE_URL=http://e-sign-service:2103

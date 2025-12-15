@@ -59,11 +59,11 @@ exports.login = async (req, res) => {
       });
     }
     
-    console.log('Agent token being signed with secret type:', 
-      process.env.AGENT_ACCESS_TOKEN_SECRET ? 'AGENT_ACCESS_TOKEN_SECRET' :
-      process.env.ADMIN_ACCESS_TOKEN_SECRET ? 'ADMIN_ACCESS_TOKEN_SECRET' :
-      'ACCESS_TOKEN_SECRET'
-    );
+    // console.log('Agent token being signed with secret type:', 
+    //   process.env.AGENT_ACCESS_TOKEN_SECRET ? 'AGENT_ACCESS_TOKEN_SECRET' :
+    //   process.env.ADMIN_ACCESS_TOKEN_SECRET ? 'ADMIN_ACCESS_TOKEN_SECRET' :
+    //   'ACCESS_TOKEN_SECRET'
+    // );
     
     const token = jwt.sign(
       {

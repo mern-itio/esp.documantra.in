@@ -425,7 +425,6 @@ exports.getAllTickets = async (req, res) => {
       try {
         // Convert string agentId to ObjectId for proper MongoDB matching
         query.assignedAgentId = new mongoose.Types.ObjectId(agentId);
-        console.log(`Filtering tickets by agentId: ${agentId} (converted to ObjectId: ${query.assignedAgentId})`);
       } catch (err) {
         console.error('Invalid agentId format:', err);
         return res.status(400).json({
@@ -439,7 +438,7 @@ exports.getAllTickets = async (req, res) => {
         try {
           // Convert string ID to ObjectId for proper MongoDB matching
           query.assignedAgentId = new mongoose.Types.ObjectId(req.admin.id);
-          console.log(`Agent ${req.admin.email}: Filtering tickets by agentId: ${req.admin.id} (converted to ObjectId: ${query.assignedAgentId})`);
+          // console.log(`Agent ${req.admin.email}: Filtering tickets by agentId: ${req.admin.id} (converted to ObjectId: ${query.assignedAgentId})`);
         } catch (err) {
           console.error('Invalid agent ID in JWT:', err);
           return res.status(400).json({

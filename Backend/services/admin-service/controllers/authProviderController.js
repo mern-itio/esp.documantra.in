@@ -9,7 +9,7 @@ const addAuthProvider = async (req, res) => {
             url: '/admin/auth-providers',
             data: payload
         });
-        console.log(result);
+        // console.log(result);
         if(result.status == 201){
             return res.status(201).json({
                 status:201,

@@ -138,6 +138,7 @@ import { FormsList } from '../pages/Template/FormList';
 import { FormView } from '../pages/Template/FormView';
 import { FormEmbed } from '../pages/Template/FormEmbed';
 import { FormSubmissions } from '../pages/Template/FormSubmissions';
+import AITemplateGenerator from '../pages/Template/AITemplateGenerator';
 import UserProfile from '../pages/Account/UserProfile';
 // Template Pages Ended
 
@@ -480,6 +481,45 @@ function DocumentView() {
     setSelectedDocument(document);
   };
 
+  // Listen for AI assistant document open events
+  useEffect(() => {
+    const handleAIDocumentOpen = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ 
+        documentId: string; 
+        documentName?: string;
+        serviceType?: string;
+      }>;
+      const { documentId, serviceType } = customEvent.detail;
+      
+      if (!documentId) return;
+
+      // Only handle document-service documents here
+      // E-sign envelopes are handled by direct navigation in AIAssistantPanel
+      if (serviceType === 'e-sign-service') {
+        return; // Already navigated in AIAssistantPanel
+      }
+
+      try {
+        // Import documentAPI dynamically to avoid circular dependencies
+        const { documentAPI } = await import('../services/api');
+        const response = await documentAPI.getDocument(documentId);
+        if (response.data?.data) {
+          setSelectedDocument(response.data.data);
+        } else {
+          console.error('Document not found:', documentId);
+        }
+      } catch (error) {
+        console.error('Error fetching document from AI assistant:', error);
+        // Don't show error if it's a 404 - document might not exist
+      }
+    };
+
+    window.addEventListener('ai-assistant:open-document', handleAIDocumentOpen);
+    return () => {
+      window.removeEventListener('ai-assistant:open-document', handleAIDocumentOpen);
+    };
+  }, []);
+
 
   return (
     <>
@@ -720,6 +760,7 @@ const authRoutes = [
   { path: '/template/admin-dashboard', element: <TemplateAdminDashboard /> },
   { path: '/template/form-embed/:id', element: <FormEmbed /> },
   { path: '/template/form-submissions/:id', element: <FormSubmissions /> },
+  { path: '/template/ai-generator', element: <AITemplateGenerator /> },
 
   // Account
   { path: '/account/profile', element: <UserProfile /> },

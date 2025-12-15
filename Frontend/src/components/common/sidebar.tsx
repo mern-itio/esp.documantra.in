@@ -140,6 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       if (pathname.startsWith('/e-sign/aggrement/deleted')) return 'esignDeleted';
       if (pathname.startsWith('/e-sign/aggrement/shared-with-me')) return 'shared-with-me';
       if (pathname.startsWith('/e-sign/create')) return 'create';
+      if (pathname.startsWith('/e-sign/powerform')) return 'powerforms';
       if (pathname.startsWith('/e-sign/form-list')) return 'form-list';
       // Any other e-sign route - keep e-sign expanded but don't force dashboard
       return 'e-sign';

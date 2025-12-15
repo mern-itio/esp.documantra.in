@@ -1,0 +1,72 @@
+/* Animated Generating Messages Styles */
+@keyframes emojiBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-10px) scale(1.15) rotate(5deg);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.1) rotate(-5deg);
+  }
+  75% {
+    transform: translateY(-8px) scale(1.12) rotate(3deg);
+  }
+}
+
+@keyframes emojiPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.9;
+  }
+}
+
+@keyframes emojiWiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes textFade {
+  0% {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  20%, 80% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(5px);
+  }
+}
+
+.generating-emoji {
+  display: inline-block;
+  font-size: 1.3rem;
+  margin-right: 0.5rem;
+  animation: emojiBounce 1.2s ease-in-out infinite;
+}
+
+.generating-text {
+  animation: textFade 2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Different animations for different emojis */
+.generating-emoji:nth-of-type(1) {
+  animation: emojiBounce 1.2s ease-in-out infinite;
+}
+
