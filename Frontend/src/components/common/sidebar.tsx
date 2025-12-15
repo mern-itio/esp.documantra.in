@@ -130,6 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (pathname === '/documents/archived') return 'archived';
     if (pathname === '/documents/folder') return 'folders';
     if (pathname === '/documents/trash') return 'trash';
+    if (pathname === '/organization/my-organizations') return 'my-organizations';
 
     if (pathname.startsWith('/e-sign/')) {
       if (pathname === '/e-sign/aggrement' || pathname === '/e-sign/aggrement/all') return 'esignDashboard';
@@ -211,6 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         // { id: 'sent', label: 'Add Envelope', path: '/e-sign/sent', icon: MailPlus },
         { id: 'powerforms', label: 'PowerForms', path: '/e-sign/powerform', icon: FormInput },
         { id: 'form-list', label: 'Templates', path: '/e-sign/form-list', icon: Send },
+        { id: 'my-organizations', label: 'My Organization', path: '/organization/my-organizations', icon: Building2 },
         // { id: 'aggrement', label: 'Aggrement', path: '/e-sign/aggrement', icon: FileSignature },
         // { id: 'manage_receipients', label: 'Manage Receipients', path: '/e-sign/manage_receipients', icon: MailIcon },
         // { id: 'envelope_types', label: 'Envelope Types', path: '/e-sign/envelope_types', icon: MailIcon },
