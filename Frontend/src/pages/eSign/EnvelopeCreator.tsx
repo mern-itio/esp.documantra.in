@@ -36,7 +36,8 @@ import {
   Search,
   Save,
   GripVertical,
-  Mail
+  Mail,
+  Sparkles
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -129,6 +130,109 @@ const EnvelopeCreator: React.FC = () => {
   const [showRecipients, setShowRecipients] = useState(false);
   const [showAddMessage, setShowAddMessage] = useState(false);
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
+
+  // Handle document from state (e.g., from AI content generation) or pending documents
+  useEffect(() => {
+    const loadDocument = async () => {
+      // First check for document from state
+      const documentData = location.state?.documentData;
+      if (documentData && documentData.content && documents.length === 0) {
+        try {
+          // Convert base64 to File
+          const byteCharacters = atob(documentData.content);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: documentData.type || 'application/pdf' });
+          const file = new File([blob], documentData.name || 'Generated Document.pdf', {
+            type: documentData.type || 'application/pdf'
+          });
+
+          const newDocument: ESDocument = {
+            id: `doc_${Date.now()}_${Math.random()}`,
+            name: file.name,
+            size: file.size,
+            pages: Math.ceil(file.size / 100000), // Mock page calculation
+            type: file.type,
+            url: URL.createObjectURL(file),
+            file: file,
+          };
+
+          setDocuments([newDocument]);
+          setEnvelopeData(prev => ({
+            ...prev,
+            subject: prev.subject || `Complete with Draft&Sign: ${file.name}`
+          }));
+
+          // Clear state to prevent re-adding
+          navigate(location.pathname, { replace: true, state: null });
+        } catch (error) {
+          console.error('Error processing document from state:', error);
+        }
+      } else if (documents.length === 0) {
+        // Check for pending document in localStorage
+        const pendingDocId = localStorage.getItem('pendingDocumentId');
+        const pendingSessionId = localStorage.getItem('pendingSessionId');
+        
+        if (pendingDocId || pendingSessionId) {
+          try {
+            const { aiContentService } = await import('../../services/aiContentService');
+            const response = await aiContentService.getPendingDocument(pendingDocId || undefined, pendingSessionId || undefined);
+            
+            if (response.success && response.data) {
+              // Convert content to PDF and add to documents
+              const pdfResponse = await aiContentService.convertToPDF({
+                content: response.data.content,
+                documentName: response.data.documentName
+              });
+
+              if (pdfResponse.success && pdfResponse.data.base64) {
+                const byteCharacters = atob(pdfResponse.data.base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const file = new File([blob], `${response.data.documentName}.pdf`, {
+                  type: 'application/pdf'
+                });
+
+                const newDocument: ESDocument = {
+                  id: `doc_${Date.now()}_${Math.random()}`,
+                  name: file.name,
+                  size: file.size,
+                  pages: Math.ceil(file.size / 100000),
+                  type: file.type,
+                  url: URL.createObjectURL(file),
+                  file: file,
+                };
+
+                setDocuments([newDocument]);
+                setEnvelopeData(prev => ({
+                  ...prev,
+                  subject: prev.subject || `Complete with Draft&Sign: ${file.name}`
+                }));
+
+                // Clean up
+                localStorage.removeItem('pendingDocumentId');
+                localStorage.removeItem('pendingSessionId');
+              }
+            }
+          } catch (error) {
+            console.error('Error loading pending document:', error);
+            // Clean up on error
+            localStorage.removeItem('pendingDocumentId');
+            localStorage.removeItem('pendingSessionId');
+          }
+        }
+      }
+    };
+
+    loadDocument();
+  }, [location.state]);
 
   // Initialize title when documents are uploaded (only once, not when subject changes)
   useEffect(() => {
@@ -3326,28 +3430,50 @@ const EnvelopeCreator: React.FC = () => {
 
                       {/* CTA when no documents */}
                       {(!documents || documents.length === 0) ? (
-                        <div className="flex flex-col items-center justify-center space-y-4 w-full">
-                          {/* Upload icon in dark grey square box */}
-                          <div className="bg-gray-700 rounded-lg p-3">
-                            <ArrowUpToLine className="w-6 h-6 text-white" />
+                        <div className="flex flex-col items-center justify-center w-full">
+                            {/* Upload icon in dark grey square box */}
+                            <div className="bg-gray-700 rounded-lg p-3 mb-4">
+                              <ArrowUpToLine className="w-6 h-6 text-white" />
+                            </div>
+
+                            {/* Text */}
+                            <p className="text-sm text-gray-700 mb-4">Drop your files here or</p>
+
+                            {/* Action Buttons Container */}
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
+                              {/* Purple Upload button with dropdown arrow */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  fileInputRef.current?.click();
+                                }}
+                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex-1 sm:flex-none min-w-[140px]"
+                                style={{ backgroundColor: '#260559' }}
+                              >
+                                <span>Upload</span>
+                                <Triangle className="w-3 h-2 fill-white rotate-180" />
+                              </button>
+
+                              {/* Divider with "or" text */}
+                              <div className="flex items-center gap-2 my-2 sm:my-0">
+                                <div className="h-px bg-gray-300 w-8"></div>
+                                <span className="text-xs text-gray-500 font-medium">OR</span>
+                                <div className="h-px bg-gray-300 w-8"></div>
+                              </div>
+
+                              {/* AI Generate Document Button with Ripple Animation */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate('/template/ai-generator');
+                                }}
+                                className="ai-generate-button flex items-center justify-center gap-2 flex-1 sm:flex-none min-w-[180px]"
+                              >
+                                <Sparkles className="w-4 h-4 relative z-10" />
+                                <span className="relative z-10 text-sm sm:text-base">Generate with AI</span>
+                              </button>
+                            </div>
                           </div>
-
-                          {/* Text */}
-                          <p className="text-sm text-gray-700">Drop your files here or</p>
-
-                          {/* Purple Upload button with dropdown arrow */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              fileInputRef.current?.click();
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                            style={{ backgroundColor: '#260559' }}
-                          >
-                            <span>Upload</span>
-                            <Triangle className="w-3 h-2 fill-white rotate-180" />
-                          </button>
-                        </div>
                       ) : (
                         <div
                           onClick={() => fileInputRef.current?.click()}

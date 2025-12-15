@@ -1,90 +1,42 @@
 import { useState, useEffect } from 'react'
-import { FileText, Eye, Download, Search, Filter, Star, Clock, Users, Check, Zap, Shield, Heart, Home, Briefcase, DollarSign, Scale, UserCheck} from 'lucide-react'
-import { Link } from 'react-router-dom'
-
-type FormData = {
-  companyName: string
-  recipientName: string
-  effectiveDate: string
-  jurisdiction: string
-  projectDescription: string
-  duration: string
-  compensation: string
-  [key: string]: string
-}
+import { FileText, Download, Star, Clock, Zap, Shield, Loader2, Sparkles, Send, AlertCircle } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../AuthService/AuthContext'
+import { aiContentService } from '../../services/aiContentService'
+import toast from 'react-hot-toast'
 
 type Complexity = 'Simple' | 'Medium' | 'Complex'
 
+interface Template {
+  id: string
+  name: string
+  category: string
+  description: string
+  complexity: Complexity
+  rating: number
+  downloads: number
+  timeToComplete: string
+  isPremium: boolean
+  isFeatured: boolean
+  tags: string[]
+  expertReviewed: boolean
+  jurisdictions: string[]
+  fields: string[]
+}
+
 const LegalTemplates = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [selectedTemplate, setSelectedTemplate] = useState('nda')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState('popularity')
-  const [showFilters, setShowFilters] = useState(false)
-  // const [activeTab, setActiveTab] = useState('smart-templates')
-  const [formData, setFormData] = useState<FormData>({
-    companyName: 'Acme Corporation',
-    recipientName: 'John Smith',
-    effectiveDate: '2025-01-15',
-    jurisdiction: 'California',
-    projectDescription: 'Software Development Project',
-    duration: '2 years',
-    compensation: '$75,000'
-  })
-  const [lastUpdatedField, setLastUpdatedField] = useState('')
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
+  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [additionalDescription, setAdditionalDescription] = useState('')
+  const [generatedContent, setGeneratedContent] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [sessionId] = useState<string>(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
 
-  // Helper to highlight updated value in preview string
-  const highlightValue = (fieldKey: string, value: string) => {
-    if (lastUpdatedField === fieldKey && value) {
-      // Escape value for regex
-      const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      return { value, regex: new RegExp(escaped, 'g') }
-    }
-    return null
-  }
-
-  const generatePreviewString = () => {
-    let preview = ''
-    if (selectedTemplate === 'nda') {
-      preview = `NON-DISCLOSURE AGREEMENT\n\nThis Non-Disclosure Agreement ("Agreement") is entered into on ${formData.effectiveDate} between ${formData.companyName} ("Disclosing Party") and ${formData.recipientName} ("Receiving Party").\n\nRECITALS\n\nWHEREAS, the Disclosing Party possesses certain confidential and proprietary information related to ${formData.projectDescription};\n\nWHEREAS, the Receiving Party desires to receive such confidential information for the purpose of evaluating potential business opportunities;\n\nNOW, THEREFORE, in consideration of the mutual covenants contained herein, the parties agree as follows:\n\n1. DEFINITION OF CONFIDENTIAL INFORMATION\nFor purposes of this Agreement, "Confidential Information" shall include all information, technical data, trade secrets, know-how, research, product plans, products, services, customers, customer lists, markets, software, developments, inventions, processes, formulas, technology, designs, drawings, engineering, hardware configuration information, marketing, finances, or other business information disclosed by the Disclosing Party.\n\n2. OBLIGATIONS OF RECEIVING PARTY\nThe Receiving Party agrees to:\na) Hold all Confidential Information in strict confidence;\nb) Not disclose any Confidential Information to third parties without prior written consent;\nc) Use Confidential Information solely for the purpose of evaluating potential business opportunities;\nd) Take reasonable precautions to protect the confidentiality of the information.\n\n3. TERM AND TERMINATION\nThis Agreement shall remain in effect for a period of ${formData.duration} from the date first written above, unless terminated earlier by mutual written consent of the parties.\n\n4. RETURN OF MATERIALS\nUpon termination of this Agreement, the Receiving Party shall promptly return or destroy all documents, materials, and other tangible manifestations of Confidential Information.\n\n5. GOVERNING LAW\nThis Agreement shall be governed by and construed in accordance with the laws of the State of ${formData.jurisdiction}, without regard to its conflict of laws principles.\n\n6. REMEDIES\nThe Receiving Party acknowledges that any breach of this Agreement may cause irreparable harm to the Disclosing Party, and that monetary damages may be inadequate to compensate for such breach.\n\nIN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.\n\nDISCLOSING PARTY:                    RECEIVING PARTY:\n\n_________________________          _________________________\n${formData.companyName}                    ${formData.recipientName}\n\nBy: _____________________          By: _____________________\nName:                              Name:\nTitle:                             Title:\nDate:                              Date:`
-    } else if (selectedTemplate === 'employment-contract') {
-      preview = `EMPLOYMENT AGREEMENT\n\nThis Employment Agreement ("Agreement") is entered into on ${formData.effectiveDate} between ${formData.companyName} ("Company") and ${formData.recipientName} ("Employee").\n\n1. POSITION AND DUTIES\nEmployee is hereby employed as [Position Title] and agrees to perform such duties and responsibilities as may be assigned by the Company.\n\n2. COMPENSATION\nEmployee shall receive an annual salary of ${formData.compensation}, payable in accordance with Company's standard payroll practices.\n\n3. BENEFITS\nEmployee shall be entitled to participate in all employee benefit programs maintained by the Company.\n\n4. TERM OF EMPLOYMENT\nThis Agreement shall commence on [Start Date] and shall continue until terminated in accordance with the provisions herein.\n\n5. CONFIDENTIALITY\nEmployee agrees to maintain the confidentiality of all proprietary information of the Company.\n\n6. GOVERNING LAW\nThis Agreement shall be governed by the laws of ${formData.jurisdiction}.\n\nIN WITNESS WHEREOF, the parties have executed this Agreement.\n\nCOMPANY:                           EMPLOYEE:\n\n_________________________          _________________________\n${formData.companyName}                    ${formData.recipientName}`
-    } else {
-      preview = `DOCUMENT PREVIEW\n\nThis document will be generated based on your selections and form inputs. Please fill out the required fields to see a complete preview.\n\nSelected Template: ${currentTemplate.name}\nCategory: ${currentTemplate.category}\nComplexity: ${currentTemplate.complexity}\n\nForm Data:\n- Company: ${formData.companyName}\n- Recipient: ${formData.recipientName}\n- Date: ${formData.effectiveDate}\n- Jurisdiction: ${formData.jurisdiction}`
-    }
-    // Highlight the last updated field value in the preview string
-    const highlightMap: FormData = {
-      companyName: formData.companyName,
-      recipientName: formData.recipientName,
-      effectiveDate: formData.effectiveDate,
-      jurisdiction: formData.jurisdiction,
-      projectDescription: formData.projectDescription,
-      duration: formData.duration,
-      compensation: formData.compensation
-    }
-    const highlight = highlightValue(lastUpdatedField, highlightMap[lastUpdatedField] || '')
-    if (highlight && highlight.value) {
-      // Only replace the first occurrence for clarity
-      preview = preview.replace(
-        highlight.regex,
-        `<span class=\"highlight-blink\">${highlight.value}</span>`
-      )
-    }
-    return preview
-  }
-
-  const categories = [
-    { id: 'all', name: 'All Templates', icon: FileText, count: 45, color: 'text-gray-600' },
-    { id: 'business', name: 'Business', icon: Briefcase, count: 12, color: 'text-blue-600' },
-    { id: 'employment', name: 'Employment', icon: Users, color: 'text-green-600', count: 8 },
-    { id: 'real-estate', name: 'Real Estate', icon: Home, color: 'text-purple-600', count: 6 },
-    { id: 'finance', name: 'Finance', icon: DollarSign, color: 'text-orange-600', count: 5 },
-    { id: 'legal', name: 'Legal', icon: Scale, color: 'text-red-600', count: 7 },
-    { id: 'personal', name: 'Personal', icon: Heart, color: 'text-pink-600', count: 4 },
-    { id: 'healthcare', name: 'Healthcare', icon: UserCheck, color: 'text-teal-600', count: 3 }
-  ]
-
-  const templates = [
+  const templates: Template[] = [
     {
       id: 'nda',
       name: 'Non-Disclosure Agreement',
@@ -183,53 +135,185 @@ const LegalTemplates = () => {
     }
   ]
 
-  const filteredTemplates = templates.filter(template => {
-    const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-    return matchesCategory && matchesSearch
-  })
+  const filteredTemplates = templates
 
-  const sortedTemplates = [...filteredTemplates].sort((a, b) => {
-    switch (sortBy) {
-      case 'popularity':
-        return b.downloads - a.downloads
-      case 'rating':
-        return b.rating - a.rating
-      case 'alphabetical':
-        return a.name.localeCompare(b.name)
-      case 'complexity':
-        const complexityOrder: Record<Complexity, number> = { 'Simple': 1, 'Medium': 2, 'Complex': 3 }
-        return complexityOrder[a.complexity as Complexity] - complexityOrder[b.complexity as Complexity]
-      default:
-        return 0
-    }
-  })
-
-  const currentTemplate = templates.find(t => t.id === selectedTemplate) || templates[0]
-
-  // Add a timer to clear highlight after a short delay
+  // Set default template on mount
   useEffect(() => {
-    if (lastUpdatedField) {
-      const timer = setTimeout(() => setLastUpdatedField(''), 1000)
-      return () => clearTimeout(timer)
+    if (!selectedTemplate && templates.length > 0) {
+      setSelectedTemplate(templates[0])
     }
-  }, [lastUpdatedField])
+  }, [])
 
-  const getComplexityColor = (complexity: Complexity) => {
-    switch (complexity) {
-      case 'Simple': return 'bg-green-100 text-green-800'
-      case 'Medium': return 'bg-yellow-100 text-yellow-800'
-      case 'Complex': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+  // Reset form data when template changes
+  useEffect(() => {
+    if (selectedTemplate) {
+      // Initialize form data with empty values for all fields
+      const initialFormData: Record<string, string> = {}
+      selectedTemplate.fields.forEach(field => {
+        const fieldKey = field.toLowerCase().replace(/\s+/g, '')
+        initialFormData[fieldKey] = ''
+      })
+      setFormData(initialFormData)
+      setAdditionalDescription('')
+      setGeneratedContent('')
+    }
+  }, [selectedTemplate])
+
+
+  const handleGenerate = async () => {
+    if (!selectedTemplate) {
+      toast.error('Please select a template')
+      return
+    }
+
+    // Validate that at least some form fields are filled
+    const hasFormData = Object.values(formData).some(value => value.trim() !== '')
+    if (!hasFormData && !additionalDescription.trim()) {
+      toast.error('Please fill in at least some fields or provide additional description')
+      return
+    }
+
+    setIsGenerating(true)
+    setGeneratedContent('')
+
+    try {
+      // Build requirements string from form data and additional description
+      let requirementsText = `Template: ${selectedTemplate.name}\n\n`
+      
+      // Add form field data
+      if (hasFormData) {
+        requirementsText += 'Provided Information:\n'
+        selectedTemplate.fields.forEach(field => {
+          const fieldKey = field.toLowerCase().replace(/\s+/g, '')
+          const value = formData[fieldKey] || ''
+          if (value.trim()) {
+            requirementsText += `- ${field}: ${value}\n`
+          }
+        })
+        requirementsText += '\n'
+      }
+
+      // Add additional description
+      if (additionalDescription.trim()) {
+        requirementsText += `Additional Details:\n${additionalDescription.trim()}`
+      }
+
+      const response = await aiContentService.generateContent({
+        templateType: selectedTemplate.name,
+        requirements: requirementsText.trim(),
+        formData: formData
+      })
+
+      if (response.success && response.data.content) {
+        setGeneratedContent(response.data.content)
+        toast.success('Content generated successfully!')
+      } else {
+        toast.error('Failed to generate content. Please try again.')
+      }
+    } catch (error: any) {
+      console.error('Error generating content:', error)
+      toast.error(error.message || 'Failed to generate content. Please try again.')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
-  // Helper to wrap highlighted value
-  // const highlightSpan = (fieldKey: string, value: string) => (
-  //   <span className={lastUpdatedField === fieldKey ? 'highlight-blink' : ''}>{value}</span>
-  // )
+  const handleDownloadPDF = async () => {
+    if (!generatedContent) {
+      toast.error('No content to download')
+      return
+    }
+
+    setIsDownloading(true)
+
+    try {
+      const response = await aiContentService.convertToPDF({
+        content: generatedContent,
+        documentName: selectedTemplate?.name || 'Legal Document'
+      })
+
+      if (response.success && response.data.base64) {
+        aiContentService.downloadPDF(
+          response.data.base64,
+          `${(selectedTemplate?.name || 'Document').replace(/\s+/g, '_')}.pdf`
+        )
+        toast.success('PDF downloaded successfully!')
+      } else {
+        toast.error('Failed to generate PDF. Please try again.')
+      }
+    } catch (error: any) {
+      console.error('Error downloading PDF:', error)
+      toast.error(error.message || 'Failed to download PDF. Please try again.')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  const handleSendAsEnvelope = async () => {
+    if (!generatedContent) {
+      toast.error('No content to send')
+      return
+    }
+
+    if (!isAuthenticated) {
+      // Store document and redirect to login
+      setIsSending(true)
+      try {
+        const response = await aiContentService.storePendingDocument({
+          documentName: selectedTemplate?.name || 'Legal Document',
+          content: generatedContent,
+          templateType: selectedTemplate?.name || 'Unknown',
+          sessionId
+        })
+
+        if (response.success) {
+          // Store in localStorage for after login
+          localStorage.setItem('pendingDocumentId', response.data.documentId)
+          localStorage.setItem('pendingSessionId', response.data.sessionId)
+          toast.success('Document saved. Please login to continue.')
+          navigate('/login', { state: { returnTo: '/e-sign/create', pendingDocument: response.data.documentId } })
+        } else {
+          toast.error('Failed to save document. Please try again.')
+        }
+      } catch (error: any) {
+        console.error('Error storing document:', error)
+        toast.error(error.message || 'Failed to save document. Please try again.')
+      } finally {
+        setIsSending(false)
+      }
+      return
+    }
+
+    // User is authenticated - convert to PDF and navigate to envelope creator
+    setIsSending(true)
+    try {
+      const response = await aiContentService.convertToPDF({
+        content: generatedContent,
+        documentName: selectedTemplate?.name || 'Legal Document'
+      })
+
+      if (response.success && response.data.base64) {
+        // Pass the base64 through state to envelope creator
+        navigate('/e-sign/create', {
+          state: {
+            documentData: {
+              name: `${(selectedTemplate?.name || 'Document').replace(/\s+/g, '_')}.pdf`,
+              content: response.data.base64,
+              type: 'application/pdf'
+            }
+          }
+        })
+      } else {
+        toast.error('Failed to prepare document. Please try again.')
+      }
+    } catch (error: any) {
+      console.error('Error preparing document:', error)
+      toast.error(error.message || 'Failed to prepare document. Please try again.')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
 
   return (
     <section id="legal-templates" className="section-padding bg-gray-50">
@@ -237,10 +321,10 @@ const LegalTemplates = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Create Legal Documents in Minutes
+            AI-Powered Legal Document Generator
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Choose from 45+ professionally drafted legal document templates. Generate, customize, and download legal documents with our smart editor.
+            Generate professional legal documents in minutes using AI. Simply describe your requirements and get a complete, ready-to-use document.
           </p>
           
           {/* Stats */}
@@ -258,334 +342,264 @@ const LegalTemplates = () => {
               <div className="text-sm text-gray-600">Legal Templates</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-[#260559]/60">24/7</div>
-              <div className="text-sm text-gray-600">Expert Support</div>
+              <div className="text-2xl font-bold text-[#260559]/60">AI</div>
+              <div className="text-sm text-gray-600">Powered</div>
             </div>
           </div>
         </div>
 
-        {/* Main Content - 3 Parts Layout */}
-        <div className="grid lg:grid-cols-12 gap-8">
-          {/* Part 1: Template Selection (Left Side) */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Search and Filters */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="space-y-4">
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search legal templates..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Sort and Filter */}
-                <div className="flex gap-3">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    <option value="popularity">Most Popular</option>
-                    <option value="rating">Highest Rated</option>
-                    <option value="alphabetical">A-Z</option>
-                    <option value="complexity">Complexity</option>
-                  </select>
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <Filter className="h-4 w-4" />
-                    Filters
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
-              <div className="space-y-2">
-                {categories.map((category) => {
-                  const IconComponent = category.icon
-                  return (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${
-                        selectedCategory === category.id
-                          ? 'bg-[#260559]/10 border-2 border-[#260559]/20'
-                          : 'hover:bg-gray-50 border-2 border-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <IconComponent className={`h-5 w-5 ${category.color}`} />
-                        <span className="font-medium text-gray-900">{category.name}</span>
-                      </div>
-                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                        {category.count}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Templates List */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">
-                  Templates ({sortedTemplates.length})
-                </h3>
-                <div className="text-sm text-gray-500">
-                  Sorted by {sortBy}
-                </div>
-              </div>
-              
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {sortedTemplates.map((template) => (
-                  <div
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template.id)}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                      selectedTemplate === template.id
-                        ? 'border-[#260559]/50 bg-[#260559]/10'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className={`font-medium ${
-                            selectedTemplate === template.id ? 'text-primary-900' : 'text-gray-900'
-                          }`}>
-                            {template.name}
-                          </h4>
-                          {template.isFeatured && (
-                            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
-                              Featured
-                            </span>
-                          )}
-                          {template.isPremium && (
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
-                              Pro
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                        
-                        {/* Template Stats */}
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                            <span>{template.rating}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Download className="h-3 w-3" />
-                            <span>{template.downloads.toLocaleString()}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{template.timeToComplete}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="ml-3">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getComplexityColor(template.complexity as Complexity)}`}>
-                          {template.complexity}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {template.tags.slice(0, 3).map((tag, index) => (
-                        <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Template Tabs at Top */}
+        <div className="bg-white rounded-xl shadow-lg p-4 mb-8">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            {filteredTemplates.map((template) => (
+              <button
+                key={template.id}
+                onClick={() => {
+                  setSelectedTemplate(template)
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all duration-200 ${
+                  selectedTemplate?.id === template.id
+                    ? 'bg-[#260559] text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <FileText className="h-4 w-4" />
+                <span>{template.name}</span>
+                {template.isFeatured && (
+                  <span className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    ⭐
+                  </span>
+                )}
+                {template.isPremium && (
+                  <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    Pro
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Part 2: Form Fields (Center) */}
-          <div className="lg:col-span-3 space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Fill Template Details</h3>
-              
-              {/* Template Info */}
-              <div className="bg-[#260559]/10 rounded-lg p-4 mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <FileText className="h-5 w-5 text-[#260559]/60" />
-                  <span className="font-medium text-[#260559]">{currentTemplate.name}</span>
-                </div>
-                <p className="text-sm text-[#260559]/70 mb-3">{currentTemplate.description}</p>
-                
-                <div className="flex items-center gap-4 text-xs text-[#260559]/70">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                    <span>{currentTemplate.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{currentTemplate.timeToComplete}</span>
-                  </div>
-                  {currentTemplate.expertReviewed && (
-                    <div className="flex items-center gap-1">
-                      <Shield className="h-3 w-3 text-green-500" />
-                      <span>Expert Reviewed</span>
+        {/* Main Content - Form Left, Generated Content Right */}
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Left: Form with broader width */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+              {selectedTemplate && (
+                <>
+                  <div className="bg-[#260559]/10 rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <FileText className="h-5 w-5 text-[#260559]/60" />
+                      <span className="font-medium text-[#260559]">{selectedTemplate.name}</span>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Dynamic Form Fields */}
-              <div className="space-y-4">
-                {currentTemplate.fields.map((field, index) => {
-                  const fieldKey = field.toLowerCase().replace(/\s+/g, '')
-                  const fieldValue = formData[fieldKey] || ''
-                  const handleChange = (value: string) => {
-                    setFormData({ ...formData, [fieldKey]: value })
-                    setLastUpdatedField(fieldKey)
-                  }
-                  return (
-                    <div key={index}>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {field} <span className="text-red-500">*</span>
-                      </label>
-                      {field === 'Jurisdiction' ? (
-                        <select
-                          value={formData.jurisdiction}
-                          onChange={(e) => { setFormData({...formData, jurisdiction: e.target.value}); setLastUpdatedField('jurisdiction') }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                          <option value="California">California</option>
-                          <option value="New York">New York</option>
-                          <option value="Texas">Texas</option>
-                          <option value="Florida">Florida</option>
-                          <option value="Illinois">Illinois</option>
-                        </select>
-                      ) : field === 'Effective Date' || field === 'Start Date' ? (
-                        <input
-                          type="date"
-                          value={formData.effectiveDate}
-                          onChange={(e) => { setFormData({...formData, effectiveDate: e.target.value}); setLastUpdatedField('effectiveDate') }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        />
-                      ) : field === 'Project Description' || field === 'Services Description' ? (
-                        <textarea
-                          value={formData.projectDescription}
-                          onChange={(e) => { setFormData({...formData, projectDescription: e.target.value}); setLastUpdatedField('projectDescription') }}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="Describe the project or services..."
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          value={fieldValue}
-                          onChange={(e) => handleChange(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder={`Enter ${field.toLowerCase()}`}
-                        />
+                    <p className="text-sm text-[#260559]/70 mb-3">{selectedTemplate.description}</p>
+                    
+                    <div className="flex items-center gap-4 text-xs text-[#260559]/70">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                        <span>{selectedTemplate.rating}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{selectedTemplate.timeToComplete}</span>
+                      </div>
+                      {selectedTemplate.expertReviewed && (
+                        <div className="flex items-center gap-1">
+                          <Shield className="h-3 w-3 text-green-500" />
+                          <span>Expert Reviewed</span>
+                        </div>
                       )}
                     </div>
-                  )
-                })}
-              </div>
+                  </div>
 
-              {/* AI Suggestions */}
-              <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="h-4 w-4 text-purple-600" />
-                  <span className="text-sm font-medium text-purple-900">AI Suggestions</span>
-                </div>
-                <p className="text-xs text-purple-700">
-                  Based on your inputs, consider adding specific confidentiality clauses for software development projects.
-                </p>
-              </div>
-            </div>
+                  {/* Dynamic Form Fields */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Document Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedTemplate.fields.map((field, index) => {
+                        const fieldKey = field.toLowerCase().replace(/\s+/g, '')
+                        const fieldValue = formData[fieldKey] || ''
+                        const isDescription = field.includes('Description') || field.includes('Terms') || field.includes('Address')
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className={isDescription ? 'md:col-span-2' : ''}
+                          >
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              {field} {field.includes('Date') || field.includes('Name') ? <span className="text-red-500">*</span> : ''}
+                            </label>
+                            {field.includes('Date') || field === 'Effective Date' || field === 'Start Date' ? (
+                              <input
+                                type="date"
+                                value={fieldValue}
+                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              />
+                            ) : isDescription ? (
+                              <textarea
+                                value={fieldValue}
+                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                                placeholder={`Enter ${field.toLowerCase()}`}
+                              />
+                            ) : field.includes('Jurisdiction') || field.includes('State') ? (
+                              <select
+                                value={fieldValue}
+                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              >
+                                <option value="">Select {field}</option>
+                                <option value="California">California</option>
+                                <option value="New York">New York</option>
+                                <option value="Texas">Texas</option>
+                                <option value="Florida">Florida</option>
+                                <option value="Illinois">Illinois</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={fieldValue}
+                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                placeholder={`Enter ${field.toLowerCase()}`}
+                              />
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
 
-            {/* Legal Compliance Info */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Shield className="h-5 w-5 text-green-500" />
-                Legal Compliance
-              </h4>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span className="text-gray-700">Expert legal review</span>
+                  {/* Additional Description */}
+                  <div className="mb-6">
+                    <label className="block text-base font-semibold text-gray-900 mb-3">
+                      Additional Details / Special Requirements
+                    </label>
+                    <textarea
+                      value={additionalDescription}
+                      onChange={(e) => setAdditionalDescription(e.target.value)}
+                      placeholder="Add any additional details, special clauses, or requirements that should be included in the document..."
+                      rows={8}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Optional: Add any special terms, clauses, or additional information you want included.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || (!Object.values(formData).some(v => v.trim()) && !additionalDescription.trim())}
+                    className="w-full bg-[#260559] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#260559]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5" />
+                        Generate Document
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+
+              {!selectedTemplate && (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Select a template to get started</p>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span className="text-gray-700">State law compliance</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span className="text-gray-700">Court admissible</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-3">
-                  Valid in: {currentTemplate.jurisdictions.join(', ')}
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Part 3: Live Preview (Right Side) */}
-          <div className="lg:col-span-4">
+          {/* Right Side: Generated Content */}
+          <div className="lg:col-span-5">
             <div className="bg-white rounded-xl shadow-lg sticky top-6">
               <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Eye className="h-5 w-5 text-blue-600" />
-                    Live Preview
-                  </h3>
-                  <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50">
-                      <Download className="h-4 w-4" />
-                      Download
-                    </button>
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  Generated Document
+                </h3>
+              </div>
+              
+              <div className="p-6 max-h-[600px] overflow-y-auto">
+                {generatedContent ? (
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed bg-gray-50 p-4 rounded-lg">
+                      {generatedContent}
+                    </pre>
                   </div>
-                </div>
-                <div className="mt-2 text-sm text-gray-500">
-                  Updates automatically as you fill the form
-                </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Zap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-2">No content generated yet</p>
+                    <p className="text-sm text-gray-400">
+                      Fill in your requirements and click "Generate Document" to create your legal document.
+                    </p>
+                  </div>
+                )}
               </div>
               
-              <div className="p-6 max-h-96 overflow-y-auto">
-                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed" dangerouslySetInnerHTML={{ __html: generatePreviewString() }} />
-              </div>
-              
-              <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-                <div className="flex gap-3">
-                  <button className="flex-1 btn-secondary text-sm" style={{borderColor: '#260559', color: '#260559'}}>
-                    Save as Template
+              {generatedContent && (
+                <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl space-y-3">
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-[#260559] text-[#260559] rounded-lg font-semibold hover:bg-[#260559]/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDownloading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Generating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-5 w-5" />
+                        Download PDF
+                      </>
+                    )}
                   </button>
-                  <button className="flex-1 bg-[#260559] text-white rounded-sm text-sm">
-                    Download PDF
+                  
+                  <button
+                    onClick={handleSendAsEnvelope}
+                    disabled={isSending}
+                    className="w-full bg-[#260559] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#260559]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        {isAuthenticated ? 'Preparing...' : 'Saving...'}
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-5 w-5" />
+                        {isAuthenticated ? 'Send as Envelope' : 'Login to Send as Envelope'}
+                      </>
+                    )}
                   </button>
+                  
+                  {!isAuthenticated && (
+                    <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      You'll be redirected to login after saving your document
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500 text-center mt-3">
-                  Sign in required to download
-                </p>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Bottom CTA */}
         <div className="text-center mt-16">
-        <div className="p-8 mb-12 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
-
+          <div className="p-8 mb-12 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
             <h3 className="text-2xl font-bold mb-4">
               Need a Custom Legal Document?
             </h3>

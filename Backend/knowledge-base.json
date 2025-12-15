@@ -1,0 +1,762 @@
+{
+  "platform": {
+    "name": "Draft and Sign",
+    "description": "A comprehensive electronic signature platform that allows users to create, edit, sign, and manage documents with legal compliance across 40+ countries.",
+    "url": "http://165.22.215.73:8081/",
+    "tagline": "All in One Document Management Platform",
+    "features": [
+      "Electronic Signatures — Legally binding signatures with compliance across 40+ countries",
+      "PDF Tools — 30+ free PDF manipulation tools (convert, edit, merge, compress, secure)",
+      "Legal Templates — 45+ professionally drafted legal document templates",
+      "AI-Powered Features — Smart document generation and editing assistance",
+      "Global Compliance — Meets legal requirements for e-signatures worldwide",
+      "API Integration — Developer-friendly REST APIs for automation",
+      "Mobile Responsive — Works seamlessly across all devices",
+      "Real-time Collaboration — Multi-user document editing and review"
+    ],
+    "techStack": {
+      "frontend": ["React 18", "TypeScript", "Tailwind CSS", "Vite", "Lucide React"],
+      "backend": ["Node.js (v16+)", "Express.js", "MongoDB", "JWT", "Docker", "Nginx"],
+      "architecture": "Microservices"
+    },
+    "deployment": {
+      "gateway": "Nginx or Express",
+      "containerization": "Docker + Docker Compose",
+      "database": "MongoDB",
+      "authentication": "JWT-based across services"
+    }
+  },
+  "services": {
+    "document-service": {
+      "name": "Document Management Service",
+      "port": 2102,
+      "description": "Comprehensive document management service for uploading, organizing, and managing documents",
+      "features": [
+        "Document upload and storage (PDF, DOC, DOCX, TXT, RTF, XLS, XLSX, CSV, PPT, PPTX, images)",
+        "Folder organization with hierarchical structure",
+        "Document sharing and permissions (view, comment, edit, full)",
+        "Version control and history",
+        "Search and filtering (advanced search with multiple filters)",
+        "Bulk operations (bulk delete, bulk move)",
+        "Trash system with 30-day retention",
+        "Document restoration from trash",
+        "Favorites and archiving",
+        "Document metadata (description, tags, status flags)",
+        "Statistics (views, downloads)",
+        "File size limit: 50MB per file",
+        "Maximum files per upload: 10"
+      ],
+      "apiEndpoints": {
+        "documents": [
+          "POST /api/documents/upload - Upload a new document",
+          "GET /api/documents - Get user documents with filters",
+          "GET /api/documents/:id - Get document details",
+          "PUT /api/documents/:id - Update document metadata",
+          "DELETE /api/documents/:id - Delete a document (moves to trash)",
+          "POST /api/documents/:id/download - Download a document",
+          "POST /api/documents/bulk-delete - Bulk delete documents",
+          "GET /api/documents/trash - Get deleted documents",
+          "POST /api/documents/:id/restore - Restore from trash",
+          "DELETE /api/documents/:id/permanent - Permanently delete"
+        ],
+        "folders": [
+          "POST /api/folders - Create a new folder",
+          "GET /api/folders - Get user folders",
+          "GET /api/folders/:id - Get folder details",
+          "PUT /api/folders/:id - Update folder",
+          "DELETE /api/folders/:id - Delete a folder",
+          "POST /api/folders/:id/move - Move folder to new location",
+          "GET /api/folders/:id/breadcrumbs - Get folder breadcrumbs"
+        ]
+      },
+      "authentication": "JWT token in Authorization header: Bearer <token>"
+    },
+    "e-sign-service": {
+      "name": "Electronic Signature Service",
+      "port": 2103,
+      "description": "Secure electronic signature service for creating and managing signature workflows",
+      "features": [
+        "Multi-signer support with custom signing orders",
+        "Custom signing workflows",
+        "Auto-reminders and notifications",
+        "Legal compliance (ESIGN Act, eIDAS, 40+ countries)",
+        "Signature tracking and status monitoring",
+        "Document distribution with email notifications",
+        "Digital signature with certificates",
+        "OTP verification for enhanced security",
+        "Audit trail and compliance reporting",
+        "Certificate of completion generation",
+        "Public signing pages (no account required)",
+        "Envelope management (draft, sent, in-progress, completed, declined)",
+        "Recipient management and permissions",
+        "Signature fields placement and customization",
+        "Timestamp authority (TSA) integration"
+      ],
+      "workflow": {
+        "steps": [
+          "1. Create envelope and upload document",
+          "2. Add recipients and set signing order",
+          "3. Place signature fields on document",
+          "4. Send envelope to recipients",
+          "5. Recipients receive email notification",
+          "6. Recipients sign document (draw or type signature)",
+          "7. OTP verification (if enabled)",
+          "8. Document is digitally signed with certificate",
+          "9. All parties receive completed document",
+          "10. Certificate of completion generated"
+        ]
+      },
+      "signatureTypes": [
+        "Draw signature (using signature canvas)",
+        "Type signature (text-based)",
+        "Upload signature image",
+        "Digital signature with X.509 certificate"
+      ],
+      "apiEndpoints": {
+        "envelopes": [
+          "POST /api/esign/envelopes - Create envelope",
+          "GET /api/esign/envelopes - Get user envelopes",
+          "GET /api/esign/envelopes/:id - Get envelope details",
+          "PUT /api/esign/envelopes/:id - Update envelope",
+          "POST /api/esign/envelopes/:id/send - Send envelope",
+          "POST /api/esign/envelopes/:id/complete - Complete envelope"
+        ],
+        "signing": [
+          "POST /api/esign/sign - Sign document",
+          "GET /api/esign/public/sign/:token - Public signing page",
+          "POST /api/esign/verify - Verify signature"
+        ],
+        "certificates": [
+          "POST /api/esign/certificates - Generate certificate",
+          "GET /api/esign/certificates - List certificates"
+        ]
+      }
+    },
+    "pdf-service": {
+      "name": "PDF Tools Service",
+      "port": 2104,
+      "description": "Comprehensive PDF manipulation service with 30+ tools",
+      "tools": {
+        "conversion": [
+          {
+            "name": "PDF to Word",
+            "description": "Convert PDF documents to editable Word documents",
+            "features": ["High-quality conversion", "Preserves formatting", "Maintains text layout", "Editable output", "Batch processing"]
+          },
+          {
+            "name": "Word to PDF",
+            "description": "Convert Word documents to PDF",
+            "features": ["Bookmark preservation", "Hyperlink retention", "Metadata transfer"]
+          },
+          {
+            "name": "PDF to Excel",
+            "description": "Convert PDF tables to Excel spreadsheets"
+          },
+          {
+            "name": "Excel to PDF",
+            "description": "Convert Excel spreadsheets to PDF"
+          },
+          {
+            "name": "PDF to PowerPoint",
+            "description": "Convert PDF to PowerPoint presentation"
+          },
+          {
+            "name": "PowerPoint to PDF",
+            "description": "Convert PowerPoint to PDF"
+          },
+          {
+            "name": "PDF to HTML",
+            "description": "Convert PDF to HTML web pages"
+          },
+          {
+            "name": "HTML to PDF",
+            "description": "Convert HTML to PDF documents"
+          },
+          {
+            "name": "PDF to Image",
+            "description": "Convert PDF pages to images (JPG, PNG, TIFF, BMP)"
+          },
+          {
+            "name": "Image to PDF",
+            "description": "Convert images to PDF documents"
+          },
+          {
+            "name": "PDF to Text",
+            "description": "Extract text from PDF documents"
+          },
+          {
+            "name": "Text to PDF",
+            "description": "Create PDF from text content"
+          },
+          {
+            "name": "PDF to EPUB",
+            "description": "Convert PDF to EPUB e-book format"
+          }
+        ],
+        "editing": [
+          {
+            "name": "Merge PDF",
+            "description": "Combine multiple PDF files into one"
+          },
+          {
+            "name": "Split PDF",
+            "description": "Split PDF into multiple files"
+          },
+          {
+            "name": "Compress PDF",
+            "description": "Reduce PDF file size"
+          },
+          {
+            "name": "Rotate PDF",
+            "description": "Rotate PDF pages"
+          },
+          {
+            "name": "Crop PDF",
+            "description": "Crop PDF pages"
+          },
+          {
+            "name": "Delete PDF Pages",
+            "description": "Remove pages from PDF"
+          },
+          {
+            "name": "Insert PDF Pages",
+            "description": "Insert pages into PDF"
+          },
+          {
+            "name": "Reorder PDF Pages",
+            "description": "Reorder pages in PDF"
+          },
+          {
+            "name": "PDF Editor",
+            "description": "Advanced PDF editing tool"
+          },
+          {
+            "name": "Add Page Numbers",
+            "description": "Add page numbers to PDF"
+          },
+          {
+            "name": "Add Header/Footer",
+            "description": "Add headers and footers to PDF"
+          },
+          {
+            "name": "Add Watermark",
+            "description": "Add watermarks to PDF"
+          },
+          {
+            "name": "Add Stamps",
+            "description": "Add stamps to PDF"
+          },
+          {
+            "name": "Find and Replace",
+            "description": "Find and replace text in PDF"
+          },
+          {
+            "name": "Redact Content",
+            "description": "Redact sensitive information from PDF"
+          }
+        ],
+        "forms": [
+          {
+            "name": "Fill PDF Forms",
+            "description": "Fill out PDF forms digitally",
+            "features": [
+              "Auto-fill using AI/pattern recognition",
+              "Data validation",
+              "Signature fields",
+              "Bulk processing",
+              "Template management",
+              "CSV/JSON import",
+              "Form field extraction",
+              "Form flattening"
+            ]
+          },
+          {
+            "name": "Create PDF Form",
+            "description": "Create fillable PDF forms"
+          },
+          {
+            "name": "Form Recognition",
+            "description": "Recognize and extract form fields"
+          }
+        ],
+        "security": [
+          {
+            "name": "Add Password",
+            "description": "Password protect PDF"
+          },
+          {
+            "name": "Remove Password",
+            "description": "Remove password from PDF"
+          },
+          {
+            "name": "Set Permissions",
+            "description": "Set PDF permissions (printing, copying, editing)"
+          },
+          {
+            "name": "Digital Signature",
+            "description": "Add digital signatures with certificates",
+            "features": [
+              "Self-signed certificate generation",
+              "Certificate storage and management",
+              "Signature validation",
+              "Timestamp authority (TSA)",
+              "Multiple signature support",
+              "Certificate chain validation"
+            ]
+          },
+          {
+            "name": "Remove Metadata",
+            "description": "Remove metadata from PDF"
+          }
+        ],
+        "ocr": [
+          {
+            "name": "OCR (Optical Character Recognition)",
+            "description": "Extract text from scanned documents and images",
+            "features": [
+              "100+ language support",
+              "High accuracy OCR",
+              "Confidence scoring",
+              "Multiple output formats (PDF, TXT)",
+              "Batch processing (up to 5 files)",
+              "Accuracy levels: Fast, Balanced, High Accuracy",
+              "Image enhancement (auto-deskew, noise removal)",
+              "File support: PDF, JPG, PNG, TIFF, BMP",
+              "Maximum file size: 100MB per file"
+            ]
+          },
+          {
+            "name": "Make PDF Searchable",
+            "description": "Make scanned PDFs searchable using OCR"
+          },
+          {
+            "name": "Handwriting Recognition",
+            "description": "Recognize handwritten text"
+          },
+          {
+            "name": "Enhanced Recognition",
+            "description": "Advanced OCR with enhanced accuracy"
+          }
+        ],
+        "analysis": [
+          {
+            "name": "PDF Info",
+            "description": "Get PDF metadata and information"
+          },
+          {
+            "name": "PDF Statistics",
+            "description": "Get PDF statistics and analysis"
+          },
+          {
+            "name": "Quality Analysis",
+            "description": "Analyze PDF quality"
+          },
+          {
+            "name": "PDF Compare",
+            "description": "Compare two PDF documents"
+          },
+          {
+            "name": "PDF Validator",
+            "description": "Validate PDF structure and integrity"
+          },
+          {
+            "name": "PDF Repair",
+            "description": "Repair corrupted PDF files"
+          },
+          {
+            "name": "Document Tracking",
+            "description": "Track document changes and versions"
+          }
+        ],
+        "optimization": [
+          {
+            "name": "Optimize Images",
+            "description": "Optimize images in PDF"
+          },
+          {
+            "name": "Optimize Fonts",
+            "description": "Optimize fonts in PDF"
+          },
+          {
+            "name": "Color Optimization",
+            "description": "Optimize colors in PDF"
+          },
+          {
+            "name": "Batch Optimization",
+            "description": "Optimize multiple PDFs with custom profiles",
+            "profiles": [
+              "Web Optimized (40-70% reduction)",
+              "Print Optimized (20-40% reduction)",
+              "Mobile Optimized (50-80% reduction)",
+              "Archive Optimized (30-60% reduction)"
+            ]
+          },
+          {
+            "name": "Remove Unused Objects",
+            "description": "Remove unused objects from PDF"
+          },
+          {
+            "name": "Linearize PDF",
+            "description": "Linearize PDF for web viewing"
+          }
+        ],
+        "extraction": [
+          {
+            "name": "Extract PDF",
+            "description": "Extract pages from PDF"
+          },
+          {
+            "name": "Extract Tables",
+            "description": "Extract tables from PDF to Excel/CSV",
+            "features": [
+              "AI-powered table detection",
+              "Format preservation",
+              "Multiple output formats (Excel, CSV)",
+              "Batch processing",
+              "Multi-language OCR support",
+              "Header extraction",
+              "Table merging"
+            ]
+          }
+        ],
+        "other": [
+          {
+            "name": "PDF Bookmarks",
+            "description": "Add bookmarks to PDF"
+          },
+          {
+            "name": "Calculate Fields",
+            "description": "Calculate form field values"
+          },
+          {
+            "name": "Spell Check",
+            "description": "Spell check PDF text"
+          },
+          {
+            "name": "Add Comments",
+            "description": "Add comments to PDF"
+          }
+        ]
+      },
+      "apiBaseUrl": "http://165.22.215.73:2104"
+    },
+    "template-service": {
+      "name": "Template Service",
+      "port": 2105,
+      "description": "Legal document template service with 45+ professional templates",
+      "features": [
+        "45+ professional legal templates",
+        "Template customization",
+        "AI-powered template generation",
+        "Template management",
+        "Form builder",
+        "Template marketplace",
+        "Form submissions",
+        "Workflow automation",
+        "Template analytics",
+        "API management"
+      ]
+    },
+    "support-service": {
+      "name": "Support Service",
+      "port": 2107,
+      "description": "Customer support service with ticket management and AI-powered chat",
+      "features": [
+        "Ticket creation and management",
+        "Real-time chat support",
+        "Agent assignment and routing",
+        "Ticket categories (technical, billing, documentation, feature, bug, other)",
+        "Priority levels (low, medium, high, urgent)",
+        "Ticket statuses (open, ongoing, closed)",
+        "Rating and feedback system",
+        "AI-powered chat support",
+        "File attachments",
+        "Ticket history and audit trail"
+      ],
+      "aiChat": {
+        "enabled": true,
+        "features": [
+          "Automatic responses to customer queries",
+          "Context-aware responses",
+          "Knowledge base integration",
+          "OpenAI GPT support (optional)",
+          "Rule-based fallback responses"
+        ]
+      }
+    },
+    "auth-service": {
+      "name": "Authentication Service",
+      "port": 2101,
+      "description": "User authentication and authorization service",
+      "features": [
+        "User registration and login",
+        "JWT token generation",
+        "Password reset",
+        "Email verification",
+        "Role-based access control"
+      ]
+    }
+  },
+  "commonQuestions": {
+    "How do I sign a document?": {
+      "answer": "To sign a document, go to the E-Signature service. You can: 1) Create an envelope and upload your document, 2) Add recipients and set signing order, 3) Place signature fields on the document, 4) Send the envelope. Recipients will receive email notifications and can sign electronically. Our signatures are legally binding and comply with regulations in 40+ countries.",
+      "category": "e-signature",
+      "relatedFeatures": ["e-sign-service", "digital-signature"]
+    },
+    "What PDF tools are available?": {
+      "answer": "We offer 30+ PDF tools including: Conversion (PDF to Word, Excel, PowerPoint, HTML, Image, Text, EPUB and vice versa), Editing (Merge, Split, Compress, Rotate, Crop, Delete/Insert pages, Reorder, Add page numbers/headers/footers/watermarks), Forms (Fill forms, Create forms, Form recognition), Security (Add/Remove password, Set permissions, Digital signature, Remove metadata), OCR (OCR with 100+ languages, Make searchable, Handwriting recognition), Analysis (PDF info, Statistics, Quality analysis, Compare, Validate, Repair), Optimization (Optimize images/fonts/colors, Batch optimization, Remove unused objects), and Extraction (Extract pages, Extract tables). Visit the PDF Tools section to access all features.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service"]
+    },
+    "How do I create a document template?": {
+      "answer": "Go to the Template Service section, browse our 45+ legal templates, or create a custom template. You can use AI-powered generation to create templates from natural language prompts. The template service includes a form builder, template marketplace, and workflow automation features.",
+      "category": "templates",
+      "relatedFeatures": ["template-service"]
+    },
+    "Is my signature legally binding?": {
+      "answer": "Yes! Our electronic signatures are legally binding and comply with legal requirements across 40+ countries, including ESIGN Act (US), eIDAS (EU), and similar regulations worldwide. We use digital certificates and cryptographic signatures to ensure authenticity and integrity.",
+      "category": "legal",
+      "relatedFeatures": ["e-sign-service", "digital-signature"]
+    },
+    "How do I share a document?": {
+      "answer": "In the Document Service, select a document and use the Share feature. You can share with specific users, set permissions (view, comment, edit, full), and generate shareable links. Documents can be organized in folders and shared at the folder level as well.",
+      "category": "document-management",
+      "relatedFeatures": ["document-service"]
+    },
+    "What file formats are supported?": {
+      "answer": "We support multiple formats: Documents (PDF, DOC, DOCX, TXT, RTF), Spreadsheets (XLS, XLSX, CSV), Presentations (PPT, PPTX), Images (JPG, PNG, GIF, BMP, TIFF), and Other (HTML, XML, JSON, ZIP). PDF tools can convert between many formats. Maximum file size is typically 50MB for documents and 100MB for PDF processing.",
+      "category": "file-formats",
+      "relatedFeatures": ["document-service", "pdf-service"]
+    },
+    "How do I track document status?": {
+      "answer": "In the E-Signature service, you can track document status, see who has signed, view signing history, and receive notifications when documents are completed. The envelope status shows: draft, sent, in-progress, completed, or declined. You can also view audit trails for compliance.",
+      "category": "e-signature",
+      "relatedFeatures": ["e-sign-service"]
+    },
+    "Can I use the API?": {
+      "answer": "Yes! We provide developer-friendly REST APIs for automation. The platform uses a microservices architecture with separate services for documents, e-signatures, PDF tools, templates, and support. Each service has its own API endpoints. Check the API documentation for endpoints and authentication details. Authentication uses JWT tokens.",
+      "category": "api",
+      "relatedFeatures": ["all-services"]
+    },
+    "How do I convert PDF to Word?": {
+      "answer": "Go to PDF Tools and select 'PDF to Word'. Upload your PDF file and the system will convert it to an editable Word document (DOCX or DOC format). The conversion preserves formatting, maintains text layout, and supports batch processing for multiple files.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "conversion"]
+    },
+    "How do I merge PDF files?": {
+      "answer": "Go to PDF Tools and select 'Merge PDF'. Upload multiple PDF files (you can select several at once), choose the order, and click merge. The system will combine all PDFs into a single file in the order you specified.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "editing"]
+    },
+    "How do I compress a PDF?": {
+      "answer": "Go to PDF Tools and select 'Compress PDF'. Upload your PDF file and the system will reduce its file size while maintaining quality. For advanced options, use 'Batch Optimization' which offers presets like Web Optimized (40-70% reduction), Print Optimized (20-40% reduction), Mobile Optimized (50-80% reduction), or Archive Optimized (30-60% reduction).",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "optimization"]
+    },
+    "How do I extract text from a scanned PDF?": {
+      "answer": "Use the OCR (Optical Character Recognition) tool in PDF Tools. Upload your scanned PDF or image, select the language (supports 100+ languages), choose accuracy level (Fast, Balanced, or High Accuracy), and select output format (searchable PDF or plain text). The system will extract text and make it searchable.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "ocr"]
+    },
+    "How do I fill out a PDF form?": {
+      "answer": "Go to PDF Tools and select 'Fill PDF Forms'. Upload your PDF form, and you can either: 1) Manually fill fields, 2) Use auto-fill with AI/pattern recognition, or 3) Import data from CSV/JSON. The tool supports form field extraction, data validation, signature fields, and bulk processing. You can also flatten the form to make fields non-editable.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "forms"]
+    },
+    "How do I add a password to a PDF?": {
+      "answer": "Go to PDF Tools and select 'Add Password'. Upload your PDF file, enter a password, and the system will encrypt the PDF. Only users with the password can open the document. You can also set permissions to restrict printing, copying, or editing even with the password.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "security"]
+    },
+    "How do I delete pages from a PDF?": {
+      "answer": "Go to PDF Tools and select 'Delete PDF Pages'. Upload your PDF, select the pages you want to remove, and the system will create a new PDF without those pages. You can select individual pages or page ranges.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "editing"]
+    },
+    "How do I rotate PDF pages?": {
+      "answer": "Go to PDF Tools and select 'Rotate PDF'. Upload your PDF, select the pages to rotate, choose rotation angle (90°, 180°, 270°), and apply. You can rotate all pages or specific pages.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "editing"]
+    },
+    "How do I extract tables from a PDF?": {
+      "answer": "Go to PDF Tools and select 'Extract Tables'. Upload your PDF, choose detection method (auto-detect, manual selection, or all content), select page range if needed, and choose output format (Excel or CSV). The tool uses AI-powered table recognition to preserve formatting and structure.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "extraction"]
+    },
+    "How do I add a digital signature to a PDF?": {
+      "answer": "Go to PDF Tools and select 'Digital Signature'. First, generate a certificate (or use existing), then upload your PDF, select the certificate, add signature metadata (reason, location, contact), and sign. The tool supports timestamp authority (TSA) for additional security. You can also verify signatures to ensure authenticity.",
+      "category": "pdf-tools",
+      "relatedFeatures": ["pdf-service", "security", "digital-signature"]
+    },
+    "How do I create a folder for my documents?": {
+      "answer": "In the Document Service, click 'Create Folder' or use the folder management section. Enter a folder name, optional description, and choose a parent folder if creating a subfolder. You can organize documents hierarchically with nested folders.",
+      "category": "document-management",
+      "relatedFeatures": ["document-service"]
+    },
+    "How do I restore a deleted document?": {
+      "answer": "Deleted documents are moved to Trash and kept for 30 days. Go to the Trash page in Document Service, find your document, and click 'Restore'. The document will be restored to its original location. After 30 days, documents are permanently deleted.",
+      "category": "document-management",
+      "relatedFeatures": ["document-service"]
+    },
+    "How do I set signing order for multiple signers?": {
+      "answer": "When creating an envelope in E-Signature service, add all recipients first. Then set the signing order by arranging recipients in sequence. You can set parallel signing (all sign at once) or sequential signing (one after another). The system will send notifications in the correct order.",
+      "category": "e-signature",
+      "relatedFeatures": ["e-sign-service"]
+    },
+    "How do I track who has signed my document?": {
+      "answer": "In the E-Signature service, open your envelope to see the signing status. You'll see which recipients have signed, when they signed, and which are pending. You can also view the audit trail for detailed activity logs including IP addresses and timestamps.",
+      "category": "e-signature",
+      "relatedFeatures": ["e-sign-service"]
+    },
+    "What is the difference between electronic signature and digital signature?": {
+      "answer": "Electronic signature is the visual representation of a signature (draw, type, or upload image) that is legally binding. Digital signature uses cryptographic certificates (X.509) to provide additional security, authenticity verification, and tamper detection. Both are legally valid, but digital signatures offer stronger security and are required for some high-security applications.",
+      "category": "e-signature",
+      "relatedFeatures": ["e-sign-service", "digital-signature"]
+    },
+    "How do I contact support?": {
+      "answer": "You can contact support through the Support Chat widget (bottom right corner). Create a ticket with your question, select a category (technical, billing, documentation, feature, bug, or other), and our AI assistant or support agents will help you. You can also attach files to your support ticket.",
+      "category": "support",
+      "relatedFeatures": ["support-service"]
+    }
+  },
+  "workflows": {
+    "signingWorkflow": {
+      "name": "E-Signature Workflow",
+      "steps": [
+        "1. Log in to your account",
+        "2. Go to E-Signature service",
+        "3. Click 'Create Envelope' or 'New Document'",
+        "4. Upload your document (PDF, DOC, DOCX, etc.)",
+        "5. Add recipients (email addresses)",
+        "6. Set signing order (sequential or parallel)",
+        "7. Place signature fields on the document",
+        "8. Add other fields if needed (date, text, initials)",
+        "9. Review and send the envelope",
+        "10. Recipients receive email notifications",
+        "11. Recipients click link and sign (draw, type, or upload signature)",
+        "12. OTP verification (if enabled)",
+        "13. Document is digitally signed",
+        "14. All parties receive completed document",
+        "15. Certificate of completion is generated"
+      ]
+    },
+    "documentManagementWorkflow": {
+      "name": "Document Management Workflow",
+      "steps": [
+        "1. Go to Document Service",
+        "2. Create folders to organize documents",
+        "3. Upload documents (drag and drop or click to upload)",
+        "4. Add metadata (description, tags)",
+        "5. Organize in folders",
+        "6. Share with others (set permissions)",
+        "7. Collaborate in real-time",
+        "8. View version history",
+        "9. Download or delete when needed"
+      ]
+    },
+    "pdfConversionWorkflow": {
+      "name": "PDF Conversion Workflow",
+      "steps": [
+        "1. Go to PDF Tools",
+        "2. Select conversion tool (e.g., PDF to Word)",
+        "3. Upload PDF file(s)",
+        "4. Configure options if available",
+        "5. Click 'Convert' or 'Process'",
+        "6. Wait for processing",
+        "7. Download converted file"
+      ]
+    },
+    "formFillingWorkflow": {
+      "name": "PDF Form Filling Workflow",
+      "steps": [
+        "1. Go to PDF Tools > Fill PDF Forms",
+        "2. Upload PDF form",
+        "3. Extract form fields (automatic or manual)",
+        "4. Fill fields manually OR use auto-fill",
+        "5. Validate form data",
+        "6. Add signature if needed",
+        "7. Choose output (editable or flattened)",
+        "8. Process and download filled form"
+      ]
+    }
+  },
+  "apiInformation": {
+    "baseUrls": {
+      "gateway": "http://165.22.215.73:8081",
+      "auth": "http://165.22.215.73:2101",
+      "document": "http://165.22.215.73:2102",
+      "esign": "http://165.22.215.73:2103",
+      "pdf": "http://165.22.215.73:2104",
+      "template": "http://165.22.215.73:2105",
+      "support": "http://165.22.215.73:2107"
+    },
+    "authentication": {
+      "method": "JWT Bearer Token",
+      "header": "Authorization: Bearer <token>",
+      "tokenType": "Access Token",
+      "expiry": "Configurable (typically 8 hours for agents)"
+    },
+    "responseFormat": {
+      "success": {
+        "status": 200,
+        "data": "Response data object"
+      },
+      "error": {
+        "status": "HTTP status code",
+        "message": "Error description",
+        "data": null
+      }
+    }
+  },
+  "legalCompliance": {
+    "regulations": [
+      "ESIGN Act (United States) - Electronic Signatures in Global and National Commerce Act",
+      "eIDAS (European Union) - Electronic Identification, Authentication and Trust Services",
+      "UETA (United States) - Uniform Electronic Transactions Act",
+      "Similar regulations in 40+ countries worldwide"
+    ],
+    "complianceFeatures": [
+      "Legally binding signatures",
+      "Audit trails",
+      "Certificate of completion",
+      "Timestamp authority",
+      "Digital certificates",
+      "Signature verification",
+      "Document integrity checks"
+    ]
+  },
+  "fileLimits": {
+    "documentService": {
+      "maxFileSize": "50MB",
+      "maxFilesPerUpload": 10,
+      "supportedFormats": ["PDF", "DOC", "DOCX", "TXT", "RTF", "XLS", "XLSX", "CSV", "PPT", "PPTX", "Images"]
+    },
+    "pdfService": {
+      "maxFileSize": "100MB (for OCR and some tools)",
+      "maxFilesPerUpload": "Varies by tool (typically 1-10)",
+      "supportedFormats": ["PDF", "Images", "Office documents"]
+    },
+    "eSignService": {
+      "maxFileSize": "50MB",
+      "supportedFormats": ["PDF", "DOC", "DOCX"]
+    }
+  },
+  "pricing": {
+    "note": "Contact sales for pricing information. The platform offers various subscription plans with different features and limits."
+  },
+  "support": {
+    "channels": [
+      "In-app support chat (AI-powered)",
+      "Email support",
+      "Ticket system",
+      "Documentation"
+    ],
+    "responseTime": "Varies by plan and priority",
+    "categories": ["technical", "billing", "documentation", "feature", "bug", "other"],
+    "priorities": ["low", "medium", "high", "urgent"]
+  },
+  "version": "1.0.0",
+  "lastUpdated": "2025-12-10",
+  "notes": "This knowledge base is automatically generated from project documentation and is used by the AI chat support system to answer user questions accurately."
+}
+

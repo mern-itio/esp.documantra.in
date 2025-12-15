@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
 
 const LoginPage = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,7 +21,9 @@ const LoginPage = () => {
     
     try {
       await login(email, password)
-      navigate('/dashboard')
+      // Check if there's a return path or pending document
+      const returnTo = (location.state as any)?.returnTo || '/dashboard'
+      navigate(returnTo)
     } catch (error) {
       setError('Invalid email or password. Please try again.')
     } finally {

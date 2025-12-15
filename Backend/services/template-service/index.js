@@ -1,12 +1,14 @@
+const dotenv = require('dotenv');
+dotenv.config();
 const express = require('express');
 const verifyJWT  = require('@draftnsign/auth-lib');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 const formBuilderRoutes = require('./routes/formBuilderRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const aiContentRoutes = require('./routes/aiContentRoutes');
 
-dotenv.config();
+
 // Import routes
 
 
@@ -25,6 +27,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/api', verifyJWT());
 app.use('/api/template',formBuilderRoutes);
 app.use('/public/template',publicRoutes);
+app.use('/public/ai-content', aiContentRoutes); // Public route for AI content generation
 app.get('/health', (req, res) => {
   res.send(`Template service is running ${req.user?.data?.fullname || ''}`);
 });

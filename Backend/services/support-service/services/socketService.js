@@ -3,6 +3,7 @@ const Ticket = require('../models/Ticket');
 const Message = require('../models/Message');
 const SupportAgent = require('../models/SupportAgent');
 const Customer = require('../models/Customer');
+const aiService = require('./aiService');
 // const { routeTicketToAgent } = require('../utils/ticketRouter');
 
 class SocketService {
@@ -343,9 +344,107 @@ class SocketService {
           });
         }
       }
+
+      // Trigger AI response if customer sent a message and AI is enabled
+      if (senderType === 'customer' && aiService.enabled) {
+        console.log('🤖 AI: Customer message detected, checking if AI should respond...');
+        
+        // Get recent messages to understand context
+        const recentMessages = await Message.find({ ticketId })
+          .sort({ createdAt: -1 })
+          .limit(5);
+        
+        const ticketContext = {
+          category: ticket.category,
+          subject: ticket.subject,
+          lastSenderType: senderType,
+          recentMessages: recentMessages.map(m => ({
+            senderType: m.senderType,
+            content: m.content
+          }))
+        };
+
+        // Check if AI should respond
+        if (aiService.shouldRespond(content, ticketContext)) {
+          console.log('🤖 AI: Should respond, generating response...');
+          // Generate AI response asynchronously (don't block)
+          this.generateAIResponse(ticketId, content, ticketContext, ticket).catch(err => {
+            console.error('❌ Error generating AI response:', err);
+          });
+        } else {
+          console.log('🤖 AI: Should not respond (agent responded or AI already responded)');
+        }
+      } else if (senderType === 'customer' && !aiService.enabled) {
+        console.log('⚠️  AI: Customer message but AI is disabled');
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       socket.emit('error', { message: 'Error sending message' });
+    }
+  }
+
+  /**
+   * Generate and send AI response
+   */
+  async generateAIResponse(ticketId, userMessage, ticketContext, ticket) {
+    try {
+      console.log(`🤖 AI: Generating response for ticket ${ticketId}, message: "${userMessage.substring(0, 50)}..."`);
+      
+      // Add a small delay to make it feel more natural
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Generate AI response
+      const aiResponse = await aiService.generateResponse(userMessage, ticketContext);
+      
+      if (!aiResponse || aiResponse.trim().length === 0) {
+        console.error('❌ AI: Generated empty response');
+        return;
+      }
+      
+      console.log(`✅ AI: Generated response (${aiResponse.length} chars)`);
+
+      // Create AI message
+      const aiMessage = new Message({
+        ticketId,
+        senderId: ticket._id, // Use ticket ID as sender ID for AI
+        senderType: 'ai',
+        content: aiResponse,
+        messageType: 'text',
+        isRead: false
+      });
+      await aiMessage.save();
+      
+      console.log(`✅ AI: Message saved with ID ${aiMessage._id}`);
+
+      // Update ticket
+      ticket.lastMessageAt = new Date();
+      await ticket.save();
+
+      // Convert to message object
+      const messageObj = {
+        _id: aiMessage._id.toString(),
+        ticketId: ticket._id.toString(),
+        senderId: aiMessage.senderId.toString(),
+        senderType: 'ai',
+        content: aiMessage.content,
+        messageType: 'text',
+        attachments: [],
+        isRead: false,
+        readBy: [],
+        createdAt: aiMessage.createdAt || new Date(),
+        timestamp: aiMessage.createdAt ? new Date(aiMessage.createdAt).toISOString() : new Date().toISOString()
+      };
+
+      // Broadcast AI response to ticket room
+      const roomName = `ticket_${ticketId}`;
+      this.io.to(roomName).emit('new_message', {
+        message: messageObj,
+        ticketId: ticketId.toString()
+      });
+
+      console.log(`✅ AI: Response sent to ticket room ${roomName}`);
+    } catch (error) {
+      console.error('Error generating AI response:', error);
     }
   }
 

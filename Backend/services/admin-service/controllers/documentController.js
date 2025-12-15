@@ -18,7 +18,7 @@ const getDocuments = async (req, res) => {
         data: result.data.data
       })
     } else {
-      console.log('Service returned non-200:', result);
+      // console.log('Service returned non-200:', result);
       return res.status(404).json({
         status: 404,
         message: 'Documents not found.'

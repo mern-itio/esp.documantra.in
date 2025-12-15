@@ -13,7 +13,8 @@ import {
   ChevronRight,
   X,
   Plus,
-  Trash2
+  Trash2,
+  Sparkles
 } from "lucide-react";
 
 interface Form {
@@ -424,10 +425,7 @@ export const FormsList: React.FC = () => {
         setLoading(true);
         const response = await templateServiceApi.delete(`/api/template/delete-form/${formId}`);
         if (response) {
-          // Remove the form from the list
-          setForms(prev => prev.filter(f => f._id !== formId));
-          
-          // Show success alert
+          setForms(prev => prev.filter(f => f._id !== formId));          
           Swal.fire({
             title: 'Deleted!',
             text: `"${formTitle}" has been deleted successfully.`,
@@ -472,43 +470,30 @@ export const FormsList: React.FC = () => {
       ? <ChevronUp className="w-3 h-3" />
       : <ChevronDown className="w-3 h-3" />;
   };
-
-  // Column customization handlers (work with tempColumns in modal)
   const handleToggleColumn = (columnId: string) => {
     setTempColumns(prev => prev.map(col =>
       col.id === columnId ? { ...col, visible: !col.visible } : col
     ));
   };
-
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedColumnIndex(index);
     e.dataTransfer.effectAllowed = 'move';
   };
-
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     setDragOverIndex(index);
   };
-
   const handleDragEnd = () => {
     setDraggedColumnIndex(null);
     setDragOverIndex(null);
   };
-
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     if (draggedColumnIndex === null || draggedColumnIndex === dropIndex) return;
-
     const newColumns = [...tempColumns];
     const draggedItem = newColumns[draggedColumnIndex];
-
-    // Remove dragged item from original position
     newColumns.splice(draggedColumnIndex, 1);
-
-    // Insert at new position
     newColumns.splice(dropIndex, 0, draggedItem);
-
-    // Update order values
     const updatedColumns = newColumns.map((col, idx) => ({
       ...col,
       order: idx
@@ -520,48 +505,53 @@ export const FormsList: React.FC = () => {
   };
 
   const handleSaveColumns = () => {
-    // Apply tempColumns to actual columns
     setColumns(tempColumns.map(col => ({ ...col })));
     setShowColumnModal(false);
   };
 
   const handleCancelColumns = () => {
-    // Discard temp changes, reset tempColumns to current columns
     setTempColumns(columns.map(col => ({ ...col })));
     setShowColumnModal(false);
   };
-
   const handleResetToDefault = () => {
-    // Reset tempColumns to default (not actual columns until Save)
     const resetColumns = defaultColumns.map(col => ({ ...col }));
     setTempColumns(resetColumns);
   };
-
-  // Get visible columns sorted by order
   const visibleColumns = columns
     .filter(col => col.visible)
     .sort((a, b) => a.order - b.order);
-
-  // Filter columns for modal search (use tempColumns in modal)
   const filteredColumnsForModal = tempColumns.filter(col =>
     col.label.toLowerCase().includes(columnSearchTerm.toLowerCase())
   );
-
   return (
     <div className="p-8 bg-white min-h-screen" style={{ backgroundColor: '#FFFFFF' }}>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+     <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl" style={{ color: '#28004D' }}>My Templates</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-sm text-white font-medium"
-          style={{
-            backgroundColor: '#4D0080',
-          }}
-        >
-          <Plus className="w-4 h-4" />
-          New Form
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/template/ai-generator')}
+            className="premium-ai-button flex items-center gap-2 px-5 py-2.5 rounded-sm"
+            style={{
+              color: '#2A1A0E',
+              fontWeight: '600',
+              fontSize: '14px'
+            }}
+          >
+            <Sparkles className="w-4 h-4" style={{ color: '#2A1A0E' }} />
+            <span>Generate Template using AI</span>
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-sm text-white font-medium transition-all duration-200 hover:opacity-90"
+            style={{
+              backgroundColor: '#4D0080',
+              borderRadius: '6px'
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            New Form
+          </button>
+        </div>
       </div>
 
       {/* Search and Filter Bar */}
