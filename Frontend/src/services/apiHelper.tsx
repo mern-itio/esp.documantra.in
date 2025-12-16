@@ -261,3 +261,8 @@ export const adminApi = createApiInstance(
   'Admin-Service',
   'adminToken'
 );
+
+export const organizationApi = createApiInstance(
+  import.meta.env.VITE_ORGANIZATION_SERVICE_URL || 'http://localhost:2111',
+  'Organization-Service'
+);
