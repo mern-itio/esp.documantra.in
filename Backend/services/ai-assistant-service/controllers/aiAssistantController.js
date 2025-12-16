@@ -98,6 +98,11 @@ class AIAssistantController {
               executionResult = await this.executePrepareDocument(result.parameters, userId, token);
               break;
             case 'create_and_send_envelope':
+              console.log('Calling executeCreateAndSendEnvelope with uploadedFile:', uploadedFile ? {
+                originalname: uploadedFile.originalname,
+                path: uploadedFile.path,
+                size: uploadedFile.size
+              } : 'null/undefined');
               executionResult = await this.executeCreateAndSendEnvelope(result.parameters, userId, token, uploadedFile);
               break;
           }
@@ -481,8 +486,28 @@ class AIAssistantController {
     try {
       const { documentId, recipients, signatureFields, subject, message } = parameters;
 
+      // Debug logging
+      console.log('executeCreateAndSendEnvelope - uploadedFile:', uploadedFile ? {
+        originalname: uploadedFile.originalname,
+        path: uploadedFile.path,
+        size: uploadedFile.size,
+        exists: uploadedFile.path ? require('fs').existsSync(uploadedFile.path) : false
+      } : 'null/undefined');
+      console.log('executeCreateAndSendEnvelope - documentId:', documentId);
+      console.log('executeCreateAndSendEnvelope - parameters:', JSON.stringify(parameters, null, 2));
+
+      // Check if uploadedFile exists and has required properties
+      const hasValidUploadedFile = uploadedFile && 
+        (uploadedFile.path || uploadedFile.buffer) && 
+        uploadedFile.originalname;
+
       // If file is uploaded, documentId is not required
-      if (!documentId && !uploadedFile) {
+      if (!documentId && !hasValidUploadedFile) {
+        console.error('Error: Neither documentId nor valid uploadedFile provided');
+        console.error('documentId:', documentId);
+        console.error('uploadedFile:', uploadedFile);
+        console.error('uploadedFile type:', typeof uploadedFile);
+        console.error('uploadedFile keys:', uploadedFile ? Object.keys(uploadedFile) : 'null');
         throw new Error('Document ID or file attachment is required');
       }
 
@@ -506,10 +531,18 @@ class AIAssistantController {
       let isUploadedFile = false;
 
       // Step 0: Check if file was uploaded
-      if (uploadedFile) {
+      if (hasValidUploadedFile) {
         // Use the uploaded file directly
         const fs = require('fs');
-        fileBuffer = fs.readFileSync(uploadedFile.path);
+        if (uploadedFile.buffer) {
+          // File is in memory (buffer)
+          fileBuffer = uploadedFile.buffer;
+        } else if (uploadedFile.path) {
+          // File is on disk
+          fileBuffer = fs.readFileSync(uploadedFile.path);
+        } else {
+          throw new Error('Uploaded file has no path or buffer');
+        }
         documentName = uploadedFile.originalname;
         isUploadedFile = true;
         console.log('Using uploaded file:', documentName);
