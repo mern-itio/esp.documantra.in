@@ -12,12 +12,11 @@ class LLMService {
 
   loadKnowledgeBase() {
     try {
-      // Try multiple possible paths for knowledge-base.json
       const possiblePaths = [
-        path.join(__dirname, '../../../knowledge-base.json'), // Docker: /app/knowledge-base.json
-        path.join(__dirname, '../../knowledge-base.json'),     // Local: Backend/services/knowledge-base.json
-        path.join(process.cwd(), 'knowledge-base.json'),      // Current working directory
-        '/app/knowledge-base.json'                            // Absolute path in Docker
+        path.join(__dirname, '../../../knowledge-base.json'),
+        path.join(__dirname, '../../knowledge-base.json'),   
+        path.join(process.cwd(), 'knowledge-base.json'),    
+        '/app/knowledge-base.json'                            
       ];
       
       for (const kbPath of possiblePaths) {
@@ -32,7 +31,6 @@ class LLMService {
         }
       }
       
-      // If no file found, return empty object
       console.warn('Knowledge base file not found. Using empty knowledge base.');
       return {};
     } catch (error) {
