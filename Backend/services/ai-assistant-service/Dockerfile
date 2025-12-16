@@ -1,19 +1,32 @@
-FROM node:18-alpine
+FROM node:20
 
 WORKDIR /app
 
-# Copy package files
-COPY services/ai-assistant-service/package*.json ./
+# Copy package.json and package-lock.json for local packages first
+COPY packages/auth-lib/package*.json ./packages/auth-lib/
+COPY packages/validators/package*.json ./packages/validators/
 
-# Install dependencies
+# Copy package.json and package-lock.json for service
+COPY services/ai-assistant-service/package*.json ./services/ai-assistant-service/
+
+# Copy all code after package.json (to leverage docker cache)
+COPY packages/auth-lib ./packages/auth-lib
+COPY packages/validators ./packages/validators
+COPY services/ai-assistant-service ./services/ai-assistant-service
+COPY knowledge-base.json ./knowledge-base.json
+
+# Install dependencies inside local packages
+WORKDIR /app/packages/auth-lib
 RUN npm install
 
-# Copy service code
-COPY services/ai-assistant-service/ .
+WORKDIR /app/packages/validators
+RUN npm install
 
-# Expose port
+# Install service dependencies (links local packages)
+WORKDIR /app/services/ai-assistant-service
+RUN npm install --legacy-peer-deps
+
 EXPOSE 2108
 
-# Start service
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]
 

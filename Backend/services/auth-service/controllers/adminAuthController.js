@@ -3,37 +3,6 @@ const jwt = require('jsonwebtoken');
 const AdminUser = require('../models/Admin');
 const { isEmailValid } = require('@draftnsign/validators');
 const mongoose = require('mongoose');
-const SupportAgent = require('../../support-service/models/SupportAgent');
-const getSupportServiceDb = () => {
-  if (mongoose.connection.readyState === 1) {
-    const currentDbName = mongoose.connection.db.databaseName;
-    
-    const currentDb = mongoose.connection.db;
-    const currentDbAgents = currentDb.collection('supportagents');
-    const possibleDbNames = ['support-db', 'support-db', 'support', currentDbName];
-    
-    for (const dbName of possibleDbNames) {
-      try {
-        const testDb = mongoose.connection.useDb(dbName);
-        const testDbInstance = testDb.db;
-        testDbInstance.listCollections().toArray().then(cols => {
-          if (cols.length > 0) {
-            const agentsCol = testDbInstance.collection('supportagents');           
-          }
-        });
-      } catch (err) {
-        console.log(`[AGENT LOGIN] Cannot access database '${dbName}':`, err.message);
-      }
-    }
-    
-    // For now, try the current database first (agents might be there)
-    // If not found, we'll try support-db
-    return currentDb;
-  } else {
-    throw new Error('MongoDB connection not ready. Cannot access support-service database.');
-  }
-};
-
 
 const adminLogin = async (req, res) => {
   try {

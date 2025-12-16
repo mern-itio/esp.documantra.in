@@ -12,9 +12,29 @@ class LLMService {
 
   loadKnowledgeBase() {
     try {
-      const kbPath = path.join(__dirname, '../../../knowledge-base.json');
-      const kbData = fs.readFileSync(kbPath, 'utf8');
-      return JSON.parse(kbData);
+      // Try multiple possible paths for knowledge-base.json
+      const possiblePaths = [
+        path.join(__dirname, '../../../knowledge-base.json'), // Docker: /app/knowledge-base.json
+        path.join(__dirname, '../../knowledge-base.json'),     // Local: Backend/services/knowledge-base.json
+        path.join(process.cwd(), 'knowledge-base.json'),      // Current working directory
+        '/app/knowledge-base.json'                            // Absolute path in Docker
+      ];
+      
+      for (const kbPath of possiblePaths) {
+        try {
+          if (fs.existsSync(kbPath)) {
+            const kbData = fs.readFileSync(kbPath, 'utf8');
+            return JSON.parse(kbData);
+          }
+        } catch (err) {
+          // Continue to next path
+          continue;
+        }
+      }
+      
+      // If no file found, return empty object
+      console.warn('Knowledge base file not found. Using empty knowledge base.');
+      return {};
     } catch (error) {
       console.error('Error loading knowledge base:', error);
       return {};
