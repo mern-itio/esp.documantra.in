@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const createApiInstance = (baseURL: string, serviceName: string) => {
+const createApiInstance = (baseURL: string) => {
   const instance = axios.create({
     baseURL,
     timeout: 300000, // 5 minutes for AI operations (file uploads, envelope creation, etc.)
@@ -36,8 +36,7 @@ const createApiInstance = (baseURL: string, serviceName: string) => {
 };
 
 const aiAssistantApi = createApiInstance(
-  import.meta.env.VITE_AI_ASSISTANT_SERVICE_URL || 'http://165.22.215.73:2108',
-  'AI Assistant'
+  import.meta.env.VITE_AI_ASSISTANT_SERVICE_URL || 'http://165.22.215.73:2108'
 );
 
 export interface AICommandResponse {
