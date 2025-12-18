@@ -2158,6 +2158,7 @@ const PowerFormCreate: React.FC = () => {
       case 2:
         return (
           <SigningEditorStep
+            envelopeId={envelopeId}
             documents={documents}
             recipients={recipients}
             signatureFields={signatureFields}
