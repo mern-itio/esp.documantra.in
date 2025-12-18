@@ -166,7 +166,11 @@ class SocketService {
 
       // Check access permissions
       if (socket.userType === 'customer') {
-        if (ticket.customerId.toString() !== socket.userId) {
+        // Convert both IDs to strings for comparison to handle ObjectId vs string mismatch
+        const ticketCustomerId = ticket.customerId?.toString();
+        const socketUserId = socket.userId?.toString();
+        
+        if (ticketCustomerId !== socketUserId) {
           socket.emit('error', { message: 'Access denied' });
           return;
         }
@@ -220,7 +224,11 @@ class SocketService {
       // Determine sender type and verify access
       let senderType;
       if (socket.userType === 'customer') {
-        if (ticket.customerId.toString() !== socket.userId) {
+        // Convert both IDs to strings for comparison to handle ObjectId vs string mismatch
+        const ticketCustomerId = ticket.customerId?.toString();
+        const socketUserId = socket.userId?.toString();
+        
+        if (ticketCustomerId !== socketUserId) {
           socket.emit('error', { message: 'Access denied' });
           return;
         }

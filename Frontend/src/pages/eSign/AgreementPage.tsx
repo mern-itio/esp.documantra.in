@@ -407,7 +407,7 @@ const AgreementPage: React.FC = () => {
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(getInitialColumnConfig());
 
   // Fetch envelopes data from API
-  const fetchEnvelopes = async () => {
+  const fetchEnvelopes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await eSignApi.get('/api/e-sign/get-envelopes');
@@ -462,11 +462,23 @@ const AgreementPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchEnvelopes();
-  }, []);
+  }, [fetchEnvelopes]);
+
+  // Listen for global events (e.g., AI assistant sending envelopes) to refresh list in real time
+  useEffect(() => {
+    const handleEnvelopesUpdated = () => {
+      fetchEnvelopes();
+    };
+
+    window.addEventListener('envelopes:updated', handleEnvelopesUpdated);
+    return () => {
+      window.removeEventListener('envelopes:updated', handleEnvelopesUpdated);
+    };
+  }, [fetchEnvelopes]);
 
   // Check for success parameter and show success modal
   useEffect(() => {

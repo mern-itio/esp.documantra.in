@@ -2,6 +2,7 @@ const Message = require('../models/Message');
 const Ticket = require('../models/Ticket');
 const SupportAgent = require('../models/SupportAgent');
 const Customer = require('../models/Customer');
+const mongoose = require('mongoose');
 
 // Get messages for a ticket
 exports.getMessages = async (req, res) => {
@@ -21,12 +22,18 @@ exports.getMessages = async (req, res) => {
     }
 
     // Check if user has access to this ticket
-    if (userType === 'customer' && ticket.customerId.toString() !== userId) {
-      return res.status(403).json({
-        status: 403,
-        message: 'Access denied',
-        data: null
-      });
+    if (userType === 'customer') {
+      // Convert both IDs to strings for comparison to handle ObjectId vs string mismatch
+      const ticketCustomerId = ticket.customerId?.toString();
+      const requestUserId = userId?.toString();
+      
+      if (ticketCustomerId !== requestUserId) {
+        return res.status(403).json({
+          status: 403,
+          message: 'Access denied',
+          data: null
+        });
+      }
     }
 
     // For agents/admins: Allow viewing messages for all tickets in unified dashboard
@@ -78,6 +85,8 @@ exports.uploadFile = async (req, res) => {
     const { ticketId } = req.params;
     const file = req.file;
     const path = require('path');
+    const userId = req.user?.data?.id || req.agent?.id || req.admin?.id;
+    const userType = req.user ? 'customer' : (req.admin ? 'admin' : 'agent');
 
     if (!file) {
       return res.status(400).json({
@@ -85,6 +94,30 @@ exports.uploadFile = async (req, res) => {
         message: 'No file uploaded',
         data: null
       });
+    }
+
+    // Verify access to ticket for customers
+    if (userType === 'customer') {
+      const ticket = await Ticket.findById(ticketId);
+      if (!ticket) {
+        return res.status(404).json({
+          status: 404,
+          message: 'Ticket not found',
+          data: null
+        });
+      }
+      
+      // Check if user has access to this ticket
+      const ticketCustomerId = ticket.customerId?.toString();
+      const requestUserId = userId?.toString();
+      
+      if (ticketCustomerId !== requestUserId) {
+        return res.status(403).json({
+          status: 403,
+          message: 'Access denied',
+          data: null
+        });
+      }
     }
 
     // Store relative path instead of absolute path

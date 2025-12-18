@@ -18,7 +18,7 @@ const conversationSchema = new mongoose.Schema({
     },
     action: {
       type: String,
-      enum: ['search_document', 'send_document', 'prepare_document', 'create_and_send_envelope', 'clarification', null],
+      enum: ['search_document', 'send_document', 'prepare_document', 'create_and_send_envelope', 'clarification', 'list_auth_providers', null],
       default: null
     },
     parameters: {
