@@ -138,3 +138,4 @@ services:
     environment:
       - DOCUMENT_SERVICE_URL=http://document-service:2102
       - ESIGN_SERVICE_URL=http://e-sign-service:2103
+      - SUBSCRIPTION_SERVICE_URL=http://subscription-service:2110

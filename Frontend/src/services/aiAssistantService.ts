@@ -41,7 +41,7 @@ const aiAssistantApi = createApiInstance(
 
 export interface AICommandResponse {
   success: boolean;
-  action: 'search_document' | 'send_document' | 'prepare_document' | 'create_and_send_envelope' | null;
+  action: 'search_document' | 'send_document' | 'prepare_document' | 'create_and_send_envelope' | 'list_auth_providers' | null;
   parameters: any;
   clarification: string | null;
   result?: any;
@@ -58,13 +58,20 @@ export interface ConversationMessage {
 }
 
 export const aiAssistantApiService = {
-  // Process a command with optional file attachment
-  processCommand: async (command: string, file?: File | null, context?: any): Promise<AICommandResponse> => {
-    if (file) {
+  // Process a command with optional file attachments
+  processCommand: async (command: string, files?: File | File[] | null, context?: any): Promise<AICommandResponse> => {
+    const fileArray: File[] =
+      !files ? [] :
+      files instanceof File ? [files] :
+      Array.isArray(files) ? files : [];
+
+    if (fileArray.length > 0) {
       // Use FormData for file upload
       const formData = new FormData();
       formData.append('command', command);
-      formData.append('file', file);
+      for (const file of fileArray) {
+        formData.append('files', file);
+      }
       if (context) {
         formData.append('context', JSON.stringify(context));
       }

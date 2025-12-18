@@ -45,6 +45,7 @@ const CustomerChatWidget: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Load tickets on mount
   useEffect(() => {
@@ -64,6 +65,18 @@ const CustomerChatWidget: React.FC = () => {
       setMessageInput(''); // Clear any input when ticket is closed
     }
   }, [currentTicket?.status]);
+
+  // Auto‑resize the chat message textarea as the user types
+  const autoResizeMessageInput = () => {
+    const el = messageInputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useEffect(() => {
+    autoResizeMessageInput();
+  }, [messageInput, currentTicket?._id, isOpen]);
 
   // Load tickets from API
   const loadTickets = async () => {
@@ -159,7 +172,7 @@ const CustomerChatWidget: React.FC = () => {
     setTyping(false);
   };
 
-  const handleTyping = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTyping = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessageInput(e.target.value);
     setTyping(true);
   }, [setTyping]);
@@ -676,18 +689,19 @@ const CustomerChatWidget: React.FC = () => {
                       )}
                       <div className="p-3">
                         <div className="flex gap-2 items-end">
-                          <input
-                            type="text"
+                          <textarea
+                            ref={messageInputRef}
                             value={messageInput}
                             onChange={handleTyping}
-                            onKeyPress={(e) => {
+                            onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
                                 handleSendMessage();
                               }
                             }}
                             placeholder="Type a message..."
-                            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559]"
+                            className="flex-1 resize-none px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559] max-h-32 overflow-y-auto text-sm"
+                            rows={1}
                           />
                           <input
                             ref={fileInputRef}
@@ -712,6 +726,10 @@ const CustomerChatWidget: React.FC = () => {
                             <Send className="w-5 h-5" />
                           </button>
                         </div>
+                        <p className="mt-2 text-[11px] text-gray-500">
+                          Press <span className="font-semibold">Enter</span> to send,&nbsp;
+                          <span className="font-semibold">Shift+Enter</span> for a new line.
+                        </p>
                       </div>
                     </div>
                   )}

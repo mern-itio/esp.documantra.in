@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, Loader2, Search, Mail, FileEdit, Trash2, ExternalLink, Paperclip, XCircle } from 'lucide-react';
 import { aiAssistantApiService }from '../../services/aiAssistantService';
 import type { ConversationMessage, AICommandResponse } from '../../services/aiAssistantService';
+import { subscriptionApi } from '../../services/apiHelper';
+import { SubscriptionStorage } from '../../services/subscriptionService';
 import toast from 'react-hot-toast';
 
 interface AIAssistantPanelProps {
@@ -18,10 +20,18 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto‑resize the textarea as the user types (similar to chat apps)
+  const autoResizeTextarea = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
 
   // Load conversation history on mount and when panel opens
   useEffect(() => {
@@ -42,6 +52,11 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
+
+  // Recalculate textarea height whenever the input text changes
+  useEffect(() => {
+    autoResizeTextarea();
+  }, [input]);
 
   const loadConversationHistory = async () => {
     try {
@@ -165,41 +180,65 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type (PDF, DOC, DOCX, etc.)
-      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png'
+    ];
+
+    const validFiles: File[] = [];
+
+    for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
-        toast.error('Please upload a PDF, Word document, or image file');
-        return;
+        toast.error(`Unsupported file type: ${file.name}. Please upload PDF, Word document, or image file.`);
+        continue;
       }
-      // Validate file size (max 50MB)
       if (file.size > 50 * 1024 * 1024) {
-        toast.error('File size must be less than 50MB');
-        return;
+        toast.error(`File too large: ${file.name}. Max size is 50MB.`);
+        continue;
       }
-      setAttachedFile(file);
-      toast.success(`File attached: ${file.name}`);
+      validFiles.push(file);
+    }
+
+    if (validFiles.length > 0) {
+      setAttachedFiles(prev => [...prev, ...validFiles]);
+      toast.success(validFiles.length === 1 ? `File attached: ${validFiles[0].name}` : `${validFiles.length} files attached`);
     }
   };
 
-  const handleRemoveFile = () => {
-    setAttachedFile(null);
+  const handleRemoveFile = (index?: number) => {
+    setAttachedFiles(prev => {
+      if (index === undefined) return [];
+      const copy = [...prev];
+      copy.splice(index, 1);
+      return copy;
+    });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const handleSend = async () => {
-    if ((!input.trim() && !attachedFile) || isLoading) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
 
     const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
 
     // Add user message to UI immediately (include file info if attached)
-    const userMessageContent = attachedFile 
-      ? `${userMessage || 'Send this document'} [File: ${attachedFile.name}]`
+    const fileLabel = attachedFiles.length === 1
+      ? `[File: ${attachedFiles[0].name}]`
+      : attachedFiles.length > 1
+        ? `[Files: ${attachedFiles.map(f => f.name).join(', ')}]`
+        : '';
+
+    const userMessageContent = attachedFiles.length > 0
+      ? `${userMessage || 'Send this document'} ${fileLabel}`.trim()
       : userMessage;
     
     const newUserMessage: ConversationMessage = {
@@ -210,12 +249,41 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
     setMessages(prev => [...prev, newUserMessage]);
 
     try {
-      const response: AICommandResponse = await aiAssistantApiService.processCommand(userMessage || 'Send this document', attachedFile);
-      
-      // Clear attached file after sending
-      setAttachedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      const response: AICommandResponse = await aiAssistantApiService.processCommand(userMessage || 'Send this document', attachedFiles);
+
+      // Only clear attached files when an action has actually been identified/executed.
+      // For pure clarification turns we keep the files so the user doesn't need to reattach them.
+      if (response.action && !response.clarification) {
+        setAttachedFiles([]);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+
+      // If an envelope was created/sent via AI, refresh subscription credits and notify listeners to refresh envelopes
+      if (response.action === 'create_and_send_envelope' && response.result?.success) {
+        try {
+          const planResp = await subscriptionApi.get('/user-plan/me');
+          if (planResp.status === 200 && planResp.data?.data) {
+            SubscriptionStorage.savePlan(planResp.data.data);
+            window.dispatchEvent(new CustomEvent('credits-updated'));
+          }
+        } catch (e) {
+          console.error('Failed to refresh subscription credits after AI envelope send:', e);
+        }
+
+        // Notify envelope lists (e.g., AgreementPage) that new envelopes are available
+        try {
+          window.dispatchEvent(new CustomEvent('envelopes:updated', {
+            detail: {
+              source: 'ai-assistant',
+              action: response.action,
+              envelopeId: response.result?.envelopeId || null
+            }
+          }));
+        } catch (e) {
+          console.error('Failed to dispatch envelopes:updated event:', e);
+        }
       }
 
       // Handle response
@@ -287,12 +355,48 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
       case 'prepare_document':
         return `Document prepared with ${response.result.fields || 0} field(s). ${response.result.nextSteps?.join('\n') || ''}`;
 
+      case 'list_auth_providers':
+        if (!response.result.providers || response.result.providers.length === 0) {
+          return 'No authentication providers are currently configured for your subscription plan.';
+        }
+        return `You have ${response.result.providers.length} authentication provider(s) available: ${response.result.providers.map((p: any) => p.name).join(', ')}.`;
+
       case 'create_and_send_envelope':
         return `Envelope created and sent successfully! Sent to ${response.result.recipients || response.parameters?.recipients?.length || 0} recipient(s) with ${response.result.signatureFields || 0} signature field(s).`;
 
       default:
         return response.message || 'Action completed successfully.';
     }
+  };
+
+  // Render plain text content but turn URLs into clickable links.
+  const renderTextWithLinks = (text: string) => {
+    if (!text) return null;
+
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      const isUrl = part.startsWith('http://') || part.startsWith('https://');
+      if (!isUrl) {
+        return <span key={index}>{part}</span>;
+      }
+
+      const isPdfToolLink = part.includes('/pdf-tools/');
+      const label = isPdfToolLink ? 'Convert this file to PDF' : part;
+
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-purple-600 underline break-all"
+        >
+          {label}
+        </a>
+      );
+    });
   };
 
   const handleDocumentClick = async (documentId: string, documentName: string, serviceType?: string, documentType?: string) => {
@@ -424,7 +528,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                   {(() => {
                     // Ensure content is always displayed as a formatted string
                     if (typeof message.content === 'string') {
-                      return message.content;
+                      return renderTextWithLinks(message.content);
                     }
                     // If content is an object, try to format it
                     if (message.content && typeof message.content === 'object' && message.action) {
@@ -510,23 +614,32 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
 
       {/* Input */}
       <div className="p-4 border-t border-slate-200 bg-white overflow-x-hidden">
-        {/* Attached File Display */}
-        {attachedFile && (
-          <div className="mb-2 p-2 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
-            <div className="flex items-center space-x-2 flex-1 min-w-0">
-              <Paperclip className="w-4 h-4 text-purple-600 flex-shrink-0" />
-              <span className="text-sm text-slate-700 truncate">{attachedFile?.name || 'Unknown file'}</span>
-              <span className="text-xs text-slate-500 flex-shrink-0">
-                ({attachedFile ? (attachedFile.size / 1024 / 1024).toFixed(2) : '0'} MB)
-              </span>
-            </div>
-            <button
-              onClick={handleRemoveFile}
-              className="p-1 hover:bg-purple-100 rounded transition-colors flex-shrink-0"
-              title="Remove file"
-            >
-              <XCircle className="w-4 h-4 text-purple-600" />
-            </button>
+        {/* Attached Files Display */}
+        {attachedFiles.length > 0 && (
+          <div className="mb-2 space-y-1">
+            {attachedFiles.map((file, idx) => (
+              <div
+                key={`${file.name}-${file.size}-${idx}`}
+                className="p-2 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  <Paperclip className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                  <span className="text-sm text-slate-700 truncate">
+                    {file.name || 'Unknown file'}
+                  </span>
+                  <span className="text-xs text-slate-500 flex-shrink-0">
+                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleRemoveFile(idx)}
+                  className="p-1 hover:bg-purple-100 rounded transition-colors flex-shrink-0"
+                  title="Remove file"
+                >
+                  <XCircle className="w-4 h-4 text-purple-600" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
         
@@ -536,6 +649,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
             ref={fileInputRef}
             type="file"
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            multiple
             onChange={handleFileSelect}
             className="hidden"
             id="ai-assistant-file-input"
@@ -553,14 +667,14 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={attachedFile ? "Write your message and I'll send this document..." : "Type your command... (e.g., 'search documents sent to Rahul')"}
-            className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder={attachedFiles.length > 0 ? "Write your message and I'll send these document(s)..." : "Type your command... (e.g., 'search documents sent to Rahul')"}
+            className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent max-h-40 overflow-y-auto"
             rows={2}
             disabled={isLoading}
           />
           <button
             onClick={handleSend}
-            disabled={(!input.trim() && !attachedFile) || isLoading}
+            disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
             className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (

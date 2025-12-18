@@ -50,11 +50,12 @@ AVAILABLE ACTIONS:
 2. send_document - Send a document to recipients via email (simple sharing)
 3. prepare_document - Prepare a document with signature fields and other form fields
 4. create_and_send_envelope - Create an e-sign envelope, add signature fields, and send to recipients (all-in-one)
+5. list_auth_providers - List available authentication providers (auth methods) for the current user’s subscription plan
 
 RESPONSE FORMAT:
 You must always respond with a JSON object containing:
 {
-  "action": "search_document" | "send_document" | "prepare_document" | "create_and_send_envelope" | null,
+  "action": "search_document" | "send_document" | "prepare_document" | "create_and_send_envelope" | "list_auth_providers" | null,
   "parameters": {
     // Action-specific parameters
   },
@@ -123,7 +124,8 @@ ACTION SPECIFICATIONS:
      "recipients": [
        {
          "name": "string",
-         "email": "string (required)"
+         "email": "string (required)",
+         "authMethods": ["optional list of authentication method names requested by the user, e.g. \"Email OTP\", \"SMS OTP\""]
        }
      ],
      "signatureFields": [
@@ -135,19 +137,39 @@ ACTION SPECIFICATIONS:
          "width": "number (default: 150)",
          "height": "number (default: 40)",
          "position": "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center" | null,
-         "recipientEmail": "string or null (if specific recipient)"
+         "recipientEmail": "string or null (if specific recipient)",
+         "documentIndex": "number (optional, 1-based index of the document within the envelope when multiple documents are attached)"
        }
      ],
      "subject": "string or null",
      "message": "string or null"
    }
 
-CLARIFICATION RULES:
-- If documentId is missing for send_document, prepare_document, or create_and_send_envelope, ask: "Which document would you like to [action]?"
-- If recipient email is missing for send_document or create_and_send_envelope, ask: "What is the recipient's email address?"
-- If signature fields are mentioned but no position specified, use default positions (bottom-right for signature fields)
-- If the command mentions both sending and signature fields, use create_and_send_envelope action
-- If the command is unclear, ask a short, specific question
+5. list_auth_providers:
+   Use this action when the user asks about available authentication / auth providers or methods, or asks how many auth providers the system has.
+   Examples of such queries: "list auth providers", "what authentication methods do you have", "how many auth providers are available", "show me all auth providers".
+   Parameters:
+   {
+     // No required parameters; always use an empty object unless future filters are added
+   }
+
+  CLARIFICATION RULES:
+  - If NO file is attached (the user message does NOT start with "[File attached:") and documentId is missing for send_document, prepare_document, or create_and_send_envelope, ask: "Which document would you like to [action]?"
+  - If a file IS attached (the system will prefix the user message with "[File attached: <fileName> (<fileType>) ]") and the user refers to "this document", "this file", or otherwise clearly means the attached file, then:
+    - Set "documentId": null
+    - DO NOT ask for a document ID or clarification about the document
+    - Proceed with the requested action using the attached file as the document source.
+  - If MULTIPLE files are attached (the system will prefix the user message with e.g. "[File attached: file1.pdf, file2.pdf (...)]") and the user says "first document", "second document", "both documents", "each document", or similar:
+    - Use "documentIndex" on each signature field to indicate which attached document it belongs to (1-based index in the order the files were attached).
+    - Example: "add signature for Sneha on the first document and for Rahul on the second document" should yield two signatureFields where the first has "documentIndex": 1 and the second has "documentIndex": 2.
+    - If the user clearly wants the same field on ALL attached documents (e.g. "add a signature for Sneha on every document"), create one signature field per document with the appropriate "documentIndex" values.
+  - On follow‑up clarification turns where a file is still attached and the user confirms the same document (e.g. "yes this is the correct document", "use this doc", "send this attached file"), keep using the attached file and DO NOT ask again for a document ID.
+  - If recipient email is missing for send_document or create_and_send_envelope, ask: "What is the recipient's email address?"
+  - If signature fields are mentioned but no position specified, use default positions (bottom-right for signature fields)
+  - If the command mentions both sending and signature fields, use create_and_send_envelope action
+  - If the user asks to apply authentication / auth provider / verification methods (e.g. "use Email OTP", "apply Aadhaar KYC"), add an "authMethods" array on each affected recipient with the method names as spoken by the user. If the user says "same auth for all recipients", copy the same authMethods array to all recipients.
+  - Do NOT invent auth methods; only use ones explicitly requested in the command.
+  - If the command is unclear, ask a short, specific question
 
 PLATFORM CONTEXT:
 ${JSON.stringify(kb, null, 2)}
@@ -211,6 +233,13 @@ Response: {
     "subject": "Employment Contract"
   },
   "clarification": "Which document is 'Employment Contract.pdf'? Please provide the document ID, search for it first, or attach the file."
+}
+
+User: "how many auth providers do you have?"
+Response: {
+  "action": "list_auth_providers",
+  "parameters": {},
+  "clarification": null
 }
 
 User: [File attached: contract.pdf] "send this to john@example.com with a signature field"
@@ -295,6 +324,22 @@ IMPORTANT:
     const lowerCommand = command.toLowerCase();
     
     // Simple keyword-based fallback
+    // 0. List auth providers / auth methods
+    if (
+      lowerCommand.includes('auth provider') ||
+      lowerCommand.includes('authentication provider') ||
+      lowerCommand.includes('auth providers') ||
+      lowerCommand.includes('authentication methods') ||
+      lowerCommand.includes('auth methods')
+    ) {
+      return {
+        action: 'list_auth_providers',
+        parameters: {},
+        clarification: null
+      };
+    }
+
+    // 1. Search documents
     if (lowerCommand.includes('search') || lowerCommand.includes('find') || lowerCommand.includes('look')) {
       return {
         action: 'search_document',

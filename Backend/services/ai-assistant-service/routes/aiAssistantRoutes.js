@@ -45,8 +45,8 @@ const upload = multer({
   }
 });
 
-// Process command (with optional file upload)
-router.post('/command', upload.single('file'), aiAssistantController.processCommand.bind(aiAssistantController));
+// Process command (with optional file uploads)
+router.post('/command', upload.array('files', 10), aiAssistantController.processCommand.bind(aiAssistantController));
 
 // Get conversation history
 router.get('/conversation', aiAssistantController.getConversationHistory.bind(aiAssistantController));
