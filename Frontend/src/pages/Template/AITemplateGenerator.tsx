@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Sparkles, 
-  FileText, 
-  Download, 
-  Send, 
-  Loader2, 
+import {
+  Sparkles,
+  Download,
+  Send,
+  Loader2,
   ArrowLeft,
-  Zap,
   AlertCircle,
-  CheckCircle2
+  User,
+  Bot,
+  Trash2,
+  Square,
+  Mic
 } from 'lucide-react';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { aiContentService } from '../../services/aiContentService';
@@ -35,29 +37,179 @@ interface Template {
   fields: string[];
 }
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  isGenerating?: boolean;
+  isDocument?: boolean;
+}
+
+// Helper function to convert markdown bold (**text**) to HTML
+const renderMarkdown = (text: string): string => {
+  const escapeHtml = (str: string) => {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  };
+
+  let html = escapeHtml(text);
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
+};
+
 const AITemplateGenerator: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [formData, setFormData] = useState<Record<string, string>>({});
-  const [additionalDescription, setAdditionalDescription] = useState('');
-  const [generatedContent, setGeneratedContent] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const [sessionId] = useState<string>(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [generatingMessageIndex, setGeneratingMessageIndex] = useState(0);
+  const [downloadingMessageId, setDownloadingMessageId] = useState<string | null>(null);
+  const [sendingMessageId, setSendingMessageId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState(''); // Add this for real-time display
+  const recognitionRef = useRef<any>(null);
 
-  // Engaging generating messages with emojis
-  const generatingMessages = [
-    { text: 'Crafting your document', emoji: '✨' },
-    { text: 'Adding legal expertise', emoji: '⚖️' },
-    { text: 'Polishing the details', emoji: '💎' },
-    { text: 'Almost there', emoji: '🚀' },
-    { text: 'Finalizing your template', emoji: '🎯' },
-    { text: 'Making it perfect', emoji: '🌟' }
-  ];
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  useEffect(() => {
+    if (!SpeechRecognition) {
+      console.warn('Speech Recognition not supported in this browser');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;  // Changed to true - keeps listening
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      // console.log('Speech recognition started');
+      setIsListening(true);
+      setLiveTranscript(''); // Clear previous transcript
+    };
+
+    recognition.onend = () => {
+      // console.log('Speech recognition ended');
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      // Process all results
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+
+        // Capitalize first letter
+        const capitalizedTranscript = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+
+        if (event.results[i].isFinal) {
+          // Final result - add to input with space
+          finalTranscript += capitalizedTranscript + ' ';
+        } else {
+          // Interim result - show in real-time
+          interimTranscript += capitalizedTranscript;
+        }
+      }
+
+      // Update live transcript for real-time display
+      if (interimTranscript) {
+        setLiveTranscript(interimTranscript);
+      }
+
+      // Update input message with final results only
+      if (finalTranscript) {
+        setInputMessage(prev => {
+          const combined = (prev + ' ' + finalTranscript).trim();
+          setLiveTranscript(''); // Clear interim when final is added
+          return combined;
+        });
+      }
+    };
+
+    recognition.onerror = (err: any) => {
+      console.error('Speech recognition error:', err.error);
+      let errorMessage = '';
+
+      switch (err.error) {
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please try again.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'No microphone found. Ensure it is connected.';
+          break;
+        case 'network':
+          errorMessage = 'Network error occurred.';
+          break;
+        default:
+          errorMessage = `Error: ${err.error}`;
+      }
+
+      console.error('Speech error:', errorMessage);
+      toast.error(errorMessage);
+      setIsListening(false);
+      setLiveTranscript('');
+    };
+
+    recognitionRef.current = recognition;
+
+    // Cleanup
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+
+  const startListening = () => {
+    if (!recognitionRef.current) {
+      toast.error('Speech Recognition not available');
+      return;
+    }
+
+    try {
+      setLiveTranscript('');
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Error starting recognition:', error);
+    }
+  };
+
+  const stopListening = () => {
+    if (!recognitionRef.current) return;
+
+    try {
+      recognitionRef.current.stop();
+      setIsListening(false); // Add this line
+      setLiveTranscript('');
+    } catch (error) {
+      console.error('Error stopping recognition:', error);
+      setIsListening(false); // Add this line
+    }
+  };
+
+  // Initial welcome message
+  useEffect(() => {
+    const welcomeMessage: Message = {
+      id: 'welcome',
+      role: 'assistant',
+      content: 'Hello! I\'m your AI document assistant. I can help you create professional legal documents.\n\nTo get started, you can:\n1. Select a template type from the dropdown above\n2. Or simply describe what kind of document you need\n\nFor example: "I need a non-disclosure agreement for my startup" or "Create an employment contract for a software engineer"\n\nI\'ll ask you for any missing information needed to create your document.',
+      timestamp: new Date()
+    };
+    setMessages([welcomeMessage]);
+  }, []);
 
   const templates: Template[] = [
     {
@@ -158,109 +310,186 @@ const AITemplateGenerator: React.FC = () => {
     }
   ];
 
-  // Set default template on mount
   useEffect(() => {
     if (!selectedTemplate && templates.length > 0) {
       setSelectedTemplate(templates[0]);
     }
   }, []);
 
-  // Reset form data when template changes
   useEffect(() => {
-    if (selectedTemplate) {
-      const initialFormData: Record<string, string> = {};
-      selectedTemplate.fields.forEach(field => {
-        const fieldKey = field.toLowerCase().replace(/\s+/g, '');
-        initialFormData[fieldKey] = '';
-      });
-      setFormData(initialFormData);
-      setAdditionalDescription('');
-      setGeneratedContent('');
-      setShowSuccessAnimation(false);
-    }
-  }, [selectedTemplate]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  // Cycle through generating messages every 2 seconds
   useEffect(() => {
-    if (!isGenerating) {
-      setGeneratingMessageIndex(0);
-      return;
-    }
+    inputRef.current?.focus();
+  }, []);
 
-    const interval = setInterval(() => {
-      setGeneratingMessageIndex((prev) => (prev + 1) % generatingMessages.length);
-    }, 2000);
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isGenerating) return;
 
-    return () => clearInterval(interval);
-  }, [isGenerating, generatingMessages.length]);
+    const userMessage: Message = {
+      id: `user_${Date.now()}`,
+      role: 'user',
+      content: inputMessage.trim(),
+      timestamp: new Date()
+    };
 
-  const handleGenerate = async () => {
-    if (!selectedTemplate) {
-      toast.error('Please select a template');
-      return;
-    }
-
-    const hasFormData = Object.values(formData).some(value => value.trim() !== '');
-    if (!hasFormData && !additionalDescription.trim()) {
-      toast.error('Please fill in at least some fields or provide additional description');
-      return;
-    }
-
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
     setIsGenerating(true);
-    setGeneratedContent('');
+
+    // Create streaming message with empty content
+    const streamingMessageId = `assistant_${Date.now()}`;
+    const streamingMessage: Message = {
+      id: streamingMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isGenerating: true
+    };
+    setMessages(prev => [...prev, streamingMessage]);
 
     try {
-      let requirementsText = `Template: ${selectedTemplate.name}\n\n`;
-      
-      if (hasFormData) {
-        requirementsText += 'Provided Information:\n';
-        selectedTemplate.fields.forEach(field => {
-          const fieldKey = field.toLowerCase().replace(/\s+/g, '');
-          const value = formData[fieldKey] || '';
-          if (value.trim()) {
-            requirementsText += `- ${field}: ${value}\n`;
+      // Build conversation context
+      const conversationHistory = messages
+        .filter(m => !m.isGenerating)
+        .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+        .join('\n\n');
+
+      const templateType = selectedTemplate?.name || 'General Legal Document';
+
+      let requirementsText = '';
+      if (selectedTemplate) {
+        requirementsText += `Template Type: ${selectedTemplate.name}\n`;
+        requirementsText += `Description: ${selectedTemplate.description}\n\n`;
+      }
+      requirementsText += `User Request:\n${userMessage.content}`;
+
+      if (conversationHistory) {
+        requirementsText += `\n\nConversation History:\n${conversationHistory}`;
+      }
+
+      requirementsText += `\n\nInstructions: Please analyze the user's request. If you have enough information to generate the document, provide the complete document. If information is missing, ask specific clarifying questions in a friendly, conversational manner.`;
+
+      let accumulatedContent = '';
+
+      // Use TRUE STREAMING from backend
+      await aiContentService.generateContentStreaming(
+        {
+          templateType: templateType,
+          requirements: requirementsText.trim(),
+          formData: {}
+        },
+        {
+          onToken: (token: string) => {
+            accumulatedContent += token;
+
+            // Update the streaming message in real-time
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === streamingMessageId
+                  ? { ...msg, content: accumulatedContent }
+                  : msg
+              )
+            );
+          },
+          onComplete: (fullContent: string) => {
+            // Check if it's a complete document
+            const isCompleteDocument =
+              fullContent.includes('WHEREAS') ||
+              fullContent.includes('NOW, THEREFORE') ||
+              fullContent.includes('IN WITNESS WHEREOF') ||
+              fullContent.length > 500;
+
+            // Update final message
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === streamingMessageId
+                  ? {
+                    ...msg,
+                    content: fullContent,
+                    isGenerating: false,
+                    isDocument: isCompleteDocument
+                  }
+                  : msg
+              )
+            );
+
+            if (isCompleteDocument) {
+              toast.success('Document generated successfully!');
+            }
+
+            setIsGenerating(false);
+            inputRef.current?.focus();
+          },
+          onError: (error: Error) => {
+            console.error('Error generating content:', error);
+
+            setMessages(prev => prev.filter(m => m.id !== streamingMessageId));
+
+            const errorMessage: Message = {
+              id: `error_${Date.now()}`,
+              role: 'assistant',
+              content: 'I apologize, but I encountered an error. Please try again or rephrase your request.',
+              timestamp: new Date()
+            };
+            setMessages(prev => [...prev, errorMessage]);
+
+            toast.error(error.message || 'Failed to generate response. Please try again.');
+            setIsGenerating(false);
+            inputRef.current?.focus();
           }
-        });
-        requirementsText += '\n';
-      }
+        }
+      );
 
-      if (additionalDescription.trim()) {
-        requirementsText += `Additional Details:\n${additionalDescription.trim()}`;
-      }
-
-      const response = await aiContentService.generateContent({
-        templateType: selectedTemplate.name,
-        requirements: requirementsText.trim(),
-        formData: formData
-      });
-
-      if (response.success && response.data.content) {
-        setGeneratedContent(response.data.content);
-        setShowSuccessAnimation(true);
-        setTimeout(() => setShowSuccessAnimation(false), 3000);
-        toast.success('Content generated successfully!');
-      } else {
-        toast.error('Failed to generate content. Please try again.');
-      }
     } catch (error: any) {
       console.error('Error generating content:', error);
-      toast.error(error.message || 'Failed to generate content. Please try again.');
-    } finally {
+
+      setMessages(prev => prev.filter(m => m.id !== streamingMessageId));
+
+      const errorMessage: Message = {
+        id: `error_${Date.now()}`,
+        role: 'assistant',
+        content: 'I apologize, but I encountered an error. Please try again or rephrase your request.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+
+      toast.error(error.message || 'Failed to generate response. Please try again.');
       setIsGenerating(false);
+      inputRef.current?.focus();
     }
   };
 
-  const handleDownloadPDF = async () => {
-    if (!generatedContent) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleClearConversation = () => {
+    const welcomeMessage: Message = {
+      id: 'welcome',
+      role: 'assistant',
+      content: 'Hello! I\'m your AI document assistant. I can help you create professional legal documents.\n\nTo get started, you can:\n1. Select a template type from the dropdown above\n2. Or simply describe what kind of document you need\n\nFor example: "I need a non-disclosure agreement for my startup" or "Create an employment contract for a software engineer"\n\nI\'ll ask you for any missing information needed to create your document.',
+      timestamp: new Date()
+    };
+    setMessages([welcomeMessage]);
+    toast.success('Conversation cleared');
+  };
+
+  const handleDownloadPDF = async (content: string, messageId: string) => {
+    if (!content) {
       toast.error('No content to download');
       return;
     }
 
-    setIsDownloading(true);
+    setDownloadingMessageId(messageId);
 
     try {
       const response = await aiContentService.convertToPDF({
-        content: generatedContent,
+        content: content,
         documentName: selectedTemplate?.name || 'Legal Document'
       });
 
@@ -277,22 +506,22 @@ const AITemplateGenerator: React.FC = () => {
       console.error('Error downloading PDF:', error);
       toast.error(error.message || 'Failed to download PDF. Please try again.');
     } finally {
-      setIsDownloading(false);
+      setDownloadingMessageId(null);
     }
   };
 
-  const handleSendAsEnvelope = async () => {
-    if (!generatedContent) {
+  const handleSendAsEnvelope = async (content: string, messageId: string) => {
+    if (!content) {
       toast.error('No content to send');
       return;
     }
 
     if (!isAuthenticated) {
-      setIsSending(true);
+      setSendingMessageId(messageId);
       try {
         const response = await aiContentService.storePendingDocument({
           documentName: selectedTemplate?.name || 'Legal Document',
-          content: generatedContent,
+          content: content,
           templateType: selectedTemplate?.name || 'Unknown',
           sessionId
         });
@@ -309,15 +538,15 @@ const AITemplateGenerator: React.FC = () => {
         console.error('Error storing document:', error);
         toast.error(error.message || 'Failed to save document. Please try again.');
       } finally {
-        setIsSending(false);
+        setSendingMessageId(null);
       }
       return;
     }
 
-    setIsSending(true);
+    setSendingMessageId(messageId);
     try {
       const response = await aiContentService.convertToPDF({
-        content: generatedContent,
+        content: content,
         documentName: selectedTemplate?.name || 'Legal Document'
       });
 
@@ -338,345 +567,253 @@ const AITemplateGenerator: React.FC = () => {
       console.error('Error preparing document:', error);
       toast.error(error.message || 'Failed to prepare document. Please try again.');
     } finally {
-      setIsSending(false);
+      setSendingMessageId(null);
     }
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF' }}>
-      {/* Header with Back Button */}
-      <div className="border-b" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
-        <div className="mx-auto py-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/e-sign/form-list')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-50"
-              style={{ color: '#28004D' }}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            {/* <div className="h-6 w-px" style={{ backgroundColor: '#D0D0D0' }}></div> */}
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FFFFFF' }}>
+      {/* Header */}
+      <div className="border-b flex-shrink-0" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
+        <div className="max-w-7xl mx-auto px-8 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/e-sign/form-list')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-50"
+                style={{ color: '#28004D' }}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg">
+                  <Sparkles className="w-6 h-6" style={{ color: '#4D0080' }} />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold" style={{ color: '#28004D' }}>
+                    AI Template Generator
+                  </h1>
+                  <p className="text-sm" style={{ color: '#888888' }}>
+                    Generate professional legal documents using AI
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg">
-                <Sparkles className="w-6 h-6" style={{ color: '#4D0080' }} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#28004D' }}>
-                  AI Template Generator
-                </h1>
-                <p className="text-sm" style={{ color: '#888888' }}>
-                  Generate professional legal documents using AI
-                </p>
-              </div>
+              <select
+                value={selectedTemplate?.id || ''}
+                onChange={(e) => {
+                  const template = templates.find(t => t.id === e.target.value);
+                  setSelectedTemplate(template || null);
+                }}
+                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                style={{
+                  borderColor: '#D0D0D0',
+                  borderRadius: '6px',
+                  color: '#28004D',
+                  backgroundColor: '#FFFFFF'
+                }}
+              >
+                <option value="">Select Template (Optional)</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+
+              {messages.length > 1 && (
+                <button
+                  onClick={handleClearConversation}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-50"
+                  style={{ color: '#28004D' }}
+                  title="Clear conversation"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        <div className="grid lg:grid-cols-12 gap-8">
-          {/* Left Side: Template Selection and Form */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Template Selection Cards */}
-            <div className="bg-white rounded-lg border p-4" style={{ borderColor: '#D0D0D0' }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: '#28004D' }}>
-                Select Template
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template)}
-                    className={`p-3 rounded-lg border text-left transition-all duration-200 ${
-                      selectedTemplate?.id === template.id
-                        ? 'border-2'
-                        : 'border'
-                    }`}
-                    style={{
-                      borderColor: selectedTemplate?.id === template.id ? '#4D0080' : '#D0D0D0',
-                      backgroundColor: selectedTemplate?.id === template.id ? '#4D008010' : '#FFFFFF',
-                      color: '#28004D'
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="font-medium text-sm">{template.name}</span>
-                      {selectedTemplate?.id === template.id && (
-                        <CheckCircle2 className="w-4 h-4 flex-shrink-0 ml-2" style={{ color: '#4D0080' }} />
-                      )}
-                    </div>
-                    <p className="text-xs" style={{ color: '#888888' }}>
-                      {template.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Form Section */}
-            {selectedTemplate && (
-              <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#D0D0D0' }}>
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 rounded-lg" >
-                      <FileText className="w-5 h-5" style={{ color: '#4D0080' }} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold" style={{ color: '#28004D' }}>
-                        {selectedTemplate.name}
-                      </h3>
-                      <p className="text-sm" style={{ color: '#888888' }}>
-                        {selectedTemplate.description}
-                      </p>
-                    </div>
-                  </div>
+      {/* Chat Container */}
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-8 py-6">
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {message.role === 'assistant' && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#4D0080' }}>
+                  <Bot className="w-5 h-5 text-white" />
                 </div>
+              )}
 
-                {/* Dynamic Form Fields */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-4" style={{ color: '#28004D' }}>
-                    Document Details
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedTemplate.fields.map((field, index) => {
-                      const fieldKey = field.toLowerCase().replace(/\s+/g, '');
-                      const fieldValue = formData[fieldKey] || '';
-                      const isDescription = field.includes('Description') || field.includes('Terms') || field.includes('Address');
-                      
-                      return (
-                        <div 
-                          key={index} 
-                          className={isDescription ? 'md:col-span-2' : ''}
-                        >
-                          <label className="block text-sm font-medium mb-2" style={{ color: '#28004D' }}>
-                            {field} {(field.includes('Date') || field.includes('Name')) && (
-                              <span style={{ color: '#DC2626' }}>*</span>
-                            )}
-                          </label>
-                          {field.includes('Date') || field === 'Effective Date' || field === 'Start Date' ? (
-                            <input
-                              type="date"
-                              value={fieldValue}
-                              onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                              style={{
-                                borderColor: '#D0D0D0',
-                                borderRadius: '6px',
-                                color: '#28004D'
-                              }}
-                            />
-                          ) : isDescription ? (
-                            <textarea
-                              value={fieldValue}
-                              onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                              rows={3}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-                              style={{
-                                borderColor: '#D0D0D0',
-                                borderRadius: '6px',
-                                color: '#28004D'
-                              }}
-                              placeholder={`Enter ${field.toLowerCase()}`}
-                            />
-                          ) : field.includes('Jurisdiction') || field.includes('State') ? (
-                            <select
-                              value={fieldValue}
-                              onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                              style={{
-                                borderColor: '#D0D0D0',
-                                borderRadius: '6px',
-                                color: '#28004D'
-                              }}
-                            >
-                              <option value="">Select {field}</option>
-                              <option value="California">California</option>
-                              <option value="New York">New York</option>
-                              <option value="Texas">Texas</option>
-                              <option value="Florida">Florida</option>
-                              <option value="Illinois">Illinois</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          ) : (
-                            <input
-                              type="text"
-                              value={fieldValue}
-                              onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                              style={{
-                                borderColor: '#D0D0D0',
-                                borderRadius: '6px',
-                                color: '#28004D'
-                              }}
-                              placeholder={`Enter ${field.toLowerCase()}`}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Additional Description */}
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold mb-3" style={{ color: '#28004D' }}>
-                    Additional Details / Special Requirements
-                  </label>
-                  <textarea
-                    value={additionalDescription}
-                    onChange={(e) => setAdditionalDescription(e.target.value)}
-                    placeholder="Add any additional details, special clauses, or requirements that should be included in the document..."
-                    rows={6}
-                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-                    style={{
-                      borderColor: '#D0D0D0',
-                      borderRadius: '6px',
-                      color: '#28004D'
-                    }}
+              <div
+                className={`max-w-[80%] rounded-lg ${message.role === 'user'
+                  ? 'rounded-br-none'
+                  : 'rounded-bl-none'
+                  }`}
+                style={{
+                  backgroundColor: message.role === 'user' ? '#4D0080' : '#F9FAFB',
+                  color: message.role === 'user' ? '#FFFFFF' : '#28004D',
+                  border: message.role === 'assistant' ? '1px solid #D0D0D0' : 'none'
+                }}
+              >
+                <div className={`px-4 py-3 ${message.isDocument ? 'pb-3' : ''}`}>
+                  <div
+                    className={`whitespace-pre-wrap text-sm leading-relaxed ${message.isGenerating ? 'streaming-cursor' : ''
+                      }`}
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content || '') }}
                   />
-                  <p className="text-xs mt-2" style={{ color: '#888888' }}>
-                    Optional: Add any special terms, clauses, or additional information you want included.
-                  </p>
                 </div>
 
-                {/* Generate Button */}
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || (!Object.values(formData).some(v => v.trim()) && !additionalDescription.trim())}
-                  className="w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden"
-                  style={{
-                    backgroundColor: '#4D0080',
-                    color: '#FFFFFF',
-                    borderRadius: '6px'
-                  }}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span className="generating-text">
-                        <span className="generating-emoji">
-                          {generatingMessages[generatingMessageIndex].emoji}
-                        </span>
-                        {generatingMessages[generatingMessageIndex].text}...
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      <span>Generate Document</span>
-                    </>
-                  )}
-                  {showSuccessAnimation && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-green-500 animate-pulse">
-                      <CheckCircle2 className="w-6 h-6 text-white" />
-                    </div>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Right Side: Generated Content */}
-          <div className="lg:col-span-5">
-            <div className="bg-white rounded-lg border sticky top-6" style={{ borderColor: '#D0D0D0' }}>
-              <div className="p-6 border-b" style={{ borderColor: '#D0D0D0' }}>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg" >
-                    <Zap className="w-5 h-5" style={{ color: '#4D0080' }} />
-                  </div>
-                  <h3 className="font-semibold" style={{ color: '#28004D' }}>
-                    Generated Document
-                  </h3>
-                </div>
-              </div>
-              
-              <div className="p-6 max-h-[500px] overflow-y-auto">
-                {generatedContent ? (
-                  <div className="prose prose-sm max-w-none">
-                    <pre 
-                      className="text-sm whitespace-pre-wrap font-mono leading-relaxed p-4 rounded-lg"
-                      style={{ 
-                        color: '#28004D',
-                        backgroundColor: '#F9FAFB',
-                        border: '1px solid #D0D0D0'
+                {message.isDocument && !message.isGenerating && (
+                  <div className="px-4 pb-3 pt-2 border-t space-y-2" style={{ borderColor: message.role === 'assistant' ? '#D0D0D0' : 'rgba(255,255,255,0.2)' }}>
+                    <button
+                      onClick={() => handleDownloadPDF(message.content, message.id)}
+                      disabled={downloadingMessageId === message.id}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      style={{
+                        borderColor: message.role === 'user' ? 'rgba(255,255,255,0.5)' : '#4D0080',
+                        color: message.role === 'user' ? '#FFFFFF' : '#4D0080',
+                        borderRadius: '6px',
+                        backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.1)' : '#FFFFFF'
                       }}
                     >
-                      {generatedContent}
-                    </pre>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="p-4 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center" >
-                      <Zap className="w-8 h-8" style={{ color: '#4D0080' }} />
-                    </div>
-                    <p className="font-medium mb-2" style={{ color: '#28004D' }}>
-                      No content generated yet
-                    </p>
-                    <p className="text-sm" style={{ color: '#888888' }}>
-                      Fill in your requirements and click "Generate Document" to create your legal document.
-                    </p>
+                      {downloadingMessageId === message.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Generating PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4" />
+                          <span>Download PDF</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleSendAsEnvelope(message.content, message.id)}
+                      disabled={sendingMessageId === message.id}
+                      className="w-full py-2 px-4 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                      style={{
+                        backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.2)' : '#4D0080',
+                        color: '#FFFFFF',
+                        borderRadius: '6px'
+                      }}
+                    >
+                      {sendingMessageId === message.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>{isAuthenticated ? 'Preparing...' : 'Saving...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          <span>{isAuthenticated ? 'Send as Envelope' : 'Login to Send as Envelope'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    {!isAuthenticated && (
+                      <p className="text-xs text-center flex items-center justify-center gap-1" style={{ color: message.role === 'user' ? 'rgba(255,255,255,0.8)' : '#888888' }}>
+                        <AlertCircle className="h-3 w-3" />
+                        You'll be redirected to login after saving your document
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
-              
-              {generatedContent && (
-                <div className="p-6 border-t space-y-3" style={{ borderColor: '#D0D0D0', backgroundColor: '#F9FAFB' }}>
-                  <button
-                    onClick={handleDownloadPDF}
-                    disabled={isDownloading}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      borderColor: '#4D0080',
-                      color: '#4D0080',
-                      borderRadius: '6px',
-                      backgroundColor: '#FFFFFF'
-                    }}
-                  >
-                    {isDownloading ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Generating PDF...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-5 w-5" />
-                        <span>Download PDF</span>
-                      </>
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={handleSendAsEnvelope}
-                    disabled={isSending}
-                    className="w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    style={{
-                      backgroundColor: '#4D0080',
-                      color: '#FFFFFF',
-                      borderRadius: '6px'
-                    }}
-                  >
-                    {isSending ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>{isAuthenticated ? 'Preparing...' : 'Saving...'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-5 w-5" />
-                        <span>{isAuthenticated ? 'Send as Envelope' : 'Login to Send as Envelope'}</span>
-                      </>
-                    )}
-                  </button>
-                  
-                  {!isAuthenticated && (
-                    <p className="text-xs text-center flex items-center justify-center gap-1" style={{ color: '#888888' }}>
-                      <AlertCircle className="h-3 w-3" />
-                      You'll be redirected to login after saving your document
-                    </p>
+
+              {message.role === 'user' && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs" style={{ backgroundColor: '#4D0080', color: '#FFFFFF' }}>
+                  {user?.fullname ? (
+                    user.fullname
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)
+                  ) : (
+                    <User className="w-5 h-5" style={{ color: '#FFFFFF' }} />
                   )}
                 </div>
               )}
             </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <div className="flex-shrink-0 border rounded-lg p-4" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
+          <div className="flex items-end gap-3">
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                value={inputMessage}
+                onChange={(e) => {
+                  setInputMessage(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                }}
+                onKeyPress={handleKeyPress}
+                placeholder={isListening && liveTranscript ? '' : "Describe the document you need... (e.g., 'I need an NDA for my startup with a tech company')"}
+                rows={1}
+                className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none w-full"
+                style={{
+                  borderColor: '#D0D0D0',
+                  borderRadius: '6px',
+                  color: '#28004D',
+                  maxHeight: '120px'
+                }}
+                disabled={isGenerating}
+              />
+              {/* Live transcript display */}
+              {isListening && liveTranscript && (
+                <div
+                  className="absolute bottom-3 left-4 text-sm italic pointer-events-none"
+                  style={{ color: '#888888' }}
+                >
+                  {liveTranscript}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={isListening ? stopListening : startListening}
+                className="p-3 rounded-lg transition-all"
+                title={isListening ? 'Stop listening' : 'Start listening'}
+              >
+                <Mic
+                  className={`w-5 h-5 ${isListening ? 'animate-pulse text-red-500' : 'text-black-700'
+                    }`}
+                />
+              </button>
+
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isGenerating}
+                className=" rounded-lg transition-all disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <Square className="w-5 h-5 text-purple-700" />
+                ) : (
+                  <Send className="w-5 h-5 text-[#4D0080]" />
+                )}
+              </button>
+            </div>
           </div>
+          <p className="text-xs mt-2" style={{ color: '#888888' }}>
+            Press Enter to send, Shift+Enter for new line • Click mic to speak
+          </p>
         </div>
       </div>
     </div>
@@ -684,4 +821,3 @@ const AITemplateGenerator: React.FC = () => {
 };
 
 export default AITemplateGenerator;
-

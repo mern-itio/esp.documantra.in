@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   generateAIContent,
   convertTextToPDF,
+  generateAIContentStream,
   storePendingDocument,
   getPendingDocument,
   deletePendingDocument
@@ -10,6 +11,7 @@ const {
 
 // Public routes (no auth required)
 router.post('/generate', generateAIContent);
+router.post('/generate-stream', generateAIContentStream);
 router.post('/convert-to-pdf', convertTextToPDF);
 router.post('/store-pending', storePendingDocument);
 router.get('/pending-document', getPendingDocument);

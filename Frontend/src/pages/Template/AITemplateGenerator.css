@@ -70,3 +70,43 @@
   animation: emojiBounce 1.2s ease-in-out infinite;
 }
 
+/* Streaming cursor animation */
+.streaming-cursor::after {
+  content: '|';
+  animation: blink 1s infinite;
+  margin-left: 2px;
+  color: #4D0080;
+}
+
+@keyframes blink {
+  0%, 50% { 
+    opacity: 1; 
+  }
+  51%, 100% { 
+    opacity: 0; 
+  }
+}
+
+/* Smooth scrolling for chat */
+.overflow-y-auto {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

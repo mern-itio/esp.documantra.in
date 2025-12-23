@@ -72,13 +72,210 @@ export interface GetPendingDocumentResponse {
   };
 }
 
+export interface StreamingCallbacks {
+  onToken?: (token: string) => void;
+  onComplete?: (fullContent: string) => void;
+  onError?: (error: Error) => void;
+}
+
 export const aiContentService = {
   /**
-   * Generate AI content for legal template
+   * Generate AI content for legal template (non-streaming)
    */
   async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
     const response = await api.post('/public/ai-content/generate', request);
     return response.data;
+  },
+
+  /**
+   * Generate AI content with TRUE STREAMING from backend
+   * This provides real-time token streaming from OpenAI via Server-Sent Events
+   */
+  async generateContentStreaming(
+    request: GenerateContentRequest,
+    callbacks: StreamingCallbacks
+  ): Promise<void> {
+    try {
+      const response = await fetch(`${TEMPLATE_SERVICE_URL}/public/ai-content/generate-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          message: 'Failed to generate content'
+        }));
+        throw new Error(errorData.message || 'Failed to generate content');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      if (!reader) {
+        throw new Error('No reader available - streaming not supported');
+      }
+
+      let buffer = ''; // Buffer for incomplete lines
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          callbacks.onComplete?.(fullContent);
+          break;
+        }
+
+        // Decode the chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Split by newlines to handle multiple SSE messages
+        const lines = buffer.split('\n');
+        
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          // SSE format: "data: {json}" or "data: [DONE]"
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            
+            // Check for completion marker
+            if (data === '[DONE]') {
+              callbacks.onComplete?.(fullContent);
+              return;
+            }
+            
+            // Skip empty data
+            if (!data) continue;
+            
+            try {
+              const parsed = JSON.parse(data);
+              
+              // Handle error in stream
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              
+              // Extract token/content from various possible formats
+              const token = parsed.content || parsed.token || parsed.delta?.content || '';
+              
+              if (token) {
+                fullContent += token;
+                callbacks.onToken?.(token);
+              }
+            } catch (parseError) {
+              // Log parse errors but continue streaming
+              console.warn('Failed to parse SSE data:', data, parseError);
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Error in streaming:', error);
+      callbacks.onError?.(error);
+    }
+  },
+
+  /**
+   * Simulated streaming (fallback if streaming endpoint not available or fails)
+   * This simulates typing by breaking up the full response
+   */
+  async generateContentWithTyping(
+    request: GenerateContentRequest,
+    callbacks: StreamingCallbacks
+  ): Promise<void> {
+    try {
+      // Get full response first
+      const response = await this.generateContent(request);
+      
+      if (!response.success || !response.data.content) {
+        throw new Error(response.message || 'Failed to generate content');
+      }
+
+      const content = response.data.content;
+      let index = 0;
+      
+      // Simulate typing effect with varying speeds
+      const typeNextChunk = () => {
+        if (index >= content.length) {
+          callbacks.onComplete?.(content);
+          return;
+        }
+
+        // Variable chunk size for more natural typing
+        // Longer chunks for spaces and punctuation
+        let chunkSize: number;
+        const currentChar = content[index];
+        
+        if (currentChar === ' ') {
+          // Fast through spaces
+          chunkSize = 1;
+        } else if (currentChar === '\n') {
+          // Handle newlines
+          chunkSize = 1;
+        } else if (['.', ',', '!', '?', ';', ':'].includes(currentChar)) {
+          // Pause slightly at punctuation
+          chunkSize = 1;
+        } else {
+          // Regular characters - type 2-5 at a time
+          chunkSize = Math.floor(Math.random() * 4) + 2;
+        }
+        
+        const chunk = content.slice(index, index + chunkSize);
+        index += chunkSize;
+
+        callbacks.onToken?.(chunk);
+
+        // Variable delay based on content
+        let delay: number;
+        if (currentChar === '\n') {
+          delay = 100; // Longer pause for newlines
+        } else if (['.', '!', '?'].includes(currentChar)) {
+          delay = 150; // Longer pause for sentence endings
+        } else if ([',', ';', ':'].includes(currentChar)) {
+          delay = 80; // Medium pause for mid-sentence punctuation
+        } else {
+          delay = Math.floor(Math.random() * 30) + 20; // 20-50ms for regular text
+        }
+        
+        setTimeout(typeNextChunk, delay);
+      };
+
+      // Start typing with a small initial delay
+      setTimeout(typeNextChunk, 100);
+      
+    } catch (error: any) {
+      console.error('Error in simulated streaming:', error);
+      callbacks.onError?.(error);
+    }
+  },
+
+  /**
+   * Generate content with automatic fallback
+   * Tries true streaming first, falls back to simulated streaming if it fails
+   */
+  async generateContentWithFallback(
+    request: GenerateContentRequest,
+    callbacks: StreamingCallbacks
+  ): Promise<void> {
+    try {
+      // Try true streaming first
+      await this.generateContentStreaming(request, callbacks);
+    } catch (streamError) {
+      console.warn('True streaming failed, falling back to simulated streaming:', streamError);
+      
+      try {
+        // Fallback to simulated streaming
+        await this.generateContentWithTyping(request, callbacks);
+      } catch (fallbackError) {
+        console.error('Both streaming methods failed:', fallbackError);
+        callbacks.onError?.(fallbackError as Error);
+      }
+    }
   },
 
   /**
@@ -120,21 +317,32 @@ export const aiContentService = {
    * Download PDF from base64
    */
   downloadPDF(base64: string, fileName: string): void {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    try {
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      throw new Error('Failed to download PDF');
     }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'application/pdf' });
-    
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
   },
 };
