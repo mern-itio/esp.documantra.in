@@ -69,11 +69,13 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
             setIsSubmitting(false);
             
             // Show authentication modal instead of opening URL directly
-            setShowAuthModal(true);
-            setCurrentAuthIndex(0);
-            setAuthStatus('pending');
-            setRetryCount(0);
-            setOtpCode('');
+            const url = `/e-sign/signer/${envelopeId}/${response.data.signerInitiate._id}/${response.data?.cycleId}?self=1`;
+            window.open(url, '_blank');
+            // setShowAuthModal(true);
+            // setCurrentAuthIndex(0);
+            // setAuthStatus('pending');
+            // setRetryCount(0);
+            // setOtpCode('');
             return;
         }
      }
@@ -161,154 +163,8 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 animate-fade-in relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div 
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%, #f9fafb 100%)',
-          backgroundSize: '400% 400%',
-          animation: 'gradient-flow 15s ease infinite',
-        }}
-      ></div>
 
-      {/* Mesh gradient overlay */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-40"
-        style={{
-          backgroundImage: `
-            radial-gradient(circle at 20% 30%, rgba(38, 5, 89, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(61, 29, 110, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 50% 50%, rgba(38, 5, 89, 0.05) 0%, transparent 70%)
-          `,
-          animation: 'mesh-move 20s ease-in-out infinite',
-        }}
-      ></div>
 
-      {/* Grid pattern overlay */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-5"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(38, 5, 89, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(38, 5, 89, 0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px',
-        }}
-      ></div>
-
-      {/* Large vibrant circles - partially visible at corners */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Top Left Corner - Large Purple Circle */}
-        <div 
-          className="absolute rounded-full"
-          style={{
-            width: '900px',
-            height: '900px',
-            top: '-450px',
-            left: '-450px',
-            background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.35) 0%, rgba(147, 51, 234, 0.45) 50%, rgba(168, 85, 247, 0.35) 100%)',
-            filter: 'blur(50px)',
-            animation: 'circle-pulse 8s ease-in-out infinite',
-          }}
-        ></div>
-        
-        {/* Top Right Corner - Large Blue Circle */}
-        <div 
-          className="absolute rounded-full"
-          style={{
-            width: '850px',
-            height: '850px',
-            top: '-425px',
-            right: '-425px',
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(96, 165, 250, 0.45) 50%, rgba(147, 197, 253, 0.35) 100%)',
-            filter: 'blur(50px)',
-            animation: 'circle-pulse 10s ease-in-out infinite 2s',
-          }}
-        ></div>
-        
-        {/* Bottom Left Corner - Large Purple-Pink Circle */}
-        <div 
-          className="absolute rounded-full"
-          style={{
-            width: '880px',
-            height: '880px',
-            bottom: '-440px',
-            left: '-440px',
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.38) 0%, rgba(167, 139, 250, 0.45) 50%, rgba(196, 181, 253, 0.35) 100%)',
-            filter: 'blur(50px)',
-            animation: 'circle-pulse 9s ease-in-out infinite 1s',
-          }}
-        ></div>
-        
-        {/* Bottom Right Corner - Large Orange-Purple Circle */}
-        <div 
-          className="absolute rounded-full"
-          style={{
-            width: '800px',
-            height: '800px',
-            bottom: '-400px',
-            right: '-400px',
-            background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.35) 0%, rgba(251, 146, 60, 0.42) 30%, rgba(168, 85, 247, 0.38) 70%, rgba(139, 92, 246, 0.35) 100%)',
-            filter: 'blur(50px)',
-            animation: 'circle-pulse 11s ease-in-out infinite 3s',
-          }}
-        ></div>
-        
-        {/* Left Edge - Medium Circle */}
-        <div 
-          className="absolute rounded-full"
-          style={{
-            width: '700px',
-            height: '700px',
-            top: '50%',
-            left: '-350px',
-            background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.35) 0%, rgba(99, 102, 241, 0.4) 100%)',
-            filter: 'blur(45px)',
-            animation: 'circle-pulse-left 12s ease-in-out infinite 4s',
-          }}
-        ></div>
-        
-        {/* Right Edge - Medium Circle */}
-        <div 
-          className="absolute rounded-full"
-          style={{
-            width: '650px',
-            height: '650px',
-            top: '20%',
-            right: '-325px',
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.38) 0%, rgba(124, 58, 237, 0.42) 100%)',
-            filter: 'blur(45px)',
-            animation: 'circle-pulse 9s ease-in-out infinite 2.5s',
-          }}
-        ></div>
-      </div>
-
-      {/* Additional subtle floating orbs for depth */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Top Left subtle orb */}
-        <div 
-          className="absolute top-0 left-0 w-96 h-96 bg-[#260559]/6 rounded-full filter blur-3xl"
-          style={{
-            animation: 'float-orb 12s ease-in-out infinite',
-          }}
-        ></div>
-        
-        {/* Bottom Right subtle orb */}
-        <div 
-          className="absolute bottom-0 right-0 w-96 h-96 bg-[#3d1d6e]/6 rounded-full filter blur-3xl"
-          style={{
-            animation: 'float-orb 15s ease-in-out infinite 3s',
-          }}
-        ></div>
-        
-        {/* Central pulsing orb */}
-        <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#260559]/3 rounded-full filter blur-3xl"
-          style={{
-            animation: 'pulse-glow 8s ease-in-out infinite',
-          }}
-        ></div>
-      </div>
 
       {/* Floating particles - Many visible circles */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -373,31 +229,9 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
         })}
       </div>
 
-      {/* Animated light rays */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#260559]/5 to-transparent"
-          style={{
-            animation: 'light-ray 6s ease-in-out infinite',
-          }}
-        ></div>
-        <div 
-          className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-[#260559]/5 to-transparent"
-          style={{
-            animation: 'light-ray 8s ease-in-out infinite 2s',
-          }}
-        ></div>
-      </div>
 
-      {/* Moving shimmer effect */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-30"
-        style={{
-          background: 'linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
-          backgroundSize: '200% 200%',
-          animation: 'shimmer-bg 8s ease-in-out infinite',
-        }}
-      ></div>
+
+
 
       {/* Custom animations */}
       <style>{`

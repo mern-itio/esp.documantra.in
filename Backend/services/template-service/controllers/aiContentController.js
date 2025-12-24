@@ -3,8 +3,6 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
-
-// Initialize OpenAI (only if API key is available)
 let OpenAI;
 let openai;
 try {
@@ -17,17 +15,14 @@ try {
 } catch (error) {
   console.warn('OpenAI package not installed. AI content generation will not work.');
 }
-
-// Schema for storing documents for unauthorized users
 const pendingDocumentSchema = new mongoose.Schema({
   documentName: String,
   content: String,
   templateType: String,
   templateData: mongoose.Schema.Types.Mixed,
   sessionId: String,
-  createdAt: { type: Date, default: Date.now, expires: 86400 } // Expires after 24 hours
+  createdAt: { type: Date, default: Date.now, expires: 86400 }
 }, { timestamps: true });
-
 let PendingDocument;
 try {
   PendingDocument = mongoose.models.PendingDocument || mongoose.model('PendingDocument', pendingDocumentSchema);
@@ -35,20 +30,133 @@ try {
   PendingDocument = mongoose.model('PendingDocument', pendingDocumentSchema);
 }
 
-/**
- * Generate AI content for legal template
- */
+// AI Feedback Schema
+const aiFeedbackSchema = new mongoose.Schema({
+  messageId: { type: String, required: true, index: true },
+  sessionId: { type: String, required: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  feedbackType: { type: String, enum: ['like', 'dislike'], required: true },
+  feedbackComment: { type: String, default: null },
+  templateType: { type: String, default: null },
+  userMessage: { type: String, default: null },
+  aiResponse: { type: String, default: null },
+  categories: [{ type: String }],
+  metadata: {
+    userAgent: String,
+    ipAddress: String,
+    responseLength: Number,
+    tokensUsed: Number
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}, { timestamps: true });
+
+// Compound index for unique feedback per message per session
+aiFeedbackSchema.index({ messageId: 1, sessionId: 1 }, { unique: true });
+
+let AIFeedback;
+try {
+  AIFeedback = mongoose.models.AIFeedback || mongoose.model('AIFeedback', aiFeedbackSchema);
+} catch (e) {
+  AIFeedback = mongoose.model('AIFeedback', aiFeedbackSchema);
+}
+
+// Feedback Categories Schema
+const feedbackCategorySchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true },
+  description: { type: String, required: true },
+  feedbackType: { type: String, enum: ['like', 'dislike', 'both'], default: 'both' },
+  isActive: { type: Boolean, default: true },
+  order: { type: Number, default: 0 }
+}, { timestamps: true });
+
+let FeedbackCategory;
+try {
+  FeedbackCategory = mongoose.models.FeedbackCategory || mongoose.model('FeedbackCategory', feedbackCategorySchema);
+} catch (e) {
+  FeedbackCategory = mongoose.model('FeedbackCategory', feedbackCategorySchema);
+}
+
+// Initialize default feedback categories
+const initializeFeedbackCategories = async () => {
+  try {
+    const count = await FeedbackCategory.countDocuments();
+    if (count === 0) {
+      await FeedbackCategory.insertMany([
+        {
+          name: 'Inaccurate Information',
+          description: 'The response contains incorrect or misleading information',
+          feedbackType: 'dislike',
+          order: 1
+        },
+        {
+          name: 'Incomplete Response',
+          description: 'The response is missing important details',
+          feedbackType: 'dislike',
+          order: 2
+        },
+        {
+          name: 'Formatting Issues',
+          description: 'The document formatting is poor or incorrect',
+          feedbackType: 'dislike',
+          order: 3
+        },
+        {
+          name: 'Tone/Style Issues',
+          description: 'The tone or writing style is inappropriate',
+          feedbackType: 'dislike',
+          order: 4
+        },
+        {
+          name: 'Too Generic',
+          description: 'The response is too generic and lacks specificity',
+          feedbackType: 'dislike',
+          order: 5
+        },
+        {
+          name: 'Helpful',
+          description: 'The response was helpful and accurate',
+          feedbackType: 'like',
+          order: 6
+        },
+        {
+          name: 'Well Formatted',
+          description: 'The document is well-structured and professional',
+          feedbackType: 'like',
+          order: 7
+        },
+        {
+          name: 'Clear and Concise',
+          description: 'The response was clear and easy to understand',
+          feedbackType: 'like',
+          order: 8
+        },
+        {
+          name: 'Other',
+          description: 'Other feedback not covered by categories',
+          feedbackType: 'both',
+          order: 9
+        }
+      ]);
+      console.log('Feedback categories initialized successfully');
+    }
+  } catch (error) {
+    console.error('Error initializing feedback categories:', error);
+  }
+};
+
+// Initialize categories on startup
+initializeFeedbackCategories();
+
 const generateAIContent = async (req, res) => {
   try {
     const { templateType, requirements, formData } = req.body;
-
     if (!templateType || !requirements) {
       return res.status(400).json({
         success: false,
         message: 'Template type and requirements are required'
       });
     }
-
     if (!openai || !process.env.OPENAI_API_KEY) {
       return res.status(503).json({
         success: false,
@@ -56,27 +164,16 @@ const generateAIContent = async (req, res) => {
         error: 'OpenAI API key not configured'
       });
     }
-
-    // Build prompt based on template type
     const systemPrompt = `You are an expert legal document writer. Generate professional, legally sound content for ${templateType} documents. 
-    Ensure the content is comprehensive, well-structured, and includes all necessary legal clauses and sections.
-    The content should be formatted as plain text, suitable for a legal document.`;
-
-    const userPrompt = `Please generate a complete ${templateType} document based on the following requirements:
-    
-Template Type: ${templateType}
-
-Requirements:
-${requirements}
-
-${formData ? `Additional Information:
-${JSON.stringify(formData, null, 2)}` : ''}
-
-Generate a complete, professional ${templateType} document with all necessary sections, clauses, and legal language. 
-Make sure it's comprehensive and ready to use.`;
-
-    console.log('Generating AI content for template:', templateType);
-
+        Be comprehensive but concise. Include all necessary legal clauses and sections.
+        Format the content as plain text suitable for a legal document.`;
+    const userPrompt = `Generate a complete ${templateType} document based on these requirements:
+    Template Type: ${templateType}
+    Requirements:
+    ${requirements}
+    ${formData && Object.keys(formData).length > 0 ? `Additional Information:
+    ${JSON.stringify(formData, null, 2)}` : ''}
+    Provide a complete, professional ${templateType} with all necessary sections, clauses, and legal language.`;
     const response = await openai.chat.completions.create({
       model: process.env.AI_MODEL || 'gpt-3.5-turbo',
       messages: [
@@ -84,11 +181,12 @@ Make sure it's comprehensive and ready to use.`;
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 4000
+      max_tokens: 4000,
+      stream: false,
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1
     });
-
     const generatedContent = response.choices[0].message.content.trim();
-
     res.json({
       success: true,
       message: 'Content generated successfully',
@@ -107,15 +205,67 @@ Make sure it's comprehensive and ready to use.`;
     });
   }
 };
-
-/**
- * Render text with markdown formatting to PDF (handles **bold** text)
- * Processes text and renders with proper bold formatting
- */
+const generateAIContentStream = async (req, res) => {
+  try {
+    const { templateType, requirements, formData } = req.body;
+    if (!templateType || !requirements) {
+      return res.status(400).json({
+        success: false,
+        message: 'Template type and requirements are required'
+      });
+    }
+    if (!openai || !process.env.OPENAI_API_KEY) {
+      return res.status(503).json({
+        success: false,
+        message: 'AI service is not configured. Please set OPENAI_API_KEY in environment variables.',
+        error: 'OpenAI API key not configured'
+      });
+    }
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); 
+      const systemPrompt = `You are an expert legal document writer. Generate professional, legally sound content for ${templateType} documents. 
+      Be comprehensive but concise. Include all necessary legal clauses and sections.
+    Format the content as plain text suitable for a legal document.`;
+    const userPrompt = `Generate a complete ${templateType} document based on these requirements:
+    Template Type: ${templateType}
+    Requirements:
+    ${requirements}
+  ${formData && Object.keys(formData).length > 0 ? `Additional Information:
+  ${JSON.stringify(formData, null, 2)}` : ''}
+  Provide a complete, professional ${templateType} with all necessary sections, clauses, and legal language.`;
+    const stream = await openai.chat.completions.create({
+      model: process.env.AI_MODEL || 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000,
+      stream: true, 
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1
+    });
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
+      if (chunk.choices[0]?.finish_reason === 'stop') {
+        res.write(`data: [DONE]\n\n`);
+        break;
+      }
+    }
+    res.end();
+  } catch (error) {
+    console.error('Error streaming AI content:', error);
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.end();
+  }
+};
 function renderFormattedText(doc, text, options = {}) {
   const { fontSize = 11, width = 495 } = options;
-  
-  // If no ** markers, render normally
   if (!text.includes('**')) {
     doc.font('Times-Roman').fontSize(fontSize);
     doc.text(text, {
@@ -125,168 +275,106 @@ function renderFormattedText(doc, text, options = {}) {
     });
     return;
   }
-
-  // Parse text into parts with bold formatting
   const parts = [];
-  let remaining = text;
-
-  while (remaining.length > 0) {
-    const boldStart = remaining.indexOf('**');
-    
-    if (boldStart === -1) {
-      // No more bold markers
-      if (remaining.trim()) {
-        parts.push({ text: remaining, bold: false });
-      }
-      break;
+  let currentPos = 0;
+  const regex = /\*\*([^*]+)\*\*/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > currentPos) {
+      parts.push({
+        text: text.substring(currentPos, match.index),
+        bold: false
+      });
     }
-
-    // Text before bold marker
-    if (boldStart > 0) {
-      parts.push({ text: remaining.substring(0, boldStart), bold: false });
-    }
-
-    // Find closing **
-    const boldEnd = remaining.indexOf('**', boldStart + 2);
-    if (boldEnd === -1) {
-      // No closing marker, treat rest as normal
-      parts.push({ text: remaining.substring(boldStart), bold: false });
-      break;
-    }
-
-    // Extract bold text (remove ** markers)
-    const boldText = remaining.substring(boldStart + 2, boldEnd);
-    if (boldText) {
-      parts.push({ text: boldText, bold: true });
-    }
-
-    remaining = remaining.substring(boldEnd + 2);
+    parts.push({
+      text: match[1],
+      bold: true
+    });
+    currentPos = match.index + match[0].length;
   }
-
+  if (currentPos < text.length) {
+    parts.push({
+      text: text.substring(currentPos),
+      bold: false
+    });
+  }
   if (parts.length === 0) {
-    parts.push({ text: text, bold: false });
-  }
-
-  // Render parts sequentially - PDFKit will handle wrapping
-  doc.fontSize(fontSize);
-  
-  // For simple case (one part), render directly
-  if (parts.length === 1) {
-    doc.font(parts[0].bold ? 'Times-Bold' : 'Times-Roman');
-    doc.text(parts[0].text, {
+    doc.font('Times-Roman').fontSize(fontSize);
+    doc.text(text, {
       align: 'left',
       width: width,
       lineGap: 2
     });
     return;
   }
-
-  // Multiple parts - render with continued option
+  doc.fontSize(fontSize);
   parts.forEach((part, index) => {
+    if (!part.text) return;
     doc.font(part.bold ? 'Times-Bold' : 'Times-Roman');
-    
-    const textOptions = {
+    doc.text(part.text, {
       align: 'left',
       width: width,
       lineGap: 2,
       continued: index < parts.length - 1
-    };
-
-    doc.text(part.text, textOptions);
+    });
   });
 }
-
-/**
- * Check if a line is a heading
- */
 function isHeading(line) {
   const trimmed = line.trim();
-  if (!trimmed) return false;
-  
-  // Remove markdown markers for checking
+  if (!trimmed || trimmed.length < 4) return false;
   const cleaned = trimmed.replace(/\*\*/g, '');
-  
-  // All caps and reasonably short
-  if (cleaned === cleaned.toUpperCase() && cleaned.length < 100 && cleaned.length > 3) {
+  if (cleaned === cleaned.toUpperCase() && cleaned.length < 100) {
     return true;
   }
-  
-  // Numbered heading
-  if (/^\d+\.\s+/.test(cleaned)) {
-    return true;
-  }
-  
-  return false;
+  return /^\d+\.\s+/.test(cleaned);
 }
-
-/**
- * Convert text content to PDF
- */
 const convertTextToPDF = async (req, res) => {
   try {
     const { content, documentName } = req.body;
-
     if (!content) {
       return res.status(400).json({
         success: false,
         message: 'Content is required'
       });
     }
-
-    // Create uploads directory if it doesn't exist
     const uploadsDir = path.join(__dirname, '..', 'uploads');
     await fs.mkdir(uploadsDir, { recursive: true });
-
-    // Generate filename
     const fileName = `${Date.now()}-${(documentName || 'document').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
     const filePath = path.join(uploadsDir, fileName);
-
-    // Create PDF
     const doc = new PDFDocument({
       margins: { top: 50, bottom: 50, left: 50, right: 50 },
-      size: 'LETTER'
+      size: 'LETTER',
+      bufferPages: true,
+      autoFirstPage: true
     });
-
     const stream = fsSync.createWriteStream(filePath);
     doc.pipe(stream);
-
-    // Split content into paragraphs (double newlines)
     const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
-    
     paragraphs.forEach((paragraph, index) => {
       if (index > 0) {
         doc.moveDown(0.5);
       }
-
       const lines = paragraph.split('\n').filter(l => l.trim());
-      
       lines.forEach((line, lineIndex) => {
         const trimmedLine = line.trim();
         if (!trimmedLine) return;
-
-        // Check if this is a heading
         if (isHeading(trimmedLine)) {
           if (lineIndex > 0 || index > 0) {
             doc.moveDown(0.5);
           }
-          
-          // Render heading in bold (remove ** markers)
           const cleanedLine = trimmedLine.replace(/\*\*/g, '');
           doc.font('Times-Bold')
-             .fontSize(13)
-             .text(cleanedLine, {
-               align: 'left',
-               width: 495,
-               lineGap: 2
-             });
+            .fontSize(13)
+            .text(cleanedLine, {
+              align: 'left',
+              width: 495,
+              lineGap: 2
+            });
           doc.moveDown(0.3);
         } else {
-          // Regular text with markdown formatting
           if (lineIndex > 0 || index > 0) {
             doc.moveDown(0.3);
           }
-          
-          // Use the formatted text renderer
           renderFormattedText(doc, trimmedLine, {
             fontSize: 11,
             width: 495
@@ -294,18 +382,13 @@ const convertTextToPDF = async (req, res) => {
         }
       });
     });
-
     doc.end();
-
-    // Wait for PDF to be written
     await new Promise((resolve, reject) => {
       stream.on('finish', resolve);
       stream.on('error', reject);
     });
-
-    // Read PDF file
     const pdfBuffer = await fs.readFile(filePath);
-
+    const base64 = pdfBuffer.toString('base64');
     res.json({
       success: true,
       message: 'PDF generated successfully',
@@ -313,7 +396,7 @@ const convertTextToPDF = async (req, res) => {
         fileName,
         filePath,
         fileSize: pdfBuffer.length,
-        base64: pdfBuffer.toString('base64')
+        base64
       }
     });
   } catch (error) {
@@ -325,31 +408,22 @@ const convertTextToPDF = async (req, res) => {
     });
   }
 };
-
-/**
- * Store document for unauthorized user
- */
 const storePendingDocument = async (req, res) => {
   try {
     const { documentName, content, templateType, templateData, sessionId } = req.body;
-
     if (!content || !templateType) {
       return res.status(400).json({
         success: false,
         message: 'Content and template type are required'
       });
     }
-
-    const pendingDoc = new PendingDocument({
+    const pendingDoc = await PendingDocument.create({
       documentName: documentName || `Generated ${templateType}`,
       content,
       templateType,
       templateData: templateData || {},
       sessionId: sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     });
-
-    await pendingDoc.save();
-
     res.json({
       success: true,
       message: 'Document stored successfully',
@@ -367,31 +441,23 @@ const storePendingDocument = async (req, res) => {
     });
   }
 };
-
-/**
- * Get pending document by ID or session ID
- */
 const getPendingDocument = async (req, res) => {
   try {
     const { documentId, sessionId } = req.query;
-
     if (!documentId && !sessionId) {
       return res.status(400).json({
         success: false,
         message: 'Document ID or session ID is required'
       });
     }
-
     const query = documentId ? { _id: documentId } : { sessionId };
-    const pendingDoc = await PendingDocument.findOne(query);
-
+    const pendingDoc = await PendingDocument.findOne(query).lean();
     if (!pendingDoc) {
       return res.status(404).json({
         success: false,
         message: 'Document not found'
       });
     }
-
     res.json({
       success: true,
       data: {
@@ -413,16 +479,10 @@ const getPendingDocument = async (req, res) => {
     });
   }
 };
-
-/**
- * Delete pending document
- */
 const deletePendingDocument = async (req, res) => {
   try {
     const { documentId } = req.params;
-
-    await PendingDocument.findByIdAndDelete(documentId);
-
+    await PendingDocument.deleteOne({ _id: documentId });
     res.json({
       success: true,
       message: 'Document deleted successfully'
@@ -437,11 +497,108 @@ const deletePendingDocument = async (req, res) => {
   }
 };
 
+const submitFeedback = async (req, res) => {
+  try {
+    const {
+      messageId,
+      sessionId,
+      feedbackType,
+      feedbackComment,
+      templateType,
+      userMessage,
+      aiResponse,
+      categories
+    } = req.body;
+
+    // Validate required fields
+    if (!messageId || !sessionId || !feedbackType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: messageId, sessionId, and feedbackType are required'
+      });
+    }
+
+    if (!['like', 'dislike'].includes(feedbackType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid feedback type. Must be "like" or "dislike"'
+      });
+    }
+
+    // Get user ID if authenticated
+    const userId = req.user?.id || null;
+
+    // Get metadata
+    const metadata = {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip || req.connection.remoteAddress,
+      responseLength: aiResponse?.length || 0
+    };
+
+    // Check if feedback already exists
+    const existingFeedback = await AIFeedback.findOne({ messageId, sessionId });
+
+    let feedback;
+    if (existingFeedback) {
+      // Update existing feedback
+      existingFeedback.feedbackType = feedbackType;
+      existingFeedback.feedbackComment = feedbackComment || null;
+      existingFeedback.categories = categories || [];
+      existingFeedback.userId = userId;
+      existingFeedback.templateType = templateType || existingFeedback.templateType;
+      existingFeedback.metadata = metadata;
+      existingFeedback.updatedAt = new Date();
+      
+      feedback = await existingFeedback.save();
+    } else {
+      // Create new feedback
+      feedback = await AIFeedback.create({
+        messageId,
+        sessionId,
+        userId,
+        feedbackType,
+        feedbackComment: feedbackComment || null,
+        templateType: templateType || null,
+        userMessage: userMessage || null,
+        aiResponse: aiResponse || null,
+        categories: categories || [],
+        metadata
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Feedback submitted successfully',
+      data: {
+        feedbackId: feedback._id.toString(),
+        feedbackType: feedback.feedbackType
+      }
+    });
+
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Feedback already exists for this message. Please try again.'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit feedback',
+      error: error.message
+    });
+  }
+};
 module.exports = {
   generateAIContent,
+  generateAIContentStream, 
   convertTextToPDF,
   storePendingDocument,
   getPendingDocument,
-  deletePendingDocument
+  deletePendingDocument,
+  submitFeedback
 };
-
