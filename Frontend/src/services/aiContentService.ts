@@ -277,7 +277,66 @@ export const aiContentService = {
       }
     }
   },
+// Submit feedback
+submitFeedback: async (feedbackData: {
+  messageId: string;
+  sessionId: string;
+  feedbackType: 'like' | 'dislike';
+  feedbackComment?: string;
+  templateType?: string;
+  userMessage?: string;
+  aiResponse?: string;
+  categories?: number[];
+}) => {
+  const response = await fetch(`${TEMPLATE_SERVICE_URL}/public/ai-content/ai-feedback/submit`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(localStorage.getItem('token') && {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      })
+    },
+    body: JSON.stringify(feedbackData)
+  });
 
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to submit feedback');
+  }
+
+  return response.json();
+},
+
+// Get feedback categories
+getFeedbackCategories: async () => {
+  const response = await fetch(`${TEMPLATE_SERVICE_URL}/ai-feedback/categories`);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch categories');
+  }
+
+  return response.json();
+},
+
+// Get feedback for a message
+getMessageFeedback: async (messageId: string, sessionId: string) => {
+  const response = await fetch(
+    `${TEMPLATE_SERVICE_URL}/ai-feedback/message/${messageId}?sessionId=${sessionId}`,
+    {
+      headers: {
+        ...(localStorage.getItem('token') && {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        })
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch feedback');
+  }
+
+  return response.json();
+},
   /**
    * Convert text content to PDF
    */
