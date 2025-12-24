@@ -110,3 +110,13 @@
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+.ProseMirror-focused {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* If border appears due to focus */
+.ProseMirror.ProseMirror-focused {
+  border-color: transparent !important;
+}

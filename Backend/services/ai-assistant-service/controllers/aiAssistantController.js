@@ -4,7 +4,7 @@ try {
   // Try simplified version first (more natural, ChatGPT-like)
   try {
     llmService = require('../services/llmServiceLangChain');
-    console.log('✅ Using Simplified LangChain service (ChatGPT-like)');
+    console.log('✅ Using Simplified LangChain services (ChatGPT-like)');
   } catch (e) {
     // Fallback to original LangChain service
     llmService = require('../services/llmServiceLangChain');

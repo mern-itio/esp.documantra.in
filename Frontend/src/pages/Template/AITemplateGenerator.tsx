@@ -6,7 +6,6 @@ import {
   Send,
   Loader2,
   ArrowLeft,
-  AlertCircle,
   User,
   Bot,
   Trash2,
@@ -19,25 +18,7 @@ import toast from 'react-hot-toast';
 import './AITemplateGenerator.css';
 import FeedbackButtons from '../../components/Template/feedbackButton';
 import InlineEditor from '../../components/Template/InlineEditor';
-
-type Complexity = 'Simple' | 'Medium' | 'Complex';
-
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  complexity: Complexity;
-  rating: number;
-  downloads: number;
-  timeToComplete: string;
-  isPremium: boolean;
-  isFeatured: boolean;
-  tags: string[];
-  expertReviewed: boolean;
-  jurisdictions: string[];
-  fields: string[];
-}
+// type Complexity = 'Simple' | 'Medium' | 'Complex';
 
 interface Message {
   id: string;
@@ -49,26 +30,21 @@ interface Message {
   userMessage?: string;
   editableContent?: string;
 }
-
-// Helper function to convert markdown bold (**text**) to HTML
 const renderMarkdown = (text: string): string => {
   const escapeHtml = (str: string) => {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   };
-
   let html = escapeHtml(text);
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\n/g, '<br>');
-
   return html;
 };
-
 const AITemplateGenerator: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -78,43 +54,34 @@ const AITemplateGenerator: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isListening, setIsListening] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState(''); // Add this for real-time display
+  const [liveTranscript, setLiveTranscript] = useState('');
   const recognitionRef = useRef<any>(null);
-
   const SpeechRecognition =
     (window as any).SpeechRecognition ||
     (window as any).webkitSpeechRecognition;
-
   useEffect(() => {
     if (!SpeechRecognition) {
       console.warn('Speech Recognition not supported in this browser');
       return;
     }
-
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
-
     recognition.onstart = () => {
       setIsListening(true);
       setLiveTranscript('');
     };
-
     recognition.onend = () => {
       setIsListening(false);
     };
-
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
       let finalTranscript = '';
-
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
-
         const capitalizedTranscript = transcript.charAt(0).toUpperCase() + transcript.slice(1);
-
         if (event.results[i].isFinal) {
           finalTranscript += capitalizedTranscript + ' ';
         } else {
@@ -124,7 +91,6 @@ const AITemplateGenerator: React.FC = () => {
       if (interimTranscript) {
         setLiveTranscript(interimTranscript);
       }
-
       if (finalTranscript) {
         setInputMessage(prev => {
           const combined = (prev + ' ' + finalTranscript).trim();
@@ -133,11 +99,9 @@ const AITemplateGenerator: React.FC = () => {
         });
       }
     };
-
     recognition.onerror = (err: any) => {
       console.error('Speech recognition error:', err.error);
       let errorMessage = '';
-
       switch (err.error) {
         case 'no-speech':
           errorMessage = 'No speech detected. Please try again.';
@@ -151,28 +115,23 @@ const AITemplateGenerator: React.FC = () => {
         default:
           errorMessage = `Error: ${err.error}`;
       }
-
       console.error('Speech error:', errorMessage);
       toast.error(errorMessage);
       setIsListening(false);
       setLiveTranscript('');
     };
-
     recognitionRef.current = recognition;
-
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
     };
   }, []);
-
   const startListening = () => {
     if (!recognitionRef.current) {
       toast.error('Speech Recognition not available');
       return;
     }
-
     try {
       setLiveTranscript('');
       recognitionRef.current.start();
@@ -180,10 +139,8 @@ const AITemplateGenerator: React.FC = () => {
       console.error('Error starting recognition:', error);
     }
   };
-
   const stopListening = () => {
     if (!recognitionRef.current) return;
-
     try {
       recognitionRef.current.stop();
       setIsListening(false);
@@ -193,146 +150,35 @@ const AITemplateGenerator: React.FC = () => {
       setIsListening(false);
     }
   };
-
   // Initial welcome message
   useEffect(() => {
     const welcomeMessage: Message = {
       id: 'welcome',
       role: 'assistant',
-      content: 'Hello! I\'m your AI document assistant. I can help you create professional legal documents.\n\nTo get started, you can:\n1. Select a template type from the dropdown above\n2. Or simply describe what kind of document you need\n\nFor example: "I need a non-disclosure agreement for my startup" or "Create an employment contract for a software engineer"\n\nI\'ll ask you for any missing information needed to create your document.',
+      content: 'Hello! I\'m your AI document assistant. I can help you create professional legal documents.\n\nTo get started, simply describe what kind of document you need.\n\nFor example: "I need a non-disclosure agreement for my startup" or "Create an employment contract for a software engineer"\n\nI\'ll ask you for any missing information needed to create your document.',
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
-  }, []);
-
-  const templates: Template[] = [
-    {
-      id: 'nda',
-      name: 'Non-Disclosure Agreement',
-      category: 'business',
-      description: 'Protect confidential information in business relationships',
-      complexity: 'Simple',
-      rating: 4.9,
-      downloads: 15420,
-      timeToComplete: '5 min',
-      isPremium: false,
-      isFeatured: true,
-      tags: ['Confidentiality', 'Business', 'Legal Protection'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA', 'UK', 'AU'],
-      fields: ['Company Name', 'Recipient Name', 'Effective Date', 'Jurisdiction', 'Project Description']
-    },
-    {
-      id: 'employment-contract',
-      name: 'Employment Contract',
-      category: 'employment',
-      description: 'Comprehensive employment agreement template',
-      complexity: 'Medium',
-      rating: 4.8,
-      downloads: 12350,
-      timeToComplete: '8 min',
-      isPremium: false,
-      isFeatured: true,
-      tags: ['Employment', 'HR', 'Contracts'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA'],
-      fields: ['Employee Name', 'Position', 'Start Date', 'Salary', 'Benefits']
-    },
-    {
-      id: 'rental-agreement',
-      name: 'Residential Lease Agreement',
-      category: 'real-estate',
-      description: 'Standard residential rental agreement',
-      complexity: 'Medium',
-      rating: 4.7,
-      downloads: 9870,
-      timeToComplete: '10 min',
-      isPremium: false,
-      isFeatured: false,
-      tags: ['Real Estate', 'Rental', 'Property'],
-      expertReviewed: true,
-      jurisdictions: ['US'],
-      fields: ['Landlord Name', 'Tenant Name', 'Property Address', 'Rent Amount', 'Lease Term']
-    },
-    {
-      id: 'service-agreement',
-      name: 'Service Agreement',
-      category: 'business',
-      description: 'Professional services contract template',
-      complexity: 'Medium',
-      rating: 4.6,
-      downloads: 8920,
-      timeToComplete: '7 min',
-      isPremium: false,
-      isFeatured: false,
-      tags: ['Services', 'Business', 'Freelance'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA', 'UK'],
-      fields: ['Service Provider', 'Client Name', 'Services Description', 'Payment Terms']
-    },
-    {
-      id: 'partnership-agreement',
-      name: 'Partnership Agreement',
-      category: 'business',
-      description: 'Business partnership formation document',
-      complexity: 'Complex',
-      rating: 4.8,
-      downloads: 5430,
-      timeToComplete: '15 min',
-      isPremium: true,
-      isFeatured: false,
-      tags: ['Partnership', 'Business Formation', 'Legal'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA'],
-      fields: ['Partner Names', 'Business Name', 'Capital Contributions', 'Profit Sharing']
-    },
-    {
-      id: 'loan-agreement',
-      name: 'Personal Loan Agreement',
-      category: 'finance',
-      description: 'Simple personal loan contract',
-      complexity: 'Simple',
-      rating: 4.5,
-      downloads: 7650,
-      timeToComplete: '6 min',
-      isPremium: false,
-      isFeatured: false,
-      tags: ['Finance', 'Loan', 'Personal'],
-      expertReviewed: true,
-      jurisdictions: ['US'],
-      fields: ['Lender Name', 'Borrower Name', 'Loan Amount', 'Interest Rate', 'Repayment Terms']
-    }
-  ];
-
+  }, []);  
   useEffect(() => {
-    if (!selectedTemplate && templates.length > 0) {
-      setSelectedTemplate(templates[0]);
-    }
   }, []);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isGenerating) return;
-
     const userMessage: Message = {
       id: `user_${Date.now()}`,
       role: 'user',
       content: inputMessage.trim(),
       timestamp: new Date()
     };
-
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsGenerating(true);
-
-    // Create streaming message with empty content
     const streamingMessageId = `assistant_${Date.now()}`;
     const streamingMessage: Message = {
       id: streamingMessageId,
@@ -343,32 +189,18 @@ const AITemplateGenerator: React.FC = () => {
       userMessage: userMessage.content
     };
     setMessages(prev => [...prev, streamingMessage]);
-
     try {
-      // Build conversation context
       const conversationHistory = messages
         .filter(m => !m.isGenerating)
         .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
         .join('\n\n');
-
-      const templateType = selectedTemplate?.name || 'General Legal Document';
-
-      let requirementsText = '';
-      if (selectedTemplate) {
-        requirementsText += `Template Type: ${selectedTemplate.name}\n`;
-        requirementsText += `Description: ${selectedTemplate.description}\n\n`;
-      }
-      requirementsText += `User Request:\n${userMessage.content}`;
-
+      const templateType = 'General Legal Document';
+      let requirementsText = `User Request:\n${userMessage.content}`;
       if (conversationHistory) {
         requirementsText += `\n\nConversation History:\n${conversationHistory}`;
       }
-
       requirementsText += `\n\nInstructions: Please analyze the user's request. If you have enough information to generate the document, provide the complete document. If information is missing, ask specific clarifying questions in a friendly, conversational manner.`;
-
       let accumulatedContent = '';
-
-      // Use TRUE STREAMING from backend
       await aiContentService.generateContentStreaming(
         {
           templateType: templateType,
@@ -378,7 +210,6 @@ const AITemplateGenerator: React.FC = () => {
         {
           onToken: (token: string) => {
             accumulatedContent += token;
-
             // Update the streaming message in real-time
             setMessages(prev =>
               prev.map(msg =>
@@ -395,34 +226,33 @@ const AITemplateGenerator: React.FC = () => {
               fullContent.includes('NOW, THEREFORE') ||
               fullContent.includes('IN WITNESS WHEREOF') ||
               fullContent.length > 500;
-
+            // Convert markdown to HTML for documents
+            const htmlContent = isCompleteDocument
+              ? renderMarkdown(fullContent)
+              : fullContent;
             // Update final message
             setMessages(prev =>
               prev.map(msg =>
                 msg.id === streamingMessageId
                   ? {
                     ...msg,
-                    content: fullContent,
-                    editableContent: fullContent,
+                    content: htmlContent, // Store HTML version
+                    editableContent: htmlContent, // Store HTML version
                     isDocument: isCompleteDocument,
                     isGenerating: false,
                   }
                   : msg
               )
             );
-
             if (isCompleteDocument) {
               toast.success('Document generated successfully!');
             }
-
             setIsGenerating(false);
             inputRef.current?.focus();
           },
           onError: (error: Error) => {
             console.error('Error generating content:', error);
-
             setMessages(prev => prev.filter(m => m.id !== streamingMessageId));
-
             const errorMessage: Message = {
               id: `error_${Date.now()}`,
               role: 'assistant',
@@ -430,19 +260,15 @@ const AITemplateGenerator: React.FC = () => {
               timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMessage]);
-
             toast.error(error.message || 'Failed to generate response. Please try again.');
             setIsGenerating(false);
             inputRef.current?.focus();
           }
         }
       );
-
     } catch (error: any) {
       console.error('Error generating content:', error);
-
       setMessages(prev => prev.filter(m => m.id !== streamingMessageId));
-
       const errorMessage: Message = {
         id: `error_${Date.now()}`,
         role: 'assistant',
@@ -450,50 +276,58 @@ const AITemplateGenerator: React.FC = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
-
       toast.error(error.message || 'Failed to generate response. Please try again.');
       setIsGenerating(false);
       inputRef.current?.focus();
     }
   };
-
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-
   const handleClearConversation = () => {
     const welcomeMessage: Message = {
       id: 'welcome',
       role: 'assistant',
-      content: 'Hello! I\'m your AI document assistant. I can help you create professional legal documents.\n\nTo get started, you can:\n1. Select a template type from the dropdown above\n2. Or simply describe what kind of document you need\n\nFor example: "I need a non-disclosure agreement for my startup" or "Create an employment contract for a software engineer"\n\nI\'ll ask you for any missing information needed to create your document.',
+      content: 'Hello! I\'m your AI document assistant. I can help you create professional legal documents.\n\nTo get started, simply describe what kind of document you need.\n\nFor example: "I need a non-disclosure agreement for my startup" or "Create an employment contract for a software engineer"\n\nI\'ll ask you for any missing information needed to create your document.',
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
     toast.success('Conversation cleared');
   };
-
+  const convertHtmlToPlainText = (html: string): string => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    tempDiv.querySelectorAll('strong').forEach(strong => {
+      const text = strong.textContent || '';
+      strong.replaceWith(`**${text}**`);
+    });
+    tempDiv.querySelectorAll('br').forEach(br => {
+      br.replaceWith('\n');
+    });
+    let plainText = tempDiv.textContent || '';
+    plainText = plainText.replace(/\n\s+\n/g, '\n\n');
+    return plainText.trim();
+  };
   const handleDownloadPDF = async (content: string, messageId: string) => {
     const finalContent = content;
     if (!finalContent) {
       toast.error('No content to download');
       return;
     }
-
     setDownloadingMessageId(messageId);
-
     try {
+      const plainTextContent = convertHtmlToPlainText(finalContent);
       const response = await aiContentService.convertToPDF({
-        content: finalContent,
-        documentName: selectedTemplate?.name || 'Legal Document'
+        content: plainTextContent,
+        documentName: 'Legal Document'
       });
-
       if (response.success && response.data.base64) {
         aiContentService.downloadPDF(
           response.data.base64,
-          `${(selectedTemplate?.name || 'Document').replace(/\s+/g, '_')}.pdf`
+          `Document.pdf`
         );
         toast.success('PDF downloaded successfully!');
       } else {
@@ -506,24 +340,22 @@ const AITemplateGenerator: React.FC = () => {
       setDownloadingMessageId(null);
     }
   };
-
   const handleSendAsEnvelope = async (content: string, messageId: string) => {
     const finalContent = content;
     if (!finalContent) {
       toast.error('No content to send');
       return;
     }
-
     if (!isAuthenticated) {
       setSendingMessageId(messageId);
       try {
+        const plainTextContent = convertHtmlToPlainText(finalContent);
         const response = await aiContentService.storePendingDocument({
-          documentName: selectedTemplate?.name || 'Legal Document',
-          content: finalContent,
-          templateType: selectedTemplate?.name || 'Unknown',
+          documentName: 'Legal Document',
+          content: plainTextContent,
+          templateType: 'General Legal Document',
           sessionId
         });
-
         if (response.success) {
           localStorage.setItem('pendingDocumentId', response.data.documentId);
           localStorage.setItem('pendingSessionId', response.data.sessionId);
@@ -540,19 +372,18 @@ const AITemplateGenerator: React.FC = () => {
       }
       return;
     }
-
     setSendingMessageId(messageId);
     try {
+      const plainTextContent = convertHtmlToPlainText(finalContent);
       const response = await aiContentService.convertToPDF({
-        content: content,
-        documentName: selectedTemplate?.name || 'Legal Document'
+        content: plainTextContent,
+        documentName: 'Legal Document'
       });
-
       if (response.success && response.data.base64) {
         navigate('/e-sign/create', {
           state: {
             documentData: {
-              name: `${(selectedTemplate?.name || 'Document').replace(/\s+/g, '_')}.pdf`,
+              name: `Document.pdf`,
               content: response.data.base64,
               type: 'application/pdf'
             }
@@ -568,10 +399,8 @@ const AITemplateGenerator: React.FC = () => {
       setSendingMessageId(null);
     }
   };
-
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FFFFFF' }}>
-      {/* Header */}
       <div className="border-b flex-shrink-0" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
         <div className="max-w-7xl mx-auto px-8 py-4">
           <div className="flex items-center justify-between gap-4">
@@ -597,30 +426,7 @@ const AITemplateGenerator: React.FC = () => {
                 </div>
               </div>
             </div>
-
             <div className="flex items-center gap-3">
-              <select
-                value={selectedTemplate?.id || ''}
-                onChange={(e) => {
-                  const template = templates.find(t => t.id === e.target.value);
-                  setSelectedTemplate(template || null);
-                }}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                style={{
-                  borderColor: '#D0D0D0',
-                  borderRadius: '6px',
-                  color: '#28004D',
-                  backgroundColor: '#FFFFFF'
-                }}
-              >
-                <option value="">Select Template (Optional)</option>
-                {templates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-
               {messages.length > 1 && (
                 <button
                   onClick={handleClearConversation}
@@ -635,10 +441,7 @@ const AITemplateGenerator: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Chat Container */}
-      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-8 py-6">
-        {/* Messages Area */}
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-8 py-6">  
         <div className="flex-1 overflow-y-auto mb-4 space-y-4">
           {messages.map((message) => (
             <div
@@ -650,7 +453,6 @@ const AITemplateGenerator: React.FC = () => {
                   <Bot className="w-5 h-5 text-white" />
                 </div>
               )}
-
               <div
                 className={`max-w-[80%] rounded-lg ${message.role === 'user'
                   ? 'rounded-br-none'
@@ -666,11 +468,11 @@ const AITemplateGenerator: React.FC = () => {
                   {message.isDocument ? (
                     <InlineEditor
                       value={message.editableContent || message.content}
-                      onChange={(updated) => {
+                      onChange={(updatedHtml) => {
                         setMessages(prev =>
                           prev.map(m =>
                             m.id === message.id
-                              ? { ...m, editableContent: updated }
+                              ? { ...m, editableContent: updatedHtml }
                               : m
                           )
                         );
@@ -681,95 +483,62 @@ const AITemplateGenerator: React.FC = () => {
                       dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content || '') }}
                     />
                   )}
-
                   {message.role === 'assistant' && !message.isGenerating && (
-                    <FeedbackButtons
-                      messageId={message.id}
-                      sessionId={sessionId}
-                      messageContent={message.content}
-                      userMessage={message.userMessage}
-                      templateType={selectedTemplate?.name}
-                      onFeedbackSubmit={(type) => {
-                        // Optional: Show a toast or update UI
-                        if (type === 'like') {
-                          toast.success('Thank you for your feedback!');
-                        }
-                      }}
-                    />
+                    <div className="flex items-center justify-between px-4 pt-2 border-t"
+                      style={{ borderColor: '#D0D0D0' }}>
+                      <FeedbackButtons
+                        messageId={message.id}
+                        sessionId={sessionId}
+                        messageContent={message.content}
+                        userMessage={message.userMessage}
+                        onFeedbackSubmit={(type) => {
+                          if (type === 'like') {
+                            toast.success('Thank you for your feedback!');
+                          }
+                        }}
+                      />
+                      {message.isDocument && (
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() =>
+                              handleDownloadPDF(
+                                message.editableContent || message.content,
+                                message.id
+                              )
+                            }
+                            disabled={downloadingMessageId === message.id}
+                            title="Download PDF"
+                            className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                          >
+                            {downloadingMessageId === message.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-[#4D0080]" />
+                            ) : (
+                              <Download className="w-4 h-4 text-[#4D0080]" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleSendAsEnvelope(
+                                message.editableContent || message.content,
+                                message.id
+                              )
+                            }
+                            disabled={sendingMessageId === message.id}
+                            title={isAuthenticated ? 'Send as Envelope' : 'Login to Send'}
+                            className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                          >
+                            {sendingMessageId === message.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-[#4D0080]" />
+                            ) : (
+                              <Send className="w-4 h-4 text-[#4D0080]" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-
-
               </div>
-
-              {message.isDocument && !message.isGenerating && (
-                <div className="px-4 pb-3 pt-2 border-t space-y-2" style={{ borderColor: message.role === 'assistant' ? '#D0D0D0' : 'rgba(255,255,255,0.2)' }}>
-                  <button
-                    onClick={() =>
-                      handleDownloadPDF(
-                        message.editableContent || message.content,
-                        message.id
-                      )
-                    }
-
-                    disabled={downloadingMessageId === message.id}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                    style={{
-                      borderColor: message.role === 'user' ? 'rgba(255,255,255,0.5)' : '#4D0080',
-                      color: message.role === 'user' ? '#FFFFFF' : '#4D0080',
-                      borderRadius: '6px',
-                      backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.1)' : '#FFFFFF'
-                    }}
-                  >
-                    {downloadingMessageId === message.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Generating PDF...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4" />
-                        <span>Download PDF</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      handleSendAsEnvelope(
-                        message.editableContent || message.content,
-                        message.id
-                      )
-                    }
-
-                    disabled={sendingMessageId === message.id}
-                    className="w-full py-2 px-4 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
-                    style={{
-                      backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.2)' : '#4D0080',
-                      color: '#FFFFFF',
-                      borderRadius: '6px'
-                    }}
-                  >
-                    {sendingMessageId === message.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>{isAuthenticated ? 'Preparing...' : 'Saving...'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4" />
-                        <span>{isAuthenticated ? 'Send as Envelope' : 'Login to Send as Envelope'}</span>
-                      </>
-                    )}
-                  </button>
-                  {!isAuthenticated && (
-                    <p className="text-xs text-center flex items-center justify-center gap-1" style={{ color: message.role === 'user' ? 'rgba(255,255,255,0.8)' : '#888888' }}>
-                      <AlertCircle className="h-3 w-3" />
-                      You'll be redirected to login after saving your document
-                    </p>
-                  )}
-                </div>
-              )}
               {message.role === 'user' && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs" style={{ backgroundColor: '#4D0080', color: '#FFFFFF' }}>
                   {user?.fullname ? (
@@ -788,8 +557,6 @@ const AITemplateGenerator: React.FC = () => {
           ))}
           <div ref={messagesEndRef} />
         </div>
-
-        {/* Input Area */}
         <div className="flex-shrink-0 border rounded-lg p-4" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
           <div className="flex items-end gap-3">
             <div className="flex-1 relative">
@@ -813,7 +580,6 @@ const AITemplateGenerator: React.FC = () => {
                 }}
                 disabled={isGenerating}
               />
-              {/* Live transcript display */}
               {isListening && liveTranscript && (
                 <div
                   className="absolute bottom-3 left-4 text-sm italic pointer-events-none"
@@ -823,7 +589,6 @@ const AITemplateGenerator: React.FC = () => {
                 </div>
               )}
             </div>
-
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -836,7 +601,6 @@ const AITemplateGenerator: React.FC = () => {
                     }`}
                 />
               </button>
-
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isGenerating}
@@ -858,5 +622,4 @@ const AITemplateGenerator: React.FC = () => {
     </div>
   );
 };
-
 export default AITemplateGenerator;

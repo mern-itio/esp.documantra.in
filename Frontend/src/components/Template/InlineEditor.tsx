@@ -1,17 +1,33 @@
-interface InlineEditorProps {
-  value: string;
-  onChange: (value: string) => void;
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { useEffect } from 'react';
+
+interface Props {
+  value: string;      
+  onChange: (html: string) => void;
 }
 
-const InlineEditor: React.FC<InlineEditorProps> = ({ value, onChange }) => {
+const InlineEditor: React.FC<Props> = ({ value, onChange }) => {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: value,
+    onUpdate({ editor }) {
+      onChange(editor.getHTML());
+    },
+  });
+
+useEffect(() => {
+  if (editor && value !== editor.getHTML()) {
+    editor.commands.setContent(value);
+  }
+}, [value, editor]);
+
+
+  if (!editor) return null;
+
   return (
-    <div
-      contentEditable
-      suppressContentEditableWarning
-      className="outline-none text-sm leading-relaxed"
-      onInput={(e) => onChange((e.target as HTMLElement).innerText)}
-    >
-      {value}
+    <div className="p-3">
+      <EditorContent editor={editor} />
     </div>
   );
 };

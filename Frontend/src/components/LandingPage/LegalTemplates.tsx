@@ -59,17 +59,17 @@ useEffect(() => {
         e.preventDefault()
         e.stopPropagation()
         e.stopImmediatePropagation()
-
+        
         // Manually scroll the chat messages area
         const delta = e.deltaY
         const currentScroll = chatMessages.scrollTop
         const maxScroll = chatMessages.scrollHeight - chatMessages.clientHeight
-
+        
         // Only scroll if within bounds
         if ((delta > 0 && currentScroll < maxScroll) || (delta < 0 && currentScroll > 0)) {
           chatMessages.scrollTop += delta
         }
-
+        
         return false
       }
     }
@@ -164,7 +164,7 @@ useEffect(() => {
     if (conversationState === 'asking_category') {
       // Detect category from user input
       const detectedCategory = detectCategory(userMessage)
-
+      
       if (detectedCategory) {
         setSelectedCategory(detectedCategory)
         setMessages(prev => [...prev, {
@@ -193,13 +193,13 @@ useEffect(() => {
 
       // Generate document
       try {
-        const response = await aiContentService.generateContent({
+      const response = await aiContentService.generateContent({
           templateType: selectedCategory,
           requirements: userMessage
-        })
+      })
 
-        if (response.success && response.data.content) {
-          setGeneratedContent(response.data.content)
+      if (response.success && response.data.content) {
+        setGeneratedContent(response.data.content)
           setMessages(prev => [...prev, {
             role: 'assistant',
             content: `✅ Your ${selectedCategory} has been generated successfully!\n\nHere's your document:\n\n---\n\n${response.data.content}\n\n---\n\nYou can now download it as PDF or send it as an envelope for e-signing.`,
@@ -207,10 +207,10 @@ useEffect(() => {
           }])
           setConversationState('generated')
           toast.success('Document generated successfully!')
-        } else {
+      } else {
           throw new Error('Failed to generate document')
-        }
-      } catch (error: any) {
+      }
+    } catch (error: any) {
         console.error('Error generating document:', error)
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -219,8 +219,8 @@ useEffect(() => {
         }])
         setConversationState('asking_requirements')
         toast.error(error.message || 'Failed to generate document. Please try again.')
-      } finally {
-        setIsGenerating(false)
+    } finally {
+      setIsGenerating(false)
       }
     } else if (conversationState === 'generated') {
       // User can ask to regenerate or start new
@@ -367,7 +367,7 @@ useEffect(() => {
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
             Generate professional legal documents in minutes using AI. Simply tell me what you need and I'll guide you through the process.
           </p>
-
+          
           {/* Stats */}
           <div className="flex flex-wrap justify-center gap-8 mb-8">
             <div className="text-center">
@@ -390,26 +390,26 @@ useEffect(() => {
         </div>
 
         {/* Chat Interface */}
-        <div
-          className="max-w-4xl mx-auto mb-8"
-          id="chat-container-wrapper"          
+        <div 
+          className="max-w-4xl mx-auto mb-8" 
+          id="chat-container-wrapper"
         >
-          <div
-            className="bg-white rounded-xl shadow-lg flex flex-col"
-            style={{
-              height: '700px',
-              maxHeight: '700px',
+          <div 
+            className="bg-white rounded-xl shadow-lg flex flex-col" 
+            style={{ 
+              height: '700px', 
+              maxHeight: '700px', 
               overflow: 'hidden',
               position: 'relative',
               touchAction: 'pan-y'
             }}
           >
             {/* Chat Messages */}
-            <div
+            <div 
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-6 space-y-4"
-              style={{
-                minHeight: 0,
+              className="flex-1 overflow-y-auto p-6 space-y-4" 
+              style={{ 
+                minHeight: 0, 
                 overflowY: 'auto',
                 overscrollBehavior: 'contain',
                 overscrollBehaviorY: 'contain',
@@ -432,7 +432,7 @@ useEffect(() => {
                     className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === 'user'
                         ? 'bg-[#260559] text-white'
                         : 'bg-gray-100 text-gray-900'
-                      }`}
+                    }`}
                   >
                     <div className="whitespace-pre-wrap text-sm leading-relaxed">
                       {message.content}
@@ -448,7 +448,7 @@ useEffect(() => {
                   )}
                 </div>
               ))}
-
+              
               {isGenerating && (
 
                 <div className="flex gap-3 justify-start">
@@ -462,49 +462,49 @@ useEffect(() => {
                 </div>
 
               )}
-
+              
               <div ref={messagesEndRef} />
-            </div>
-
+              </div>
+              
             {/* Action Buttons (shown when document is generated) */}
             {conversationState === 'generated' && generatedContent && (
               <div className="border-t border-gray-200 p-4 bg-gray-50 flex gap-3">
-                <button
-                  onClick={handleDownloadPDF}
-                  disabled={isDownloading}
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-[#260559] text-[#260559] rounded-lg font-semibold hover:bg-[#260559]/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Generating PDF...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-5 w-5" />
-                      Download PDF
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={handleSendAsEnvelope}
-                  disabled={isSending}
+                  >
+                    {isDownloading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Generating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-5 w-5" />
+                        Download PDF
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={handleSendAsEnvelope}
+                    disabled={isSending}
                   className="flex-1 bg-[#260559] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#260559]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSending ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      {isAuthenticated ? 'Preparing...' : 'Saving...'}
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-5 w-5" />
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        {isAuthenticated ? 'Preparing...' : 'Saving...'}
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-5 w-5" />
                       {isAuthenticated ? 'Send as Envelope' : 'Login to Send'}
-                    </>
-                  )}
-                </button>
-
+                      </>
+                    )}
+                  </button>
+                  
                 <button
                   onClick={handleStartNew}
                   className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-200"
@@ -527,8 +527,8 @@ useEffect(() => {
                       conversationState === 'asking_category'
                         ? "Type the document type you need (e.g., NDA, Offer Letter, Employment Contract)..."
                         : conversationState === 'asking_requirements'
-                          ? "Provide the details for your document..."
-                          : "Type your message..."
+                        ? "Provide the details for your document..."
+                        : "Type your message..."
                     }
                     rows={1}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#260559] focus:border-transparent resize-none max-h-32 overflow-y-auto"
@@ -550,12 +550,12 @@ useEffect(() => {
                   )}
                 </button>
               </div>
-
+              
               {!isAuthenticated && conversationState === 'generated' && (
                 <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  You'll be redirected to login after saving your document
-                </p>
+                      <AlertCircle className="h-3 w-3" />
+                      You'll be redirected to login after saving your document
+                    </p>
               )}
             </div>
           </div>
@@ -568,7 +568,7 @@ useEffect(() => {
               Need a Custom Legal Document?
             </h3>
             <p className="text-primary-100 mb-6 max-w-2xl mx-auto">
-              Our legal experts can create custom documents tailored to your specific needs.
+              Our legal experts can create custom documents tailored to your specific needs. 
               Get professional legal documents drafted by experienced attorneys.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
