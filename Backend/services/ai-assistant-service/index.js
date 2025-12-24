@@ -30,7 +30,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes (require authentication)
-app.use('/api', verifyJWT(process.env.ACCESS_TOKEN_SECRET));
+app.use('/api', verifyJWT('user'));
 app.use('/api/ai-assistant', aiAssistantRoutes);
 
 // Error handling middleware

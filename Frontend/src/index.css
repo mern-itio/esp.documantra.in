@@ -846,9 +846,9 @@
   }
 }
 
-.create-envelope-special {
+/* .create-envelope-special {
   animation: createEnvelopeBounce 3s ease-in-out infinite;
-}
+} */
 
 .create-envelope-btn {
   animation: createEnvelopePulse 2s ease-in-out infinite;
@@ -968,10 +968,10 @@
   z-index: 1;
 }
 
-.create-envelope-icon {
+/* .create-envelope-icon {
   animation: createEnvelopeBounce 2s ease-in-out infinite;
   animation-delay: 0.5s;
-}
+} */
 
 .create-envelope-text {
   text-shadow: 0 1px 2px rgba(62, 43, 102, 0.1);

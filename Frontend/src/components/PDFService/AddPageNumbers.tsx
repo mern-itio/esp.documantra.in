@@ -11,8 +11,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-// Use the correct worker version that matches the installed pdfjs-dist
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+// Use worker from public folder
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const AddPageNumbers: React.FC = () => {
    const location = useLocation();

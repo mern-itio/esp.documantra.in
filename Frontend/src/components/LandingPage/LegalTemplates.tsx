@@ -1,220 +1,254 @@
-import { useState, useEffect } from 'react'
-import { FileText, Download, Star, Clock, Zap, Shield, Loader2, Sparkles, Send, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Download, Send, Loader2, Sparkles, AlertCircle, Bot, User } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthService/AuthContext'
 import { aiContentService } from '../../services/aiContentService'
 import toast from 'react-hot-toast'
 
-type Complexity = 'Simple' | 'Medium' | 'Complex'
-
-interface Template {
-  id: string
-  name: string
-  category: string
-  description: string
-  complexity: Complexity
-  rating: number
-  downloads: number
-  timeToComplete: string
-  isPremium: boolean
-  isFeatured: boolean
-  tags: string[]
-  expertReviewed: boolean
-  jurisdictions: string[]
-  fields: string[]
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
 }
+
+type ConversationState = 'initial' | 'asking_category' | 'asking_requirements' | 'generating' | 'generated'
 
 const LegalTemplates = () => {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
-  const [formData, setFormData] = useState<Record<string, string>>({})
-  const [additionalDescription, setAdditionalDescription] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState('')
+  const [conversationState, setConversationState] = useState<ConversationState>('initial')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [generatedContent, setGeneratedContent] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sessionId] = useState<string>(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const chatMessagesRef = useRef<HTMLDivElement>(null)
+// 1. Create a ref for the scrollable chat container
+const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const templates: Template[] = [
-    {
-      id: 'nda',
-      name: 'Non-Disclosure Agreement',
-      category: 'business',
-      description: 'Protect confidential information in business relationships',
-      complexity: 'Simple',
-      rating: 4.9,
-      downloads: 15420,
-      timeToComplete: '5 min',
-      isPremium: false,
-      isFeatured: true,
-      tags: ['Confidentiality', 'Business', 'Legal Protection'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA', 'UK', 'AU'],
-      fields: ['Company Name', 'Recipient Name', 'Effective Date', 'Jurisdiction', 'Project Description']
-    },
-    {
-      id: 'employment-contract',
-      name: 'Employment Contract',
-      category: 'employment',
-      description: 'Comprehensive employment agreement template',
-      complexity: 'Medium',
-      rating: 4.8,
-      downloads: 12350,
-      timeToComplete: '8 min',
-      isPremium: false,
-      isFeatured: true,
-      tags: ['Employment', 'HR', 'Contracts'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA'],
-      fields: ['Employee Name', 'Position', 'Start Date', 'Salary', 'Benefits']
-    },
-    {
-      id: 'rental-agreement',
-      name: 'Residential Lease Agreement',
-      category: 'real-estate',
-      description: 'Standard residential rental agreement',
-      complexity: 'Medium',
-      rating: 4.7,
-      downloads: 9870,
-      timeToComplete: '10 min',
-      isPremium: false,
-      isFeatured: false,
-      tags: ['Real Estate', 'Rental', 'Property'],
-      expertReviewed: true,
-      jurisdictions: ['US'],
-      fields: ['Landlord Name', 'Tenant Name', 'Property Address', 'Rent Amount', 'Lease Term']
-    },
-    {
-      id: 'service-agreement',
-      name: 'Service Agreement',
-      category: 'business',
-      description: 'Professional services contract template',
-      complexity: 'Medium',
-      rating: 4.6,
-      downloads: 8920,
-      timeToComplete: '7 min',
-      isPremium: false,
-      isFeatured: false,
-      tags: ['Services', 'Business', 'Freelance'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA', 'UK'],
-      fields: ['Service Provider', 'Client Name', 'Services Description', 'Payment Terms']
-    },
-    {
-      id: 'partnership-agreement',
-      name: 'Partnership Agreement',
-      category: 'business',
-      description: 'Business partnership formation document',
-      complexity: 'Complex',
-      rating: 4.8,
-      downloads: 5430,
-      timeToComplete: '15 min',
-      isPremium: true,
-      isFeatured: false,
-      tags: ['Partnership', 'Business Formation', 'Legal'],
-      expertReviewed: true,
-      jurisdictions: ['US', 'CA'],
-      fields: ['Partner Names', 'Business Name', 'Capital Contributions', 'Profit Sharing']
-    },
-    {
-      id: 'loan-agreement',
-      name: 'Personal Loan Agreement',
-      category: 'finance',
-      description: 'Simple personal loan contract',
-      complexity: 'Simple',
-      rating: 4.5,
-      downloads: 7650,
-      timeToComplete: '6 min',
-      isPremium: false,
-      isFeatured: false,
-      tags: ['Finance', 'Loan', 'Personal'],
-      expertReviewed: true,
-      jurisdictions: ['US'],
-      fields: ['Lender Name', 'Borrower Name', 'Loan Amount', 'Interest Rate', 'Repayment Terms']
-    }
-  ]
+// 2. Call this after messages update
+const scrollToBottom = () => {
+  if (messagesContainerRef.current) {
+    messagesContainerRef.current.scrollTop =
+      messagesContainerRef.current.scrollHeight;
+  }
+};
 
-  const filteredTemplates = templates
-
-  // Set default template on mount
+// 3. Whenever chatMessages changes (or new msg added), scroll:
+useEffect(() => {
+  scrollToBottom();
+}, [messages]);
+  // Prevent ALL scroll propagation from chat to page
   useEffect(() => {
-    if (!selectedTemplate && templates.length > 0) {
-      setSelectedTemplate(templates[0])
+    const chatMessages = chatMessagesRef.current
+    const chatWrapper = document.getElementById('chat-container-wrapper')
+    if (!chatMessages || !chatWrapper) return
+
+    let isOverChat = false
+
+    const handleWheel = (e: WheelEvent) => {
+      // Check if event is within chat wrapper or mouse is over chat
+      const target = e.target as Node
+      if (isOverChat || chatWrapper.contains(target)) {
+        // Prevent default to stop page scroll completely
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+
+        // Manually scroll the chat messages area
+        const delta = e.deltaY
+        const currentScroll = chatMessages.scrollTop
+        const maxScroll = chatMessages.scrollHeight - chatMessages.clientHeight
+
+        // Only scroll if within bounds
+        if ((delta > 0 && currentScroll < maxScroll) || (delta < 0 && currentScroll > 0)) {
+          chatMessages.scrollTop += delta
+        }
+
+        return false
+      }
+    }
+
+
+    // Use capture phase on document to catch all wheel events
+    document.addEventListener('wheel', handleWheel, { passive: false, capture: true })
+
+    return () => {
+      document.removeEventListener('wheel', handleWheel, { capture: true } as any)
+      // Restore body scroll on cleanup
+      document.body.style.overflow = ''
     }
   }, [])
 
-  // Reset form data when template changes
+  // Auto-scroll to bottom
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  // }, [messages])
+
+  // Initialize with welcome message
   useEffect(() => {
-    if (selectedTemplate) {
-      // Initialize form data with empty values for all fields
-      const initialFormData: Record<string, string> = {}
-      selectedTemplate.fields.forEach(field => {
-        const fieldKey = field.toLowerCase().replace(/\s+/g, '')
-        initialFormData[fieldKey] = ''
-      })
-      setFormData(initialFormData)
-      setAdditionalDescription('')
-      setGeneratedContent('')
+    if (messages.length === 0) {
+      setMessages([{
+        role: 'assistant',
+        content: "👋 Hello! I'm your AI legal document assistant. What type of document would you like to create today?\n\nYou can ask for documents like:\n• NDA (Non-Disclosure Agreement)\n• Employment Contract\n• Offer Letter\n• Service Agreement\n• Partnership Agreement\n• Rental Agreement\n• Loan Agreement\n• Or any other legal document\n\nJust tell me what you need!",
+        timestamp: new Date()
+      }])
+      setConversationState('asking_category')
     }
-  }, [selectedTemplate])
+  }, [])
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto'
+      inputRef.current.style.height = `${inputRef.current.scrollHeight}px`
+    }
+  }, [input])
 
-  const handleGenerate = async () => {
-    if (!selectedTemplate) {
-      toast.error('Please select a template')
-      return
+  const detectCategory = (text: string): string | null => {
+    const lowerText = text.toLowerCase()
+    const categoryMap: Record<string, string> = {
+      'nda': 'NDA (Non-Disclosure Agreement)',
+      'non-disclosure': 'NDA (Non-Disclosure Agreement)',
+      'non disclosure': 'NDA (Non-Disclosure Agreement)',
+      'confidentiality': 'NDA (Non-Disclosure Agreement)',
+      'employment': 'Employment Contract',
+      'employment contract': 'Employment Contract',
+      'job contract': 'Employment Contract',
+      'offer letter': 'Offer Letter',
+      'offer': 'Offer Letter',
+      'job offer': 'Offer Letter',
+      'service agreement': 'Service Agreement',
+      'service contract': 'Service Agreement',
+      'partnership': 'Partnership Agreement',
+      'partnership agreement': 'Partnership Agreement',
+      'rental': 'Residential Lease Agreement',
+      'lease': 'Residential Lease Agreement',
+      'rental agreement': 'Residential Lease Agreement',
+      'loan': 'Loan Agreement',
+      'loan agreement': 'Loan Agreement',
+      'consulting': 'Consulting Agreement',
+      'consulting agreement': 'Consulting Agreement',
+      'purchase': 'Purchase Agreement',
+      'purchase agreement': 'Purchase Agreement'
     }
 
-    // Validate that at least some form fields are filled
-    const hasFormData = Object.values(formData).some(value => value.trim() !== '')
-    if (!hasFormData && !additionalDescription.trim()) {
-      toast.error('Please fill in at least some fields or provide additional description')
-      return
-    }
-
-    setIsGenerating(true)
-    setGeneratedContent('')
-
-    try {
-      // Build requirements string from form data and additional description
-      let requirementsText = `Template: ${selectedTemplate.name}\n\n`
-      
-      // Add form field data
-      if (hasFormData) {
-        requirementsText += 'Provided Information:\n'
-        selectedTemplate.fields.forEach(field => {
-          const fieldKey = field.toLowerCase().replace(/\s+/g, '')
-          const value = formData[fieldKey] || ''
-          if (value.trim()) {
-            requirementsText += `- ${field}: ${value}\n`
-          }
-        })
-        requirementsText += '\n'
+    for (const [key, value] of Object.entries(categoryMap)) {
+      if (lowerText.includes(key)) {
+        return value
       }
+    }
 
-      // Add additional description
-      if (additionalDescription.trim()) {
-        requirementsText += `Additional Details:\n${additionalDescription.trim()}`
-      }
+    return null
+  }
 
-      const response = await aiContentService.generateContent({
-        templateType: selectedTemplate.name,
-        requirements: requirementsText.trim(),
-        formData: formData
-      })
+  const handleSend = async () => {
+    const userMessage = input.trim()
+    if (!userMessage) return
 
-      if (response.success && response.data.content) {
-        setGeneratedContent(response.data.content)
-        toast.success('Content generated successfully!')
+    // Add user message
+    const newUserMessage: ChatMessage = {
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, newUserMessage])
+    setInput('')
+
+    // Process based on conversation state
+    if (conversationState === 'asking_category') {
+      // Detect category from user input
+      const detectedCategory = detectCategory(userMessage)
+
+      if (detectedCategory) {
+        setSelectedCategory(detectedCategory)
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Great! I'll help you create a ${detectedCategory}.\n\nPlease provide the following details:\n\n• Parties involved (names, roles, addresses)\n• Key terms and conditions\n• Dates (effective date, expiration date, etc.)\n• Any specific clauses or requirements\n• Jurisdiction or governing law (if applicable)\n\nYou can provide these details in natural language. For example:\n"Party A: John Doe, Individual, New York. Party B: ABC Corp, Company, California. Effective date: January 1, 2025. Duration: 1 year."`,
+          timestamp: new Date()
+        }])
+        setConversationState('asking_requirements')
       } else {
-        toast.error('Failed to generate content. Please try again.')
+        // Ask user to specify category
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "I'd be happy to help! Could you please specify what type of document you'd like to create?\n\nFor example:\n• NDA (Non-Disclosure Agreement)\n• Employment Contract\n• Offer Letter\n• Service Agreement\n• Partnership Agreement\n• Rental Agreement\n• Loan Agreement\n• Or describe what you need",
+          timestamp: new Date()
+        }])
       }
-    } catch (error: any) {
-      console.error('Error generating content:', error)
-      toast.error(error.message || 'Failed to generate content. Please try again.')
-    } finally {
-      setIsGenerating(false)
+    } else if (conversationState === 'asking_requirements') {
+      // User provided requirements
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Perfect! I have all the details. Let me generate your document now. This may take a few moments...',
+        timestamp: new Date()
+      }])
+      setConversationState('generating')
+      setIsGenerating(true)
+
+      // Generate document
+      try {
+        const response = await aiContentService.generateContent({
+          templateType: selectedCategory,
+          requirements: userMessage
+        })
+
+        if (response.success && response.data.content) {
+          setGeneratedContent(response.data.content)
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `✅ Your ${selectedCategory} has been generated successfully!\n\nHere's your document:\n\n---\n\n${response.data.content}\n\n---\n\nYou can now download it as PDF or send it as an envelope for e-signing.`,
+            timestamp: new Date()
+          }])
+          setConversationState('generated')
+          toast.success('Document generated successfully!')
+        } else {
+          throw new Error('Failed to generate document')
+        }
+      } catch (error: any) {
+        console.error('Error generating document:', error)
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `❌ I encountered an error while generating your document: ${error.message || 'Please try again.'}\n\nWould you like to try again or provide more details?`,
+          timestamp: new Date()
+        }])
+        setConversationState('asking_requirements')
+        toast.error(error.message || 'Failed to generate document. Please try again.')
+      } finally {
+        setIsGenerating(false)
+      }
+    } else if (conversationState === 'generated') {
+      // User can ask to regenerate or start new
+      if (userMessage.toLowerCase().includes('new') || userMessage.toLowerCase().includes('another') || userMessage.toLowerCase().includes('different')) {
+        // Start new conversation
+        setMessages([{
+          role: 'assistant',
+          content: "Great! What type of document would you like to create now?",
+          timestamp: new Date()
+        }])
+        setConversationState('asking_category')
+        setSelectedCategory('')
+        setGeneratedContent('')
+      } else {
+        // Respond to other queries
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Your document is ready! You can download it as PDF or send it for e-signing using the buttons below. If you'd like to create a new document, just say 'new document' or 'create another'.",
+          timestamp: new Date()
+        }])
+      }
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
     }
   }
 
@@ -229,13 +263,13 @@ const LegalTemplates = () => {
     try {
       const response = await aiContentService.convertToPDF({
         content: generatedContent,
-        documentName: selectedTemplate?.name || 'Legal Document'
+        documentName: selectedCategory || 'Legal Document'
       })
 
       if (response.success && response.data.base64) {
         aiContentService.downloadPDF(
           response.data.base64,
-          `${(selectedTemplate?.name || 'Document').replace(/\s+/g, '_')}.pdf`
+          `${(selectedCategory || 'Document').replace(/\s+/g, '_').replace(/[()]/g, '')}.pdf`
         )
         toast.success('PDF downloaded successfully!')
       } else {
@@ -256,18 +290,16 @@ const LegalTemplates = () => {
     }
 
     if (!isAuthenticated) {
-      // Store document and redirect to login
       setIsSending(true)
       try {
         const response = await aiContentService.storePendingDocument({
-          documentName: selectedTemplate?.name || 'Legal Document',
+          documentName: selectedCategory || 'Legal Document',
           content: generatedContent,
-          templateType: selectedTemplate?.name || 'Unknown',
+          templateType: selectedCategory || 'Unknown',
           sessionId
         })
 
         if (response.success) {
-          // Store in localStorage for after login
           localStorage.setItem('pendingDocumentId', response.data.documentId)
           localStorage.setItem('pendingSessionId', response.data.sessionId)
           toast.success('Document saved. Please login to continue.')
@@ -284,20 +316,18 @@ const LegalTemplates = () => {
       return
     }
 
-    // User is authenticated - convert to PDF and navigate to envelope creator
     setIsSending(true)
     try {
       const response = await aiContentService.convertToPDF({
         content: generatedContent,
-        documentName: selectedTemplate?.name || 'Legal Document'
+        documentName: selectedCategory || 'Legal Document'
       })
 
       if (response.success && response.data.base64) {
-        // Pass the base64 through state to envelope creator
         navigate('/e-sign/create', {
           state: {
             documentData: {
-              name: `${(selectedTemplate?.name || 'Document').replace(/\s+/g, '_')}.pdf`,
+              name: `${(selectedCategory || 'Document').replace(/\s+/g, '_').replace(/[()]/g, '')}.pdf`,
               content: response.data.base64,
               type: 'application/pdf'
             }
@@ -314,19 +344,30 @@ const LegalTemplates = () => {
     }
   }
 
+  const handleStartNew = () => {
+    setMessages([{
+      role: 'assistant',
+      content: "Great! What type of document would you like to create now?",
+      timestamp: new Date()
+    }])
+    setConversationState('asking_category')
+    setSelectedCategory('')
+    setGeneratedContent('')
+    setInput('')
+  }
 
   return (
     <section id="legal-templates" className="section-padding bg-gray-50">
       <div className="container-max">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             AI-Powered Legal Document Generator
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Generate professional legal documents in minutes using AI. Simply describe your requirements and get a complete, ready-to-use document.
+            Generate professional legal documents in minutes using AI. Simply tell me what you need and I'll guide you through the process.
           </p>
-          
+
           {/* Stats */}
           <div className="flex flex-wrap justify-center gap-8 mb-8">
             <div className="text-center">
@@ -348,250 +389,173 @@ const LegalTemplates = () => {
           </div>
         </div>
 
-        {/* Template Tabs at Top */}
-        <div className="bg-white rounded-xl shadow-lg p-4 mb-8">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            {filteredTemplates.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => {
-                  setSelectedTemplate(template)
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all duration-200 ${
-                  selectedTemplate?.id === template.id
-                    ? 'bg-[#260559] text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <FileText className="h-4 w-4" />
-                <span>{template.name}</span>
-                {template.isFeatured && (
-                  <span className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    ⭐
-                  </span>
-                )}
-                {template.isPremium && (
-                  <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    Pro
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Main Content - Form Left, Generated Content Right */}
-        <div className="grid lg:grid-cols-12 gap-8">
-          {/* Left: Form with broader width */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
-              {selectedTemplate && (
-                <>
-                  <div className="bg-[#260559]/10 rounded-lg p-4 mb-6">
-                    <div className="flex items-center gap-3 mb-2">
-                      <FileText className="h-5 w-5 text-[#260559]/60" />
-                      <span className="font-medium text-[#260559]">{selectedTemplate.name}</span>
+        {/* Chat Interface */}
+        <div
+          className="max-w-4xl mx-auto mb-8"
+          id="chat-container-wrapper"          
+        >
+          <div
+            className="bg-white rounded-xl shadow-lg flex flex-col"
+            style={{
+              height: '700px',
+              maxHeight: '700px',
+              overflow: 'hidden',
+              position: 'relative',
+              touchAction: 'pan-y'
+            }}
+          >
+            {/* Chat Messages */}
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-6 space-y-4"
+              style={{
+                minHeight: 0,
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
+                overscrollBehaviorY: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                position: 'relative',
+                isolation: 'isolate'
+              }}
+            >
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {message.role === 'assistant' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#260559] flex items-center justify-center">
+                      <Bot className="h-5 w-5 text-white" />
                     </div>
-                    <p className="text-sm text-[#260559]/70 mb-3">{selectedTemplate.description}</p>
-                    
-                    <div className="flex items-center gap-4 text-xs text-[#260559]/70">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                        <span>{selectedTemplate.rating}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{selectedTemplate.timeToComplete}</span>
-                      </div>
-                      {selectedTemplate.expertReviewed && (
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3 text-green-500" />
-                          <span>Expert Reviewed</span>
-                        </div>
-                      )}
+                  )}
+                  <div
+                    className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === 'user'
+                        ? 'bg-[#260559] text-white'
+                        : 'bg-gray-100 text-gray-900'
+                      }`}
+                  >
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {message.content}
+                    </div>
+                    <div className={`text-xs mt-2 ${message.role === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
-
-                  {/* Dynamic Form Fields */}
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Document Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedTemplate.fields.map((field, index) => {
-                        const fieldKey = field.toLowerCase().replace(/\s+/g, '')
-                        const fieldValue = formData[fieldKey] || ''
-                        const isDescription = field.includes('Description') || field.includes('Terms') || field.includes('Address')
-                        
-                        return (
-                          <div 
-                            key={index} 
-                            className={isDescription ? 'md:col-span-2' : ''}
-                          >
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              {field} {field.includes('Date') || field.includes('Name') ? <span className="text-red-500">*</span> : ''}
-                            </label>
-                            {field.includes('Date') || field === 'Effective Date' || field === 'Start Date' ? (
-                              <input
-                                type="date"
-                                value={fieldValue}
-                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                              />
-                            ) : isDescription ? (
-                              <textarea
-                                value={fieldValue}
-                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                                rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                                placeholder={`Enter ${field.toLowerCase()}`}
-                              />
-                            ) : field.includes('Jurisdiction') || field.includes('State') ? (
-                              <select
-                                value={fieldValue}
-                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                              >
-                                <option value="">Select {field}</option>
-                                <option value="California">California</option>
-                                <option value="New York">New York</option>
-                                <option value="Texas">Texas</option>
-                                <option value="Florida">Florida</option>
-                                <option value="Illinois">Illinois</option>
-                                <option value="Other">Other</option>
-                              </select>
-                            ) : (
-                              <input
-                                type="text"
-                                value={fieldValue}
-                                onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                placeholder={`Enter ${field.toLowerCase()}`}
-                              />
-                            )}
-                          </div>
-                        )
-                      })}
+                  {message.role === 'user' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                      <User className="h-5 w-5 text-gray-600" />
                     </div>
-                  </div>
-
-                  {/* Additional Description */}
-                  <div className="mb-6">
-                    <label className="block text-base font-semibold text-gray-900 mb-3">
-                      Additional Details / Special Requirements
-                    </label>
-                    <textarea
-                      value={additionalDescription}
-                      onChange={(e) => setAdditionalDescription(e.target.value)}
-                      placeholder="Add any additional details, special clauses, or requirements that should be included in the document..."
-                      rows={8}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Optional: Add any special terms, clauses, or additional information you want included.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || (!Object.values(formData).some(v => v.trim()) && !additionalDescription.trim())}
-                    className="w-full bg-[#260559] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#260559]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-5 w-5" />
-                        Generate Document
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
-
-              {!selectedTemplate && (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Select a template to get started</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Side: Generated Content */}
-          <div className="lg:col-span-5">
-            <div className="bg-white rounded-xl shadow-lg sticky top-6">
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-yellow-500" />
-                  Generated Document
-                </h3>
-              </div>
-              
-              <div className="p-6 max-h-[600px] overflow-y-auto">
-                {generatedContent ? (
-                  <div className="prose prose-sm max-w-none">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed bg-gray-50 p-4 rounded-lg">
-                      {generatedContent}
-                    </pre>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Zap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-2">No content generated yet</p>
-                    <p className="text-sm text-gray-400">
-                      Fill in your requirements and click "Generate Document" to create your legal document.
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              {generatedContent && (
-                <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl space-y-3">
-                  <button
-                    onClick={handleDownloadPDF}
-                    disabled={isDownloading}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-[#260559] text-[#260559] rounded-lg font-semibold hover:bg-[#260559]/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isDownloading ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Generating PDF...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-5 w-5" />
-                        Download PDF
-                      </>
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={handleSendAsEnvelope}
-                    disabled={isSending}
-                    className="w-full bg-[#260559] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#260559]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isSending ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        {isAuthenticated ? 'Preparing...' : 'Saving...'}
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-5 w-5" />
-                        {isAuthenticated ? 'Send as Envelope' : 'Login to Send as Envelope'}
-                      </>
-                    )}
-                  </button>
-                  
-                  {!isAuthenticated && (
-                    <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      You'll be redirected to login after saving your document
-                    </p>
                   )}
                 </div>
+              ))}
+
+              {isGenerating && (
+
+                <div className="flex gap-3 justify-start">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#260559] flex items-center justify-center">
+                    <Bot className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="bg-gray-100 rounded-lg px-4 py-3 flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#260559]" />
+                    <span className="text-sm text-gray-600">Generating your document...</span>
+                  </div>
+                </div>
+
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Action Buttons (shown when document is generated) */}
+            {conversationState === 'generated' && generatedContent && (
+              <div className="border-t border-gray-200 p-4 bg-gray-50 flex gap-3">
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={isDownloading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-[#260559] text-[#260559] rounded-lg font-semibold hover:bg-[#260559]/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Generating PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-5 w-5" />
+                      Download PDF
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleSendAsEnvelope}
+                  disabled={isSending}
+                  className="flex-1 bg-[#260559] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#260559]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSending ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      {isAuthenticated ? 'Preparing...' : 'Saving...'}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5" />
+                      {isAuthenticated ? 'Send as Envelope' : 'Login to Send'}
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleStartNew}
+                  className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-200"
+                >
+                  New Document
+                </button>
+              </div>
+            )}
+
+            {/* Input Area */}
+            <div className="border-t border-gray-200 p-4 bg-white">
+              <div className="flex gap-3 items-end">
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={
+                      conversationState === 'asking_category'
+                        ? "Type the document type you need (e.g., NDA, Offer Letter, Employment Contract)..."
+                        : conversationState === 'asking_requirements'
+                          ? "Provide the details for your document..."
+                          : "Type your message..."
+                    }
+                    rows={1}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#260559] focus:border-transparent resize-none max-h-32 overflow-y-auto"
+                    disabled={isGenerating || conversationState === 'generating'}
+                  />
+                </div>
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isGenerating || conversationState === 'generating'}
+                  className="px-6 py-3 bg-[#260559] text-white rounded-lg font-semibold hover:bg-[#260559]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5" />
+                      Send
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {!isAuthenticated && conversationState === 'generated' && (
+                <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  You'll be redirected to login after saving your document
+                </p>
               )}
             </div>
           </div>
@@ -604,7 +568,7 @@ const LegalTemplates = () => {
               Need a Custom Legal Document?
             </h3>
             <p className="text-primary-100 mb-6 max-w-2xl mx-auto">
-              Our legal experts can create custom documents tailored to your specific needs. 
+              Our legal experts can create custom documents tailored to your specific needs.
               Get professional legal documents drafted by experienced attorneys.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

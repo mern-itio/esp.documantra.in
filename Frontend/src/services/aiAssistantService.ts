@@ -41,11 +41,21 @@ const aiAssistantApi = createApiInstance(
 
 export interface AICommandResponse {
   success: boolean;
-  action: 'search_document' | 'send_document' | 'prepare_document' | 'create_and_send_envelope' | 'list_auth_providers' | null;
+  action: 'search_document' | 'send_document' | 'prepare_document' | 'create_and_send_envelope' | 'list_auth_providers' | 'generate_document' | null;
   parameters: any;
   clarification: string | null;
   result?: any;
   message?: string;
+  conversationId?: string;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: string;
+  createdAt: string;
+  messageCount: number;
+  preview: string;
 }
 
 export interface ConversationMessage {
@@ -59,7 +69,7 @@ export interface ConversationMessage {
 
 export const aiAssistantApiService = {
   // Process a command with optional file attachments
-  processCommand: async (command: string, files?: File | File[] | null, context?: any): Promise<AICommandResponse> => {
+  processCommand: async (command: string, files?: File | File[] | null, context?: any, conversationId?: string): Promise<AICommandResponse> => {
     const fileArray: File[] =
       !files ? [] :
       files instanceof File ? [files] :
@@ -69,6 +79,9 @@ export const aiAssistantApiService = {
       // Use FormData for file upload
       const formData = new FormData();
       formData.append('command', command);
+      if (conversationId) {
+        formData.append('conversationId', conversationId);
+      }
       for (const file of fileArray) {
         formData.append('files', file);
       }
@@ -87,21 +100,52 @@ export const aiAssistantApiService = {
       // Regular JSON request
       const response = await aiAssistantApi.post('/api/ai-assistant/command', {
         command,
-        context
+        context,
+        conversationId
       });
       return response.data;
     }
   },
 
-  // Get conversation history
-  getConversationHistory: async (limit: number = 50): Promise<{ success: boolean; messages: ConversationMessage[] }> => {
+  // Get conversation history (specific or most recent)
+  getConversationHistory: async (conversationId?: string, limit: number = 50): Promise<{ success: boolean; conversationId?: string; title?: string; messages: ConversationMessage[] }> => {
     const response = await aiAssistantApi.get('/api/ai-assistant/conversation', {
+      params: { conversationId, limit }
+    });
+    return response.data;
+  },
+
+  // List all conversations
+  listConversations: async (limit: number = 50): Promise<{ success: boolean; conversations: Conversation[] }> => {
+    const response = await aiAssistantApi.get('/api/ai-assistant/conversations', {
       params: { limit }
     });
     return response.data;
   },
 
-  // Clear conversation
+  // Create new conversation
+  createConversation: async (title?: string): Promise<{ success: boolean; conversationId: string; title: string }> => {
+    const response = await aiAssistantApi.post('/api/ai-assistant/conversations', {
+      title: title || 'New Chat'
+    });
+    return response.data;
+  },
+
+  // Update conversation title
+  updateConversationTitle: async (conversationId: string, title: string): Promise<{ success: boolean; conversationId: string; title: string }> => {
+    const response = await aiAssistantApi.put(`/api/ai-assistant/conversations/${conversationId}/title`, {
+      title
+    });
+    return response.data;
+  },
+
+  // Delete conversation
+  deleteConversation: async (conversationId: string): Promise<{ success: boolean; message: string }> => {
+    const response = await aiAssistantApi.delete(`/api/ai-assistant/conversations/${conversationId}`);
+    return response.data;
+  },
+
+  // Clear conversation (deprecated - kept for backward compatibility)
   clearConversation: async (): Promise<{ success: boolean; message: string }> => {
     const response = await aiAssistantApi.delete('/api/ai-assistant/conversation');
     return response.data;

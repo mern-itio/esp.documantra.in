@@ -6,6 +6,14 @@ const conversationSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  title: {
+    type: String,
+    default: 'New Chat'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   messages: [{
     role: {
       type: String,
@@ -18,7 +26,7 @@ const conversationSchema = new mongoose.Schema({
     },
     action: {
       type: String,
-      enum: ['search_document', 'send_document', 'prepare_document', 'create_and_send_envelope', 'clarification', 'list_auth_providers', null],
+      enum: ['search_document', 'send_document', 'prepare_document', 'create_and_send_envelope', 'clarification', 'list_auth_providers', 'generate_document', 'list_documents_by_category', 'list_shared_documents', 'list_signed_documents', 'select_document', null],
       default: null
     },
     parameters: {
@@ -30,6 +38,21 @@ const conversationSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  lastDocumentList: [{
+    index: Number,
+    id: String,
+    name: String,
+    category: String
+  }],
+  selectedDocument: {
+    id: String,
+    name: String,
+    category: String,
+    serviceType: String, // 'e-sign-service' or 'document-service'
+    docType: String, // 'envelope' or 'document'
+    envelopeId: String, // For e-sign service documents
+    documentId: String // For document service documents
+  },
   createdAt: {
     type: Date,
     default: Date.now

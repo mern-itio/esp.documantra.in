@@ -48,10 +48,22 @@ const upload = multer({
 // Process command (with optional file uploads)
 router.post('/command', upload.array('files', 10), aiAssistantController.processCommand.bind(aiAssistantController));
 
-// Get conversation history
+// Get conversation history (specific or most recent)
 router.get('/conversation', aiAssistantController.getConversationHistory.bind(aiAssistantController));
 
-// Clear conversation
+// List all conversations
+router.get('/conversations', aiAssistantController.listConversations.bind(aiAssistantController));
+
+// Create new conversation
+router.post('/conversations', aiAssistantController.createConversation.bind(aiAssistantController));
+
+// Update conversation title
+router.put('/conversations/:conversationId/title', aiAssistantController.updateConversationTitle.bind(aiAssistantController));
+
+// Delete conversation
+router.delete('/conversations/:conversationId', aiAssistantController.deleteConversation.bind(aiAssistantController));
+
+// Clear conversation (deprecated - kept for backward compatibility)
 router.delete('/conversation', aiAssistantController.clearConversation.bind(aiAssistantController));
 
 // Sync documents for indexing

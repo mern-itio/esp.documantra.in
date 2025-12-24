@@ -55,9 +55,26 @@ const documentEmbeddingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for vector search (if using MongoDB Atlas Vector Search)
-documentEmbeddingSchema.index({ embedding: '2dsphere' });
+// Indexes for vector search and queries
 documentEmbeddingSchema.index({ ownerId: 1, documentId: 1 });
+documentEmbeddingSchema.index({ ownerId: 1, 'metadata.category': 1 });
+documentEmbeddingSchema.index({ ownerId: 1, 'metadata.recipientEmail': 1 });
+documentEmbeddingSchema.index({ ownerId: 1, 'metadata.tags': 1 });
+documentEmbeddingSchema.index({ ownerId: 1, updatedAt: -1 });
+
+// Note: MongoDB Atlas Vector Search index must be created manually in Atlas UI
+// When creating the index in Atlas, paste ONLY this in JSON Editor:
+// {
+//   "fields": [
+//     {
+//       "type": "vector",
+//       "path": "embedding",
+//       "numDimensions": 1536,
+//       "similarity": "cosine"
+//     }
+//   ]
+// }
+// MongoDB Atlas will automatically add name, type, and wrap in definition
 
 module.exports = mongoose.model('DocumentEmbedding', documentEmbeddingSchema);
 

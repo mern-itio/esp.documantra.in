@@ -72,11 +72,10 @@ const MenuItemButton: React.FC<{
         <div className="flex items-center space-x-3">
           {item.icon && (
             <item.icon
-              className={`h-5 w-5 transition-all duration-300 ${
-                isMainMenuActive 
-                  ? 'text-white group-hover/btn:scale-110 group-hover/btn:rotate-3' 
+              className={`h-5 w-5 transition-all duration-300 ${isMainMenuActive
+                  ? 'text-white group-hover/btn:scale-110 group-hover/btn:rotate-3'
                   : 'text-slate-400 group-hover/btn:text-[#3E2B66] group-hover/btn:scale-110 group-hover/btn:rotate-3'
-              }`}
+                }`}
             />
           )}
           {isOpen && <span className="font-medium transition-all duration-300">{item.label}</span>}
@@ -89,12 +88,12 @@ const MenuItemButton: React.FC<{
           )
         )}
       </button>
-      
+
       {/* Tooltip for collapsed sidebar */}
       {!isOpen && tooltipPosition.left > 0 && (
-        <div 
+        <div
           className="fixed px-3 py-1.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover:scale-100"
-          style={{ 
+          style={{
             top: `${tooltipPosition.top}px`,
             left: `${tooltipPosition.left}px`,
             transform: 'translateY(-50%)'
@@ -114,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isOpen = true,
   setIsOpen = () => { }
 }) => {
- const [expandedMenu, setExpandedMenu] = useState<string | null>("e-sign");
+  const [expandedMenu, setExpandedMenu] = useState<string | null>("e-sign");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -314,7 +313,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       // Don't navigate when sidebar is collapsed - just expand it
       return;
     }
-    
+
     // Normal behavior when sidebar is open
     if (item.children) {
       toggleSubmenu(item.id);
@@ -326,7 +325,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className={`bg-white shadow-lg border-r border-slate-200 transition-all duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
       {/* Header */}
-         {/* <div className="bg-[#260559] flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
+      {/* <div className="bg-[#260559] flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
         {isOpen && (
           <div className=" flex items-center space-x-2">
             <div>
@@ -373,7 +372,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           return (
             <div key={item.id}>
-              <MenuItemButton 
+              <MenuItemButton
                 item={item}
                 isOpen={isOpen}
                 isMainMenuActive={isMainMenuActive}
@@ -397,11 +396,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                               group/btn text-xs w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm relative
                               transition-all duration-300 transform active:scale-100 overflow-hidden
                               ${isSendEnvelope
-                              ? "text-[#3E2B66] bg-gradient-to-r from-purple-50 to-indigo-50 hover:border-[#3E2B66] hover:bg-gradient-to-r hover:from-[#3E2B66] hover:to-[#4d3577] hover:text-white hover:shadow-lg hover:scale-[1.05] create-envelope-btn"
+                              ? "text-[#3E2B66] bg-gradient-to-r from-purple-50 to-indigo-50 hover:border-[#3E2B66] hover:bg-gradient-to-r hover:from-[#3E2B66] hover:to-[#4d3577] hover:text-white hover:shadow-lg hover:scale-[1.05]"
                               : isActive
                                 ? "bg-gradient-to-r from-indigo-100 to-purple-50 text-[#3E2B66] shadow-sm border-l-4 border-[#3E2B66] hover:scale-[1.02]"
                                 : "text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 hover:shadow-sm hover:scale-[1.02]"
-                            }
+                                }
                                   `}
                           style={{
                             cursor: 'pointer',
@@ -419,20 +418,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {sub.icon && (
                               <sub.icon
                                 className={`h-4 w-4 transition-all duration-300
-                      ${isSendEnvelope 
-                        ? "text-[#3E2B66] group-hover/btn:text-white group-hover/btn:scale-125 group-hover/btn:rotate-12 create-envelope-icon" 
-                        : isActive 
-                          ? "text-[#3E2B66] scale-110" 
-                          : "text-slate-500 group-hover/btn:text-[#3E2B66] group-hover/btn:scale-110 group-hover/btn:rotate-6"
-                      }
-                    `}
+                              ${isSendEnvelope
+                                    ? "text-[#3E2B66] group-hover/btn:text-white group-hover/btn:scale-125 group-hover/btn:rotate-12 create-envelope-icon"
+                                    : isActive
+                                      ? "text-[#3E2B66] scale-110"
+                                      : "text-slate-500 group-hover/btn:text-[#3E2B66] group-hover/btn:scale-110 group-hover/btn:rotate-6"
+                                  }
+                               `}
                               />
                             )}
                             <span className={`transition-all duration-300 relative z-10 ${isSendEnvelope ? 'text-[#3E2B66] group-hover/btn:text-white font-bold create-envelope-text' : isActive ? 'font-medium text-[#3E2B66]' : 'font-normal'}`}>{sub.label}</span>
                           </div>
-                        
+
                         </button>
-                        
+
                         {/* Tooltip for collapsed sidebar submenu items (if visible) */}
                         {!isOpen && (
                           <div className="absolute left-full ml-2 px-3 py-1.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover/sub:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover/sub:scale-100" style={{ top: '50%', transform: 'translateY(-50%)' }}>
@@ -457,7 +456,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Quick Actions */}
           <div className="px-2 pb-2 space-y-1">
-           
+
             <button
               onClick={() => navigate('/credits-usage')}
               className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
@@ -477,13 +476,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* Help Section */}
           <div className="px-2 pb-3 pt-2 border-t border-slate-200">
 
-            <Link to='/help-support'>  
-            <button
-              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
-            >
-              <HelpCircle className="h-3.5 w-3.5 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
-              <span className="font-medium">Help & Support</span>
-            </button>
+            <Link to='/help-support'>
+              <button
+                className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
+              >
+                <HelpCircle className="h-3.5 w-3.5 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
+                <span className="font-medium">Help & Support</span>
+              </button>
             </Link>
           </div>
         </div>

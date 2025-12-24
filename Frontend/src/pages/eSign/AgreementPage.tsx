@@ -129,7 +129,7 @@ const AgreementPage: React.FC = () => {
       title: 'Search',
       content: 'Quickly find envelopes by name or creator.'
     },
-  
+
     {
       id: 'customize-columns',
       selector: '[data-tour="customize-columns"]',
@@ -307,8 +307,16 @@ const AgreementPage: React.FC = () => {
           >
             {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
           </button>
-          {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">To: {agreement.primaryRecipientName || '-'}</div>)}
-          {!isPowerForm && (<div className="text-xs text-gray-500 mt-0.5">By: {agreement?.sender?.name || '-'}</div>)}
+          {!agreement.isPowerForm && (
+            <>
+              <div className="text-xs text-gray-500 mt-0.5">
+                To: {agreement.primaryRecipientName || '-'}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                By: {agreement?.sender?.name || '-'}
+              </div>
+            </>
+          )}
         </div>
       </div>
     ),
@@ -428,7 +436,7 @@ const AgreementPage: React.FC = () => {
           recipientCount: envelope.recipients?.length || 0,
           isPowerForm: envelope.isPowerForm,
           sender: envelope.sender,
-          direction:envelope.direction,
+          direction: envelope.direction,
           completedCount: envelope.recipients?.filter(recipient =>
             recipient.status === 'completed' || recipient.status === 'signed'
           ).length || 0,
@@ -470,13 +478,48 @@ const AgreementPage: React.FC = () => {
 
   // Listen for global events (e.g., AI assistant sending envelopes) to refresh list in real time
   useEffect(() => {
-    const handleEnvelopesUpdated = () => {
-      fetchEnvelopes();
+    const handleEnvelopesUpdated = (event?: Event) => {
+      console.log('🔄 Envelopes updated event received, refreshing list...', event);
+      // Add a small delay to ensure backend has processed the request
+      setTimeout(() => {
+        fetchEnvelopes();
+      }, 500);
     };
 
+    // Listen for envelope updates from AI assistant
     window.addEventListener('envelopes:updated', handleEnvelopesUpdated);
+    
+    // Also listen for document generation events (in case auto-send happens)
+    window.addEventListener('ai-assistant:document-sent', handleEnvelopesUpdated);
+    
+    // Listen for any AI assistant actions that might create envelopes
+    const handleAIAction = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const action = customEvent.detail?.action;
+      // Refresh if envelope-related actions occurred
+      if (action === 'create_and_send_envelope' || 
+          action === 'generate_document' || 
+          action === 'send_document') {
+        console.log('🔄 AI assistant action detected, refreshing envelopes...', action);
+        handleEnvelopesUpdated();
+      }
+    };
+    window.addEventListener('ai-assistant:action-completed', handleAIAction);
+    
+    // Refresh when page becomes visible (user switches back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 Page visible, refreshing envelopes...');
+        fetchEnvelopes();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
     return () => {
       window.removeEventListener('envelopes:updated', handleEnvelopesUpdated);
+      window.removeEventListener('ai-assistant:document-sent', handleEnvelopesUpdated);
+      window.removeEventListener('ai-assistant:action-completed', handleAIAction);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchEnvelopes]);
 
@@ -584,7 +627,7 @@ const AgreementPage: React.FC = () => {
     } else if (currentTab === 'shared-with-me') {
       filtered = filtered.filter(agreement => agreement.direction != 'Sent');
     }
-    
+
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(agreement =>
@@ -900,9 +943,9 @@ const AgreementPage: React.FC = () => {
     setResizingColumn(columnId);
     resizingColumnRef.current = columnId;
     resizeStartXRef.current = e.clientX;
-    
+
     // Get current width from state or calculate from DOM
-    const currentWidth = columnWidths[columnId] || 
+    const currentWidth = columnWidths[columnId] ||
       (() => {
         const th = (e.target as HTMLElement).closest('th');
         return th ? th.offsetWidth : 150;
@@ -912,10 +955,10 @@ const AgreementPage: React.FC = () => {
 
   const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!resizingColumnRef.current) return;
-    
+
     const diff = e.clientX - resizeStartXRef.current;
     const newWidth = Math.max(50, resizeStartWidthRef.current + diff); // Minimum width of 50px
-    
+
     setColumnWidths(prev => {
       const updated = { ...prev, [resizingColumnRef.current!]: newWidth };
       localStorage.setItem('agreement-table-column-widths', JSON.stringify(updated));
@@ -937,7 +980,7 @@ const AgreementPage: React.FC = () => {
       document.addEventListener('mouseup', handleResizeEnd);
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
-      
+
       return () => {
         document.removeEventListener('mousemove', handleResizeMove);
         document.removeEventListener('mouseup', handleResizeEnd);
@@ -1501,8 +1544,8 @@ const AgreementPage: React.FC = () => {
                   const columnWidth = getColumnWidth(column.id);
                   const isResizing = resizingColumn === column.id;
                   return (
-                    <th 
-                      key={column.id} 
+                    <th
+                      key={column.id}
                       className={`py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider relative group ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
                       style={{ width: columnWidth ? `${columnWidth}px` : undefined }}
                     >
@@ -1510,13 +1553,12 @@ const AgreementPage: React.FC = () => {
                         <span>{column.label}</span>
                       </div>
                       <div
-                        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${
-                          isResizing 
-                            ? 'bg-[#3E2B66] opacity-100' 
+                        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${isResizing
+                            ? 'bg-[#3E2B66] opacity-100'
                             : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
-                        }`}
+                          }`}
                         onMouseDown={(e) => handleResizeStart(e, column.id)}
-                        style={{ 
+                        style={{
                           cursor: 'col-resize',
                           width: isResizing ? '2px' : '1px'
                         }}
@@ -1551,8 +1593,8 @@ const AgreementPage: React.FC = () => {
                       {getVisibleColumns().map((column) => {
                         const columnWidth = getColumnWidth(column.id);
                         return (
-                          <td 
-                            key={column.id} 
+                          <td
+                            key={column.id}
                             className={`py-4 whitespace-nowrap ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
                             style={{ width: columnWidth ? `${columnWidth}px` : undefined, overflow: 'hidden', textOverflow: 'ellipsis' }}
                           >
@@ -1838,7 +1880,7 @@ const AgreementPage: React.FC = () => {
                     const pageNum = page as number;
                     return (
                       <button
-                        key={pageNum} 
+                        key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
                           ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
@@ -1882,21 +1924,24 @@ const AgreementPage: React.FC = () => {
       </div>
 
       {/* Fixed-position dropdown menu rendered once per page to avoid clipping */}
-      {openMenuId && menuPosition && (
-        <div
-          ref={menuRef}
-          className="fixed z-50 w-56 bg-white border border-gray-200 rounded-sm shadow-lg"
-          style={{ top: menuPosition.top, left: menuPosition.left }}
-        >
-          <ul className="py-1 text-sm text-gray-700">
-            <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('view', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">View</button></li>
-            <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handlePrint(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Print</button></li>
-            <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('edit', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Edit</button></li>
-            <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleExportCSV(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Export as CSV</button></li>
-            <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('delete', openMenuId); }} className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50">Delete</button></li>
-          </ul>
-        </div>
-      )}
+      {openMenuId && menuPosition && (() => {
+        const currentAgreement = agreements.find(a => a.id === openMenuId);
+        return (
+          <div
+            ref={menuRef}
+            className="fixed z-50 w-56 bg-white border border-gray-200 rounded-sm shadow-lg"
+            style={{ top: menuPosition.top, left: menuPosition.left }}
+          >
+            <ul className="py-1 text-sm text-gray-700">
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('view', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">View</button></li>
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handlePrint(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Print</button></li>
+              {currentAgreement?.status !== 'completed' && <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('edit', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Edit</button></li>}
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleExportCSV(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Export as CSV</button></li>
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('delete', openMenuId); }} className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50">Delete</button></li>
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* Guided Tour Overlay */}
       {isTourOpen && (
@@ -2224,10 +2269,10 @@ const AgreementPage: React.FC = () => {
                   <div
                     key={column.id}
                     className={`flex items-center justify-between p-3 rounded-lg border transition-all ${column.visible
-                        ? 'bg-purple-50 border-purple-300'
-                        : isDisabled
-                          ? 'bg-gray-50 border-gray-200 opacity-60'
-                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      ? 'bg-purple-50 border-purple-300'
+                      : isDisabled
+                        ? 'bg-gray-50 border-gray-200 opacity-60'
+                        : 'bg-white border-gray-200 hover:bg-gray-50'
                       }`}
                   >
                     <label className="flex items-center gap-3 cursor-pointer flex-1">
