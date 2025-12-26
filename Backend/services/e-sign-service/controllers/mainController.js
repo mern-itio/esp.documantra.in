@@ -448,7 +448,7 @@ const getEnvelopeStats = async (req, res) => {
       const key = item._id.charAt(0).toUpperCase() + item._id.slice(1);
       response[key] = item.count;
       response.Total += item.count;
-    });
+    }); 
 
     return res.status(200).json({
       status: "success",
@@ -473,8 +473,6 @@ try {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) return res.status(404).send("Envelope not found");
-    // 
-
     // Update envelope status if draft
     if (envelope.status === 'draft') {
       envelope.status = 'in-progress';
@@ -796,7 +794,7 @@ const addSignature = async (req, res) => {
           const html = signReminderTemplate(nextSignerName, envelope.subject, envelope.message, signLink);
           
           // Send Reminder E-Mail to pending signers
-          // await sendEmail(
+          // await sendEmail(   
           //   nextSignerEmail,
           //   `Reminder: Action Required: Sign "${envelope.subject}"`,
           //   html
@@ -1131,6 +1129,7 @@ const signerInitiate = async (req, res) => {
       }
       // Prepare Signature Fields for each slot
       const fields = await SignatureField.find({ envelopeId: envelope._id, slotId: slot.slotId, type: "signature" });
+      console.log("Fields for slot:", slot.slotId, fields);
       // Map them into the lighter structure for SelfSigner
       const signatureFieldsForSigner = fields.map(f => ({
         fieldId: f._id,

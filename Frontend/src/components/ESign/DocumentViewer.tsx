@@ -944,6 +944,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       
       // Get initials from recipient or selfSigner based on mode
       let initialsValue = "";
+      let signerName = "John Doe"; // default name
       switch (mode) {
         case MODE.SELF_SIGNER: {
           const matchedSigner = selfSigner.find(
@@ -951,6 +952,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           );
           if (matchedSigner) {
             initialsValue = (matchedSigner as any).initials || "";
+            signerName = (matchedSigner as any)?.data?.name || "John Doe";
+            console.log(signerName);
           }
           break;
         }
@@ -970,7 +973,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         documentId:field?.documentId,
         recipientId: currentUserId,
         certificateId, 
-        signerName: "John Doe", // adjust dynamically if you have a real name
+        signerName: signerName,
         selfValue: selfValue || "",
         cycleId:cycleId || "",
         initials: initialsValue || undefined
@@ -1349,81 +1352,83 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           MIN_FIELD_WIDTH
                         );
                         const scaledHeight = Math.max(
-                          rawHeight * pageScale,
+                          rawHeight * pageScale-20,
                           MIN_FIELD_HEIGHT
                         );
+                        console.log("scaleHeight", scaledHeight);
+                        console.log("scaleWidth", scaledWidth);
                         const labelOffset = Math.max(
-                          4,
-                          Math.min(12, scaledHeight * 0.2)
+                          12,
+                          Math.min(18, scaledHeight * 0.25)
                         );
-                        const labelFontSize = Math.max(
-                          4.5,
-                          Math.min(10, 9 * pageScale)
-                        );
+                        // const labelFontSize = Math.max(
+                        //   4.5,
+                        //   Math.min(9, 8 * pageScale)
+                        // );
                         const fieldFontSize = Math.max(
                          4.5,
                           Math.min(11, 11 * pageScale)
                         );
                         const boxPaddingY = Math.max(4, 12 * pageScale);
                         const boxPaddingX = Math.max(6, 14 * pageScale);
-                        const labelTop = scaledHeight + 2;
+                        // const labelTop = scaledHeight + 2;
 
                         // recipient display (best-effort)
-                        const recipientDisplay = (() => {
-                          switch (mode) {
-                            case MODE.SELF_SIGNER: {
-                              const matched = getMatchedSigner(field);
-                              if (matched) {
-                                const matchedAny = matched as any;
-                                const primary =
-                                  matchedAny?.data?.name || matchedAny?.name || matchedAny?.data?.email;
-                                const secondary =
-                                  matched?.data?.name && matched?.data?.email
-                                    ? matched.data.email
-                                    : undefined;
-                                return {
-                                  primary: primary || "Recipient",
-                                  secondary,
-                                  decorated: true,
-                                };
-                              }
-                              break;
-                            }
-                            case MODE.RECIPIENT: {
-                              const recipient = getMatchedRecipient(field);
-                              if (recipient) {
-                                return {
-                                  primary: recipient.name || recipient.email || "Recipient",
-                                  secondary:
-                                    recipient.name && recipient.email ? recipient.email : undefined,
-                                  decorated: true,
-                                };
-                              }
-                              if (
-                                field.recipientId &&
-                                String(field.recipientId) === String(currentUserId)
-                              ) {
-                                return {
-                                  primary: "You",
-                                  decorated: false,
-                                };
-                              }
-                              break;
-                            }
-                          }
-                          return {
-                            primary: "Recipient",
-                            decorated: false,
-                          };
-                        })();
-                        const recipientSecondaryFont = Math.max(
-                          4,
-                          Math.min(labelFontSize - 1, labelFontSize * 0.95)
-                        );
-                        const recipientBadgePaddingY = Math.max(2, 6 * pageScale);
-                        const recipientBadgePaddingX = Math.max(3, 10 * pageScale);
-                        const recipientBadgeRadius = Math.max(3, 8 * pageScale);
-                        const recipientBadgeGap = Math.max(1, 4 * pageScale);
+                        // const recipientDisplay = (() => {
+                        //   switch (mode) {
+                        //     case MODE.SELF_SIGNER: {
+                        //       const matched = getMatchedSigner(field);
+                        //       if (matched) {
+                        //         const matchedAny = matched as any;
+                        //         const primary =
+                        //           matchedAny?.data?.name || matchedAny?.name || matchedAny?.data?.email;
+                        //         const secondary =
+                        //           matched?.data?.name && matched?.data?.email
+                        //             ? matched.data.email
+                        //             : undefined;
+                        //         return {
+                        //           primary: primary || "Recipient",
+                        //           secondary,
+                        //           decorated: true,
+                        //         };
+                        //       }
+                        //       break;
+                        //     }
+                        //     case MODE.RECIPIENT: {
+                        //       const recipient = getMatchedRecipient(field);
+                        //       if (recipient) {
+                        //         return {
+                        //           primary: recipient.name || recipient.email || "Recipient",
+                        //           secondary:
+                        //             recipient.name && recipient.email ? recipient.email : undefined,
+                        //           decorated: true,
+                        //         };
+                        //       }
+                        //       if (
+                        //         field.recipientId &&
+                        //         String(field.recipientId) === String(currentUserId)
+                        //       ) {
+                        //         return {
+                        //           primary: "You",
+                        //           decorated: false,
+                        //         };
+                        //       }
+                        //       break;
+                        //     }
+                        //   }
+                        //   return {
+                        //     primary: "Recipient",
+                        //     decorated: false,
+                        //   };
+                        // })();
+                        // const recipientSecondaryFont = Math.max(
+                        //   4,
+                        //   Math.min(labelFontSize - 1, labelFontSize * 0.95)
+                        // );
+                        // const recipientBadgePaddingY = Math.max(2, 6 * pageScale);
+                        // const recipientBadgePaddingX = Math.max(3, 10 * pageScale);
+                        // const recipientBadgeRadius = Math.max(3, 8 * pageScale);
+                        // const recipientBadgeGap = Math.max(1, 4 * pageScale);
 
                         if (isSignatureType) {
                           // Mode-aware check: use slotId for self-signer, recipientId for recipient mode
@@ -1463,13 +1468,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   fontSize: fieldFontSize,
                                   padding: `0px ${boxPaddingX-15}px`,
                                 }}
-                                className={`flex items-center justify-center font-semibold rounded border-2 ${isSigned
-                                  ? "border-green-500"
+                                className={`flex items-center justify-center font-semibold rounded ${isSigned
+                                  ? "border-0"
                                   : isCurrentUser
                                     ? isSigning
-                                      ? "bg-blue-100 border-blue-400 text-blue-600 cursor-progress"
-                                      : "bg-blue-100 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
-                                    : "bg-gray-100 border-gray-300 text-gray-500 opacity-50"
+                                      ? "bg-blue-100 border-2 border-blue-400 text-blue-600 cursor-progress"
+                                      : "bg-blue-100 border-2 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
+                                    : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
                                   }`}
                                 onClick={() => {
                                   if (isSigning) return;
@@ -1516,67 +1521,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 ) : isCurrentUser && !recipientSignature ?(
                                   "Click to Save"
                                 ):("Signature")}
-                              </div>
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: labelTop,
-                                  left: 0,
-                                  width: scaledWidth,
-                                  pointerEvents: 'none',
-                                  textAlign: 'center',
-                                  fontSize: labelFontSize,
-                                  lineHeight: 1.1,
-                                }}
-                                className="text-[10px] text-gray-600"
-                              >
-                                {recipientDisplay.decorated ? (
-                                  <div
-                                    style={{
-                                      display: "inline-flex",
-                                      flexDirection: "column",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      backgroundColor: "rgba(148, 163, 184, 0.35)",
-                                      borderRadius: recipientBadgeRadius,
-                                      padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
-                                      gap: recipientBadgeGap,
-                                    }}
-                                  >
-                                    <span
-                                      style={{
-                                        fontSize: labelFontSize,
-                                        fontWeight: 600,
-                                        color: "#1f2937",
-                                        lineHeight: 1.1,
-                                      }}
-                                    >
-                                      {recipientDisplay.primary}
-                                    </span>
-                                    {recipientDisplay.secondary ? (
-                                      <span
-                                        style={{
-                                          fontSize: recipientSecondaryFont,
-                                          color: "#1f2937",
-                                          lineHeight: 1.05,
-                                        }}
-                                      >
-                                        {recipientDisplay.secondary}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <span
-                                    style={{
-                                      fontSize: labelFontSize,
-                                      fontWeight: 500,
-                                      color: "#4b5563",
-                                      lineHeight: 1.1,
-                                    }}
-                                  >
-                                    {recipientDisplay.primary}
-                                  </span>
-                                )}
                               </div>
                             </div>
                           );
@@ -1802,8 +1746,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         // For recipient mode, fields are always editable if currentUser
                         const editable = isCurrentUser && !(mode === MODE.SELF_SIGNER && hasValueInSelfSigner);
                         const commonBox =
-                          "w-full h-full flex items-center justify-center rounded border " +
-                          ( (isFieldCompleted && mode === MODE.SELF_SIGNER) || isSigned ? "border-green-500" : editable ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-gray-100 border-gray-300 text-gray-500 opacity-80");
+                          "w-full h-full flex items-center justify-center rounded " +
+                          ( (isFieldCompleted && mode === MODE.SELF_SIGNER) || isSigned ? "border-0" : editable ? "bg-blue-50 border border-blue-400 text-blue-700" : "bg-gray-100 border border-gray-300 text-gray-500 opacity-80");
 
                         const inputBaseStyle: React.CSSProperties = {
                           height: scaledHeight,
@@ -2039,70 +1983,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               
                             </div>
                           }
-                            {/* Only show label for non-signature fields if they are not completed (self-signer mode only) */}
-                            {!(isFieldCompleted && mode === MODE.SELF_SIGNER) && (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: labelTop,
-                                  left: 0,
-                                  width: scaledWidth,
-                                  pointerEvents: 'none',
-                                  textAlign: 'center',
-                                  fontSize: labelFontSize,
-                                  lineHeight: 1.1,
-                                }}
-                                className="text-[10px] text-gray-600"
-                              >
-                                {recipientDisplay.decorated ? (
-                                  <div
-                                    style={{
-                                      display: "inline-flex",
-                                      flexDirection: "column",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      backgroundColor: "rgba(148, 163, 184, 0.35)",
-                                      borderRadius: recipientBadgeRadius,
-                                      padding: `${recipientBadgePaddingY}px ${recipientBadgePaddingX}px`,
-                                      gap: recipientBadgeGap,
-                                    }}
-                                  >
-                                    <span
-                                      style={{
-                                        fontSize: labelFontSize,
-                                        fontWeight: 600,
-                                        color: "#1f2937",
-                                        lineHeight: 1.1,
-                                      }}
-                                    >
-                                      {recipientDisplay.primary}
-                                    </span>
-                                    {recipientDisplay.secondary ? (
-                                      <span
-                                        style={{
-                                          fontSize: recipientSecondaryFont,
-                                          color: "#1f2937",
-                                          lineHeight: 1.05,
-                                        }}
-                                      >
-                                        {recipientDisplay.secondary}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <span
-                                    style={{
-                                      fontSize: labelFontSize,
-                                      fontWeight: 500,
-                                      color: "#4b5563",
-                                      lineHeight: 1.1,
-                                    }}
-                                  >
-                                    {recipientDisplay.primary}
-                                  </span>
-                                )}
-                              </div>
-                            )}
                           </div>
                         );
                       })}

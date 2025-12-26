@@ -1,54 +1,59 @@
 const Organization = require('../models/organization');
-const createOrganization = async (payload, files = [], userId) => {
+const createOrganization = async (payload, userId) => {
     const { name, logo, website, gst } = payload;
-    if (!name || !logo || !website || !gst) {
-        throw new Error('Missing required fields');
+
+    if (!name?.trim()) {
+        throw new Error('Organization name is required');
     }
 
-    // Normalize inputs for consistent uniqueness checks
-    const normalizedWebsite = String(website).trim().toLowerCase();
-    const normalizedGst = String(gst).trim().toUpperCase();
+    const normalizedWebsite = website
+        ? String(website).trim().toLowerCase()
+        : undefined;
 
-    // Check if website or GST already exist
-    const existing = await Organization.findOne({
-        $or: [
-            { website: normalizedWebsite },
-            { gst: normalizedGst }
-        ]
-    }).lean();
+    const normalizedGst = gst
+        ? String(gst).trim().toUpperCase()
+        : undefined;
 
-    if (existing) {
-        if (existing.website && String(existing.website).trim().toLowerCase() === normalizedWebsite) {
-            throw new Error('Website already in use');
+    // Build dynamic duplicate check
+    const orConditions = [];
+    if (normalizedWebsite) orConditions.push({ website: normalizedWebsite });
+    if (normalizedGst) orConditions.push({ gst: normalizedGst });
+
+    if (orConditions.length) {
+        const existing = await Organization.findOne({ $or: orConditions }).lean();
+
+        if (existing) {
+            if (
+                normalizedWebsite &&
+                existing.website?.toLowerCase() === normalizedWebsite
+            ) {
+                throw new Error('Website already in use');
+            }
+
+            if (
+                normalizedGst &&
+                existing.gst?.toUpperCase() === normalizedGst
+            ) {
+                throw new Error('GST number already in use');
+            }
+
+            throw new Error('Organization already exists');
         }
-        if (existing.gst && String(existing.gst).trim().toUpperCase() === normalizedGst) {
-            throw new Error('GST number already in use');
-        }
-        // Fallback generic duplicate error
-        throw new Error('Organization with provided website or GST already exists');
     }
-
-    // Map files to document metadata
-    const verificationDocuments = (files || []).map(file => ({
-        filename: file.filename,
-        type: file.mimetype,
-        path: file.path,
-        uploadedAt: new Date()
-    }));
 
     const org = await Organization.create({
-        name,
-        logo,
+        name: name.trim(),
+        logo: logo || undefined,
         website: normalizedWebsite,
         gst: normalizedGst,
-        verificationDocuments,
         createdBy: userId,
-        status: "PENDING",
+        status: true,
         remark: "",
     });
 
     return org;
-}
+};
+
 const getOrganizationDetails = async (orgId) => {  
     const result = await Organization.findById(orgId);
     if (!result) {
@@ -75,10 +80,20 @@ const getOrganizationsByUserId = async (userId) => {
     const organizations = await Organization.find({ createdBy: userId });
     return organizations;
 }
+const getAllOrganizations = async () => {
+    const organizations = await Organization.find();
+    return organizations;
+}
+const getAllOrganizationsRquest = async () => {
+    const organizations = await Organization.find({ isverifcationRequested: true });
+    return organizations;
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
     updateOrganizationDetails,
     deleteOrganization,
-    getOrganizationsByUserId
+    getOrganizationsByUserId,
+    getAllOrganizations,
+    getAllOrganizationsRquest
 };
