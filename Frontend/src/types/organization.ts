@@ -10,7 +10,10 @@ export interface Organization {
   verificationDocuments?: VerificationDocument[];
   createdBy?: string;
   approvedBy?: string;
-  status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'pending' | 'approved' | 'rejected' | 'suspended';
+  verifiedBy?: string;
+  status?: boolean;
+  isverified?: boolean;
+  isverifcationRequested?: boolean;
   remark?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -26,10 +29,18 @@ export interface VerificationDocument {
 
 export interface CreateOrganizationRequest {
   name: string;
-  logo: string;
+  logo?: string;
+  website?: string;
+  gst?: string;
+  documents?: VerificationDocument[];
+}
+
+export interface VerifyOrganizationRequest {
+  name: string;
+  logo?: string;
   website: string;
   gst: string;
-  documents?: VerificationDocument[];
+  documents?: File[];
 }
 
 export interface CreateOrganizationResponse {

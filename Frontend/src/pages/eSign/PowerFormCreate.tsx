@@ -1800,7 +1800,7 @@ const PowerFormCreate: React.FC = () => {
             {/* Power Form */}
             <div>
               <h3 id='ToggleAddMessage' onClick={() => setShowPowerForm(prev => !prev)} className="text-lg text-gray-900 cursor-pointer flex items-center justify-between">
-                <span>Add power form</span>
+                <span>Add Signers Slots</span>
                 {showPowerForm ? (
                   <ChevronUp className="w-5 h-5 text-gray-500" />
                 ) : (
@@ -1812,9 +1812,9 @@ const PowerFormCreate: React.FC = () => {
                /* ======================== POWER FORM MODE ======================== */
               <Card className="p-6 shadow-sm border border-gray-200 rounded-sm bg-white space-y-6" data-tour="ec-power-form">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900">Build Power Form</h4>
+                  <h4 className="text-lg font-semibold text-gray-900">Add Slots</h4>
                   <p className="text-sm text-gray-600">
-                    Set up your reusable form and signer slots.
+                    Set up your reusable signer slots.
                   </p>
                 </div>
 

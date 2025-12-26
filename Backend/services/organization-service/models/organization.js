@@ -17,14 +17,20 @@ const OrganizationSchema = new mongoose.Schema({
     verificationDocuments: [VerificationDocumentSchema],
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
+    verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
 
     status: { 
-        type: String, 
-        enum: ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"],
-        default: "PENDING"
+        type: Boolean,
+        default: true
     },
-
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    isverifcationRequested: {
+        type: Boolean,
+        default: false
+    },
     remark: { type: String }
 }, { timestamps: true });
 

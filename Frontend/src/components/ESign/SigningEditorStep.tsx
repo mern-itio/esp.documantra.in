@@ -378,9 +378,6 @@ export default function SigningEditorStep({
       setEditorTourIndex(startIndex);
     }
   }, [documents.length, editorTourSteps]);
-  console.log("activeRecipientId1", activeRecipientId);
-  console.log("recipients", recipients[0]?.id);
-  console.log("mode", mode);
 
   // effective slots (slots prop preferred, fall back to powerFormData.slots)
   const slotsToUse = slots ?? powerFormData?.slots ?? [];
@@ -389,7 +386,6 @@ export default function SigningEditorStep({
   const activeDoc = useMemo(() => documents.find(d => d.id === activeDocId) || null, [activeDocId, documents]);
   const activeRecipient = useMemo(() => recipients.find(r => r.id === activeRecipientId) || null, [activeRecipientId, recipients]);
   const activeSlot = useMemo(() => slotsToUse.find(s => s.slotId === activeSlotId) || null, [activeSlotId, slotsToUse]);
-  console.log("activeRecipientId2", activeRecipientId);
   // color map for recipients & slots
   const recipientColorMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -412,7 +408,6 @@ export default function SigningEditorStep({
   // initialize when docs/recipients/slots change
   useEffect(() => {
     if (!activeDocId && documents.length) setActiveDocId(documents[0].id);
-    console.log("documentes", documents);
     if (mode === "normal" && !activeRecipientId) setActiveRecipientId(recipients[0]?.id ?? null);
     if (mode === "power" && !activeSlotId) setActiveSlotId(slotsToUse?.[0]?.slotId ?? null);
   }, [documents, recipients, slotsToUse, mode]);
@@ -498,7 +493,7 @@ export default function SigningEditorStep({
         if (!pageRect) return;
 
         const width = 200;
-        const height = 40;
+        const height = 20;
         const left = (pageRect.width - width) / 2;
         const top = (pageRect.height - height) / 2;
 
@@ -735,7 +730,6 @@ export default function SigningEditorStep({
     onFieldsChange,
     leftPanel
   ]);
-  console.log("activeRecipientId3", activeRecipientId);
   // auto-select activeSlot from selected recipient when activeSlot is empty
   useEffect(() => {
     if (mode === "power" && !activeSlotId && slotsToUse.length > 0) {
@@ -746,7 +740,6 @@ export default function SigningEditorStep({
           slot.role === "signer" || slot.role === "firstSigner"
         );
       }
-      console.log("activeRecipientId4", activeRecipientId);
       if (matchingSlot) {
         setActiveSlotId(matchingSlot.slotId);
       } else {
@@ -755,7 +748,6 @@ export default function SigningEditorStep({
       }
     }
   }, [mode, activeSlotId, activeRecipientId, slotsToUse]);
-  console.log("SignatureField", signatureFields);
   // helpers to find assignee by field
   const findAssignee = (f: SignatureField) => {
     if (f.recipientId) {
@@ -881,7 +873,6 @@ export default function SigningEditorStep({
 
   // drag handlers
   const handleDragStart = (e: React.DragEvent, field: { type: FieldType; label?: string; id?: string }) => {
-    console.log(`Field ID : ${field.id}`);
     setDraggedField(field);
     setDragging(true);
     e.dataTransfer.effectAllowed = "move";
@@ -938,7 +929,7 @@ export default function SigningEditorStep({
     setCurrentPage(pageNum);
 
     // base width/height (kept constant - you can replace with ratio later)
-    const width = 200, height = 40;
+    const width = 200, height = 20;
     let left = e.clientX - rect.left - width / 2;
     let top = e.clientY - rect.top - height / 2;
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Globe, FileText, Upload, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Building, Globe, FileText, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { CreateOrganizationRequest } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
 
@@ -16,14 +16,12 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [success, setSuccess] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   
   const [formData, setFormData] = useState<CreateOrganizationRequest>({
     name: '',
     logo: '',
     website: '',
-    gst: '',
-    documents: []
+    gst: ''
   });
 
   const validateField = (name: string, value: string): string => {
@@ -33,16 +31,19 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
         if (value.trim().length < 2) return 'Organization name must be at least 2 characters';
         return '';
       case 'website':
-        if (!value.trim()) return 'Website URL is required';
-        const urlPattern = /^https?:\/\/.+\..+/i;
-        if (!urlPattern.test(value.trim())) return 'Please enter a valid website URL';
+        if (value.trim()) {
+          const urlPattern = /^https?:\/\/.+\..+/i;
+          if (!urlPattern.test(value.trim())) return 'Please enter a valid website URL';
+        }
         return '';
       case 'gst':
-        if (!value.trim()) return 'GST number is required';
-        if (value.trim().length < 10) return 'GST number must be at least 10 characters';
+        // GST is optional, no validation needed
         return '';
       case 'logo':
-        if (!value.trim()) return 'Logo URL is required';
+        if (value.trim()) {
+          const urlPattern = /^https?:\/\/.+\..+/i;
+          if (!urlPattern.test(value.trim())) return 'Please enter a valid logo URL';
+        }
         return '';
       default:
         return '';
@@ -53,13 +54,9 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
     const nextErrors: { [key: string]: string } = {};
     
     ['name', 'logo', 'website', 'gst'].forEach((field) => {
-      const error = validateField(field, (formData as any)[field]);
+      const error = validateField(field, (formData as any)[field] || '');
       if (error) nextErrors[field] = error;
     });
-
-    if (documentFiles.length === 0) {
-      nextErrors['documents'] = 'At least one verification document is required';
-    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -84,23 +81,6 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
     }
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setDocumentFiles(files);
-      if (errors['documents']) {
-        setErrors((prev) => {
-          const next = { ...prev };
-          delete next['documents'];
-          return next;
-        });
-      }
-    }
-  };
-
-  const removeDocument = (index: number) => {
-    setDocumentFiles((prev) => prev.filter((_, i) => i !== index));
-  };
 
 const handleSubmit = async (e: FormEvent) => {
   e.preventDefault();
@@ -112,26 +92,13 @@ const handleSubmit = async (e: FormEvent) => {
   setIsLoading(true);
 
   try {
-    const formDataPayload = new FormData();
-
-    // Append JSON fields
-    formDataPayload.append(
-      'organization',
-      JSON.stringify({
-        name: formData.name,
-        logo: formData.logo,
-        website: formData.website,
-        gst: formData.gst
-      })
-    );
-
-    // Append all document files
-    documentFiles.forEach(file => {
-      formDataPayload.append('documents', file);
+    // Send request with JSON payload (no documents needed for creation)
+    const response = await organizationApi.post('/api/organization/create', {
+      name: formData.name,
+      logo: formData.logo || undefined,
+      website: formData.website || undefined,
+      gst: formData.gst || undefined
     });
-
-    // Send request directly via organizationApi
-    const response = await organizationApi.post('/api/organization/create', formDataPayload);
 
     setSuccess(true);
 
@@ -139,7 +106,7 @@ const handleSubmit = async (e: FormEvent) => {
       onSuccess(response.data.data);
     } else {
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/organization');
       }, 2000);
     }
   } catch (err: any) {
@@ -163,7 +130,7 @@ const handleSubmit = async (e: FormEvent) => {
             <h1 className="text-2xl font-bold text-gray-900">Create Organization</h1>
           </div>
           <p className="text-gray-600 text-sm">
-            Set up your organization profile to get started. All information will be reviewed by our team.
+            Set up your organization profile to get started. You can verify your organization later to unlock additional features.
           </p>
         </div>
 
@@ -172,7 +139,7 @@ const handleSubmit = async (e: FormEvent) => {
           <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg flex items-center gap-3 animate-fade-in">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             <p className="text-green-800 text-sm font-medium">
-              Organization created successfully! Your request is pending approval.
+              Organization created successfully! You can now verify your organization to unlock additional features.
             </p>
           </div>
         )}
@@ -219,7 +186,7 @@ const handleSubmit = async (e: FormEvent) => {
           {/* Website */}
           <div>
             <label htmlFor="website" className="block text-sm font-semibold text-gray-700 mb-2">
-              Website URL <span className="text-red-500">*</span>
+              Website URL
             </label>
             <div className="relative group">
               <Globe className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
@@ -237,7 +204,6 @@ const handleSubmit = async (e: FormEvent) => {
                     : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
                 }`}
                 placeholder="https://www.example.com"
-                required
               />
             </div>
             {errors.website && (
@@ -248,7 +214,7 @@ const handleSubmit = async (e: FormEvent) => {
           {/* GST Number */}
           <div>
             <label htmlFor="gst" className="block text-sm font-semibold text-gray-700 mb-2">
-              GST Number <span className="text-red-500">*</span>
+              GST Number
             </label>
             <div className="relative group">
               <FileText className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
@@ -266,7 +232,6 @@ const handleSubmit = async (e: FormEvent) => {
                     : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
                 }`}
                 placeholder="GST123456789"
-                required
               />
             </div>
             {errors.gst && (
@@ -277,7 +242,7 @@ const handleSubmit = async (e: FormEvent) => {
           {/* Logo URL */}
           <div>
             <label htmlFor="logo" className="block text-sm font-semibold text-gray-700 mb-2">
-              Logo URL <span className="text-red-500">*</span>
+              Organization Logo URL
             </label>
             <div className="relative group">
               <Upload className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
@@ -295,7 +260,6 @@ const handleSubmit = async (e: FormEvent) => {
                     : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
                 }`}
                 placeholder="https://www.example.com/logo.png"
-                required
               />
             </div>
             {errors.logo && (
@@ -318,65 +282,6 @@ const handleSubmit = async (e: FormEvent) => {
             )}
           </div>
 
-          {/* Verification Documents */}
-          <div>
-            <label htmlFor="documents" className="block text-sm font-semibold text-gray-700 mb-2">
-              Verification Documents <span className="text-red-500">*</span>
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#3E2B66] transition-colors duration-300">
-              <input
-                type="file"
-                id="documents"
-                name="documents"
-                onChange={handleFileChange}
-                multiple
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="hidden"
-              />
-              <label
-                htmlFor="documents"
-                className="cursor-pointer flex flex-col items-center gap-2"
-              >
-                <Upload className="h-8 w-8 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  Click to upload or drag and drop
-                </span>
-                <span className="text-xs text-gray-500">
-                  PDF, DOC, DOCX, JPG, PNG (Max 10MB each)
-                </span>
-              </label>
-            </div>
-            {errors.documents && (
-              <p className="text-red-600 text-xs mt-1 animate-fade-in">{errors.documents}</p>
-            )}
-            
-            {/* Selected Files */}
-            {documentFiles.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {documentFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-gray-600" />
-                      <span className="text-sm text-gray-700">{file.name}</span>
-                      <span className="text-xs text-gray-500">
-                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeDocument(index)}
-                      className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Submit Button */}
           <div className="flex gap-4 pt-4">
