@@ -69,7 +69,7 @@ const EnvelopeDetailPage: React.FC = () => {
     const moreBtnRef = useRef<HTMLButtonElement>(null);
     const resendBtnRef = useRef<HTMLButtonElement>(null);
     const [resendLoading, setResendLoading] = useState<boolean>(false);
-    const [showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
+    const [_showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
     const [copiedEmbedUrl, setCopiedEmbedUrl] = useState<boolean>(false);
     const [copiedEmbedCode, setCopiedEmbedCode] = useState<boolean>(false);
 

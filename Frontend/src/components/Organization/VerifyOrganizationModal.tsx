@@ -165,7 +165,7 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
         `/api/organization/verify/${organization._id}`,
         formDataPayload
       );
-
+      console.log(response);
       setSuccess(true);
       setTimeout(() => {
         onSuccess();

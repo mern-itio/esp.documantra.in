@@ -17,7 +17,6 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
   onClick,
   onEdit,
   onDelete,
-  onSettings,
   onTeams,
   onVerify,
 }) => {
@@ -48,7 +47,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
 
   // Determine status - can be boolean or string
   const statusValue = organization.status;
-  const isActive = typeof statusValue === 'boolean' ? statusValue : statusValue === true || statusValue?.toString().toUpperCase() === 'APPROVED';
+  const isActive = typeof statusValue === 'boolean' ? statusValue : statusValue === true ;
   const isDisabled = !isActive;
   
   // Verification status
