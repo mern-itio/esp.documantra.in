@@ -35,6 +35,10 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [isScheduled, setIsScheduled] = useState<boolean>(false);
+  const [scheduledDate, setScheduledDate] = useState<string>('');
+  const [scheduledTime, setScheduledTime] = useState<string>('');
+  const [_showScheduleOptions, setShowScheduleOptions] = useState<boolean>(false);
 
   const autoResizeTextarea = () => {
     const el = inputRef.current;
@@ -316,9 +320,16 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
         ? `[Files: ${attachedFiles.map(f => f.name).join(', ')}]`
         : '';
 
+    // Append scheduling information to the command if scheduling is enabled
+    let commandWithScheduling = userMessage || 'Send this document';
+    if (isScheduled && scheduledDate) {
+      const scheduledDateTime = new Date(scheduledDate + (scheduledTime ? `T${scheduledTime}` : '')).toLocaleString();
+      commandWithScheduling += ` [SCHEDULE: ${scheduledDateTime}]`;
+    }
+
     const userMessageContent = attachedFiles.length > 0
-      ? `${userMessage || 'Send this document'} ${fileLabel}`.trim()
-      : userMessage;
+      ? `${commandWithScheduling} ${fileLabel}`.trim()
+      : commandWithScheduling;
     
     const newUserMessage: ConversationMessage = {
       role: 'user',
@@ -328,10 +339,17 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
     setMessages(prev => [...prev, newUserMessage]);
 
     try {
+      // Prepare context with scheduling information
+      const context = isScheduled && scheduledDate ? {
+        isScheduled: true,
+        scheduledDate: scheduledDate,
+        scheduledTime: scheduledTime || null
+      } : undefined;
+
       const response: AICommandResponse = await aiAssistantApiService.processCommand(
-        userMessage || 'Send this document', 
+        commandWithScheduling, 
         attachedFiles, 
-        undefined, 
+        context, 
         currentConversationId || undefined
       );
       
@@ -344,6 +362,13 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
         setAttachedFiles([]);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
+        }
+        // Reset scheduling options after successful action
+        if (isScheduled) {
+          setIsScheduled(false);
+          setScheduledDate('');
+          setScheduledTime('');
+          setShowScheduleOptions(false);
         }
       }
 
@@ -1006,7 +1031,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
               </div>
             ))}
           </div>
-        )}
+        )}        
         
         <div className="flex items-end space-x-2">
           {/* File Upload Button */}

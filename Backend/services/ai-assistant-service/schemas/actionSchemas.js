@@ -63,7 +63,10 @@ const CreateAndSendEnvelopeParamsSchema = z.object({
   recipients: z.array(RecipientSchema),
   signatureFields: z.array(SignatureFieldSchema),
   subject: z.string().nullable().optional(),
-  message: z.string().nullable().optional()
+  message: z.string().nullable().optional(),
+  isScheduled: z.boolean().optional(),
+  scheduledDate: z.string().nullable().optional(), // ISO date string or date with time
+  scheduledTime: z.string().nullable().optional() // Time string (e.g., "14:30")
 });
 
 // Generate document parameters

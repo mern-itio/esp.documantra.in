@@ -35,8 +35,10 @@ const App: React.FC = () => {
                   <RouterProvider router={router} />
                   <Toaster />
                   <GlobalPlansModalPortal />
+                   <div className="fixed right-6 bottom-85 flex flex-col gap-4 z-50">
                   <CustomerChatWidget />
                   <AIAssistantButton />
+                </div>
                 </ThemeConfig>
               </SidebarProvider>
             </AppProvider>

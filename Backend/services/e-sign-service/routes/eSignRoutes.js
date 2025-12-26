@@ -6,6 +6,8 @@ const {
          getEnvelopeStats,
          envelopExists,
          sendEnvelope,
+         scheduleEnvelope,
+         processScheduledEnvelopesHandler,
          addSignature,
          getRecipientByEmail,
          envelopeArchive,
@@ -51,6 +53,8 @@ router.get('/envelope/:id', envelopesDetail);
 router.get('/envelope-exist/:id', envelopExists);
 router.get('/analytics/envelope-stats', getEnvelopeStats);
 router.post('/send-envelope/:envelopeId',sendEnvelope);
+router.post('/schedule-envelope/:envelopeId',scheduleEnvelope);
+router.post('/process-scheduled-envelopes', processScheduledEnvelopesHandler);
 router.get('/get-recipient/:email',getRecipientByEmail);
 router.post('/envelope/archive/:envelopeId',envelopeArchive);
 router.post('/envelope/delete/:envelopeId',envelopeDelete);

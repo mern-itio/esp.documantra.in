@@ -355,6 +355,9 @@ const EnvelopeCreator: React.FC = () => {
   // Send confirmation modal state
   const [showSendConfirmationModal, setShowSendConfirmationModal] = useState<boolean>(false);
   const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
+  const [isScheduled, setIsScheduled] = useState<boolean>(false);
+  const [scheduledDate, setScheduledDate] = useState<string>('');
+  const [scheduledTime, setScheduledTime] = useState<string>('');
   const [draggedSignerId, setDraggedSignerId] = useState<string | null>(null);
   const [dragOverSignerId, setDragOverSignerId] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
@@ -2355,6 +2358,41 @@ const EnvelopeCreator: React.FC = () => {
   const confirmAndSendEnvelope = async () => {
     if (!envelopeId) return;
     
+    // Check if scheduling is enabled FIRST - before any sending logic
+    // This must be checked before setting sending state or doing any API calls
+    if (isScheduled && scheduledDate) {
+      console.log('Scheduling envelope:', { isScheduled, scheduledDate, scheduledTime, envelopeId });
+      
+      // Close modal immediately (don't show sending animation for scheduled)
+      setShowSendConfirmationModal(false);
+      
+      try {
+        // Schedule the envelope instead of sending immediately
+        const response = await eSignApi.post(`/api/e-sign/schedule-envelope/${envelopeId}`, {
+          scheduledDate,
+          scheduledTime: scheduledTime || null
+        });
+        
+        console.log('Envelope scheduled successfully:', response.data);
+        
+        // Navigate to agreement page with scheduled parameter
+        // The sweet alert will be shown in AgreementPage
+        navigate(`/e-sign/aggrement?scheduled=true&envelopeId=${envelopeId}`);
+      } catch (err: any) {
+        console.error('Error scheduling envelope:', err);
+        Swal.fire({
+          title: "Error",
+          text: err?.response?.data?.message || "Failed to schedule envelope. Please try again.",
+          icon: "error",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#ffc107",
+        });
+      }
+      return; // Exit early for scheduled envelopes - IMPORTANT: don't continue to sending logic
+    }
+    
+    console.log('Sending envelope (not scheduled):', { isScheduled, scheduledDate, envelopeId });
+    
     // Double-check credits before sending (safety check)
     const totalCost = calculateTotalCost();
     const creditsBalance = subscriptionPlan?.creditsBalance || 0;
@@ -2404,7 +2442,7 @@ const EnvelopeCreator: React.FC = () => {
         return;
       }
       
-      // Now send the envelope
+      // Send the envelope immediately (only if not scheduled)
       await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
       
       // Record credit usage
@@ -6969,7 +7007,7 @@ const EnvelopeCreator: React.FC = () => {
             {/* Step 2: Authentication & Credits */}
             {sendModalStep === 2 && (
               <div>
-                {sending ? (
+                {sending && !isScheduled ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     {/* Envelope Sending Animation */}
                     <div className="relative mb-8 w-full max-w-md">
@@ -7337,6 +7375,64 @@ const EnvelopeCreator: React.FC = () => {
                       )}
                     </div>
 
+                    {/* Schedule Envelope Section */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center gap-3 mb-4">
+                        <input
+                          type="checkbox"
+                          id="schedule-envelope"
+                          checked={isScheduled}
+                          onChange={(e) => {
+                            setIsScheduled(e.target.checked);
+                            if (!e.target.checked) {
+                              setScheduledDate('');
+                              setScheduledTime('');
+                            }
+                          }}
+                          className="w-4 h-4 text-[#3E2B66] border-gray-300 rounded focus:ring-[#3E2B66]"
+                        />
+                        <label htmlFor="schedule-envelope" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          Schedule envelope to send later
+                        </label>
+                      </div>
+                      
+                      {isScheduled && (
+                        <div className="ml-7 space-y-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Date
+                              </label>
+                              <input
+                                type="date"
+                                value={scheduledDate}
+                                onChange={(e) => setScheduledDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66]"
+                                required={isScheduled}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Time
+                              </label>
+                              <input
+                                type="time"
+                                value={scheduledTime}
+                                onChange={(e) => setScheduledTime(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66]"
+                              />
+                            </div>
+                          </div>
+                          {scheduledDate && (
+                            <div className="text-xs text-gray-600 mt-2">
+                              <span className="font-medium">Scheduled for:</span>{' '}
+                              {new Date(scheduledDate + (scheduledTime ? `T${scheduledTime}` : '')).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-gray-200">
                       <button
@@ -7359,7 +7455,13 @@ const EnvelopeCreator: React.FC = () => {
                             return;
                           }
                           
-                          // If credits are sufficient, proceed with sending
+                          // Validate scheduling if enabled
+                          if (isScheduled && !scheduledDate) {
+                            toast.error('Please select a date for scheduling');
+                            return;
+                          }
+                          
+                          // If credits are sufficient, proceed with sending/scheduling
                           if (!sending) {
                             confirmAndSendEnvelope();
                           }
@@ -7380,7 +7482,10 @@ const EnvelopeCreator: React.FC = () => {
                             <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
                         )}
-                        {sending ? 'Sending Envelope...' : 'Confirm & Send'}
+                        {sending 
+                          ? (isScheduled ? 'Scheduling Envelope...' : 'Sending Envelope...')
+                          : (isScheduled ? 'Confirm & Schedule' : 'Confirm & Send')
+                        }
                       </button>
                     </div>
                   </>

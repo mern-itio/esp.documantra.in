@@ -183,8 +183,8 @@ const generateAIContent = async (req, res) => {
       temperature: 0.7,
       max_completion_tokens: 4000,
       stream: false,
-      presence_penalty: 0.1,
-      frequency_penalty: 0.1
+      // presence_penalty: 0.1,
+      // frequency_penalty: 0.1
     });
     const generatedContent = response.choices[0].message.content.trim();
     res.json({

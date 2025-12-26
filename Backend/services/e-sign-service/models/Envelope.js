@@ -47,7 +47,11 @@ const EnvelopeSchema = new mongoose.Schema({
   numberOfParties: { type: Number, default: 1 },
   powerFormId: { type: String, default: null },               // if linked to a PowerForm template
   // NEW FIELD: completion certificate metadata
-  completionCertificate: { type: CompletionCertificateSchema, default: null }
+  completionCertificate: { type: CompletionCertificateSchema, default: null },
+  // Scheduling fields
+  isScheduled: { type: Boolean, default: false },
+  scheduledDate: { type: Date }, // Combined date and time for when to send
+  scheduledTime: { type: String } // Optional separate time field for UI convenience
 
 }, { timestamps: true });
 

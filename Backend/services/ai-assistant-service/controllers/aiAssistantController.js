@@ -579,6 +579,22 @@ class AIAssistantController {
                 recipientsLength: result.parameters?.recipients?.length || 0,
                 recipients: result.parameters?.recipients
               });
+              // Merge scheduling parameters from context if available (from UI)
+              if (enhancedContext?.isScheduled) {
+                result.parameters = {
+                  ...result.parameters,
+                  isScheduled: enhancedContext.isScheduled,
+                  scheduledDate: enhancedContext.scheduledDate,
+                  scheduledTime: enhancedContext.scheduledTime || null
+                };
+              }
+              // Also check if LLM extracted scheduling from user prompt
+              if (result.parameters?.isScheduled || result.parameters?.scheduledDate) {
+                // LLM already extracted scheduling, use it
+                if (!result.parameters.isScheduled && result.parameters.scheduledDate) {
+                  result.parameters.isScheduled = true;
+                }
+              }
               executionResult = await this.executeCreateAndSendEnvelope(result.parameters, userId, token, uploadedFiles, conversation);
               break;
             case 'generate_document':
@@ -837,6 +853,9 @@ class AIAssistantController {
           if (recipientEmail) {
             console.log('📧 Auto-sending generated document to:', recipientEmail);
             try {
+              // Extract scheduling information from requirements or command
+              let extractedScheduling = this.extractSchedulingFromText(result.parameters?.requirements || command);
+              
               // Prepare send parameters
               const sendParameters = {
                 documentId: executionResult.envelopeId,
@@ -851,17 +870,34 @@ class AIAssistantController {
                 }]
               };
 
-              // Execute send action
+              // Merge scheduling parameters - prioritize extracted from text, then context
+              if (extractedScheduling.isScheduled) {
+                sendParameters.isScheduled = true;
+                sendParameters.scheduledDate = extractedScheduling.scheduledDate;
+                sendParameters.scheduledTime = extractedScheduling.scheduledTime;
+                console.log('📅 Extracted scheduling from requirements:', extractedScheduling);
+              } else if (enhancedContext?.isScheduled) {
+                sendParameters.isScheduled = enhancedContext.isScheduled;
+                sendParameters.scheduledDate = enhancedContext.scheduledDate;
+                sendParameters.scheduledTime = enhancedContext.scheduledTime || null;
+                console.log('📅 Using scheduling from context:', enhancedContext);
+              }
+              
               const sendResult = await this.executeCreateAndSendEnvelope(sendParameters, userId, token, null, conversation);
               
               // Update execution result to include send information
               executionResult = {
                 ...executionResult,
                 autoSent: true,
+                autoScheduled: sendParameters.isScheduled === true, // Track if it was scheduled
                 sendResult: sendResult
               };
               
-              console.log('✅ Successfully auto-sent generated document');
+              if (sendParameters.isScheduled) {
+                console.log('✅ Successfully scheduled generated document');
+              } else {
+                console.log('✅ Successfully auto-sent generated document');
+              }
             } catch (sendError) {
               console.error('❌ Failed to auto-send document:', sendError.message);
               // Don't fail the entire request, just log the error
@@ -1394,7 +1430,56 @@ class AIAssistantController {
   // Execute create_and_send_envelope action - Complete envelope creation and sending
   async executeCreateAndSendEnvelope(parameters, userId, token, uploadedFile = null, conversation = null) {
     try {
-      let { documentId, recipients, signatureFields, subject, message } = parameters;
+      let { documentId, recipients, signatureFields, subject, message, scheduledDate, scheduledTime, isScheduled } = parameters;
+      
+      // Normalize and parse scheduling parameters
+      // If scheduledDate exists but isScheduled is not explicitly set, set it to true
+      if (scheduledDate && scheduledDate.trim() !== '' && isScheduled !== true) {
+        isScheduled = true;
+        console.log('📅 Auto-setting isScheduled=true because scheduledDate is provided');
+      }
+      
+      // Parse "today" to actual date if needed
+      if (scheduledDate && typeof scheduledDate === 'string') {
+        const lowerDate = scheduledDate.toLowerCase().trim();
+        if (lowerDate === 'today') {
+          const today = new Date();
+          scheduledDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+          console.log('📅 Converted "today" to:', scheduledDate);
+        }
+      }
+      
+      // Normalize time format (convert PM/AM to 24-hour if needed)
+      if (scheduledTime && typeof scheduledTime === 'string') {
+        const timeStr = scheduledTime.trim().toUpperCase();
+        // Check if it's in 12-hour format with AM/PM
+        const pmMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*PM/i);
+        const amMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*AM/i);
+        
+        if (pmMatch) {
+          let hours = parseInt(pmMatch[1]);
+          const minutes = pmMatch[2];
+          if (hours !== 12) hours += 12; // Convert PM to 24-hour (except 12 PM)
+          scheduledTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
+          console.log('📅 Converted PM time to 24-hour:', scheduledTime);
+        } else if (amMatch) {
+          let hours = parseInt(amMatch[1]);
+          const minutes = amMatch[2];
+          if (hours === 12) hours = 0; // 12 AM = 00:xx
+          scheduledTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
+          console.log('📅 Converted AM time to 24-hour:', scheduledTime);
+        }
+      }
+      
+      // Debug logging for scheduling
+      console.log('📅 Scheduling check:', {
+        isScheduled,
+        scheduledDate,
+        scheduledTime,
+        hasScheduledDate: !!scheduledDate,
+        hasScheduledTime: !!scheduledTime,
+        parameters: JSON.stringify({ isScheduled, scheduledDate, scheduledTime })
+      });
       
       // Safety check: If recipients are missing or invalid, try to extract from parameters or throw clear error
       if (!recipients || !Array.isArray(recipients) || recipients.length === 0 || !recipients.some(r => r.email)) {
@@ -2277,15 +2362,47 @@ class AIAssistantController {
         }
       }
 
-      // Step 7: Send the envelope
-      await axios.post(
-        `${eSignServiceUrl}/api/e-sign/send-envelope/${envelopeId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 60000 // 1 minute for sending
+      // Step 7: Send or schedule the envelope
+      // Check if scheduling is requested - either isScheduled flag is true OR scheduledDate is provided
+      const shouldSchedule = (isScheduled === true) || (scheduledDate && scheduledDate.trim() !== '');
+      
+      console.log('📅 Final scheduling decision:', {
+        shouldSchedule,
+        isScheduled,
+        scheduledDate,
+        scheduledTime,
+        envelopeId
+      });
+      
+      if (shouldSchedule && scheduledDate) {
+        // Schedule the envelope
+        console.log('⏰ Scheduling envelope:', { envelopeId, scheduledDate, scheduledTime });
+        try {
+          const scheduleResponse = await axios.post(
+            `${eSignServiceUrl}/api/e-sign/schedule-envelope/${envelopeId}`,
+            { scheduledDate, scheduledTime: scheduledTime || null },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 60000
+            }
+          );
+          console.log('✅ Envelope scheduled successfully:', scheduleResponse.data);
+        } catch (scheduleError) {
+          console.error('❌ Error scheduling envelope:', scheduleError.response?.data || scheduleError.message);
+          throw scheduleError;
         }
-      );
+      } else {
+        // Send immediately
+        console.log('📤 Sending envelope immediately (not scheduled)');
+        await axios.post(
+          `${eSignServiceUrl}/api/e-sign/send-envelope/${envelopeId}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 60000 // 1 minute for sending
+          }
+        );
+      }
 
       // Step 8: Deduct credits for authentication providers (if any)
       let creditsDebited = 0;
@@ -2372,12 +2489,20 @@ class AIAssistantController {
         }
       }
 
+      // Determine if envelope was scheduled or sent
+      const wasScheduled = shouldSchedule && scheduledDate;
+      
       return {
         success: true,
-        message: 'Envelope created and sent successfully',
+        message: wasScheduled 
+          ? 'Envelope scheduled successfully' 
+          : 'Envelope created and sent successfully',
         envelopeId,
         recipients: recipients.length,
         signatureFields: signatureFields?.length || 0,
+        isScheduled: wasScheduled,
+        scheduledDate: wasScheduled ? scheduledDate : null,
+        scheduledTime: wasScheduled ? scheduledTime : null,
         authProvidersApplied: Array.from(recipientsAuthInfo.entries()).map(
           ([email, info]) => ({
             email,
@@ -3382,6 +3507,32 @@ class AIAssistantController {
         return `You currently have ${result.providers.length} authentication provider(s) available in your plan: ${names}.`;
 
       case 'create_and_send_envelope':
+        if (result.isScheduled === true) {
+          const scheduledDate = result.scheduledDate;
+          const scheduledTime = result.scheduledTime;
+          let scheduleInfo = '';
+          if (scheduledDate) {
+            try {
+              const date = new Date(scheduledDate);
+              const formattedDate = date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+              });
+              scheduleInfo = ` for ${formattedDate}`;
+              if (scheduledTime) {
+                const [hours, minutes] = scheduledTime.split(':');
+                const hour12 = parseInt(hours) % 12 || 12;
+                const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+                scheduleInfo += ` at ${hour12}:${minutes} ${ampm}`;
+              }
+            } catch (e) {
+              scheduleInfo = ` for ${scheduledDate}`;
+              if (scheduledTime) scheduleInfo += ` at ${scheduledTime}`;
+            }
+          }
+          return `Envelope scheduled successfully${scheduleInfo}! It will be sent to ${result.recipients || 0} recipient(s) with ${result.signatureFields || 0} signature field(s) at the scheduled time.`;
+        }
         return `Envelope created and sent successfully! Sent to ${result.recipients || 0} recipient(s) with ${result.signatureFields || 0} signature field(s).`;
 
       case 'generate_document':
@@ -3413,7 +3564,38 @@ class AIAssistantController {
         if (result.autoSent && result.sendResult) {
           const recipients = result.sendResult.recipients || 0;
           const signatureFields = result.sendResult.signatureFields || 0;
-          message += `\n\n✅ Document sent successfully to ${recipients} recipient(s) with ${signatureFields} signature field(s)!`;
+          
+          // Check if it was scheduled or sent
+          if (result.autoScheduled === true) {
+            const scheduledDate = result.sendResult.scheduledDate || result.sendResult.scheduledDate;
+            const scheduledTime = result.sendResult.scheduledTime || result.sendResult.scheduledTime;
+            let scheduleInfo = '';
+            if (scheduledDate) {
+              try {
+                const date = new Date(scheduledDate);
+                const formattedDate = date.toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric' 
+                });
+                scheduleInfo = ` for ${formattedDate}`;
+                if (scheduledTime) {
+                  const [hours, minutes] = scheduledTime.split(':');
+                  const hour12 = parseInt(hours) % 12 || 12;
+                  const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+                  scheduleInfo += ` at ${hour12}:${minutes} ${ampm}`;
+                }
+              } catch (e) {
+                // If date parsing fails, just show the raw date
+                scheduleInfo = ` for ${scheduledDate}`;
+                if (scheduledTime) scheduleInfo += ` at ${scheduledTime}`;
+              }
+            }
+            message += `\n\n✅ Document scheduled successfully${scheduleInfo}! It will be sent to ${recipients} recipient(s) with ${signatureFields} signature field(s) at the scheduled time.`;
+          } else {
+            message += `\n\n✅ Document sent successfully to ${recipients} recipient(s) with ${signatureFields} signature field(s)!`;
+          }
+          
           if (result.autoSendError) {
             message += `\n\n⚠️ Note: ${result.autoSendError}`;
           }
@@ -3685,6 +3867,125 @@ class AIAssistantController {
         error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
       });
     }
+  }
+
+  // Helper method to extract scheduling information from text
+  extractSchedulingFromText(text) {
+    if (!text || typeof text !== 'string') {
+      return { isScheduled: false, scheduledDate: null, scheduledTime: null };
+    }
+
+    const lowerText = text.toLowerCase();
+    let isScheduled = false;
+    let scheduledDate = null;
+    let scheduledTime = null;
+
+    // Check for scheduling keywords
+    const hasScheduleKeywords = /schedule|send\s+(?:later|on|at|for)|delay|tomorrow|next\s+(?:week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i.test(text);
+    
+    if (hasScheduleKeywords) {
+      isScheduled = true;
+
+      // Extract date patterns
+      // "today"
+      if (lowerText.includes('today')) {
+        const today = new Date();
+        scheduledDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+      }
+      // "tomorrow"
+      else if (lowerText.includes('tomorrow')) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        scheduledDate = tomorrow.toISOString().split('T')[0];
+      }
+      // Date patterns: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, "December 15, 2025", etc.
+      else {
+        // Try various date formats
+        const datePatterns = [
+          /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // DD/MM/YYYY or MM/DD/YYYY
+          /(\d{4})-(\d{1,2})-(\d{1,2})/, // YYYY-MM-DD
+          /(?:on|for)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})/i,
+          /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i
+        ];
+
+        for (const pattern of datePatterns) {
+          const match = text.match(pattern);
+          if (match) {
+            try {
+              let dateStr;
+              if (pattern === datePatterns[0]) {
+                // DD/MM/YYYY or MM/DD/YYYY - assume DD/MM/YYYY
+                const [, day, month, year] = match;
+                dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              } else if (pattern === datePatterns[1]) {
+                // YYYY-MM-DD
+                dateStr = match[0];
+              } else {
+                // Month name format
+                const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+                const monthIndex = months.indexOf(match[1].toLowerCase());
+                if (monthIndex !== -1) {
+                  const month = (monthIndex + 1).toString().padStart(2, '0');
+                  const day = match[2].replace(/\D/g, '').padStart(2, '0');
+                  const year = match[3];
+                  dateStr = `${year}-${month}-${day}`;
+                }
+              }
+              
+              if (dateStr) {
+                // Validate date
+                const testDate = new Date(dateStr);
+                if (!isNaN(testDate.getTime())) {
+                  scheduledDate = dateStr;
+                  break;
+                }
+              }
+            } catch (e) {
+              // Continue to next pattern
+            }
+          }
+        }
+      }
+
+      // Extract time patterns
+      // "05:29PM", "5:29 PM", "17:29", "at 5:29 PM", etc.
+      const timePatterns = [
+        /(\d{1,2}):(\d{2})\s*(AM|PM)/i, // 12-hour format
+        /at\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i, // "at 5:29 PM"
+        /(\d{1,2}):(\d{2})/ // 24-hour format (if no AM/PM)
+      ];
+
+      for (const pattern of timePatterns) {
+        const match = text.match(pattern);
+        if (match) {
+          try {
+            let hours = parseInt(match[1]);
+            const minutes = match[2];
+            
+            // Handle AM/PM
+            if (match[3]) {
+              const isPM = match[3].toUpperCase() === 'PM';
+              if (isPM && hours !== 12) {
+                hours += 12;
+              } else if (!isPM && hours === 12) {
+                hours = 0;
+              }
+            }
+            
+            scheduledTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
+            break;
+          } catch (e) {
+            // Continue to next pattern
+          }
+        }
+      }
+    }
+
+    return {
+      isScheduled,
+      scheduledDate,
+      scheduledTime
+    };
   }
 
   // Clear conversation history (deprecated - use deleteConversation instead)

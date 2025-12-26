@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X, Settings, Clock, Mail, Eye, MailOpen, EyeClosed } from 'lucide-react';
+import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X, Settings, Clock, Mail, Eye, MailOpen, EyeClosed, CircleCheckBig } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 interface Agreement {
   id: string;
   name: string;
-  status: 'completed' | 'in-progress' | 'draft' | 'deleted';
+  status: 'completed' | 'in-progress' | 'draft' | 'deleted' | 'scheduled';
   lastChange: string;
   createdBy: string;
   recipientCount: number;
@@ -16,6 +16,8 @@ interface Agreement {
   primaryRecipientName?: string;
   isPowerForm?: boolean;
   direction?: string;
+  isScheduled?: boolean;
+  scheduledDate?: string;
   sender?: {
     name: string;
     email: string;
@@ -32,6 +34,9 @@ interface EnvelopeData {
   isPowerForm?: boolean;
   direction?: string;
   signatureType?: string;
+  isScheduled?: boolean;
+  scheduledDate?: string;
+  scheduledTime?: string;
   sender: {
     id?: string;
     name: string;
@@ -65,6 +70,81 @@ interface ColumnConfig {
   order: number;
   render: (agreement: Agreement, envelopeData?: EnvelopeData) => React.ReactNode;
 }
+
+// Component for Scheduled status with tooltip that escapes overflow
+const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string }> = ({ scheduledDate }) => {
+  const [showTooltip, setShowTooltip] = React.useState(false);
+  const [tooltipPosition, setTooltipPosition] = React.useState({ left: 0, top: 0 });
+  const statusRef = React.useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = () => {
+    if (statusRef.current) {
+      const rect = statusRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        left: rect.left + rect.width / 2,
+        top: rect.bottom + 8
+      });
+      setShowTooltip(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
+
+  if (!scheduledDate) return null;
+
+  try {
+    const scheduledDateObj = new Date(scheduledDate);
+    if (isNaN(scheduledDateObj.getTime())) {
+      return null;
+    }
+    const formattedDate = scheduledDateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const formattedTime = scheduledDateObj.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    return (
+      <>
+        <div 
+          ref={statusRef}
+          className="relative inline-flex items-center gap-2 text-blue-600"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          style={{ position: 'relative', zIndex: 1 }}
+        >
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-blue-600 transition-transform duration-200" />
+            <span className="text-sm font-medium">Scheduled</span>
+          </div>
+        </div>
+        {showTooltip && (
+          <div 
+            className="fixed min-w-[280px] max-w-[320px] bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-[9999] pointer-events-none whitespace-normal"
+            style={{
+              left: `${tooltipPosition.left}px`,
+              top: `${tooltipPosition.top}px`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <div className="mb-2 font-semibold text-base">Scheduled Delivery</div>
+            <div className="text-xs text-gray-300 mb-1">Date: {formattedDate}</div>
+            <div className="text-xs text-gray-300">Time: {formattedTime}</div>
+            <div className="absolute top-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#1A1333] rotate-45" />
+          </div>
+        )}
+      </>
+    );
+  } catch (error) {
+    return null;
+  }
+};
 
 const AgreementPage: React.FC = () => {
   const location = useLocation();
@@ -274,6 +354,55 @@ const AgreementPage: React.FC = () => {
     }
   }, [loading]);
 
+  // Handle scheduled envelope alert
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const isScheduled = searchParams.get('scheduled') === 'true';
+    const envelopeId = searchParams.get('envelopeId');
+    
+    if (isScheduled && envelopeId) {
+      // Fetch envelope details to get scheduled date
+      eSignApi.get(`/api/e-sign/envelope/${envelopeId}`)
+        .then((response) => {
+          if (response.data && response.data.data) {
+            const envelope = response.data.data;
+            const scheduledDate = envelope.scheduledDate;
+            if (scheduledDate) {
+              const scheduledDateTime = new Date(scheduledDate).toLocaleString();
+              Swal.fire({
+                title: "Envelope Scheduled!",
+                text: `Your envelope has been scheduled to send on ${scheduledDateTime}`,
+                icon: "success",
+                confirmButtonText: "OK",
+                confirmButtonColor: "#4D0080",
+              });
+            } else {
+              Swal.fire({
+                title: "Envelope Scheduled!",
+                text: "Your envelope has been scheduled successfully.",
+                icon: "success",
+                confirmButtonText: "OK",
+                confirmButtonColor: "#4D0080",
+              });
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching envelope details:', error);
+          Swal.fire({
+            title: "Envelope Scheduled!",
+            text: "Your envelope has been scheduled successfully.",
+            icon: "success",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#4D0080",
+          });
+        });
+      
+      // Clean up URL parameters
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, navigate]);
+
   // Check if we're on a powerform route
   const isPowerFormRoute = () => {
     const path = location.pathname;
@@ -351,7 +480,10 @@ const AgreementPage: React.FC = () => {
               <span className="text-sm font-medium">Completed</span>
             </div>
           )}
-          {agreement.status === 'draft' && !agreement.isPowerForm && (
+          {agreement.isScheduled && agreement.status === 'draft' && (
+            <ScheduledStatusWithTooltip scheduledDate={agreement.scheduledDate} />
+          )}
+          {agreement.status === 'draft' && !agreement.isPowerForm && !agreement.isScheduled && (
             <div className="flex items-center gap-2 text-[#3E2B66] group/status">
               <Pencil className="w-5 h-5 text-[#3E2B66] group-hover/status:rotate-12 transition-transform duration-200" />
               <span className="text-sm font-medium">Draft</span>
@@ -437,6 +569,8 @@ const AgreementPage: React.FC = () => {
           isPowerForm: envelope.isPowerForm,
           sender: envelope.sender,
           direction: envelope.direction,
+          isScheduled: envelope.isScheduled || false,
+          scheduledDate: envelope.scheduledDate,
           completedCount: envelope.recipients?.filter(recipient =>
             recipient.status === 'completed' || recipient.status === 'signed'
           ).length || 0,
@@ -488,24 +622,24 @@ const AgreementPage: React.FC = () => {
 
     // Listen for envelope updates from AI assistant
     window.addEventListener('envelopes:updated', handleEnvelopesUpdated);
-    
+
     // Also listen for document generation events (in case auto-send happens)
     window.addEventListener('ai-assistant:document-sent', handleEnvelopesUpdated);
-    
+
     // Listen for any AI assistant actions that might create envelopes
     const handleAIAction = (event: Event) => {
       const customEvent = event as CustomEvent;
       const action = customEvent.detail?.action;
       // Refresh if envelope-related actions occurred
-      if (action === 'create_and_send_envelope' || 
-          action === 'generate_document' || 
-          action === 'send_document') {
+      if (action === 'create_and_send_envelope' ||
+        action === 'generate_document' ||
+        action === 'send_document') {
         console.log('🔄 AI assistant action detected, refreshing envelopes...', action);
         handleEnvelopesUpdated();
       }
     };
     window.addEventListener('ai-assistant:action-completed', handleAIAction);
-    
+
     // Refresh when page becomes visible (user switches back to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -514,7 +648,7 @@ const AgreementPage: React.FC = () => {
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       window.removeEventListener('envelopes:updated', handleEnvelopesUpdated);
       window.removeEventListener('ai-assistant:document-sent', handleEnvelopesUpdated);
@@ -1532,7 +1666,7 @@ const AgreementPage: React.FC = () => {
       )}
       {/* Agreements Table */}
       <div className="relative" data-tour="agreements-table">
-        <div className="overflow-x-auto relative">
+        <div className="flex flex-col min-h-[calc(100vh-150px)] overflow-x-auto relative">
           <table ref={tableRef} className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
@@ -1554,8 +1688,8 @@ const AgreementPage: React.FC = () => {
                       </div>
                       <div
                         className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${isResizing
-                            ? 'bg-[#3E2B66] opacity-100'
-                            : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
+                          ? 'bg-[#3E2B66] opacity-100'
+                          : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
                           }`}
                         onMouseDown={(e) => handleResizeStart(e, column.id)}
                         style={{
@@ -1574,9 +1708,36 @@ const AgreementPage: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {currentAgreements.length === 0 ? (
                 <tr>
-                  <td colSpan={getVisibleColumns().length + (isPowerForm ? 1 : 2)} className="px-6 py-12 text-center">
-                    <div className="text-gray-500">
-                      {searchTerm ? 'No agreements found matching your search.' : 'No agreements available.'}
+                  <td
+                    colSpan={getVisibleColumns().length + (isPowerForm ? 1 : 2)}
+                    className="px-6 py-16"
+                  >
+                    <div className="flex flex-col h-100 items-center justify-center text-center gap-4">
+                      {/* Simple illustration / icon */}
+                      <div className="relative flex items-center justify-center">
+                        <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center">
+                          <div className="w-14 h-18 rounded-lg bg-white shadow-md border border-indigo-100 flex flex-col items-center justify-center">
+                            <div className="w-10 h-2 bg-indigo-100 rounded mb-1" />
+                            <div className="w-8 h-2 bg-indigo-100 rounded mb-1" />
+                            <div className="w-6 h-2 bg-indigo-100 rounded" />
+                          </div>
+                        </div>
+                        <span className="absolute -bottom-1 -right-1 text-2xl"><CircleCheckBig className="h-6 w-6 text-green-500" /></span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3 className="text-lg font-semibold text-3E2B66">
+                          You&apos;re all caught up! 
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          There are no agreements to show right now.
+                        </p>
+                        {searchTerm && (
+                          <p className="text-xs text-gray-400">
+                            Try adjusting your filters or search term.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -1818,8 +1979,31 @@ const AgreementPage: React.FC = () => {
                   );
                 })
               )}
+
             </tbody>
           </table>
+          {currentAgreements.length > 0 && currentAgreements.length < 6 && (
+            <div className="relative flex-1 flex items-center justify-center overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-indigo-100/40">
+              <div className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-indigo-200/20 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-purple-200/20 blur-3xl" />
+
+              <div className="relative z-10 max-w-md px-12 py-8 text-center backdrop-blur">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                  <CircleCheckBig className="h-6 w-6 text-green-500" />
+                </div>
+
+                <p className="text-xl font-semibold text-indigo-700">
+                  You&apos;re all caught up
+                </p>
+
+                <p className="mt-1 text-m text-indigo-600/80">
+                  All active agreements are visible here
+                </p>
+              </div>
+
+            </div>
+          )}
+
         </div>
 
         {/* Pagination */}

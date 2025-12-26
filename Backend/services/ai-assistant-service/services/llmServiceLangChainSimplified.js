@@ -74,7 +74,7 @@ AVAILABLE ACTIONS:
 - search_document: Find documents by content, name, or metadata
 - send_document: Share a document via email
 - prepare_document: Add signature fields to a document
-- create_and_send_envelope: Create e-sign envelope with signature fields and send
+- create_and_send_envelope: Create e-sign envelope with signature fields and send. Supports scheduling - if user says "schedule for [date]", "send on [date]", "send later", "tomorrow", "at [time]", etc., extract isScheduled: true, scheduledDate (YYYY-MM-DD), and scheduledTime (HH:MM format, 24-hour)
 - list_auth_providers: Show available authentication methods
 - generate_document: Create a new document (NDA, contract, offer letter, etc.)
 - list_documents_by_category: List documents of a specific type
@@ -107,6 +107,9 @@ Assistant: {{"action": "list_shared_documents", "parameters": {{"recipientEmail"
 User: "send this file to john@example.com with signature field"
 Assistant: {{"action": "create_and_send_envelope", "parameters": {{"documentId": null, "recipients": [{{"email": "john@example.com", "name": "john"}}], "signatureFields": [{{"type": "signature", "page": 1, "position": "bottom-right"}}]}}, "clarification": null}}
 
+User: "schedule this document to send tomorrow at 2 PM to snehat@itio.in with signature field"
+Assistant: {{"action": "create_and_send_envelope", "parameters": {{"documentId": null, "recipients": [{{"email": "snehat@itio.in", "name": "sneha"}}], "signatureFields": [{{"type": "signature", "page": 1, "position": "bottom-right"}}], "isScheduled": true, "scheduledDate": "2025-12-16", "scheduledTime": "14:00"}}, "clarification": null}}
+
 User: "add signature field at the bottom right and no auth"
 Assistant: {{"action": "create_and_send_envelope", "parameters": {{"documentId": null, "recipients": [], "signatureFields": [{{"type": "signature", "page": 1, "position": "bottom-right"}}]}}, "clarification": "Who should receive this document? Please provide recipient email address."}}
 
@@ -120,6 +123,7 @@ GUIDELINES:
 - Understand context from conversation history
 - If a document was just generated, use it when user says "send the generated document"
 - Extract dates naturally: "today", "yesterday", "18th november 2025" → "2025-11-18"
+- **SCHEDULING**: If user mentions "schedule", "send later", "send on [date]", "send at [time]", "tomorrow", etc., extract isScheduled: true, scheduledDate (YYYY-MM-DD), and scheduledTime (HH:MM, 24-hour format). Examples: "tomorrow at 2 PM" → scheduledDate: tomorrow's date, scheduledTime: "14:00"; "on December 15 at 3:30 PM" → scheduledDate: "2025-12-15", scheduledTime: "15:30"
 - When user asks for "drafted documents", "draft envelopes", "documents I drafted", etc., use list_shared_documents with status: "draft" and recipientEmail: null
 - When user says "add signature field at [position]" or "signature at [position]", create the signature field immediately with that position
 - Common positions: "bottom right" → "bottom-right", "bottom left" → "bottom-left", "top right" → "top-right", "top left" → "top-left"

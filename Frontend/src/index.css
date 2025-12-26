@@ -2033,3 +2033,18 @@ canvas {
   opacity: 1;
   transform: scale(1.1);
 }
+
+.footer-state {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    #faf7ff
+  );
+}
+.footer-content {
+  max-height: 82rem;
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+  /* padding: 50px; */
+}

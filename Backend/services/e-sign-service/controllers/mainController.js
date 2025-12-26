@@ -4,11 +4,11 @@ const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const axios = require('axios');
 const sendEmail = require('../emails/sendEmail');
-const {signRequestTemplate, signReminderTemplate, envelopeCompletedTemplate } = require('../emails/emailTemplates');
+const { signRequestTemplate, signReminderTemplate, envelopeCompletedTemplate } = require('../emails/emailTemplates');
 const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
 const { signAndEmbed, initiateRecipientSignature, finalizeSigning, prepareDocumentForFinalSigning } = require('../services/digitalSignatureService');
-const {logActivity} = require('../services/activityLogService');
+const { logActivity } = require('../services/activityLogService');
 const { ActivityLogs } = require('../models/ActivityLogs');
 const Document = require('../models/Document');
 const Cycle = require('../models/Cycle');
@@ -170,6 +170,9 @@ const envelopesData = async (req, res) => {
         id: envelope._id,
         subject: envelope.subject,
         status: envelope.status,
+        isScheduled: envelope.isScheduled,
+        scheduledDate: envelope.scheduledDate,
+        scheduledTime: envelope.scheduledTime,
         priority: envelope.priority,
         createdAt: envelope.createdAt,
         sentAt: envelope.updatedAt,
@@ -212,111 +215,111 @@ const envelopesData = async (req, res) => {
 
 
 const envelopesDetail = async (req, res) => {
-    const envelopeId = req.params.id;
-    const userId = req?.user?.data?.id;
+  const envelopeId = req.params.id;
+  const userId = req?.user?.data?.id;
 
-    try {
-        // Step 1: Fetch single envelope by ID
-        const envelope = await Envelope.findById(envelopeId)
-            .populate("documentIds")   // fetch docs
-            .populate({
-                        path: 'recipientIds',           // populate recipients
-                        select: 'name email UserId signature initials',    // only global info
-                        populate: {
-                          path: 'permissions',          // populate envelope-specific permissions
-                          model: 'RecipientPermission',
-                          match: { envelopeId: envelopeId }, // only permissions for this envelope
-                          select: 'role order status authLevel'
-                        }
-                      });
-        if (!envelope) {
-            return res.status(404).json({ message: 'Envelope not found' });
+  try {
+    // Step 1: Fetch single envelope by ID
+    const envelope = await Envelope.findById(envelopeId)
+      .populate("documentIds")   // fetch docs
+      .populate({
+        path: 'recipientIds',           // populate recipients
+        select: 'name email UserId signature initials',    // only global info
+        populate: {
+          path: 'permissions',          // populate envelope-specific permissions
+          model: 'RecipientPermission',
+          match: { envelopeId: envelopeId }, // only permissions for this envelope
+          select: 'role order status authLevel'
         }
-        let currentRecipient = envelope.recipientIds.find(r => {
-            return String(r.UserId) === String(userId);
-        });
-        let direction = '';
-        const senderId = envelope.sender;
-        if(senderId == userId){
-          direction = 'Sent';
-        }else{
-          direction = 'Received';
-        }
-
-        // Step 2: Fetch sender details from User service
-        const senderResponse = await axios.get(
-            `${process.env.AUTH_URL}/api/user-details/${senderId}`,
-        );
-
-        const senderDetails = senderResponse.data;
-        if (!senderDetails || !senderDetails.data) {
-            return res.status(404).json({ message: 'Sender not found' });
-        }
-
-        // Step 3: Format the response (single envelope object)
-        const formattedEnvelope = {
-            id: envelope._id,
-            subject: envelope.subject,
-            message: envelope.message,
-            envelopetype: envelope.envelopetype,
-            status: envelope.status,
-            priority: envelope.priority,
-            createdAt: envelope.createdAt,
-            sentAt: envelope.updatedAt,
-            expiresAt: envelope.expirationDate,
-            isPowerForm: envelope.isPowerForm,
-            powerFormId:envelope.powerFormId,
-            direction: direction,
-            currRecipient: currentRecipient?._id || null,
-            sender: {
-                id: senderDetails?.data?._id,
-                name: senderDetails?.data?.fullname,
-                email: senderDetails?.data?.email,
-                role: senderDetails?.data?.role || 'sender',
-                organization: "ITIO",
-                avatar: ""
-            },
-            signatureType: envelope.signatureType,
-            documents: envelope.documentIds.map(doc => ({
-                id: doc._id,
-                name: doc.fileName,
-                size: doc.fileSize,
-                type: doc.mimeType
-            })),
-           recipients: envelope.recipientIds.map(recipient => {
-              const perm = recipient.permissions?.[0] || {};
-              return {
-                id: recipient._id,
-                name: recipient.name,
-                email: recipient.email,
-                initials: recipient.initials || '',
-                role: perm.role,
-                order: perm.order,
-                status: perm.status,
-                authentication: (() => {
-                  // Handle authLevel: can be array (new) or single value (old data for backward compatibility)
-                  if (!perm.authLevel) return null;
-                  if (Array.isArray(perm.authLevel)) {
-                    return perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : null;
-                  }
-                  // Old format: single ObjectId - convert to array format for frontend
-                  return JSON.stringify([perm.authLevel]);
-                })(),
-                signature: recipient.signature
-              };
-            })
-        };
-
-        // Step 4: Return single envelope
-        return res.status(200).json({
-            status: 'success',
-            data: formattedEnvelope
-        });
-
-    } catch (error) {
-        console.error('Error fetching envelope:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+      });
+    if (!envelope) {
+      return res.status(404).json({ message: 'Envelope not found' });
     }
+    let currentRecipient = envelope.recipientIds.find(r => {
+      return String(r.UserId) === String(userId);
+    });
+    let direction = '';
+    const senderId = envelope.sender;
+    if (senderId == userId) {
+      direction = 'Sent';
+    } else {
+      direction = 'Received';
+    }
+
+    // Step 2: Fetch sender details from User service
+    const senderResponse = await axios.get(
+      `${process.env.AUTH_URL}/api/user-details/${senderId}`,
+    );
+
+    const senderDetails = senderResponse.data;
+    if (!senderDetails || !senderDetails.data) {
+      return res.status(404).json({ message: 'Sender not found' });
+    }
+
+    // Step 3: Format the response (single envelope object)
+    const formattedEnvelope = {
+      id: envelope._id,
+      subject: envelope.subject,
+      message: envelope.message,
+      envelopetype: envelope.envelopetype,
+      status: envelope.status,
+      priority: envelope.priority,
+      createdAt: envelope.createdAt,
+      sentAt: envelope.updatedAt,
+      expiresAt: envelope.expirationDate,
+      isPowerForm: envelope.isPowerForm,
+      powerFormId: envelope.powerFormId,
+      direction: direction,
+      currRecipient: currentRecipient?._id || null,
+      sender: {
+        id: senderDetails?.data?._id,
+        name: senderDetails?.data?.fullname,
+        email: senderDetails?.data?.email,
+        role: senderDetails?.data?.role || 'sender',
+        organization: "ITIO",
+        avatar: ""
+      },
+      signatureType: envelope.signatureType,
+      documents: envelope.documentIds.map(doc => ({
+        id: doc._id,
+        name: doc.fileName,
+        size: doc.fileSize,
+        type: doc.mimeType
+      })),
+      recipients: envelope.recipientIds.map(recipient => {
+        const perm = recipient.permissions?.[0] || {};
+        return {
+          id: recipient._id,
+          name: recipient.name,
+          email: recipient.email,
+          initials: recipient.initials || '',
+          role: perm.role,
+          order: perm.order,
+          status: perm.status,
+          authentication: (() => {
+            // Handle authLevel: can be array (new) or single value (old data for backward compatibility)
+            if (!perm.authLevel) return null;
+            if (Array.isArray(perm.authLevel)) {
+              return perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : null;
+            }
+            // Old format: single ObjectId - convert to array format for frontend
+            return JSON.stringify([perm.authLevel]);
+          })(),
+          signature: recipient.signature
+        };
+      })
+    };
+
+    // Step 4: Return single envelope
+    return res.status(200).json({
+      status: 'success',
+      data: formattedEnvelope
+    });
+
+  } catch (error) {
+    console.error('Error fetching envelope:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 };
 const getSignatureFields = async (req, res) => {
   const documentId = req.params.id;
@@ -412,7 +415,7 @@ const getEnvelopeStats = async (req, res) => {
         $addFields: {
           derivedStatus: {
             $switch: {
-             branches: [
+              branches: [
                 {
                   case: { $and: [{ $eq: ["$status", "in-progress"] }, { $lt: ["$expirationDate", now] }] },
                   then: "expired"
@@ -469,7 +472,7 @@ const envelopExists = async (envelopeId) => {
   }
 };
 const sendEnvelope = async (req, res) => {
-try {
+  try {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) return res.status(404).send("Envelope not found");
@@ -479,14 +482,64 @@ try {
     if (envelope.status === 'draft') {
       envelope.status = 'in-progress';
       await envelope.save();
-      await sendToRecipients(envelope._id,envelope.subject,envelope.message);
+      await sendToRecipients(envelope._id, envelope.subject, envelope.message);
       return res.status(200).send("Envelope sent to recipients");
     }
-}catch(error){
+  } catch (error) {
     console.error("Error sending envelope:", error);
-    return res.status(500).send("Server error"); 
+    return res.status(500).send("Server error");
+  }
+
 }
 
+// Schedule envelope to be sent at a specific date/time
+const scheduleEnvelope = async (req, res) => {
+  try {
+    const { envelopeId } = req.params;
+    const { scheduledDate, scheduledTime } = req.body;
+
+    if (!scheduledDate) {
+      return res.status(400).json({ message: "Scheduled date is required" });
+    }
+
+    const envelope = await Envelope.findById(envelopeId);
+    if (!envelope) {
+      return res.status(404).json({ message: "Envelope not found" });
+    }
+
+    if (envelope.status !== 'draft') {
+      return res.status(400).json({ message: "Only draft envelopes can be scheduled" });
+    }
+
+    // Combine date and time if time is provided
+    let scheduledDateTime = new Date(scheduledDate);
+    if (scheduledTime) {
+      const [hours, minutes] = scheduledTime.split(':');
+      scheduledDateTime.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0, 0);
+    } else {
+      // If no time provided, set to start of day
+      scheduledDateTime.setHours(0, 0, 0, 0);
+    }
+
+    // Validate that scheduled date is in the future
+    if (scheduledDateTime <= new Date()) {
+      return res.status(400).json({ message: "Scheduled date must be in the future" });
+    }
+
+    envelope.isScheduled = true;
+    envelope.scheduledDate = scheduledDateTime;
+    envelope.scheduledTime = scheduledTime || null;
+    await envelope.save();
+
+    return res.status(200).json({
+      message: "Envelope scheduled successfully",
+      scheduledDate: envelope.scheduledDate,
+      isScheduled: true
+    });
+  } catch (error) {
+    console.error("Error scheduling envelope:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 }
 const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage) => {
   try {
@@ -532,32 +585,32 @@ const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage) =>
   }
 };
 const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuffer, signedFilename) => {
-  try{
+  try {
     const AllRecipients = await RecipientPermission.find({
       envelopeId: envelope._id
     }).populate('recipientId');
     console.log("AllRecipients:", AllRecipients);
     for (const Recipient of AllRecipients) {
-        if(Recipient){
-          const html = envelopeCompletedTemplate(
-            Recipient.recipientId.name,
-            envelope.subject
-          );
-          const attachments = [
-                    { filename: certFilename, content: certBuffer, contentType: 'application/pdf' },
-                    { filename: signedFilename, content: signedBuffer, contentType: 'application/pdf' }
-                  ];
-          await sendEmail(
-            Recipient.recipientId.email,
-            `Document "${envelope.subject}" Completed and Signed`,
-            html,
-            attachments
-          );
+      if (Recipient) {
+        const html = envelopeCompletedTemplate(
+          Recipient.recipientId.name,
+          envelope.subject
+        );
+        const attachments = [
+          { filename: certFilename, content: certBuffer, contentType: 'application/pdf' },
+          { filename: signedFilename, content: signedBuffer, contentType: 'application/pdf' }
+        ];
+        await sendEmail(
+          Recipient.recipientId.email,
+          `Document "${envelope.subject}" Completed and Signed`,
+          html,
+          attachments
+        );
 
-        }
       }
+    }
 
-  }catch (error){
+  } catch (error) {
     console.error("Error sending to all recipients:", error);
     return { error: "Internal error while sending recipient email" };
   }
@@ -565,293 +618,293 @@ const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuf
 
 const addSignature = async (req, res) => {
   console.log("Add Signature Started...");
-  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue,cycleId, initials } = req.body;
+  const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName, selfValue, cycleId, initials } = req.body;
 
   if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
     return res.status(400).json({ message: 'All parameters are required' });
   }
   // Call the certificate function
-  if(!certificateId){
+  if (!certificateId) {
     const cert = await issueCertificate(recipientId, envelopeId);
     // Log certificate issued action
     await logActivity(envelopeId, "CERTIFICATE_ISSUED", "Sender", {
-      recipientId,  
+      recipientId,
       certificateId: cert.certificateId,
     });
   }
   // Call the initiateRecipientSignature
-  const initiateSign = await initiateRecipientSignature({fieldId, envelopeId, documentId, recipientId, signatureImageBase64,selfValue });
+  const initiateSign = await initiateRecipientSignature({ fieldId, envelopeId, documentId, recipientId, signatureImageBase64, selfValue });
   if (!initiateSign) {
     console.log('Failed to initiate recipient signature');
     return res.status(500).json({ message: 'Failed to initiate signature' });
   }
-  
+
   // Save initials if provided
-  if(initials !== undefined && initials !== null && initials.trim() !== ''){
-    if(selfValue === "1" || selfValue === 1){
+  if (initials !== undefined && initials !== null && initials.trim() !== '') {
+    if (selfValue === "1" || selfValue === 1) {
       // Self-signer mode
       const selfSignerUpdate = await selfSigner.findById(recipientId);
-      if(selfSignerUpdate){
+      if (selfSignerUpdate) {
         selfSignerUpdate.initials = initials.trim().toUpperCase();
         await selfSignerUpdate.save();
       }
     } else {
       // Recipient mode
       const RecipientUpdate = await Recipient.findById(recipientId);
-      if(RecipientUpdate){
+      if (RecipientUpdate) {
         RecipientUpdate.initials = initials.trim().toUpperCase();
         await RecipientUpdate.save();
       }
     }
   }
-  
+
   // Check pending recipients and send email to next recipient
-    if(selfValue !== "1" && selfValue !== 1){ 
-        try {
+  if (selfValue !== "1" && selfValue !== 1) {
+    try {
+      const pendingFields = await SignatureField.find({
+        envelopeId: envelopeId,
+        status: 'pending'
+      });
+      if (pendingFields.length === 0) {
+        const envelope = await Envelope.findById(envelopeId);
+        if (envelope) {
+          // prepare document for final signing if all done
+          const prepareDoc = await prepareDocumentForFinalSigning(envelopeId, documentId);
+          if (!prepareDoc) {
+            console.log('Failed to prepare document for final signing');
+            return res.status(500).json({ message: 'Failed to prepare document for final signing' });
+          }
+          // Call the final signing function
+          const digiSign = await finalizeSigning(envelopeId, documentId);
+          if (!digiSign) {
+            console.log('Failed to finalize signing');
+            return res.status(500).json({ message: 'Failed to finalize signing' });
+          }
+          const signedPdfBuffer = fs.readFileSync(digiSign.finalPath);
+          const signedPdfFilename = `signed-document-${envelopeId}.pdf`;
+          // Update envelope status to completed
+          envelope.status = 'completed';
+
+          await envelope.save();
+          // Generate Certificate of Completion and send email
+          try {
+            const { buffer, filename, filepath } = await generateAndStoreCompletionCertificate(envelope._id);
+            // Persist reference to the envelope (adapt schema as needed)
+            envelope.completionCertificate = {
+              filename,
+              path: filepath,          // server path (or store URL if you upload to S3)
+              mimeType: 'application/pdf',
+              createdAt: new Date()
+            };
+            await envelope.save();
+            //Send completion email to all recipients
+            await sendToAllRecipients(envelope, buffer, filename, signedPdfBuffer, signedPdfFilename);
+
+          } catch (err) {
+            console.error('Error generating completion certificate:', err);
+          }
+
+          await logActivity(envelopeId, "ENVELOPE_COMPLETED", "System", {
+            subject: envelope.subject,
+            message: envelope.message
+          });
+
+          // Create notification for envelope creator when envelope is completed
+          try {
+            const recipient = await Recipient.findById(recipientId);
+            if (recipient && envelope.sender) {
+              await Notification.create({
+                userId: envelope.sender.toString(),
+                envelopeId: envelope._id,
+                recipientId: recipient._id,
+                recipientName: recipient.name,
+                envelopeSubject: envelope.subject,
+                type: 'envelope_completed',
+                message: `All recipients have signed "${envelope.subject}"`
+              });
+            }
+          } catch (notifErr) {
+            console.error('Error creating notification:', notifErr);
+          }
+
+          return res.status(200).json({
+            status: 'success',
+            message: 'Envelope signing completed',
+            fieldRemmaning: false,
+            data: finalizeSigning
+          });
+        }
+      } else {
+        // Check if current user's signature field or anyother field is pending or not
         const pendingFields = await SignatureField.find({
           envelopeId: envelopeId,
-          status: 'pending'
+          status: 'pending',
+          recipientId: recipientId
         });
+
         if (pendingFields.length === 0) {
+          // Recipient has completed all their signature fields
           const envelope = await Envelope.findById(envelopeId);
-            if (envelope) {
-                // prepare document for final signing if all done
-                const prepareDoc = await prepareDocumentForFinalSigning(envelopeId, documentId);
-                if (!prepareDoc) {
-                  console.log('Failed to prepare document for final signing');
-                  return res.status(500).json({ message: 'Failed to prepare document for final signing' });
-                }
-                // Call the final signing function
-                const digiSign = await finalizeSigning(envelopeId, documentId);
-                if (!digiSign) {
-                  console.log('Failed to finalize signing');
-                  return res.status(500).json({ message: 'Failed to finalize signing' });
-                }
-                const signedPdfBuffer = fs.readFileSync(digiSign.finalPath);
-                const signedPdfFilename = `signed-document-${envelopeId}.pdf`;
-                // Update envelope status to completed
-                envelope.status = 'completed';
-                
-                await envelope.save();   
-                // Generate Certificate of Completion and send email
-                try{
-                    const { buffer, filename, filepath } = await generateAndStoreCompletionCertificate(envelope._id);
-                    // Persist reference to the envelope (adapt schema as needed)
-                    envelope.completionCertificate = {
-                      filename,
-                      path: filepath,          // server path (or store URL if you upload to S3)
-                      mimeType: 'application/pdf',
-                      createdAt: new Date()
-                    };
-                    await envelope.save();
-                    //Send completion email to all recipients
-                    await sendToAllRecipients(envelope,buffer,filename,signedPdfBuffer,signedPdfFilename);
-
-                }catch(err){
-                    console.error('Error generating completion certificate:', err);
-                }
-
-                await logActivity(envelopeId, "ENVELOPE_COMPLETED", "System", {
-                  subject:envelope.subject,
-                  message:envelope.message
+          if (envelope) {
+            // Create notification for envelope creator when recipient completes signing
+            try {
+              const recipient = await Recipient.findById(recipientId);
+              if (recipient && envelope.sender) {
+                await Notification.create({
+                  userId: envelope.sender.toString(),
+                  envelopeId: envelope._id,
+                  recipientId: recipient._id,
+                  recipientName: recipient.name,
+                  envelopeSubject: envelope.subject,
+                  type: 'signature_completed',
+                  message: `${recipient.name} has signed "${envelope.subject}"`
                 });
-                
-                // Create notification for envelope creator when envelope is completed
-                try {
-                  const recipient = await Recipient.findById(recipientId);
-                  if (recipient && envelope.sender) {
-                    await Notification.create({
-                      userId: envelope.sender.toString(),
-                      envelopeId: envelope._id,
-                      recipientId: recipient._id,
-                      recipientName: recipient.name,
-                      envelopeSubject: envelope.subject,
-                      type: 'envelope_completed',
-                      message: `All recipients have signed "${envelope.subject}"`
-                    });
-                  }
-                } catch (notifErr) {
-                  console.error('Error creating notification:', notifErr);
-                }
-                
-                return res.status(200).json({
-                  status: 'success',
-                  message: 'Envelope signing completed',
-                  fieldRemmaning: false,
-                  data: finalizeSigning
-                }); 
-            }
-          }else{
-          // Check if current user's signature field or anyother field is pending or not
-          const pendingFields = await SignatureField.find({
-            envelopeId: envelopeId,
-            status: 'pending',
-            recipientId:recipientId
-          });
-          
-          if(pendingFields.length === 0){
-            // Recipient has completed all their signature fields
-            const envelope = await Envelope.findById(envelopeId);
-            if (envelope) {
-              // Create notification for envelope creator when recipient completes signing
-              try {
-                const recipient = await Recipient.findById(recipientId);
-                if (recipient && envelope.sender) {
-                  await Notification.create({
-                    userId: envelope.sender.toString(),
-                    envelopeId: envelope._id,
-                    recipientId: recipient._id,
-                    recipientName: recipient.name,
-                    envelopeSubject: envelope.subject,
-                    type: 'signature_completed',
-                    message: `${recipient.name} has signed "${envelope.subject}"`
-                  });
-                }
-              } catch (notifErr) {
-                console.error('Error creating notification:', notifErr);
               }
-              
-              await sendToRecipients(envelope._id,envelope.subject,envelope.message);
-              // Log individual field signature
-              await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
-                subject:envelope.subject,
-                message:envelope.message
-              });
-              console.log('Envelope sent to next recipient');
-              return res.status(200).json({
-                status: 'success',
-                message: 'Signature added with compliance',
-                fieldRemmaning: false
-              });
+            } catch (notifErr) {
+              console.error('Error creating notification:', notifErr);
             }
-          }else{
+
+            await sendToRecipients(envelope._id, envelope.subject, envelope.message);
+            // Log individual field signature
+            await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
+              subject: envelope.subject,
+              message: envelope.message
+            });
+            console.log('Envelope sent to next recipient');
             return res.status(200).json({
               status: 'success',
               message: 'Signature added with compliance',
-              fieldRemmaning:true
+              fieldRemmaning: false
             });
           }
+        } else {
+          return res.status(200).json({
+            status: 'success',
+            message: 'Signature added with compliance',
+            fieldRemmaning: true
+          });
         }
-      } catch (err) {
-        return res.status(500).json({ message: err.message });
       }
-    }else if (selfValue === "1" || selfValue === 1){
-      // Find Pending Signers
-      const pendingSelfSigners = await Cycle.findById(cycleId)
-                 .populate({ path: 'signers', match: { status: { $in: ['pending', 'initiated'] } } });
-      
-      if(!pendingSelfSigners || pendingSelfSigners.signers.length == 0){
-        // All signers have completed, prepare document and finalize
-        const envelope = await Envelope.findById(envelopeId);
-        if (envelope) {
-          // Preprare Document
-          // Cryptographical Sign
-          // BlockChain anchoring 
-          // Generate Certificate
-          // Send Email and Certificate
-        }
-        return res.status(200).json({
-          status: 'success',
-          message: 'Signature added with compliance',
-          fieldRemmaning: false
-        });
-      }else{
-        // Get the current signer and envelope
-        const signer = await selfSigner.findById(recipientId);
-        const envelope = await Envelope.findById(envelopeId);
-        
-        if (!signer || !envelope) {
-          return res.status(404).json({ message: 'Signer or envelope not found' });
-        }
-        
-        // Handle Mongoose Map access - data can be a Map or plain object
-        const getDataValue = (data, key) => {
-          if (!data) return '';
-          if (data instanceof Map) {
-            return data.get(key) || '';
-          }
-          return data[key] || '';
-        };
-        
-        const signerEmail = getDataValue(signer.data, 'Email');
-        const signerName = getDataValue(signer.data, 'Name') || 'Signer';
-        console.log(signerEmail);
-        
-        // Check if there are more fields remaining for this signer
-        const pendingFields = await SignatureField.find({
-          envelopeId: envelopeId,
-          slotId: signer.signerSlotId,
-          type: 'signature',
-          status: 'pending'
-        });
-        
-        const fieldRemmaning = pendingFields.length > 0;
-        
-        // Get next pending signer for reminder email
-        const nextSigner = pendingSelfSigners.signers[0];
-        if (nextSigner) {
-          const nextSignerEmail = getDataValue(nextSigner.data, 'Email');
-          const nextSignerName = getDataValue(nextSigner.data, 'Name') || 'Signer';
-          const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${nextSigner._id}?self=1&cycleId=${cycleId}`;
-          const html = signReminderTemplate(nextSignerName, envelope.subject, envelope.message, signLink);
-          
-          // Send Reminder E-Mail to pending signers
-          // await sendEmail(
-          //   nextSignerEmail,
-          //   `Reminder: Action Required: Sign "${envelope.subject}"`,
-          //   html
-          // );
-        }
-        
-        // Notify Creator or Next Signer
-        // Notify Signer 
-        
-        return res.status(200).json({
-          status: 'success',
-          message: 'Signature added with compliance',
-          fieldRemmaning: fieldRemmaning
-        });
-      }
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
     }
+  } else if (selfValue === "1" || selfValue === 1) {
+    // Find Pending Signers
+    const pendingSelfSigners = await Cycle.findById(cycleId)
+      .populate({ path: 'signers', match: { status: { $in: ['pending', 'initiated'] } } });
+
+    if (!pendingSelfSigners || pendingSelfSigners.signers.length == 0) {
+      // All signers have completed, prepare document and finalize
+      const envelope = await Envelope.findById(envelopeId);
+      if (envelope) {
+        // Preprare Document
+        // Cryptographical Sign
+        // BlockChain anchoring 
+        // Generate Certificate
+        // Send Email and Certificate
+      }
+      return res.status(200).json({
+        status: 'success',
+        message: 'Signature added with compliance',
+        fieldRemmaning: false
+      });
+    } else {
+      // Get the current signer and envelope
+      const signer = await selfSigner.findById(recipientId);
+      const envelope = await Envelope.findById(envelopeId);
+
+      if (!signer || !envelope) {
+        return res.status(404).json({ message: 'Signer or envelope not found' });
+      }
+
+      // Handle Mongoose Map access - data can be a Map or plain object
+      const getDataValue = (data, key) => {
+        if (!data) return '';
+        if (data instanceof Map) {
+          return data.get(key) || '';
+        }
+        return data[key] || '';
+      };
+
+      const signerEmail = getDataValue(signer.data, 'Email');
+      const signerName = getDataValue(signer.data, 'Name') || 'Signer';
+      console.log(signerEmail);
+
+      // Check if there are more fields remaining for this signer
+      const pendingFields = await SignatureField.find({
+        envelopeId: envelopeId,
+        slotId: signer.signerSlotId,
+        type: 'signature',
+        status: 'pending'
+      });
+
+      const fieldRemmaning = pendingFields.length > 0;
+
+      // Get next pending signer for reminder email
+      const nextSigner = pendingSelfSigners.signers[0];
+      if (nextSigner) {
+        const nextSignerEmail = getDataValue(nextSigner.data, 'Email');
+        const nextSignerName = getDataValue(nextSigner.data, 'Name') || 'Signer';
+        const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${nextSigner._id}?self=1&cycleId=${cycleId}`;
+        const html = signReminderTemplate(nextSignerName, envelope.subject, envelope.message, signLink);
+
+        // Send Reminder E-Mail to pending signers
+        // await sendEmail(
+        //   nextSignerEmail,
+        //   `Reminder: Action Required: Sign "${envelope.subject}"`,
+        //   html
+        // );
+      }
+
+      // Notify Creator or Next Signer
+      // Notify Signer 
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Signature added with compliance',
+        fieldRemmaning: fieldRemmaning
+      });
+    }
+  }
 };
 const addPowerFormSignerSignature = async (req, res) => {
 }
 
-const getRecipientByEmail  = async (req, res)=>{
- const {email} = req.params;
- try{
+const getRecipientByEmail = async (req, res) => {
+  const { email } = req.params;
+  try {
     const userId = req.user?.data?.id;
     if (!userId) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
     // Check if recipient exists for this user
-     const existingRecipient = await Recipient.findOne({ email, UserId: userId });
-     if(existingRecipient){
-       return res.status(200).json({
+    const existingRecipient = await Recipient.findOne({ email, UserId: userId });
+    if (existingRecipient) {
+      return res.status(200).json({
         recipient: existingRecipient
-       });
-     }else{
+      });
+    } else {
       return res.status(404).json({
-        message:"Recipient not found..."
+        message: "Recipient not found..."
       })
-     }
+    }
 
- }catch(err){
-  console.log(`Error in fetching recipient by Email: ${err}`)
-  return res.status(500).json({ message: 'Failed to fetch recipient' });
- }
+  } catch (err) {
+    console.log(`Error in fetching recipient by Email: ${err}`)
+    return res.status(500).json({ message: 'Failed to fetch recipient' });
+  }
 
 }
 
 const envelopeArchive = async (req, res) => {
   try {
-    const envelopeId = req.params.envelopeId; 
+    const envelopeId = req.params.envelopeId;
     const envelope = await Envelope.findById(envelopeId);
-    if(envelope){
-    // Update the status to "archived"
-    envelope.status = "archived";
-    await envelope.save();
-    return res.status(200).json({ message: "Envelope archived successfully", envelope });
+    if (envelope) {
+      // Update the status to "archived"
+      envelope.status = "archived";
+      await envelope.save();
+      return res.status(200).json({ message: "Envelope archived successfully", envelope });
     }
   } catch (error) {
     console.error("Error checking envelope existence:", error);
@@ -860,11 +913,11 @@ const envelopeArchive = async (req, res) => {
 }
 const envelopeDelete = async (req, res) => {
   try {
-    const envelopeId = req.params.envelopeId; 
+    const envelopeId = req.params.envelopeId;
     // Validate envelopeId is a valid ObjectId
     console.log(envelopeId);
     const envelope = await Envelope.findById(envelopeId);
-    if(envelope){
+    if (envelope) {
       // Update the status to "deleted" (soft delete)
       envelope.status = "deleted";
       await envelope.save();
@@ -884,7 +937,7 @@ const envelopePermanentDelete = async (req, res) => {
     // Validate envelopeId is a valid ObjectId
     console.log('Permanently deleting envelope:', envelopeId);
     const envelope = await Envelope.findOneAndDelete({ _id: envelopeId });
-    if(envelope){
+    if (envelope) {
       return res.status(200).json({ message: "Envelope permanently deleted successfully", envelope });
     } else {
       return res.status(404).json({ message: "Envelope not found" });
@@ -918,10 +971,10 @@ const envelopeReminder = async (req, res) => {
       // Loop through unique recipients
       for (const recipient of uniqueRecipients) {
         const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelope._id}/${recipient._id}`;
-        const html = signReminderTemplate(recipient.name,envelope.subject,envelope.message,signLink);
+        const html = signReminderTemplate(recipient.name, envelope.subject, envelope.message, signLink);
         // Send Reminder E-Mail to pending recipients
         await sendEmail(
-            recipient.email,
+          recipient.email,
           `Reminder: Action Required: Sign "${envelope.subject}"`,
           html
         );
@@ -976,7 +1029,7 @@ const duplicateEnvelope = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
-const activityLogs = async (req, res) =>{
+const activityLogs = async (req, res) => {
   try {
     const logs = await ActivityLogs.find({ envelopeId: req.params.envelopeId }).sort({ timestamp: -1 });
     res.status(200).json({ logs });
@@ -997,7 +1050,7 @@ const removeRecFromEnvelope = async (req, res) => {
     if (envelope) {
       envelope.recipientIds = envelope.recipientIds.filter(id => id.toString() !== recipientId);
       await envelope.save();
-    //remove record from RecipientPermission
+      //remove record from RecipientPermission
       await RecipientPermission.deleteMany({ recipientId: recipientId, envelopeId: envelopeId });
       return res.status(200).json({ message: "Recipient deleted succesfully..." });
     }
@@ -1059,12 +1112,12 @@ const removeDocSignField = async (req, res) => {
   } catch (error) {
     console.error("Error removing signature field:", error);
     res.status(500).json({ message: "Server error", error });
-  } 
+  }
 }
 const connectPowerForm = async (req, res) => {
   try {
-    const { envelopeId, creatorSlotId, firstSigningSlotId, numberOfParties, slots  } = req.body;
-    if ( !envelopeId) {
+    const { envelopeId, creatorSlotId, firstSigningSlotId, numberOfParties, slots } = req.body;
+    if (!envelopeId) {
       return res.status(400).json({ message: "PowerForm ID and Envelope ID are required." });
     }
     const envelope = await Envelope.findById(envelopeId);
@@ -1085,14 +1138,14 @@ const connectPowerForm = async (req, res) => {
   }
 }
 const getEnvelopePower = async (req, res) => {
-  try{
+  try {
     const { powerFormId, envelopeId } = req.params;
-    const envelope = await Envelope.findOne({powerFormId:powerFormId, _id:envelopeId});
+    const envelope = await Envelope.findOne({ powerFormId: powerFormId, _id: envelopeId });
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found." });
     }
-      return res.status(200).json({ message: "Power form envelope found", envelope });
-  }catch (err){
+    return res.status(200).json({ message: "Power form envelope found", envelope });
+  } catch (err) {
     console.log(err);
     return res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -1150,8 +1203,8 @@ const signerInitiate = async (req, res) => {
         status: role === "firstSigner" ? "initiated" : "pending",
         signingOrder: slot.index,
         data: slotData,
-        signatureFields:signatureFieldsForSigner,
-        nonSignatureFields:nonSignatureFieldsForSigner
+        signatureFields: signatureFieldsForSigner,
+        nonSignatureFields: nonSignatureFieldsForSigner
       });
     }
 
@@ -1184,11 +1237,11 @@ const signerInitiate = async (req, res) => {
 
 const getSelfSigner = async (req, res) => {
 
-    try {
+  try {
     const { cycleId } = req.params;  // get the id from URL params
 
     // Find all cycles for the envelope and populate the signers
-    const cycles = await Cycle.findById({ _id:cycleId })
+    const cycles = await Cycle.findById({ _id: cycleId })
       .populate({
         path: 'signers',
         model: 'SelfSigner',
@@ -1212,7 +1265,7 @@ const getCycle = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error", error: err.message });
-  } 
+  }
 };
 const getSigners = async (req, res) => {
   try {
@@ -1277,13 +1330,13 @@ const getAllEnvelopeStats = async (req, res) => {
     const id = req?.user?.data?.id
     const { startDate, endDate, range } = req.query;
 
-    if (!userType ) {
+    if (!userType) {
       return res.status(400).json({ message: 'userType is required' });
     }
     let query = {};
-    if (userType === 'user'){
+    if (userType === 'user') {
       query = { sender: new mongoose.Types.ObjectId(id) };
-    }else if(userType === 'admin'){
+    } else if (userType === 'admin') {
       // Admin can see all envelopes, no additional filter needed
       query = {};
     }
@@ -1297,19 +1350,19 @@ const getAllEnvelopeStats = async (req, res) => {
     const completedEnvelopes = await Envelope.countDocuments({ ...query, status: 'completed' });
     const pendingEnvelopes = await Envelope.countDocuments({ ...query, status: 'in-progress' });
     const expiredEnvelopes = await Envelope.countDocuments({ ...query, status: 'expired' });
-   //Total Recipients (aggregate from Envelope)
+    //Total Recipients (aggregate from Envelope)
     const recipientAgg = await Envelope.aggregate([
       { $match: query },
-      { 
-        $group: { 
-          _id: null, 
-          totalRecipients: { $sum: { $size: { $ifNull: ["$recipientIds", []] } } } 
-        } 
+      {
+        $group: {
+          _id: null,
+          totalRecipients: { $sum: { $size: { $ifNull: ["$recipientIds", []] } } }
+        }
       }
     ]);
     const totalRecipients = recipientAgg.length ? recipientAgg[0].totalRecipients : 0;
 
-    return  res.status(200).json({
+    return res.status(200).json({
       totalEnvelopes,
       completedEnvelopes,
       pendingEnvelopes,
@@ -1321,7 +1374,7 @@ const getAllEnvelopeStats = async (req, res) => {
     throw new Error('Internal Server Error');
   }
 };
-const getAllRecipients = async (req, res) =>{
+const getAllRecipients = async (req, res) => {
   try {
     const userId = req.user?.data?.id;
     if (!userId) {
@@ -1429,7 +1482,7 @@ const saveTextField = async (req, res) => {
 
         // Send updated PDF to all recipients
 
-        await sendToAllRecipients(envelope,certBuffer,certFilename,signedPdfBuffer,signedPdfFilename);
+        await sendToAllRecipients(envelope, certBuffer, certFilename, signedPdfBuffer, signedPdfFilename);
 
         console.log(`PDF updated successfully: ${outputPath}`);
       }
@@ -1451,7 +1504,7 @@ const getNotifications = async (req, res) => {
 
     const { limit = 50, unreadOnly = false } = req.query;
     const query = { userId: userId.toString() };
-    
+
     if (unreadOnly === 'true') {
       query.isRead = false;
     }
@@ -1461,9 +1514,9 @@ const getNotifications = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
 
-    const unreadCount = await Notification.countDocuments({ 
-      userId: userId.toString(), 
-      isRead: false 
+    const unreadCount = await Notification.countDocuments({
+      userId: userId.toString(),
+      isRead: false
     });
 
     return res.status(200).json({
@@ -1537,33 +1590,33 @@ const markAllNotificationsAsRead = async (req, res) => {
 };
 
 const saveNonSignatureField = async (req, res) => {
-  const {envelopeID, recipientId, fields, selfValue, cycleId} = req.body;
+  const { envelopeID, recipientId, fields, selfValue, cycleId } = req.body;
   const nonSignatureField = await SignatureField.findById(fields.fieldId);
   console.log(nonSignatureField);
-  if(!nonSignatureField){
-    return res.status(404).json({message: 'Field not found'});
+  if (!nonSignatureField) {
+    return res.status(404).json({ message: 'Field not found' });
   }
   nonSignatureField.signature = fields.value;
   nonSignatureField.status = 'completed';
   await nonSignatureField.save();
-  
+
   // Handle self-signer mode: update selfSigner's nonSignatureFields array
-  if(selfValue === "1" || selfValue === 1){
-    if(!cycleId || !recipientId){
-      return res.status(400).json({message: 'cycleId and recipientId are required for self-signer mode'});
+  if (selfValue === "1" || selfValue === 1) {
+    if (!cycleId || !recipientId) {
+      return res.status(400).json({ message: 'cycleId and recipientId are required for self-signer mode' });
     }
-    
+
     const selfSignerUpdate = await selfSigner.findById(recipientId);
-    if(!selfSignerUpdate){
-      return res.status(404).json({message: 'SelfSigner not found'});
+    if (!selfSignerUpdate) {
+      return res.status(404).json({ message: 'SelfSigner not found' });
     }
-    
+
     // Find or create entry in nonSignatureFields array
     const existingFieldEntry = selfSignerUpdate.nonSignatureFields.find(
       (nf) => nf.fieldId && nf.fieldId.toString() === fields.fieldId.toString()
     );
-    
-    if(existingFieldEntry){
+
+    if (existingFieldEntry) {
       existingFieldEntry.value = fields.value;
       existingFieldEntry.state = 'submited';
       existingFieldEntry.submitedAt = new Date();
@@ -1575,34 +1628,34 @@ const saveNonSignatureField = async (req, res) => {
         submitedAt: new Date()
       });
     }
-    
+
     await selfSignerUpdate.save();
   }
-  
-  return res.status(200).json({message: 'Field saved succesfully'});
+
+  return res.status(200).json({ message: 'Field saved succesfully' });
 }
-const saveupdateSignature = async (req, res) =>{
-  const {recipientId, Signature, mode, envelopeId, selfValue, initials} = req.body;
-  if(!recipientId && !Signature){
-    return res.status(401).json({message: 'Recipient and Signature is required.'});
+const saveupdateSignature = async (req, res) => {
+  const { recipientId, Signature, mode, envelopeId, selfValue, initials } = req.body;
+  if (!recipientId && !Signature) {
+    return res.status(401).json({ message: 'Recipient and Signature is required.' });
   }
 
   // Handle self-signer mode
-  if(selfValue === "1" || selfValue === 1){
+  if (selfValue === "1" || selfValue === 1) {
     const selfSignerUpdate = await selfSigner.findById(recipientId);
-    if(!selfSignerUpdate){
-      return res.status(404).json({message: 'SelfSigner not found.'});
+    if (!selfSignerUpdate) {
+      return res.status(404).json({ message: 'SelfSigner not found.' });
     }
-    
+
     // Update signature in selfSigner
     selfSignerUpdate.signature = Signature;
     // Update initials if provided
-    if(initials !== undefined && initials !== null && initials.trim() !== ''){
+    if (initials !== undefined && initials !== null && initials.trim() !== '') {
       selfSignerUpdate.initials = initials.trim().toUpperCase();
     }
     await selfSignerUpdate.save();
 
-    if(mode === 'update'){
+    if (mode === 'update') {
       // Find all signature fields that belong to this selfSigner (via slotId)
       const signatureFields = await SignatureField.find({
         envelopeId: envelopeId,
@@ -1613,7 +1666,7 @@ const saveupdateSignature = async (req, res) =>{
 
       // Update signatureFields array in selfSigner
       const updatedSignatureFields = [];
-      for(const field of signatureFields){
+      for (const field of signatureFields) {
         // Update the field signature
         field.signature = Signature;
         await field.save();
@@ -1622,8 +1675,8 @@ const saveupdateSignature = async (req, res) =>{
         const existingFieldEntry = selfSignerUpdate.signatureFields.find(
           (sf) => sf.fieldId && sf.fieldId.toString() === field._id.toString()
         );
-        
-        if(existingFieldEntry){
+
+        if (existingFieldEntry) {
           existingFieldEntry.state = 'signed';
           existingFieldEntry.signedAt = new Date();
         } else {
@@ -1635,9 +1688,9 @@ const saveupdateSignature = async (req, res) =>{
         }
         updatedSignatureFields.push(field);
       }
-      
+
       await selfSignerUpdate.save();
-      
+
       // Pass field id to front end to re render the signature fields
       return res.status(200).json({
         message: 'Signature updated succesfully',
@@ -1645,22 +1698,22 @@ const saveupdateSignature = async (req, res) =>{
         signatureFields: updatedSignatureFields
       });
     }
-    
-    return res.status(200).json({message: 'Signature saved succesfully', mode: mode});
+
+    return res.status(200).json({ message: 'Signature saved succesfully', mode: mode });
   }
 
   // Regular recipient mode
   const RecipientUpdate = await Recipient.findById(recipientId);
-  if(!RecipientUpdate){
-    return res.status(404).json({message: 'Recipient not found.'});
+  if (!RecipientUpdate) {
+    return res.status(404).json({ message: 'Recipient not found.' });
   }
   RecipientUpdate.signature = Signature;
   // Update initials if provided
-  if(initials !== undefined && initials !== null && initials.trim() !== ''){
+  if (initials !== undefined && initials !== null && initials.trim() !== '') {
     RecipientUpdate.initials = initials.trim().toUpperCase();
   }
   await RecipientUpdate.save();
-  if(mode === 'update'){
+  if (mode === 'update') {
     //find all signature fields and update existing signature fields
     const signatureFields = await SignatureField.find({
       envelopeId: envelopeId,
@@ -1668,27 +1721,82 @@ const saveupdateSignature = async (req, res) =>{
       type: 'signature',
       signature: { $exists: true, $nin: ['', null] } // ensures signature is not empty or null
     });
-    if(signatureFields.length > 0){
-      for(const field of signatureFields){
+    if (signatureFields.length > 0) {
+      for (const field of signatureFields) {
         field.signature = Signature;
         await field.save();
       }
       // Pass field id to front end to re render the signature fields
-      return res.status(200).json({message: 'Signature updated succesfully',mode:mode,signatureFields:signatureFields});
+      return res.status(200).json({ message: 'Signature updated succesfully', mode: mode, signatureFields: signatureFields });
     }
   }
-  return res.status(200).json({message: 'Signature saved succesfully',mode:mode});
+  return res.status(200).json({ message: 'Signature saved succesfully', mode: mode });
 }
 const LinkUserRecipient = async (req, res) => {
   const { email, userId } = req.body;
-  const RecipientData = await Recipient.findOne({ email: email});
-  if(RecipientData){
+  const RecipientData = await Recipient.findOne({ email: email });
+  if (RecipientData) {
     RecipientData.UserId = userId;
     await RecipientData.save();
     return res.status(200).json({ message: 'Recipient linked to user successfully', Recipient });
   }
 }
 // Export functions
+// Process scheduled envelopes (to be called by a cron job or worker)
+const processScheduledEnvelopes = async () => {
+  try {
+    const now = new Date();
+    // Find all envelopes that are scheduled and the scheduled time has passed
+    const scheduledEnvelopes = await Envelope.find({
+      isScheduled: true,
+      status: 'draft',
+      scheduledDate: { $lte: now }
+    });
+
+    console.log(`Processing ${scheduledEnvelopes.length} scheduled envelope(s)`);
+
+    for (const envelope of scheduledEnvelopes) {
+      try {
+        // Update status and send
+        envelope.status = 'in-progress';
+        envelope.isScheduled = false; // Clear scheduling flag
+        await envelope.save();
+
+        await sendToRecipients(envelope._id, envelope.subject, envelope.message);
+
+        console.log(`Successfully sent scheduled envelope ${envelope._id}`);
+      } catch (error) {
+        console.error(`Error processing scheduled envelope ${envelope._id}:`, error);
+        // Don't throw - continue with other envelopes
+      }
+    }
+
+    return { processed: scheduledEnvelopes.length };
+  } catch (error) {
+    console.error("Error processing scheduled envelopes:", error);
+    throw error;
+  }
+}
+
+// HTTP route handler wrapper for processScheduledEnvelopes
+const processScheduledEnvelopesHandler = async (req, res) => {
+  try {
+    const result = await processScheduledEnvelopes();
+    return res.status(200).json({
+      success: true,
+      message: `Processed ${result.processed} scheduled envelope(s)`,
+      processed: result.processed
+    });
+  } catch (error) {
+    console.error("Error in processScheduledEnvelopesHandler:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error processing scheduled envelopes",
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getAllRecipients,
   envelopesData,
@@ -1697,6 +1805,9 @@ module.exports = {
   envelopExists,
   getSignatureFields,
   sendEnvelope,
+  scheduleEnvelope,
+  processScheduledEnvelopes,
+  processScheduledEnvelopesHandler,
   addSignature,
   getRecipientByEmail,
   envelopeArchive,

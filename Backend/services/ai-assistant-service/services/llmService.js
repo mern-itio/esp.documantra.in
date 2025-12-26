@@ -122,7 +122,7 @@ ACTION SPECIFICATIONS:
 4. create_and_send_envelope:
    Use this action when user wants to send a document WITH signature fields in one command.
    This creates an e-sign envelope, adds signature fields, and sends it automatically.
-   Extract: documentId, recipients, signature fields, subject, message
+   Extract: documentId, recipients, signature fields, subject, message, scheduling information
    Parameters:
    {
      "documentId": "string (required)",
@@ -147,8 +147,30 @@ ACTION SPECIFICATIONS:
        }
      ],
      "subject": "string or null",
-     "message": "string or null"
+     "message": "string or null",
+     "isScheduled": "boolean (optional, true if user wants to schedule the envelope)",
+     "scheduledDate": "string or null (optional, ISO date string or date in YYYY-MM-DD format, e.g., '2025-12-15')",
+     "scheduledTime": "string or null (optional, time in HH:MM format, e.g., '14:30' or '02:30 PM')"
    }
+   
+   SCHEDULING DETECTION:
+   - If user mentions scheduling words like "schedule", "schedule for", "send later", "send on", "send at", "delay", "tomorrow", "next week", etc., set isScheduled: true
+   - Extract date from phrases like:
+     * "schedule for December 15, 2025" → scheduledDate: "2025-12-15"
+     * "send on 15th December" → scheduledDate: "2025-12-15" (use current year if not specified)
+     * "tomorrow" → scheduledDate: tomorrow's date in YYYY-MM-DD format
+     * "next Monday" → scheduledDate: next Monday's date
+     * "on 15/12/2025" or "15-12-2025" → scheduledDate: "2025-12-15"
+   - Extract time from phrases like:
+     * "at 2:30 PM" → scheduledTime: "14:30"
+     * "at 14:30" → scheduledTime: "14:30"
+     * "at 2 PM" → scheduledTime: "14:00"
+     * "in the morning" → scheduledTime: "09:00" (default morning time)
+     * "in the afternoon" → scheduledTime: "14:00" (default afternoon time)
+     * "in the evening" → scheduledTime: "18:00" (default evening time)
+   - If only date is mentioned without time, set scheduledTime to null (system will use default time)
+   - If only time is mentioned without date, ask for clarification or use today's date if context suggests it
+   - Always convert dates to YYYY-MM-DD format and times to HH:MM format (24-hour)
 
 5. list_auth_providers:
    Use this action when the user asks about available authentication / auth providers or methods, or asks how many auth providers the system has.

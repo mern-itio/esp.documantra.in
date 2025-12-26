@@ -72,6 +72,13 @@ AVAILABLE ACTIONS:
 2. send_document - Send a document to recipients via email (simple sharing)
 3. prepare_document - Prepare a document with signature fields and other form fields
 4. create_and_send_envelope - Create an e-sign envelope, add signature fields, and send to recipients (all-in-one)
+   **SCHEDULING SUPPORT**: This action supports scheduling envelopes for future delivery. If user mentions scheduling words like "schedule", "schedule for", "send later", "send on", "send at", "delay", "tomorrow", "next week", etc., extract scheduling information:
+   - Set isScheduled: true when scheduling is mentioned
+   - Extract date from phrases like "schedule for December 15, 2025" → scheduledDate: "2025-12-15", "tomorrow" → tomorrow's date in YYYY-MM-DD, "on 15/12/2025" → "2025-12-15"
+   - Extract time from phrases like "at 2:30 PM" → scheduledTime: "14:30", "at 14:30" → "14:30", "at 2 PM" → "14:00", "in the morning" → "09:00", "in the afternoon" → "14:00", "in the evening" → "18:00"
+   - Always convert dates to YYYY-MM-DD format and times to HH:MM format (24-hour)
+   - If only date is mentioned without time, set scheduledTime to null
+   - Example: "send this document to john@example.com with signature field, schedule for tomorrow at 2 PM" → {{"action": "create_and_send_envelope", "parameters": {{"documentId": null, "recipients": [{{"email": "john@example.com"}}], "signatureFields": [{{"type": "signature", "position": "bottom-right"}}], "isScheduled": true, "scheduledDate": "2025-12-16", "scheduledTime": "14:00"}}, "clarification": null}}
 5. list_auth_providers - List available authentication providers (auth methods) for the current user's subscription plan
 6. generate_document - Generate a new document using AI (e.g., NDA, contract, agreement) by asking for required details.
    IMPORTANT: When user provides details after being asked (e.g., "two party involved sneha and kiara, effective date 19/12/2025, period 5 months"), 
