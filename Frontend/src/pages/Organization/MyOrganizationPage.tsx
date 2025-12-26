@@ -3,12 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { Building, Plus, Users } from 'lucide-react';
 import { MyOrganizationCard } from '../../components/Organization/MyOrganizationCard';
 import { SharedOrganizationCard } from '../../components/Organization/SharedOrganizationCard';
+import { EditOrganizationModal } from '../../components/Organization/EditOrganizationModal';
+import { DeleteOrganizationModal } from '../../components/Organization/DeleteOrganizationModal';
+import { TeamsManagementModal } from '../../components/Organization/TeamsManagementModal';
+import { VerifyOrganizationModal } from '../../components/Organization/VerifyOrganizationModal';
 import type { Organization } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
 
 const MyOrganizationPage: React.FC = () => {
   const navigate = useNavigate();
   const [myOrganization, setMyOrganization] = React.useState<Organization | null>(null);
+  const [showEditModal, setShowEditModal] = React.useState(false);
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+  const [showTeamsModal, setShowTeamsModal] = React.useState(false);
+  const [showVerifyModal, setShowVerifyModal] = React.useState(false);
+
   useEffect(() => {
      getUserOrganizations();
   }, []);
@@ -30,6 +39,18 @@ const MyOrganizationPage: React.FC = () => {
     }
   };
 
+  const handleEditSuccess = () => {
+    getUserOrganizations();
+  };
+
+  const handleDeleteSuccess = () => {
+    setMyOrganization(null);
+  };
+
+  const handleVerifySuccess = () => {
+    getUserOrganizations();
+  };
+
   const sharedOrganizations: Organization[] = [
     {
       _id: '2',
@@ -37,7 +58,7 @@ const MyOrganizationPage: React.FC = () => {
       logo: 'https://via.placeholder.com/150',
       website: 'https://www.techsolutions.com',
       gst: 'GST987654321',
-      status: 'APPROVED',
+      status: true,
       createdBy: 'user456',
       createdAt: new Date().toISOString(),
       verificationDocuments: []
@@ -48,7 +69,7 @@ const MyOrganizationPage: React.FC = () => {
       logo: 'https://via.placeholder.com/150',
       website: 'https://www.globalent.com',
       gst: 'GST456789123',
-      status: 'APPROVED',
+      status: true,
       createdBy: 'user789',
       createdAt: new Date().toISOString(),
       verificationDocuments: []
@@ -104,6 +125,10 @@ const MyOrganizationPage: React.FC = () => {
                     // Navigate to organization details
                     console.log('Navigate to organization details');
                   }}
+                  onEdit={() => setShowEditModal(true)}
+                  onDelete={() => setShowDeleteModal(true)}
+                  onTeams={() => setShowTeamsModal(true)}
+                  onVerify={() => setShowVerifyModal(true)}
                 />
               )}
             </div>
@@ -170,6 +195,34 @@ const MyOrganizationPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <EditOrganizationModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        organization={myOrganization}
+        onSuccess={handleEditSuccess}
+      />
+
+      <DeleteOrganizationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        organization={myOrganization}
+        onSuccess={handleDeleteSuccess}
+      />
+
+      <TeamsManagementModal
+        isOpen={showTeamsModal}
+        onClose={() => setShowTeamsModal(false)}
+        organization={myOrganization}
+      />
+
+      <VerifyOrganizationModal
+        isOpen={showVerifyModal}
+        onClose={() => setShowVerifyModal(false)}
+        organization={myOrganization}
+        onSuccess={handleVerifySuccess}
+      />
     </div>
   );
 };

@@ -69,7 +69,7 @@ const EnvelopeDetailPage: React.FC = () => {
     const moreBtnRef = useRef<HTMLButtonElement>(null);
     const resendBtnRef = useRef<HTMLButtonElement>(null);
     const [resendLoading, setResendLoading] = useState<boolean>(false);
-    const [showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
+    const [_showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
     const [copiedEmbedUrl, setCopiedEmbedUrl] = useState<boolean>(false);
     const [copiedEmbedCode, setCopiedEmbedCode] = useState<boolean>(false);
 
@@ -578,18 +578,18 @@ const EnvelopeDetailPage: React.FC = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-[15px] font-semibold text-gray-900">Power Form</h2>
                                 </div>
-                                {showEmbedUrl && envelope.powerFormId ? (
+                                { envelope.isPowerForm ? (
                                     <div className="py-3 space-y-3">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-medium text-gray-700">Embed URL:</span>
                                         </div>
                                         <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
                                             <code className="flex-1 text-sm text-gray-800 break-all">
-                                                {`${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`}
+                                                {`${window.location.origin}/e-sign/power-form/${envelope.id}`}
                                             </code>
                                             <button
                                                 onClick={async () => {
-                                                    const url = `${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}`;
+                                                    const url = `${window.location.origin}/e-sign/power-form/${envelope.id}`;
                                                     try {
                                                         if (navigator.clipboard && navigator.clipboard.writeText) {
                                                             await navigator.clipboard.writeText(url);
@@ -665,7 +665,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                                 </button>
                                             </div>
                                             <code className="text-xs text-blue-800 break-all block">
-                                                {`<iframe src="${window.location.origin}/e-sign/power-form/${envelope.powerFormId}/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`}
+                                                {`<iframe src="${window.location.origin}/e-sign/power-form/${envelope.id}" width="600" height="800" frameborder="0"></iframe>`}
                                             </code>
                                         </div>
                                     </div>
@@ -677,7 +677,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                                     setShowEmbedUrl(true);
                                                 } else {
                                                     // If powerFormId doesn't exist, navigate to embed page
-                                                    navigate(`/e-sign/power-form-embed/${envelope.powerFormId}/${envelope.id}`);
+                                                    navigate(`/e-sign/power-form-embed/${envelope.id}`);
                                                 }
                                             }}
                                             className="inline-flex items-center gap-2 px-4 py-2 bg-[#D600AA] text-white text-sm font-medium rounded-md hover:bg-[#b30088] transition-colors"

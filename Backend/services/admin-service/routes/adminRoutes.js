@@ -18,6 +18,7 @@ const {getUserPdfOperations, getUserServiceStats, getUserOperationHistory} = req
 const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, getPdfOperationById, deletePdfOperation} = require('../controllers/pdfController');
 
 const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
+const {listOrganizations} = require('../controllers/organizationController');
 
 // User management routes
 router.get('/user-list', userList);
@@ -82,5 +83,8 @@ router.get('/auth-providers', listAuthProviders);
 router.put('/auth-providers/:id', updateAuthProvider);
 router.post('/auth-providers/toggle', toggleAuthProvider);
 router.delete('/auth-providers/:id', deleteAuthProvider);
+
+// Organization routes
+router.get('/organization-request-list', listOrganizations);
 
 module.exports = router;
