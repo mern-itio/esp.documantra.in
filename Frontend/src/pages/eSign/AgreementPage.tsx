@@ -18,6 +18,7 @@ interface Agreement {
   direction?: string;
   isScheduled?: boolean;
   scheduledDate?: string;
+  scheduledTime?: string;
   sender?: {
     name: string;
     email: string;
@@ -73,7 +74,7 @@ interface ColumnConfig {
 }
 
 // Component for Scheduled status with tooltip that escapes overflow
-const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string }> = ({ scheduledDate }) => {
+const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string; scheduledTime?: string }> = ({ scheduledDate, scheduledTime }) => {
   const [showTooltip, setShowTooltip] = React.useState(false);
   const [tooltipPosition, setTooltipPosition] = React.useState({ left: 0, top: 0 });
   const statusRef = React.useRef<HTMLDivElement>(null);
@@ -105,11 +106,35 @@ const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string }> = ({ sche
       day: 'numeric',
       year: 'numeric'
     });
-    const formattedTime = scheduledDateObj.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+    
+    // Use scheduledTime if available, otherwise convert from scheduledDate
+    let formattedTime: string;
+    if (scheduledTime) {
+      // Parse the scheduledTime (format: "HH:mm" or "HH:MM")
+      const [hours, minutes] = scheduledTime.split(':');
+      const hour24 = parseInt(hours, 10);
+      const minute = parseInt(minutes, 10);
+      
+      if (!isNaN(hour24) && !isNaN(minute)) {
+        // Format as 12-hour time
+        const hour12 = hour24 % 12 || 12;
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        formattedTime = `${hour12.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${ampm}`;
+      } else {
+        // Fallback to date conversion if parsing fails
+        formattedTime = scheduledDateObj.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+    } else {
+      formattedTime = scheduledDateObj.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
 
     return (
       <>
@@ -482,7 +507,7 @@ const AgreementPage: React.FC = () => {
             </div>
           )}
           {agreement.isScheduled && agreement.status === 'draft' && (
-            <ScheduledStatusWithTooltip scheduledDate={agreement.scheduledDate} />
+            <ScheduledStatusWithTooltip scheduledDate={agreement.scheduledDate} scheduledTime={agreement.scheduledTime} />
           )}
           {agreement.status === 'draft' && !agreement.isPowerForm && !agreement.isScheduled && (
             <div className="flex items-center gap-2 text-[#3E2B66] group/status">
@@ -572,6 +597,7 @@ const AgreementPage: React.FC = () => {
           direction: envelope.direction,
           isScheduled: envelope.isScheduled || false,
           scheduledDate: envelope.scheduledDate,
+          scheduledTime: envelope.scheduledTime,
           completedCount: envelope.recipients?.filter(recipient =>
             recipient.status === 'completed' || recipient.status === 'signed'
           ).length || 0,
