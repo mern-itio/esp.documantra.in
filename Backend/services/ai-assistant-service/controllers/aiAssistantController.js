@@ -175,9 +175,22 @@ class AIAssistantController {
       
       // Post-process: If in document generation flow and user provided details but LLM didn't recognize it
       // BUT ONLY if user didn't provide an email (which means they want to send, not generate)
+      // AND the user is NOT clearly asking to search/find/list documents
       const lastAssistantMsg = conversation?.messages?.filter(m => m.role === 'assistant').pop();
       
-      if (isInDocumentGenerationFlow && result.action !== 'generate_document' && !result.clarification && !hasEmail) {
+      // Check if command is clearly a search/list/find command (don't override these)
+      const isSearchCommand = /search|find|look\s+for|list|show|get|fetch|retrieve/i.test(command.toLowerCase());
+      const isSearchAction = result.action === 'search_document' || 
+                            result.action === 'list_shared_documents' || 
+                            result.action === 'list_documents_by_category' ||
+                            result.action === 'list_signed_documents';
+      
+      if (isInDocumentGenerationFlow && 
+          result.action !== 'generate_document' && 
+          !result.clarification && 
+          !hasEmail &&
+          !isSearchCommand &&
+          !isSearchAction) {
         // Check if command contains document details
         const hasDetails = /party|parties|first|second|date|period|duration|effective|confidential|term|obligation|exclusion|signatory|address|entity|living|receiver|sender|name/i.test(command.toLowerCase());
         if (hasDetails) {
@@ -271,18 +284,103 @@ class AIAssistantController {
         // Continue with unvalidated result but log warning
       }
 
+      // Post-process: If user references a document by number/position (e.g., "first document", "second document")
+      // and there's a lastDocumentList, automatically select that document
+      const commandLower = command.toLowerCase();
+      const documentPositionPatterns = [
+        /(?:first|1st|1)\s+(?:document|doc|envelope|file)/i,
+        /(?:second|2nd|2)\s+(?:document|doc|envelope|file)/i,
+        /(?:third|3rd|3)\s+(?:document|doc|envelope|file)/i,
+        /(?:fourth|4th|4)\s+(?:document|doc|envelope|file)/i,
+        /(?:fifth|5th|5)\s+(?:document|doc|envelope|file)/i,
+        /(?:sixth|6th|6)\s+(?:document|doc|envelope|file)/i,
+        /(?:seventh|7th|7)\s+(?:document|doc|envelope|file)/i,
+        /(?:eighth|8th|8)\s+(?:document|doc|envelope|file)/i,
+        /(?:ninth|9th|9)\s+(?:document|doc|envelope|file)/i,
+        /(?:tenth|10th|10)\s+(?:document|doc|envelope|file)/i,
+        /document\s+(?:number|#)?\s*(\d+)/i,
+        /(?:the|send|share|use)\s+(?:first|1st|1)\s+(?:one|document|doc|envelope)/i
+      ];
+      
+      let documentIndex = null;
+      for (const pattern of documentPositionPatterns) {
+        const match = command.match(pattern);
+        if (match) {
+          if (match[1]) {
+            // Pattern with capture group (e.g., "document 1")
+            documentIndex = parseInt(match[1], 10);
+          } else {
+            // Pattern without capture group (e.g., "first document")
+            if (commandLower.includes('first') || commandLower.includes('1st') || (commandLower.match(/\b1\b/) && commandLower.includes('document'))) {
+              documentIndex = 1;
+            } else if (commandLower.includes('second') || commandLower.includes('2nd') || (commandLower.match(/\b2\b/) && commandLower.includes('document'))) {
+              documentIndex = 2;
+            } else if (commandLower.includes('third') || commandLower.includes('3rd') || (commandLower.match(/\b3\b/) && commandLower.includes('document'))) {
+              documentIndex = 3;
+            } else if (commandLower.includes('fourth') || commandLower.includes('4th') || (commandLower.match(/\b4\b/) && commandLower.includes('document'))) {
+              documentIndex = 4;
+            } else if (commandLower.includes('fifth') || commandLower.includes('5th') || (commandLower.match(/\b5\b/) && commandLower.includes('document'))) {
+              documentIndex = 5;
+            } else if (commandLower.includes('sixth') || commandLower.includes('6th') || (commandLower.match(/\b6\b/) && commandLower.includes('document'))) {
+              documentIndex = 6;
+            } else if (commandLower.includes('seventh') || commandLower.includes('7th') || (commandLower.match(/\b7\b/) && commandLower.includes('document'))) {
+              documentIndex = 7;
+            } else if (commandLower.includes('eighth') || commandLower.includes('8th') || (commandLower.match(/\b8\b/) && commandLower.includes('document'))) {
+              documentIndex = 8;
+            } else if (commandLower.includes('ninth') || commandLower.includes('9th') || (commandLower.match(/\b9\b/) && commandLower.includes('document'))) {
+              documentIndex = 9;
+            } else if (commandLower.includes('tenth') || commandLower.includes('10th') || (commandLower.match(/\b10\b/) && commandLower.includes('document'))) {
+              documentIndex = 10;
+            }
+          }
+          if (documentIndex) break;
+        }
+      }
+      
+      // If document position is detected and there's a lastDocumentList, select that document
+      // This should override any previously selected document (including drafts)
+      if (documentIndex && conversation?.lastDocumentList && conversation.lastDocumentList.length > 0) {
+        const idx = Math.min(conversation.lastDocumentList.length, Math.max(1, documentIndex)) - 1;
+        const selectedDoc = conversation.lastDocumentList[idx];
+        if (selectedDoc) {
+          console.log(`🔄 Auto-selecting document #${documentIndex} from last list (overriding previous selection):`, selectedDoc);
+          conversation.selectedDocument = {
+            id: selectedDoc.id,
+            name: selectedDoc.name,
+            category: selectedDoc.category,
+            serviceType: selectedDoc.serviceType || 'document-service',
+            docType: selectedDoc.docType || 'document'
+          };
+          // If it's an e-sign envelope, also set envelopeId
+          if (selectedDoc.serviceType === 'e-sign-service' || selectedDoc.serviceType === 'envelope') {
+            conversation.selectedDocument.envelopeId = selectedDoc.id;
+            conversation.selectedDocument.serviceType = 'e-sign-service';
+            conversation.selectedDocument.docType = 'envelope';
+          }
+          // Clear any draft-related selection when explicitly selecting from list
+          console.log('✅ Overriding selectedDocument with document from list:', conversation.selectedDocument);
+          
+          // If user said "share" or "send" with document position, ensure action is set correctly
+          if ((commandLower.includes('share') || commandLower.includes('send')) && 
+              (!result.action || result.action === 'generate_document')) {
+            result.action = 'create_and_send_envelope';
+            result.parameters = result.parameters || {};
+            console.log('🔄 Auto-setting action to create_and_send_envelope for document position reference');
+          }
+        }
+      }
+
       // Check if there's a selected document from previous conversation
       if (conversation?.selectedDocument && conversation.selectedDocument.id) {
         // If user says "send the generated document" or similar, and action is not set or is wrong, fix it
-        const lowerCommand = command.toLowerCase();
-        const mentionsGeneratedDoc = lowerCommand.includes('generated document') || 
-                                     lowerCommand.includes('the document') ||
-                                     lowerCommand.includes('this document') ||
-                                     (lowerCommand.includes('send') && !result.action);
+        const mentionsGeneratedDoc = commandLower.includes('generated document') || 
+                                     commandLower.includes('the document') ||
+                                     commandLower.includes('this document') ||
+                                     (commandLower.includes('send') && !result.action);
         
         if (mentionsGeneratedDoc && (!result.action || result.action === 'generate_document')) {
           // User wants to send the generated document, not generate a new one
-          if (lowerCommand.includes('send') || lowerCommand.includes('email')) {
+          if (commandLower.includes('send') || commandLower.includes('email')) {
             result.action = 'create_and_send_envelope';
             result.parameters = result.parameters || {};
             result.parameters.documentId = conversation.selectedDocument.id;
@@ -291,16 +389,23 @@ class AIAssistantController {
         }
         
         // If action needs documentId but it's missing, use the selected document
+        // BUT: If user explicitly mentioned a document position (first, second, etc.), 
+        // that selection should have already happened above and overridden any draft
         const needsDocumentId = ['send_document', 'prepare_document', 'create_and_send_envelope'].includes(result.action);
         if (needsDocumentId && (!result.parameters || !result.parameters.documentId)) {
           result.parameters = result.parameters || {};
-          // Prioritize envelopeId (e-sign service) over documentId (document service)
-          if (conversation.selectedDocument.envelopeId) {
-            result.parameters.documentId = conversation.selectedDocument.envelopeId;
-            console.log('💾 Using selected envelope (e-sign service):', conversation.selectedDocument.envelopeId);
+          // Only use selectedDocument if it exists and wasn't just overridden by position selection
+          if (conversation.selectedDocument?.id) {
+            // Prioritize envelopeId (e-sign service) over documentId (document service)
+            if (conversation.selectedDocument.envelopeId) {
+              result.parameters.documentId = conversation.selectedDocument.envelopeId;
+              console.log('💾 Using selected envelope (e-sign service):', conversation.selectedDocument.envelopeId);
+            } else {
+              result.parameters.documentId = conversation.selectedDocument.id;
+              console.log('💾 Using selected document:', conversation.selectedDocument.id);
+            }
           } else {
-            result.parameters.documentId = conversation.selectedDocument.id;
-            console.log('💾 Using selected document:', conversation.selectedDocument.id);
+            console.warn('⚠️ Action needs documentId but no selected document found');
           }
         }
         
@@ -820,31 +925,86 @@ class AIAssistantController {
           });
         }
 
+        // Store document list for list actions (so user can reference "first document", "second document", etc.)
+        if (result.action === 'list_shared_documents' && executionResult?.documents) {
+          conversation.lastDocumentList = executionResult.documents.map((doc, idx) => {
+            // Normalize serviceType: if it's 'envelope', convert to 'e-sign-service'
+            let serviceType = doc.serviceType || doc.source || 'document-service';
+            if (serviceType === 'envelope') {
+              serviceType = 'e-sign-service';
+            }
+            return {
+              index: idx + 1,
+              id: doc.id || doc._id,
+              name: doc.name,
+              category: doc.category || null,
+              source: doc.source,
+              serviceType: serviceType,
+              docType: doc.type || 'document'
+            };
+          });
+          console.log('💾 Stored document list in lastDocumentList:', conversation.lastDocumentList.length, 'documents');
+        } else if (result.action === 'list_documents_by_category' && executionResult?.documents) {
+          // Already stored in executeListDocumentsByCategory, but ensure it's there
+          if (!conversation.lastDocumentList || conversation.lastDocumentList.length === 0) {
+            conversation.lastDocumentList = executionResult.documents.map((doc, idx) => ({
+              index: idx + 1,
+              id: doc.id || doc._id,
+              name: doc.name,
+              category: doc.category || result.parameters?.category || null,
+              source: doc.source,
+              serviceType: doc.serviceType,
+              docType: doc.type || 'document'
+            }));
+          }
+        } else if (result.action === 'search_document' && executionResult?.documents) {
+          conversation.lastDocumentList = executionResult.documents.map((doc, idx) => ({
+            index: idx + 1,
+            id: doc.documentId || doc.id || doc._id,
+            name: doc.documentName || doc.name,
+            category: doc.category || null,
+            source: doc.source,
+            serviceType: doc.serviceType || doc.source || 'document-service',
+            docType: doc.documentType || doc.type || 'document'
+          }));
+          console.log('💾 Stored search results in lastDocumentList:', conversation.lastDocumentList.length, 'documents');
+        }
+
         // If document was generated, store it in selectedDocument for future use
         // Generated documents are created ONLY in e-sign service, so envelopeId is the primary ID
-        if (result.action === 'generate_document' && executionResult?.envelopeId) {
-          conversation.selectedDocument = {
-            id: executionResult.envelopeId, // Primary ID - document is in e-sign service
-            name: executionResult.documentName || 'Generated Document',
-            category: result.parameters?.category || 'document',
-            serviceType: 'e-sign-service',
-            docType: 'envelope',
-            envelopeId: executionResult.envelopeId,
-            documentId: executionResult.documentId || null // Document ID from e-sign service if available
-          };
-          console.log('💾 Stored generated document in selectedDocument (e-sign service):', conversation.selectedDocument);
-        } else if (result.action === 'generate_document' && executionResult?.documentId) {
-          // Fallback: if somehow documentId exists but envelopeId doesn't (shouldn't happen with new flow)
-          conversation.selectedDocument = {
-            id: executionResult.documentId,
-            name: executionResult.documentName || 'Generated Document',
-            category: result.parameters?.category || 'document',
-            serviceType: 'document-service',
-            docType: 'document',
-            envelopeId: null,
-            documentId: executionResult.documentId
-          };
-          console.log('⚠️ Stored generated document in selectedDocument (document service - fallback):', conversation.selectedDocument);
+        if (result.action === 'generate_document') {
+          // Check if executionResult has envelopeId (primary case) or if the ID looks like an envelope ID
+          const hasEnvelopeId = !!executionResult?.envelopeId;
+          const resultId = executionResult?.envelopeId || executionResult?.documentId;
+          const looksLikeEnvelopeId = resultId && /^[a-f0-9]{24}$/i.test(resultId);
+          
+          // Generated documents are ALWAYS in e-sign service
+          if (hasEnvelopeId || looksLikeEnvelopeId || executionResult?.serviceType === 'e-sign-service') {
+            conversation.selectedDocument = {
+              id: executionResult.envelopeId || resultId, // Primary ID - document is in e-sign service
+              name: executionResult.documentName || 'Generated Document',
+              category: result.parameters?.category || 'document',
+              serviceType: 'e-sign-service', // ALWAYS e-sign-service for generated documents
+              docType: 'envelope',
+              envelopeId: executionResult.envelopeId || resultId,
+              documentId: executionResult.documentId || null // Document ID from e-sign service if available
+            };
+            console.log('💾 Stored generated document in selectedDocument (e-sign service):', conversation.selectedDocument);
+          } else if (executionResult?.documentId) {
+            // Fallback: if somehow documentId exists but envelopeId doesn't (shouldn't happen with new flow)
+            // But even in fallback, if ID looks like envelope ID, treat as e-sign service
+            const isEnvelopeId = /^[a-f0-9]{24}$/i.test(executionResult.documentId);
+            conversation.selectedDocument = {
+              id: executionResult.documentId,
+              name: executionResult.documentName || 'Generated Document',
+              category: result.parameters?.category || 'document',
+              serviceType: isEnvelopeId ? 'e-sign-service' : 'document-service',
+              docType: isEnvelopeId ? 'envelope' : 'document',
+              envelopeId: isEnvelopeId ? executionResult.documentId : null,
+              documentId: executionResult.documentId
+            };
+            console.log(`⚠️ Stored generated document in selectedDocument (${isEnvelopeId ? 'e-sign-service' : 'document-service'} - fallback):`, conversation.selectedDocument);
+          }
         }
 
         // Auto-send: If user provided email in the original command, automatically send the document
@@ -969,8 +1129,38 @@ class AIAssistantController {
   // Execute search_document action
   async executeSearchDocument(parameters, userId, token) {
     try {
+      // Extract document name from query if it looks like a specific name search
+      let documentTitle = parameters.documentTitle || null;
+      const query = parameters.query || '';
+      
+      // If query contains patterns like "envelope name X" or "document named X", extract the name
+      if (!documentTitle && query) {
+        const namePatterns = [
+          /(?:envelope|document|file)\s+(?:name|named|called|titled)\s+["']?([^"']+)["']?/i,
+          /(?:envelope|document|file)\s+["']?([^"']+)["']?/i,
+          /search\s+(?:for\s+)?(?:envelope|document|file)\s+(?:name|named|called|titled)?\s*["']?([^"']+)["']?/i,
+          /(?:is\s+there|find|show)\s+(?:any\s+)?(?:envelope|document|file)\s+(?:name|named|called|titled)?\s*["']?([^"']+)["']?/i
+        ];
+        
+        for (const pattern of namePatterns) {
+          const match = query.match(pattern);
+          if (match && match[1]) {
+            documentTitle = match[1].trim();
+            console.log('📝 Extracted document name from query:', documentTitle);
+            break;
+          }
+        }
+        
+        // If no pattern matched but query is short and doesn't look like a general search, use it as name
+        if (!documentTitle && query.trim().length > 0 && query.trim().length < 50 && !/^(search|find|list|show|get|documents?|envelopes?|files?)$/i.test(query.trim())) {
+          documentTitle = query.trim();
+          console.log('📝 Using query as document name:', documentTitle);
+        }
+      }
+      
       const searchResults = await ragService.hybridSearch({
         ...parameters,
+        documentTitle: documentTitle,
         token: token
       }, userId);
 
@@ -1096,7 +1286,7 @@ class AIAssistantController {
                       },
                       {
                         headers: { Authorization: `Bearer ${token}` },
-                        timeout: 30000 // 30 seconds
+                        timeout: 60000 // 1 minute (increased from 30 seconds)
                       }
                     );
                     
@@ -1136,7 +1326,7 @@ class AIAssistantController {
                     },
                     {
                       headers: { Authorization: `Bearer ${token}` },
-                      timeout: 30000 // 30 seconds
+                      timeout: 60000 // 1 minute (increased from 30 seconds)
                     }
                   );
                 }
@@ -1752,24 +1942,45 @@ class AIAssistantController {
         const selectedDoc = conversation?.selectedDocument;
         const docIdMatches = selectedDoc?.id === documentId;
         const looksLikeEnvelopeId = /^[a-f0-9]{24}$/i.test(documentId);
+        
+        // If documentId looks like a MongoDB ObjectId (24 hex chars), it's from e-sign service
+        // This is the primary indicator - MongoDB ObjectIds are used by e-sign service
+        const isFromESignService = looksLikeEnvelopeId;
+        
         const isGeneratedDocument = (selectedDoc?.envelopeId === documentId) || 
                                     (docIdMatches && selectedDoc?.serviceType === 'e-sign-service') ||
                                     (docIdMatches && selectedDoc?.docType === 'envelope') ||
-                                    (docIdMatches && looksLikeEnvelopeId && selectedDoc); // If ID matches and looks like envelope ID, assume it's generated
-        const shouldOnlyCheckESign = isGeneratedDocument || looksLikeEnvelopeId;
+                                    (docIdMatches && looksLikeEnvelopeId && selectedDoc) || // If ID matches and looks like envelope ID, assume it's generated
+                                    (looksLikeEnvelopeId); // If it looks like envelope ID, it's from e-sign service
+        
+        // Always check e-sign service if it looks like an envelope ID (MongoDB ObjectId)
+        const shouldOnlyCheckESign = isGeneratedDocument || looksLikeEnvelopeId || isFromESignService;
         
         console.log('🔍 Document lookup:', {
           documentId,
           isGeneratedDocument,
           looksLikeEnvelopeId,
+          isFromESignService,
           shouldOnlyCheckESign,
-          selectedDocument: conversation?.selectedDocument
+          selectedDocument: conversation?.selectedDocument,
+          selectedDocServiceType: conversation?.selectedDocument?.serviceType,
+          selectedDocDocType: conversation?.selectedDocument?.docType
         });
         
         // Step 1: Try e-sign service first if it's a generated document or looks like an envelope ID
         if (shouldOnlyCheckESign) {
+          // Fix selectedDocument serviceType if it's wrong (should be e-sign-service for envelope IDs)
+          if (looksLikeEnvelopeId && conversation?.selectedDocument && conversation.selectedDocument.serviceType !== 'e-sign-service') {
+            console.log('🔧 Fixing selectedDocument serviceType from', conversation.selectedDocument.serviceType, 'to e-sign-service');
+            conversation.selectedDocument.serviceType = 'e-sign-service';
+            conversation.selectedDocument.docType = 'envelope';
+            conversation.selectedDocument.envelopeId = documentId;
+            // Save the fix
+            await conversation.save().catch(err => console.warn('Failed to save conversation after fixing serviceType:', err));
+          }
+          
           // For generated documents, we can use the existing envelope directly without downloading/re-uploading
-          if (isGeneratedDocument && !hasValidUploadedFile) {
+          if ((isGeneratedDocument || looksLikeEnvelopeId) && !hasValidUploadedFile) {
             console.log('✅ Using existing generated envelope directly, skipping file download/upload');
             // Set fileBuffer to null - we'll skip the upload step and use the existing envelope
             fileBuffer = null;
@@ -2094,7 +2305,24 @@ class AIAssistantController {
       }
 
       // Step 2: Create envelope in e-sign service OR use existing envelope for generated documents
-      let envelopeId = documentId; // For generated documents, use the existing envelopeId
+      // For generated documents or documents that look like envelope IDs, use documentId as envelopeId
+      // MongoDB ObjectId format (24 hex chars) indicates it's from e-sign service
+      const looksLikeEnvelopeId = /^[0-9a-fA-F]{24}$/.test(documentId);
+      const isFromESignService = looksLikeEnvelopeId || 
+                                  (conversation?.selectedDocument?.serviceType === 'e-sign-service') ||
+                                  (conversation?.selectedDocument?.docType === 'envelope') ||
+                                  (conversation?.selectedDocument?.envelopeId === documentId);
+      
+      let envelopeId = isFromESignService ? documentId : null; // Use documentId as envelopeId if it's from e-sign service
+      
+      console.log('📦 Envelope ID determination:', {
+        documentId,
+        looksLikeEnvelopeId,
+        isFromESignService,
+        envelopeId,
+        selectedDocServiceType: conversation?.selectedDocument?.serviceType,
+        selectedDocDocType: conversation?.selectedDocument?.docType
+      });
       
       // Only upload/create envelope if we have a file to upload
       if (fileBuffer || hasValidUploadedFile) {
@@ -2177,6 +2405,31 @@ class AIAssistantController {
       }
 
       // Step 4: Add recipients (include authentication providers if any)
+      // First, get current envelope to check existing recipients
+      let existingRecipients = [];
+      try {
+        const currentEnvelopeResponse = await axios.get(
+          `${eSignServiceUrl}/api/e-sign/envelope/${envelopeId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 60000
+          }
+        );
+        existingRecipients = currentEnvelopeResponse.data?.data?.recipients || [];
+      } catch (err) {
+        console.warn('Could not fetch current envelope recipients, proceeding with add:', err.message);
+      }
+
+      // Filter out recipients that already exist
+      const existingEmails = existingRecipients.map(r => (r.email || '').toLowerCase()).filter(Boolean);
+      const newRecipients = recipients.filter(r => !existingEmails.includes(r.email.toLowerCase()));
+      
+      if (newRecipients.length === 0 && existingRecipients.length > 0) {
+        console.log('ℹ️ All recipients already exist in the envelope. Proceeding with send/resend.');
+      } else if (newRecipients.length > 0) {
+        console.log(`📧 Adding ${newRecipients.length} new recipient(s) to envelope`);
+      }
+
       const recipientsPayload = recipients.map(r => {
         const emailKey = (r.email || '').toLowerCase();
         const authInfo = recipientsAuthInfo.get(emailKey);
@@ -2195,6 +2448,7 @@ class AIAssistantController {
         return baseRecipient;
       });
 
+      // Add recipients (will add only new ones if some already exist)
       await axios.post(
         `${eSignServiceUrl}/api/e-sign/add-recipients`,
         {
@@ -2203,7 +2457,7 @@ class AIAssistantController {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 30000 // 30 seconds
+          timeout: 60000 // 1 minute (increased from 30 seconds)
         }
       );
 
@@ -2212,7 +2466,7 @@ class AIAssistantController {
         `${eSignServiceUrl}/api/e-sign/envelope/${envelopeId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 30000 // 30 seconds
+          timeout: 60000 // 1 minute (increased from 30 seconds)
         }
       );
 
@@ -2348,17 +2602,28 @@ class AIAssistantController {
             };
           }).filter(Boolean);
 
-          await axios.post(
-            `${eSignServiceUrl}/api/e-sign/save-signature-fields`,
-            {
-              envelopeId,
-              signatureFields: processedFields
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 30000 // 30 seconds
-            }
-          );
+          try {
+            await axios.post(
+              `${eSignServiceUrl}/api/e-sign/save-signature-fields`,
+              {
+                envelopeId,
+                signatureFields: processedFields
+              },
+              {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 120000 // 2 minutes (increased from 1 minute)
+              }
+            );
+            console.log('✅ Signature fields saved successfully');
+          } catch (sigFieldError) {
+            console.error('❌ Error saving signature fields:', {
+              message: sigFieldError.message,
+              status: sigFieldError.response?.status,
+              data: sigFieldError.response?.data
+            });
+            // Don't throw - continue with sending even if signature fields fail
+            console.warn('⚠️ Continuing with envelope send despite signature field save error');
+          }
         }
       }
 
@@ -2383,7 +2648,7 @@ class AIAssistantController {
             { scheduledDate, scheduledTime: scheduledTime || null },
             {
               headers: { Authorization: `Bearer ${token}` },
-              timeout: 60000
+              timeout: 120000 // 2 minutes for scheduling
             }
           );
           console.log('✅ Envelope scheduled successfully:', scheduleResponse.data);
@@ -2394,14 +2659,103 @@ class AIAssistantController {
       } else {
         // Send immediately
         console.log('📤 Sending envelope immediately (not scheduled)');
-        await axios.post(
-          `${eSignServiceUrl}/api/e-sign/send-envelope/${envelopeId}`,
-          {},
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 60000 // 1 minute for sending
+        
+        // Verify envelope status before sending (only if we have envelopeData from earlier)
+        if (envelopeData && envelopeData.status) {
+          console.log('📋 Envelope status before send:', envelopeData.status);
+          
+          // Check if we're adding new recipients (resending scenario)
+          const existingRecipientsInEnvelope = envelopeData.recipients || [];
+          const existingEmails = existingRecipientsInEnvelope.map(r => (r.email || '').toLowerCase()).filter(Boolean);
+          const newRecipientsToAdd = recipients.filter(r => !existingEmails.includes(r.email.toLowerCase()));
+          
+          // If envelope is already in-progress, sent, or completed
+          if (envelopeData.status === 'in-progress' || envelopeData.status === 'sent' || envelopeData.status === 'completed') {
+            if (newRecipientsToAdd.length > 0) {
+              // New recipients added - always proceed with resend
+              console.log(`ℹ️ Envelope is "${envelopeData.status}" but ${newRecipientsToAdd.length} new recipient(s) added. Proceeding with resend.`);
+              // Continue with send - new recipients need to be notified
+            } else {
+              // No new recipients - check if all existing recipients have been notified
+              const notifiedRecipients = existingRecipientsInEnvelope.filter(r => r.status === 'sent' || r.status === 'notified' || r.notified === true);
+              
+              if (notifiedRecipients.length === existingRecipientsInEnvelope.length && existingRecipientsInEnvelope.length > 0) {
+                console.log('✅ All recipients have already been notified. Envelope is already sent.');
+                return {
+                  success: true,
+                  message: `Envelope is already ${envelopeData.status}. All recipients have been notified.`,
+                  envelopeId: envelopeId,
+                  recipients: existingRecipientsInEnvelope.length,
+                  status: envelopeData.status,
+                  alreadySent: true
+                };
+              } else {
+                // Some recipients not notified - proceed with resend
+                console.log(`ℹ️ Envelope is "${envelopeData.status}" but not all recipients have been notified. Proceeding with resend...`);
+              }
+            }
+          } else if (envelopeData.status !== 'draft') {
+            console.warn(`⚠️ Envelope status is "${envelopeData.status}", not "draft". Attempting to send anyway...`);
           }
-        );
+        }
+        
+        try {
+          console.log(`🚀 Calling send-envelope API for envelope: ${envelopeId}`);
+          const sendStartTime = Date.now();
+          
+          const sendResponse = await axios.post(
+            `${eSignServiceUrl}/api/e-sign/send-envelope/${envelopeId}`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 300000 // 5 minutes for sending
+            }
+          );
+          
+          const sendDuration = Date.now() - sendStartTime;
+          console.log(`✅ Envelope sent successfully in ${sendDuration}ms:`, sendResponse.data);
+        } catch (sendError) {
+          const errorDetails = {
+            message: sendError.message,
+            code: sendError.code,
+            status: sendError.response?.status,
+            statusText: sendError.response?.statusText,
+            data: sendError.response?.data,
+            timeout: sendError.code === 'ECONNABORTED' || sendError.message.includes('timeout')
+          };
+          
+          console.error('❌ Error sending envelope:', errorDetails);
+          
+          // If envelope is in-progress and we get a 400/422, it might already be sent
+          if ((envelopeData?.status === 'in-progress' || envelopeData?.status === 'sent') && 
+              (sendError.response?.status === 400 || sendError.response?.status === 422)) {
+            const errorMsg = sendError.response?.data?.message || sendError.response?.data?.error || '';
+            if (errorMsg.includes('already') || errorMsg.includes('sent') || errorMsg.includes('in-progress')) {
+              console.log('ℹ️ Envelope appears to already be sent. Returning success.');
+              return {
+                success: true,
+                message: `Envelope is already ${envelopeData?.status || 'sent'}. Recipients have been notified.`,
+                envelopeId: envelopeId,
+                recipients: envelopeData?.recipients?.length || recipients.length,
+                status: envelopeData?.status || 'in-progress',
+                alreadySent: true
+              };
+            }
+          }
+          
+          // If it's a timeout, provide more helpful error message
+          if (errorDetails.timeout) {
+            throw new Error(`Envelope send operation timed out after 5 minutes. The envelope (ID: ${envelopeId}) may still be processing in the background. Please check the envelope status in the e-sign service.`);
+          }
+          
+          // If it's a 400/422 error, include the error details
+          if (sendError.response?.status === 400 || sendError.response?.status === 422) {
+            const errorMsg = sendError.response?.data?.message || sendError.response?.data?.error || sendError.message;
+            throw new Error(`Failed to send envelope: ${errorMsg}`);
+          }
+          
+          throw sendError;
+        }
       }
 
       // Step 8: Deduct credits for authentication providers (if any)
@@ -2561,7 +2915,7 @@ class AIAssistantController {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 60000
+          timeout: 120000 // 2 minutes (increased from 60 seconds)
         }
       );
 
@@ -2580,7 +2934,7 @@ class AIAssistantController {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 60000
+          timeout: 120000 // 2 minutes (increased from 60 seconds)
         }
       );
 
@@ -2612,7 +2966,7 @@ class AIAssistantController {
             ...envelopeFormData.getHeaders(),
             Authorization: `Bearer ${token}`
           },
-          timeout: 60000,
+          timeout: 180000, // 3 minutes for file upload (increased from 60 seconds)
           maxContentLength: Infinity,
           maxBodyLength: Infinity
         }
@@ -2661,6 +3015,8 @@ class AIAssistantController {
         documentId: null, // Not created in document service
         documentName: documentName,
         content: generatedContent,
+        serviceType: 'e-sign-service', // Explicitly set service type for generated documents
+        docType: 'envelope', // Explicitly set doc type
         nextStep: 'Would you like to send this document? Please provide recipient email address.'
       };
     } catch (error) {
@@ -2804,7 +3160,7 @@ class AIAssistantController {
         allDocuments.push(...filteredEnvelopes.map(envelope => ({
           _id: envelope._id || envelope.id,
           id: envelope._id || envelope.id,
-          name: envelope.subject || envelope.name || `Envelope ${envelope._id || envelope.id}`,
+          name: envelope.name || envelope.subject || `Envelope ${envelope._id || envelope.id}`,
           type: 'envelope',
           status: envelope.status,
           createdAt: envelope.createdAt,
@@ -3294,7 +3650,7 @@ class AIAssistantController {
           allShared.push(...serviceFilteredEnvelopes.map(envelope => ({
             _id: envelope._id || envelope.id,
             id: envelope._id || envelope.id,
-            name: envelope.subject || envelope.name || `Envelope ${envelope._id || envelope.id}`,
+            name: envelope.name || envelope.subject || `Envelope ${envelope._id || envelope.id}`,
             type: 'envelope',
             status: envelope.status,
             createdAt: envelope.createdAt,
@@ -3319,24 +3675,27 @@ class AIAssistantController {
       
       console.log(`✅ Found ${limited.length} shared documents (from ${allShared.length} total)`);
 
+      const formattedDocuments = limited.map((doc, idx) => ({
+        index: idx + 1,
+        id: doc._id || doc.id,
+        name: doc.name,
+        type: doc.type || 'document',
+        size: doc.size || 0,
+        createdAt: doc.createdAt,
+        sharedWith: doc.sharedWith || doc.recipients || [],
+        source: doc.source,
+        serviceType: doc.serviceType,
+        status: doc.status
+      }));
+
       return {
         success: true,
-        documents: limited.map((doc, idx) => ({
-          index: idx + 1,
-          id: doc._id || doc.id,
-          name: doc.name,
-          type: doc.type || 'document',
-          size: doc.size || 0,
-          createdAt: doc.createdAt,
-          sharedWith: doc.sharedWith || doc.recipients || [],
-          source: doc.source,
-          serviceType: doc.serviceType,
-          status: doc.status
-        })),
+        documents: formattedDocuments,
         count: limited.length,
         recipientEmail: recipientEmail || 'current_user',
         date: date || null,
-        status: status || null
+        status: status || null,
+        _documentList: formattedDocuments // Store for auto-selection
       };
     } catch (error) {
       console.error('Error executing list shared documents:', error);
@@ -3417,7 +3776,7 @@ class AIAssistantController {
         documents: filtered.map((envelope, idx) => ({
           index: idx + 1,
           id: envelope._id || envelope.id,
-          name: envelope.subject || `Envelope ${envelope._id || envelope.id}`,
+          name: envelope.name || envelope.subject || `Envelope ${envelope._id || envelope.id}`,
           status: envelope.status,
           completedAt: envelope.completedAt,
           recipients: envelope.recipients || []
@@ -3491,7 +3850,24 @@ class AIAssistantController {
         if (docs.length === 0) {
           return 'No documents found matching your search.';
         }
-        return `Found ${docs.length} document(s). Click on any document to view details.`;
+        // Format results with document names (use name first, then subject/fallback)
+        const docList = docs.map((doc, idx) => {
+          const docId = doc.documentId || doc.id || doc._id || '';
+          // For e-sign envelopes, check metadata.name first, then documentName, then metadata.subject
+          let docName = 'Untitled Document';
+          if (doc.serviceType === 'e-sign-service' || doc.source === 'e-sign-service') {
+            docName = doc.metadata?.name || doc.documentName || doc.metadata?.subject || doc.name || 'Untitled Envelope';
+          } else {
+            docName = doc.documentName || doc.name || 'Untitled Document';
+          }
+          // Clean the name for the link format (remove colons and special chars that might break parsing)
+          docName = docName.replace(/:/g, '-').replace(/\s+/g, ' ').trim();
+          const serviceType = doc.serviceType || doc.source || 'document-service';
+          const docType = doc.documentType || doc.type || 'document';
+          // Format: [[doc:name:id:serviceType:docType]]
+          return `${idx + 1}. [[doc:${docName}:${docId}:${serviceType}:${docType}]]`;
+        }).join('\n');
+        return `Found ${docs.length} document(s):\n${docList}`;
 
       case 'send_document':
         return `Document sent successfully to ${parameters.recipients?.length || 0} recipient(s).`;
@@ -3550,12 +3926,21 @@ class AIAssistantController {
           const docIdStr = docId.toString(); // Ensure it's a string
           
           // If envelopeId exists, it's in e-sign service; otherwise document service
-          const serviceType = result.envelopeId ? 'e-sign-service' : 'document-service';
+          // Generated documents are ALWAYS in e-sign service, so prioritize envelopeId
+          const serviceType = result.envelopeId ? 'e-sign-service' : (result.serviceType || 'document-service');
           const docType = result.envelopeId ? 'envelope' : 'document';
           
           // Format: [[doc:name:id:serviceType:docType]]
           message += `\n\n📄 View document: [[doc:${docName}:${docIdStr}:${serviceType}:${docType}]]`;
-          console.log('🔗 Created document link in formatResultForStorage:', { docName, docId: docIdStr, serviceType, docType, hasEnvelopeId: !!result.envelopeId });
+          console.log('🔗 Created document link in formatResultForStorage:', { 
+            docName, 
+            docId: docIdStr, 
+            serviceType, 
+            docType, 
+            hasEnvelopeId: !!result.envelopeId,
+            resultEnvelopeId: result.envelopeId,
+            resultServiceType: result.serviceType
+          });
         } else {
           console.warn('⚠️ generate_document result missing documentId/envelopeId in formatResultForStorage:', result);
         }
@@ -3612,10 +3997,17 @@ class AIAssistantController {
         }
         const list = categoryDocs.map((doc, idx) => {
           const docId = doc.id || doc._id || '';
-          const serviceType = doc.serviceType || doc.source || 'document-service';
+          let docName = doc.name || 'Untitled Document';
+          // Clean the name for the link format (remove colons and special chars that might break parsing)
+          docName = docName.replace(/:/g, '-').replace(/\s+/g, ' ').trim();
+          // Normalize serviceType: if it's 'envelope', convert to 'e-sign-service'
+          let serviceType = doc.serviceType || doc.source || 'document-service';
+          if (serviceType === 'envelope') {
+            serviceType = 'e-sign-service';
+          }
           const docType = doc.type || 'document';
           // Format: [[doc:name:id:serviceType:docType]]
-          return `${idx + 1}. [[doc:${doc.name}:${docId}:${serviceType}:${docType}]]`;
+          return `${idx + 1}. [[doc:${docName}:${docId}:${serviceType}:${docType}]]`;
         }).join('\n');
         return `Found ${categoryDocs.length} ${result.category || 'document(s)'}:\n${list}\n\nYou can select one by saying "choose [number]" or "select [number]".`;
 
@@ -3637,10 +4029,22 @@ class AIAssistantController {
         
         const sharedList = sharedDocs.map((doc, idx) => {
           const docId = doc.id || doc._id || '';
-          const serviceType = doc.serviceType || doc.source || 'document-service';
+          // For e-sign envelopes, ensure we use name first, then subject
+          let docName = doc.name || 'Untitled Document';
+          if (doc.serviceType === 'envelope' || doc.serviceType === 'e-sign-service' || doc.source === 'e-sign-service') {
+            // The name should already be set correctly from list_shared_documents, but ensure it's clean
+            docName = doc.name || 'Untitled Envelope';
+          }
+          // Clean the name for the link format (remove colons and special chars that might break parsing)
+          docName = docName.replace(/:/g, '-').replace(/\s+/g, ' ').trim();
+          // Normalize serviceType: if it's 'envelope', convert to 'e-sign-service'
+          let serviceType = doc.serviceType || doc.source || 'document-service';
+          if (serviceType === 'envelope') {
+            serviceType = 'e-sign-service';
+          }
           const docType = doc.type || 'document';
           // Format: [[doc:name:id:serviceType:docType]]
-          return `${idx + 1}. [[doc:${doc.name}:${docId}:${serviceType}:${docType}]]`;
+          return `${idx + 1}. [[doc:${docName}:${docId}:${serviceType}:${docType}]]`;
         }).join('\n');
         
         if (recipientEmail === 'current_user' || !recipientEmail) {
@@ -3661,10 +4065,17 @@ class AIAssistantController {
         }
         const signedList = signedDocs.map((doc, idx) => {
           const docId = doc.id || doc._id || '';
-          const serviceType = doc.serviceType || doc.source || 'document-service';
+          let docName = doc.name || 'Untitled Document';
+          // Clean the name for the link format (remove colons and special chars that might break parsing)
+          docName = docName.replace(/:/g, '-').replace(/\s+/g, ' ').trim();
+          // Normalize serviceType: if it's 'envelope', convert to 'e-sign-service'
+          let serviceType = doc.serviceType || doc.source || 'document-service';
+          if (serviceType === 'envelope') {
+            serviceType = 'e-sign-service';
+          }
           const docType = doc.type || 'document';
           // Format: [[doc:name:id:serviceType:docType]]
-          return `${idx + 1}. [[doc:${doc.name}:${docId}:${serviceType}:${docType}]]`;
+          return `${idx + 1}. [[doc:${docName}:${docId}:${serviceType}:${docType}]]`;
         }).join('\n');
         return `Found ${signedDocs.length} document(s) signed by ${result.recipientEmail} on ${result.date}:\n${signedList}`;
 

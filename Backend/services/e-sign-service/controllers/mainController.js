@@ -168,6 +168,7 @@ const envelopesData = async (req, res) => {
 
       return {
         id: envelope._id,
+        name: envelope.name,
         subject: envelope.subject,
         status: envelope.status,
         isScheduled: envelope.isScheduled,
@@ -259,6 +260,7 @@ const envelopesDetail = async (req, res) => {
     // Step 3: Format the response (single envelope object)
     const formattedEnvelope = {
       id: envelope._id,
+      name: envelope.name,
       subject: envelope.subject,
       message: envelope.message,
       envelopetype: envelope.envelopetype,

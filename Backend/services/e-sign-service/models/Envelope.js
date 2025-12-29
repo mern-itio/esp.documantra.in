@@ -22,6 +22,7 @@ const PartySlotSchema = new mongoose.Schema({
 }, { _id: false });
 
 const EnvelopeSchema = new mongoose.Schema({
+  name: { type: String }, // Envelope name/title for display
   subject: { type: String },
   message: { type: String },
   envelopetype: { type: String },

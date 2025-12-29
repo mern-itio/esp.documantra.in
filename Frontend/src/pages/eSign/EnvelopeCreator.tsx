@@ -16,7 +16,6 @@ import {
   ChevronUp,
   User,
   Key,
-  MessageSquare,
   ArrowUpToLine,
   Triangle,
   PenLine,
@@ -287,39 +286,27 @@ const EnvelopeCreator: React.FC = () => {
   const [bulkBatchName, setBulkBatchName] = useState<string>('');
   const [bulkRoleDropdownOpen, setBulkRoleDropdownOpen] = useState<boolean>(false);
   const [bulkCustomizeOpen, setBulkCustomizeOpen] = useState<boolean>(false);
-  const [bulkAccessCode, setBulkAccessCode] = useState<string | undefined>(undefined);
-  const [openBulkAccess, setOpenBulkAccess] = useState<boolean>(false);
-  const [bulkPrivateMessage, setBulkPrivateMessage] = useState<string | undefined>(undefined);
-  const [openBulkPrivate, setOpenBulkPrivate] = useState<boolean>(false);
-  // Authentication modal state
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalForRecipientId, setAuthModalForRecipientId] = useState<string | null>(null);
   const [authModalForBulk, setAuthModalForBulk] = useState<boolean>(false);
   const [tempAuthSelection, setTempAuthSelection] = useState<string[] | undefined>(undefined);
   const [hasUserChangedSelection, setHasUserChangedSelection] = useState<boolean>(false);
-
-  // Helper function to parse authentication (handles both string and JSON array)
   const parseAuthentication = (auth: string | undefined | null): string[] => {
     if (!auth) return [];
     try {
-      // Try to parse as JSON array
       const parsed = JSON.parse(auth);
       if (Array.isArray(parsed)) return parsed;
-      // If it's a string, return as single-item array for backward compatibility
       return [auth];
     } catch {
-      // If not JSON, treat as single string (backward compatibility)
       return [auth];
     }
   };
 
-  // Helper function to stringify authentication (store as JSON array)
   const stringifyAuthentication = (auth: string[] | null | undefined): string | null => {
     if (!auth || auth.length === 0) return null;
     return JSON.stringify(auth);
   };
 
-  // Initialize tempAuthSelection when modal opens
   useEffect(() => {
     if (showAuthModal && !hasUserChangedSelection) {
       if (authModalForBulk) {
@@ -1109,21 +1096,17 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   const clearBulkList = () => {
-    // Clear manual bulk list
     setBulkList(null);
-    // Clear CSV-derived list and related panels
     setCsvRecipientList(null);
     setCsvAccessCode(undefined);
     setCsvPrivateMessage(undefined);
     setOpenCsvAccess(false);
     setOpenCsvPrivate(false);
-    // Reset CSV parsing state
     setCsvFile(null);
     setCsvHeaders([]);
     setCsvRecipientsData([]);
     setShowCsvExceptions(false);
     setUnmatchedColumns([]);
-    // Reset inline bulk rows to initial empty rows
     setBulkRows([
       { id: `row_${Date.now()}`, name: '', email: '' },
       { id: `row_${Date.now() + 1}`, name: '', email: '' },
@@ -1138,8 +1121,6 @@ const EnvelopeCreator: React.FC = () => {
   const searchQueryRef = useRef<string>('');
   const suggestionsContainerRef = useRef<HTMLDivElement | null>(null);
   const emailSuggestionsContainerRef = useRef<HTMLDivElement | null>(null);
-  
-  // Recipient list modal state
   const [showRecipientListModal, setShowRecipientListModal] = useState(false);
   const [recipientListModalForId, setRecipientListModalForId] = useState<string | null>(null);
   const [savedRecipients, setSavedRecipients] = useState<Array<{ _id: string; name: string; email: string; title?: string; company?: string; phone?: string; address?: string }>>([]);
@@ -1155,12 +1136,6 @@ const EnvelopeCreator: React.FC = () => {
     address: ''
   });
   const [savingNewRecipient, setSavingNewRecipient] = useState(false);
-  // Access code expanded panels per recipient
-  const [openAccessForId, setOpenAccessForId] = useState<Record<string, boolean>>({});
-  // Private message expanded panels per recipient
-  const [openPrivateForId, setOpenPrivateForId] = useState<Record<string, boolean>>({});
-
-  // Envelope Type state
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
@@ -1168,12 +1143,9 @@ const EnvelopeCreator: React.FC = () => {
   const [showOtherInputInDropdown, setShowOtherInputInDropdown] = useState<boolean>(false);
   const [newEnvelopeTypeValue, setNewEnvelopeTypeValue] = useState<string>('');
   const typeDropdownRef = useRef<HTMLDivElement | null>(null);
-
-  // PDF Preview Modal state
   const [pdfPreviewModalOpen, setPdfPreviewModalOpen] = useState<boolean>(false);
   const [selectedPdfForPreview, setSelectedPdfForPreview] = useState<ESDocument | null>(null);
   const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
-
   const steps = [
     { id: 1, name: 'Documents', description: 'Upload documents' },
     { id: 2, name: 'Signers', description: 'Add recipients and roles' },
@@ -1184,7 +1156,6 @@ const EnvelopeCreator: React.FC = () => {
     setFiles(files);
     if (!files) return;
 
-    // Auto-set or refresh subject using all selected filenames (with extensions)
     const subjectWasAuto = (envelopeData.subject || '').trim().startsWith('Complete with Esign:');
     if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
       const names = Array.from(files).map(f => f.name).filter(Boolean);
@@ -1317,7 +1288,10 @@ const EnvelopeCreator: React.FC = () => {
       }
 
       if (loopEnvelopeId) formData.append('envelopeId', loopEnvelopeId);
-      // Include subject, message and envelopetype from Step 1
+      // Include name, subject, message and envelopetype from Step 1
+      if (documentTitle && documentTitle.trim()) {
+        formData.append('name', documentTitle.trim());
+      }
       formData.append('subject', envelopeData.subject.trim());
       formData.append('message', (envelopeData.message || '').trim());
       if (selectedEnvelopeType) {
@@ -1542,6 +1516,11 @@ const EnvelopeCreator: React.FC = () => {
         }
         // Prefill subject/message when returning to earlier steps
         const env = response.data.data;
+        // Load envelope name if available
+        if (typeof env.name === 'string' && env.name.trim()) {
+          setDocumentTitle(env.name.trim());
+          setTitleInput(env.name.trim());
+        }
         setEnvelopeData(prev => ({
           ...prev,
           subject: typeof env.subject === 'string' ? env.subject : (prev.subject || ''),
@@ -1597,6 +1576,7 @@ const EnvelopeCreator: React.FC = () => {
         envelopeId,
         envelopeData: {
           ...envelopeData,
+          name: documentTitle || undefined,
           envelopetype: selectedEnvelopeType || undefined,
         },
       });
@@ -1630,6 +1610,7 @@ const EnvelopeCreator: React.FC = () => {
         envelopeId,
         envelopeData: {
           ...envelopeData,
+          name: documentTitle || undefined,
           expiresAt,
           expirationAlertDays: advancedOptions.expirationAlertDays, // Backend now supports this field
           reminderEnabled: envelopeData.reminderEnabled,
@@ -4219,7 +4200,7 @@ const EnvelopeCreator: React.FC = () => {
                                                   {getInitials(it.name, it.email)}
                                                 </div>
                                                 <div className="text-xs font-medium text-[#3E2B66] text-center px-2 max-w-[80px] truncate">
-                                                  {formatSentenceCase(it.name || it.email || 'Unnamed')}
+                                                  {formatSentenceCase(it.name || it.email || 'Recipient')}
                                                 </div>
                                               </div>
                                             ))}
@@ -4238,7 +4219,7 @@ const EnvelopeCreator: React.FC = () => {
                                 const ordered = items.map((it, idx) => ({ 
                                   key: `csv-${idx}`, 
                                   order: idx + 1,
-                                  name: formatSentenceCase(it.name || it.email || 'Unnamed'),
+                                  name: formatSentenceCase(it.name || it.email || 'Recipient'),
                                   email: it.email
                                 }));
                                 return (
@@ -4283,7 +4264,7 @@ const EnvelopeCreator: React.FC = () => {
                               const ordered = sortedRecipients.map((r) => ({
                                 key: r.id,
                                 order: r.order || 0,
-                                name: formatSentenceCase(r.name || r.email || 'Unnamed'),
+                                name: formatSentenceCase(r.name || r.email || 'Recipient'),
                                 email: r.email
                               }));
 
@@ -4480,28 +4461,6 @@ const EnvelopeCreator: React.FC = () => {
                                                 </div>
                                               </div>
                                             </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setBulkCustomizeOpen(false);
-                                                setOpenBulkPrivate(true);
-                                              }}
-                                              className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
-                                            >
-                                              <div className="flex items-start gap-3">
-                                                <MessageSquare className="w-5 h-5 text-gray-600 mt-0.5" />
-                                                <div>
-                                                  <div className="font-medium text-gray-900">Add private message</div>
-                                                  <div className="text-xs text-gray-500 mt-1">Include a personal note with this recipient.</div>
-                                                </div>
-                                              </div>
-                                            </button>
-                                            {bulkAccessCode && (
-                                              <div className="px-4 py-2 text-xs text-gray-600">Access code set</div>
-                                            )}
-                                            {bulkPrivateMessage && (
-                                              <div className="px-4 py-2 text-xs text-gray-600">Private message set</div>
-                                            )}
                                           </div>
                                         </div>
                                       )}
@@ -4511,83 +4470,6 @@ const EnvelopeCreator: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          {/* Bulk Access Code Panel */}
-                          {openBulkAccess && (
-                            <div className="shadow-lg border-gray-200 bg-gray-100 relative">
-                              <div className="absolute top-0 bottom-0" style={{ left: '-2px', width: 7 }}></div>
-                              <div className="flex items-center justify-between px-4 pt-4">
-                                <h5 className="text-lg text-gray-900">Access Code</h5>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    title="Remove access code"
-                                    onClick={() => { setBulkAccessCode(undefined); setOpenBulkAccess(false); }}
-                                    className="p-2 rounded hover:bg-gray-100"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-[#2C2441]" />
-                                  </button>
-                                  <button
-                                    title="Collapse"
-                                    onClick={() => setOpenBulkAccess(false)}
-                                    className="p-2 rounded hover:bg-gray-100"
-                                  >
-                                    <ChevronUp className="w-4 h-4 text-[#2C2441]" />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="px-4 pb-4">
-                                <div className="mt-2">
-                                  <input
-                                    type="text"
-                                    value={bulkAccessCode || ''}
-                                    onChange={(e) => setBulkAccessCode(e.target.value)}
-                                    placeholder="Enter access code"
-                                    className="w-100 px-4 py-2 border border-gray-300 bg-white rounded-sm "
-                                  />
-                                </div>
-                                <div className="mt-3 text-gray-600 text-sm space-y-1">
-                                  <p>Codes are not case-sensitive.</p>
-                                  <p>You must provide this code to the signer.</p>
-                                  <p className="text-gray-500">This code is available for you to review on the Envelope Details page.</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          {/* Bulk Private Message Panel */}
-                          {openBulkPrivate && (
-                            <div className="shadow-lg border-gray-200 bg-gray-100 relative">
-                              <div className="absolute top-0 bottom-0" style={{ left: '-2px', width: 7 }}></div>
-                              <div className="flex items-center justify-between px-4 pt-4">
-                                <h5 className="text-lg text-gray-900">Private Message</h5>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    title="Remove private message"
-                                    onClick={() => { setBulkPrivateMessage(undefined); setOpenBulkPrivate(false); }}
-                                    className="p-2 rounded hover:bg-gray-100"
-                                  >
-                                    <Trash2 className="w-6 h-6 text-[#2C2441]" />
-                                  </button>
-                                  <button
-                                    title="Collapse"
-                                    onClick={() => setOpenBulkPrivate(false)}
-                                    className="p-2 rounded hover:bg-gray-100"
-                                  >
-                                    <ChevronUp className="w-5 h-5 text-[#2C2441]" />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="px-4 pb-4">
-                                <div className="mt-2">
-                                  <textarea
-                                    value={bulkPrivateMessage || ''}
-                                    onChange={(e) => setBulkPrivateMessage(e.target.value)}
-                                    placeholder="Write a private message for all bulk recipients"
-                                    className="w-full px-4 py-2 border border-gray-300 bg-white rounded-sm"
-                                    rows={3}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
 
@@ -4648,15 +4530,6 @@ const EnvelopeCreator: React.FC = () => {
                                                   <div>
                                                     <div className="font-medium text-gray-900">Add authentication method</div>
                                                     <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
-                                                  </div>
-                                                </div>
-                                              </button>
-                                              <button type="button" onClick={() => { setCsvCustomizeOpen(false); setOpenCsvPrivate(true); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors">
-                                                <div className="flex items-start gap-3">
-                                                  <MessageSquare className="w-5 h-5 text-gray-600 mt-0.5" />
-                                                  <div>
-                                                    <div className="font-medium text-gray-900">Add private message</div>
-                                                    <div className="text-xs text-gray-500 mt-1">Include a personal note with this recipient.</div>
                                                   </div>
                                                 </div>
                                               </button>
@@ -4813,7 +4686,7 @@ const EnvelopeCreator: React.FC = () => {
                                         <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0" />
                                         <span className="text-sm font-medium text-gray-600">{displayOrder}.</span>
                                         <span className="text-sm font-medium text-gray-900">
-                                          {recipient.name || 'Unnamed Recipient'}
+                                          {recipient.name || 'Recipient'}
                                         </span>
                                         <span className="text-xs text-gray-500">
                                           {recipient.email || 'No email'}
@@ -5257,21 +5130,6 @@ const EnvelopeCreator: React.FC = () => {
                                                     </div>
                                                   </div>
                                                 </button>
-                                                <button
-                                                  onClick={() => {
-                                                    setOpenPrivateForId(prev => ({ ...prev, [recipient.id]: true }));
-                                                    setOpenCustomizeDropdownId(null);
-                                                  }}
-                                                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
-                                                >
-                                                  <div className="flex items-start gap-3">
-                                                    <MessageSquare className="w-5 h-5 text-gray-600 mt-0.5" />
-                                                    <div>
-                                                      <div className="font-medium text-gray-900">Add private message</div>
-                                                      <div className="text-xs text-gray-500 mt-1">Include a personal note with this recipient.</div>
-                                                    </div>
-                                                  </div>
-                                                </button>
                                               </div>
                                             </div>
                                           )}
@@ -5449,94 +5307,7 @@ const EnvelopeCreator: React.FC = () => {
                                         </div>
                                       </div>
                                     </div>
-
                                   </div>
-                                  {/* Access Code Panel */}
-                                  {openAccessForId[recipient.id] && recipient.authentication === 'access_code' && (
-                                    <div className="shadow-lg border-gray-200 bg-gray-100 relative">
-                                      <div className="absolute top-0 bottom-0" style={{ left: '-7px', width: 7, background: '#eff2f5ff' }}></div>
-                                      <div className="flex items-center justify-between px-4 pt-4">
-                                        <h5 className="text-lg text-gray-900">Access Code</h5>
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            title="Remove access code"
-                                            onClick={() => {
-                                              updateRecipient(recipient.id, { authentication: undefined, authValue: undefined });
-                                              setOpenAccessForId(prev => ({ ...prev, [recipient.id]: false }));
-                                            }}
-                                            className="p-2 rounded hover:bg-gray-100"
-                                          >
-                                            <Trash2 className="w-6 h-6 text-[#2C2441]" />
-                                          </button>
-                                          <button
-                                            title="Collapse"
-                                            onClick={() => setOpenAccessForId(prev => ({ ...prev, [recipient.id]: false }))}
-                                            className="p-2 rounded hover:bg-gray-100"
-                                          >
-                                            <ChevronUp className="w-4 h-4 text-[#2C2441]" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <div className="px-4 pb-4">
-                                        <div className="mt-2">
-                                          <input
-                                            type="text"
-                                            value={recipient.authValue || ''}
-                                            onChange={(e) => updateRecipient(recipient.id, { authValue: e.target.value })}
-                                            placeholder="Enter access code"
-                                            className="w-100 bg-white px-4 py-2 border border-gray-300 rounded-sm "
-                                          />
-                                        </div>
-                                        <div className="mt-3 text-gray-600 text-sm space-y-1">
-                                          <p>Codes are not case-sensitive.</p>
-                                          <p>You must provide this code to the signer.</p>
-                                          <p className="text-gray-500">This code is available for you to review on the Envelope Details page.</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Private Message Panel */}
-                                  {openPrivateForId[recipient.id] && (
-                                    <div className="shadow-lg border-gray-200 bg-gray-100 relative">
-                                      <div className="absolute top-0 bottom-0" style={{ left: '-7px', width: 7, background: '#eff2f5ff' }}></div>
-                                      <div className="flex items-center justify-between px-4 pt-4">
-                                        <h5 className="text-lg text-gray-900">Private Message</h5>
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            title="Remove private message"
-                                            onClick={() => {
-                                              updateRecipient(recipient.id, { privateMessage: undefined as any });
-                                              setOpenPrivateForId(prev => ({ ...prev, [recipient.id]: false }));
-                                            }}
-                                            className="p-2 rounded hover:bg-gray-100"
-                                          >
-                                            <Trash2 className="w-6 h-6 text-[#2C2441]" />
-                                          </button>
-                                          <button
-                                            title="Collapse"
-                                            onClick={() => setOpenPrivateForId(prev => ({ ...prev, [recipient.id]: false }))}
-                                            className="p-2 rounded hover:bg-gray-100"
-                                          >
-                                            <ChevronUp className="w-5 h-5 text-[#2C2441]" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <div className="px-4 pb-4">
-                                        <div className="mt-2">
-                                          <textarea
-                                            rows={3}
-                                            value={recipient.privateMessage || ''}
-                                            onChange={(e) => updateRecipient(recipient.id, { privateMessage: e.target.value } as any)}
-                                            placeholder="Write a private message for this recipient"
-                                            className="w-full bg-white px-4 py-2 border border-gray-300 rounded-sm "
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Remove button: show only if there are at least 2 recipients */}
                                   {recipients.length > 1 && (
                                     <button
                                       onClick={() => removeRecipient(recipient.id)}
@@ -6852,7 +6623,7 @@ const EnvelopeCreator: React.FC = () => {
                     const ordered = sortedRecipients.map((r) => ({
                       key: r.id,
                       order: r.order || 0,
-                      name: formatSentenceCase(r.name || r.email || 'Unnamed'),
+                      name: formatSentenceCase(r.name || r.email || 'Recipient'),
                       email: r.email
                     }));
 

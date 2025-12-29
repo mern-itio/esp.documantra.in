@@ -501,7 +501,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
     let processedText = text;
     let placeholderIndex = 0;
     
-    processedText = processedText.replace(docLinkRegex, ( name, id, serviceType, docType) => {
+    processedText = processedText.replace(docLinkRegex, (_match, name, id, serviceType, docType) => {
       const placeholder = `__DOC_LINK_${placeholderIndex}__`;
       docLinkPlaceholders.push({ placeholder, name, id, serviceType, docType });
       placeholderIndex++;
@@ -941,12 +941,18 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                 {message.searchResults && message.searchResults.length > 0 && (
                   <div className="mt-3 space-y-2 pt-3 border-t border-slate-200">
                     <p className="text-xs font-medium text-slate-600 mb-2">Search Results:</p>
-                    {message.searchResults.map((doc: any, idx: number) => (
+                    {message.searchResults.map((doc: any, idx: number) => {
+                      // For e-sign envelopes, use metadata.name first, then documentName, then metadata.subject
+                      const displayName = (doc.serviceType === 'e-sign-service' || doc.source === 'e-sign-service' || doc.documentType === 'envelope')
+                        ? (doc.metadata?.name || doc.documentName || doc.metadata?.subject || doc.name || doc.documentId)
+                        : (doc.documentName || doc.name || doc.documentId);
+                      
+                      return (
                       <button
                         key={idx}
                         onClick={() => handleDocumentClick(
                           doc.documentId, 
-                          doc.documentName || doc.documentId,
+                          displayName,
                           doc.serviceType,
                           doc.documentType
                         )}
@@ -957,7 +963,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                             <div className="flex items-center space-x-2">
                               <span className="text-xs font-semibold text-[#4D0080]">#{idx + 1}</span>
                               <p className="text-sm font-medium text-slate-900 truncate group-hover:text-[#4D0080]">
-                                {doc.documentName || doc.documentId}
+                                {displayName}
                               </p>
                             </div>
                             {doc.metadata?.description && (
@@ -985,7 +991,8 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                           <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#4D0080] flex-shrink-0 ml-2" />
                         </div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -26,6 +26,7 @@ interface Agreement {
 
 interface EnvelopeData {
   id: string;
+  name?: string;
   subject: string;
   status: string;
   priority?: string;
@@ -434,7 +435,7 @@ const AgreementPage: React.FC = () => {
             className="text-left text-sm font-semibold text-[#3E2B66] hover:text-[#260559] hover:underline transition-colors duration-200"
             title="View envelope details"
           >
-            {agreement.name?.slice(0, 25)}{agreement.name?.length > 25 ? "..." : ""}
+            {agreement.name}
           </button>
           {!agreement.isPowerForm && (
             <>
@@ -561,7 +562,7 @@ const AgreementPage: React.FC = () => {
         // Map all envelopes to agreement format
         const allEnvelopes = envelopes.map(envelope => ({
           id: envelope.id,
-          name: envelope.subject || 'Untitled Agreement',
+          name: envelope.name || envelope.subject || 'Untitled Agreement',
           status: envelope.status as 'completed' | 'in-progress' | 'draft' | 'deleted',
           lastChange: envelope.sentAt || envelope.createdAt,
           createdBy: envelope.sender?.name || 'Unknown',

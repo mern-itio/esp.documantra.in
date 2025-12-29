@@ -468,14 +468,18 @@ class RAGServiceLangChain {
       // Add e-sign service results
       eSignResults.forEach(env => {
         if (!allResults.has(env._id || env.id)) {
+          // Use name first, fall back to subject
+          const displayName = env.name || env.subject || 'Untitled Envelope';
           allResults.set(env._id || env.id, {
             documentId: env._id || env.id,
-            documentName: env.subject || 'Untitled Envelope',
+            documentName: displayName,
             documentType: 'envelope',
             serviceType: 'e-sign-service',
             metadata: {
               status: env.status,
-              recipients: env.recipients || []
+              recipients: env.recipients || [],
+              name: env.name,
+              subject: env.subject
             },
             similarity: 0.7,
             source: 'e-sign-service'
@@ -483,8 +487,49 @@ class RAGServiceLangChain {
         }
       });
 
+      // Filter by exact name match if documentTitle is provided and looks like a specific name
+      let filteredResults = Array.from(allResults.values());
+      
+      // If documentTitle is provided and doesn't look like a general search query, filter by exact name match
+      if (documentTitle && documentTitle.trim()) {
+        const searchName = documentTitle.trim().toLowerCase();
+        // Check if it's a specific name query (not just keywords like "document", "envelope", etc.)
+        const isSpecificName = !/^(search|find|list|show|get|documents?|envelopes?|files?)$/i.test(searchName);
+        
+        if (isSpecificName) {
+          // Filter to exact or close name matches
+          filteredResults = filteredResults.filter(doc => {
+            const docName = (doc.documentName || '').toLowerCase();
+            const metadataName = (doc.metadata?.name || '').toLowerCase();
+            const metadataSubject = (doc.metadata?.subject || '').toLowerCase();
+            
+            // Exact match or contains the search name
+            return docName === searchName || 
+                   docName.includes(searchName) ||
+                   metadataName === searchName ||
+                   metadataName.includes(searchName) ||
+                   metadataSubject === searchName ||
+                   metadataSubject.includes(searchName);
+          });
+          
+          // If we found exact matches, prioritize them
+          if (filteredResults.length > 0) {
+            filteredResults = filteredResults.sort((a, b) => {
+              const aName = (a.documentName || '').toLowerCase();
+              const bName = (b.documentName || '').toLowerCase();
+              const aExact = aName === searchName;
+              const bExact = bName === searchName;
+              
+              if (aExact && !bExact) return -1;
+              if (!aExact && bExact) return 1;
+              return b.similarity - a.similarity;
+            });
+          }
+        }
+      }
+
       // Sort by similarity and return top results
-      const sortedResults = Array.from(allResults.values())
+      const sortedResults = filteredResults
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, limit);
 

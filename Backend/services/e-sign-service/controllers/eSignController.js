@@ -50,8 +50,11 @@ const Upload = async (req, res) => {
     let envelope;
   if (req.body.envelopeId) {
       envelope = await Envelope.findById(req.body.envelopeId);
-      // Update subject/message if provided on existing envelope
-      const { subject, message, envelopetype } = req.body || {};
+      // Update subject/message/name if provided on existing envelope
+      const { name, subject, message, envelopetype } = req.body || {};
+      if (typeof name === 'string' && name.trim().length > 0) {
+        envelope.name = name.trim();
+      }
       if (typeof subject === 'string' && subject.trim().length > 0) {
         envelope.subject = subject.trim();
       }
@@ -63,10 +66,11 @@ const Upload = async (req, res) => {
       }
       await envelope.save();
     } else {
-      // Create a new envelope with optional subject/message
-      const { subject, message, envelopetype } = req.body || {};
+      // Create a new envelope with optional subject/message/name
+      const { name, subject, message, envelopetype } = req.body || {};
       envelope = new Envelope({
         sender: userId,
+        name: typeof name === 'string' && name.trim().length > 0 ? name.trim() : undefined,
         subject: typeof subject === 'string' ? subject.trim() : undefined,
         envelopetype: typeof envelopetype === 'string' && envelopetype.trim().length > 0 ? envelopetype.trim() : (typeof subject === 'string' ? subject.trim() : undefined),
         message: typeof message === 'string' ? message.trim() : undefined,
@@ -330,6 +334,9 @@ const updateEnvelope = async (req, res) => {
       return res.status(404).json({ message: 'Envelope not found' });
     }
     // Step 2: Update envelope fields
+    if (typeof envelopeData.name === 'string' && envelopeData.name.trim().length > 0) {
+      envelope.name = envelopeData.name.trim();
+    }
     envelope.subject = envelopeData.subject || envelope.subject;
     // set envelopetype from provided value if present, else leave unchanged
     if (typeof envelopeData.envelopetype === 'string' && envelopeData.envelopetype.trim().length > 0) {
