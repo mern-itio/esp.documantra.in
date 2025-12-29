@@ -477,19 +477,74 @@ const sendEnvelope = async (req, res) => {
   try {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
-    if (!envelope) return res.status(404).send("Envelope not found");
+    if (!envelope) {
+      return res.status(404).json({ message: "Envelope not found" });
+    }
+
+    // Check if envelope is already sent or completed
+    if (envelope.status === 'sent' || envelope.status === 'completed' || envelope.status === 'declined') {
+      return res.status(400).json({ 
+        message: `Envelope is already ${envelope.status}. Cannot send again.` 
+      });
+    }
+
     // Update envelope status if draft
     if (envelope.status === 'draft') {
       envelope.status = 'in-progress';
       await envelope.save();
-      await sendToRecipients(envelope._id, envelope.subject, envelope.message);
-      return res.status(200).send("Envelope sent to recipients");
+    }
+
+    // Send to all waiting recipients (for both draft and in-progress envelopes)
+    const sentRecipients = [];
+    let hasMoreRecipients = true;
+    let attempts = 0;
+    const maxAttempts = 100; // Safety limit to prevent infinite loops
+
+    while (hasMoreRecipients && attempts < maxAttempts) {
+      attempts++;
+      const result = await sendToRecipients(envelope._id, envelope.subject, envelope.message);
+      
+      if (result.error) {
+        if (result.error === "No waiting recipients") {
+          hasMoreRecipients = false;
+        } else {
+          console.error("Error sending to recipient:", result.error);
+          // Continue trying other recipients even if one fails
+        }
+      } else if (result.success) {
+        sentRecipients.push({
+          recipientId: result.recipientId,
+          permissionId: result.permissionId
+        });
+      }
+    }
+
+    // If we sent to at least one recipient, return success
+    if (sentRecipients.length > 0) {
+      return res.status(200).json({
+        message: "Envelope sent to recipients",
+        recipientsSent: sentRecipients.length,
+        recipients: sentRecipients
+      });
+    } else {
+      // Check if there are any recipients at all
+      const allRecipients = await RecipientPermission.find({ envelopeId: envelope._id });
+      if (allRecipients.length === 0) {
+        return res.status(400).json({ 
+          message: "No recipients found for this envelope" 
+        });
+      }
+      
+      // All recipients have already been sent
+      return res.status(200).json({
+        message: "All recipients have already been notified",
+        recipientsSent: 0
+      });
     }
   } catch (error) {
     console.error("Error sending envelope:", error);
-    return res.status(500).send("Server error");
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
-
 }
 
 // Schedule envelope to be sent at a specific date/time
