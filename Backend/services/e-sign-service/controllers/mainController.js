@@ -562,7 +562,7 @@ const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage) =>
     // Step 3: Send email
     const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
     const html = signRequestTemplate(
-      waitingPermission.recipientId.name,
+      waitingPermission.recipientId.name, 
       envelopeSubject,
       envelopeMessage,
       signLink
@@ -811,65 +811,76 @@ const addSignature = async (req, res) => {
         });
       }else{
         // Get the current signer and envelope
-        const signer = await selfSigner.findById(recipientId);
+        const currentSigner = await selfSigner.findById(recipientId);
         const envelope = await Envelope.findById(envelopeId);
         
-        if (!signer || !envelope) {
+        if (!currentSigner || !envelope) {
           return res.status(404).json({ message: 'Signer or envelope not found' });
         }
-        
-        // Handle Mongoose Map access - data can be a Map or plain object
-        const getDataValue = (data, key) => {
-          if (!data) return '';
-          if (data instanceof Map) {
-            return data.get(key) || '';
-          }
-          return data[key] || '';
-        };
-        
-        const signerEmail = getDataValue(signer.data, 'Email');
-        const signerName = getDataValue(signer.data, 'Name') || 'Signer';
-        console.log(signerEmail);
-        
-        // Check if there are more fields remaining for this signer
-        const pendingFields = await SignatureField.find({
-          envelopeId: envelopeId,
-          slotId: signer.signerSlotId,
-          type: 'signature',
-          status: 'pending'
-        });
-        
-        const fieldRemmaning = pendingFields.length > 0;
-        
-        // Get next pending signer for reminder email
-        const nextSigner = pendingSelfSigners.signers[0];
-        if (nextSigner) {
-          const nextSignerEmail = getDataValue(nextSigner.data, 'Email');
-          const nextSignerName = getDataValue(nextSigner.data, 'Name') || 'Signer';
-          const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${nextSigner._id}?self=1&cycleId=${cycleId}`;
-          const html = signReminderTemplate(nextSignerName, envelope.subject, envelope.message, signLink);
-          
-          // Send Reminder E-Mail to pending signers
-          // await sendEmail(   
-          //   nextSignerEmail,
-          //   `Reminder: Action Required: Sign "${envelope.subject}"`,
-          //   html
-          // );
+        // 1. Find pending signature fields
+        const pendingSignatureField = currentSigner.signatureFields.find(
+          f => f.state == 'pending'
+        );
+
+        // 2. Find pending non-signature fields
+        const pendingNonSignatureField = currentSigner.nonSignatureFields.find(
+          f => f.state == 'pending' || f.value === null
+        );
+
+        // 3. If ANY pending field exists → redirect back to signing page
+        if (pendingSignatureField || pendingNonSignatureField) {
+          console.log('Pending fields remain for current self-signer');
+          console.log(pendingSignatureField);
+          console.log(pendingNonSignatureField);
+          // Prepare Email to next self-signer in cycle
+          return res.status(200).json({
+              status: 'success',
+              message: 'Signature added with compliance',
+              fieldRemmaning:true
+            });
+        }else{
+            // Find next pending self-signer
+            const nextSigner = pendingSelfSigners?.signers?.find(
+              s => s.status === 'pending'
+            );
+            if (!nextSigner) {
+              console.log('No next self-signer found');
+              return;
+            }
+            const nextSignerEmail = nextSigner?.data?.email;
+            const nextSignerName = nextSigner?.data?.name;
+            if (!nextSignerEmail) {
+              console.log('Next signer email missing');
+              return;
+            }
+            const nextSignerSignatureLink =
+              `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${nextSigner._id}/${cycleId}/?self=1`;
+            const nextSignerSubject =
+              `Action Required: ${currentSigner?.data?.name} has completed their signing`;
+            const nextSignerMessage =
+              'The previous signer has completed their part. Please proceed to sign the document.';
+            const html = signRequestTemplate(
+              nextSignerName,
+              nextSignerSubject,
+              nextSignerMessage,
+              nextSignerSignatureLink
+            );
+            await sendEmail(
+              nextSignerEmail,
+              nextSignerSubject,
+              html
+            );
+
+            return res.status(200).json({
+              status: 'success',
+              message: 'Signature added with compliance',
+              fieldRemmaning:false
+            });
+          // All fields completed for this signer
         }
-        
-        // Notify Creator or Next Signer
-        // Notify Signer 
-        
-        return res.status(200).json({
-          status: 'success',
-          message: 'Signature added with compliance',
-          fieldRemmaning: fieldRemmaning
-        });
       }
     }
 };
-const addPowerFormSignerSignature = async (req, res) => {
-}
 
 const getRecipientByEmail = async (req, res) => {
   const { email } = req.params;
@@ -1185,7 +1196,6 @@ const signerInitiate = async (req, res) => {
       }
       // Prepare Signature Fields for each slot
       const fields = await SignatureField.find({ envelopeId: envelope._id, slotId: slot.slotId, type: "signature" });
-      console.log("Fields for slot:", slot.slotId, fields);
       // Map them into the lighter structure for SelfSigner
       const signatureFieldsForSigner = fields.map(f => ({
         fieldId: f._id,
@@ -1197,7 +1207,6 @@ const signerInitiate = async (req, res) => {
         fieldId: f._id,
         state: f.status = "pending"
       }));
-      signatureFieldsForSigner.push(...nonSignatureFieldsForSigner);
       slotRecords.push({
         envelopeId: envelope._id,
         signerSlotId: slot.slotId,

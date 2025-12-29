@@ -1,25 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export default function ThankYouPage() {
-  const [showConfetti, _setShowConfetti] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(true);
 
   const PALETTE = ["#ffffff", "#260559", "#214191", "#ffcc00", "#00ffea"];
 
   const CONFETTI_COUNT = 80;
-  const pieces = Array.from({ length: CONFETTI_COUNT }).map((_, i) => {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 120 + Math.random() * 420;
-    const tx = Math.cos(angle) * dist;
-    const ty = Math.sin(angle) * dist;
-    const rot = Math.floor(Math.random() * 720) + "deg";
-    const delay = (Math.random() * 0.25).toFixed(2) + "s";
-    const duration = (0.9 + Math.random() * 1.4).toFixed(2) + "s";
-    const width = Math.floor(6 + Math.random() * 10);
-    const height = Math.floor(6 + Math.random() * 18);
-    const color = PALETTE[i % PALETTE.length];
-    const shape = Math.random() > 0.6 ? "circle" : "rect";
-    return { id: i, tx, ty, rot, delay, duration, width, height, color, shape };
-  });
+  const pieces = useMemo(() =>
+    Array.from({ length: CONFETTI_COUNT }).map((_, i) => {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 120 + Math.random() * 420;
+      const tx = Math.cos(angle) * dist;
+      const ty = Math.sin(angle) * dist;
+      const rot = Math.floor(Math.random() * 720) + "deg";
+      const delay = (Math.random() * 0.25).toFixed(2) + "s";
+      const duration = (0.9 + Math.random() * 1.4).toFixed(2) + "s";
+      const width = Math.floor(6 + Math.random() * 10);
+      const height = Math.floor(6 + Math.random() * 18);
+      const color = PALETTE[i % PALETTE.length];
+      const shape = Math.random() > 0.6 ? "circle" : "rect";
+      return { id: i, tx, ty, rot, delay, duration, width, height, color, shape };
+    }),
+    []
+  );
+
+  // Hide confetti after the longest piece finishes + small buffer
+  useEffect(() => {
+    const parseSec = (s: string) => parseFloat(s || "0");
+    const maxSec = Math.max(...pieces.map(p => parseSec(p.duration) + parseSec(p.delay)));
+    const timeout = (maxSec + 0.3) * 1000; // add 300ms buffer
+    const t = setTimeout(() => setShowConfetti(false), timeout);
+    return () => clearTimeout(t);
+  }, [pieces]);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ backgroundColor: "#260559" }}>
