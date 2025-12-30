@@ -54,6 +54,7 @@ app.listen(PORT, () => {
   const runScheduledWorker = async () => {
     // Prevent concurrent runs
     if (isWorkerRunning) {
+      console.log('[Scheduled Worker] Skipping - previous run still in progress');
       return;
     }
     
@@ -62,6 +63,7 @@ app.listen(PORT, () => {
       
       // Only run if DB is connected
       if (mongoose.connection.readyState !== 1) {
+        console.log('[Scheduled Worker] Skipping - database not connected (state:', mongoose.connection.readyState, ')');
         return;
       }
       
@@ -70,21 +72,41 @@ app.listen(PORT, () => {
       // Use the existing processScheduledEnvelopes function
       // Cache the require to avoid repeated file system access
       if (!global._scheduledWorkerController) {
-        global._scheduledWorkerController = require('./controllers/mainController');
+        try {
+          global._scheduledWorkerController = require('./controllers/mainController');
+          console.log('[Scheduled Worker] Controller loaded successfully');
+        } catch (requireError) {
+          console.error('[Scheduled Worker] Failed to load controller:', requireError.message);
+          throw requireError;
+        }
       }
       
       // Call the function directly
       if (global._scheduledWorkerController.processScheduledEnvelopes) {
-        await global._scheduledWorkerController.processScheduledEnvelopes();
+        const result = await global._scheduledWorkerController.processScheduledEnvelopes();
+        if (result && result.processed > 0) {
+          console.log(`[Scheduled Worker] ✅ Processed ${result.processed} scheduled envelope(s)`);
+        }
+      } else {
+        console.error('[Scheduled Worker] processScheduledEnvelopes function not found in controller');
       }
     } catch (error) {
-      // Silently handle errors - don't crash the server or trigger restarts
-      // Only log non-connection errors
-      if (error && error.message && 
-          !error.message.includes('connection') && 
-          !error.message.includes('Cannot find module') &&
-          !error.message.includes('processScheduledEnvelopes')) {
-        // Suppress error to avoid triggering nodemon
+      // Log all errors properly for production debugging
+      // Only skip logging for connection issues during startup
+      const isConnectionError = error && error.message && (
+        error.message.includes('connection') || 
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('MongoNetworkError')
+      );
+      
+      if (!isConnectionError) {
+        console.error('[Scheduled Worker] ❌ Error processing scheduled envelopes:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      } else {
+        console.log('[Scheduled Worker] ⚠️ Database connection issue (will retry):', error.message);
       }
     } finally {
       isWorkerRunning = false;
@@ -103,20 +125,27 @@ app.listen(PORT, () => {
         }
         
         // Run worker immediately
-        runScheduledWorker().catch(() => {});
+        runScheduledWorker().catch((err) => {
+          console.error('[Scheduled Worker] Initial run error:', err.message);
+        });
         
         // Set up interval to run worker every minute
         workerInterval = setInterval(() => {
-          runScheduledWorker().catch(() => {});
+          runScheduledWorker().catch((err) => {
+            console.error('[Scheduled Worker] Interval run error:', err.message);
+          });
         }, 60000); // Run every minute
         
         console.log('✅ Scheduled envelope worker started - will process scheduled envelopes every minute');
+        console.log('[Scheduled Worker] Worker initialized at:', new Date().toISOString());
       } else {
         // Wait for DB connection and retry
+        console.log('[Scheduled Worker] Waiting for database connection... (state:', mongoose.connection.readyState, ')');
         setTimeout(initializeWorker, 2000);
       }
     } catch (error) {
-      // Silently handle initialization errors
+      // Log initialization errors for debugging
+      console.error('[Scheduled Worker] Initialization error:', error.message);
       setTimeout(initializeWorker, 5000);
     }
   };

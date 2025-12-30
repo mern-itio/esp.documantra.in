@@ -179,6 +179,7 @@ const envelopesData = async (req, res) => {
         sentAt: envelope.updatedAt,
         expiresAt: envelope.expirationDate,
         isPowerForm: envelope.isPowerForm,
+        isAIGenerated: envelope.isAIGenerated || false,
         completionCertificate: envelope.completionCertificate,
         // sender info (fallbacks preserved)
         sender: {
@@ -567,18 +568,57 @@ const scheduleEnvelope = async (req, res) => {
     }
 
     // Combine date and time if time is provided
-    let scheduledDateTime = new Date(scheduledDate);
-    if (scheduledTime) {
-      const [hours, minutes] = scheduledTime.split(':');
-      scheduledDateTime.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0, 0);
+    // Parse date and time as local time, then convert to UTC for storage
+    // This ensures the user's intended time is preserved regardless of server timezone
+    let scheduledDateTime;
+    
+    if (typeof scheduledDate === 'string') {
+      // Extract date parts (YYYY-MM-DD format from HTML date input)
+      const dateOnly = scheduledDate.split('T')[0];
+      const dateParts = dateOnly.split('-');
+      
+      if (dateParts.length === 3) {
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+        const day = parseInt(dateParts[2]);
+        
+        // Parse time if provided (HH:MM format from HTML time input)
+        let hours = 0;
+        let minutes = 0;
+        if (scheduledTime) {
+          const timeParts = scheduledTime.split(':');
+          hours = parseInt(timeParts[0]) || 0;
+          minutes = parseInt(timeParts[1]) || 0;
+        }
+        
+        // Create date in LOCAL timezone (as user intended)
+        // This will be automatically converted to UTC when stored in MongoDB
+        scheduledDateTime = new Date(year, month, day, hours, minutes, 0, 0);
+        
+        // Log for debugging
+        console.log(`[scheduleEnvelope] Parsed schedule:`, {
+          inputDate: scheduledDate,
+          inputTime: scheduledTime || '00:00',
+          localDateTime: scheduledDateTime.toLocaleString(),
+          utcDateTime: scheduledDateTime.toISOString(),
+          serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        });
+      } else {
+        // Fallback: try to parse as-is
+        scheduledDateTime = new Date(scheduledDate);
+      }
     } else {
-      // If no time provided, set to start of day
-      scheduledDateTime.setHours(0, 0, 0, 0);
+      scheduledDateTime = new Date(scheduledDate);
     }
 
-    // Validate that scheduled date is in the future
-    if (scheduledDateTime <= new Date()) {
-      return res.status(400).json({ message: "Scheduled date must be in the future" });
+    // Validate that scheduled date is in the future (compare in UTC)
+    const nowUTC = new Date();
+    if (scheduledDateTime <= nowUTC) {
+      return res.status(400).json({ 
+        message: "Scheduled date must be in the future",
+        scheduled: scheduledDateTime.toISOString(),
+        now: nowUTC.toISOString()
+      });
     }
 
     envelope.isScheduled = true;
@@ -1811,17 +1851,103 @@ const LinkUserRecipient = async (req, res) => {
 // Process scheduled envelopes (to be called by a cron job or worker)
 const processScheduledEnvelopes = async () => {
   try {
+    // Use UTC date for consistent comparison (MongoDB stores dates in UTC)
     const now = new Date();
+    
+    // Log for debugging
+    console.log(`[processScheduledEnvelopes] Checking for scheduled envelopes at ${now.toISOString()} (${now.toLocaleString()})`);
+    
+    // First, find ALL scheduled envelopes for debugging
+    const allScheduled = await Envelope.find({
+      isScheduled: true,
+      status: 'draft'
+    }).select('_id scheduledDate subject');
+    
+    if (allScheduled.length > 0) {
+      console.log(`[processScheduledEnvelopes] Found ${allScheduled.length} scheduled envelope(s) in database:`);
+      allScheduled.forEach(env => {
+        // Ensure scheduledDate is a proper Date object
+        const scheduledDate = env.scheduledDate instanceof Date 
+          ? env.scheduledDate 
+          : (env.scheduledDate ? new Date(env.scheduledDate) : null);
+        
+        if (scheduledDate) {
+          const timeDiffMs = scheduledDate.getTime() - now.getTime();
+          const timeDiffMinutes = Math.round(timeDiffMs / 1000 / 60);
+          const timeDiffSeconds = Math.round(timeDiffMs / 1000);
+          const isPast = scheduledDate <= now;
+          
+          console.log(`  - Envelope ${env._id}:`, {
+            subject: env.subject,
+            scheduledDateUTC: scheduledDate.toISOString(),
+            scheduledDateLocal: scheduledDate.toLocaleString('en-IN', { timeZone: 'Asia/Calcutta' }),
+            nowUTC: now.toISOString(),
+            nowLocal: now.toLocaleString('en-IN', { timeZone: 'Asia/Calcutta' }),
+            timeDiffSeconds: timeDiffSeconds,
+            timeDiffMinutes: timeDiffMinutes,
+            isPast: isPast,
+            willProcess: isPast
+          });
+        }
+      });
+    }
+    
     // Find all envelopes that are scheduled and the scheduled time has passed
-    const scheduledEnvelopes = await Envelope.find({
+    // MongoDB compares dates in UTC, so this should work correctly
+    // Using $lte (less than or equal) to include envelopes whose time has arrived
+    const query = {
       isScheduled: true,
       status: 'draft',
       scheduledDate: { $lte: now }
+    };
+    
+    console.log(`[processScheduledEnvelopes] MongoDB query:`, {
+      isScheduled: true,
+      status: 'draft',
+      scheduledDate: { $lte: now.toISOString() },
+      nowType: typeof now,
+      nowValue: now.toISOString()
     });
+    
+    const scheduledEnvelopes = await Envelope.find(query);
 
-    console.log(`Processing ${scheduledEnvelopes.length} scheduled envelope(s)`);
+    console.log(`[processScheduledEnvelopes] MongoDB query found ${scheduledEnvelopes.length} envelope(s) with scheduledDate <= ${now.toISOString()}`);
+    
+    // Debug: Show what MongoDB returned
+    if (scheduledEnvelopes.length > 0) {
+      scheduledEnvelopes.forEach(env => {
+        const scheduledDate = env.scheduledDate instanceof Date 
+          ? env.scheduledDate 
+          : new Date(env.scheduledDate);
+        console.log(`[processScheduledEnvelopes] MongoDB returned envelope ${env._id}: scheduledDate=${scheduledDate.toISOString()}, type=${typeof env.scheduledDate}`);
+      });
+    }
+    
+    // Additional safety check: filter in memory to ensure dates are truly past
+    // This handles any edge cases with date comparison
+    const readyToProcess = scheduledEnvelopes.filter(env => {
+      const scheduledDate = env.scheduledDate instanceof Date 
+        ? env.scheduledDate 
+        : new Date(env.scheduledDate);
+      const isReady = scheduledDate <= now;
+      
+      if (!isReady) {
+        console.log(`[processScheduledEnvelopes] ⚠️ Envelope ${env._id} filtered out: scheduledDate (${scheduledDate.toISOString()}) > now (${now.toISOString()})`);
+      }
+      
+      return isReady;
+    });
+    
+    console.log(`[processScheduledEnvelopes] After filtering: ${readyToProcess.length} envelope(s) ready to process`);
+    
+    // Debug: Log envelope details if any found
+    if (readyToProcess.length > 0) {
+      readyToProcess.forEach(env => {
+        console.log(`[processScheduledEnvelopes] ✅ Processing Envelope ${env._id}: scheduledDate=${env.scheduledDate?.toISOString()}, now=${now.toISOString()}`);
+      });
+    }
 
-    for (const envelope of scheduledEnvelopes) {
+    for (const envelope of readyToProcess) {
       try {
         // Update status and send
         envelope.status = 'in-progress';
@@ -1837,7 +1963,7 @@ const processScheduledEnvelopes = async () => {
       }
     }
 
-    return { processed: scheduledEnvelopes.length };
+    return { processed: readyToProcess.length };
   } catch (error) {
     console.error("Error processing scheduled envelopes:", error);
     throw error;
