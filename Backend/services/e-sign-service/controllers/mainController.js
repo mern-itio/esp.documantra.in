@@ -548,7 +548,6 @@ const sendEnvelope = async (req, res) => {
   }
 }
 
-// Schedule envelope to be sent at a specific date/time
 const scheduleEnvelope = async (req, res) => {
   try {
     const { envelopeId } = req.params;
@@ -557,39 +556,27 @@ const scheduleEnvelope = async (req, res) => {
     if (!scheduledDate) {
       return res.status(400).json({ message: "Scheduled date is required" });
     }
-
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found" });
     }
-
     if (envelope.status !== 'draft') {
       return res.status(400).json({ message: "Only draft envelopes can be scheduled" });
     }
-
-    // Combine date and time if time is provided
-    // CRITICAL: Parse date and time as user's local timezone, then convert to UTC
-    // The frontend sends date/time in user's local timezone, but server might be in UTC
-    // Solution: Accept timezone offset from frontend, or use a default (IST = UTC+5:30)
     let scheduledDateTime;
-    
-    // Get timezone offset from request (in minutes, e.g., 330 for IST = UTC+5:30)
-    // If not provided, default to IST (UTC+5:30 = 330 minutes)
     const timezoneOffset = req.body.timezoneOffset !== undefined 
       ? parseInt(req.body.timezoneOffset) 
-      : 330; // Default to IST (UTC+5:30)
+      : 330; 
     
     if (typeof scheduledDate === 'string') {
-      // Extract date parts (YYYY-MM-DD format from HTML date input)
       const dateOnly = scheduledDate.split('T')[0];
       const dateParts = dateOnly.split('-');
       
       if (dateParts.length === 3) {
         const year = parseInt(dateParts[0]);
-        const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+        const month = parseInt(dateParts[1]) - 1; 
         const day = parseInt(dateParts[2]);
         
-        // Parse time if provided (HH:MM format from HTML time input)
         let hours = 0;
         let minutes = 0;
         if (scheduledTime) {
@@ -597,25 +584,15 @@ const scheduleEnvelope = async (req, res) => {
           hours = parseInt(timeParts[0]) || 0;
           minutes = parseInt(timeParts[1]) || 0;
         }
-        
-        // Create date in UTC, accounting for user's timezone offset
-        // timezoneOffset is in minutes, positive for timezones ahead of UTC (e.g., IST = +330)
-        // getTimezoneOffset() returns negative for ahead-of-UTC, so we multiply by -1 in frontend
-        // To convert local time to UTC: UTC = local - offset
-        // Example: User enters 10:53 IST (UTC+5:30 = +330 min), we want 05:23 UTC
-        // Calculation: 10:53 - 5:30 = 05:23
         const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
         const offsetMinutes = Math.abs(timezoneOffset) % 60;
-        const isAheadOfUTC = timezoneOffset > 0; // Positive means ahead of UTC (like IST)
+        const isAheadOfUTC = timezoneOffset > 0;
         
-        // Calculate UTC time
         let utcHours, utcMinutes;
         if (isAheadOfUTC) {
-          // Timezone is ahead of UTC (like IST), subtract offset
           utcHours = hours - offsetHours;
           utcMinutes = minutes - offsetMinutes;
         } else {
-          // Timezone is behind UTC, add offset
           utcHours = hours + offsetHours;
           utcMinutes = minutes + offsetMinutes;
         }
@@ -623,7 +600,6 @@ const scheduleEnvelope = async (req, res) => {
         let utcMonth = month;
         let utcYear = year;
         
-        // Handle minute overflow/underflow
         if (utcMinutes < 0) {
           utcMinutes += 60;
           utcHours -= 1;
@@ -631,8 +607,6 @@ const scheduleEnvelope = async (req, res) => {
           utcMinutes -= 60;
           utcHours += 1;
         }
-        
-        // Handle hour overflow/underflow
         if (utcHours < 0) {
           utcHours += 24;
           utcDay -= 1;
@@ -642,7 +616,6 @@ const scheduleEnvelope = async (req, res) => {
               utcMonth = 11;
               utcYear -= 1;
             }
-            // Get days in previous month
             const daysInMonth = new Date(utcYear, utcMonth + 1, 0).getDate();
             utcDay = daysInMonth;
           }
@@ -659,31 +632,14 @@ const scheduleEnvelope = async (req, res) => {
             }
           }
         }
-        
-        // Create date in UTC
         scheduledDateTime = new Date(Date.UTC(utcYear, utcMonth, utcDay, utcHours, utcMinutes, 0, 0));
         
-        // Log for debugging
-        const offsetSign = isAheadOfUTC ? '+' : '-';
-        console.log(`[scheduleEnvelope] Parsed schedule:`, {
-          inputDate: scheduledDate,
-          inputTime: scheduledTime || '00:00',
-          timezoneOffsetMinutes: timezoneOffset,
-          timezoneOffset: `${offsetSign}${offsetHours}:${offsetMinutes.toString().padStart(2, '0')}`,
-          userLocalTime: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
-          calculatedUTCTime: `${utcHours.toString().padStart(2, '0')}:${utcMinutes.toString().padStart(2, '0')}`,
-          utcDateTime: scheduledDateTime.toISOString(),
-          serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        });
       } else {
-        // Fallback: try to parse as-is
         scheduledDateTime = new Date(scheduledDate);
       }
     } else {
       scheduledDateTime = new Date(scheduledDate);
     }
-
-    // Validate that scheduled date is in the future (compare in UTC)
     const nowUTC = new Date();
     if (scheduledDateTime <= nowUTC) {
       return res.status(400).json({ 

@@ -71,6 +71,8 @@ type Party = {
 };
 
 import { Document as PDFDocument, Page as PDFPage } from 'react-pdf';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
 const EnvelopeCreator: React.FC = () => {
   const location = useLocation();
@@ -349,6 +351,31 @@ const EnvelopeCreator: React.FC = () => {
   const [isScheduled, setIsScheduled] = useState<boolean>(false);
   const [scheduledDate, setScheduledDate] = useState<string>(getTomorrowDate());
   const [scheduledTime, setScheduledTime] = useState<string>('10:00');
+  // Combined date-time state for DatePicker
+  const [scheduledDateTime, setScheduledDateTime] = useState<Date>(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    return tomorrow;
+  });
+  
+  // Calculate minTime based on selected date
+  const getMinTime = (): Date => {
+    const now = new Date();
+    const selected = scheduledDateTime;
+    // If selected date is today, set min time to current time + 1 minute
+    if (
+      selected.getDate() === now.getDate() &&
+      selected.getMonth() === now.getMonth() &&
+      selected.getFullYear() === now.getFullYear()
+    ) {
+      const minTime = new Date(now);
+      minTime.setMinutes(minTime.getMinutes() + 1);
+      return minTime;
+    }
+    // If future date, allow any time from midnight
+    return new Date(0, 0, 0, 0, 0);
+  };
   const [draggedSignerId, setDraggedSignerId] = useState<string | null>(null);
   const [dragOverSignerId, setDragOverSignerId] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
@@ -2136,21 +2163,18 @@ const EnvelopeCreator: React.FC = () => {
           name: recipient.name,
           email: recipient.email
         })
-        console.log('Fetched and updated');
       }
     } catch (err) {
       console.log(`Handle email on Blur`);
     }
   }
 
-  // Drag handlers for recipient reordering
   const handleRecipientDragStart = (e: React.DragEvent, recipientId: string) => {
     if (!setSigningOrder) {
       e.preventDefault();
-      return; // Only allow dragging when signing order is enabled
+      return; 
     }
     
-    // Prevent dragging if clicking on interactive elements
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.tagName === 'TEXTAREA' || 
         target.closest('button') || target.closest('input') || target.closest('textarea') || 
@@ -2163,7 +2187,6 @@ const EnvelopeCreator: React.FC = () => {
     setDraggedRecipientId(recipientId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', recipientId);
-    // Prevent text selection during drag
     e.dataTransfer.setDragImage(new Image(), 0, 0);
   };
 
@@ -2195,7 +2218,6 @@ const EnvelopeCreator: React.FC = () => {
       const draggedOrder = draggedRecipient.order || prev.findIndex(r => r.id === draggedRecipientId) + 1;
       const targetOrder = targetRecipient.order || prev.findIndex(r => r.id === targetRecipientId) + 1;
 
-      // Swap orders
       const updated = prev.map(r => {
         if (r.id === draggedRecipientId) {
           return { ...r, order: targetOrder };
@@ -2205,8 +2227,6 @@ const EnvelopeCreator: React.FC = () => {
         }
         return r;
       });
-
-      // Normalize orders to ensure they're sequential
       return normalizeOrders(updated);
     });
 
@@ -2220,80 +2240,37 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   const removeRecipient = async (id: string) => {
-    // Check if coming from db and delete from db too
-
-    // Heuristic: If the ID is a MongoDB ObjectId (24 hex chars), treat it as DB record
     const isDbRecord = /^[a-fA-F0-9]{24}$/.test(id);
 
     if (isDbRecord) {
       try {
-        await eSignApi.post(`/api/e-sign/envelope/remove-recipient/${id}/${envelopeId}`);// Adjust API path if needed
-        console.log(`Recipient ${id} deleted from DB successfully.`);
+        await eSignApi.post(`/api/e-sign/envelope/remove-recipient/${id}/${envelopeId}`);        
       } catch (error) {
         console.error('Failed to delete recipient from DB:', error);
       }
     }
     setRecipients(prev => {
       const removed = prev.filter(recipient => recipient.id !== id);
-      // Normalize orders after removal
       const normalized = normalizeOrders(removed);
-      
-      // Handle active recipient state
       if (id === activeRecipientId) {
-        // If we removed the active recipient, set the first remaining as active (if any)
         if (normalized.length > 0 && normalized.length > 3) {
           setActiveRecipientId(normalized[0].id);
         } else {
-          // If we now have 3 or fewer, clear active state (all will show as cards)
           setActiveRecipientId(null);
         }
       } else if (normalized.length <= 3) {
-        // If we now have 3 or fewer recipients, clear active state
         setActiveRecipientId(null);
-      }
-      
+      }      
       return normalized;
     });
   };
-
-  // const canProceedToNext = () => {
-  //   switch (currentStep) {
-  //     case 1:
-  //       return documents?.length > 0 && selectedEnvelopeType !== '';
-  //     case 2:
-  //       if (mode === 'normal') {
-  //         return recipients?.length > 0 && recipients.every(r => r.name && r.email);
-  //       } else {
-  //         // power mode'
-  //         return true; // Fields are optional
-  //       }
-  //     case 3:
-  //       return true; // Fields are optional
-  //     case 4:
-  //       return true; // Authentication is optional
-  //     case 5:
-  //       return envelopeData.subject.trim() !== '';
-  //     default:
-  //       return true;
-  //   }
-  // };
-
-  // const handleCreateEnvelope = () => {
-  //   if (!user) return;
-  //   navigate('/e-sign/dashboard');
-  // };
-
-  // Fetch subscription plan and auth methods for send confirmation
   const fetchSendConfirmationData = async () => {
     try {
-      // Fetch subscription plan
       const planResponse = await subscriptionApi.get('/user-plan/me');
       if (planResponse.status === 200) {
         setSubscriptionPlan(planResponse.data.data);
         SubscriptionStorage.savePlan(planResponse.data.data);
       }
-      
-      // Fetch auth methods
       const authResponse = await subscriptionApi.get('/user/available/auth/methods');
       if (authResponse.status === 200) {
         setAuthMethods(authResponse.data.data.methods || []);
@@ -2310,62 +2287,39 @@ const EnvelopeCreator: React.FC = () => {
       console.error('Cannot send envelope: envelopeId is missing');
       return;
     }
-    
-    // Check if user has enough credits before proceeding
     const totalCost = calculateTotalCost();
     const creditsBalance = subscriptionPlan?.creditsBalance || 0;
     
     if (totalCost > 0 && creditsBalance < totalCost) {
-      // Show subscription modal instead of send confirmation
       setShowSubscriptionModal(true);
       toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
       return;
     }
     
     try {
-      // Show confirmation modal instead of directly sending
-      console.log('Fetching send confirmation data...');
       await fetchSendConfirmationData();
-      console.log('Setting modal to show...');
       setSendModalStep(1);
       setShowSendConfirmationModal(true);
-      console.log('Modal should now be visible');
     } catch (error) {
       console.error('Error preparing send confirmation:', error);
-      // Still show the modal even if data fetch fails
       setSendModalStep(1);
       setShowSendConfirmationModal(true);
       toast.error('Failed to load some data, but you can still proceed.');
     }
   };
 
-  // Actual send function called after confirmation
   const confirmAndSendEnvelope = async () => {
     if (!envelopeId) return;
     
-    // Check if scheduling is enabled FIRST - before any sending logic
-    // This must be checked before setting sending state or doing any API calls
     if (isScheduled && scheduledDate) {
-      console.log('Scheduling envelope:', { isScheduled, scheduledDate, scheduledTime, envelopeId });
-      
-      // Close modal immediately (don't show sending animation for scheduled)
-      setShowSendConfirmationModal(false);
-      
+      setShowSendConfirmationModal(false);      
       try {
-        // Schedule the envelope instead of sending immediately
-        // Get user's timezone offset in minutes (e.g., IST = UTC+5:30 = 330 minutes)
-        const timezoneOffset = new Date().getTimezoneOffset() * -1; // Negative because getTimezoneOffset returns opposite
-        
+        const timezoneOffset = new Date().getTimezoneOffset() * -1;
         const response = await eSignApi.post(`/api/e-sign/schedule-envelope/${envelopeId}`, {
           scheduledDate,
           scheduledTime: scheduledTime || null,
           timezoneOffset: timezoneOffset
-        });
-        
-        console.log('Envelope scheduled successfully:', response.data);
-        
-        // Navigate to agreement page with scheduled parameter
-        // The sweet alert will be shown in AgreementPage
+        });       
         navigate(`/e-sign/aggrement?scheduled=true&envelopeId=${envelopeId}`);
       } catch (err: any) {
         console.error('Error scheduling envelope:', err);
@@ -2377,20 +2331,14 @@ const EnvelopeCreator: React.FC = () => {
           confirmButtonColor: "#ffc107",
         });
       }
-      return; // Exit early for scheduled envelopes - IMPORTANT: don't continue to sending logic
+      return;
     }
-    
-    console.log('Sending envelope (not scheduled):', { isScheduled, scheduledDate, envelopeId });
-    
-    // Double-check credits before sending (safety check)
     const totalCost = calculateTotalCost();
     const creditsBalance = subscriptionPlan?.creditsBalance || 0;
     
     if (totalCost > 0 && creditsBalance < totalCost) {
-      // Close send confirmation modal
       setShowSendConfirmationModal(false);
       setSending(false);
-      // Show subscription modal
       setShowSubscriptionModal(true);
       toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
       return;
@@ -7177,36 +7125,77 @@ const EnvelopeCreator: React.FC = () => {
                       
                       {isScheduled && (
                         <div className="ml-7 space-y-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Date
-                              </label>
-                              <input
-                                type="date"
-                                value={scheduledDate}
-                                onChange={(e) => setScheduledDate(e.target.value)}
-                                min={new Date().toISOString().split('T')[0]}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66]"
-                                required={isScheduled}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Time
-                              </label>
-                              <input
-                                type="time"
-                                value={scheduledTime}
-                                onChange={(e) => setScheduledTime(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66]"
-                              />
-                            </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Schedule Date & Time
+                            </label>
+                            <DatePicker
+                              selected={scheduledDateTime}
+                              onChange={(date: Date | null) => {
+                                if (date) {
+                                  setScheduledDateTime(date);
+                                  // Update separate date and time states for API compatibility
+                                  const dateStr = date.toISOString().split('T')[0];
+                                  const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                                  setScheduledDate(dateStr);
+                                  setScheduledTime(timeStr);
+                                }
+                              }}
+                              showTimeSelect
+                              timeFormat="HH:mm"
+                              timeIntervals={1}
+                              dateFormat="MMMM d, yyyy h:mm aa"
+                              minDate={new Date()}
+                              minTime={getMinTime()}
+                              maxTime={new Date(0, 0, 0, 23, 59)}
+                              filterTime={(time: Date) => {
+                                const now = new Date();
+                                const selected = scheduledDateTime;
+                                // If selected date is today, filter out past times
+                                if (
+                                  selected.getDate() === now.getDate() &&
+                                  selected.getMonth() === now.getMonth() &&
+                                  selected.getFullYear() === now.getFullYear()
+                                ) {
+                                  const currentTime = now.getHours() * 60 + now.getMinutes();
+                                  const timeToCheck = time.getHours() * 60 + time.getMinutes();
+                                  // Allow times that are at least 1 minute in the future
+                                  return timeToCheck > currentTime;
+                                }
+                                // For future dates, allow all times
+                                return true;
+                              }}
+                              onChangeRaw={(e) => {
+                                // Prevent manual typing into the input; users must pick from the picker
+                                if (e && typeof (e as any).preventDefault === 'function') {
+                                  (e as any).preventDefault();
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E2B66] bg-white cursor-pointer"
+                              wrapperClassName="w-full"
+                              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
+                              placeholderText="Select date and time"
+                              isClearable={false}
+                              required={isScheduled}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Select a future date and time. For today, you can only select times after the current time.
+                            </p>
                           </div>
-                          {scheduledDate && (
-                            <div className="text-xs text-gray-600 mt-2">
-                              <span className="font-medium">Scheduled for:</span>{' '}
-                              {new Date(scheduledDate + (scheduledTime ? `T${scheduledTime}` : '')).toLocaleString()}
+                          {scheduledDateTime && (
+                            <div className="text-sm text-gray-700 mt-2 p-2 bg-white rounded border border-purple-200">
+                              <span className="font-medium text-purple-700">Scheduled for:</span>{' '}
+                              <span className="text-gray-800">
+                                {scheduledDateTime.toLocaleString('en-US', {
+                                  weekday: 'short',
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                  hour12: true
+                                })}
+                              </span>
                             </div>
                           )}
                         </div>

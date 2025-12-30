@@ -51,7 +51,7 @@ const Upload = async (req, res) => {
   if (req.body.envelopeId) {
       envelope = await Envelope.findById(req.body.envelopeId);
       // Update subject/message/name if provided on existing envelope
-      const { name, subject, message, envelopetype } = req.body || {};
+      const { name, subject, message, envelopetype, isAIGenerated } = req.body || {};
       if (typeof name === 'string' && name.trim().length > 0) {
         envelope.name = name.trim();
       }
@@ -64,16 +64,34 @@ const Upload = async (req, res) => {
       if (typeof message === 'string') {
         envelope.message = message.trim();
       }
+      // Handle isAIGenerated update - can come as string 'true'/'false' from FormData or as boolean
+      if (isAIGenerated !== undefined) {
+        if (typeof isAIGenerated === 'boolean') {
+          envelope.isAIGenerated = isAIGenerated;
+        } else if (typeof isAIGenerated === 'string') {
+          envelope.isAIGenerated = isAIGenerated.toLowerCase() === 'true';
+        }
+      }
       await envelope.save();
     } else {
       // Create a new envelope with optional subject/message/name
-      const { name, subject, message, envelopetype } = req.body || {};
+      const { name, subject, message, envelopetype, isAIGenerated } = req.body || {};
+      
+      // Handle isAIGenerated - can come as string 'true'/'false' from FormData or as boolean
+      let aiGenerated = false;
+      if (typeof isAIGenerated === 'boolean') {
+        aiGenerated = isAIGenerated;
+      } else if (typeof isAIGenerated === 'string') {
+        aiGenerated = isAIGenerated.toLowerCase() === 'true';
+      }
+      
       envelope = new Envelope({
         sender: userId,
         name: typeof name === 'string' && name.trim().length > 0 ? name.trim() : undefined,
         subject: typeof subject === 'string' ? subject.trim() : undefined,
         envelopetype: typeof envelopetype === 'string' && envelopetype.trim().length > 0 ? envelopetype.trim() : (typeof subject === 'string' ? subject.trim() : undefined),
         message: typeof message === 'string' ? message.trim() : undefined,
+        isAIGenerated: aiGenerated,
       });
       await envelope.save();
 

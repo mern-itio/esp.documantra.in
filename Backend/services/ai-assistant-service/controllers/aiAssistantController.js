@@ -2381,6 +2381,8 @@ class AIAssistantController {
 
         if (subject) formData.append('subject', subject);
         if (message) formData.append('message', message);
+        // Mark envelope as AI-generated
+        formData.append('isAIGenerated', 'true');
 
         const uploadResponse = await axios.post(
           `${eSignServiceUrl}/api/e-sign/upload`,
@@ -2957,6 +2959,8 @@ class AIAssistantController {
         contentType: 'application/pdf'
       });
       envelopeFormData.append('subject', `${category} Document`);
+      // Mark envelope as AI-generated
+      envelopeFormData.append('isAIGenerated', 'true');
 
       const envelopeResponse = await axios.post(
         `${eSignServiceUrl}/api/e-sign/upload`,

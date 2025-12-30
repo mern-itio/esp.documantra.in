@@ -52,7 +52,9 @@ const EnvelopeSchema = new mongoose.Schema({
   // Scheduling fields
   isScheduled: { type: Boolean, default: false },
   scheduledDate: { type: Date }, // Combined date and time for when to send
-  scheduledTime: { type: String } // Optional separate time field for UI convenience
+  scheduledTime: { type: String }, // Optional separate time field for UI convenience
+  // AI Assistant tracking
+  isAIGenerated: { type: Boolean, default: false } // Track if envelope was created/sent by AI assistant
 
 }, { timestamps: true });
 

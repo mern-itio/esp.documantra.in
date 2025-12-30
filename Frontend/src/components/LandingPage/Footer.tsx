@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Mail, Linkedin, Github, Search, ArrowRight} from 'lucide-react'
+import { Mail, Linkedin, Github, Search, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Footer = () => {
@@ -18,7 +18,7 @@ const Footer = () => {
   //       const response = await fetch('https://ipapi.co/json/')
   //       const data = await response.json()
   //       setUserCountry(data.country_name)
-        
+
   //       // For demo, we'll randomly assign a country
   //       // const demoCountries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'India']
   //       // const randomCountry = demoCountries[Math.floor(Math.random() * demoCountries.length)]
@@ -506,7 +506,7 @@ const Footer = () => {
             <p className="text-gray-300 max-w-2xl mx-auto mb-6">
               Stay compliant with local e-signature laws and regulations. Search our comprehensive database of legal requirements by country and jurisdiction.
             </p>
-            
+
             {/* Country Search */}
             <form onSubmit={handleCountrySearch} className="max-w-md mx-auto mb-8">
               <div className="relative">
@@ -540,12 +540,11 @@ const Footer = () => {
                   <h4 className="font-medium text-white text-sm">{country.name}</h4>
                 </div>
                 <div className="text-xs text-gray-400 mb-2">{country.laws[0]}</div>
-                <div className={`text-xs px-2 py-1 rounded-full inline-block ${
-                  country.status === 'Fully Compliant' ? 'bg-green-900 text-green-300' :
-                  country.status === 'Qualified Signatures' ? 'bg-blue-900 text-blue-300' :
-                  country.status === 'Digital Signatures' ? 'bg-purple-900 text-purple-300' :
-                  'bg-orange-900 text-orange-300'
-                }`}>
+                <div className={`text-xs px-2 py-1 rounded-full inline-block ${country.status === 'Fully Compliant' ? 'bg-green-900 text-green-300' :
+                    country.status === 'Qualified Signatures' ? 'bg-blue-900 text-blue-300' :
+                      country.status === 'Digital Signatures' ? 'bg-purple-900 text-purple-300' :
+                        'bg-orange-900 text-orange-300'
+                  }`}>
                   {country.status}
                 </div>
               </div>
@@ -944,7 +943,7 @@ const Footer = () => {
             <div className="flex items-center gap-4">
               <div className="text-2xl font-bold gradient-text">DraftnSign</div>
               <span className="text-gray-400 text-sm">
-                © 2025 DraftnSign. All rights reserved.
+                © {new Date().getFullYear()} DraftnSign. All rights reserved.
               </span>
             </div>
 
@@ -967,7 +966,7 @@ const Footer = () => {
                 className="w-10 h-10 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center transition-colors"
               >
                 <svg className="h-5 w-5 text-gray-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
               </a>
               <a

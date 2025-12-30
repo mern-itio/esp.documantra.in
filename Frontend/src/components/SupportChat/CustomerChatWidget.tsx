@@ -84,7 +84,7 @@ const CustomerChatWidget: React.FC = () => {
       const response = await supportCustomerApi.getTickets();
       if (response.data?.data?.tickets) {
         setTickets(response.data.data.tickets);
-        
+
         // If current ticket exists, update its status from the API response
         if (currentTicket) {
           const updatedTicket = response.data.data.tickets.find((t: any) => t._id === currentTicket._id);
@@ -120,11 +120,11 @@ const CustomerChatWidget: React.FC = () => {
         toast.error('This ticket is closed. Please create a new ticket to continue.');
         return;
       }
-      
+
       setCurrentTicket(ticket);
       setIsOpen(true);
       setIsMinimized(false);
-      
+
       // Messages will be loaded automatically by context when currentTicket changes
       // Just join the socket room for real-time updates
       if (isConnected && socket) {
@@ -145,7 +145,7 @@ const CustomerChatWidget: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!currentTicket) return;
-    
+
     // Prevent sending messages to closed tickets
     if (currentTicket.status === 'closed') {
       toast.error('This ticket is closed. Please create a new ticket to continue.');
@@ -153,20 +153,20 @@ const CustomerChatWidget: React.FC = () => {
       setShowCreateTicket(true);
       return;
     }
-    
+
     // Don't send if there's no message and no attachments
     if (!messageInput.trim() && pendingAttachments.length === 0) return;
-    
-    const content = messageInput.trim() || (pendingAttachments.length > 0 
-      ? `Uploaded: ${pendingAttachments.map(a => a.originalName).join(', ')}` 
+
+    const content = messageInput.trim() || (pendingAttachments.length > 0
+      ? `Uploaded: ${pendingAttachments.map(a => a.originalName).join(', ')}`
       : '');
-    
+
     const attachmentsToSend = [...pendingAttachments];
-    
+
     // Clear input and pending attachments
     setMessageInput('');
     setPendingAttachments([]);
-    
+
     // Send message with attachments
     await sendMessage(content, attachmentsToSend.length > 0 ? 'file' : 'text', attachmentsToSend);
     setTyping(false);
@@ -268,7 +268,7 @@ const CustomerChatWidget: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 bg-[#260559] hover:bg-[#260559]/90 text-white rounded-full p-4 shadow-lg transition-all hover:scale-110"
+          className="fixed bottom-24 right-6 z-50 bg-[#260559] hover:bg-[#260559]/90 text-white rounded-full p-4 shadow-lg transition-all hover:scale-110"
           aria-label="Open support chat"
         >
           <MessageSquare className="w-6 h-6" />
@@ -282,9 +282,8 @@ const CustomerChatWidget: React.FC = () => {
       {isOpen && (
         <div
           ref={chatContainerRef}
-          className={`fixed bottom-6 right-6 z-50 bg-white rounded-lg shadow-2xl transition-all ${
-            isMinimized ? 'h-14 w-80' : 'h-[600px] w-96'
-          } flex flex-col`}
+          className={`fixed bottom-6 right-6 z-50 bg-white rounded-lg shadow-2xl transition-all ${isMinimized ? 'h-14 w-80' : 'h-[600px] w-96'
+            } flex flex-col`}
         >
           {/* Header */}
           <div className="bg-[#260559] text-white p-4 rounded-t-lg flex items-center justify-between">
@@ -385,11 +384,10 @@ const CustomerChatWidget: React.FC = () => {
                             >
                               <div className="flex justify-between items-start mb-1">
                                 <span className="font-medium text-sm">{ticket.subject}</span>
-                                <span className={`text-xs px-2 py-1 rounded ${
-                                  ticket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
+                                <span className={`text-xs px-2 py-1 rounded ${ticket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
                                   ticket.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
                                   {ticket.status}
                                 </span>
                               </div>
@@ -408,16 +406,15 @@ const CustomerChatWidget: React.FC = () => {
                     {/* Ticket Info */}
                     <div className="bg-white p-3 rounded-lg border">
                       <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-sm">{currentTicket.subject}</span>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          currentTicket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
-                          currentTicket.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className="font-semibold text-[15px]">{currentTicket.subject}</span>
+                        <span className={`text-[9px] px-2 py-1 rounded ${currentTicket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
+                          currentTicket.status === 'ongoing' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
                           {currentTicket.status}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500">{currentTicket.ticketNumber}</p>
+                      <p className="text-[9px] text-gray-500">{currentTicket.ticketNumber}</p>
                     </div>
 
                     {/* Messages */}
@@ -427,13 +424,12 @@ const CustomerChatWidget: React.FC = () => {
                         className={`flex ${msg.senderType === 'customer' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            msg.senderType === 'customer'
-                              ? 'bg-[#260559] text-white'
-                              : msg.senderType === 'ai'
+                          className={`max-w-[90%] rounded-lg p-2 ${msg.senderType === 'customer'
+                            ? 'bg-[#260559] text-white'
+                            : msg.senderType === 'ai'
                               ? 'bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200'
                               : 'bg-white border'
-                          }`}
+                            }`}
                         >
                           {/* AI Badge */}
                           {msg.senderType === 'ai' && (
@@ -444,15 +440,14 @@ const CustomerChatWidget: React.FC = () => {
                           )}
                           {/* Only show text content if it's not just a file upload notification */}
                           {msg.content && !(msg.messageType === 'file' && msg.content.startsWith('Uploaded:')) && (
-                            <p className={`text-sm whitespace-pre-wrap break-words ${
-                              msg.senderType === 'ai' ? 'text-gray-800' : ''
-                            }`}>{msg.content}</p>
+                            <p className={`text-sm whitespace-pre-wrap break-words ${msg.senderType === 'ai' ? 'text-gray-800' : ''
+                              }`}>{msg.content}</p>
                           )}
                           {msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
                             <div className="mt-2 space-y-2">
                               {msg.attachments.map((att, idx) => {
                                 if (!att || !att.path) return null;
-                                
+
                                 // Handle both relative and absolute paths
                                 let filePath = att.path;
                                 // If path is absolute, extract relative part
@@ -465,18 +460,18 @@ const CustomerChatWidget: React.FC = () => {
                                   // Normalize path separators
                                   filePath = filePath.replace(/\\/g, '/');
                                 }
-                                
+
                                 // Ensure path doesn't start with /
                                 if (filePath.startsWith('/')) {
                                   filePath = filePath.substring(1);
                                 }
-                                
+
                                 const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://165.22.215.73:2107';
                                 const fileUrl = `${supportServiceUrl}/uploads/${filePath}`;
                                 const isImage = att.mimeType?.startsWith('image/');
-                                
+
                                 const isCustomerMessage = msg.senderType === 'customer';
-                                
+
                                 return (
                                   <div key={idx || `att-${idx}`} className="mt-2">
                                     {isImage ? (
@@ -489,11 +484,10 @@ const CustomerChatWidget: React.FC = () => {
                                         <img
                                           src={fileUrl}
                                           alt={att.originalName || 'Image attachment'}
-                                          className={`max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${
-                                            isCustomerMessage 
-                                              ? 'border border-white/30' 
-                                              : 'border border-gray-300'
-                                          }`}
+                                          className={`max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${isCustomerMessage
+                                            ? 'border border-white/30'
+                                            : 'border border-gray-300'
+                                            }`}
                                           style={{ maxHeight: '250px', maxWidth: '100%' }}
                                           onError={(e) => {
                                             console.error('Failed to load image:', fileUrl);
@@ -525,11 +519,10 @@ const CustomerChatWidget: React.FC = () => {
                                         href={fileUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${
-                                          isCustomerMessage
-                                            ? 'border-white/30 bg-white/10 text-white hover:bg-white/20'
-                                            : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
+                                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${isCustomerMessage
+                                          ? 'border-white/30 bg-white/10 text-white hover:bg-white/20'
+                                          : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                          }`}
                                       >
                                         <Paperclip className="w-4 h-4" />
                                         <span className="font-medium">{att.originalName || 'Download file'}</span>
@@ -545,9 +538,13 @@ const CustomerChatWidget: React.FC = () => {
                               })}
                             </div>
                           )}
-                          <p className="text-xs mt-1 opacity-70">
-                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          <p className="text-[9px] mt-1 opacity-70 text-right">
+                            {new Date(msg.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </p>
+
                         </div>
                       </div>
                     ))}
@@ -607,9 +604,8 @@ const CustomerChatWidget: React.FC = () => {
                               className="focus:outline-none"
                             >
                               <Star
-                                className={`w-8 h-8 ${
-                                  star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-                                }`}
+                                className={`w-8 h-8 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                                  }`}
                               />
                             </button>
                           ))}
@@ -652,7 +648,7 @@ const CustomerChatWidget: React.FC = () => {
                             const filePath = att.path.startsWith('/') ? att.path.substring(1) : att.path;
                             const fileUrl = `${supportServiceUrl}/uploads/${filePath}`;
                             const isImage = att.mimeType?.startsWith('image/');
-                            
+
                             return (
                               <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
                                 {isImage ? (

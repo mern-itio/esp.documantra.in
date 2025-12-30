@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Send, Bot, Loader2, Search, Mail, FileEdit, Trash2, ExternalLink, Paperclip, XCircle, Plus, MessageSquare, Edit2, History } from 'lucide-react';
-import { aiAssistantApiService }from '../../services/aiAssistantService';
+import { X, Send, Bot, Loader2, Search, Mail, FileEdit, Trash2, ExternalLink, Paperclip, XCircle, Plus, MessageSquare, Edit2, History, Dot } from 'lucide-react';
+import { aiAssistantApiService } from '../../services/aiAssistantService';
 import type { ConversationMessage, AICommandResponse, Conversation } from '../../services/aiAssistantService';
 import { subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionStorage } from '../../services/subscriptionService';
@@ -39,6 +39,11 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   const [scheduledDate, setScheduledDate] = useState<string>('');
   const [scheduledTime, setScheduledTime] = useState<string>('');
   const [_showScheduleOptions, setShowScheduleOptions] = useState<boolean>(false);
+  useEffect(() => {
+    if (!isLoading) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading]);
 
   const autoResizeTextarea = () => {
     const el = inputRef.current;
@@ -81,7 +86,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
-      
+
       const newChatWidth = window.innerWidth - e.clientX;
       const constrainedWidth = Math.max(400, Math.min(1200, newChatWidth));
       setChatAreaWidth(constrainedWidth);
@@ -110,10 +115,10 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
     if (showHistoryDropdown && historyButtonRef.current) {
       const buttonRect = historyButtonRef.current.getBoundingClientRect();
       const rightPosition = window.innerWidth - buttonRect.right;
-      
+
       setDropdownPosition({
-        top: buttonRect.bottom + 8, 
-        right: Math.max(10, rightPosition) 
+        top: buttonRect.bottom + 8,
+        right: Math.max(10, rightPosition)
       });
     }
   }, [showHistoryDropdown, chatAreaWidth]);
@@ -163,92 +168,92 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
         }
         if (response.messages) {
           const reconstructedMessages: SearchResultMessage[] = response.messages.map((msg: any) => {
-          let content: string = '';
-          
-          if (typeof msg.content === 'string' && msg.content.trim()) {
-            content = msg.content;
-            
-            const trimmed = content.trim();
-            if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && msg.action) {
-              try {
-                const parsed = JSON.parse(content);
-                if (parsed && typeof parsed === 'object') {
-                  const formatted = formatActionResult({
-                    action: msg.action,
-                    parameters: msg.parameters || {},
-                    result: parsed
-                  } as AICommandResponse);
-                  content = formatted;
+            let content: string = '';
+
+            if (typeof msg.content === 'string' && msg.content.trim()) {
+              content = msg.content;
+
+              const trimmed = content.trim();
+              if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && msg.action) {
+                try {
+                  const parsed = JSON.parse(content);
+                  if (parsed && typeof parsed === 'object') {
+                    const formatted = formatActionResult({
+                      action: msg.action,
+                      parameters: msg.parameters || {},
+                      result: parsed
+                    } as AICommandResponse);
+                    content = formatted;
+                  }
+                } catch (e) {
                 }
+              }
+            }
+            else if (!content && msg.parameters?._resultData && msg.action) {
+              try {
+                content = formatActionResult({
+                  action: msg.action,
+                  parameters: msg.parameters || {},
+                  result: msg.parameters._resultData
+                } as AICommandResponse);
               } catch (e) {
               }
             }
-          }
-          else if (!content && msg.parameters?._resultData && msg.action) {
-            try {
-              content = formatActionResult({
-                action: msg.action,
-                parameters: msg.parameters || {},
-                result: msg.parameters._resultData
-              } as AICommandResponse);
-            } catch (e) {
-            }
-          }
-          else if (msg.content && typeof msg.content === 'object') {
-            try {
-              content = formatActionResult({
-                action: msg.action,
-                parameters: msg.parameters || {},
-                result: msg.content
-              } as AICommandResponse);
-            } catch (e) {
+            else if (msg.content && typeof msg.content === 'object') {
               try {
-                const stringified = JSON.stringify(msg.content);
-                const parsed = JSON.parse(stringified);
-                if (msg.action && parsed) {
-                  content = formatActionResult({
-                    action: msg.action,
-                    parameters: msg.parameters || {},
-                    result: parsed
-                  } as AICommandResponse);
-                } else {
-                  content = stringified;
+                content = formatActionResult({
+                  action: msg.action,
+                  parameters: msg.parameters || {},
+                  result: msg.content
+                } as AICommandResponse);
+              } catch (e) {
+                try {
+                  const stringified = JSON.stringify(msg.content);
+                  const parsed = JSON.parse(stringified);
+                  if (msg.action && parsed) {
+                    content = formatActionResult({
+                      action: msg.action,
+                      parameters: msg.parameters || {},
+                      result: parsed
+                    } as AICommandResponse);
+                  } else {
+                    content = stringified;
+                  }
+                } catch (e2) {
+                  content = 'Message content could not be displayed.';
                 }
-              } catch (e2) {
-                content = 'Message content could not be displayed.';
               }
             }
-          }
-          else {
-            content = String(msg.content || '');
-          }
+            else {
+              content = String(msg.content || '');
+            }
 
-          if (msg.role === 'assistant' && !content.trim()) {
-            content = 'Action completed successfully.';
-          }
+            if (msg.role === 'assistant' && !content.trim()) {
+              content = 'Action completed successfully.';
+            }
 
-          let searchResults: any[] | undefined = undefined;
-          if (msg.action === 'search_document') {
-            if (msg.parameters?._resultData) {
-              const resultData = msg.parameters._resultData;
-              if (resultData.documents && Array.isArray(resultData.documents)) {
-                searchResults = resultData.documents;
-              } else if (Array.isArray(resultData)) {
-                searchResults = resultData;
+            let searchResults: any[] | undefined = undefined;
+            if (msg.action === 'search_document') {
+              if (msg.parameters?._resultData) {
+                const resultData = msg.parameters._resultData;
+                if (resultData.documents && Array.isArray(resultData.documents)) {
+                  searchResults = resultData.documents;
+                } else if (Array.isArray(resultData)) {
+                  searchResults = resultData;
+                }
               }
             }
-          }
 
-          return {
-            role: msg.role,
-            content: content, 
-            action: msg.action || null,
-            parameters: msg.parameters || {},
-            searchResults: searchResults,
-            timestamp: msg.timestamp
-          } as SearchResultMessage;
+            return {
+              role: msg.role,
+              content: content,
+              action: msg.action || null,
+              parameters: msg.parameters || {},
+              searchResults: searchResults,
+              timestamp: msg.timestamp
+            } as SearchResultMessage;
           });
-          
+
           setMessages(reconstructedMessages);
         }
       }
@@ -330,7 +335,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
     const userMessageContent = attachedFiles.length > 0
       ? `${commandWithScheduling} ${fileLabel}`.trim()
       : commandWithScheduling;
-    
+
     const newUserMessage: ConversationMessage = {
       role: 'user',
       content: userMessageContent,
@@ -347,12 +352,12 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
       } : undefined;
 
       const response: AICommandResponse = await aiAssistantApiService.processCommand(
-        commandWithScheduling, 
-        attachedFiles, 
-        context, 
+        commandWithScheduling,
+        attachedFiles,
+        context,
         currentConversationId || undefined
       );
-      
+
       if (response.conversationId && response.conversationId !== currentConversationId) {
         setCurrentConversationId(response.conversationId);
         loadConversationsList();
@@ -372,11 +377,11 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
         }
       }
 
-      const shouldRefreshEnvelopes = 
+      const shouldRefreshEnvelopes =
         (response.action === 'create_and_send_envelope' && response.result?.success) ||
         (response.action === 'generate_document' && response.result?.autoSent && response.result?.sendResult?.success) ||
         (response.result?.autoSent === true && response.result?.sendResult?.success);
-      
+
       if (shouldRefreshEnvelopes) {
         try {
           const planResp = await subscriptionApi.get('/user-plan/me');
@@ -389,10 +394,10 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
         }
 
         try {
-          const envelopeId = response.result?.envelopeId || 
-                            response.result?.sendResult?.envelopeId || 
-                            null;
-          
+          const envelopeId = response.result?.envelopeId ||
+            response.result?.sendResult?.envelopeId ||
+            null;
+
           window.dispatchEvent(new CustomEvent('envelopes:updated', {
             detail: {
               source: 'ai-assistant',
@@ -401,7 +406,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
               autoSent: response.result?.autoSent || false
             }
           }));
-          
+
           window.dispatchEvent(new CustomEvent('ai-assistant:document-sent', {
             detail: {
               source: 'ai-assistant',
@@ -496,18 +501,18 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
 
     const docLinkRegex = /\[\[doc:([^:]+):([^:]+):([^:]+):([^\]]+)\]\]/g;
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    
+
     const docLinkPlaceholders: Array<{ placeholder: string; name: string; id: string; serviceType: string; docType: string }> = [];
     let processedText = text;
     let placeholderIndex = 0;
-    
+
     processedText = processedText.replace(docLinkRegex, (_match, name, id, serviceType, docType) => {
       const placeholder = `__DOC_LINK_${placeholderIndex}__`;
       docLinkPlaceholders.push({ placeholder, name, id, serviceType, docType });
       placeholderIndex++;
       return placeholder;
     });
-    
+
     const parts = processedText.split(urlRegex);
 
     return parts.map((part, index) => {
@@ -527,7 +532,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
           </a>
         );
       }
-      
+
       if (part.includes('__DOC_LINK_')) {
         const docLinkParts = part.split(/(__DOC_LINK_\d+__)/g);
         return (
@@ -557,7 +562,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
           </span>
         );
       }
-      
+
       return <span key={index}>{part}</span>;
     });
   };
@@ -574,13 +579,13 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
       window.dispatchEvent(new CustomEvent('ai-assistant:open-document', {
         detail: { documentId, documentName, serviceType: 'document-service' }
       }));
-      
+
       if (window.location.pathname !== '/all-documents') {
         window.location.href = '/all-documents';
       }
-      
+
       onClose();
-      
+
       toast.success(`Opening document: ${documentName}`);
     } catch (error) {
       console.error('Error opening document:', error);
@@ -713,7 +718,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       ref={panelRef}
       className="fixed right-0 top-0 h-full bg-white shadow-2xl z-[60] flex border-l border-slate-200 overflow-hidden"
       style={{ width: `${chatAreaWidth}px` }}
@@ -740,16 +745,15 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
               <button
                 ref={historyButtonRef}
                 onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  showHistoryDropdown ? 'bg-purple-100 text-[#4D0080]' : 'hover:bg-slate-100 text-slate-500'
-                }`}
+                className={`p-1.5 rounded-lg transition-colors ${showHistoryDropdown ? 'bg-purple-100 text-[#4D0080]' : 'hover:bg-slate-100 text-slate-500'
+                  }`}
                 title="Chat History"
               >
                 <History className="w-4 h-4" />
               </button>
-              
+
               {showHistoryDropdown && createPortal(
-                <div 
+                <div
                   ref={historyDropdownRef}
                   className="fixed bg-white rounded-lg shadow-xl border border-slate-200 z-[70] max-h-[600px] flex flex-col"
                   style={{
@@ -770,7 +774,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  
+
                   {/* Conversations List */}
                   <div className="flex-1 overflow-y-auto p-2">
                     {isLoadingConversations ? (
@@ -790,11 +794,10 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                               handleSelectConversation(conv.id);
                               setShowHistoryDropdown(false);
                             }}
-                            className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
-                              currentConversationId === conv.id
+                            className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${currentConversationId === conv.id
                                 ? 'bg-purple-100 border border-purple-300'
                                 : 'hover:bg-slate-100 border border-transparent'
-                            }`}
+                              }`}
                           >
                             {editingTitleId === conv.id ? (
                               <input
@@ -860,7 +863,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                 , document.body
               )}
             </div>
-            
+
             <button
               onClick={handleNewChat}
               className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
@@ -884,207 +887,212 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
           </div>
         </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-slate-50">
-        {isInitializing ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-6 h-6 text-[#4D0080] animate-spin" />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center text-slate-500 mt-8">
-            <Bot className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-            <p>Start a conversation with your AI assistant</p>
-          </div>
-        ) : (
-          messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-slate-50">
+          {isInitializing ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-6 h-6 text-[#4D0080] animate-spin" />
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="text-center text-slate-500 mt-8">
+              <Bot className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p>Start a conversation with your AI assistant</p>
+            </div>
+          ) : (
+            messages.map((message, index) => (
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 break-words ${
-                  message.role === 'user'
-                    ? 'bg-[#4D0080] text-white'
-                    : 'bg-white text-slate-900 border border-slate-200'
-                }`}
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {message.role === 'assistant' && message.action && (
-                  <div className="flex items-center space-x-2 mb-2 pb-2 border-b border-slate-200">
-                    {getActionIcon(message.action)}
-                    <span className="text-xs font-medium text-slate-600">
-                      {message.action.replace('_', ' ').toUpperCase()}
+                <div
+                  className={`max-w-[80%] rounded-lg px-4 py-2 break-words ${message.role === 'user'
+                      ? 'bg-[#4D0080] text-white'
+                      : 'bg-white text-slate-900 border border-slate-200'
+                    }`}
+                >
+                  {message.role === 'assistant' && message.action && (
+                    <div className="flex items-center space-x-2 mb-2 pb-2 border-b border-slate-200">
+                      {getActionIcon(message.action)}
+                      <span className="text-xs font-medium text-slate-600">
+                        {message.action.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="whitespace-pre-wrap text-sm break-words">
+                    {(() => {
+                      if (typeof message.content === 'string') {
+                        return renderTextWithLinks(message.content);
+                      }
+                      if (message.content && typeof message.content === 'object' && message.action) {
+                        try {
+                          return formatActionResult({
+                            action: message.action,
+                            parameters: message.parameters || {},
+                            result: message.parameters?._resultData || message.content
+                          } as AICommandResponse);
+                        } catch (e) {
+                          // Fallback to stringify if formatting fails
+                          return JSON.stringify(message.content, null, 2);
+                        }
+                      }
+                      // Final fallback
+                      return String(message.content || '');
+                    })()}
+                  </div>
+                  {/* Render clickable search results */}
+                  {message.searchResults && message.searchResults.length > 0 && (
+                    <div className="mt-3 space-y-2 pt-3 border-t border-slate-200">
+                      <p className="text-xs font-medium text-slate-600 mb-2">Search Results:</p>
+                      {message.searchResults.map((doc: any, idx: number) => {
+                        // For e-sign envelopes, use metadata.name first, then documentName, then metadata.subject
+                        const displayName = (doc.serviceType === 'e-sign-service' || doc.source === 'e-sign-service' || doc.documentType === 'envelope')
+                          ? (doc.metadata?.name || doc.documentName || doc.metadata?.subject || doc.name || doc.documentId)
+                          : (doc.documentName || doc.name || doc.documentId);
+
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => handleDocumentClick(
+                              doc.documentId,
+                              displayName,
+                              doc.serviceType,
+                              doc.documentType
+                            )}
+                            className="w-full text-left p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-[#4D0080] transition-all group"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs font-semibold text-[#4D0080]">#{idx + 1}</span>
+                                  <p className="text-sm font-medium text-slate-900 truncate group-hover:text-[#4D0080]">
+                                    {displayName}
+                                  </p>
+                                </div>
+                                {doc.metadata?.description && (
+                                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                                    {doc.metadata.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center space-x-3 mt-1 text-xs text-slate-400">
+                                  {doc.serviceType === 'e-sign-service' && (
+                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                                      E-Sign
+                                    </span>
+                                  )}
+                                  {doc.metadata?.recipientName && (
+                                    <span>To: {doc.metadata.recipientName}</span>
+                                  )}
+                                  {doc.metadata?.category && (
+                                    <span>• {doc.metadata.category}</span>
+                                  )}
+                                  {doc.metadata?.status && (
+                                    <span>• {doc.metadata.status}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#4D0080] flex-shrink-0 ml-2" />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="flex items-center justify-center h-full">
+                <span className="text-sm text-[#4D0080] font-medium">
+                  Thinking
+                  <span className="inline-block w-[1ch] animate-dot"><Dot className="w-2 h-2" /></span>
+                  <span className="inline-block w-[1ch] animate-dot animation-delay-200"><Dot className="w-2 h-2" /></span>
+                  <span className="inline-block w-[1ch] animate-dot animation-delay-400"><Dot className="w-2 h-2" /></span>
+                </span>
+              </div>
+
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div className="p-4 border-t border-slate-200 bg-white overflow-x-hidden">
+          {/* Attached Files Display */}
+          {attachedFiles.length > 0 && (
+            <div className="mb-2 space-y-1">
+              {attachedFiles.map((file, idx) => (
+                <div
+                  key={`${file.name}-${file.size}-${idx}`}
+                  className="p-2 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <Paperclip className="w-4 h-4 text-[#4D0080] flex-shrink-0" />
+                    <span className="text-sm text-slate-700 truncate">
+                      {file.name || 'Unknown file'}
+                    </span>
+                    <span className="text-xs text-slate-500 flex-shrink-0">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
                     </span>
                   </div>
-                )}
-                <div className="whitespace-pre-wrap text-sm break-words">
-                  {(() => {
-                    if (typeof message.content === 'string') {
-                      return renderTextWithLinks(message.content);
-                    }
-                    if (message.content && typeof message.content === 'object' && message.action) {
-                      try {
-                        return formatActionResult({
-                          action: message.action,
-                          parameters: message.parameters || {},
-                          result: message.parameters?._resultData || message.content
-                        } as AICommandResponse);
-                      } catch (e) {
-                        // Fallback to stringify if formatting fails
-                        return JSON.stringify(message.content, null, 2);
-                      }
-                    }
-                    // Final fallback
-                    return String(message.content || '');
-                  })()}
+                  <button
+                    onClick={() => handleRemoveFile(idx)}
+                    className="p-1 hover:bg-purple-100 rounded transition-colors flex-shrink-0"
+                    title="Remove file"
+                  >
+                    <XCircle className="w-4 h-4 text-[#4D0080]" />
+                  </button>
                 </div>
-                {/* Render clickable search results */}
-                {message.searchResults && message.searchResults.length > 0 && (
-                  <div className="mt-3 space-y-2 pt-3 border-t border-slate-200">
-                    <p className="text-xs font-medium text-slate-600 mb-2">Search Results:</p>
-                    {message.searchResults.map((doc: any, idx: number) => {
-                      // For e-sign envelopes, use metadata.name first, then documentName, then metadata.subject
-                      const displayName = (doc.serviceType === 'e-sign-service' || doc.source === 'e-sign-service' || doc.documentType === 'envelope')
-                        ? (doc.metadata?.name || doc.documentName || doc.metadata?.subject || doc.name || doc.documentId)
-                        : (doc.documentName || doc.name || doc.documentId);
-                      
-                      return (
-                      <button
-                        key={idx}
-                        onClick={() => handleDocumentClick(
-                          doc.documentId, 
-                          displayName,
-                          doc.serviceType,
-                          doc.documentType
-                        )}
-                        className="w-full text-left p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-[#4D0080] transition-all group"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs font-semibold text-[#4D0080]">#{idx + 1}</span>
-                              <p className="text-sm font-medium text-slate-900 truncate group-hover:text-[#4D0080]">
-                                {displayName}
-                              </p>
-                            </div>
-                            {doc.metadata?.description && (
-                              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                                {doc.metadata.description}
-                              </p>
-                            )}
-                            <div className="flex items-center space-x-3 mt-1 text-xs text-slate-400">
-                              {doc.serviceType === 'e-sign-service' && (
-                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                                  E-Sign
-                                </span>
-                              )}
-                              {doc.metadata?.recipientName && (
-                                <span>To: {doc.metadata.recipientName}</span>
-                              )}
-                              {doc.metadata?.category && (
-                                <span>• {doc.metadata.category}</span>
-                              )}
-                              {doc.metadata?.status && (
-                                <span>• {doc.metadata.status}</span>
-                              )}
-                            </div>
-                          </div>
-                          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#4D0080] flex-shrink-0 ml-2" />
-                        </div>
-                      </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
-          ))
-        )}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white rounded-lg px-4 py-2 border border-slate-200">
-              <Loader2 className="w-4 h-4 text-[#4D0080] animate-spin" />
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+          )}
 
-      {/* Input */}
-      <div className="p-4 border-t border-slate-200 bg-white overflow-x-hidden">
-        {/* Attached Files Display */}
-        {attachedFiles.length > 0 && (
-          <div className="mb-2 space-y-1">
-            {attachedFiles.map((file, idx) => (
-              <div
-                key={`${file.name}-${file.size}-${idx}`}
-                className="p-2 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between"
-              >
-                <div className="flex items-center space-x-2 flex-1 min-w-0">
-                  <Paperclip className="w-4 h-4 text-[#4D0080] flex-shrink-0" />
-                  <span className="text-sm text-slate-700 truncate">
-                    {file.name || 'Unknown file'}
-                  </span>
-                  <span className="text-xs text-slate-500 flex-shrink-0">
-                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                  </span>
-                </div>
-                <button
-                  onClick={() => handleRemoveFile(idx)}
-                  className="p-1 hover:bg-purple-100 rounded transition-colors flex-shrink-0"
-                  title="Remove file"
-                >
-                  <XCircle className="w-4 h-4 text-[#4D0080]" />
-                </button>
-              </div>
-            ))}
+          <div className="flex items-end space-x-2">
+            {/* File Upload Button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+              id="ai-assistant-file-input"
+            />
+            <label
+              htmlFor="ai-assistant-file-input"
+              className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors flex-shrink-0"
+              title="Attach file"
+            >
+              <Paperclip className="w-5 h-5 text-slate-600" />
+            </label>
+
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={attachedFiles.length > 0 ? "Write your message and I'll send these document(s)..." : "Type your command... (e.g., 'search documents sent to Receipient Name')"}
+              className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent max-h-40 overflow-y-auto"
+              rows={2}
+              disabled={isLoading}
+            />
+            <button
+              onClick={handleSend}
+              disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
+              className="p-2 bg-[#4D0080] text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
           </div>
-        )}        
-        
-        <div className="flex items-end space-x-2">
-          {/* File Upload Button */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            multiple
-            onChange={handleFileSelect}
-            className="hidden"
-            id="ai-assistant-file-input"
-          />
-          <label
-            htmlFor="ai-assistant-file-input"
-            className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors flex-shrink-0"
-            title="Attach file"
-          >
-            <Paperclip className="w-5 h-5 text-slate-600" />
-          </label>
-          
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={attachedFiles.length > 0 ? "Write your message and I'll send these document(s)..." : "Type your command... (e.g., 'search documents sent to Receipient Name')"}
-            className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent max-h-40 overflow-y-auto"
-            rows={2}
-            disabled={isLoading}
-          />
-          <button
-            onClick={handleSend}
-            disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-            className="p-2 bg-[#4D0080] text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
+          <p className="text-xs text-slate-500 mt-2">
+            Press Enter to send, Shift+Enter for new line
+          </p>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
-          Press Enter to send, Shift+Enter for new line
-        </p>
-      </div>
       </div>
     </div>
   );
