@@ -568,9 +568,16 @@ const scheduleEnvelope = async (req, res) => {
     }
 
     // Combine date and time if time is provided
-    // Parse date and time as local time, then convert to UTC for storage
-    // This ensures the user's intended time is preserved regardless of server timezone
+    // CRITICAL: Parse date and time as user's local timezone, then convert to UTC
+    // The frontend sends date/time in user's local timezone, but server might be in UTC
+    // Solution: Accept timezone offset from frontend, or use a default (IST = UTC+5:30)
     let scheduledDateTime;
+    
+    // Get timezone offset from request (in minutes, e.g., 330 for IST = UTC+5:30)
+    // If not provided, default to IST (UTC+5:30 = 330 minutes)
+    const timezoneOffset = req.body.timezoneOffset !== undefined 
+      ? parseInt(req.body.timezoneOffset) 
+      : 330; // Default to IST (UTC+5:30)
     
     if (typeof scheduledDate === 'string') {
       // Extract date parts (YYYY-MM-DD format from HTML date input)
@@ -591,15 +598,80 @@ const scheduleEnvelope = async (req, res) => {
           minutes = parseInt(timeParts[1]) || 0;
         }
         
-        // Create date in LOCAL timezone (as user intended)
-        // This will be automatically converted to UTC when stored in MongoDB
-        scheduledDateTime = new Date(year, month, day, hours, minutes, 0, 0);
+        // Create date in UTC, accounting for user's timezone offset
+        // timezoneOffset is in minutes, positive for timezones ahead of UTC (e.g., IST = +330)
+        // getTimezoneOffset() returns negative for ahead-of-UTC, so we multiply by -1 in frontend
+        // To convert local time to UTC: UTC = local - offset
+        // Example: User enters 10:53 IST (UTC+5:30 = +330 min), we want 05:23 UTC
+        // Calculation: 10:53 - 5:30 = 05:23
+        const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+        const offsetMinutes = Math.abs(timezoneOffset) % 60;
+        const isAheadOfUTC = timezoneOffset > 0; // Positive means ahead of UTC (like IST)
+        
+        // Calculate UTC time
+        let utcHours, utcMinutes;
+        if (isAheadOfUTC) {
+          // Timezone is ahead of UTC (like IST), subtract offset
+          utcHours = hours - offsetHours;
+          utcMinutes = minutes - offsetMinutes;
+        } else {
+          // Timezone is behind UTC, add offset
+          utcHours = hours + offsetHours;
+          utcMinutes = minutes + offsetMinutes;
+        }
+        let utcDay = day;
+        let utcMonth = month;
+        let utcYear = year;
+        
+        // Handle minute overflow/underflow
+        if (utcMinutes < 0) {
+          utcMinutes += 60;
+          utcHours -= 1;
+        } else if (utcMinutes >= 60) {
+          utcMinutes -= 60;
+          utcHours += 1;
+        }
+        
+        // Handle hour overflow/underflow
+        if (utcHours < 0) {
+          utcHours += 24;
+          utcDay -= 1;
+          if (utcDay < 1) {
+            utcMonth -= 1;
+            if (utcMonth < 0) {
+              utcMonth = 11;
+              utcYear -= 1;
+            }
+            // Get days in previous month
+            const daysInMonth = new Date(utcYear, utcMonth + 1, 0).getDate();
+            utcDay = daysInMonth;
+          }
+        } else if (utcHours >= 24) {
+          utcHours -= 24;
+          utcDay += 1;
+          const daysInMonth = new Date(utcYear, utcMonth + 1, 0).getDate();
+          if (utcDay > daysInMonth) {
+            utcDay = 1;
+            utcMonth += 1;
+            if (utcMonth >= 12) {
+              utcMonth = 0;
+              utcYear += 1;
+            }
+          }
+        }
+        
+        // Create date in UTC
+        scheduledDateTime = new Date(Date.UTC(utcYear, utcMonth, utcDay, utcHours, utcMinutes, 0, 0));
         
         // Log for debugging
+        const offsetSign = isAheadOfUTC ? '+' : '-';
         console.log(`[scheduleEnvelope] Parsed schedule:`, {
           inputDate: scheduledDate,
           inputTime: scheduledTime || '00:00',
-          localDateTime: scheduledDateTime.toLocaleString(),
+          timezoneOffsetMinutes: timezoneOffset,
+          timezoneOffset: `${offsetSign}${offsetHours}:${offsetMinutes.toString().padStart(2, '0')}`,
+          userLocalTime: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+          calculatedUTCTime: `${utcHours.toString().padStart(2, '0')}:${utcMinutes.toString().padStart(2, '0')}`,
           utcDateTime: scheduledDateTime.toISOString(),
           serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
         });

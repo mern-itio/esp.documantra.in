@@ -129,7 +129,6 @@ const EnvelopeCreator: React.FC = () => {
   const [showRecipients, setShowRecipients] = useState(false);
   const [showAddMessage, setShowAddMessage] = useState(false);
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
-
   // Handle document from state (e.g., from AI content generation) or pending documents
   useEffect(() => {
     const loadDocument = async () => {
@@ -338,13 +337,18 @@ const EnvelopeCreator: React.FC = () => {
       setTempAuthSelection(undefined);
     }
   }, [showAuthModal]);
+  const getTomorrowDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0]; // yyyy-mm-dd
+  };
   const [shouldOpenAuthModalFromTour, setShouldOpenAuthModalFromTour] = useState<boolean>(false);
   // Send confirmation modal state
   const [showSendConfirmationModal, setShowSendConfirmationModal] = useState<boolean>(false);
   const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
   const [isScheduled, setIsScheduled] = useState<boolean>(false);
-  const [scheduledDate, setScheduledDate] = useState<string>('');
-  const [scheduledTime, setScheduledTime] = useState<string>('');
+  const [scheduledDate, setScheduledDate] = useState<string>(getTomorrowDate());
+  const [scheduledTime, setScheduledTime] = useState<string>('10:00');
   const [draggedSignerId, setDraggedSignerId] = useState<string | null>(null);
   const [dragOverSignerId, setDragOverSignerId] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
@@ -2349,9 +2353,13 @@ const EnvelopeCreator: React.FC = () => {
       
       try {
         // Schedule the envelope instead of sending immediately
+        // Get user's timezone offset in minutes (e.g., IST = UTC+5:30 = 330 minutes)
+        const timezoneOffset = new Date().getTimezoneOffset() * -1; // Negative because getTimezoneOffset returns opposite
+        
         const response = await eSignApi.post(`/api/e-sign/schedule-envelope/${envelopeId}`, {
           scheduledDate,
-          scheduledTime: scheduledTime || null
+          scheduledTime: scheduledTime || null,
+          timezoneOffset: timezoneOffset
         });
         
         console.log('Envelope scheduled successfully:', response.data);
@@ -6114,7 +6122,7 @@ const EnvelopeCreator: React.FC = () => {
                   <ExternalLink className="w-4 h-4" />
                 </button> */}
                 <button
-                  onClick={() => window.open('/help-support', '_blank')}
+                  onClick={() => window.open('/contact-sales', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
                 >
                   <span>Contact Us</span>
