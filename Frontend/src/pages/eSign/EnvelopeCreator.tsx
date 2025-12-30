@@ -2315,7 +2315,7 @@ const EnvelopeCreator: React.FC = () => {
       setShowSendConfirmationModal(false);      
       try {
         const timezoneOffset = new Date().getTimezoneOffset() * -1;
-        const response = await eSignApi.post(`/api/e-sign/schedule-envelope/${envelopeId}`, {
+        await eSignApi.post(`/api/e-sign/schedule-envelope/${envelopeId}`, {
           scheduledDate,
           scheduledTime: scheduledTime || null,
           timezoneOffset: timezoneOffset
