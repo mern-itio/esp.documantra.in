@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Send, Bot, Loader2, Search, Mail, FileEdit, Trash2, ExternalLink, Paperclip, XCircle, Plus, MessageSquare, Edit2, History, Dot } from 'lucide-react';
+import { X, Send, Bot, Loader2, Search, Mail, FileEdit, Trash2, ExternalLink, Paperclip, XCircle, Plus, MessageSquare, Edit2, History, Dot, AlertCircle, CheckCircle, Lightbulb } from 'lucide-react';
 import { aiAssistantApiService } from '../../services/aiAssistantService';
 import type { ConversationMessage, AICommandResponse, Conversation } from '../../services/aiAssistantService';
 import { subscriptionApi } from '../../services/apiHelper';
@@ -13,6 +13,10 @@ interface AIAssistantPanelProps {
 }
 interface SearchResultMessage extends ConversationMessage {
   searchResults?: any[];
+  isError?: boolean;
+  patternId?: string; // For learning system
+  failedAction?: string;
+  failedParameters?: any;
 }
 const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<SearchResultMessage[]>([]);
@@ -39,6 +43,21 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   const [scheduledDate, setScheduledDate] = useState<string>('');
   const [scheduledTime, setScheduledTime] = useState<string>('');
   const [_showScheduleOptions, setShowScheduleOptions] = useState<boolean>(false);
+  
+  // Learning system state
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [currentFailedPattern, setCurrentFailedPattern] = useState<{
+    patternId: string;
+    userCommand: string;
+    failedAction: string;
+    failedParameters: any;
+  } | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState<Map<string, {
+    patternId: string;
+    userCommand: string;
+    failedAction: string;
+    timestamp: number;
+  }>>(new Map());
   useEffect(() => {
     if (!isLoading) {
       inputRef.current?.focus();
@@ -122,7 +141,6 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
       });
     }
   }, [showHistoryDropdown, chatAreaWidth]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (historyDropdownRef.current && !historyDropdownRef.current.contains(event.target as Node)) {
@@ -131,16 +149,13 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
         }
       }
     };
-
     if (showHistoryDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showHistoryDropdown]);
-
   const loadConversationsList = async () => {
     try {
       setIsLoadingConversations(true);
@@ -157,7 +172,6 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
       setIsLoadingConversations(false);
     }
   };
-
   const loadConversationHistory = async (conversationId?: string) => {
     try {
       setIsInitializing(true);
@@ -227,11 +241,9 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
             else {
               content = String(msg.content || '');
             }
-
             if (msg.role === 'assistant' && !content.trim()) {
               content = 'Action completed successfully.';
             }
-
             let searchResults: any[] | undefined = undefined;
             if (msg.action === 'search_document') {
               if (msg.parameters?._resultData) {
@@ -243,7 +255,6 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                 }
               }
             }
-
             return {
               role: msg.role,
               content: content,
@@ -452,13 +463,27 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
       }
     } catch (error: any) {
       console.error('Error processing command:', error);
-      const errorMessage: ConversationMessage = {
+      const errorResponse = error.response?.data;
+      const isLearningEnabled = errorResponse?.learningEnabled || false;
+      const patternId = errorResponse?.patternId;
+      
+      const errorMessage: SearchResultMessage = {
         role: 'assistant',
-        content: `Sorry, I encountered an error: ${error.response?.data?.message || error.message || 'Unknown error'}. Please try again.`,
-        timestamp: new Date().toISOString()
-      };
+        content: `Sorry, I encountered an error: ${errorResponse?.message || error.message || 'Unknown error'}. Please try again.`,
+        timestamp: new Date().toISOString(),
+        isError: true,
+        patternId: patternId,
+        failedAction: errorResponse?.action,
+        failedParameters: errorResponse?.parameters,
+        userCommand: userMessageContent // Store user command for correction modal
+      } as any;
       setMessages(prev => [...prev, errorMessage]);
       toast.error('Failed to process command');
+      
+      // Track failed attempt for automatic detection
+      if (isLearningEnabled && patternId) {
+        trackFailedAttempt(patternId, userMessageContent, errorResponse?.action, errorResponse?.parameters);
+      }
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -702,6 +727,154 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
     }
   };
 
+  // Track failed attempt for automatic detection
+  const trackFailedAttempt = (patternId: string, userCommand: string, failedAction: string, _failedParameters: any) => {
+    const attemptKey = `${patternId}_${Date.now()}`;
+    setFailedAttempts(prev => {
+      const newMap = new Map(prev);
+      newMap.set(attemptKey, {
+        patternId,
+        userCommand,
+        failedAction,
+        timestamp: Date.now()
+      });
+      // Keep only last 10 failed attempts
+      if (newMap.size > 10) {
+        const firstKey = Array.from(newMap.keys())[0];
+        newMap.delete(firstKey);
+      }
+      return newMap;
+    });
+
+    // Set up automatic detection listener (5 minute window)
+    setTimeout(() => {
+      setFailedAttempts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(attemptKey);
+        return newMap;
+      });
+    }, 5 * 60 * 1000); // 5 minutes
+  };
+
+  // Detect user actions after failures (automatic detection)
+  useEffect(() => {
+    const handleUserAction = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const actionType = customEvent.detail?.action || event.type;
+      const actionData = customEvent.detail?.data || customEvent.detail;
+      
+      // Map event types to AI actions
+      const eventToActionMap: Record<string, string> = {
+        'envelopes:updated': 'create_and_send_envelope',
+        'ai-assistant:document-sent': 'create_and_send_envelope',
+        'document:sent': 'send_document',
+        'envelope:created': 'create_and_send_envelope'
+      };
+
+      const aiAction = eventToActionMap[actionType];
+      if (!aiAction) return;
+
+      // Extract parameters from event data
+      let parameters: any = {};
+      if (actionData) {
+        if (actionData.recipients) parameters.recipients = actionData.recipients;
+        if (actionData.documentId) parameters.documentId = actionData.documentId;
+        if (actionData.envelopeId) parameters.documentId = actionData.envelopeId;
+        if (actionData.signatureFields) parameters.signatureFields = actionData.signatureFields;
+      }
+
+      // Record user action for automatic matching
+      try {
+        await aiAssistantApiService.recordUserAction(
+          aiAction,
+          parameters,
+          'ui',
+          { route: window.location.pathname, eventType: actionType }
+        );
+      } catch (error) {
+        console.error('Error recording user action:', error);
+      }
+
+      // Check if this action happened after a recent failure
+      const recentFailures = Array.from(failedAttempts.entries())
+        .filter(([_, attempt]) => Date.now() - attempt.timestamp < 5 * 60 * 1000)
+        .sort(([_, a], [__, b]) => b.timestamp - a.timestamp);
+
+      if (recentFailures.length > 0) {
+        const mostRecentFailure = recentFailures[0][1];
+        
+        // Check if action matches failed action
+        if (aiAction === mostRecentFailure.failedAction) {
+          // User performed the action manually - prompt for correction
+          setCurrentFailedPattern({
+            patternId: mostRecentFailure.patternId,
+            userCommand: mostRecentFailure.userCommand,
+            failedAction: mostRecentFailure.failedAction,
+            failedParameters: {}
+          });
+          setShowCorrectionModal(true);
+          
+          // Pre-fill correction form with detected action
+          setTimeout(() => {
+            // The correction form will be populated with the detected action
+          }, 100);
+          
+          // Remove from tracking
+          setFailedAttempts(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(recentFailures[0][0]);
+            return newMap;
+          });
+        }
+      }
+    };
+
+    // Listen for various user actions
+    const handleUserActionListener = handleUserAction as unknown as EventListener;
+    window.addEventListener('envelopes:updated', handleUserActionListener);
+    window.addEventListener('ai-assistant:document-sent', handleUserActionListener);
+    window.addEventListener('ai-assistant:action-completed', handleUserActionListener);
+
+    return () => {
+      window.removeEventListener('envelopes:updated', handleUserActionListener);
+      window.removeEventListener('ai-assistant:document-sent', handleUserActionListener);
+      window.removeEventListener('ai-assistant:action-completed', handleUserActionListener);
+    };
+  }, [failedAttempts]);
+
+  // Handle correction recording
+  const handleRecordCorrection = async (correction: {
+    action: string;
+    parameters: any;
+    description?: string;
+  }) => {
+    if (!currentFailedPattern) return;
+
+    try {
+      await aiAssistantApiService.recordUserCorrection(
+        currentFailedPattern.patternId,
+        correction
+      );
+      toast.success('Thank you! Your correction has been recorded. The AI will learn from this.');
+      setShowCorrectionModal(false);
+      setCurrentFailedPattern(null);
+    } catch (error: any) {
+      console.error('Error recording correction:', error);
+      toast.error('Failed to record correction. Please try again.');
+    }
+  };
+
+  // Open correction modal manually
+  const handleShowCorrection = (patternId: string, userCommand: string, failedAction: string, failedParameters: any) => {
+    setCurrentFailedPattern({
+      patternId,
+      userCommand,
+      failedAction,
+      failedParameters
+    });
+    setShowCorrectionModal(true);
+  };
+
   const getActionIcon = (action: string | null | undefined) => {
     switch (action) {
       case 'search_document':
@@ -907,15 +1080,51 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                 <div
                   className={`max-w-[80%] rounded-lg px-4 py-2 break-words ${message.role === 'user'
                       ? 'bg-[#4D0080] text-white'
-                      : 'bg-white text-slate-900 border border-slate-200'
+                      : message.isError
+                        ? 'bg-red-50 text-red-900 border border-red-200'
+                        : 'bg-white text-slate-900 border border-slate-200'
                     }`}
                 >
                   {message.role === 'assistant' && message.action && (
                     <div className="flex items-center space-x-2 mb-2 pb-2 border-b border-slate-200">
-                      {getActionIcon(message.action)}
+                      {message.isError ? (
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      ) : (
+                        getActionIcon(message.action)
+                      )}
                       <span className="text-xs font-medium text-slate-600">
-                        {message.action.replace('_', ' ').toUpperCase()}
+                        {message.isError ? 'ERROR' : message.action.replace('_', ' ').toUpperCase()}
                       </span>
+                    </div>
+                  )}
+                  {message.isError && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <Lightbulb className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-xs text-yellow-800 mb-2">
+                            Help the AI learn! If you perform this action manually, we can record it so the AI does it correctly next time.
+                          </p>
+                          {message.patternId ? (
+                            <button
+                              onClick={() => {
+                                const userCmd = (message as any).userCommand || 'Previous command';
+                                const failedAct = message.failedAction || message.action || '';
+                                const failedParams = message.failedParameters || message.parameters || {};
+                                handleShowCorrection(message.patternId!, userCmd, failedAct, failedParams);
+                              }}
+                              className="text-xs px-3 py-1.5 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors flex items-center space-x-1"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              <span>Record Correction</span>
+                            </button>
+                          ) : (
+                            <p className="text-xs text-yellow-700 italic">
+                              Perform the action manually and the system will auto-detect it within 5 minutes.
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                   <div className="whitespace-pre-wrap text-sm break-words">
@@ -1093,6 +1302,211 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
             Press Enter to send, Shift+Enter for new line
           </p>
         </div>
+      </div>
+
+      {/* Correction Modal */}
+      {showCorrectionModal && currentFailedPattern && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Lightbulb className="w-5 h-5 text-yellow-600" />
+                  <h3 className="text-lg font-semibold text-slate-900">Help AI Learn</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowCorrectionModal(false);
+                    setCurrentFailedPattern(null);
+                  }}
+                  className="p-1 hover:bg-slate-100 rounded transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+            </div>
+
+            <CorrectionForm
+              failedPattern={currentFailedPattern}
+              onRecord={handleRecordCorrection}
+              onCancel={() => {
+                setShowCorrectionModal(false);
+                setCurrentFailedPattern(null);
+              }}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
+// Correction Form Component
+interface CorrectionFormProps {
+  failedPattern: {
+    patternId: string;
+    userCommand: string;
+    failedAction: string;
+    failedParameters: any;
+  };
+  onRecord: (correction: { action: string; parameters: any; description?: string }) => void;
+  onCancel: () => void;
+}
+
+const CorrectionForm: React.FC<CorrectionFormProps> = ({ failedPattern, onRecord, onCancel }) => {
+  const [action, setAction] = useState(failedPattern.failedAction || '');
+  const [parameters, setParameters] = useState(JSON.stringify(failedPattern.failedParameters || {}, null, 2));
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autoDetected, setAutoDetected] = useState(false);
+
+  // Try to auto-detect correction from recent user actions
+  useEffect(() => {
+    const detectCorrection = async () => {
+      try {
+        // Get recent patterns for this command to see if auto-detection already matched
+        const patterns = await aiAssistantApiService.getLearnedPatterns(failedPattern.userCommand);
+        if (patterns.data && patterns.data.length > 0) {
+          const recentPattern = patterns.data.find((p: any) => 
+            p.failedCommand === failedPattern.userCommand && 
+            p.correctAction && 
+            p.correctParameters
+          );
+          if (recentPattern && recentPattern.correctAction) {
+            setAction(recentPattern.correctAction);
+            setParameters(JSON.stringify(recentPattern.correctParameters, null, 2));
+            setAutoDetected(true);
+            setDescription('Automatically detected from your recent action');
+          }
+        }
+      } catch (error) {
+        console.error('Error detecting correction:', error);
+      }
+    };
+
+    detectCorrection();
+  }, [failedPattern]);
+
+  const handleSubmit = async () => {
+    try {
+      let parsedParams = {};
+      try {
+        parsedParams = JSON.parse(parameters);
+      } catch (e) {
+        toast.error('Invalid JSON in parameters. Please fix the format.');
+        return;
+      }
+
+      setIsSubmitting(true);
+      await onRecord({
+        action,
+        parameters: parsedParams,
+        description: description.trim() || undefined
+      });
+    } catch (error) {
+      console.error('Error submitting correction:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-4">
+      <div>
+        <p className="text-sm text-slate-600 mb-2">
+          <strong>Your Command:</strong> "{failedPattern.userCommand}"
+        </p>
+        <p className="text-sm text-slate-600 mb-4">
+          <strong>AI Attempted:</strong> {failedPattern.failedAction}
+        </p>
+        {autoDetected && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <p className="text-sm text-green-800">
+                We detected you performed this action manually. The correction has been pre-filled below.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Correct Action *
+        </label>
+        <select
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="search_document">Search Document</option>
+          <option value="send_document">Send Document</option>
+          <option value="prepare_document">Prepare Document</option>
+          <option value="create_and_send_envelope">Create and Send Envelope</option>
+          <option value="list_auth_providers">List Auth Providers</option>
+          <option value="generate_document">Generate Document</option>
+          <option value="list_documents_by_category">List Documents by Category</option>
+          <option value="list_shared_documents">List Shared Documents</option>
+          <option value="list_signed_documents">List Signed Documents</option>
+          <option value="select_document">Select Document</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Correct Parameters (JSON) *
+        </label>
+        <textarea
+          value={parameters}
+          onChange={(e) => setParameters(e.target.value)}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+          rows={8}
+          placeholder='{"recipients": [{"email": "user@example.com", "name": "User"}], "signatureFields": [...]}'
+        />
+        <p className="text-xs text-slate-500 mt-1">
+          Enter the correct parameters as JSON. This is what the AI should have used.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Description (Optional)
+        </label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          rows={3}
+          placeholder="Describe what you did to complete this action correctly..."
+        />
+      </div>
+
+      <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={!action || !parameters || isSubmitting}
+          className="px-4 py-2 text-sm font-medium text-white bg-[#4D0080] rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Recording...</span>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              <span>Record Correction</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

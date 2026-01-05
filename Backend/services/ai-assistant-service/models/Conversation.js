@@ -53,6 +53,21 @@ const conversationSchema = new mongoose.Schema({
     envelopeId: String, // For e-sign service documents
     documentId: String // For document service documents
   },
+  recipientMappings: [{
+    name: {
+      type: String,
+      required: true,
+      lowercase: true // Store lowercase for case-insensitive matching
+    },
+    email: {
+      type: String,
+      required: true
+    },
+    lastUsed: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

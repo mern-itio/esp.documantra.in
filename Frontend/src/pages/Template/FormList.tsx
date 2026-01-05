@@ -21,6 +21,9 @@ interface Form {
   _id: string;
   title: string;
   description?: string;
+  content?: string;
+  pdfBase64?: string;
+  isAIGenerated?: boolean;
   owner?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -373,27 +376,64 @@ export const FormsList: React.FC = () => {
     }
   };
 
-  const handleUse = (formId: string) => {
-    navigate(`/e-sign/form-builder/${formId}`);
+  const handleUse = (form: Form) => {
+    // If it's an AI-generated template with PDF, navigate to envelope creator with PDF
+    if (form.isAIGenerated && form.pdfBase64) {
+      navigate('/e-sign/create', {
+        state: {
+          documentData: {
+            name: `${form.title}.pdf`,
+            content: form.pdfBase64,
+            type: 'application/pdf'
+          }
+        }
+      });
+    } else {
+      // Regular form - navigate to form builder
+      navigate(`/e-sign/form-builder/${form._id}`);
+    }
   };
 
-  const handleMenuAction = (formId: string, action: string) => {
+  const handleMenuAction = (form: Form, action: string) => {
     setShowDropdown(null);
     switch (action) {
       case 'edit':
-        navigate(`/e-sign/form-builder/${formId}`);
+        if (form.isAIGenerated && form.pdfBase64) {
+          // For AI-generated templates, navigate to envelope creator
+          navigate('/e-sign/create', {
+            state: {
+              documentData: {
+                name: `${form.title}.pdf`,
+                content: form.pdfBase64,
+                type: 'application/pdf'
+              }
+            }
+          });
+        } else {
+          navigate(`/e-sign/form-builder/${form._id}`);
+        }
         break;
       case 'view':
-        window.open(`/template/form-view/${formId}`, '_blank');
+        if (form.isAIGenerated && form.pdfBase64) {
+          // Show PDF preview in new window
+          const pdfBlob = new Blob(
+            [Uint8Array.from(atob(form.pdfBase64), c => c.charCodeAt(0))],
+            { type: 'application/pdf' }
+          );
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
+        } else {
+          window.open(`/template/form-view/${form._id}`, '_blank');
+        }
         break;
       case 'embed':
-        navigate(`/template/form-embed/${formId}`);
+        navigate(`/template/form-embed/${form._id}`);
         break;
       case 'submissions':
-        navigate(`/template/form-submissions/${formId}`);
+        navigate(`/template/form-submissions/${form._id}`);
         break;
       case 'delete':
-        handleDeleteClick(formId);
+        handleDeleteClick(form._id);
         break;
     }
   };
@@ -792,6 +832,12 @@ export const FormsList: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <Star className="w-4 h-4" style={{ color: '#28004D' }} />
                               <span style={{ color: '#28004D' }}>{form.title}</span>
+                              {form.isAIGenerated && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: '#F3E8FF', color: '#4D0080' }}>
+                                  <Sparkles className="w-3 h-3" />
+                                  AI
+                                </span>
+                              )}
                             </div>
                           </td>
                         );
@@ -832,7 +878,7 @@ export const FormsList: React.FC = () => {
                           <td key={col.id} className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <button
-                                onClick={() => handleUse(form._id)}
+                                onClick={() => handleUse(form)}
                                 className="px-3 py-1.5 rounded text-white font-medium"
                                 style={{
                                   backgroundColor: '#4D0080',
@@ -947,36 +993,40 @@ export const FormsList: React.FC = () => {
                                       }}
                                     >
                                       <button
-                                        onClick={() => handleMenuAction(form._id, 'edit')}
+                                        onClick={() => handleMenuAction(form, 'edit')}
                                         className="w-full text-left px-4 py-2 hover:bg-gray-50"
                                         style={{ color: '#28004D' }}
                                       >
-                                        Add / Edit
+                                        {form.isAIGenerated ? 'Use Template' : 'Add / Edit'}
                                       </button>
                                       <button
-                                        onClick={() => handleMenuAction(form._id, 'view')}
+                                        onClick={() => handleMenuAction(form, 'view')}
                                         className="w-full text-left px-4 py-2 hover:bg-gray-50"
                                         style={{ color: '#28004D' }}
                                       >
                                         View
                                       </button>
-                                      <button
-                                        onClick={() => handleMenuAction(form._id, 'embed')}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50"
-                                        style={{ color: '#28004D' }}
-                                      >
-                                        Embed
-                                      </button>
-                                      <button
-                                        onClick={() => handleMenuAction(form._id, 'submissions')}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50"
-                                        style={{ color: '#28004D' }}
-                                      >
-                                        Submissions
-                                      </button>
+                                      {!form.isAIGenerated && (
+                                        <>
+                                          <button
+                                            onClick={() => handleMenuAction(form, 'embed')}
+                                            className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                                            style={{ color: '#28004D' }}
+                                          >
+                                            Embed
+                                          </button>
+                                          <button
+                                            onClick={() => handleMenuAction(form, 'submissions')}
+                                            className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                                            style={{ color: '#28004D' }}
+                                          >
+                                            Submissions
+                                          </button>
+                                        </>
+                                      )}
                                       <div className="border-t my-1" style={{ borderColor: '#D0D0D0' }}></div>
                                       <button
-                                        onClick={() => handleMenuAction(form._id, 'delete')}
+                                        onClick={() => handleMenuAction(form, 'delete')}
                                         className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2"
                                         style={{ color: '#DC2626' }}
                                       >

@@ -190,28 +190,18 @@ const AgreementPage: React.FC = () => {
   // header selections
   const dateOptions = ['All time', 'Last 12 months', 'Last 6 months', 'Last 30 days', 'Last week', 'Last 24 hours', 'Custom'];
   const statusOptions = ['All', 'In progress', 'Completed', 'Draft', 'Deleted'];
-  const senderOptions = ['Sent by anyone', 'Sent by me', 'Sent to me'];
-  const quickOptions = ['All', 'Action Required', 'Waiting for Others', 'Expiring Soon', 'Authentication Failed'];
-  const advancedOptions = ['Exclude envelope custom fields', 'Include envelope custom fields'];
   const [selectedDateIdx, setSelectedDateIdx] = useState<number>(2);
   const [selectedStatusIdx, setSelectedStatusIdx] = useState<number>(0);
-  const [selectedSenderIdx, setSelectedSenderIdx] = useState<number>(0);
-  const [selectedQuickIdx, setSelectedQuickIdx] = useState<number>(0);
-  const [selectedAdvancedIdx, setSelectedAdvancedIdx] = useState<number>(0);
   const [selectedShared, setSelectedShared] = useState<'user' | 'viewAll' | 'selectUser'>('user');
   const [customDateFrom, setCustomDateFrom] = useState<string>('');
   const [customDateTo, setCustomDateTo] = useState<string>('');
   const [currentUserName, setCurrentUserName] = useState<string>('');
-  const [isSharedWithMeOpen, setIsSharedWithMeOpen] = useState<boolean>(false);
-  const [isSharedEnvelopesOpen, setIsSharedEnvelopesOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const dateButtonRef = useRef<HTMLButtonElement | null>(null);
   const statusButtonRef = useRef<HTMLButtonElement | null>(null);
   const itemsPerPage = 10;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkMenu, setShowBulkMenu] = useState<boolean>(false);
-  const [showMoveDialog, setShowMoveDialog] = useState<boolean>(false);
-  const [selectedFolder, setSelectedFolder] = useState<string>('Inbox');
   const [bulkResending, setBulkResending] = useState<boolean>(false);
   const [rowResendLoadingId, setRowResendLoadingId] = useState<string | null>(null);
   // Column customization state
@@ -266,7 +256,6 @@ const AgreementPage: React.FC = () => {
 
   const currentStep = tourSteps[tourStepIndex];
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  // Dragging state for tutorial tooltip
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -277,25 +266,20 @@ const AgreementPage: React.FC = () => {
     const step = tourSteps[tourStepIndex];
     const el = document.querySelector(step?.selector || '') as HTMLElement | null;
     if (el) {
-      // Get position immediately for instant update
       const rect = el.getBoundingClientRect();
       setTargetRect(rect);
-      // Then scroll element into view and refine position after scroll
-      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      // Refine position after scroll completes
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });    
       const refineTimeout = setTimeout(() => {
         const updatedRect = el.getBoundingClientRect();
         setTargetRect(updatedRect);
       }, 300);
       return () => clearTimeout(refineTimeout);
     } else {
-      // If element not found, skip to next step after a short delay
       setTargetRect(null);
       const skipTimeout = setTimeout(() => {
         if (tourStepIndex < tourSteps.length - 1) {
           setTourStepIndex(tourStepIndex + 1);
         } else {
-          // If we've reached the end and still can't find elements, close tour
           closeTour();
         }
       }, 100);
@@ -303,7 +287,6 @@ const AgreementPage: React.FC = () => {
     }
   }, [isTourOpen, tourStepIndex, tourSteps]);
 
-  // Handle dragging
   useEffect(() => {
     if (!isDragging) return;
 
@@ -312,9 +295,9 @@ const AgreementPage: React.FC = () => {
         const newX = e.clientX - dragOffset.x;
         const newY = e.clientY - dragOffset.y;
 
-        // Keep tooltip within viewport bounds
-        const tooltipWidth = 384; // max-w-sm = 384px
-        const tooltipHeight = 200; // approximate height
+      
+        const tooltipWidth = 384; 
+        const tooltipHeight = 200;
         const padding = 16;
 
         const constrainedX = Math.max(padding, Math.min(newX, window.innerWidth - tooltipWidth - padding));
@@ -338,7 +321,7 @@ const AgreementPage: React.FC = () => {
   }, [isDragging, dragOffset, tooltipPosition]);
 
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault(); // Prevent text selection
+    e.preventDefault(); 
     if (!tooltipRef.current) return;
 
     const rect = tooltipRef.current.getBoundingClientRect();
@@ -348,7 +331,6 @@ const AgreementPage: React.FC = () => {
     setDragOffset({ x: offsetX, y: offsetY });
     setIsDragging(true);
 
-    // Initialize tooltip position with current position if not already set
     if (!tooltipPosition) {
       setTooltipPosition({ x: rect.left, y: rect.top });
     }
@@ -363,16 +345,13 @@ const AgreementPage: React.FC = () => {
   };
   const nextStep = () => {
     setTourStepIndex((i) => Math.min(i + 1, tourSteps.length - 1));
-    // Reset tooltip position when moving to next step
     setTooltipPosition(null);
   };
   const prevStep = () => {
     setTourStepIndex((i) => Math.max(i - 1, 0));
-    // Reset tooltip position when moving to previous step
     setTooltipPosition(null);
   };
 
-  // Auto-start guided tour on initial render after data loads
   const tourStartedRef = useRef<boolean>(false);
   useEffect(() => {
     if (!loading && !tourStartedRef.current) {
@@ -382,14 +361,12 @@ const AgreementPage: React.FC = () => {
     }
   }, [loading]);
 
-  // Handle scheduled envelope alert
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const isScheduled = searchParams.get('scheduled') === 'true';
     const envelopeId = searchParams.get('envelopeId');
 
     if (isScheduled && envelopeId) {
-      // Fetch envelope details to get scheduled date
       eSignApi.get(`/api/e-sign/envelope/${envelopeId}`)
         .then((response) => {
           if (response.data && response.data.data) {
@@ -426,18 +403,15 @@ const AgreementPage: React.FC = () => {
           });
         });
 
-      // Clean up URL parameters
       navigate(location.pathname, { replace: true });
     }
   }, [location.search, navigate]);
 
-  // Check if we're on a powerform route
   const isPowerFormRoute = () => {
     const path = location.pathname;
     return path.includes('/powerform') || path.includes('/power-form');
   };
 
-  // Get current tab from URL path or default to all
   const getCurrentTab = () => {
     const path = location.pathname;
     if (path.includes('/shared-with-me')) return 'shared-with-me';
@@ -446,20 +420,17 @@ const AgreementPage: React.FC = () => {
     if (path.includes('/in-progress')) return 'in-progress';
     if (path.includes('/deleted')) return 'deleted';
     if (path.includes('/all')) return 'all';
-    return 'all'; // Default to 'all' tab
+    return 'all'; 
   };
 
   const currentTab = getCurrentTab();
   const isPowerForm = isPowerFormRoute();
 
-  // Helper function to detect if envelope was sent by AI
-  // Check the isAIGenerated flag from the envelope data
   const isAISentEnvelope = (agreement: Agreement, envelopeData?: EnvelopeData): boolean => {
-    // Check if envelope is marked as AI-generated
+
     return envelopeData?.isAIGenerated === true || agreement.isAIGenerated === true;
   };
 
-  // Column render functions (defined after isPowerForm)
   const columnRenderers = {
     name: (agreement: Agreement, envelopeData?: EnvelopeData) => {
       const isAISent = isAISentEnvelope(agreement, envelopeData);
@@ -512,7 +483,6 @@ const AgreementPage: React.FC = () => {
               </div>
             )}
           </div>
-          {/* Hover icon - Clock with animation */}
           <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/status:opacity-100 transition-opacity duration-200 pointer-events-none">
             <Clock className="w-5 h-5 text-[#3E2B66] animate-spin" style={{ animationDuration: '2s' }} />
           </div>
@@ -575,7 +545,6 @@ const AgreementPage: React.FC = () => {
     ),
   };
 
-  // Initialize column config
   const getInitialColumnConfig = (): ColumnConfig[] => [
     { id: 'name', label: 'Name', visible: true, order: 1, render: columnRenderers.name },
     { id: 'status', label: 'Status', visible: true, order: 2, render: columnRenderers.status },
@@ -591,7 +560,6 @@ const AgreementPage: React.FC = () => {
 
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(getInitialColumnConfig());
 
-  // Fetch envelopes data from API
   const fetchEnvelopes = useCallback(async () => {
     try {
       setLoading(true);
@@ -600,10 +568,8 @@ const AgreementPage: React.FC = () => {
       if (response.data && response.data.status === 'success') {
         const envelopes: EnvelopeData[] = response.data.data;
 
-        // Store full envelope data
         setEnvelopesData(envelopes);
 
-        // Map all envelopes to agreement format
         const allEnvelopes = envelopes.map(envelope => ({
           id: envelope.id,
           name: envelope.name || envelope.subject || 'Untitled Agreement',
@@ -626,7 +592,6 @@ const AgreementPage: React.FC = () => {
               const s = (r.status || '').toLowerCase();
               return s === 'waiting' || s === 'pending' || s === 'needs to sign';
             });
-            // If backend doesn't include recipient status, fall back to first recipient when in-progress
             if (firstWaiting) return firstWaiting.name || firstWaiting.email;
             if (((envelope.status || '').toLowerCase()) === 'in-progress') {
               const first = (envelope.recipients || [])[0];
@@ -657,27 +622,21 @@ const AgreementPage: React.FC = () => {
     fetchEnvelopes();
   }, [fetchEnvelopes]);
 
-  // Listen for global events (e.g., AI assistant sending envelopes) to refresh list in real time
   useEffect(() => {
     const handleEnvelopesUpdated = (event?: Event) => {
       console.log('🔄 Envelopes updated event received, refreshing list...', event);
-      // Add a small delay to ensure backend has processed the request
       setTimeout(() => {
         fetchEnvelopes();
       }, 500);
     };
 
-    // Listen for envelope updates from AI assistant
     window.addEventListener('envelopes:updated', handleEnvelopesUpdated);
 
-    // Also listen for document generation events (in case auto-send happens)
     window.addEventListener('ai-assistant:document-sent', handleEnvelopesUpdated);
 
-    // Listen for any AI assistant actions that might create envelopes
     const handleAIAction = (event: Event) => {
       const customEvent = event as CustomEvent;
       const action = customEvent.detail?.action;
-      // Refresh if envelope-related actions occurred
       if (action === 'create_and_send_envelope' ||
         action === 'generate_document' ||
         action === 'send_document') {
@@ -687,7 +646,6 @@ const AgreementPage: React.FC = () => {
     };
     window.addEventListener('ai-assistant:action-completed', handleAIAction);
 
-    // Refresh when page becomes visible (user switches back to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         console.log('🔄 Page visible, refreshing envelopes...');
@@ -704,16 +662,13 @@ const AgreementPage: React.FC = () => {
     };
   }, [fetchEnvelopes]);
 
-  // Check for success parameter and show success modal
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sent = params.get('sent');
 
     if (sent === 'true') {
-      // Remove the query parameter from URL
       navigate(location.pathname, { replace: true });
 
-      // Show success modal after a brief delay to ensure page is loaded
       setTimeout(() => {
         Swal.fire({
           title: "Envelope Sent!",
@@ -726,7 +681,6 @@ const AgreementPage: React.FC = () => {
     }
   }, [location.search, navigate, location.pathname]);
 
-  // Read current user name from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem('userData');
@@ -739,23 +693,20 @@ const AgreementPage: React.FC = () => {
         }
       }
     } catch (_) {
-      // ignore parse errors
+      
     }
   }, []);
 
-  // Close any open row menu on outside click or ESC
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
-      // Don't close if clicking on dropdown trigger buttons
       const isClickOnDateButton = dateButtonRef.current && dateButtonRef.current.contains(target);
       const isClickOnStatusButton = statusButtonRef.current && statusButtonRef.current.contains(target);
 
       if (isClickOnDateButton || isClickOnStatusButton) {
-        return; // Don't close menu if clicking the button itself - let the button's onClick handle it
+        return; 
       }
 
-      // Close menus if clicking outside
       if (menuRef.current && !menuRef.current.contains(target)) {
         setOpenMenuId(null);
         setMenuPosition(null);
@@ -771,7 +722,6 @@ const AgreementPage: React.FC = () => {
         setHeaderMenuPosition(null);
       }
     }
-    // Use click event (bubbling phase) so button onClick fires first
     document.addEventListener('click', handleClickOutside);
     document.addEventListener('keydown', handleEsc);
     return () => {
@@ -781,21 +731,13 @@ const AgreementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Filter agreements based on current tab and search term
     let filtered = agreements;
-
-    // First, filter by powerform if on powerform route
     if (isPowerForm) {
       filtered = filtered.filter(agreement => agreement.isPowerForm === true);
     } else {
-      // On regular agreement routes, exclude powerforms (or show all, depending on your preference)
-      // If you want to show both, remove this filter
-      // filtered = filtered.filter(agreement => agreement.isPowerForm !== true);
     }
 
-    // Filter by status based on current tab
     if (currentTab === 'all') {
-      // Show all except deleted in 'All' view
       filtered = filtered.filter(agreement => agreement.status !== 'deleted');
     } else if (currentTab === 'completed') {
       filtered = filtered.filter(agreement => agreement.status === 'completed');
@@ -809,7 +751,6 @@ const AgreementPage: React.FC = () => {
       filtered = filtered.filter(agreement => agreement.direction != 'Sent');
     }
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(agreement =>
         agreement.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -817,7 +758,6 @@ const AgreementPage: React.FC = () => {
       );
     }
 
-    // Filter by selected Status dropdown
     if (selectedStatusIdx !== 0) {
       const statusMap: { [key: number]: Agreement['status'] } = {
         1: 'in-progress',
@@ -831,7 +771,6 @@ const AgreementPage: React.FC = () => {
       }
     }
 
-    // Filter by selected Date range (based on lastChange)
     const { from, to } = getSelectedDateRange();
     if (from || to) {
       filtered = filtered.filter(a => {
@@ -843,20 +782,14 @@ const AgreementPage: React.FC = () => {
     }
 
     setFilteredAgreements(filtered);
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1); 
   }, [agreements, searchTerm, currentTab, selectedStatusIdx, selectedDateIdx, customDateFrom, customDateTo, isPowerForm]);
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredAgreements.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentAgreements = filteredAgreements.slice(startIndex, endIndex);
-  // interface Document {
-  //   id: string;
-  //   name: string;
-  //   size: number;
-  //   type: string;
-  // }
+ 
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -915,50 +848,38 @@ const AgreementPage: React.FC = () => {
     setPageInput(page.toString());
   };
 
-  // Handle page jump from input
   const handlePageJump = () => {
     const pageNum = parseInt(pageInput, 10);
     if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
       handlePageChange(pageNum);
     } else {
-      // Reset to current page if invalid
       setPageInput(currentPage.toString());
     }
   };
 
-  // Handle Enter key in page input
   const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handlePageJump();
     }
   };
 
-  // Update page input when currentPage changes externally
   useEffect(() => {
     setPageInput(currentPage.toString());
   }, [currentPage]);
 
-  // Generate pagination page numbers to display
   const getPaginationPages = (): (number | string)[] => {
     if (totalPages <= 4) {
-      // If 4 or fewer pages, show all
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    // Show: 1, 2, ..., last-1, last
     return [1, 2, '...', totalPages - 1, totalPages];
   };
 
-  // Note: navigation between tabs is preserved via URL reading above; UI mirrors filter bar
-
   const handleClearFilters = () => {
     setSearchTerm('');
-    setSelectedDateIdx(2); // Last 6 months default
+    setSelectedDateIdx(2); 
     setCustomDateFrom('');
     setCustomDateTo('');
-    setSelectedStatusIdx(0); // All
-    setSelectedSenderIdx(0); // Sent by anyone
-    setSelectedQuickIdx(0); // All
-    setSelectedAdvancedIdx(0); // Default
+    setSelectedStatusIdx(0); 
     setCurrentPage(1);
     setOpenHeaderMenu(null);
     setHeaderMenuPosition(null);
@@ -1082,7 +1003,6 @@ const AgreementPage: React.FC = () => {
     }
   };
 
-  // Get visible columns (max 3)
   const getVisibleColumns = (): ColumnConfig[] => {
     return columnConfig
       .filter(col => col.visible)
@@ -1090,17 +1010,14 @@ const AgreementPage: React.FC = () => {
       .slice(0, 3);
   };
 
-  // Toggle column visibility
   const toggleColumn = (columnId: string) => {
     setColumnConfig(prev => {
       const updated = prev.map(col => {
         if (col.id === columnId) {
           const newVisible = !col.visible;
-          // If enabling, check if we already have 3 visible columns
           if (newVisible) {
             const visibleCount = prev.filter(c => c.visible).length;
             if (visibleCount >= 3) {
-              // Don't allow more than 3 visible columns
               return col;
             }
           }
@@ -1112,12 +1029,10 @@ const AgreementPage: React.FC = () => {
     });
   };
 
-  // Reset columns to default
   const resetColumns = () => {
     setColumnConfig(getInitialColumnConfig());
   };
 
-  // Column resizing handlers
   const handleResizeStart = (e: React.MouseEvent, columnId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1125,7 +1040,6 @@ const AgreementPage: React.FC = () => {
     resizingColumnRef.current = columnId;
     resizeStartXRef.current = e.clientX;
 
-    // Get current width from state or calculate from DOM
     const currentWidth = columnWidths[columnId] ||
       (() => {
         const th = (e.target as HTMLElement).closest('th');
@@ -1154,7 +1068,6 @@ const AgreementPage: React.FC = () => {
     resizeStartWidthRef.current = 0;
   }, []);
 
-  // Effect to handle mouse move and mouse up for resizing
   useEffect(() => {
     if (resizingColumn) {
       document.addEventListener('mousemove', handleResizeMove);
@@ -1171,12 +1084,10 @@ const AgreementPage: React.FC = () => {
     }
   }, [resizingColumn, handleResizeMove, handleResizeEnd]);
 
-  // Get column width
   const getColumnWidth = (columnId: string): number | undefined => {
     return columnWidths[columnId];
   };
 
-  // Get envelope data for an agreement
   const getEnvelopeData = (agreementId: string): EnvelopeData | undefined => {
     return envelopesData.find(e => e.id === agreementId);
   };
@@ -1219,14 +1130,12 @@ const AgreementPage: React.FC = () => {
 
   const openHeaderDropdown = (type: 'date' | 'status' | 'sender' | 'quick' | 'advanced' | 'shared', e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent event bubbling to document click handler
+    e.stopPropagation(); 
 
     if (openHeaderMenu === type) {
-      // If clicking the same button, close the menu
       setOpenHeaderMenu(null);
       setHeaderMenuPosition(null);
     } else {
-      // Open the menu for the clicked type
       const rect = e.currentTarget.getBoundingClientRect();
       const width = type === 'shared' ? 336 : 360;
       const left = Math.min(window.innerWidth - width - 8, Math.max(8, rect.left + window.scrollX));
@@ -1236,18 +1145,6 @@ const AgreementPage: React.FC = () => {
     }
   };
 
-  // const handleResetHeader = () => {
-  //   setSelectedDateIdx(2);
-  //   setSelectedStatusIdx(0);
-  //   setSelectedSenderIdx(0);
-  //   setSelectedQuickIdx(0);
-  //   setSelectedAdvancedIdx(0);
-  // };
-
-  // const handleApplyHeader = () => {
-  //   setOpenHeaderMenu(null);
-  //   setHeaderMenuPosition(null);
-  // };
 
   const closeHeaderMenu = () => {
     setOpenHeaderMenu(null);
@@ -1321,21 +1218,6 @@ const AgreementPage: React.FC = () => {
     const label = statusOptions[selectedStatusIdx];
     return label === 'All' ? 'Status' : label;
   };
-
-  // const getSenderButtonLabel = () => {
-  //   const label = senderOptions[selectedSenderIdx];
-  //   return label === 'Sent by anyone' ? 'Sender' : label;
-  // };
-
-  // const getQuickViewsButtonLabel = () => {
-  //   const label = quickOptions[selectedQuickIdx];
-  //   return label === 'All' ? 'Quick views' : label;
-  // };
-
-  // const getAdvancedButtonLabel = () => {
-  //   const label = advancedOptions[selectedAdvancedIdx];
-  //   return label === 'Exclude envelope custom fields' ? 'Advanced search' : 'Advanced search*';
-  // };
 
   const handlePrint = () => {
     try {
@@ -2353,42 +2235,6 @@ const AgreementPage: React.FC = () => {
                     ))}
                   </ul>
                 )}
-                {openHeaderMenu === 'sender' && (
-                  <ul className="space-y-3">
-                    {senderOptions.map((label, idx) => (
-                      <li key={label}>
-                        <button onClick={() => { setSelectedSenderIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedSenderIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
-                          <span>{label}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {openHeaderMenu === 'quick' && (
-                  <ul className="space-y-3">
-                    {quickOptions.map((label, idx) => (
-                      <li key={label}>
-                        <button onClick={() => { setSelectedQuickIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedQuickIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
-                          <span>{label}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {openHeaderMenu === 'advanced' && (
-                  <ul className="space-y-3">
-                    {advancedOptions.map((label, idx) => (
-                      <li key={label}>
-                        <button onClick={() => { setSelectedAdvancedIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedAdvancedIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
-                          <span>{label}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
             </div>
           ) : (
@@ -2396,82 +2242,8 @@ const AgreementPage: React.FC = () => {
               <button onClick={() => { setSelectedShared('user'); closeHeaderMenu(); }} className={`w-full px-2 py-2 flex items-center gap-2 rounded-sm ${selectedShared === 'user' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>
                 {selectedShared === 'user' && <Check className="w-4 h-4" />}<span>{currentUserName || 'Current User'}</span>
               </button>
-              <div className="mt-2 px-2 py-1 text-[10px] tracking-wide text-gray-500">SHARED ACCESS</div>
-              <button onClick={() => { setSelectedShared('viewAll'); closeHeaderMenu(); setIsSharedWithMeOpen(true); }} className={`w-full text-left px-2 py-2 rounded-sm ${selectedShared === 'viewAll' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>View All</button>
-              <div className="mt-2 px-2 py-1 text-[10px] tracking-wide text-gray-500">SHARED ENVELOPES (LEGACY)</div>
-              <button onClick={() => { setSelectedShared('selectUser'); closeHeaderMenu(); setIsSharedEnvelopesOpen(true); }} className={`w-full text-left px-2 py-2 rounded-sm ${selectedShared === 'selectUser' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>Select User</button>
-            </div>
+              </div>
           )}
-        </div>
-      )}
-
-      {/* Modal: Shared with Me */}
-      {isSharedWithMeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setIsSharedWithMeOpen(false)}></div>
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 p-8">
-            <div className="flex items-start justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Shared with Me</h2>
-              <button onClick={() => setIsSharedWithMeOpen(false)} className="text-gray-500 hover:text-gray-700">✕</button>
-            </div>
-            <div className="text-gray-700">
-              <p className="text-xl mb-4">No one has shared access with you.</p>
-              <p className="mb-4">Reduce delays by sending and managing envelopes on behalf of others.</p>
-              <button className="text-indigo-700 underline">Get Started</button>
-            </div>
-            <div className="mt-8 text-right">
-              <button onClick={() => setIsSharedWithMeOpen(false)} className="px-4 py-2 bg-gray-100 rounded-sm">Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Shared Envelopes (Select User) */}
-      {isSharedEnvelopesOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setIsSharedEnvelopesOpen(false)}></div>
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-900">Shared Envelopes</h2>
-              <button onClick={() => setIsSharedEnvelopesOpen(false)} className="text-gray-500 hover:text-gray-700">✕</button>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-sm mb-6">
-              <div className="flex items-center gap-2">
-                <input type="text" placeholder="Search" className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                <button className="px-3 py-2 border border-gray-300 rounded-sm"><Search /></button>
-              </div>
-            </div>
-            <div className="py-8 text-center text-gray-700">
-              <div className="text-2xl mb-2">No results</div>
-              <div>You don't have any shared users.</div>
-            </div>
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <button onClick={() => setIsSharedEnvelopesOpen(false)} className="px-4 py-2 bg-gray-100 rounded-sm">Cancel</button>
-              <button className="px-4 py-2 bg-gray-300 text-gray-600 rounded-sm cursor-not-allowed">Select</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Move to Folder Modal (shared with detail page style) */}
-      {showMoveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMoveDialog(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6">
-            <button onClick={() => setShowMoveDialog(false)} className="absolute right-6 top-6 text-2xl text-[#3E2B66]">✕</button>
-            <h3 className="text-[22px] font-semibold text-[#3E2B66] mb-6">Move to Folder</h3>
-            <div className="space-y-2 mb-6">
-              {['Inbox', 'Sent', 'test'].map((f) => (
-                <button key={f} onClick={() => setSelectedFolder(f)} className={`w-full text-left px-4 py-3 rounded-sm border ${selectedFolder === f ? 'bg-gray-100 border-gray-300' : 'border-transparent hover:bg-gray-50'}`}>{f}</button>
-              ))}
-            </div>
-            <div className="flex items-center justify-between">
-              <button className="px-4 py-2 bg-gray-100 rounded-sm">New Folder</button>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setShowMoveDialog(false)} className="px-4 py-2 bg-gray-100 rounded-sm">Cancel</button>
-                <button onClick={() => setShowMoveDialog(false)} className="px-5 py-2 bg-[#3E2B66] text-white rounded-sm">Move</button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 

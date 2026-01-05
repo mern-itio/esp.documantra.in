@@ -10,10 +10,12 @@ import {
   Bot,
   Trash2,
   Square,
-  Mic
+  Mic,
+  Save
 } from 'lucide-react';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { aiContentService } from '../../services/aiContentService';
+import { templateServiceApi } from '../../services/apiHelper';
 import toast from 'react-hot-toast';
 import './AITemplateGenerator.css';
 import FeedbackButtons from '../../components/Template/feedbackButton';
@@ -51,6 +53,7 @@ const AITemplateGenerator: React.FC = () => {
   const [sessionId] = useState<string>(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [downloadingMessageId, setDownloadingMessageId] = useState<string | null>(null);
   const [sendingMessageId, setSendingMessageId] = useState<string | null>(null);
+  const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isListening, setIsListening] = useState(false);
@@ -399,6 +402,50 @@ const AITemplateGenerator: React.FC = () => {
       setSendingMessageId(null);
     }
   };
+  const handleSaveTemplate = async (content: string, messageId: string, userMessage?: string) => {
+    const finalContent = content;
+    if (!finalContent) {
+      toast.error('No content to save');
+      return;
+    }
+    if (!isAuthenticated) {
+      toast.error('Please login to save templates');
+      return;
+    }
+    // Generate a default title from user message or use a generic one
+    let defaultTitle = 'AI Generated Template';
+    if (userMessage) {
+      // Extract a meaningful title from the user's request
+      const words = userMessage.split(' ').slice(0, 5);
+      defaultTitle = words.join(' ') + ' Template';
+    }
+    // Prompt user for template title
+    const title = prompt('Enter template title:', defaultTitle);
+    if (!title || !title.trim()) {
+      return; // User cancelled or entered empty title
+    }
+    setSavingTemplateId(messageId);
+    try {
+      const plainTextContent = convertHtmlToPlainText(finalContent);
+      const response = await templateServiceApi.post('/api/template/save-ai-template', {
+        title: title.trim(),
+        content: plainTextContent,
+        description: userMessage || 'AI-generated template'
+      });
+      if (response.data && response.data.success) {
+        toast.success('Template saved successfully!');
+        // Optionally navigate to form list
+        // navigate('/e-sign/form-list');
+      } else {
+        toast.error('Failed to save template. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Error saving template:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to save template. Please try again.');
+    } finally {
+      setSavingTemplateId(null);
+    }
+  };
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FFFFFF' }}>
       <div className="border-b flex-shrink-0" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
@@ -499,6 +546,24 @@ const AITemplateGenerator: React.FC = () => {
                       />
                       {message.isDocument && (
                         <div className="flex items-center gap-3">
+                          <button
+                            onClick={() =>
+                              handleSaveTemplate(
+                                message.editableContent || message.content,
+                                message.id,
+                                message.userMessage
+                              )
+                            }
+                            disabled={savingTemplateId === message.id || !isAuthenticated}
+                            title={isAuthenticated ? 'Save as Template' : 'Login to Save Template'}
+                            className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                          >
+                            {savingTemplateId === message.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-[#4D0080]" />
+                            ) : (
+                              <Save className="w-4 h-4 text-[#4D0080]" />
+                            )}
+                          </button>
                           <button
                             onClick={() =>
                               handleDownloadPDF(

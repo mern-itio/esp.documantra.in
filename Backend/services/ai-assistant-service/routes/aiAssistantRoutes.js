@@ -69,5 +69,16 @@ router.delete('/conversation', aiAssistantController.clearConversation.bind(aiAs
 // Sync documents for indexing
 router.post('/sync-documents', aiAssistantController.syncDocuments.bind(aiAssistantController));
 
+// Learning system endpoints
+router.post('/learning/correction', aiAssistantController.recordUserCorrection.bind(aiAssistantController));
+router.post('/learning/action', aiAssistantController.recordUserAction.bind(aiAssistantController));
+router.get('/learning/stats', aiAssistantController.getLearningStats.bind(aiAssistantController));
+router.get('/learning/patterns', aiAssistantController.getLearnedPatterns.bind(aiAssistantController));
+
+// AI Co-Pilot endpoints
+router.post('/copilot/parse-command', aiAssistantController.parseFieldCommand.bind(aiAssistantController));
+router.post('/copilot/analyze-pdf', upload.single('pdf'), aiAssistantController.analyzePDFForSuggestions.bind(aiAssistantController));
+router.post('/copilot/check-constraints', aiAssistantController.checkConstraints.bind(aiAssistantController));
+
 module.exports = router;
 

@@ -17,6 +17,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { FormPreview } from '../../components/Template/FormPreview';
+import { FormAICoPilot } from '../../components/Template/FormAICoPilot';
 import { Link, useParams } from 'react-router-dom';
 import { templateServiceApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
@@ -161,6 +162,15 @@ const saveFormFields = async () => {
 
   return (
     <div className="h-screen flex bg-gray-50 overflow-hidden">
+      <FormAICoPilot
+        formFields={formFields}
+        onFieldsAdded={(fields) => {
+          setFormFields(prev => [...prev, ...fields]);
+          if (fields.length > 0) {
+            setSelectedField(fields[0]);
+          }
+        }}
+      />
       {/* Sidebar - Field Types */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 h-screen">
        

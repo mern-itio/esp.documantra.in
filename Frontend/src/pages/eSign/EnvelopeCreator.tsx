@@ -48,6 +48,8 @@ import SignatureTypeSelector from '../../components/ESign/advanced/SignatureType
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
+import { AICoPilot } from '../../components/ESign/AICoPilot';
+import { aiAssistantApiService } from '../../services/aiAssistantService';
 import { SubscriptionPlansModal } from '../../components/common/SubscriptionPlansModal';
 import { debounce } from '../../components/common/lib/utils';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
@@ -123,6 +125,7 @@ const EnvelopeCreator: React.FC = () => {
   const [_files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<EditorSignatureFieldExt[]>([]);
+  const [aiSuggestions, setAiSuggestions] = useState<Array<{ suggestions: any[]; documentId: string }>>([]);
   const [sending, setSending] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -150,11 +153,14 @@ const EnvelopeCreator: React.FC = () => {
             type: documentData.type || 'application/pdf'
           });
 
+          // Get actual page count from PDF
+          const pageCount = await getPDFPageCount(file);
+
           const newDocument: ESDocument = {
             id: `doc_${Date.now()}_${Math.random()}`,
             name: file.name,
             size: file.size,
-            pages: Math.ceil(file.size / 100000), // Mock page calculation
+            pages: pageCount, // Actual page count from PDF
             type: file.type,
             url: URL.createObjectURL(file),
             file: file,
@@ -200,11 +206,14 @@ const EnvelopeCreator: React.FC = () => {
                   type: 'application/pdf'
                 });
 
+                // Get actual page count from PDF
+                const pageCount = await getPDFPageCount(file);
+
                 const newDocument: ESDocument = {
                   id: `doc_${Date.now()}_${Math.random()}`,
                   name: file.name,
                   size: file.size,
-                  pages: Math.ceil(file.size / 100000),
+                  pages: pageCount, // Actual page count from PDF
                   type: file.type,
                   url: URL.createObjectURL(file),
                   file: file,
@@ -1198,28 +1207,82 @@ const EnvelopeCreator: React.FC = () => {
     processFiles(Array.from(files));
   };
 
-  const processFiles = (files: File[]) => {
+  const getPDFPageCount = async (file: File): Promise<number> => {
+    return new Promise(async (resolve) => {
+      try {
+        // Load PDF.js if not available
+        let pdfjsLib = (window as any).pdfjsLib;
+        if (!pdfjsLib && typeof window !== 'undefined') {
+          try {
+            const pdfjsModule = await import('pdfjs-dist');
+            pdfjsLib = pdfjsModule;
+            if (pdfjsLib.GlobalWorkerOptions) {
+              pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+            }
+            (window as any).pdfjsLib = pdfjsLib;
+          } catch (importError) {
+            console.warn('PDF.js not available, using estimate:', importError);
+            resolve(Math.ceil(file.size / 100000));
+            return;
+          }
+        }
+
+        if (pdfjsLib) {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            try {
+              const arrayBuffer = e.target?.result as ArrayBuffer;
+              const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+              const pdf = await loadingTask.promise;
+              resolve(pdf.numPages);
+            } catch (error) {
+              console.error('Error reading PDF pages:', error);
+              // Fallback to estimate if PDF.js fails
+              resolve(Math.ceil(file.size / 100000));
+            }
+          };
+          reader.onerror = () => {
+            // Fallback to estimate on error
+            resolve(Math.ceil(file.size / 100000));
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          // Fallback if PDF.js is not available
+          resolve(Math.ceil(file.size / 100000));
+        }
+      } catch (error) {
+        console.error('Error getting PDF page count:', error);
+        // Fallback to estimate
+        resolve(Math.ceil(file.size / 100000));
+      }
+    });
+  };
+
+  const processFiles = async (files: File[]) => {
     const validDocs: ESDocument[] = [];
     const invalidFiles: File[] = [];
 
-    files.forEach((file) => {
+    for (const file of files) {
       // Only accept PDF files
       if (file.type !== "application/pdf") {
         invalidFiles.push(file);
-        return; // skip adding invalid file
+        continue; // skip adding invalid file
       }
+
+      // Get actual page count from PDF
+      const pageCount = await getPDFPageCount(file);
 
       const newDocument: ESDocument = {
         id: `doc_${Date.now()}_${Math.random()}`,
         name: file.name,
         size: file.size,
-        pages: Math.ceil(file.size / 100000), // Mock page calculation
+        pages: pageCount, // Actual page count from PDF
         type: file.type,
         url: URL.createObjectURL(file),
         file: file,
       };
       validDocs.push(newDocument);
-    });
+    }
 
     // Show alert if any invalid files
     if (invalidFiles.length > 0) {
@@ -1534,7 +1597,31 @@ const EnvelopeCreator: React.FC = () => {
           type: doc.type || 'application/pdf',
           url: doc.url || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${encodeURIComponent(doc.name || '')}`,
         }));
-        setDocuments(apiDocs);
+        
+        // Verify and update page counts for documents loaded from backend
+        const docsWithPageCounts = await Promise.all(
+          apiDocs.map(async (doc: any) => {
+            // If page count is missing or seems incorrect, recalculate it
+            if (!doc.pages || doc.pages === 1) {
+              try {
+                // Try to fetch the document and count pages
+                const docUrl = doc.url || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${encodeURIComponent(doc.name || '')}`;
+                const fetchResponse = await fetch(docUrl);
+                if (fetchResponse.ok) {
+                  const blob = await fetchResponse.blob();
+                  const file = new File([blob], doc.name || 'document.pdf', { type: 'application/pdf' });
+                  const pageCount = await getPDFPageCount(file);
+                  return { ...doc, pages: pageCount };
+                }
+              } catch (error) {
+                console.warn('Could not verify page count for document:', doc.name, error);
+              }
+            }
+            return doc;
+          })
+        );
+        
+        setDocuments(docsWithPageCounts);
         console.log('Fetched documents:', apiDocs);
         const loadedRecipients = response.data.data.recipients || [];
         setRecipients(loadedRecipients);
@@ -5549,27 +5636,105 @@ const EnvelopeCreator: React.FC = () => {
 
       case 2:
         return (
-          <SigningEditorStep
-            documents={documents}
-            recipients={recipients}
-            signatureFields={signatureFields}
-            setSignatureFields={setSignatureFields}
-            mode={mode}
-            powerFormData={powerFormData}
-            slots={slots}
-            onSend={mode === 'normal' ? handleSendEnvelope : undefined}
-            sending={sending}
-            onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
-            envelopeId={envelopeId}
-            onBack={() => {
-              setCurrentStep(1);
-              if (envelopeId) {
-                navigate(`/e-sign/create?step=1&envelopeId=${envelopeId}`);
-              } else {
-                navigate(`/e-sign/create?step=1`);
-              }
-            }}
-          />
+          <>
+            {/* AI Suggestions Banner */}
+            {(() => {
+              const totalSuggestions = aiSuggestions.reduce((sum, s) => sum + (s.suggestions?.length || 0), 0);
+              const hasSuggestions = totalSuggestions > 0;
+              console.log('Rendering suggestions banner check:', { 
+                aiSuggestions, 
+                totalSuggestions, 
+                hasSuggestions,
+                aiSuggestionsLength: aiSuggestions.length 
+              });
+              return hasSuggestions;
+            })() ? (
+              <div className="mb-4 bg-indigo-50 border-2 border-indigo-300 rounded-lg p-4 shadow-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-5 h-5 text-indigo-600" />
+                      <h4 className="font-semibold text-indigo-900">
+                        AI Field Suggestions Available
+                      </h4>
+                    </div>
+                    <p className="text-sm text-indigo-700 mb-3">
+                      {aiSuggestions.reduce((sum, s) => sum + (s.suggestions?.length || 0), 0)} field suggestion(s) found. Click "Apply All" to add them automatically.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          // Apply all suggestions
+                          const allFields: EditorSignatureFieldExt[] = [];
+                          aiSuggestions.forEach(({ suggestions, documentId }) => {
+                            if (suggestions && Array.isArray(suggestions)) {
+                              suggestions.forEach((suggestion: any) => {
+                                const doc = documents.find(d => d.id === documentId);
+                                if (doc && suggestion) {
+                                  // Backend returns coordinates in PDF points (pixels), not normalized
+                                  // Use coordinates directly, but ensure they're valid numbers
+                                  allFields.push({
+                                    id: `${Date.now()}_${Math.random()}`,
+                                    docId: documentId,
+                                    page: suggestion.page || 1,
+                                    x: typeof suggestion.x === 'number' ? suggestion.x : (suggestion.x || 0) * 612, // Already in points, or normalize if needed
+                                    y: typeof suggestion.y === 'number' ? suggestion.y : (suggestion.y || 0) * 792,
+                                    width: typeof suggestion.width === 'number' ? suggestion.width : (suggestion.width || 150),
+                                    height: typeof suggestion.height === 'number' ? suggestion.height : (suggestion.height || 50),
+                                    type: (suggestion.type || 'signature') as 'signature' | 'text' | 'date' | 'email' | 'number',
+                                    recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
+                                  } as EditorSignatureFieldExt);
+                                }
+                              });
+                            }
+                          });
+                          if (allFields.length > 0) {
+                            setSignatureFields(prev => [...prev, ...allFields]);
+                            saveSignatureFieldsImmediate([...signatureFields, ...allFields]);
+                            setAiSuggestions([]);
+                            toast.success(`Applied ${allFields.length} field suggestion(s)`);
+                          } else {
+                            toast.error('No valid suggestions to apply');
+                          }
+                        }}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Apply All Suggestions
+                      </button>
+                      <button
+                        onClick={() => setAiSuggestions([])}
+                        className="px-4 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-50 text-sm font-medium"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            <SigningEditorStep
+              documents={documents}
+              recipients={recipients}
+              signatureFields={signatureFields}
+              setSignatureFields={setSignatureFields}
+              mode={mode}
+              powerFormData={powerFormData}
+              slots={slots}
+              onSend={mode === 'normal' ? handleSendEnvelope : undefined}
+              sending={sending}
+              onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
+              envelopeId={envelopeId}
+              onBack={() => {
+                setCurrentStep(1);
+                if (envelopeId) {
+                  navigate(`/e-sign/create?step=1&envelopeId=${envelopeId}`);
+                } else {
+                  navigate(`/e-sign/create?step=1`);
+                }
+              }}
+            />
+          </>
         );
 
       case 3:
@@ -6145,6 +6310,53 @@ const EnvelopeCreator: React.FC = () => {
         <div className="flex-1">
           <div className="max-w-6xlVV mx-auto">
             {renderStepContent()}
+            
+            {/* AI Co-Pilot - Only show on field placement steps */}
+            {(currentStep === 2 || currentStep === 3) && (
+              <AICoPilot
+                recipients={recipients}
+                signatureFields={signatureFields}
+                documents={documents}
+                currentPage={1} // This should come from SigningEditorStep if available
+                mode={mode}
+                onFieldsAdded={(fields) => {
+                  setSignatureFields(prev => [...prev, ...fields]);
+                  saveSignatureFieldsImmediate([...signatureFields, ...fields] as EditorSignatureFieldExt[]);
+                }}
+                onRecipientsUpdated={(updatedRecipients) => {
+                  setRecipients(updatedRecipients);
+                }}
+                onAnalyzePDF={async (documentId) => {
+                  // Find the document and analyze it
+                  const document = documents.find(d => d.id === documentId);
+                  if (document && document.file) {
+                    try {
+                      const response = await aiAssistantApiService.analyzePDFForSuggestions(document.file);
+                      if (response.success && response.data) {
+                        // Suggestions are handled internally by AICoPilot component
+                        toast.success(`Found ${response.data.suggestions?.length || 0} field suggestions`);
+                      }
+                    } catch (error) {
+                      console.error('Error analyzing PDF:', error);
+                      toast.error('Failed to analyze PDF');
+                    }
+                  }
+                }}
+                onSuggestionsReceived={(suggestions, documentId) => {
+                  console.log('Suggestions received:', suggestions, 'for document:', documentId);
+                  // Store suggestions for display
+                  setAiSuggestions(prev => {
+                    const existing = prev.find(s => s.documentId === documentId);
+                    if (existing) {
+                      return prev.map(s => s.documentId === documentId ? { ...s, suggestions } : s);
+                    }
+                    const newState = [...prev, { suggestions, documentId }];
+                    console.log('Updated aiSuggestions state:', newState);
+                    return newState;
+                  });
+                }}
+              />
+            )}
 
             {/* Navigation (hidden on step 2; footer lives inside SigningEditorStep) */}
             {currentStep !== 2 && (

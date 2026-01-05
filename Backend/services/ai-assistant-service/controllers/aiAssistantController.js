@@ -4,11 +4,9 @@ try {
   // Try simplified version first (more natural, ChatGPT-like)
   try {
     llmService = require('../services/llmServiceLangChain');
-    console.log('✅ Using Simplified LangChain services (ChatGPT-like)');
   } catch (e) {
     // Fallback to original LangChain service
     llmService = require('../services/llmServiceLangChain');
-    console.log('✅ Using LangChain services');
   }
   ragService = require('../services/ragServiceLangChain');
 } catch (error) {
@@ -20,6 +18,7 @@ try {
 const Conversation = require('../models/Conversation');
 const axios = require('axios');
 const { ActionResponseSchema } = require('../schemas/actionSchemas');
+const learningService = require('../services/learningService');
 
 class AIAssistantController {
   // Process user command
@@ -48,7 +47,6 @@ class AIAssistantController {
           mimetype: f.mimetype,
           size: f.size
         }));
-        // console.log('Files uploaded:', uploadedFiles.map(f => `${f.originalname} (${f.size})`).join(', '));
       }
 
       // Get or create conversation
@@ -95,6 +93,14 @@ class AIAssistantController {
                                          lastAssistantMessage?.content?.includes('GENERATE DOCUMENT') ||
                                          lastAssistantMessage?.action === 'generate_document';
 
+      // Retrieve learned patterns for this command (few-shot learning)
+      let learnedExamples = [];
+      try {
+        learnedExamples = await learningService.getFewShotExamples(userId, command, 3);
+      } catch (learnError) {
+        console.warn('Error retrieving learned patterns:', learnError.message);
+      }
+
       // Process command with LLM (include file info if uploaded)
       const llmContext = {
         previousMessages: previousMessages.map(m => ({
@@ -111,25 +117,163 @@ class AIAssistantController {
           envelopeId: conversation.selectedDocument.envelopeId,
           name: conversation.selectedDocument.name,
           category: conversation.selectedDocument.category
-        } : null
+        } : null,
+        learnedExamples: learnedExamples, // Add learned patterns to context
+        recipientMappings: conversation?.recipientMappings || [] // Add recipient name-to-email mappings
       };
       
-      let result = await llmService.processCommand(command, llmContext);
+      // Check recipient mappings BEFORE LLM processing to avoid unnecessary clarifications
+      let preProcessedRecipients = null;
+      const commandLowerForMapping = command.toLowerCase();
+      const sendPatterns = [
+        /(?:send|to|recipient)\s+(?:this\s+)?(?:document|doc|file)\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+        /send\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+        /(?:to|recipient)\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+        /send\s+(?:this\s+)?(?:document|doc|file)\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i
+      ];
       
-      console.log('📥 Raw result from LLM service:', JSON.stringify(result, null, 2));
-
-      // Pre-process: If user wants to generate AND send in one command, extract and store email
-      // Check if command contains both "generate" and an email address
-      const lowerCommand = command.toLowerCase();
+      for (const pattern of sendPatterns) {
+        const nameMatch = command.match(pattern);
+        if (nameMatch && nameMatch[1]) {
+          let mentionedName = nameMatch[1].trim().toLowerCase();
+          mentionedName = mentionedName.replace(/\b(this|the|a|an|document|doc|file)\b/gi, '').trim();
+          
+          if (mentionedName && mentionedName.length > 1) {
+            // Check conversation recipient mappings
+            if (conversation?.recipientMappings && conversation.recipientMappings.length > 0) {
+              const mapping = conversation.recipientMappings.find(m => 
+                m.name.toLowerCase() === mentionedName || 
+                m.name.toLowerCase().includes(mentionedName) ||
+                mentionedName.includes(m.name.toLowerCase())
+              );
+              
+              if (mapping) {
+                preProcessedRecipients = [{
+                  email: mapping.email,
+                  name: mapping.name
+                }];
+                // Update last used timestamp
+                mapping.lastUsed = new Date();
+                console.log(`✅ Pre-processed: Found recipient mapping "${mentionedName}" → "${mapping.email}"`);
+                break;
+              }
+            }
+            
+            // Also check learned patterns
+            if (!preProcessedRecipients) {
+              try {
+                const learnedPatterns = await learningService.findSimilarPatterns(userId, command, 3);
+                for (const pattern of learnedPatterns) {
+                  if (pattern.userCorrection?.parameters?.recipients) {
+                    const learnedRecipients = Array.isArray(pattern.userCorrection.parameters.recipients) 
+                      ? pattern.userCorrection.parameters.recipients 
+                      : [pattern.userCorrection.parameters.recipients];
+                    
+                    for (const recipient of learnedRecipients) {
+                      if (recipient.email && recipient.name && 
+                          (recipient.name.toLowerCase().includes(mentionedName) ||
+                           mentionedName.includes(recipient.name.toLowerCase()))) {
+                        preProcessedRecipients = [{
+                          email: recipient.email,
+                          name: recipient.name
+                        }];
+                        console.log(`✅ Pre-processed: Found learned pattern mapping "${mentionedName}" → "${recipient.email}"`);
+                        break;
+                      }
+                    }
+                    if (preProcessedRecipients) break;
+                  }
+                }
+              } catch (learnError) {
+                console.warn('Error checking learned patterns for recipient:', learnError);
+              }
+            }
+          }
+          if (preProcessedRecipients) break;
+        }
+      }
+      
+      // Check if user is providing an email in response to a question about email
       const emailPattern = /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/;
       const hasEmail = emailPattern.test(command);
+      const lowerCommand = command.toLowerCase();
+      
+      // If user provides just an email (likely in response to "What is X's email?")
+      if (hasEmail && command.trim().split(/\s+/).length <= 3 && conversation?.messages) {
+        const lastAssistantMsg = conversation.messages
+          .filter(m => m.role === 'assistant')
+          .slice(-1)[0];
+        
+        // Check if last assistant message asked for email
+        if (lastAssistantMsg && (
+          lastAssistantMsg.content.toLowerCase().includes("email") ||
+          lastAssistantMsg.content.toLowerCase().includes("recipient")
+        )) {
+          // Look for name in previous user messages
+          const previousUserMessages = conversation.messages
+            .filter(m => m.role === 'user')
+            .slice(-3);
+          
+          for (const prevMsg of previousUserMessages) {
+            const namePatterns = [
+              /(?:what\s+is|who\s+is)\s+([a-z\s]+?)(?:'s|\s+email)/i,
+              /(?:send|to|recipient)\s+(?:this\s+)?(?:document|doc|file)\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+              /send\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i
+            ];
+            
+            for (const pattern of namePatterns) {
+              const nameMatch = prevMsg.content.match(pattern);
+              if (nameMatch && nameMatch[1]) {
+                let extractedName = nameMatch[1].trim().toLowerCase();
+                extractedName = extractedName.replace(/\b(this|the|a|an|document|doc|file|what|is|who)\b/gi, '').trim();
+                
+                if (extractedName && extractedName.length > 1) {
+                  const emailMatch = command.match(emailPattern);
+                  if (emailMatch && emailMatch[1]) {
+                    // Store name-to-email mapping
+                    if (!conversation.recipientMappings) {
+                      conversation.recipientMappings = [];
+                    }
+                    const existingMapping = conversation.recipientMappings.find(m => m.name.toLowerCase() === extractedName);
+                    if (existingMapping) {
+                      existingMapping.email = emailMatch[1];
+                      existingMapping.lastUsed = new Date();
+                    } else {
+                      conversation.recipientMappings.push({
+                        name: extractedName,
+                        email: emailMatch[1],
+                        lastUsed: new Date()
+                      });
+                    }
+                    console.log(`✅ Stored name-to-email mapping from email response: "${extractedName}" → "${emailMatch[1]}"`);
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      let result = await llmService.processCommand(command, llmContext);
       const hasGenerate = lowerCommand.includes('generate') || lowerCommand.includes('create');
       const hasSend = lowerCommand.includes('send') || lowerCommand.includes('email');
       
+      // If we found a recipient mapping, inject it into the result
+      if (preProcessedRecipients && (result.action === 'create_and_send_envelope' || result.action === 'send_document')) {
+        if (!result.parameters) {
+          result.parameters = {};
+        }
+        result.parameters.recipients = preProcessedRecipients;
+        // Remove clarification if it was about email
+        if (result.clarification && (result.clarification.toLowerCase().includes('email') || result.clarification.toLowerCase().includes('recipient'))) {
+          result.clarification = null;
+        }
+        console.log(`✅ Injected pre-processed recipients into result:`, preProcessedRecipients);
+      }
+      
       // If user says "generate X and send it to Y", extract email and store it for auto-send
-      if (result.action === 'generate_document' && hasEmail && (hasSend || result.parameters?.recipientEmail)) {
-        console.log('🔄 Pre-processing: Detected "generate and send" in single command');
-        
+      if (result.action === 'generate_document' && hasEmail && (hasSend || result.parameters?.recipientEmail)) {        
         // Ensure parameters object exists
         if (!result.parameters) {
           result.parameters = {};
@@ -139,13 +283,11 @@ class AIAssistantController {
         let extractedEmail = null;
         if (result.parameters.recipientEmail) {
           extractedEmail = result.parameters.recipientEmail;
-          console.log('📧 Email already in parameters:', extractedEmail);
         } else {
           const emailMatch = command.match(emailPattern);
           if (emailMatch && emailMatch[1]) {
             extractedEmail = emailMatch[1];
             result.parameters.recipientEmail = extractedEmail; // Store for auto-send
-            console.log('📧 Extracted email from command and stored in parameters:', extractedEmail);
           }
         }
         
@@ -156,7 +298,6 @@ class AIAssistantController {
             .replace(new RegExp(`\\s*(?:and\\s+)?(?:send\\s+it\\s+to|send\\s+to)\\s+${extractedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi'), '')
             .replace(new RegExp(extractedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
             .trim();
-          console.log('🧹 Cleaned requirements text (removed email references)');
         }
       }
 
@@ -167,7 +308,6 @@ class AIAssistantController {
           // Check if command contains document details
           const hasDetails = /party|parties|first|second|date|period|duration|effective|confidential|term|obligation|exclusion|signatory|address|entity|living|receiver|sender|name/i.test(command.toLowerCase());
           if (hasDetails) {
-            console.log('🔄 Post-processing: Adding user-provided details to requirements field');
             result.parameters.requirements = command; // Use the full command as requirements
           }
         }
@@ -197,8 +337,6 @@ class AIAssistantController {
           // Extract category from previous messages
           const categoryMatch = lastAssistantMessage?.content?.match(/(?:NDA|Contract|Agreement)/i);
           const category = categoryMatch ? categoryMatch[0] : 'NDA'; // Default to NDA if not found
-          
-          console.log('🔄 Post-processing: Detected document generation details, forcing generate_document action');
           result = {
             action: 'generate_document',
             parameters: {
@@ -215,7 +353,6 @@ class AIAssistantController {
       if (lastAssistantMsg?.action === 'generate_document' && conversation?.selectedDocument) {
         // If user provides email and action is generate_document or missing, convert to send
         if (hasEmail && (result.action === 'generate_document' || !result.action)) {
-          console.log('🔄 Post-processing: Detected email after document generation, converting to create_and_send_envelope');
           result.action = 'create_and_send_envelope';
           result.parameters = result.parameters || {};
           
@@ -226,16 +363,13 @@ class AIAssistantController {
               email: emailMatch[1],
               name: emailMatch[1].split('@')[0] // Use email prefix as name
             }];
-            console.log('📧 Extracted recipient email:', emailMatch[1]);
           }
           
           // Use the generated document
           if (conversation.selectedDocument.envelopeId) {
             result.parameters.documentId = conversation.selectedDocument.envelopeId;
-            console.log('💾 Using generated envelope (e-sign service):', conversation.selectedDocument.envelopeId);
           } else if (conversation.selectedDocument.id) {
             result.parameters.documentId = conversation.selectedDocument.id;
-            console.log('💾 Using generated document:', conversation.selectedDocument.id);
           }
           
           // Add default signature field if not specified
@@ -245,7 +379,6 @@ class AIAssistantController {
               page: 1,
               position: 'bottom-right'
             }];
-            console.log('📝 Added default signature field');
           }
           
           result.clarification = null;
@@ -257,10 +390,8 @@ class AIAssistantController {
         const lowerCommand = command.toLowerCase();
         if (lowerCommand.includes('today') && !result.parameters.date) {
           result.parameters.date = 'today';
-          console.log('📅 Controller: Added missing date: today');
         } else if (lowerCommand.includes('yesterday') && !result.parameters.date) {
           result.parameters.date = 'yesterday';
-          console.log('📅 Controller: Added missing date: yesterday');
         }
       }
 
@@ -278,7 +409,6 @@ class AIAssistantController {
           result.parameters.requirements = preservedRequirements;
         }
         
-        console.log('✅ After Zod validation:', JSON.stringify(result, null, 2));
       } catch (validationError) {
         console.warn('LLM response validation failed, using as-is:', validationError.message);
         // Continue with unvalidated result but log warning
@@ -343,7 +473,6 @@ class AIAssistantController {
         const idx = Math.min(conversation.lastDocumentList.length, Math.max(1, documentIndex)) - 1;
         const selectedDoc = conversation.lastDocumentList[idx];
         if (selectedDoc) {
-          console.log(`🔄 Auto-selecting document #${documentIndex} from last list (overriding previous selection):`, selectedDoc);
           conversation.selectedDocument = {
             id: selectedDoc.id,
             name: selectedDoc.name,
@@ -357,22 +486,14 @@ class AIAssistantController {
             conversation.selectedDocument.serviceType = 'e-sign-service';
             conversation.selectedDocument.docType = 'envelope';
           }
-          // Clear any draft-related selection when explicitly selecting from list
-          console.log('✅ Overriding selectedDocument with document from list:', conversation.selectedDocument);
-          
-          // If user said "share" or "send" with document position, ensure action is set correctly
           if ((commandLower.includes('share') || commandLower.includes('send')) && 
               (!result.action || result.action === 'generate_document')) {
             result.action = 'create_and_send_envelope';
             result.parameters = result.parameters || {};
-            console.log('🔄 Auto-setting action to create_and_send_envelope for document position reference');
           }
         }
       }
-
-      // Check if there's a selected document from previous conversation
       if (conversation?.selectedDocument && conversation.selectedDocument.id) {
-        // If user says "send the generated document" or similar, and action is not set or is wrong, fix it
         const mentionsGeneratedDoc = commandLower.includes('generated document') || 
                                      commandLower.includes('the document') ||
                                      commandLower.includes('this document') ||
@@ -384,7 +505,6 @@ class AIAssistantController {
             result.action = 'create_and_send_envelope';
             result.parameters = result.parameters || {};
             result.parameters.documentId = conversation.selectedDocument.id;
-            console.log('🔄 Auto-corrected: Using generated document for send action');
           }
         }
         
@@ -399,34 +519,24 @@ class AIAssistantController {
             // Prioritize envelopeId (e-sign service) over documentId (document service)
             if (conversation.selectedDocument.envelopeId) {
               result.parameters.documentId = conversation.selectedDocument.envelopeId;
-              console.log('💾 Using selected envelope (e-sign service):', conversation.selectedDocument.envelopeId);
             } else {
               result.parameters.documentId = conversation.selectedDocument.id;
-              console.log('💾 Using selected document:', conversation.selectedDocument.id);
             }
           } else {
             console.warn('⚠️ Action needs documentId but no selected document found');
           }
         }
-        
-        // Don't clear selectedDocument yet - keep it available for multiple operations
-        // Only clear it when explicitly replaced or after successful send
       }
 
-      // If user just generated a document and now wants to send it, ensure we use the generated document
       if (result.action === 'create_and_send_envelope' && !result.parameters?.documentId) {
-        // Check if last message was about document generation
         const lastAssistantMsg = conversation?.messages?.filter(m => m.role === 'assistant').pop();
         if (lastAssistantMsg?.action === 'generate_document' && conversation?.selectedDocument) {
           result.parameters = result.parameters || {};
-          // Prioritize envelopeId (e-sign service) over documentId (document service)
           if (conversation.selectedDocument.envelopeId) {
             result.parameters.documentId = conversation.selectedDocument.envelopeId;
-            console.log('🔄 Auto-using generated envelope (e-sign service) for send action:', conversation.selectedDocument.envelopeId);
           } else if (conversation.selectedDocument.id) {
             result.parameters.documentId = conversation.selectedDocument.id;
-            console.log('🔄 Auto-using generated document for send action:', conversation.selectedDocument.id);
-          }
+           }
         }
       }
       
@@ -453,7 +563,50 @@ class AIAssistantController {
             const msgEmails = msg.match(emailPattern) || [];
             if (msgEmails.length > 0) {
               emails = msgEmails;
-              console.log('📧 Found email in conversation history:', emails);
+              
+              // Try to extract name from previous messages when email is found in follow-up
+              const previousMessages = conversation.messages
+                .filter(m => m.role === 'user')
+                .slice(-3)
+                .map(m => m.content.toLowerCase());
+              
+              // Look for name patterns in previous messages
+              for (const prevMsg of previousMessages) {
+                const namePatterns = [
+                  /(?:send|to|recipient)\s+(?:this\s+)?(?:document|doc|file)\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+                  /send\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+                  /(?:to|recipient)\s+([a-z\s]+?)(?:\s|$|\[|@)/i
+                ];
+                
+                for (const pattern of namePatterns) {
+                  const nameMatch = prevMsg.match(pattern);
+                  if (nameMatch && nameMatch[1]) {
+                    let extractedName = nameMatch[1].trim().toLowerCase();
+                    extractedName = extractedName.replace(/\b(this|the|a|an|document|doc|file)\b/gi, '').trim();
+                    
+                    if (extractedName && extractedName.length > 1 && extractedName !== msgEmails[0].split('@')[0]) {
+                      // Store name-to-email mapping
+                      if (!conversation.recipientMappings) {
+                        conversation.recipientMappings = [];
+                      }
+                      const existingMapping = conversation.recipientMappings.find(m => m.name.toLowerCase() === extractedName);
+                      if (existingMapping) {
+                        existingMapping.email = msgEmails[0];
+                        existingMapping.lastUsed = new Date();
+                      } else {
+                        conversation.recipientMappings.push({
+                          name: extractedName,
+                          email: msgEmails[0],
+                          lastUsed: new Date()
+                        });
+                      }
+                      console.log(`✅ Stored name-to-email mapping: "${extractedName}" → "${msgEmails[0]}"`);
+                      break;
+                    }
+                  }
+                }
+              }
+              
               break;
             }
           }
@@ -483,26 +636,121 @@ class AIAssistantController {
               }
             }
             
+            // Store name-to-email mapping in conversation for future use
+            if (conversation && name && name !== email.split('@')[0]) {
+              // Only store if name is different from email username (meaningful mapping)
+              const existingMapping = conversation.recipientMappings?.find(m => m.name.toLowerCase() === name.toLowerCase());
+              if (existingMapping) {
+                // Update existing mapping
+                existingMapping.email = email;
+                existingMapping.lastUsed = new Date();
+              } else {
+                // Add new mapping
+                if (!conversation.recipientMappings) {
+                  conversation.recipientMappings = [];
+                }
+                conversation.recipientMappings.push({
+                  name: name.toLowerCase(),
+                  email: email,
+                  lastUsed: new Date()
+                });
+              }
+            }
+            
             return {
               email: email,
               name: name
             };
           });
           
-          console.log('✅ Post-processed: Extracted recipients from command/history:', result.parameters.recipients);
         } else if (!hasValidRecipients) {
-          console.warn('⚠️ No recipients found and no email in command/history:', {
-            hasRecipients: !!result.parameters.recipients,
-            recipientsLength: result.parameters.recipients?.length || 0,
-            emailsInCommand: emails,
-            checkedHistory: true
-          });
+          // Check recipient mappings for name-to-email lookup
+          const commandLower = command.toLowerCase();
+          // Improved name extraction patterns - match various formats
+          const namePatterns = [
+            /(?:send|to|recipient)\s+(?:this\s+)?(?:document|doc|file)\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+            /send\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+            /(?:to|recipient)\s+([a-z\s]+?)(?:\s|$|\[|@)/i,
+            /send\s+(?:this\s+)?(?:document|doc|file)\s+to\s+([a-z\s]+?)(?:\s|$|\[|@)/i
+          ];
+          
+          let mentionedName = null;
+          for (const pattern of namePatterns) {
+            const nameMatch = command.match(pattern);
+            if (nameMatch && nameMatch[1]) {
+              mentionedName = nameMatch[1].trim().toLowerCase();
+              // Remove common words that might be captured
+              mentionedName = mentionedName.replace(/\b(this|the|a|an|document|doc|file)\b/gi, '').trim();
+              if (mentionedName && mentionedName.length > 1) {
+                break;
+              }
+            }
+          }
+          
+          if (mentionedName) {
+            // Check conversation recipient mappings
+            if (conversation?.recipientMappings && conversation.recipientMappings.length > 0) {
+              const mapping = conversation.recipientMappings.find(m => 
+                m.name.toLowerCase() === mentionedName || 
+                m.name.toLowerCase().includes(mentionedName) ||
+                mentionedName.includes(m.name.toLowerCase())
+              );
+              
+              if (mapping) {
+                // Found mapping! Use the stored email
+                result.parameters.recipients = [{
+                  email: mapping.email,
+                  name: mapping.name
+                }];
+                // Update last used timestamp
+                mapping.lastUsed = new Date();
+                console.log(`✅ Found recipient mapping: "${mentionedName}" → "${mapping.email}"`);
+              }
+            }
+            
+            // Also check learned patterns for name-to-email mappings
+            if (!result.parameters.recipients || result.parameters.recipients.length === 0) {
+              try {
+                const learnedPatterns = await learningService.findSimilarPatterns(userId, command, 3);
+                for (const pattern of learnedPatterns) {
+                  if (pattern.userCorrection?.parameters?.recipients) {
+                    const learnedRecipients = Array.isArray(pattern.userCorrection.parameters.recipients) 
+                      ? pattern.userCorrection.parameters.recipients 
+                      : [pattern.userCorrection.parameters.recipients];
+                    
+                    for (const recipient of learnedRecipients) {
+                      if (recipient.email && recipient.name && 
+                          (recipient.name.toLowerCase().includes(mentionedName) ||
+                           mentionedName.includes(recipient.name.toLowerCase()))) {
+                        result.parameters.recipients = [{
+                          email: recipient.email,
+                          name: recipient.name
+                        }];
+                        console.log(`✅ Found learned pattern mapping: "${mentionedName}" → "${recipient.email}"`);
+                        break;
+                      }
+                    }
+                    if (result.parameters.recipients && result.parameters.recipients.length > 0) break;
+                  }
+                }
+              } catch (learnError) {
+                console.warn('Error checking learned patterns for recipient:', learnError);
+              }
+            }
+          }
+          
+          if (!hasValidRecipients && (!result.parameters.recipients || result.parameters.recipients.length === 0)) {
+            console.warn('⚠️ No recipients found and no email in command/history:', {
+              hasRecipients: !!result.parameters.recipients,
+              recipientsLength: result.parameters.recipients?.length || 0,
+              emailsInCommand: emails,
+              checkedHistory: true,
+              checkedMappings: true,
+              mentionedName: mentionedName
+            });
+          }
         }
       }
-
-      // Normalize action/parameters based on actual context
-      // If a file is attached but the model chose send_document without a documentId,
-      // treat this as create_and_send_envelope so the file-based envelope flow is used
       if (
         uploadedFiles.length > 0 &&
         result.action === 'send_document' &&
@@ -572,23 +820,29 @@ class AIAssistantController {
           : [];
         let hasSignatureFields = signatureFields && signatureFields.length > 0;
 
+        // Check if we're in a clarification flow (previous message asked about signature placement)
+        const lastAssistantMsg = previousMessages.filter(m => m.role === 'assistant').pop();
+        const isInSignatureClarificationFlow = lastAssistantMsg?.content?.includes('where to place the signature field') ||
+                                              lastAssistantMsg?.content?.includes('signature field is required') ||
+                                              lastAssistantMsg?.content?.includes('Add a signature at');
+
         // Post-process: Extract signature field from command if user mentioned it but LLM didn't create it
+        // OR if user is responding to a clarification with just position words
         if (!hasSignatureFields) {
-          const lowerCommand = command.toLowerCase();
-          const hasSignatureMention = lowerCommand.includes('signature') || lowerCommand.includes('sign');
-          const hasPosition = lowerCommand.includes('bottom-right') || lowerCommand.includes('bottom right') || 
-                             lowerCommand.includes('bottom-left') || lowerCommand.includes('bottom left') ||
-                             lowerCommand.includes('top-right') || lowerCommand.includes('top right') ||
-                             lowerCommand.includes('top-left') || lowerCommand.includes('top left') ||
-                             lowerCommand.includes('center');
+          const lowerCommand = command.toLowerCase().trim();
           
-          if (hasSignatureMention && hasPosition) {
+          // Handle clarification responses - if user says just position words, interpret as signature placement
+          if (isInSignatureClarificationFlow) {
+            let position = null;
+            let pageNumber = 1;
+            
             // Extract page number if mentioned
             const pageMatch = command.match(/page\s+(\d+)/i);
-            const pageNumber = pageMatch ? parseInt(pageMatch[1]) : 1;
+            if (pageMatch) {
+              pageNumber = parseInt(pageMatch[1]);
+            }
             
-            // Determine position
-            let position = 'bottom-right'; // default
+            // Handle natural language position responses
             if (lowerCommand.includes('bottom-right') || (lowerCommand.includes('bottom') && lowerCommand.includes('right'))) {
               position = 'bottom-right';
             } else if (lowerCommand.includes('bottom-left') || (lowerCommand.includes('bottom') && lowerCommand.includes('left'))) {
@@ -597,27 +851,77 @@ class AIAssistantController {
               position = 'top-right';
             } else if (lowerCommand.includes('top-left') || (lowerCommand.includes('top') && lowerCommand.includes('left'))) {
               position = 'top-left';
-            } else if (lowerCommand.includes('center')) {
+            } else if (lowerCommand.includes('center') || lowerCommand.includes('middle')) {
               position = 'center';
+            } else if (lowerCommand.includes('bottom')) {
+              // User said just "bottom" - default to bottom-right
+              position = 'bottom-right';
+            } else if (lowerCommand.includes('top')) {
+              // User said just "top" - default to top-right
+              position = 'top-right';
+            } else if (lowerCommand.includes('left')) {
+              // User said just "left" - default to bottom-left
+              position = 'bottom-left';
+            } else if (lowerCommand.includes('right')) {
+              // User said just "right" - default to bottom-right
+              position = 'bottom-right';
             }
             
-            result.parameters.signatureFields = [{
-              type: 'signature',
-              page: pageNumber,
-              position: position,
-              width: 150,
-              height: 40
-            }];
+            if (position) {
+              result.parameters.signatureFields = [{
+                type: 'signature',
+                page: pageNumber,
+                position: position,
+                width: 150,
+                height: 40
+              }];
+              
+              hasSignatureFields = true;
+              result.action = 'create_and_send_envelope'; // Ensure action is set
+              result.clarification = null; // Clear any clarification
+             }
+          } else {
+            const hasSignatureMention = lowerCommand.includes('signature') || lowerCommand.includes('sign');
+            const hasPosition = lowerCommand.includes('bottom-right') || lowerCommand.includes('bottom right') || 
+                               lowerCommand.includes('bottom-left') || lowerCommand.includes('bottom left') ||
+                               lowerCommand.includes('top-right') || lowerCommand.includes('top right') ||
+                               lowerCommand.includes('top-left') || lowerCommand.includes('top left') ||
+                               lowerCommand.includes('center');
             
-            hasSignatureFields = true;
-            console.log('✅ Controller: Extracted signature field from command:', { page: pageNumber, position });
+            if (hasSignatureMention && hasPosition) {
+              // Extract page number if mentioned
+              const pageMatch = command.match(/page\s+(\d+)/i);
+              const pageNumber = pageMatch ? parseInt(pageMatch[1]) : 1;
+              
+              // Determine position
+              let position = 'bottom-right'; // default
+              if (lowerCommand.includes('bottom-right') || (lowerCommand.includes('bottom') && lowerCommand.includes('right'))) {
+                position = 'bottom-right';
+              } else if (lowerCommand.includes('bottom-left') || (lowerCommand.includes('bottom') && lowerCommand.includes('left'))) {
+                position = 'bottom-left';
+              } else if (lowerCommand.includes('top-right') || (lowerCommand.includes('top') && lowerCommand.includes('right'))) {
+                position = 'top-right';
+              } else if (lowerCommand.includes('top-left') || (lowerCommand.includes('top') && lowerCommand.includes('left'))) {
+                position = 'top-left';
+              } else if (lowerCommand.includes('center')) {
+                position = 'center';
+              }
+              
+              result.parameters.signatureFields = [{
+                type: 'signature',
+                page: pageNumber,
+                position: position,
+                width: 150,
+                height: 40
+              }];
+              
+              hasSignatureFields = true;
+            }
           }
         }
 
         if (!hasSignatureFields) {
-          // Build clarification that asks for signature field details and shows available auth providers
           const clarificationText = await this.buildSignatureAndAuthClarificationMessage(token);
-
           conversation.messages.push({
             role: 'assistant',
             content: clarificationText,
@@ -676,15 +980,6 @@ class AIAssistantController {
               executionResult = await this.executeListAuthProviders(userId, token);
               break;
             case 'create_and_send_envelope':
-              // Log parameters before execution to debug recipient extraction
-              console.log('🚀 Executing create_and_send_envelope with parameters:', JSON.stringify(result.parameters, null, 2));
-              console.log('📧 Recipients check:', {
-                hasRecipients: !!result.parameters?.recipients,
-                recipientsType: Array.isArray(result.parameters?.recipients) ? 'array' : typeof result.parameters?.recipients,
-                recipientsLength: result.parameters?.recipients?.length || 0,
-                recipients: result.parameters?.recipients
-              });
-              // Merge scheduling parameters from context if available (from UI)
               if (enhancedContext?.isScheduled) {
                 result.parameters = {
                   ...result.parameters,
@@ -693,9 +988,7 @@ class AIAssistantController {
                   scheduledTime: enhancedContext.scheduledTime || null
                 };
               }
-              // Also check if LLM extracted scheduling from user prompt
               if (result.parameters?.isScheduled || result.parameters?.scheduledDate) {
-                // LLM already extracted scheduling, use it
                 if (!result.parameters.isScheduled && result.parameters.scheduledDate) {
                   result.parameters.isScheduled = true;
                 }
@@ -720,7 +1013,6 @@ class AIAssistantController {
                     lowerCommand.includes('documents i drafted') ||
                     lowerCommand.includes('envelopes i drafted')) {
                   result.parameters.status = 'draft';
-                  console.log('📋 Controller execution: Detected "drafted" in command, added status: draft');
                 }
               }
               
@@ -769,8 +1061,7 @@ class AIAssistantController {
                           month = monthMap[monthName];
                           if (month) {
                             extractedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            console.log(`📅 Controller: Extracted specific date from command: "${match[0]}" -> ${extractedDate}`);
-                            break;
+                             break;
                           }
                         }
                         
@@ -790,8 +1081,7 @@ class AIAssistantController {
                           month = monthMap[monthName];
                           if (month) {
                             extractedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            console.log(`📅 Controller: Extracted specific date from command: "${match[0]}" -> ${extractedDate}`);
-                            break;
+                             break;
                           }
                         }
                         
@@ -802,8 +1092,7 @@ class AIAssistantController {
                           day = parseInt(match[3], 10);
                           if (year && month && day) {
                             extractedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            console.log(`📅 Controller: Extracted specific date from command: "${match[0]}" -> ${extractedDate}`);
-                            break;
+                             break;
                           }
                         }
                         
@@ -814,7 +1103,6 @@ class AIAssistantController {
                           year = parseInt(match[3], 10);
                           if (year && month && day) {
                             extractedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            console.log(`📅 Controller: Extracted specific date from command: "${match[0]}" -> ${extractedDate}`);
                             break;
                           }
                         }
@@ -827,7 +1115,6 @@ class AIAssistantController {
                           const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
                           const day = String(parsed.getUTCDate()).padStart(2, '0');
                           extractedDate = `${year}-${month}-${day}`;
-                          console.log(`📅 Controller: Extracted specific date from command (fallback): "${match[0]}" -> ${extractedDate}`);
                           break;
                         }
                       } catch (e) {
@@ -869,7 +1156,6 @@ class AIAssistantController {
                         if (monthIndex !== undefined) {
                           // Format as "YYYY-MM" for month range
                           extractedDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
-                          console.log(`📅 Controller: Extracted month/year from command: "${match[0]}" -> ${extractedDate}`);
                           break;
                         }
                       } catch (e) {
@@ -882,20 +1168,16 @@ class AIAssistantController {
                 
                 if (extractedDate) {
                   result.parameters.date = extractedDate;
-                  console.log(`📅 Controller execution: Added date: ${extractedDate}`);
                 }
               }
               // Extract service type from command
               if (!result.parameters.serviceType) {
                 if (lowerCommand.includes('e-sign') || lowerCommand.includes('esign') || lowerCommand.includes('e sign') || lowerCommand.includes('envelope')) {
                   result.parameters.serviceType = 'e-sign';
-                  console.log('📋 Controller execution: Added serviceType: e-sign');
                 } else if (lowerCommand.includes('document service')) {
                   result.parameters.serviceType = 'document';
-                  console.log('📋 Controller execution: Added serviceType: document');
-                }
+                 }
               }
-              console.log('🚀 Calling executeListSharedDocuments with parameters:', JSON.stringify(result.parameters, null, 2));
               executionResult = await this.executeListSharedDocuments(result.parameters, userId, token);
               break;
             case 'list_signed_documents':
@@ -907,6 +1189,24 @@ class AIAssistantController {
           }
         } catch (execError) {
           console.error('Error executing action:', execError);
+          
+          // Record failed attempt for learning
+          let patternId = null;
+          try {
+            const pattern = await learningService.recordFailedAttempt(userId, {
+              userCommand: command,
+              aiAction: result.action,
+              aiParameters: result.parameters,
+              errorMessage: execError.message,
+              errorType: 'execution_error',
+              conversationId: conversation._id.toString(),
+              messageId: `msg_${Date.now()}`
+            });
+            patternId = pattern._id.toString();
+          } catch (learnError) {
+            console.error('Error recording failed attempt:', learnError);
+          }
+          
           // Save error message to conversation
           conversation.messages.push({
             role: 'assistant',
@@ -921,7 +1221,9 @@ class AIAssistantController {
             success: false,
             message: `Error executing ${result.action}: ${execError.message}`,
             action: result.action,
-            parameters: result.parameters
+            parameters: result.parameters,
+            learningEnabled: true, // Flag to indicate learning is available
+            patternId: patternId // ID for recording corrections
           });
         }
 
@@ -943,8 +1245,7 @@ class AIAssistantController {
               docType: doc.type || 'document'
             };
           });
-          console.log('💾 Stored document list in lastDocumentList:', conversation.lastDocumentList.length, 'documents');
-        } else if (result.action === 'list_documents_by_category' && executionResult?.documents) {
+         } else if (result.action === 'list_documents_by_category' && executionResult?.documents) {
           // Already stored in executeListDocumentsByCategory, but ensure it's there
           if (!conversation.lastDocumentList || conversation.lastDocumentList.length === 0) {
             conversation.lastDocumentList = executionResult.documents.map((doc, idx) => ({
@@ -967,13 +1268,8 @@ class AIAssistantController {
             serviceType: doc.serviceType || doc.source || 'document-service',
             docType: doc.documentType || doc.type || 'document'
           }));
-          console.log('💾 Stored search results in lastDocumentList:', conversation.lastDocumentList.length, 'documents');
         }
-
-        // If document was generated, store it in selectedDocument for future use
-        // Generated documents are created ONLY in e-sign service, so envelopeId is the primary ID
         if (result.action === 'generate_document') {
-          // Check if executionResult has envelopeId (primary case) or if the ID looks like an envelope ID
           const hasEnvelopeId = !!executionResult?.envelopeId;
           const resultId = executionResult?.envelopeId || executionResult?.documentId;
           const looksLikeEnvelopeId = resultId && /^[a-f0-9]{24}$/i.test(resultId);
@@ -989,10 +1285,7 @@ class AIAssistantController {
               envelopeId: executionResult.envelopeId || resultId,
               documentId: executionResult.documentId || null // Document ID from e-sign service if available
             };
-            console.log('💾 Stored generated document in selectedDocument (e-sign service):', conversation.selectedDocument);
-          } else if (executionResult?.documentId) {
-            // Fallback: if somehow documentId exists but envelopeId doesn't (shouldn't happen with new flow)
-            // But even in fallback, if ID looks like envelope ID, treat as e-sign service
+           } else if (executionResult?.documentId) {
             const isEnvelopeId = /^[a-f0-9]{24}$/i.test(executionResult.documentId);
             conversation.selectedDocument = {
               id: executionResult.documentId,
@@ -1082,7 +1375,7 @@ class AIAssistantController {
         });
         conversation.updatedAt = new Date();
         conversation.isActive = true; // Mark as active
-        // Save conversation (this will also save selectedDocument if it was set)
+        // Save conversation (this will also save selectedDocument and recipientMappings if they were set)
         await conversation.save();
 
         return res.json({
@@ -4422,6 +4715,135 @@ class AIAssistantController {
     }
   }
 
+  // Record user correction after AI failure
+  async recordUserCorrection(req, res) {
+    try {
+      const userId = req.user.data.id;
+      const { patternId, userCorrection } = req.body;
+
+      if (!patternId || !userCorrection || !userCorrection.action) {
+        return res.status(400).json({
+          success: false,
+          message: 'patternId and userCorrection with action are required'
+        });
+      }
+
+      const pattern = await learningService.recordUserCorrection(userId, patternId, userCorrection);
+      
+      return res.json({
+        success: true,
+        message: 'User correction recorded successfully',
+        data: {
+          patternId: pattern._id,
+          intent: pattern.pattern.intent
+        }
+      });
+    } catch (error) {
+      console.error('Error recording user correction:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to record user correction',
+        error: error.message
+      });
+    }
+  }
+
+  // Get learning statistics
+  async getLearningStats(req, res) {
+    try {
+      const userId = req.user.data.id;
+      const stats = await learningService.getUserLearningStats(userId);
+      
+      return res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Error getting learning stats:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get learning statistics',
+        error: error.message
+      });
+    }
+  }
+
+  // Record user action for automatic learning detection
+  async recordUserAction(req, res) {
+    try {
+      const userId = req.user.data.id;
+      const { action, parameters, source, metadata } = req.body;
+
+      if (!action) {
+        return res.status(400).json({
+          success: false,
+          message: 'action is required'
+        });
+      }
+
+      const userAction = await learningService.recordUserAction(
+        userId,
+        action,
+        parameters || {},
+        source || 'manual',
+        metadata || {}
+      );
+
+      return res.json({
+        success: true,
+        message: 'User action recorded',
+        data: {
+          actionId: userAction._id,
+          matchedPatternId: userAction.matchedPatternId
+        }
+      });
+    } catch (error) {
+      console.error('Error recording user action:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to record user action',
+        error: error.message
+      });
+    }
+  }
+
+  // Get learned patterns for a command (for testing/debugging)
+  async getLearnedPatterns(req, res) {
+    try {
+      const userId = req.user.data.id;
+      const { command } = req.query;
+
+      if (!command) {
+        return res.status(400).json({
+          success: false,
+          message: 'command query parameter is required'
+        });
+      }
+
+      const patterns = await learningService.findSimilarPatterns(userId, command, 5);
+      
+      return res.json({
+        success: true,
+        data: patterns.map(p => ({
+          id: p._id,
+          failedCommand: p.failedAttempt.userCommand,
+          failedAction: p.failedAttempt.aiAction,
+          correctAction: p.userCorrection.action,
+          correctParameters: p.userCorrection.parameters,
+          confidence: p.metadata.confidence,
+          usageCount: p.metadata.usageCount
+        }))
+      });
+    } catch (error) {
+      console.error('Error getting learned patterns:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get learned patterns',
+        error: error.message
+      });
+    }
+  }
+
   // Sync documents for indexing
   async syncDocuments(req, res) {
     try {
@@ -4445,6 +4867,100 @@ class AIAssistantController {
       res.status(500).json({
         success: false,
         message: error.message || 'Failed to sync documents for AI assistant.'
+      });
+    }
+  }
+
+  /**
+   * AI Co-Pilot: Parse natural language command to field placements
+   */
+  async parseFieldCommand(req, res) {
+    try {
+      const { command, context } = req.body;
+      
+      if (!command) {
+        return res.status(400).json({
+          success: false,
+          message: 'Command is required'
+        });
+      }
+
+      const coPilotService = require('../services/coPilotService');
+      const result = await coPilotService.parseFieldCommand(command, context || {});
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error parsing field command:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to parse field command',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * AI Co-Pilot: Analyze PDF for field suggestions
+   */
+  async analyzePDFForSuggestions(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'PDF file is required'
+        });
+      }
+
+      const fs = require('fs').promises;
+      const pdfBuffer = await fs.readFile(req.file.path);
+      
+      // Clean up uploaded file
+      await fs.unlink(req.file.path);
+
+      const { fieldTypes, minConfidence } = req.body;
+      const options = {
+        fieldTypes: fieldTypes ? JSON.parse(fieldTypes) : ['signature', 'date', 'name'],
+        minConfidence: minConfidence ? parseFloat(minConfidence) : 0.6
+      };
+
+      const coPilotService = require('../services/coPilotService');
+      const result = await coPilotService.analyzePDFForFieldSuggestions(pdfBuffer, options);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error analyzing PDF:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to analyze PDF',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * AI Co-Pilot: Check constraints
+   */
+  async checkConstraints(req, res) {
+    try {
+      const { context } = req.body;
+      
+      if (!context) {
+        return res.status(400).json({
+          success: false,
+          message: 'Context is required'
+        });
+      }
+
+      const coPilotService = require('../services/coPilotService');
+      const result = await coPilotService.checkConstraints(context);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error checking constraints:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check constraints',
+        error: error.message
       });
     }
   }

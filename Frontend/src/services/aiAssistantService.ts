@@ -47,6 +47,8 @@ export interface AICommandResponse {
   result?: any;
   message?: string;
   conversationId?: string;
+  learningEnabled?: boolean; // Flag indicating learning is available
+  patternId?: string; // ID of failed pattern for correction recording
 }
 
 export interface Conversation {
@@ -154,6 +156,79 @@ export const aiAssistantApiService = {
   // Sync documents for indexing
   syncDocuments: async (): Promise<{ success: boolean; message: string; indexed?: number }> => {
     const response = await aiAssistantApi.post('/api/ai-assistant/sync-documents');
+    return response.data;
+  },
+
+  // Learning system APIs
+  recordUserCorrection: async (patternId: string, userCorrection: {
+    action: string;
+    parameters: any;
+    description?: string;
+  }): Promise<{ success: boolean; message: string; data?: any }> => {
+    const response = await aiAssistantApi.post('/api/ai-assistant/learning/correction', {
+      patternId,
+      userCorrection
+    });
+    return response.data;
+  },
+
+  getLearningStats: async (): Promise<{ success: boolean; data?: any }> => {
+    const response = await aiAssistantApi.get('/api/ai-assistant/learning/stats');
+    return response.data;
+  },
+
+  getLearnedPatterns: async (command: string): Promise<{ success: boolean; data?: any[] }> => {
+    const response = await aiAssistantApi.get('/api/ai-assistant/learning/patterns', {
+      params: { command }
+    });
+    return response.data;
+  },
+
+  recordUserAction: async (action: string, parameters: any, source: string = 'manual', metadata?: any): Promise<{ success: boolean; data?: any }> => {
+    const response = await aiAssistantApi.post('/api/ai-assistant/learning/action', {
+      action,
+      parameters,
+      source,
+      metadata
+    });
+    return response.data;
+  },
+
+  // AI Co-Pilot: Parse natural language command to field placements
+  parseFieldCommand: async (command: string, context: any): Promise<any> => {
+    const response = await aiAssistantApi.post('/api/ai-assistant/copilot/parse-command', {
+      command,
+      context
+    });
+    return response.data;
+  },
+
+  // AI Co-Pilot: Analyze PDF for field suggestions
+  analyzePDFForSuggestions: async (pdfFile: File, options?: {
+    fieldTypes?: string[];
+    minConfidence?: number;
+  }): Promise<any> => {
+    const formData = new FormData();
+    formData.append('pdf', pdfFile);
+    if (options?.fieldTypes) {
+      formData.append('fieldTypes', JSON.stringify(options.fieldTypes));
+    }
+    if (options?.minConfidence !== undefined) {
+      formData.append('minConfidence', options.minConfidence.toString());
+    }
+    const response = await aiAssistantApi.post('/api/ai-assistant/copilot/analyze-pdf', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  // AI Co-Pilot: Check constraints
+  checkConstraints: async (context: any): Promise<any> => {
+    const response = await aiAssistantApi.post('/api/ai-assistant/copilot/check-constraints', {
+      context
+    });
     return response.data;
   }
 };

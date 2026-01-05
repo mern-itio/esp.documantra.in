@@ -49,7 +49,7 @@ class LLMServiceLangChain {
     }
   }
 
-  buildPrompt() {
+  buildPrompt(learnedExamples = [], recipientMappings = []) {
     const kb = this.knowledgeBase;
     let formatInstructions;
     try {
@@ -62,6 +62,33 @@ class LLMServiceLangChain {
     // Escape any curly braces in formatInstructions and knowledge base to avoid template conflicts
     const escapedFormatInstructions = formatInstructions.replace(/\{/g, '{{').replace(/\}/g, '}}');
     const kbString = JSON.stringify(kb, null, 2).replace(/\{/g, '{{').replace(/\}/g, '}}');
+    
+    // Build learned examples section if available
+    let learnedExamplesSection = '';
+    if (learnedExamples && learnedExamples.length > 0) {
+      learnedExamplesSection = `\n\nLEARNED PATTERNS FROM USER CORRECTIONS (Use these as examples when similar commands appear):\n`;
+      learnedExamples.forEach((example, idx) => {
+        learnedExamplesSection += `\nExample ${idx + 1}:\n`;
+        learnedExamplesSection += `User Command: "${example.userCommand}"\n`;
+        learnedExamplesSection += `AI Attempted: action="${example.aiAction}", parameters=${JSON.stringify(example.aiParameters)}\n`;
+        learnedExamplesSection += `Error: ${example.error}\n`;
+        learnedExamplesSection += `Correct Approach: action="${example.correctAction}", parameters=${JSON.stringify(example.correctParameters)}\n`;
+        if (example.description) {
+          learnedExamplesSection += `User's Description: "${example.description}"\n`;
+        }
+      });
+      learnedExamplesSection += `\nWhen you see similar commands, use the "Correct Approach" from these examples instead of making the same mistake.\n`;
+    }
+    
+    // Build recipient mappings section if available
+    let recipientMappingsSection = '';
+    if (recipientMappings && recipientMappings.length > 0) {
+      recipientMappingsSection = `\n\nRECIPIENT NAME-TO-EMAIL MAPPINGS (Use these when user mentions a name without email):\n`;
+      recipientMappings.forEach((mapping, idx) => {
+        recipientMappingsSection += `- "${mapping.name}" → "${mapping.email}"\n`;
+      });
+      recipientMappingsSection += `\nIf user mentions a name from the above list (e.g., "send to ${recipientMappings[0]?.name || 'name'}"), use the corresponding email address in the recipients array.\n`;
+    }
     
     const systemPrompt = `You are an AI assistant for Draft and Sign, a comprehensive document management and e-signature platform.
 
@@ -110,6 +137,14 @@ CRITICAL JSON FORMAT RULES:
 - If a file IS attached and the user refers to "this document", "this file", set documentId to null and proceed
 - If recipient email is missing for send_document or create_and_send_envelope, set action to null and clarification: "What is the recipient's email address?"
 - If signature fields are mentioned but no position specified, use default positions (bottom-right for signature fields)
+- **CRITICAL FOR CLARIFICATION RESPONSES**: If the previous assistant message asked "where to place the signature field" or "signature field is required", 
+  AND the user responds with just position words (e.g., "bottom", "top", "left", "right", "center", "bottom-left", "bottom-right", etc.),
+  you MUST interpret this as the user providing signature field placement information. Extract the position and create signatureFields array.
+  Examples:
+  - User says "bottom" after clarification → {{"action": "create_and_send_envelope", "parameters": {{"signatureFields": [{{"type": "signature", "position": "bottom-right", "page": 1}}]}}, "clarification": null}}
+  - User says "bottom left" after clarification → {{"action": "create_and_send_envelope", "parameters": {{"signatureFields": [{{"type": "signature", "position": "bottom-left", "page": 1}}]}}, "clarification": null}}
+  - User says "top right page 2" after clarification → {{"action": "create_and_send_envelope", "parameters": {{"signatureFields": [{{"type": "signature", "position": "top-right", "page": 2}}]}}, "clarification": null}}
+  Always extract page number if mentioned, default to page 1 if not mentioned.
 - When user says "generate [category] file", set action to null and clarification: "Do you want to create a new [category] document or choose from existing [category] documents?"
 - If user says "choose existing", use list_documents_by_category action
 - If user says "create new one", use generate_document action with category and empty requirements (system will ask for details)
@@ -152,6 +187,8 @@ CRITICAL JSON FORMAT RULES:
 
 PLATFORM CONTEXT:
 ${kbString}
+${learnedExamplesSection}
+${recipientMappingsSection}
 
 Always return valid JSON matching the schema. Extract as much information as possible from the user's command.`;
 
@@ -162,13 +199,14 @@ Always return valid JSON matching the schema. Extract as much information as pos
     ]);
   }
 
-  buildChain() {
+  buildChain(customPrompt = null) {
+    const promptToUse = customPrompt || this.prompt;
     return RunnableSequence.from([
       {
         input: (x) => x.input,
         history: (x) => x.history || []
       },
-      this.prompt,
+      promptToUse,
       this.model,
       async (response) => {
         try {
@@ -213,6 +251,11 @@ Always return valid JSON matching the schema. Extract as much information as pos
 
   async processCommand(userCommand, context = {}) {
     try {
+      // Get learned examples from context
+      const learnedExamples = context.learnedExamples || [];
+      // Get recipient mappings from context
+      const recipientMappings = context.recipientMappings || [];
+      
       // Build history from previous messages
       const history = (context.previousMessages || []).slice(-4).map(msg => {
         if (msg.role === 'user') {
@@ -272,7 +315,14 @@ Always return valid JSON matching the schema. Extract as much information as pos
         }
       }
 
-      const result = await this.chain.invoke({
+      // Rebuild chain with learned examples or recipient mappings if available
+      let chainToUse = this.chain;
+      if (learnedExamples.length > 0 || recipientMappings.length > 0) {
+        const promptWithExamples = this.buildPrompt(learnedExamples, recipientMappings);
+        chainToUse = this.buildChain(promptWithExamples);
+      }
+      
+      const result = await chainToUse.invoke({
         input: userMessage,
         history: history
       });
