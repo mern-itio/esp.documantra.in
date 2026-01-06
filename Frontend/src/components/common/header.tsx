@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { Bell, LogOut, Menu, Search, Crown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
-import { subscriptionApi, eSignApi } from '../../services/apiHelper';
+import { subscriptionApi, eSignApi, organizationApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
+import type { Organization } from '../../types/organization';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -13,11 +14,13 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const { user, logout } = useAuth();
+  const [allOrganizations, setAllOrganizations] = React.useState<Organization[]>([]);
+  const { user, logout, accountType, organizationId, switchAccount,organizationDetail } = useAuth();
+  console.log("organizationDetail in header:", organizationDetail);
+  const [showSwitcher, setShowSwitcher] = useState(false);
   const { userPlan, isFreePlan } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
-
   // Check if user has a paid plan
   const isPaidPlan = userPlan && !isFreePlan();
 
@@ -119,13 +122,22 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   // Fetch notifications on mount and when user changes
   React.useEffect(() => {
     if (user) {
+      fetchOrganizations();
       fetchNotifications();
       // Poll for new notifications every 30 seconds
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
   }, [user, fetchNotifications]);
-
+  const fetchOrganizations = async () => {
+    try{
+      const response = await organizationApi.get('/api/organization/user-organizations');
+      const data = response.data?.data ?? response.data;
+       setAllOrganizations(Array.isArray(data) ? data : data ? [data] : []);
+    }catch (err){
+      console.error('Error fetching organizations:', err);
+    }
+  };
   // Mark all notifications as read
   const handleMarkAllAsRead = async () => {
     try {
@@ -394,7 +406,23 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             >
               <div className="relative">
                 <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
-                  {getInitials((user as any)?.fullname)}
+                  {organizationDetail && accountType === 'organization' ? (
+                    organizationDetail.logo ? (
+                      <img
+                        src={organizationDetail.logo}
+                        alt={organizationDetail.name}
+                        className="h-8 w-8 rounded-full object-contain "
+                      />
+                    ) : (
+                      <span >
+                        {getInitials(organizationDetail.name)}
+                      </span>
+                    )
+                  ) : (
+                    <span >
+                      {getInitials((user as any)?.fullname)}
+                    </span>
+                  )}
                 </div>
                 {isPaidPlan && (
                   <div className="absolute top-0 right-1 transform translate-x-1/2 -translate-y-1/2 rotate-35 z-10 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300">
@@ -405,18 +433,143 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             </button>
             {showUserMenu && (
               <div
-                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-user-menu-slide"
+                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl z-50  animate-user-menu-slide"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header section */}
                 <div className="p-4">
-                  <p className="text-base font-semibold text-gray-900">{formatName((user as any)?.fullname)}</p>
-                  <p className="text-sm text-gray-600 mt-1">{(user as any)?.email || '—'}</p>
-                  <p className="text-sm text-gray-600 mt-1">Account #{accountId}</p>
-                  <p className="text-sm text-gray-600 mt-1">{formatName((user as any)?.fullname)}</p>
+                  {/* Name row */}
+                  <div className="flex items-center gap-2 relative">
+                    {/* User name */}
+                    <p className="text-base font-semibold text-gray-900">
+                      {organizationDetail && accountType === 'organization'
+                        ? formatName(organizationDetail.name)
+                        : formatName((user as any)?.fullname)}
+                    </p>
+                                        {/* Switcher icon button */}
+                    <div className="relative group">
+                      <button
+                        onClick={() => setShowSwitcher(prev => !prev)}
+                        className="flex items-center justify-center w-8 h-8 rounded-full
+                                  border border-gray-300 text-gray-600
+                                  hover:border-[#3E2B66] hover:text-[#3E2B66]
+                                  transition"
+                        aria-label="Switch account"
+                      >
+                        {/* Switch icon */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8 7h12m0 0-4-4m4 4-4 4M16 17H4m0 0 4 4m-4-4 4-4"
+                          />
+                        </svg>
+                      </button>
+
+                      {/* Tooltip */}
+                      <div
+                        className="absolute left-1/2 -translate-x-1/2 top-full mt-2
+                                  whitespace-nowrap rounded-md bg-gray-900 px-2 py-1
+                                  text-xs text-white opacity-0 group-hover:opacity-100
+                                  transition pointer-events-none z-50"
+                      >
+                        Switch account
+                      </div>
+                    </div>
+                    {/* Dropdown */}
+                    {showSwitcher && (
+                      <div className="absolute left-0 top-full mt-2 w-52 rounded-lg
+                                      border border-gray-200 bg-white shadow-lg z-50">
+                          <div className="px-4 py-2 border-b border-gray-100">
+                            <p className="text-xs font-semibold text-gray-900 tracking-wide">
+                              Switch Account
+                            </p>
+                          </div>                    
+                            <button
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                              onClick={async () => { await switchAccount('user'); setShowUserMenu(false); setShowSwitcher(false); }}
+                            >
+                              <div className={`flex items-center gap-2 
+                                ${accountType === 'user'
+                                  ? "bg-green-50 px-1 py-2 border border-green-300 rounded-md"
+                                  : "hover:bg-gray-100"
+                                }`}>
+                                <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
+                                  {getInitials((user as any)?.fullname)}
+                                </div>
+
+                                <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">
+                                  {formatName((user as any)?.fullname)}
+                                </p>
+                              </div>
+                            </button>
+                        {allOrganizations.length > 0 && allOrganizations.map((org) => (
+                          <button
+                            key={org._id}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            onClick={async () => { await switchAccount('organization', org._id); setShowUserMenu(false); setShowSwitcher(false); }}
+                          >
+                            <div className={`flex items-center gap-2 
+                              ${accountType === 'organization' && organizationId === org._id
+                                ? "bg-green-50 px-1 py-2 border border-green-300 rounded-md"
+                                : "hover:bg-gray-100"
+                              }`}>
+                              <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
+                                {org.name
+                                  .split(' ')
+                                  .map((word) => word[0].toUpperCase())
+                                  .join('')
+                                  .slice(0, 2)}
+                              </div>
+                              <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">
+                                {org.name}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {organizationDetail && accountType === 'organization' ? 
+                  <div>
+                    <a href={
+                        organizationDetail.website.startsWith('http')
+                          ? organizationDetail.website
+                          : `https://${organizationDetail.website}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline text-purple-600"
+                    >
+                      {organizationDetail.website}
+                    </a>
+                    <p className="text-sm text-gray-600 mt-1">Account #{organizationDetail?._id || "_"}</p>
+                  </div>
+                   : (
+                    <div>
+                        <p className="text-sm text-gray-600 mt-1">{(user as any)?.email || "—"}</p>
+                        <p className="text-sm text-gray-600 mt-1">Account #{accountId}</p>
+                    </div>
+                  )}
+
+                  {/* ✅ Manage Profile button (restored) */}
                   <button
-                    onClick={() => { setShowUserMenu(false); navigate('/account/profile'); }}
-                    className="mt-3 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:border-[#3E2B66] hover:text-[#3E2B66] transition-all duration-300 w-full hover:scale-[1.02] active:scale-100"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate("/account/profile");
+                    }}
+                    className="mt-3 inline-flex items-center justify-center px-4 py-2
+                              border border-gray-300 rounded-lg text-sm font-medium text-gray-900
+                              hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent
+                              hover:border-[#3E2B66] hover:text-[#3E2B66]
+                              transition-all duration-300 w-full hover:scale-[1.02]"
                   >
                     Manage Profile
                   </button>

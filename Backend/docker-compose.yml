@@ -139,3 +139,15 @@ services:
       - DOCUMENT_SERVICE_URL=http://document-service:2102
       - ESIGN_SERVICE_URL=http://e-sign-service:2103
       - SUBSCRIPTION_SERVICE_URL=http://subscription-service:2110
+      
+  organization-service:
+    build:
+      context: .
+      dockerfile: services/organization-service/Dockerfile
+    ports:
+      - "2111:2111"
+    volumes:
+      - ./services/organization-service:/app/services/organization-service:cached
+      - /app/services/organization-service/node_modules
+      - ./services/organization-service/uploads:/app/services/organization-service/uploads  # <-- added
+    command: npm run dev

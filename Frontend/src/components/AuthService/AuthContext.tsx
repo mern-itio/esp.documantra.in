@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { API_ENDPOINTS, apiRequest } from '../../services/api';
+import { authApi } from '../../services/apiHelper';
 import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
 
 interface User {
@@ -22,6 +23,10 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; }) => Promise<void>;
+  accountType: 'user' | 'organization';
+  organizationId: string | null;
+  organizationDetail: any | null;
+  switchAccount: (accountType: 'user' | 'organization', organizationId?: string | null) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +47,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [accountType, setAccountType] = useState<'user' | 'organization'>(() => {
+    const v = localStorage.getItem('accountType');
+    return (v === 'organization' ? 'organization' : 'user');
+  });
+  const [organizationId, setOrganizationId] = useState<string | null>(() => {
+    return localStorage.getItem('organizationId') || null;
+  });
+  const [organizationDetail, setOrganizationDetail] = useState<any | null>(() => {
+    try {
+      const v = localStorage.getItem('organizationDetail');
+      return v ? JSON.parse(v) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Check for existing authentication on component mount
   useEffect(() => {
@@ -85,6 +105,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         setIsAuthenticated(true);
+        // initialize accountType and organizationId from storage (if present)
+        const storedAccountType = localStorage.getItem('accountType');
+        const storedOrgId = localStorage.getItem('organizationId');
+        if (storedAccountType === 'organization') setAccountType('organization');
+        else setAccountType('user');
+        setOrganizationId(storedOrgId || null);
+        try {
+          const storedOrgDetail = localStorage.getItem('organizationDetail');
+          setOrganizationDetail(storedOrgDetail ? JSON.parse(storedOrgDetail) : null);
+        } catch {
+          setOrganizationDetail(null);
+        }
       } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('accessToken');
@@ -168,6 +200,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       localStorage.setItem('accessToken', data.token);
       localStorage.setItem('userData', JSON.stringify(initialUserData));
+      // default to user account after login
+      localStorage.setItem('accountType', 'user');
+      localStorage.removeItem('organizationId');
+      setAccountType('user');
+      setOrganizationId(null);
 
       setUser(initialUserData);
       setIsAuthenticated(true);
@@ -197,12 +234,101 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear authentication data
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userData');
+    localStorage.removeItem('accountType');
+    localStorage.removeItem('organizationId');
+    localStorage.removeItem('organizationDetail');
     
     // Clear subscription data
     SubscriptionStorage.clearPlan();
     
     setUser(null);
     setIsAuthenticated(false);
+    setOrganizationDetail(null);
+  };
+
+  const switchAccount = async (newAccountType: 'user' | 'organization', orgId?: string | null) => {
+    let dispatchedOrgId: string | null = orgId || null;
+    let dispatchedOrgDetail: any | null = organizationDetail || null;
+
+    try {
+      const resp = await authApi.get(`/api/auth/switch-account/${newAccountType}/?orgId=${orgId}`).catch((e) => {
+        console.warn('switch-account API failed, falling back to local-only switch', e?.message || e);
+        return null;
+      });
+
+      if (resp && resp.data) {
+        const d: any = resp.data;
+
+        // Set account type
+        const canonicalAccountType = newAccountType;
+        localStorage.setItem('accountType', canonicalAccountType);
+        setAccountType(canonicalAccountType === 'organization' ? 'organization' : 'user');
+        const respOrgRoot = d?.organization || null;
+
+        let organizationDetail: any = null;
+        let resolvedOrgId: string | null = null;
+
+        if (respOrgRoot) {
+          // Case: nested wrapper: { organization: { organization: {...}, access: {...} } }
+          if (respOrgRoot.organization && typeof respOrgRoot.organization === 'object') {
+            organizationDetail = { ...respOrgRoot.organization };
+            // if access/permissions provided alongside wrapper, attach them
+            if (respOrgRoot.access) organizationDetail.access = respOrgRoot.access;
+            if (respOrgRoot.permissions) organizationDetail.permissions = respOrgRoot.permissions;
+          } else {
+            // Case: merged shape or plain org object which may already include access/permissions
+            organizationDetail = { ...respOrgRoot };
+          }
+        } else if (orgId) {
+          organizationDetail = { id: orgId };
+        }
+
+        if (organizationDetail) {
+          // Normalize id field
+          resolvedOrgId = organizationDetail._id || organizationDetail.id || null;
+          dispatchedOrgId = resolvedOrgId || dispatchedOrgId;
+          dispatchedOrgDetail = organizationDetail;
+          // Persist full organization detail (including access/permissions if present)
+          localStorage.setItem('organizationDetail', JSON.stringify(organizationDetail));
+          if (resolvedOrgId) localStorage.setItem('organizationId', resolvedOrgId);
+          setOrganizationId(resolvedOrgId);
+          setOrganizationDetail(organizationDetail);
+        } else if (canonicalAccountType === 'user') {
+          localStorage.removeItem('organizationDetail');
+          localStorage.removeItem('organizationId');
+          setOrganizationId(null);
+          setOrganizationDetail(null);
+        }
+        // If no organizationDetail but orgId provided, ensure orgId persisted earlier in fallback branch
+      } else {
+        // Local-only switch
+        localStorage.setItem('accountType', newAccountType);
+        setAccountType(newAccountType);
+        if (orgId) {
+          localStorage.setItem('organizationId', orgId);
+          setOrganizationId(orgId);
+          dispatchedOrgId = orgId;
+          dispatchedOrgDetail = organizationDetail || null;
+        } else if (newAccountType === 'user') {
+          localStorage.removeItem('organizationId');
+          setOrganizationId(null);
+          dispatchedOrgId = null;
+          dispatchedOrgDetail = null;
+        }
+      }
+
+      // Notify other parts of the app with resolved org info
+      try { window.dispatchEvent(new CustomEvent('account-switched', { detail: { accountType: newAccountType, organizationId: (typeof dispatchedOrgId !== 'undefined' ? dispatchedOrgId : orgId || null), organizationDetail: (typeof dispatchedOrgDetail !== 'undefined' ? dispatchedOrgDetail : null) } })); } catch {}
+    } catch (err) {
+      console.error('Failed to switch account:', err);
+      // best-effort local update
+      localStorage.setItem('accountType', newAccountType);
+      setAccountType(newAccountType);
+      if (orgId) {
+        localStorage.setItem('organizationId', orgId);
+        setOrganizationId(orgId);
+      }
+    }
   };
 
   const signup = async (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string }) => {
@@ -226,7 +352,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     login,
     logout,
-    signup
+    signup,
+    accountType,
+    organizationId,
+    organizationDetail,
+    switchAccount
   };
 
   return (

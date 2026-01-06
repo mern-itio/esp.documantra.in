@@ -741,7 +741,7 @@ const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuf
 
 
 const addSignature = async (req, res) => {
-  console.log("Add Signature Started...");
+  console.log("Signature Started...");
   const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName,selfValue,cycleId, initials } = req.body;
 
   if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId || !certificateId) {
@@ -921,9 +921,16 @@ const addSignature = async (req, res) => {
         // All signers have completed, prepare document and finalize
         const envelope = await Envelope.findById(envelopeId);
         if (envelope) {
-          // Preprare Document
-          // Cryptographical Sign
-          // BlockChain anchoring 
+          const prepareDoc = await prepareDocumentForFinalSigning(envelopeId, documentId, cycleId, true);
+          if (!prepareDoc) {
+            console.log('Failed to prepare document for final signing');
+            return res.status(500).json({ message: 'Failed to prepare document for final signing' });
+          }
+          const digiSign = await finalizeSigning(envelopeId, documentId, cycleId, true);
+          if (!digiSign) {
+            console.log('Failed to finalize signing');
+            return res.status(500).json({ message: 'Failed to finalize signing' });
+          }
           // Generate Certificate
           // Send Email and Certificate
         }
@@ -952,10 +959,6 @@ const addSignature = async (req, res) => {
 
         // 3. If ANY pending field exists → redirect back to signing page
         if (pendingSignatureField || pendingNonSignatureField) {
-          console.log('Pending fields remain for current self-signer');
-          console.log(pendingSignatureField);
-          console.log(pendingNonSignatureField);
-          // Prepare Email to next self-signer in cycle
           return res.status(200).json({
               status: 'success',
               message: 'Signature added with compliance',
@@ -963,9 +966,10 @@ const addSignature = async (req, res) => {
             });
         }else{
             // Find next pending self-signer
-            const nextSigner = pendingSelfSigners?.signers?.find(
-              s => s.status === 'pending'
-            );
+            const nextSigner = pendingSelfSigners?.signers
+              ?.filter(s => s.status === 'pending')
+              ?.sort((a, b) => a.signingOrder - b.signingOrder)[0];
+
             if (!nextSigner) {
               console.log('No next self-signer found');
               return;
@@ -999,7 +1003,6 @@ const addSignature = async (req, res) => {
               message: 'Signature added with compliance',
               fieldRemmaning:false
             });
-          // All fields completed for this signer
         }
       }
     }

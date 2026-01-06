@@ -13,6 +13,7 @@ import { organizationApi } from '../../services/apiHelper';
 const MyOrganizationPage: React.FC = () => {
   const navigate = useNavigate();
   const [myOrganization, setMyOrganization] = React.useState<Organization | null>(null);
+  const [sharedOrganizations, setSharedOrganizations] = React.useState<Organization[]>([]);
   const [showEditModal, setShowEditModal] = React.useState(false);
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   const [showTeamsModal, setShowTeamsModal] = React.useState(false);
@@ -28,9 +29,20 @@ const MyOrganizationPage: React.FC = () => {
         const payload = response.data?.data ?? response.data;
         console.log('User Organizations:', payload);
         if (Array.isArray(payload)) {
-          setMyOrganization(payload[0] ?? null);
+          const owner = payload.find((o) => (o as any).isOwner) ?? payload[0] ?? null;
+          setMyOrganization(owner ?? null);
+          setSharedOrganizations(payload.filter((o) => !(o as any).isOwner));
+        } else if (payload) {
+          if ((payload as any).isOwner) {
+            setMyOrganization(payload);
+            setSharedOrganizations([]);
+          } else {
+            setMyOrganization(null);
+            setSharedOrganizations([payload]);
+          }
         } else {
-          setMyOrganization(payload ?? null);
+          setMyOrganization(null);
+          setSharedOrganizations([]);
         }
       }
       // Handle the response data as needed
@@ -51,33 +63,47 @@ const MyOrganizationPage: React.FC = () => {
     getUserOrganizations();
   };
 
-  const sharedOrganizations: Organization[] = [
-    {
-      _id: '2',
-      name: 'Tech Solutions Inc',
-      logo: 'https://via.placeholder.com/150',
-      website: 'https://www.techsolutions.com',
-      gst: 'GST987654321',
-      status: true,
-      createdBy: 'user456',
-      createdAt: new Date().toISOString(),
-      verificationDocuments: []
-    },
-    {
-      _id: '3',
-      name: 'Global Enterprises',
-      logo: 'https://via.placeholder.com/150',
-      website: 'https://www.globalent.com',
-      gst: 'GST456789123',
-      status: true,
-      createdBy: 'user789',
-      createdAt: new Date().toISOString(),
-      verificationDocuments: []
-    }
+  // `sharedOrganizations` is populated from the API response (see `getUserOrganizations`)
+
+  // Combine organizations into a single array and build element lists in one loop
+  const organizations: (Organization & { isOwner?: boolean })[] = [
+    ...(myOrganization ? [{ ...myOrganization, isOwner: true }] : []),
+    ...sharedOrganizations.map((org) => ({ ...org, isOwner: (org as any).isOwner ?? false }))
   ];
 
-  // Determine if user has an organization
-  const hasOrganization = !!myOrganization;
+  const myOrgElements: React.ReactElement[] = [];
+  const sharedOrgElements: React.ReactElement[] = [];
+
+  organizations.forEach((org) => {
+    if (org.isOwner) {
+      myOrgElements.push(
+        <MyOrganizationCard
+          key={org._id}
+          organization={org}
+          onClick={() => {
+            console.log('Navigate to organization details');
+          }}
+          onEdit={() => setShowEditModal(true)}
+          onDelete={() => setShowDeleteModal(true)}
+          onTeams={() => setShowTeamsModal(true)}
+          onVerify={() => setShowVerifyModal(true)}
+        />
+      );
+    } else {
+      sharedOrgElements.push(
+        <SharedOrganizationCard
+          key={org._id}
+          organization={org}
+          role="Member"
+          onClick={() => {
+            console.log('Navigate to shared organization details');
+          }}
+        />
+      );
+    }
+  });
+
+  const hasOrganization = myOrgElements.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -118,19 +144,7 @@ const MyOrganizationPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900">My Organization</h2>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {myOrganization && (
-                <MyOrganizationCard
-                  organization={myOrganization}
-                  onClick={() => {
-                    // Navigate to organization details
-                    console.log('Navigate to organization details');
-                  }}
-                  onEdit={() => setShowEditModal(true)}
-                  onDelete={() => setShowDeleteModal(true)}
-                  onTeams={() => setShowTeamsModal(true)}
-                  onVerify={() => setShowVerifyModal(true)}
-                />
-              )}
+              {myOrgElements}
             </div>
           </div>
         ) : (
@@ -164,23 +178,13 @@ const MyOrganizationPage: React.FC = () => {
             <Users className="w-5 h-5 text-blue-600" />
             <h2 className="text-xl font-semibold text-gray-900">Shared Organizations</h2>
             <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-              {sharedOrganizations.length}
+              {sharedOrgElements.length}
             </span>
           </div>
 
-          {sharedOrganizations.length > 0 ? (
+          {sharedOrgElements.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {sharedOrganizations.map((org) => (
-                <SharedOrganizationCard
-                  key={org._id}
-                  organization={org}
-                  role="Member"
-                  onClick={() => {
-                    // Navigate to shared organization details
-                    console.log('Navigate to shared organization details');
-                  }}
-                />
-              ))}
+              {sharedOrgElements}
             </div>
           ) : (
             <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">

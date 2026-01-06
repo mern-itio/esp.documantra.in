@@ -7,6 +7,9 @@ interface DocumentState {
   // User & Auth
   currentUser: User | null;
   userPermissions: any;
+  accountType?: 'user' | 'organization';
+  organizationId?: string | null;
+  organizationDetail?: any | null;
 
   // Documents & Folders
   documents: Document[];
@@ -33,6 +36,9 @@ interface DocumentState {
   // Actions
   setCurrentUser: (user: User) => void;
   loadUserFromStorage: () => void;
+  // Account switching
+  setAccount: (accountType: 'user' | 'organization', organizationId?: string | null, organizationDetail?: any | null) => void;
+  loadAccountFromStorage: () => void;
   uploadFiles: (files: File[], folderId?: string) => Promise<void>;
   createFolder: (name: string, parentId?: string) => Promise<void>;
   deleteDocuments: (documentIds: string[]) => Promise<void>;
@@ -127,6 +133,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   // Initial state
   currentUser: null,
   userPermissions: getUserPermissions('regular'),
+  accountType: localStorage.getItem('accountType') === 'organization' ? 'organization' : 'user',
+  organizationId: localStorage.getItem('organizationId') || null,
+  organizationDetail: (() => {
+    try { const d = localStorage.getItem('organizationDetail'); return d ? JSON.parse(d) : null; } catch { return null; }
+  })(),
   documents: [],
   folders: [],
   selectedDocuments: [],
@@ -152,6 +163,23 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       const permissions = getUserPermissions(user.role);
       set({ currentUser: user, userPermissions: permissions });
     }
+  },
+  setAccount: (accountType: 'user' | 'organization', organizationId?: string | null, organizationDetail?: any | null) => {
+    try {
+      localStorage.setItem('accountType', accountType);
+      if (organizationId) localStorage.setItem('organizationId', organizationId);
+      else localStorage.removeItem('organizationId');
+      if (organizationDetail) localStorage.setItem('organizationDetail', JSON.stringify(organizationDetail));
+      else if (accountType === 'user') localStorage.removeItem('organizationDetail');
+    } catch {}
+    set({ accountType, organizationId: organizationId || null, organizationDetail: organizationDetail || null });
+  },
+  loadAccountFromStorage: () => {
+    const acct = localStorage.getItem('accountType');
+    const org = localStorage.getItem('organizationId');
+    let orgDetail = null;
+    try { const d = localStorage.getItem('organizationDetail'); orgDetail = d ? JSON.parse(d) : null; } catch {}
+    set({ accountType: acct === 'organization' ? 'organization' : 'user', organizationId: org || null, organizationDetail: orgDetail });
   },
 
   // API-based document fetching

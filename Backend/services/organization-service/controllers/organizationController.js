@@ -1,4 +1,12 @@
 const orgService = require('../services/organization.service');
+const ALL_PERMISSIONS = {
+    ENVELOPE_CREATE: true,
+    ENVELOPE_SHARE: true,
+    FOLDER_CREATE: true,
+    FOLDER_SHARE: true,
+    ORG_SHARE: true,
+    ORG_SETTINGS_EDIT: true
+};
 const createOrganization = async (req, res) => {
     const userId = req?.user?.data?.id; // Assuming user ID is available in req.user
     try {
@@ -123,6 +131,88 @@ const deleteOrganization = async (req, res) => {
         });
     }
 }
+const getOrganizationDetailsandAccess = async (req, res) => {
+    const organizationId = req?.params?.orgId;
+    const requestingUser = req?.user;
+    console.log("Requested User: ",requestingUser);
+    console.log("Organization ID: ",organizationId);
+    try {
+        if(!organizationId){
+            return res.status(500).json({
+                success: false,
+                message: "Organization ID is required"
+            });
+        }
+        const organization = await orgService.getOrganizationDetails(organizationId);
+        if (!organization) {
+            return res.status(404).json({
+                success: false,
+                message: "Organization not found"
+            });
+        }
+        // Check if the requesting user is the owner
+        if (organization.createdBy.toString() === requestingUser?.data?.id.toString()) {
+            // Normalize organization document to plain object if it's a Mongoose doc
+            const orgPlain = (organization && typeof organization.toObject === 'function') ? organization.toObject() : organization;
+
+            const organizationEnvelope = Object.assign({}, orgPlain, {
+                access: {
+                    isOwner: true,
+                    role: { name: "OWNER" }
+                },
+                permissions: ALL_PERMISSIONS
+            });
+
+            return res.status(200).json({
+                success: true,
+                organization: organizationEnvelope
+            });
+        }
+        //verify user membership in organization
+        const orgUser = await orgService.getOrganizationUser(organizationId, requestingUser?.data?.id);
+        if (!orgUser || orgUser.status !== "ACTIVE") {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied to this organization"
+            });
+        }
+        const role = await orgService.getOrganizationRoleById(orgUser.roleId);
+        if (!role) {
+            return res.status(403).json({
+                success: false,
+                message: "Role not found for the user in this organization"
+            });
+        }
+        const permissions = await orgService.getOrganizationPermissionsByRoleId(role._id);
+        const orgPlain = (organization && typeof organization.toObject === 'function') ? organization.toObject() : organization;
+        const perms = permissions || {
+            ENVELOPE_CREATE: false,
+            ENVELOPE_SHARE: false,
+            FOLDER_CREATE: false,
+            FOLDER_SHARE: false,
+            ORG_SHARE: false,
+            ORG_SETTINGS_EDIT: false
+        };
+
+        const organizationEnvelope = Object.assign({}, orgPlain, {
+            access: {
+                isOwner: false,
+                role: { name: role.name }
+            },
+            permissions: perms
+        });
+
+        return res.status(200).json({
+            success: true,
+            organization: organizationEnvelope
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -130,5 +220,6 @@ module.exports = {
     deleteOrganization,
     fetchUserOrganizations,
     fetchAllOrganizationsVerificationRequest,
-    verificationOrganization
+    verificationOrganization,
+    getOrganizationDetailsandAccess
 };

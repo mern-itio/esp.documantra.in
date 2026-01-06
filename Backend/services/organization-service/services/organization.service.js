@@ -1,4 +1,8 @@
 const Organization = require('../models/organization');
+const organizationUser = require('../models/organizationUser');
+const organizationRole = require('../models/organizationRole');
+const organizationPermission = require('../models/organizationPermission');
+const mongoose = require('mongoose');
 const createOrganization = async (payload, userId) => {
     const { name, logo, website, gst } = payload;
 
@@ -77,9 +81,46 @@ const deleteOrganization = async (orgId) => {
     return true;
 }
 const getOrganizationsByUserId = async (userId) => {
-    const organizations = await Organization.find({ createdBy: userId });
-    return organizations;
-}
+  const objectId = new mongoose.Types.ObjectId(userId);
+
+  const organizations = await Organization.aggregate([
+    // 1. Organizations the user owns
+    {
+      $match: { createdBy: objectId }
+    },
+    {
+      $addFields: { isOwner: true }
+    },
+
+    // 2. Union with organizations shared with the user
+    {
+      $unionWith: {
+        coll: "organizationusers", // collection name for OrganizationUser
+        pipeline: [
+          { $match: { userId: objectId } },
+          {
+            $lookup: {
+              from: "organizations",
+              localField: "organizationId",
+              foreignField: "_id",
+              as: "organization"
+            }
+          },
+          { $unwind: "$organization" },
+          {
+            $project: {
+              organization: 1,
+              isOwner: { $literal: false }
+            }
+          }
+        ]
+      }
+    }
+  ]);
+
+  return organizations;
+};
+
 const getAllOrganizations = async () => {
     const organizations = await Organization.find();
     return organizations;
@@ -88,6 +129,23 @@ const getAllOrganizationsRquest = async () => {
     const organizations = await Organization.find({ isverifcationRequested: true });
     return organizations;
 }
+const getOrganizationUser = async (orgId, userId) => {
+      const orgUser = await organizationUser.findOne({
+            orgId,
+            userId: userId,
+            status: "ACTIVE"
+        }).lean();
+
+        return orgUser;
+}
+const getOrganizationRoleById = async (roleId) => {
+    const orgRole = await organizationRole.findById(roleId).lean();
+    return orgRole;
+}
+const getOrganizationPermissionsByRoleId = async (roleId) => {
+    const orgPermissions = await organizationPermission.findById(roleId).lean();
+    return orgPermissions;
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -95,5 +153,8 @@ module.exports = {
     deleteOrganization,
     getOrganizationsByUserId,
     getAllOrganizations,
-    getAllOrganizationsRquest
+    getAllOrganizationsRquest,
+    getOrganizationUser,
+    getOrganizationRoleById,
+    getOrganizationPermissionsByRoleId
 };

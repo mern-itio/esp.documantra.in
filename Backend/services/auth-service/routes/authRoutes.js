@@ -1,5 +1,5 @@
 const express = require('express');
-const { login, register, getMe } = require('../controllers/authController');
+const { login, register, getMe, switchAccount } = require('../controllers/authController');
 const {adminLogin} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
@@ -11,4 +11,5 @@ router.post('/register', register);
 router.get('/api/user-details/:id', userDetails);
 router.get('/api/find-user/:email', findUserByEmail);
 router.get('/api/auth/me', verifyJWT, getMe);
+router.get('/api/auth/switch-account/:accType', verifyJWT(), switchAccount);
 module.exports = router;

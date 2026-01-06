@@ -41,6 +41,7 @@ const { decrypt } = require('../utils/keyEncryption');
 const RecipientPermission = require('../models/RecipientPermission');
 const { logActivity } = require('./activityLogService');
 const selfSigner = require('../models/selfSigner');
+const Cycle = require('../models/Cycle');
 
 const signer = new SignPdf();
 
@@ -114,7 +115,6 @@ async function initiateRecipientSignature({fieldId, envelopeId, documentId, reci
     if (signatureImageBase64) {
         const rp = await selfSigner.findOne({ _id:recipientId });
         if (rp) {
-          rp.signature = signatureImageBase64;
           rp.status = 'submitted';
           
           // Update signatureFields array to mark this field as signed
@@ -152,118 +152,202 @@ async function initiateRecipientSignature({fieldId, envelopeId, documentId, reci
   return { signatureField: sField };
 }
 
-async function prepareDocumentForFinalSigning(envelopeId, documentId) {
+async function prepareDocumentForFinalSigning(
+  envelopeId,
+  documentId,
+  cycleId,
+  isSelfSign = false
+) {
+   // 1. Load base document
   const docRecord = await Document.findById(documentId);
   if (!docRecord) throw new Error('Document not found');
-  if (!docRecord.filePath || !fs.existsSync(docRecord.filePath)) throw new Error('Original document file missing');
+  if (!docRecord.filePath || !fs.existsSync(docRecord.filePath)) {
+    throw new Error('Original document file missing');
+  }
 
   let pdfBuffer = fs.readFileSync(docRecord.filePath);
   const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
 
-  // fetch ALL fields (signature + non-signature)
-  const allFields = await SignatureFields.find({ documentId }).sort({ order: 1, _id: 1 }).lean();
+   // 2. Load field definitions
 
-  // embed visible values (signature image OR text)
+  const allFields = await SignatureFields
+    .find({ documentId })
+    .sort({ order: 1, _id: 1 })
+    .lean();
+
+  // 3. Resolve field values for SELF SIGN flow
+ 
+  const resolvedFieldMap = new Map();
+
+  if (isSelfSign && cycleId) {
+    const cycle = await Cycle.findById(cycleId)
+      .populate({
+        path: 'signers',
+        model: 'SelfSigner',
+        options: { sort: { signingOrder: 1 } }
+      })
+      .lean();
+
+    if (!cycle) throw new Error('Cycle not found');
+
+    for (const signer of cycle.signers || []) {
+
+      // Non-signature fields
+      for (const f of signer.nonSignatureFields || []) {
+        resolvedFieldMap.set(String(f.fieldId), {
+          type: 'text',
+          value: f.value,
+          signerId: signer._id,
+          signingOrder: signer.signingOrder,
+        });
+      }
+
+      // Signature fields
+      if (signer.signature) {
+        for (const f of signer.signatureFields || []) {
+          resolvedFieldMap.set(String(f.fieldId), {
+            type: 'signature',
+            value: signer.signature,
+            signerId: signer._id,
+            signingOrder: signer.signingOrder,
+          });
+        }
+      }
+    }
+  }
+
+  // 4. Embed visible values into PDF
   for (const f of allFields) {
-    if (!f.signature) continue; // no value → skip
-
     try {
-      const pageIndex = Math.max(0, (f.page ? Number(f.page) - 1 : 0));
+      const resolved = isSelfSign
+        ? resolvedFieldMap.get(String(f._id))
+        : (f.signature ? { type: f.type, value: f.signature } : null);
+
+      if (!resolved || !resolved.value) continue;
+
+      const pageIndex = Math.max(0, Number(f.page || 1) - 1);
       const page = pdfDoc.getPages()[pageIndex] || pdfDoc.getPages()[0];
+
       const x = Number(f.x || 50);
       const w = Number(f.width || 150);
       const h = Number(f.height || 40);
       const topY = Number(f.y || 50);
       const y = page.getHeight() - topY - h;
 
-      if (f.type === 'signature' && f.signature.startsWith('data:image')) {
-        console.log(`Embedding signature image for field ${f._id} on page ${f.page}`);
-        // signature → embed image
-        const base64 = f.signature.split(',')[1];
+      if (
+        resolved.type === 'signature' &&
+        typeof resolved.value === 'string' &&
+        resolved.value.startsWith('data:image')
+      ) {
+        const base64 = resolved.value.split(',')[1];
         if (!base64) continue;
+
         const img = await pdfDoc.embedPng(Buffer.from(base64, 'base64'));
         page.drawImage(img, { x, y, width: w, height: h });
       } else {
-        console.log(`Embedding signature image for field ${f._id} on page ${f.page} text ${f.signature}`);
-        // non-signature → draw text
-        page.drawText(String(f.signature), {
-          x: x ,
-          y: y ,
-          size:12,
+        page.drawText(String(resolved.value), {
+          x,
+          y,
+          size: 12,
           color: rgb(0, 0, 0),
         });
       }
     } catch (e) {
       await AuditTrail.create({
         envelopeId,
-        recipientId: f.recipientId,
         action: 'EMBED_FIELD_FAILED',
-        details: { error: e.message, fieldId: f._id },
+        details: {
+          fieldId: f._id,
+          error: e.message,
+        },
       }).catch(() => {});
     }
   }
 
-  // save normalized PDF (important for crypto signing)
+  // 5. Normalize PDF for cryptographic signing
   const normalizedBytes = await pdfDoc.save({ useObjectStreams: false });
   let workingBuffer = Buffer.from(normalizedBytes);
 
-  // now only add placeholders for SIGNATURE fields
+  // 6. Add signature placeholders
+   
   const sigFields = allFields.filter(f => f.type === 'signature');
-  for (const f of sigFields) {
-    const targetPage = Math.max(1, Number(f.page || 1));
-    const x = Number(f.x || 50);
-    const y = Number(f.y || 50);
-    const w = Number(f.width || 150);
-    const h = Number(f.height || 40);
 
+  for (const f of sigFields) {
     const placeholderField = {
-      page: targetPage,
-      x,
-      y,
-      width: w,
-      height: h,
+      page: Math.max(1, Number(f.page || 1)),
+      x: Number(f.x || 50),
+      y: Number(f.y || 50),
+      width: Number(f.width || 150),
+      height: Number(f.height || 40),
       name: `sig_${String(f._id)}`,
-      reason: `Signature placeholder for recipient ${f.recipientId}`,
+      reason: `Signature placeholder for field ${String(f._id)}`,
       signatureLength: 65536,
     };
 
     try {
-      workingBuffer = await addPlaceholderToPdf(workingBuffer, placeholderField);
+      workingBuffer = await addPlaceholderToPdf(
+        workingBuffer,
+        placeholderField
+      );
     } catch (e) {
       await AuditTrail.create({
         envelopeId,
-        recipientId: f.recipientId,
         action: 'PLACEHOLDER_ADD_FAILED',
-        details: { error: e.message, fieldId: f._id },
+        details: {
+          fieldId: f._id,
+          error: e.message,
+        },
       }).catch(() => {});
     }
   }
 
-  // save prepared file
-  const outName = `prepared_${Date.now()}_${path.basename(docRecord.filePath)}`;
+  // 7. Persist prepared PDF against Cycle
+   
   const preparedDir = path.join(process.cwd(), 'uploads', 'prepared');
-  if (!fs.existsSync(preparedDir)) fs.mkdirSync(preparedDir, { recursive: true });
-  const outPath = path.join(preparedDir, outName);
+  if (!fs.existsSync(preparedDir)) {
+    fs.mkdirSync(preparedDir, { recursive: true });
+  }
+  let outname = `prepared_${Date.now()}_${path.basename(docRecord.filePath)}`;
+  if (isSelfSign) {
+    outname = `cycle_${cycleId}_${Date.now()}_${path.basename(docRecord.filePath)}`;
+  }
+  const outPath = path.join(preparedDir, outname);
+
   fs.writeFileSync(outPath, workingBuffer);
-
-  docRecord.preparedDoc = outPath;
-  await docRecord.save();
-
+  if(isSelfSign){
+    await Cycle.findByIdAndUpdate(cycleId, {
+      preparedDoc: outPath
+    });
+  }else{
+      docRecord.preparedDoc = outPath;
+      await docRecord.save();
+  }
   await AuditTrail.create({
     envelopeId,
     action: 'DOCUMENT_PREPARED',
-    details: { preparedPath: outPath },
+    details: {
+      preparedPath: outPath,
+      cycleId,
+      isSelfSign,
+    },
   }).catch(() => {});
 
   return { preparedPath: outPath };
 }
 
 
-async function finalizeSigning(envelopeId, documentId) {
-  const docRecord = await Document.findById(documentId);
-  if (!docRecord) throw new Error('Document not found');
-  if (!docRecord.preparedDoc || !fs.existsSync(docRecord.preparedDoc)) throw new Error('Prepared document not found. Call prepareDocumentForFinalSigning first.');
+async function finalizeSigning(envelopeId, documentId,cycleId=null, isSelfSign = false) {
+  let docRecord = null;
+  if(!isSelfSign && !cycleId){
+     docRecord = await Document.findById(documentId);
+    if (!docRecord) throw new Error('Document not found');
+    if (!docRecord.preparedDoc || !fs.existsSync(docRecord.preparedDoc)) throw new Error('Prepared document not found. Call prepareDocumentForFinalSigning first.');
+  }else{
+     docRecord = await Cycle.findById(cycleId);
+    if (!docRecord) throw new Error('Cycle not found');
+    if (!docRecord.preparedDoc || !fs.existsSync(docRecord.preparedDoc)) throw new Error('Prepared document not found in Cycle. Call prepareDocumentForFinalSigning first.');
 
+  }
   // Read the current prepared (or partially-signed) PDF
   let pdfBuffer = fs.readFileSync(docRecord.preparedDoc);
 
@@ -272,18 +356,47 @@ async function finalizeSigning(envelopeId, documentId) {
     documentId,
     type: 'signature'
   }).sort({ order: 1, _id: 1 });
-
-  // Optional: acquire a lock on the envelope/document here to prevent concurrent signing
-  // e.g. using a lightweight DB lock or Redis lock. Not shown here, but recommended.
-
+  // Find all signers using cycleId if self-sign
+  const signerByFieldId = new Map();
+  if (isSelfSign && cycleId) {
+    const cycle = await Cycle.findById(cycleId)
+      .populate({
+        path: 'signers',
+        model: 'SelfSigner',
+        options: { sort: { signingOrder: 1 } }
+      })
+      .lean();
+      for (const signer of cycle.signers) {
+        for (const sf of signer.signatureFields || []) {
+          signerByFieldId.set(
+            sf.fieldId.toString(),
+            signer
+          );
+        }
+      }
+  }
   for (const field of sigFields) {
     // The placeholder name must match what prepareDocumentForFinalSigning created:
     const placeholderName = `sig_${String(field._id)}`;
+      let recipientIdToUse = field.recipientId;
+      // Self-sign override
+      if (isSelfSign && cycleId) {
+        const signer = signerByFieldId.get(field._id.toString());
+        if (!signer) {
+          await AuditTrail.create({
+            envelopeId,
+            action: 'NO_SIGNER_FOR_FIELD',
+            details: { fieldId: field._id }
+          }).catch(() => {});
+          continue;
+        }
 
+        recipientIdToUse = signer._id;
+      }
     // load the certificate for this recipient
-    const certDoc = await Certificate.findOne({ recipientId: field.recipientId, envelopeId }).sort({ createdAt: -1 });
+    const certDoc = await Certificate.findOne({ recipientId: recipientIdToUse, envelopeId }).sort({ createdAt: -1 });
     if (!certDoc) {
-      await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'NO_CERT_FOUND', details: { fieldId: field._id } }).catch(() => {});
+      await AuditTrail.create({ envelopeId, recipientId: recipientIdToUse, action: 'NO_CERT_FOUND', details: { fieldId: field._id } }).catch(() => {});
       continue;
     }
 
@@ -305,7 +418,7 @@ async function finalizeSigning(envelopeId, documentId) {
       // I call it with an options object; update signPdfWithCert accordingly if necessary.
       const signedBuffer = await signPdfWithCert(pdfBuffer, privateKeyPem, certPem, {
         envelopeId,
-        recipientId: field.recipientId,
+        recipientId: recipientIdToUse,
         placeholderName // crucial
       });
 
@@ -331,7 +444,7 @@ async function finalizeSigning(envelopeId, documentId) {
       // create DigitalSignature record
       const sigRecord = await DigitalSignature.create({
         envelopeId,
-        recipientId: field.recipientId,
+        recipientId: recipientIdToUse,
         certificateId: certDoc._id,
         signatureValue: signedHash,
         signedAt: new Date(),
@@ -352,24 +465,25 @@ async function finalizeSigning(envelopeId, documentId) {
       }
 
       // mark field completed
-      field.status = 'completed';
-      await field.save();
+      if(!isSelfSign){
+        field.status = 'completed';
+        await field.save();
 
-      // update recipient permission
-      const rp = await RecipientPermission.findOne({ envelopeId, recipientId: field.recipientId });
-      if (rp) {
-        rp.status = 'completed';
-        await rp.save();
+        // update recipient permission
+        const rp = await RecipientPermission.findOne({ envelopeId, recipientId: field.recipientId });
+        if (rp) {
+          rp.status = 'completed';
+          await rp.save();
+        }
       }
-
-      await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'DOC_SIGNED', details: { signatureId: sigRecord._id, savedPath: archiveSaved?.filePath, pdfHash: signedHash } }).catch(() => {});
+      await AuditTrail.create({ envelopeId, recipientId: recipientIdToUse, action: 'DOC_SIGNED', details: { signatureId: sigRecord._id, savedPath: archiveSaved?.filePath, pdfHash: signedHash } }).catch(() => {});
 
       // update pdfBuffer to the newly signed PDF for the next signer
       pdfBuffer = signedBuffer;
 
     } catch (e) {
       // If signing failed, audit and continue with the next recipient
-      await AuditTrail.create({ envelopeId, recipientId: field.recipientId, action: 'SIGNING_FAILED', details: { error: e.message, fieldId: field._id } }).catch(() => {});
+      await AuditTrail.create({ envelopeId, recipientId: recipientIdToUse, action: 'SIGNING_FAILED', details: { error: e.message, fieldId: field._id } }).catch(() => {});
       continue;
     }
   }
