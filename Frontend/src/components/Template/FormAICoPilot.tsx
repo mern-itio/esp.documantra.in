@@ -45,25 +45,29 @@ export const FormAICoPilot: React.FC<FormAICoPilotProps> = ({
       // Since forms don't have pages/coordinates, we'll parse field types and labels
       const response = await aiAssistantApiService.parseFieldCommand(command, context);
 
-      if (response.success && response.data) {
+      if (response.success && response.data && response.data.fields) {
         const { fields } = response.data;
 
         if (fields && fields.length > 0) {
           const newFields: FormField[] = fields.map((field: any, index: number) => ({
             _id: `field_${Date.now()}_${index}`,
             type: field.type || 'text',
-            label: field.label || `${field.type} Field`,
-            placeholder: field.placeholder || `Enter ${field.type}...`,
+            label: field.label || `${field.type.charAt(0).toUpperCase() + field.type.slice(1)} Field`,
+            placeholder: field.placeholder || (field.type === 'checkbox' ? '' : `Enter ${field.type}...`),
             required: field.required || false,
-            options: field.type === 'radio' || field.type === 'select' ? ['Option 1', 'Option 2'] : undefined
+            options: (field.type === 'radio' || field.type === 'select' || field.type === 'dropdown') 
+              ? (field.options && field.options.length > 0 ? field.options : ['Option 1', 'Option 2']) 
+              : undefined
           }));
 
           onFieldsAdded(newFields);
           toast.success(`Added ${newFields.length} field(s)`);
           setCommand('');
+        } else {
+          toast.error('No fields were generated from the command');
         }
       } else {
-        toast.error(response.error || 'Failed to parse command');
+        toast.error(response.error || response.message || 'Failed to parse command');
       }
     } catch (error: any) {
       console.error('Error parsing command:', error);

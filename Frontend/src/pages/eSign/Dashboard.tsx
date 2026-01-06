@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { eSignApi } from '../../services/apiHelper';
+import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -330,6 +331,12 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Audit, Logs & Insights Section */}
+      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <AIAuditInsights />
+      </div>
+
 
       {/* Envelopes List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

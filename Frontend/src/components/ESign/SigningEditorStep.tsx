@@ -13,6 +13,8 @@ import {
 import type { Recipient } from "../../types";
 import { eSignApi } from "../../services/apiHelper";
 import toast from "react-hot-toast";
+import { AISuggestionsOverlay, type AISuggestion } from "./AISuggestionsOverlay";
+import { useAuth } from "../AuthService/AuthContext";
 
 // Type declarations for PDF.js
 declare global {
@@ -105,7 +107,8 @@ export default function SigningEditorStep({
   sending,
   onBack,
   onFieldsChange,
-  envelopeId
+  envelopeId,
+  aiSuggestions
 }: {
   documents: Doc[];
   recipients: Recipient[];
@@ -119,6 +122,7 @@ export default function SigningEditorStep({
   onBack?: () => void;
   onFieldsChange?: (fields: SignatureField[]) => void;
   envelopeId?: string | null;
+  aiSuggestions?: Array<{ suggestions: any[]; documentId: string }>;
 }) {
   // PDF.js worker setup - same approach as InsertPDF
   useEffect(() => {
@@ -193,6 +197,8 @@ export default function SigningEditorStep({
   const [pageCanvases, setPageCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
   const [thumbnailCanvases, setThumbnailCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const [showAISuggestions, setShowAISuggestions] = useState(true);
+  const [rejectedSuggestions, setRejectedSuggestions] = useState<Set<string>>(new Set());
   
   // History for undo/redo
   const [fieldHistory, setFieldHistory] = useState<SignatureField[][]>([signatureFields]);
@@ -327,12 +333,33 @@ export default function SigningEditorStep({
     }
   };
 
+  // Check if user has completed the editor tour
+  const hasCompletedEditorTour = () => {
+    try {
+      const completed = localStorage.getItem('editorTourCompleted');
+      return completed === 'true';
+    } catch {
+      return false;
+    }
+  };
+
+  // Mark tour as completed
+  const markEditorTourAsCompleted = () => {
+    try {
+      localStorage.setItem('editorTourCompleted', 'true');
+    } catch (error) {
+      console.error('Error saving editor tour completion:', error);
+    }
+  };
+
   const closeEditorTour = () => {
     setIsEditorTourOpen(false);
     setEditorTourIndex(0);
     setEditorTargetRect(null);
     setEditorTooltipPosition(null);
     setIsEditorDragging(false);
+    // Mark tour as completed when user closes it
+    markEditorTourAsCompleted();
   };
   const nextEditorStep = () => {
     let nextIndex = editorTourIndex + 1;
@@ -363,21 +390,30 @@ export default function SigningEditorStep({
     setEditorTooltipPosition(null);
   };
 
-  // Auto-start tour on mount
+  // Auto-start tour on mount (only for new users)
   const editorTourStartedRef = useRef<boolean>(false);
+  const { user } = useAuth();
+  
   useEffect(() => {
     if (!editorTourStartedRef.current && documents.length > 0) {
       editorTourStartedRef.current = true;
-      setIsEditorTourOpen(true);
-      // Skip document step if only one document
-      let startIndex = 0;
-      const firstStep = editorTourSteps[0];
-      if (firstStep && (firstStep.id as string) === 'document' && documents.length <= 1) {
-        startIndex = 1;
+      
+      // Check if user is new or hasn't completed the tour
+      const isNewUser = user?.isFirstLogin === true;
+      const hasCompleted = hasCompletedEditorTour();
+      
+      if (isNewUser && !hasCompleted) {
+        setIsEditorTourOpen(true);
+        // Skip document step if only one document
+        let startIndex = 0;
+        const firstStep = editorTourSteps[0];
+        if (firstStep && (firstStep.id as string) === 'document' && documents.length <= 1) {
+          startIndex = 1;
+        }
+        setEditorTourIndex(startIndex);
       }
-      setEditorTourIndex(startIndex);
     }
-  }, [documents.length, editorTourSteps]);
+  }, [documents.length, editorTourSteps, user]);
 
   // effective slots (slots prop preferred, fall back to powerFormData.slots)
   const slotsToUse = slots ?? powerFormData?.slots ?? [];
@@ -1982,6 +2018,105 @@ export default function SigningEditorStep({
                           height: 'auto'
                         }}
                       />
+
+                      {/* AI Suggestions Overlay */}
+                      {(() => {
+                        // Get suggestions for current document and page
+                        const docSuggestions = aiSuggestions?.find(s => s.documentId === activeDocId);
+                        const pageSuggestionsData = docSuggestions?.suggestions?.filter((s: any) => 
+                          s.page === pageNum && !rejectedSuggestions.has(`${s.page}-${s.x}-${s.y}`)
+                        ) || [];
+
+                        if (pageSuggestionsData.length === 0) return null;
+
+                        // Get page dimensions
+                        const canvasWidth = pageCanvas.width;
+                        const canvasHeight = pageCanvas.height;
+                        const imgElement = document.querySelector(`[data-page="${pageNum}"] img`) as HTMLImageElement;
+                        const renderedWidth = imgElement?.offsetWidth || canvasWidth;
+                        const renderedHeight = imgElement?.offsetHeight || canvasHeight;
+
+                        // Convert suggestions to AISuggestion format
+                        const suggestions: AISuggestion[] = pageSuggestionsData.map((s: any) => ({
+                          type: s.type || 'signature',
+                          page: s.page || pageNum,
+                          x: s.x || 0,
+                          y: s.y || 0,
+                          width: s.width || 150,
+                          height: s.height || 50,
+                          confidence: s.confidence,
+                          reason: s.reason,
+                          context: s.context,
+                          documentId: activeDocId || undefined
+                        }));
+
+                        return (
+                          <AISuggestionsOverlay
+                            suggestions={suggestions}
+                            currentPage={pageNum}
+                            pageWidth={renderedWidth}
+                            pageHeight={renderedHeight}
+                            pdfWidth={canvasWidth}
+                            pdfHeight={canvasHeight}
+                            onAcceptSuggestion={(suggestion) => {
+                              // Convert suggestion to SignatureField and add it
+                              const newField: SignatureField = {
+                                id: `${Date.now()}_${Math.random()}`,
+                                docId: activeDocId || '',
+                                page: suggestion.page,
+                                x: suggestion.x,
+                                y: suggestion.y,
+                                width: suggestion.width,
+                                height: suggestion.height,
+                                type: suggestion.type as FieldType,
+                                recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
+                                slotId: mode === 'power' && slots && slots.length > 0 ? slots[0].slotId : undefined
+                              };
+                              setSignatureFields(prev => [...prev, newField]);
+                              if (onFieldsChange) {
+                                onFieldsChange([...signatureFields, newField]);
+                              }
+                              // Remove from suggestions
+                              setRejectedSuggestions(prev => new Set([...prev, `${suggestion.page}-${suggestion.x}-${suggestion.y}`]));
+                              toast.success(`Added ${suggestion.type} field`);
+                            }}
+                            onRejectSuggestion={(suggestion) => {
+                              setRejectedSuggestions(prev => new Set([...prev, `${suggestion.page}-${suggestion.x}-${suggestion.y}`]));
+                              toast.success('Suggestion dismissed');
+                            }}
+                            onAcceptAll={() => {
+                              const newFields: SignatureField[] = suggestions.map(suggestion => ({
+                                id: `${Date.now()}_${Math.random()}`,
+                                docId: activeDocId || '',
+                                page: suggestion.page,
+                                x: suggestion.x,
+                                y: suggestion.y,
+                                width: suggestion.width,
+                                height: suggestion.height,
+                                type: suggestion.type as FieldType,
+                                recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
+                                slotId: mode === 'power' && slots && slots.length > 0 ? slots[0].slotId : undefined
+                              }));
+                              setSignatureFields(prev => [...prev, ...newFields]);
+                              if (onFieldsChange) {
+                                onFieldsChange([...signatureFields, ...newFields]);
+                              }
+                              suggestions.forEach(s => {
+                                setRejectedSuggestions(prev => new Set([...prev, `${s.page}-${s.x}-${s.y}`]));
+                              });
+                              toast.success(`Added ${newFields.length} field suggestion(s)`);
+                            }}
+                            onRejectAll={() => {
+                              suggestions.forEach(s => {
+                                setRejectedSuggestions(prev => new Set([...prev, `${s.page}-${s.x}-${s.y}`]));
+                              });
+                              toast.success('All suggestions dismissed');
+                            }}
+                            showOverlay={showAISuggestions}
+                            onToggleOverlay={() => setShowAISuggestions(!showAISuggestions)}
+                          />
+                        );
+                      })()}
 
                       {/* Render ALL fields on this page */}
                       {signatureFields

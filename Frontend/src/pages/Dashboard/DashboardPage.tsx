@@ -19,6 +19,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -535,7 +536,7 @@ const DashboardPage: React.FC = () => {
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                             padding: '10px 14px'
                           }}
-                          formatter={(value: any, name: string) => {
+                          formatter={(value: any, name?: string) => {
                             if (name === 'used') return [`${value} credits`, 'Credits Used'];
                             if (name === 'added') return [`${value} credits`, 'Credits Added'];
                             return [value, name];
@@ -606,7 +607,7 @@ const DashboardPage: React.FC = () => {
                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                               padding: '10px 14px'
                             }}
-                            formatter={(value: any, name: string) => [`${value} credits`, name]}
+                            formatter={(value: any, name?: string) => [`${value} credits`, name]}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -687,6 +688,9 @@ const DashboardPage: React.FC = () => {
             </Link>
           </div>
         )}
+      </div>
+      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <AIAuditInsights />
       </div>
     </div>
   );

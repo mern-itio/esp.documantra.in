@@ -45,14 +45,10 @@ app.use('/admin', verifyJWT("admin"),adminRoutes );
 const PORT = process.env.PORT || 2103;
 app.listen(PORT, () => {
   console.log(`E-Sign Service running on ${PORT}/`);
-  
-  // Start scheduled envelope worker - works automatically in both dev and production
-  // Inline the worker logic directly to avoid nodemon file watching issues
   let workerInterval = null;
   let isWorkerRunning = false;
   
   const runScheduledWorker = async () => {
-    // Prevent concurrent runs
     if (isWorkerRunning) {
       console.log('[Scheduled Worker] Skipping - previous run still in progress');
       return;
@@ -61,16 +57,12 @@ app.listen(PORT, () => {
     try {
       const mongoose = require('mongoose');
       
-      // Only run if DB is connected
       if (mongoose.connection.readyState !== 1) {
         console.log('[Scheduled Worker] Skipping - database not connected (state:', mongoose.connection.readyState, ')');
         return;
       }
       
       isWorkerRunning = true;
-      
-      // Use the existing processScheduledEnvelopes function
-      // Cache the require to avoid repeated file system access
       if (!global._scheduledWorkerController) {
         try {
           global._scheduledWorkerController = require('./controllers/mainController');
@@ -80,8 +72,6 @@ app.listen(PORT, () => {
           throw requireError;
         }
       }
-      
-      // Call the function directly
       if (global._scheduledWorkerController.processScheduledEnvelopes) {
         const result = await global._scheduledWorkerController.processScheduledEnvelopes();
         if (result && result.processed > 0) {
@@ -91,8 +81,6 @@ app.listen(PORT, () => {
         console.error('[Scheduled Worker] processScheduledEnvelopes function not found in controller');
       }
     } catch (error) {
-      // Log all errors properly for production debugging
-      // Only skip logging for connection issues during startup
       const isConnectionError = error && error.message && (
         error.message.includes('connection') || 
         error.message.includes('ECONNREFUSED') ||
@@ -113,44 +101,36 @@ app.listen(PORT, () => {
     }
   };
   
-  // Initialize worker after server starts and DB connects
   const initializeWorker = () => {
     try {
       const mongoose = require('mongoose');
       
       if (mongoose.connection.readyState === 1) {
-        // Clear any existing interval
         if (workerInterval) {
           clearInterval(workerInterval);
         }
-        
-        // Run worker immediately
         runScheduledWorker().catch((err) => {
           console.error('[Scheduled Worker] Initial run error:', err.message);
         });
         
-        // Set up interval to run worker every minute
         workerInterval = setInterval(() => {
           runScheduledWorker().catch((err) => {
             console.error('[Scheduled Worker] Interval run error:', err.message);
           });
-        }, 60000); // Run every minute
+        }, 60000); 
         
         console.log('✅ Scheduled envelope worker started - will process scheduled envelopes every minute');
         console.log('[Scheduled Worker] Worker initialized at:', new Date().toISOString());
       } else {
-        // Wait for DB connection and retry
+       
         console.log('[Scheduled Worker] Waiting for database connection... (state:', mongoose.connection.readyState, ')');
         setTimeout(initializeWorker, 2000);
       }
     } catch (error) {
-      // Log initialization errors for debugging
+     
       console.error('[Scheduled Worker] Initialization error:', error.message);
       setTimeout(initializeWorker, 5000);
     }
   };
-  
-  // Start worker after a short delay to ensure everything is ready
-  // This delay helps avoid nodemon restart issues
   setTimeout(initializeWorker, 5000);
 });

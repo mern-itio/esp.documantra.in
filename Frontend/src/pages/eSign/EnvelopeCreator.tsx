@@ -533,7 +533,13 @@ const EnvelopeCreator: React.FC = () => {
     }, 100);
     return () => clearTimeout(timeoutId);
   }, [isCreatorTourOpen, creatorTourIndex, showRecipients, setSigningOrder, showAddMessage]);
-  const closeCreatorTour = () => { setIsCreatorTourOpen(false); setCreatorTourIndex(0); setCreatorTargetRect(null); };
+  const closeCreatorTour = () => { 
+    setIsCreatorTourOpen(false); 
+    setCreatorTourIndex(0); 
+    setCreatorTargetRect(null);
+    // Mark tour as completed when user closes it
+    markTourAsCompleted();
+  };
   const nextCreatorStep = async () => {
     const step = creatorTourSteps[creatorTourIndex];
     try {
@@ -573,13 +579,41 @@ const EnvelopeCreator: React.FC = () => {
   };
   const prevCreatorStep = () => setCreatorTourIndex(i => Math.max(i - 1, 0));
   const creatorTourStartedRef = useRef<boolean>(false);
+  
+  // Check if user has completed the creator tour
+  const hasCompletedCreatorTour = () => {
+    try {
+      const completed = localStorage.getItem('creatorTourCompleted');
+      return completed === 'true';
+    } catch {
+      return false;
+    }
+  };
+
+  // Mark tour as completed
+  const markTourAsCompleted = () => {
+    try {
+      localStorage.setItem('creatorTourCompleted', 'true');
+    } catch (error) {
+      console.error('Error saving tour completion:', error);
+    }
+  };
+
   useEffect(() => {
+    // Only show tour if user is new (isFirstLogin) and hasn't completed it
     if (!creatorTourStartedRef.current) {
       creatorTourStartedRef.current = true;
-      setIsCreatorTourOpen(true);
-      setCreatorTourIndex(0);
+      
+      // Check if user is new or hasn't completed the tour
+      const isNewUser = user?.isFirstLogin === true;
+      const hasCompleted = hasCompletedCreatorTour();
+      
+      if (isNewUser && !hasCompleted) {
+        setIsCreatorTourOpen(true);
+        setCreatorTourIndex(0);
+      }
     }
-  }, []);
+  }, [user]);
 
   // Handle opening auth modal from customize tour step
   useEffect(() => {
@@ -2601,13 +2635,11 @@ const EnvelopeCreator: React.FC = () => {
     setTypeSearch('');
   };
 
-  // Handle saving new envelope type (only for current envelope, not saved to DB)
   const handleSaveNewEnvelopeType = () => {
     if (!newEnvelopeTypeValue.trim()) {
       return;
     }
 
-    // Set the custom type for this envelope only (not saved to database)
     setSelectedEnvelopeType(newEnvelopeTypeValue.trim());
     setShowOtherInputInDropdown(false);
     setNewEnvelopeTypeValue('');
@@ -2615,7 +2647,6 @@ const EnvelopeCreator: React.FC = () => {
     setTypeSearch('');
   };
 
-  // Close type dropdown on outside click
   useEffect(() => {
     if (!typeDropdownOpen) return;
     const onDocClick = (e: MouseEvent) => {
@@ -2678,22 +2709,18 @@ const EnvelopeCreator: React.FC = () => {
           }
         }
       } else if (routeEnvelopeId) {
-        // Arrived via /e-sign/edit/:envelopeId -> preload envelope on Step 1
         setCurrentStep(1);
         setEnvelopeId(routeEnvelopeId);
         await getEnvelopeDetail(routeEnvelopeId);
       } else {
-        // No step or envelopeId in URL, default to step 1
         setCurrentStep(1);
       }
     } catch (error) {
       console.error('Error in getSteps:', error);
-      // Fallback to step 1 on error
       setCurrentStep(1);
     }
   }
 
-  // Load unique recipient suggestions aggregated from user's envelopes and saved recipients
   const loadRecipientSuggestions = async (forceReload = false) => {
     if (!forceReload && (recipientSuggestions.length > 0 || loadingRecipientSuggestions)) return;
     setLoadingRecipientSuggestions(true);
@@ -2703,11 +2730,9 @@ const EnvelopeCreator: React.FC = () => {
       const email = (r?.email || '').trim();
       if (!email) return;
       const key = email.toLowerCase();
-      // Prefer name from saved recipients if available, otherwise use envelope recipient name
       if (!map.has(key)) {
         map.set(key, { name: name || email, email });
       } else {
-        // Update name if current entry doesn't have a name but new one does
         const existing = map.get(key);
         if (existing && (!existing.name || existing.name === existing.email) && name && name !== email) {
           map.set(key, { name, email });
@@ -2715,13 +2740,11 @@ const EnvelopeCreator: React.FC = () => {
       }
     };
     try {
-      // Fetch from both sources in parallel
       const [envelopesResponse, savedRecipientsResponse] = await Promise.allSettled([
         eSignApi.get('/api/e-sign/get-envelopes'),
         eSignApi.get('/api/e-sign/recipients')
       ]);
 
-      // Add recipients from envelopes
       if (envelopesResponse.status === 'fulfilled') {
         const response = envelopesResponse.value;
         const envelopes = response?.data?.data || response?.data?.envelopes || response?.data || [];
@@ -2733,7 +2756,6 @@ const EnvelopeCreator: React.FC = () => {
         }
       }
 
-      // Add saved recipients from database (user-filtered by backend)
       if (savedRecipientsResponse.status === 'fulfilled') {
         const response = savedRecipientsResponse.value;
         const savedRecipients = response?.data?.data || [];
@@ -2744,7 +2766,6 @@ const EnvelopeCreator: React.FC = () => {
         }
       }
 
-      // Always include logged-in user's email in suggestions
       if (user?.email) {
         const userEmail = user.email.toLowerCase();
         if (!map.has(userEmail)) {
@@ -2757,7 +2778,6 @@ const EnvelopeCreator: React.FC = () => {
       setRecipientSuggestions(Array.from(map.values()));
     } catch (err) {
       console.warn('Failed to load recipient suggestions; defaulting to empty list', err);
-      // Still include logged-in user's email even on error
       if (user?.email) {
         setRecipientSuggestions([{
           name: user.fullname || user.email,
@@ -2771,27 +2791,19 @@ const EnvelopeCreator: React.FC = () => {
     }
   };
 
-  // Debounced search function
   const debouncedSearch = useRef(
     debounce((query: string) => {
       setDebouncedSearchQuery(query);
     }, 250)
   ).current;
-
-  // Fetch saved recipients from the API
   const fetchSavedRecipients = async () => {
     setLoadingSavedRecipients(true);
     try {
-      // Fetch from both sources in parallel (same as loadRecipientSuggestions)
       const [envelopesResponse, savedRecipientsResponse] = await Promise.allSettled([
         eSignApi.get('/api/e-sign/get-envelopes'),
         eSignApi.get('/api/e-sign/recipients')
       ]);
-
-      // Use a Map to deduplicate by email (prefer saved recipients over envelope recipients)
       const recipientsMap = new Map<string, { _id: string; name: string; email: string; title?: string; company?: string; phone?: string; address?: string }>();
-
-      // First, add saved recipients (these have full details)
       if (savedRecipientsResponse.status === 'fulfilled') {
         const response = savedRecipientsResponse.value;
         const savedRecipients = response?.data?.data || [];
@@ -2813,7 +2825,6 @@ const EnvelopeCreator: React.FC = () => {
         }
       }
 
-      // Then, add recipients from envelopes (only if not already in map)
       if (envelopesResponse.status === 'fulfilled') {
         const response = envelopesResponse.value;
         const envelopes = response?.data?.data || response?.data?.envelopes || response?.data || [];
@@ -2824,7 +2835,6 @@ const EnvelopeCreator: React.FC = () => {
               recs.forEach((r: any) => {
                 if (r?.email) {
                   const email = r.email.toLowerCase();
-                  // Only add if not already in map (saved recipients take priority)
                   if (!recipientsMap.has(email)) {
                     recipientsMap.set(email, {
                       _id: r.id || r._id || email,
@@ -2842,7 +2852,6 @@ const EnvelopeCreator: React.FC = () => {
           });
         }
       }
-
       setSavedRecipients(Array.from(recipientsMap.values()));
     } catch (err) {
       console.error('Failed to fetch saved recipients', err);
@@ -2852,17 +2861,14 @@ const EnvelopeCreator: React.FC = () => {
     }
   };
 
-  // Open recipient list modal
   const openRecipientListModal = (recipientId: string) => {
     setRecipientListModalForId(recipientId);
     setRecipientListSearch('');
     setShowRecipientListModal(true);
     fetchSavedRecipients();
-    // Also refresh suggestions to include any newly added recipients
     loadRecipientSuggestions(true);
   };
 
-  // Select recipient from list
   const selectRecipientFromList = (savedRecipient: { name: string; email: string; title?: string; company?: string; phone?: string; address?: string }) => {
     if (recipientListModalForId) {
       updateRecipient(recipientListModalForId, {
@@ -2934,7 +2940,6 @@ const EnvelopeCreator: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [suggestionsOpenForId]);
 
-  // Close email suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!emailSuggestionsOpenForId) return;
@@ -2947,12 +2952,10 @@ const EnvelopeCreator: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [emailSuggestionsOpenForId]);
 
-  // Close document menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!openMenuId) return;
       const target = e.target as HTMLElement;
-      // Check if click is outside the menu
       if (!target.closest('.document-menu-container')) {
         setOpenMenuId(null);
       }
@@ -2961,7 +2964,6 @@ const EnvelopeCreator: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuId]);
 
-  // Close role dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!openRoleDropdownId) return;
@@ -2974,7 +2976,6 @@ const EnvelopeCreator: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openRoleDropdownId]);
 
-  // Close customize dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!openCustomizeDropdownId) return;
@@ -3115,23 +3116,15 @@ const EnvelopeCreator: React.FC = () => {
                           const fontSizeClass = 'text-xs';
                           const closeButtonSize = 'w-5 h-5';
                           const closeIconSize = 'w-2.5 h-2.5';
-                          // Subtle vertical offset to show bottom edges (primary offset is horizontal)
-                          const verticalOffset = 10; // Subtle downward offset for each card
-                          // Prominent horizontal offset to make right edges clearly visible
-                          const horizontalOffset = absPosition === 0 ? 0 : 20 + (absPosition * 6); // Progressive horizontal offset: 20px, 26px, 32px, 38px
-                          
-                          // Only show top 4 cards in stack
+                          const verticalOffset = 10; 
+                          const horizontalOffset = absPosition === 0 ? 0 : 20 + (absPosition * 6); 
                           if (absPosition >= 4) return null;
-                          
-                          // Calculate scale - minimal scaling for cleaner look
                           const scale = absPosition === 0 ? 1 : Math.max(0.98 - absPosition * 0.01, 0.95);
-                          
-                          // Color scheme for stacked cards - different colors for visual appeal
                           const cardColors = [
-                            { border: '#260559', shadow: 'rgba(38, 5, 89, 0.2)', accent: '#6366f1' }, // Purple for top card
-                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#8b5cf6' }, // Indigo for second
-                            { border: '#8b5cf6', shadow: 'rgba(139, 92, 246, 0.12)', accent: '#a78bfa' }, // Purple for third
-                            { border: '#a78bfa', shadow: 'rgba(167, 139, 250, 0.1)', accent: '#c4b5fd' } // Light purple for fourth
+                            { border: '#260559', shadow: 'rgba(38, 5, 89, 0.2)', accent: '#6366f1' },
+                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#8b5cf6' }, 
+                            { border: '#8b5cf6', shadow: 'rgba(139, 92, 246, 0.12)', accent: '#a78bfa' },
+                            { border: '#a78bfa', shadow: 'rgba(167, 139, 250, 0.1)', accent: '#c4b5fd' }
                           ];
                           const cardColor = cardColors[Math.min(absPosition, 3)];
                           
@@ -3151,10 +3144,9 @@ const EnvelopeCreator: React.FC = () => {
                                 opacity: absPosition < 4 ? Math.max(1 - absPosition * 0.05, 0.85) : 0,
                                 pointerEvents: absPosition === 0 ? 'auto' : 'none',
                                 willChange: 'transform, opacity',
-                                background: '#ffffff' // Clean white background like in the image
+                                background: '#ffffff'
                               }}
                             >
-                              {/* Close button at top right */}
                               {!doc.isUploading && absPosition === 0 && (
                                 <button
                                   onClick={(e) => {
@@ -3168,7 +3160,6 @@ const EnvelopeCreator: React.FC = () => {
                                 </button>
                               )}
 
-                              {/* PDF Preview/Thumbnail */}
                               {!doc.isUploading && doc.url && (
                                 <div 
                                   className="w-full flex-1 border-b overflow-hidden bg-gradient-to-br from-gray-50 to-white min-h-0 relative group"
@@ -3177,7 +3168,6 @@ const EnvelopeCreator: React.FC = () => {
                                     borderBottomColor: absPosition === 0 ? cardColor.border + '40' : 'rgba(0, 0, 0, 0.1)'
                                   }}
                                 >
-                                  {/* Subtle gradient overlay */}
                                   <div 
                                     className="absolute inset-0 opacity-30 pointer-events-none"
                                     style={{
@@ -3213,7 +3203,6 @@ const EnvelopeCreator: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* File Info Section */}
                               {!doc.isUploading ? (
                                 <div className={paddingClass} style={{ background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 1))' }}>
                                   <div className="flex items-start justify-between gap-2">
@@ -3247,10 +3236,8 @@ const EnvelopeCreator: React.FC = () => {
                           );
                         })}
                         
-                        {/* Navigation Buttons - Left and Right of Document */}
                         {documents.length > 1 && (
                           <>
-                            {/* Left Arrow */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -3263,7 +3250,6 @@ const EnvelopeCreator: React.FC = () => {
                               <ChevronLeft className="w-6 h-6" style={{ color: '#260559' }} />
                             </button>
                             
-                            {/* Right Arrow */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -3280,7 +3266,6 @@ const EnvelopeCreator: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Upload Box - same line as stacked documents */}
                     <div className="w-2/3 flex-shrink-0" data-tour="ec-upload">
                       <div
                         onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
@@ -3440,29 +3425,19 @@ const EnvelopeCreator: React.FC = () => {
                     );
                   })}
 
-                  {/* Upload Box - dynamically fills remaining space based on document count */}
                   {(() => {
                     const docCount = documents?.length || 0;
                     let colSpanClasses = '';
                     
                     if (docCount === 0) {
-                      // No documents: full width
                       colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
                     } else if (docCount >= 4) {
-                      // 4+ documents: wraps to new row, full width
                       colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
                     } else if (docCount === 1) {
-                      // 1 document: fill remaining space (1 col on small, 2 on medium, 3 on large)
                       colSpanClasses = 'col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-3';
                     } else if (docCount === 2) {
-                      // 2 documents: on small screens they fill the row (2 cols), so upload wraps and takes full width (2 cols)
-                      // On medium: 2 docs take 2 cols, upload takes remaining 1 col
-                      // On large: 2 docs take 2 cols, upload takes remaining 2 cols
                       colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2';
                     } else if (docCount === 3) {
-                      // 3 documents: on small screens they wrap, upload takes full width (2 cols)
-                      // On medium: 3 docs fill the row (3 cols), so upload wraps and takes full width (3 cols)
-                      // On large: 3 docs take 3 cols, upload takes remaining 1 col
                       colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1';
                     }
                     
@@ -3480,7 +3455,6 @@ const EnvelopeCreator: React.FC = () => {
                         } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
                         } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[200px] flex items-center justify-center`}
                     >
-                      {/* Hidden file input */}
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -3490,20 +3464,13 @@ const EnvelopeCreator: React.FC = () => {
                         className="hidden"
                       />
 
-                      {/* CTA when no documents */}
                       {(!documents || documents.length === 0) ? (
                         <div className="flex flex-col items-center justify-center w-full">
-                            {/* Upload icon in dark grey square box */}
                             <div className="bg-gray-700 rounded-lg p-3 mb-4">
                               <ArrowUpToLine className="w-6 h-6 text-white" />
                             </div>
-
-                            {/* Text */}
                             <p className="text-sm text-gray-700 mb-4">Drop your files here or</p>
-
-                            {/* Action Buttons Container */}
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
-                              {/* Purple Upload button with dropdown arrow */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -3515,15 +3482,11 @@ const EnvelopeCreator: React.FC = () => {
                                 <span>Upload</span>
                                 <Triangle className="w-3 h-2 fill-white rotate-180" />
                               </button>
-
-                              {/* Divider with "or" text */}
                               <div className="flex items-center gap-2 my-2 sm:my-0">
                                 <div className="h-px bg-gray-300 w-8"></div>
                                 <span className="text-xs text-gray-500 font-medium">OR</span>
                                 <div className="h-px bg-gray-300 w-8"></div>
                               </div>
-
-                              {/* AI Generate Document Button with Ripple Animation */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -3542,15 +3505,10 @@ const EnvelopeCreator: React.FC = () => {
                           className="flex flex-col items-center justify-center w-full cursor-pointer text-gray-500 hover:text-gray-700"
                         >
                           <div className="flex flex-col items-center justify-center space-y-4">
-                            {/* Upload icon in dark grey square box */}
                             <div className="bg-gray-700 rounded-lg p-3">
                               <Upload className="w-6 h-6 text-white" />
                             </div>
-
-                            {/* Text */}
                             <p className="text-sm text-gray-700">Drop your files here or</p>
-
-                            {/* Purple Upload button with dropdown arrow */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -3574,7 +3532,6 @@ const EnvelopeCreator: React.FC = () => {
               </div>
             )}
             <hr className="border-t-2 border-gray-300 my-4" />
-            {/* Recipients form moved from Step 2 to Step 1 */}
             <div>
               <h3
                 onClick={() => setShowRecipients(prev => !prev)}
@@ -3602,9 +3559,7 @@ const EnvelopeCreator: React.FC = () => {
               )}
               {showRecipients && (
                 <div className="space-y-4">
-                  {/* Top-level Options */}
                   <div className="space-y-3">
-                    {/* I'm the only signer checkbox */}
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -3612,7 +3567,6 @@ const EnvelopeCreator: React.FC = () => {
                         onChange={(e) => {
                           setIsOnlySigner(e.target.checked);
                           if (e.target.checked) {
-                            // Clear existing recipients and add current user as recipient
                             setRecipients([{
                               id: `self-${Date.now()}`,
                               name: user?.fullname || 'Me',
@@ -3620,10 +3574,9 @@ const EnvelopeCreator: React.FC = () => {
                               role: 'signer',
                               order: 1,
                               status: 'waiting',
-                              authentication: '68ee2a18ba0c0738eb275d34' // Default: secret email verification
+                              authentication: '68ee2a18ba0c0738eb275d34' 
                             }]);
                           } else {
-                            // Clear recipients when unchecked
                             setRecipients([]);
                           }
                         }}
@@ -3631,9 +3584,7 @@ const EnvelopeCreator: React.FC = () => {
                       />
                       <span className="text-gray-800 text-[12px] flex items-center gap-2">
                         I'm the only signer
-
                         <span className="relative group inline-flex">
-                          {/* Icon */}
                           <div>
                             <Info className="w-5 h-5 text-[#1A1333]" />
                           </div>
@@ -3652,11 +3603,7 @@ const EnvelopeCreator: React.FC = () => {
                           </div>
                         </span>
                       </span>
-
-
                     </label>
-
-                    {/* Set signing order checkbox */}
                     <div className="flex items-center justify-start gap-2 w-full">
                       <label className="flex items-center space-x-2 cursor-pointer" data-tour="ec-signing-order">
                         <input
@@ -3670,7 +3617,6 @@ const EnvelopeCreator: React.FC = () => {
                         <span className={`text-sm ${((((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2)) ? 'text-gray-300' : 'text-gray-700'}`}>Set signing order</span>
                       </label>
 
-                      {/* View and Bulk controls */}
                       <div className="flex items-center gap-4">
                         <button className="text-blue-600 hover:text-blue-700 text-sm font-medium" onClick={() => setShowSigningOrder(true)}>
                           View
@@ -3698,7 +3644,7 @@ const EnvelopeCreator: React.FC = () => {
                                       role: bulkList.role,
                                       order: idx + 1,
                                       status: 'waiting' as const,
-                                      authentication: '68ee2a18ba0c0738eb275d34' as Recipient['authentication'] // Default: secret email verification
+                                      authentication: '68ee2a18ba0c0738eb275d34' as Recipient['authentication'] 
                                     }))
                                   );
                                   setShowBulkModal(true);
@@ -3716,8 +3662,6 @@ const EnvelopeCreator: React.FC = () => {
                     </div>
 
                   </div>
-
-                  {/* Recipient Cards - Show form when expanded if not only signer */}
                   {!isOnlySigner && (
                     <>
                       {showBulkModal && (
@@ -3734,7 +3678,6 @@ const EnvelopeCreator: React.FC = () => {
                               ✕
                             </button>
 
-                            {/* Header - Defined once for all steps */}
                             <div className="mb-6">
                               <h2 className="text-[20px] font-semibold text-[#3E2B66]">
                                 Bulk send
@@ -3772,15 +3715,6 @@ const EnvelopeCreator: React.FC = () => {
                                   </div>
 
                                   <div className="absolute bottom-4 right-4 flex items-center justify-end gap-3 bg-white">
-                                    {/* <button
-                                      onClick={downloadSampleCsv}
-                                      className="px-4 py-2 border rounded-md text-[#3E2B66] border-[#3E2B66] flex items-center gap-2"
-                                    >
-                                      <ArrowDownToLine className="w-4 h-4" />
-                                      Sample CSV
-                                    </button> */}
-
-
                                     <button
                                       onClick={() => setBulkStep(bulkMethod === 'manual' ? 2 : 2)}
                                       className="px-4 py-2 text-white rounded-md" style={{ backgroundColor: '#260559' }}
@@ -3788,9 +3722,7 @@ const EnvelopeCreator: React.FC = () => {
                                       Next
                                     </button>
                                   </div>
-
                                 </div>
-
                               </div>
                             )}
 
@@ -3851,7 +3783,6 @@ const EnvelopeCreator: React.FC = () => {
 
                                 <div className="flex items-center justify-end mt-8">
                                   <div className="flex items-center gap-3">
-                                    {/* <button onClick={() => setBulkMethod('csv')} className="px-4 py-2 border rounded-sm">Upload CSV</button> */}
                                     <button onClick={applyBulkRecipients} className="px-4 py-2 text-white rounded-sm" style={{ backgroundColor: '#260559' }}>Save</button>
                                   </div>
                                 </div>
@@ -3860,16 +3791,13 @@ const EnvelopeCreator: React.FC = () => {
 
                             {bulkStep === 2 && bulkMethod === 'csv' && !showRecipientsEditor && (
                               <div className="w-full h-full flex flex-col relative">
-                                {/* Show Exceptions Page */}
                                 {showCsvExceptions ? (
                                   <>
                                     <div className="max-w-3xl mx-auto flex-1 flex flex-col px-6 pb-6">
-                                      {/* Instructional Text */}
+                                      
                                       <p className="text-sm text-gray-700 mb-6" style={{ fontFamily: 'sans-serif' }}>
                                         The following items could not be matched between entries on your envelope and the imported bulk list. You can accept these matching exceptions and continue with the envelope. Or you can discard the imported CSV, edit it to update column headers as required, and then re-import the edited file.
                                       </p>
-
-                                      {/* Sample Download Link */}
                                       <div className="mb-6">
                                         <p className="text-sm text-gray-700 mb-2" style={{ fontFamily: 'sans-serif' }}>
                                           You can download a sample bulk list preformatted for your envelope.
@@ -3881,8 +3809,6 @@ const EnvelopeCreator: React.FC = () => {
                                           Download sample
                                         </button>
                                       </div>
-
-                                      {/* Bulk list columns Warning Box */}
                                       {unmatchedColumns.length > 0 && (
                                         <div
                                           className="mb-8 p-4 rounded-lg border"
@@ -3905,10 +3831,7 @@ const EnvelopeCreator: React.FC = () => {
                                           </ul>
                                         </div>
                                       )}
-
-                                      {/* Action Buttons */}
-
-                                    </div>
+                                       </div>
                                     <div className="flex items-center justify-end gap-3 mt-auto">
                                       <button
                                         onClick={handleDiscardCsv}
@@ -5725,6 +5648,7 @@ const EnvelopeCreator: React.FC = () => {
               sending={sending}
               onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
               envelopeId={envelopeId}
+              aiSuggestions={aiSuggestions}
               onBack={() => {
                 setCurrentStep(1);
                 if (envelopeId) {

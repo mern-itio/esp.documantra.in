@@ -26,14 +26,11 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
-// import { useApp } from '../../context/AppContext';
 import type { Document, Recipient } from '../../types';
-// import AdvancedAuthenticationSelector from '../../components/ESign/advanced/AdvancedAuthenticationSelector';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
 import { eSignApi } from '../../services/apiHelper';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
-// Extend editor field locally to allow optional power-form metadata used during save
 type EditorSignatureFieldExt = EditorSignatureField & {
   signerIndex?: number | null;
   isPowerForm?: boolean;
@@ -43,8 +40,7 @@ type EditorSignatureFieldExt = EditorSignatureField & {
 import type { AxiosProgressEvent } from 'axios';
 import { Card } from '../../components/DocumentService/ui/card';
 import toast from 'react-hot-toast';
-// type FieldType = "signature" | "text" | "email" | "number" | "id";
-// --- add this type near the other types at the top of the file ---
+import { useAuth } from '../../components/AuthService/AuthContext';
 type Party = {
   id: string;                 // e.g. "slot_1"
   name: string;               // display label, e.g. "Party A"
@@ -58,26 +54,17 @@ const PowerFormCreate: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { envelopeId: routeEnvelopeId } = useParams<{ envelopeId: string }>();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Power Form State
   const [mode, setMode] = useState<'normal' | 'power'>('normal');
-  // const [powerForms, setPowerForms] = useState<any[]>([]);
-  // const [selectedForm, setSelectedForm] = useState<string>("");
-  // const [powerFormData, setPowerFormData] = useState<any>(null);
   const [slots, setSlots] = useState<any[]>([]);
-
-  // Parties & related state.....
   const [parties, setParties] = useState<Party[]>(
     [{ id: 'slot_1', name: 'Signer A', slot: 1, role: 'signer', authMethod: 'email', required: true }]
   );
   const [numberOfParties, setNumberOfParties] = useState<number>(parties.length || 1);
   const [maxParties] = useState<number>(10);
-
-  // Selected/first party ids (creator choices)
   const [selectedPartyId, setSelectedPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
   const [firstSigningPartyId, setFirstSigningPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
-
-  // Initialize currentStep from URL to prevent button from disappearing
   const getInitialStep = () => {
     const params = new URLSearchParams(location.search);
     const step = params.get('step');
@@ -97,9 +84,7 @@ const PowerFormCreate: React.FC = () => {
     signatureType: 'standard' as 'standard' | 'advanced' | 'qualified',
     complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified'
   });
-
   const [documents, setDocuments] = useState<Document[]>([]);
-
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [_files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
@@ -118,9 +103,7 @@ const PowerFormCreate: React.FC = () => {
   const [_setSigningOrder, _setSetSigningOrder] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
-  // const RECIPIENT_COLORS = ["#789ceaff", "#87ecccff", "#f0c089ff", "#eea1c3ff", "#b99aeeff", "#f7b1bcff"];
   const [_showSigningOrder, _setShowSigningOrder] = useState(false);
-  // Bulk send modal state
   const [_showBulkModal, _setShowBulkModal] = useState(false);
   const [_bulkStep, _setBulkStep] = useState<1 | 2>(1);
   const [_bulkMethod, _setBulkMethod] = useState<'manual' | 'csv'>('manual');
@@ -134,14 +117,8 @@ const PowerFormCreate: React.FC = () => {
   const [_bulkBatchName, _setBulkBatchName] = useState<string>('');
   const [bulkRoleDropdownOpen, setBulkRoleDropdownOpen] = useState<boolean>(false);
   const [bulkCustomizeOpen, setBulkCustomizeOpen] = useState<boolean>(false);
-  // const [bulkAccessCode, setBulkAccessCode] = useState<string | undefined>(undefined);
-  // const [openBulkAccess, setOpenBulkAccess] = useState<boolean>(false);
-  // const [bulkPrivateMessage, setBulkPrivateMessage] = useState<string | undefined>(undefined);
-  // const [openBulkPrivate, setOpenBulkPrivate] = useState<boolean>(false);
-  // Help menu / sidebar state
   const [helpMenuOpen, setHelpMenuOpen] = useState<boolean>(false);
   const [helpSidebarOpen, setHelpSidebarOpen] = useState<boolean>(false);
-  // Advanced options modal state
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const advancedContentRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = {
@@ -151,30 +128,12 @@ const PowerFormCreate: React.FC = () => {
     mobileFriendly: useRef<HTMLDivElement | null>(null),
     comments: useRef<HTMLDivElement | null>(null),
   } as const;
-  // CSV recipient summary state (separate from manual bulk list)
-  const [_csvRecipientList, _setCsvRecipientList] = useState<null | { fileName: string; role: Recipient['role']; items: Array<{ name: string; email: string }> }>(null);
-  const [csvRoleDropdownOpen, setCsvRoleDropdownOpen] = useState<boolean>(false);
+   const [csvRoleDropdownOpen, setCsvRoleDropdownOpen] = useState<boolean>(false);
   const [csvCustomizeOpen, setCsvCustomizeOpen] = useState<boolean>(false);
-  const [_csvAccessCode, _setCsvAccessCode] = useState<string | undefined>(undefined);
-  const [_openCsvAccess, _setOpenCsvAccess] = useState<boolean>(false);
-  const [_csvPrivateMessage, _setCsvPrivateMessage] = useState<string | undefined>(undefined);
-  const [_openCsvPrivate, _setOpenCsvPrivate] = useState<boolean>(false);
-  const [showEnvelopeTooltip, setShowEnvelopeTooltip] = useState(false);
+   const [showEnvelopeTooltip, setShowEnvelopeTooltip] = useState(false);
   const [showFrequencyTooltip, setShowFrequencyTooltip] = useState(false);
-  const [_csvFile, _setCsvFile] = useState<File | null>(null);
-  const [_isDragOverCsv, _setIsDragOverCsv] = useState(false);
-  const [_showCsvExceptions, _setShowCsvExceptions] = useState(false);
-  const [_unmatchedColumns, _setUnmatchedColumns] = useState<string[]>([]);
-  const [_csvHeaders, _setCsvHeaders] = useState<string[]>([]);
-  const [_csvRecipientsData, _setCsvRecipientsData] = useState<Array<Record<string, string>>>([]);
-  const [_showRecipientsEditor, _setShowRecipientsEditor] = useState(false);
-  const [_activeTab, _setActiveTab] = useState<'all' | 'errors'>('all');
-  const [_showErrorBanner, _setShowErrorBanner] = useState(true);
-  // const csvFileInputRef = useRef<HTMLInputElement>(null);
   const bulkRoleRef = useRef<HTMLButtonElement | null>(null);
   const bulkCustomizeRef = useRef<HTMLButtonElement | null>(null);
-
-
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -184,7 +143,6 @@ const PowerFormCreate: React.FC = () => {
       if (bulkCustomizeOpen && bulkCustomizeRef.current && !bulkCustomizeRef.current.contains(target)) {
         setBulkCustomizeOpen(false);
       }
-      // close CSV dropdowns if open
       if (csvRoleDropdownOpen) setCsvRoleDropdownOpen(false);
       if (csvCustomizeOpen) setCsvCustomizeOpen(false);
     };
@@ -195,7 +153,6 @@ const PowerFormCreate: React.FC = () => {
  const [suggestionsOpenForId, setSuggestionsOpenForId] = useState<string | null>(null);
   const suggestionsContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Envelope Type state
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
@@ -205,7 +162,6 @@ const PowerFormCreate: React.FC = () => {
   const [savingNewType, setSavingNewType] = useState<boolean>(false);
   const typeDropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Guided tour for Power Form Creator
   const [isCreatorTourOpen, setIsCreatorTourOpen] = useState<boolean>(false);
   const [creatorTourIndex, setCreatorTourIndex] = useState<number>(0);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -233,7 +189,6 @@ const PowerFormCreate: React.FC = () => {
     setFiles(files);
     if (!files) return;
 
-    // Auto-set or refresh subject using all selected filenames (with extensions)
     const subjectWasAuto = (envelopeData.subject || '').trim().startsWith('Complete with Esign:');
     if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
       const names = Array.from(files).map(f => f.name).filter(Boolean);
@@ -250,17 +205,16 @@ const PowerFormCreate: React.FC = () => {
     const invalidFiles: File[] = [];
 
     files.forEach((file) => {
-      // Only accept PDF files
       if (file.type !== "application/pdf") {
         invalidFiles.push(file);
-        return; // skip adding invalid file
+        return; 
       }
 
       const newDocument: Document = {
         id: `doc_${Date.now()}_${Math.random()}`,
         name: file.name,
         size: file.size,
-        pages: Math.ceil(file.size / 100000), // Mock page calculation
+        pages: Math.ceil(file.size / 100000), 
         type: file.type,
         url: URL.createObjectURL(file),
         file: file,
@@ -268,7 +222,6 @@ const PowerFormCreate: React.FC = () => {
       validDocs.push(newDocument);
     });
 
-    // Show alert if any invalid files
     if (invalidFiles.length > 0) {
       alert(
         `Only PDF files are allowed. The following files are invalid:\n\n${invalidFiles
@@ -276,10 +229,7 @@ const PowerFormCreate: React.FC = () => {
           .join("\n")}`
       );
     }
-
-    // Add only valid PDFs to document state
     if (validDocs.length > 0) {
-      // Pre-compute the full list of document names (existing + new) with extensions
       const allDocNames = [...(documents || []).map(d => d.name), ...validDocs.map(d => d.name)].filter(Boolean);
       setDocuments((prev) => [...prev, ...validDocs]);
       const subjectWasAuto = (envelopeData.subject || '').trim().startsWith('Complete with Esign:');
@@ -289,7 +239,6 @@ const PowerFormCreate: React.FC = () => {
     }
   };
 
-  // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -318,24 +267,16 @@ const PowerFormCreate: React.FC = () => {
     }
   };
 
-  // Setp 1: Save Document In DB with Empty Envelope
-
   const uploadDocuments = async (_currentStep: any) => {
-    // Validate subject before allowing upload
     if (!envelopeData.subject || envelopeData.subject.trim() === '') {
       alert('Please enter a subject before uploading documents.');
       return false;
     }
-
-    // Validate envelope type selection
     if (!selectedEnvelopeType || selectedEnvelopeType.trim() === '') {
       alert('Please select an Envelope Type before uploading documents.');
       return false;
     }
-
     if (!documents || documents.length === 0) return;
-
-    // Validate file types before upload
     const invalidFiles = documents.filter(
       (doc) => !doc.type || !doc.type.toLowerCase().includes('pdf')
     );
@@ -346,16 +287,12 @@ const PowerFormCreate: React.FC = () => {
           .map((f) => f.name)
           .join('\n')}`
       );
-      return false; // failure
+      return false; 
     }
-
-    // mark as uploading
     setDocuments((prev) =>
       prev.map((doc) => ({ ...doc, isUploading: true, uploadProgress: 0 }))
     );
-
-    let loopEnvelopeId = envelopeId; // local variable
-
+    let loopEnvelopeId = envelopeId; 
     for (const doc of documents) {
       const formData = new FormData();
       if (doc.file) {
@@ -364,15 +301,12 @@ const PowerFormCreate: React.FC = () => {
         console.warn('Skipping document with no file:', doc.name);
         continue;
       }
-
       if (loopEnvelopeId) formData.append('envelopeId', loopEnvelopeId);
-      // Include subject, message and envelopetype from Step 1
       formData.append('subject', envelopeData.subject.trim());
       formData.append('message', (envelopeData.message || '').trim());
       if (selectedEnvelopeType) {
         formData.append('envelopetype', selectedEnvelopeType);
       }
-
       try {
         const response = await eSignApi.post('/api/e-sign/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -381,7 +315,6 @@ const PowerFormCreate: React.FC = () => {
               const percent = Math.round(
                 (progressEvent.loaded * 100) / progressEvent.total
               );
-
               setDocuments((prev) =>
                 prev.map((d) =>
                   d.id === doc.id ? { ...d, uploadProgress: percent } : d
@@ -390,11 +323,9 @@ const PowerFormCreate: React.FC = () => {
             }
           },
         });
-
         if (response.status === 200) {
           loopEnvelopeId = response.data.data.envelopeId;
         }
-
         setDocuments((prev) =>
           prev.map((d) =>
             d.id === doc.id
@@ -413,22 +344,16 @@ const PowerFormCreate: React.FC = () => {
         );
       }
     }
-
     if (loopEnvelopeId) {
-      setEnvelopeId(loopEnvelopeId);
-    
+      setEnvelopeId(loopEnvelopeId);    
       await savePowerFormSlots(loopEnvelopeId);
       await getEnvelopeDetail(loopEnvelopeId);
       navigate(`/e-sign/powerforms?step=2&envelopeId=${loopEnvelopeId}`);
-      return true; // success
+      return true;
     }
   };
-
-
-  // Step 2: Insert Recipients Map them with Envelope
   const insertRecipient = async () => {
     if (recipients?.length === 0) return;
-
     const recipientData = recipients.map(recipient => ({
       name: recipient.name,
       email: recipient.email,
@@ -454,44 +379,6 @@ const PowerFormCreate: React.FC = () => {
       console.error('Error inserting recipients:', error);
     }
   }
-  // const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-  //     const formId = e.target.value;
-      
-  //     // Check if "Create Template" option was selected
-  //     if (formId === 'create_template') {
-  //       navigate('/e-sign/form-list');
-  //       return;
-  //     }
-      
-  //     setSelectedForm(formId);       // ✅ update selected
-  //     if (formId) {
-  //       getFormDetails(formId);        // ✅ fetch details
-  //     } else {
-  //       setPowerFormData(null); // Clear form data if no form selected
-  //     }
-  // };
-  // Get Power Form Template
-  // const getPowerForm = async () => {
-  //   try {
-  //     const response = await templateServiceApi.get('/api/template/get-form');
-  //     if (response.status === 200) {
-  //       //setPowerFormTemplate(response.data.template);
-  //       setMode('power');
-  //       console.log('Power Forms:', response.data.form);
-  //       setPowerForms(response.data.form);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching power form template:', error);
-  //   }
-  // };
-  // const getFormDetails = async (formId: string) => {
-  //   const response = await templateServiceApi.get(`/api/template/get-form-details/${formId}`);
-  //   if (response.status === 200) {
-  //     console.log('Power Forms:', response.data);
-  //     setPowerFormData(response.data);
-  //   }
-  // }
-  //Step 3: Save Signature fields 
   const saveSignatureFields = async () => {
     if (!envelopeId || signatureFields.length === 0) return;
     console.log('Preparing to save signature fields:', signatureFields);
@@ -510,7 +397,7 @@ const PowerFormCreate: React.FC = () => {
       signerIndex: mode === "power" ? (field.signerIndex ?? null) : null,
       label: field.label ?? (field.type === "signature" ? "Signature" : undefined),
       option: field.options ?? [],
-      fieldId: field.fieldId ?? null, // <-- add this line
+      fieldId: field.fieldId ?? null,
     }));
     console.log('Transformed fields data for saving:', fieldsData);
 
@@ -521,7 +408,6 @@ const PowerFormCreate: React.FC = () => {
       });
       if (response.status === 200) {
         setSignatureFields(response.data.data.signatureFields);
-        // Navigation is handled by handleNext function
         return true;
       }
       return false;
@@ -530,8 +416,6 @@ const PowerFormCreate: React.FC = () => {
       throw error;
     }
   };
-
-  // Immediate save with provided fields (used by SigningEditorStep on add)
   const saveSignatureFieldsImmediate = async (fields: EditorSignatureFieldExt[]) => {
     try {
       if (!envelopeId) return;
@@ -568,7 +452,6 @@ const PowerFormCreate: React.FC = () => {
     try {
       const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
       if (response.status === 200) {
-        // Normalize documents to ensure preview works in both upload and edit flows
         const apiDocs = (response.data.data.documents || []).map((doc: any) => ({
           ...doc,
           type: doc.type || 'application/pdf',
@@ -578,7 +461,6 @@ const PowerFormCreate: React.FC = () => {
         console.log('Fetched documents:', apiDocs);
         setRecipients(response.data.data.recipients);
         console.log('Fetched recipients:', response.data.data.recipients);
-        // Prefill subject/message when returning to earlier steps
         const env = response.data.data;
         setEnvelopeData(prev => ({
           ...prev,
@@ -596,7 +478,6 @@ const PowerFormCreate: React.FC = () => {
   };
   const validateAndScrollToField = (): { isValid: boolean; fieldSelector?: string; message?: string } => {
     if (currentStep === 1) {
-      // Check documents
       if (!documents || documents.length === 0) {
         return {
           isValid: false,
@@ -604,7 +485,6 @@ const PowerFormCreate: React.FC = () => {
           message: 'Please upload at least one document'
         };
       }
-      // Check envelope type
       if (!selectedEnvelopeType || selectedEnvelopeType.trim() === '') {
         return {
           isValid: false,
@@ -612,7 +492,6 @@ const PowerFormCreate: React.FC = () => {
           message: 'Please select an envelope type'
         };
       }
-      // If "Other" is selected, require custom input
       if (selectedEnvelopeType === 'Other' && (!newEnvelopeTypeValue || newEnvelopeTypeValue.trim() === '')) {
         return {
           isValid: false,
@@ -620,7 +499,6 @@ const PowerFormCreate: React.FC = () => {
           message: 'Please enter an envelope type'
         };
       }
-      // Check subject
       if (!envelopeData.subject || envelopeData.subject.trim() === '') {
         return {
           isValid: false,
@@ -631,7 +509,6 @@ const PowerFormCreate: React.FC = () => {
     }
     if (currentStep === 2) {
       if (mode === 'power') {
-        // Check if parties exist
         if (!parties || parties.length === 0) {
           if (!showPowerForm) {
             setShowPowerForm(true);
@@ -642,7 +519,6 @@ const PowerFormCreate: React.FC = () => {
             message: 'Please add at least one signer for the Power Form'
           };
         }
-        // Check if selected party is set
         if (!selectedPartyId) {
           if (!showPowerForm) {
             setShowPowerForm(true);
@@ -653,7 +529,6 @@ const PowerFormCreate: React.FC = () => {
             message: 'Please choose which signer you are'
           };
         }
-        // Check if first signing party is set
         if (!firstSigningPartyId) {
           if (!showPowerForm) {
             setShowPowerForm(true);
@@ -665,7 +540,6 @@ const PowerFormCreate: React.FC = () => {
           };
         }
       } else {
-        // Normal mode - check recipients
         if (!recipients || recipients.length === 0) {
           if (!showRecipients) {
             setShowRecipients(true);
@@ -676,14 +550,12 @@ const PowerFormCreate: React.FC = () => {
             message: 'Please add at least one recipient'
           };
         }
-        // Check if all recipients have name and email
         const firstInvalidRecipient = recipients.findIndex(r => !r.name || !r.name.trim() || !r.email || !r.email.trim());
         if (firstInvalidRecipient !== -1) {
           if (!showRecipients) {
             setShowRecipients(true);
           }
           const recipient = recipients[firstInvalidRecipient];
-          // Check which field is missing
           if (!recipient.name || !recipient.name.trim()) {
             return {
               isValid: false,
@@ -713,16 +585,11 @@ const PowerFormCreate: React.FC = () => {
     return { isValid: true };
   };
 
-  // Scroll to field and show message
   const scrollToField = (selector: string, message: string) => {
-    // Wait a bit for any state updates (like expanding sections) to complete
     setTimeout(() => {
       const element = document.querySelector(selector) as HTMLElement;
       if (element) {
-        // Scroll to element with more padding to ensure it's centered
         element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        
-        // Get the input field (either the element itself or one inside it)
         let inputField: HTMLElement | null = null;
         if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
           inputField = element;
@@ -732,28 +599,19 @@ const PowerFormCreate: React.FC = () => {
         
         if (inputField) {
           setTimeout(() => {
-            // Scroll the field into view again to ensure it's centered
             inputField!.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-            
-            // Focus the field (this moves the text cursor there and positions the caret)
             inputField!.focus();
-            
-            // If it's an input, also select the text if any (makes it more obvious where to type)
             if (inputField instanceof HTMLInputElement || inputField instanceof HTMLTextAreaElement) {
-              // Small delay to ensure focus is complete before selecting
               setTimeout(() => {
                 inputField!.select();
               }, 50);
             }
             
-            // Highlight the field with prominent red border and animation
             inputField.style.borderColor = '#ef4444';
             inputField.style.borderWidth = '2px';
             inputField.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.2), 0 0 20px rgba(239, 68, 68, 0.3)';
             inputField.style.transition = 'all 0.3s ease';
             inputField.style.zIndex = '9999';
-            
-            // Add a pulsing animation to draw attention
             let pulseCount = 0;
             const pulseInterval = setInterval(() => {
               if (pulseCount < 3) {
@@ -767,7 +625,6 @@ const PowerFormCreate: React.FC = () => {
               }
             }, 600);
             
-            // Remove highlight after 4 seconds
             setTimeout(() => {
               inputField!.style.borderColor = '';
               inputField!.style.borderWidth = '';
@@ -778,7 +635,6 @@ const PowerFormCreate: React.FC = () => {
             }, 4000);
           }, 500);
         } else {
-          // If no input found, just highlight the container
           element.style.outline = '3px solid rgba(239, 68, 68, 0.5)';
           element.style.outlineOffset = '2px';
           setTimeout(() => {
@@ -786,8 +642,6 @@ const PowerFormCreate: React.FC = () => {
             element.style.outlineOffset = '';
           }, 4000);
         }
-        
-        // Show toast message
         toast.error(message, {
           duration: 4000,
           position: 'top-center',
@@ -804,8 +658,6 @@ const PowerFormCreate: React.FC = () => {
 
   const handleNext = async () => {
     if (nextLoading) return;
-    
-    // Validate fields first
     const validation = validateAndScrollToField();
     if (!validation.isValid) {
       if (validation.fieldSelector && validation.message) {
@@ -821,27 +673,24 @@ const PowerFormCreate: React.FC = () => {
         const success = await uploadDocuments(currentStep);
         if (!success) {
           setNextLoading(false);
-          return; // 🚫 stop here — no next step
+          return; 
         }
       }
       if (currentStep === 2) {
         if (mode === 'normal') {
           await insertRecipient();
         } else {
-          // power form: save signature fields and go to preview
           if (signatureFields.length === 0) {
             toast.error('Please add at least one signature field.');
             setNextLoading(false);
             return;
           }
-          // Save signature fields
           const saved = await saveSignatureFields();
           if (!saved) {
             toast.error('Failed to save signature fields. Please try again.');
             setNextLoading(false);
             return;
           }
-          // Navigate to preview (envelope detail page)
           if (envelopeId) {
             navigate(`/e-sign/envelope/${envelopeId}`);
           } else {
@@ -1020,7 +869,32 @@ const PowerFormCreate: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [isCreatorTourOpen, creatorTourIndex, showPowerForm, showAddMessage]);
 
-  const closeCreatorTour = () => { setIsCreatorTourOpen(false); setCreatorTourIndex(0); setCreatorTargetRect(null); };
+  // Check if user has completed the power form creator tour
+  const hasCompletedPowerFormTour = () => {
+    try {
+      const completed = localStorage.getItem('powerFormTourCompleted');
+      return completed === 'true';
+    } catch {
+      return false;
+    }
+  };
+
+  // Mark tour as completed
+  const markPowerFormTourAsCompleted = () => {
+    try {
+      localStorage.setItem('powerFormTourCompleted', 'true');
+    } catch (error) {
+      console.error('Error saving power form tour completion:', error);
+    }
+  };
+
+  const closeCreatorTour = () => { 
+    setIsCreatorTourOpen(false); 
+    setCreatorTourIndex(0); 
+    setCreatorTargetRect(null);
+    // Mark tour as completed when user closes it
+    markPowerFormTourAsCompleted();
+  };
   const nextCreatorStep = async () => {
     const step = creatorTourSteps[creatorTourIndex];
     try {
@@ -1042,10 +916,17 @@ const PowerFormCreate: React.FC = () => {
   useEffect(() => {
     if (!creatorTourStartedRef.current) {
       creatorTourStartedRef.current = true;
-      setIsCreatorTourOpen(true);
-      setCreatorTourIndex(0);
+      
+      // Check if user is new or hasn't completed the tour
+      const isNewUser = user?.isFirstLogin === true;
+      const hasCompleted = hasCompletedPowerFormTour();
+      
+      if (isNewUser && !hasCompleted) {
+        setIsCreatorTourOpen(true);
+        setCreatorTourIndex(0);
+      }
     }
-  }, []);
+  }, [user]);
 
   const handleTooltipMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (tooltipRef.current) {
