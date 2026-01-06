@@ -13,11 +13,14 @@ export const API_ENDPOINTS = {
 };
 
 export const apiRequest = async (url: string, options: RequestInit = {}) => {
+  // Use standard access token (do not auto-swap tokens on account switch)
   const token = localStorage.getItem('accessToken');
   
   const defaultHeaders = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
+    ...(localStorage.getItem('accountType') ? { 'X-Account-Type': localStorage.getItem('accountType')! } : {}),
+    ...(localStorage.getItem('organizationId') ? { 'X-Organization-Id': localStorage.getItem('organizationId')! } : {}),
   };
 
   const config: RequestInit = {
@@ -40,8 +43,10 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
 
 // Helper function to get auth token for document service
 const getDocumentAuthToken = (): string | null => {
-  const token = 
-    localStorage.getItem('accessToken') || // Check accessToken first (as used in auth API)
+  const acct = localStorage.getItem('accountType');
+  const token = (acct === 'organization'
+    ? (localStorage.getItem('orgAccessToken') || localStorage.getItem('accessToken'))
+    : localStorage.getItem('accessToken')) ||
     // localStorage.getItem('token') || // Check for generic token
     localStorage.getItem('userData') || // Check for userToken
     (() => {
@@ -210,6 +215,8 @@ const makeDocumentRequest = async (
   
   const headers: HeadersInit = {
     'Authorization': `Bearer ${token}`,
+    ...(localStorage.getItem('accountType') ? { 'X-Account-Type': localStorage.getItem('accountType')! } : {}),
+    ...(localStorage.getItem('organizationId') ? { 'X-Organization-Id': localStorage.getItem('organizationId')! } : {}),
     ...(!isFormData && { 'Content-Type': 'application/json' }),
     ...options.headers,
   };

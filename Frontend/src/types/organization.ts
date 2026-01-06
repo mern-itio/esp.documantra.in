@@ -18,7 +18,10 @@ export interface Organization {
   createdAt?: string;
   updatedAt?: string;
 }
-
+export interface OrganizationWithOwner {
+  organization: Organization;
+  isOwner: boolean;
+}
 export interface VerificationDocument {
   type?: string;
   url?: string;

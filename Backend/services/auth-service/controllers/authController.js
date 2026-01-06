@@ -167,10 +167,49 @@ const getMe = async (req, res) => {
     });
   }
 };
+// Switch account (user <-> organization)
+const switchAccount = async (req, res) => {
+  try {
+    const requestingUser = req.user;
+    if (!requestingUser) {
+      return res.status(401).json({ status: 401, message: 'Not authenticated' });
+    }
+    const organizationId = req?.query?.orgId || null;
+    const accountType = req?.params?.accType;
+    if (!accountType || (accountType !== 'user' && accountType !== 'organization')) {
+      return res.status(400).json({ status: 400, message: 'Invalid account type' });
+    }
+    // If switching to organization, organizationId must be present
+    if (!organizationId && accountType === 'organization') {
+      return res.status(400).json({ status: 400, message: 'organizationId required for organization account' });
+    }
+    if (accountType === 'user') {
+      return res.status(200).json({ status: 200, message: 'Switched to user account successfully',accountType: 'user' });
+    }
+    if (accountType === 'organization' && organizationId) {
+      //post request to organization service with userid in body and token in header
+      const orgResp = await axios.get(`${process.env.ORGANIZATION_SERVICE_URL}/api/organization/details-and-permission/${organizationId}`,{
+        headers: {
+          Authorization: req.headers.authorization  
+        }
+      });
+      console.log("Organization Service Response: ",orgResp.data);
+      const organization = orgResp.data.organization;
 
+      if (!organization) {
+        return res.status(404).json({ status: 404, message: 'Organization not found' });
+      }
+      return res.status(200).json({ status: 200, message: 'Switched to organization account successfully', accountType: 'organization', organizationId: organizationId, organization: organization });
+    }
+  } catch (error) {
+    return res.status(500).json({ status: 500, message: 'Internal server error' });
+  }
+   
+};
 // Export functions
 module.exports = {
   login,
   register,
-  getMe
+  getMe,
+  switchAccount
 };

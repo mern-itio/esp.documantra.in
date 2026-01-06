@@ -31,6 +31,6 @@ RUN npm install
 WORKDIR /app/services/organization-service
 RUN npm install --legacy-peer-deps
 
-EXPOSE 2101
+EXPOSE 2111
 
 CMD ["npm", "run", "dev"]
