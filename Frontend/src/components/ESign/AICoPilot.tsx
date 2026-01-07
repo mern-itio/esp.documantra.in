@@ -28,6 +28,7 @@ export const AICoPilot: React.FC<AICoPilotProps> = ({
 }) => {
   const [constraints, setConstraints] = useState<any>(null);
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set());
+  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const analyzedDocumentsRef = useRef<Set<string>>(new Set());
   const previousDocumentsLength = useRef<number>(0);
 
@@ -73,6 +74,8 @@ export const AICoPilot: React.FC<AICoPilotProps> = ({
       // The service already returns response.data, so we access it directly
       if (response && response.success) {
         setConstraints(response);
+        // Reset banner dismissal when new constraints are detected
+        setIsBannerDismissed(false);
       } else if (response && response.error) {
         console.error('Constraint check error:', response.error);
       }
@@ -140,7 +143,7 @@ export const AICoPilot: React.FC<AICoPilotProps> = ({
   };
 
   // Show floating error banner if there are violations or non-dismissed warnings
-  const hasErrors = constraints && (
+  const hasErrors = !isBannerDismissed && constraints && (
     (constraints.violations && constraints.violations.length > 0) ||
     (constraints.warnings && constraints.warnings.some((w: any) => 
       !dismissedWarnings.has(w.type + '_' + (w.recipientId || w.fieldId || w.page || ''))
@@ -169,7 +172,6 @@ export const AICoPilot: React.FC<AICoPilotProps> = ({
 
   return (
     <>
-      {/* Floating Error Banner - Always visible when there are errors */}
       {hasErrors && (
         <div className="fixed top-4 right-4 z-50 w-96 bg-white rounded-lg shadow-2xl border-2 border-red-300 transition-all duration-300">
           <div className="p-4">
@@ -180,12 +182,11 @@ export const AICoPilot: React.FC<AICoPilotProps> = ({
               </div>
               <button
                 onClick={() => {
-                  // Dismiss the banner by dismissing all warnings
-                  if (constraints && constraints.violations && constraints.violations.length === 0) {
-                    handleDismissAllWarnings();
-                  }
+                  setIsBannerDismissed(true);
+                  handleDismissAllWarnings();
                 }}
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Dismiss"
               >
                 <X className="w-4 h-4" />
               </button>

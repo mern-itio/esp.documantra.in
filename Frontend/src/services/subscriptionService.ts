@@ -1,5 +1,10 @@
 import { subscriptionApi } from './apiHelper';
-import type { SubscriptionPlan } from '../types';
+import type { SubscriptionPlan, Invoice } from '../types';
+
+export interface SubscriptionUpgradeResult {
+  plan: SubscriptionPlan;
+  invoice: Invoice | null;
+}
 
 export class SubscriptionService {
   /**
@@ -49,10 +54,16 @@ export class SubscriptionService {
   /**
    * Upgrade user's subscription to a specific plan by ID
    */
-  static async upgradeToPlan(planId: string): Promise<SubscriptionPlan> {
+  static async upgradeToPlan(planId: string): Promise<SubscriptionUpgradeResult> {
     try {
       const response = await subscriptionApi.post('/user-plan/upgrade', { planId });
-      return response.data.data;
+      const data = response.data?.data;
+
+      // Backend returns { plan, invoice }, but keep a fallback if only plan is returned
+      const plan: SubscriptionPlan = data?.plan || data;
+      const invoice: Invoice | null = data?.invoice || null;
+
+      return { plan, invoice };
     } catch (error) {
       console.error('Error upgrading user plan:', error);
       throw error;
@@ -91,6 +102,67 @@ export class SubscriptionService {
    */
   static isFreePlan(userPlan: SubscriptionPlan): boolean {
     return userPlan.isFree || userPlan.type === 'free';
+  }
+
+  /**
+   * Fetch latest invoice for the current user
+   */
+  static async getLatestInvoice(): Promise<Invoice | null> {
+    try {
+      const response = await subscriptionApi.get('/invoices/latest');
+      return response.data?.data || null;
+    } catch (error) {
+      console.error('Error fetching latest invoice:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch all invoices for the current user
+   */
+  static async getAllInvoices(): Promise<Invoice[]> {
+    try {
+      const response = await subscriptionApi.get('/invoices/me');
+      return Array.isArray(response.data?.data) ? response.data.data : [];
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Download invoice or receipt file for a given invoice
+   */
+  static async downloadInvoiceFile(invoiceId: string, type: 'invoice' | 'receipt'): Promise<void> {
+    try {
+      const url =
+        type === 'invoice'
+          ? `/invoices/${invoiceId}/download`
+          : `/invoices/${invoiceId}/receipt`;
+
+      const response = await subscriptionApi.get(url, { responseType: 'blob' });
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/octet-stream',
+      });
+
+      // Derive filename from headers if available
+      const disposition = response.headers['content-disposition'] || '';
+      const match = /filename="?([^"]+)"?/.exec(disposition);
+      const fallbackName = type === 'invoice' ? 'invoice.pdf' : 'receipt.pdf';
+      const filename = match?.[1] || fallbackName;
+
+      const link = document.createElement('a');
+      const href = URL.createObjectURL(blob);
+      link.href = href;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(href);
+    } catch (error) {
+      console.error('Error downloading invoice file:', error);
+      throw error;
+    }
   }
 }
 

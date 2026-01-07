@@ -53,7 +53,6 @@ import { aiAssistantApiService } from '../../services/aiAssistantService';
 import { SubscriptionPlansModal } from '../../components/common/SubscriptionPlansModal';
 import { debounce } from '../../components/common/lib/utils';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
-// Extend editor field locally to allow optional power-form metadata used during save
 type EditorSignatureFieldExt = EditorSignatureField & {
   signerIndex?: number | null;
   isPowerForm?: boolean;
@@ -61,12 +60,10 @@ type EditorSignatureFieldExt = EditorSignatureField & {
   option?: string[];
 };
 import type { AxiosProgressEvent } from 'axios';
-// type FieldType = "signature" | "text" | "email" | "number" | "id";
-// --- add this type near the other types at the top of the file ---
 type Party = {
-  id: string;                 // e.g. "slot_1"
-  name: string;               // display label, e.g. "Party A"
-  slot: number;               // 1-based index
+  id: string;                 
+  name: string;               
+  slot: number;               
   role?: 'signer' | 'approver' | 'carbon_copy' | string;
   authMethod?: 'email' | 'sms' | 'access_code' | 'none' | string;
   required?: boolean;
@@ -82,24 +79,19 @@ const EnvelopeCreator: React.FC = () => {
   const { envelopeId: routeEnvelopeId } = useParams<{ envelopeId: string }>();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Power Form State
   const [mode, _setMode] = useState<'normal' | 'power'>('normal');
   const [_powerForms, _setPowerForms] = useState<any[]>([]);
   const [selectedForm, _setSelectedForm] = useState<string>("");
   const [powerFormData, _setPowerFormData] = useState<any>(null);
   const [slots, setSlots] = useState<any[]>([]);
 
-  // Parties & related state.....
   const [parties, _setParties] = useState<Party[]>(
     [{ id: 'slot_1', name: 'Party A', slot: 1, role: 'signer', authMethod: 'email', required: true }]
   );
   const [numberOfParties, __setNumberOfParties] = useState<number>(parties.length || 1);
   const [_maxParties] = useState<number>(10);
-
-  // Selected/first party ids (creator choices)
   const [selectedPartyId, _setSelectedPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
   const [firstSigningPartyId, _setFirstSigningPartyId] = useState<string>(parties[0]?.id ?? 'slot_1');
-
   const [showTip, setShowTip] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [envelopeData, setEnvelopeData] = useState({
@@ -118,14 +110,14 @@ const EnvelopeCreator: React.FC = () => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const [documentTitle, setDocumentTitle] = useState<string>(''); // Separate state for title, independent of subject
-
+  const [documentTitle, setDocumentTitle] = useState<string>('');
   const [documents, setDocuments] = useState<ESDocument[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [_files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<EditorSignatureFieldExt[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<Array<{ suggestions: any[]; documentId: string }>>([]);
+  const [isAiSuggestionsExpanded, setIsAiSuggestionsExpanded] = useState(true);
   const [sending, setSending] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -134,14 +126,11 @@ const EnvelopeCreator: React.FC = () => {
   const [showRecipients, setShowRecipients] = useState(false);
   const [showAddMessage, setShowAddMessage] = useState(false);
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
-  // Handle document from state (e.g., from AI content generation) or pending documents
   useEffect(() => {
     const loadDocument = async () => {
-      // First check for document from state
       const documentData = location.state?.documentData;
       if (documentData && documentData.content && documents.length === 0) {
         try {
-          // Convert base64 to File
           const byteCharacters = atob(documentData.content);
           const byteNumbers = new Array(byteCharacters.length);
           for (let i = 0; i < byteCharacters.length; i++) {
@@ -153,14 +142,13 @@ const EnvelopeCreator: React.FC = () => {
             type: documentData.type || 'application/pdf'
           });
 
-          // Get actual page count from PDF
           const pageCount = await getPDFPageCount(file);
 
           const newDocument: ESDocument = {
             id: `doc_${Date.now()}_${Math.random()}`,
             name: file.name,
             size: file.size,
-            pages: pageCount, // Actual page count from PDF
+            pages: pageCount, 
             type: file.type,
             url: URL.createObjectURL(file),
             file: file,
@@ -172,13 +160,11 @@ const EnvelopeCreator: React.FC = () => {
             subject: prev.subject || `Complete with Draft&Sign: ${file.name}`
           }));
 
-          // Clear state to prevent re-adding
           navigate(location.pathname, { replace: true, state: null });
         } catch (error) {
           console.error('Error processing document from state:', error);
         }
       } else if (documents.length === 0) {
-        // Check for pending document in localStorage
         const pendingDocId = localStorage.getItem('pendingDocumentId');
         const pendingSessionId = localStorage.getItem('pendingSessionId');
         
@@ -188,7 +174,6 @@ const EnvelopeCreator: React.FC = () => {
             const response = await aiContentService.getPendingDocument(pendingDocId || undefined, pendingSessionId || undefined);
             
             if (response.success && response.data) {
-              // Convert content to PDF and add to documents
               const pdfResponse = await aiContentService.convertToPDF({
                 content: response.data.content,
                 documentName: response.data.documentName
@@ -206,14 +191,12 @@ const EnvelopeCreator: React.FC = () => {
                   type: 'application/pdf'
                 });
 
-                // Get actual page count from PDF
                 const pageCount = await getPDFPageCount(file);
-
                 const newDocument: ESDocument = {
                   id: `doc_${Date.now()}_${Math.random()}`,
                   name: file.name,
                   size: file.size,
-                  pages: pageCount, // Actual page count from PDF
+                  pages: pageCount, 
                   type: file.type,
                   url: URL.createObjectURL(file),
                   file: file,
@@ -225,14 +208,12 @@ const EnvelopeCreator: React.FC = () => {
                   subject: prev.subject || `Complete with Draft&Sign: ${file.name}`
                 }));
 
-                // Clean up
                 localStorage.removeItem('pendingDocumentId');
                 localStorage.removeItem('pendingSessionId');
               }
             }
           } catch (error) {
             console.error('Error loading pending document:', error);
-            // Clean up on error
             localStorage.removeItem('pendingDocumentId');
             localStorage.removeItem('pendingSessionId');
           }
@@ -243,46 +224,36 @@ const EnvelopeCreator: React.FC = () => {
     loadDocument();
   }, [location.state]);
 
-  // Initialize title when documents are uploaded (only once, not when subject changes)
   useEffect(() => {
     if (documents?.length > 0 && !documentTitle) {
       const defaultTitle = `Complete with Draft&Sign: ${documents[0]?.name || 'Document'}`;
       setDocumentTitle(defaultTitle);
       setTitleInput(defaultTitle);
-      // Also set subject initially if it's empty
       if (!envelopeData.subject) {
         setEnvelopeData(prev => ({ ...prev, subject: defaultTitle }));
       }
     }
   }, [documents]);
 
-  // Reset stacked doc index when documents change
   useEffect(() => {
     if (documents && documents.length > 0) {
       setStackedDocIndex(prev => Math.max(0, Math.min(prev, documents.length - 1)));
     }
   }, [documents?.length]);
   const [showDocuments, setShowDocuments] = useState(true);
-  const [stackedDocIndex, setStackedDocIndex] = useState(0); // Index of top document in stacked view
+  const [stackedDocIndex, setStackedDocIndex] = useState(0); 
   const [openRoleDropdownId, setOpenRoleDropdownId] = useState<string | null>(null);
   const [openCustomizeDropdownId, setOpenCustomizeDropdownId] = useState<string | null>(null);
   const [setSigningOrder, setSetSigningOrder] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  // const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const RECIPIENT_COLORS = ["#789ceaff", "#87ecccff", "#f0c089ff", "#eea1c3ff", "#b99aeeff", "#f7b1bcff"];
   const [showSigningOrder, setShowSigningOrder] = useState(false);
-  // Drag and drop state for recipient reordering
   const [draggedRecipientId, setDraggedRecipientId] = useState<string | null>(null);
   const [dragOverRecipientId, setDragOverRecipientId] = useState<string | null>(null);
-  // Temporary order values while typing (before Enter is pressed)
   const [tempOrderValues, setTempOrderValues] = useState<Record<string, number>>({});
-  // Track if order is being updated for animation
   const [_isReordering, setIsReordering] = useState(false);
-  // Track which recipient is being reordered
   const [reorderingRecipientId, setReorderingRecipientId] = useState<string | null>(null);
-  // Track recently reordered pills for animation effect
   const [reorderedPillIds, setReorderedPillIds] = useState<Set<string>>(new Set());
-  // Bulk send modal state
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkStep, setBulkStep] = useState<1 | 2>(1);
   const [bulkMethod, setBulkMethod] = useState<'manual' | 'csv'>('manual');
@@ -341,7 +312,6 @@ const EnvelopeCreator: React.FC = () => {
     }
   }, [showAuthModal, authModalForRecipientId, authModalForBulk]);
 
-  // Reset hasUserChangedSelection when modal closes
   useEffect(() => {
     if (!showAuthModal) {
       setHasUserChangedSelection(false);
@@ -351,16 +321,14 @@ const EnvelopeCreator: React.FC = () => {
   const getTomorrowDate = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0]; // yyyy-mm-dd
+    return d.toISOString().split('T')[0]; 
   };
   const [shouldOpenAuthModalFromTour, setShouldOpenAuthModalFromTour] = useState<boolean>(false);
-  // Send confirmation modal state
   const [showSendConfirmationModal, setShowSendConfirmationModal] = useState<boolean>(false);
   const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
   const [isScheduled, setIsScheduled] = useState<boolean>(false);
   const [scheduledDate, setScheduledDate] = useState<string>(getTomorrowDate());
   const [scheduledTime, setScheduledTime] = useState<string>('10:00');
-  // Combined date-time state for DatePicker
   const [scheduledDateTime, setScheduledDateTime] = useState<Date>(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -368,11 +336,9 @@ const EnvelopeCreator: React.FC = () => {
     return tomorrow;
   });
   
-  // Calculate minTime based on selected date
   const getMinTime = (): Date => {
     const now = new Date();
     const selected = scheduledDateTime;
-    // If selected date is today, set min time to current time + 1 minute
     if (
       selected.getDate() === now.getDate() &&
       selected.getMonth() === now.getMonth() &&
@@ -382,24 +348,18 @@ const EnvelopeCreator: React.FC = () => {
       minTime.setMinutes(minTime.getMinutes() + 1);
       return minTime;
     }
-    // If future date, allow any time from midnight
     return new Date(0, 0, 0, 0, 0);
   };
   const [draggedSignerId, setDraggedSignerId] = useState<string | null>(null);
   const [dragOverSignerId, setDragOverSignerId] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
   const [authMethods, setAuthMethods] = useState<any[]>([]);
-  // Help menu / sidebar state
   const [helpMenuOpen, setHelpMenuOpen] = useState<boolean>(false);
   const [helpSidebarOpen, setHelpSidebarOpen] = useState<boolean>(false);
   const helpMenuRef = useRef<HTMLDivElement | null>(null);
   const helpButtonRef = useRef<HTMLButtonElement | null>(null);
-  // Subscription modal state
   const [showSubscriptionModal, setShowSubscriptionModal] = useState<boolean>(false);
-  // Summary section state
-  const [showSummary, setShowSummary] = useState<boolean>(false);
-  
-  // Check if there are any recipients with authentication methods
+  const [showSummary, setShowSummary] = useState<boolean>(false);  
   const hasRecipientsWithAuth = useMemo(() => {
     return recipients.some((recipient) => {
       const authArray = parseAuthentication(recipient.authentication);
@@ -409,9 +369,6 @@ const EnvelopeCreator: React.FC = () => {
       return authMethodList.length > 0;
     });
   }, [recipients, authMethods]);
-  
-  // Auto-expand summary when there are no recipients with authentication in the table
-  // Collapse it when there are recipients with authentication in the table
   useEffect(() => {
     if (!hasRecipientsWithAuth && recipients.length > 0) {
       setShowSummary(true);
@@ -420,13 +377,11 @@ const EnvelopeCreator: React.FC = () => {
     }
   }, [hasRecipientsWithAuth, recipients.length]);
   
-  // Close help menu when clicking outside
   useEffect(() => {
     if (!helpMenuOpen) return;
     
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      // Close if click is outside both the help menu and the help button
       if (
         helpMenuRef.current && 
         !helpMenuRef.current.contains(target) &&
@@ -443,7 +398,6 @@ const EnvelopeCreator: React.FC = () => {
     };
   }, [helpMenuOpen]);
   
-  // Advanced options modal state
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const advancedContentRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = {
@@ -454,23 +408,16 @@ const EnvelopeCreator: React.FC = () => {
     comments: useRef<HTMLDivElement | null>(null),
   } as const;
   
-  // Advanced options state
   const [advancedOptions, setAdvancedOptions] = useState({
-    // Recipient Privileges
     canSignOnPaper: true,
     canDelegate: false,
-    // Reminders (already in envelopeData, but keeping here for consistency)
-    // Expiration
     expirationDays: 120,
     expirationAlertDays: 0,
     expirationType: 'custom' as 'custom' | 'never',
     alertType: 'custom' as 'custom' | 'never',
-    // Mobile-Friendly
     responsiveSigning: true,
-    // Comments
     commentsEnabled: false,
   });
-  // CSV recipient summary state (separate from manual bulk list)
   const [csvRecipientList, setCsvRecipientList] = useState<null | { fileName: string; role: Recipient['role']; items: Array<{ name: string; email: string }> }>(null);
   const [csvRoleDropdownOpen, setCsvRoleDropdownOpen] = useState<boolean>(false);
   const [csvCustomizeOpen, setCsvCustomizeOpen] = useState<boolean>(false);
@@ -479,7 +426,6 @@ const EnvelopeCreator: React.FC = () => {
   const [_csvPrivateMessage, setCsvPrivateMessage] = useState<string | undefined>(undefined);
   const [_openCsvPrivate, setOpenCsvPrivate] = useState<boolean>(false);
   const [showEnvelopeTooltip, setShowEnvelopeTooltip] = useState(false);
-  // const [showFrequencyTooltip, setShowFrequencyTooltip] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isDragOverCsv, setIsDragOverCsv] = useState(false);
   const [showCsvExceptions, setShowCsvExceptions] = useState(false);
@@ -493,7 +439,6 @@ const EnvelopeCreator: React.FC = () => {
   const bulkRoleRef = useRef<HTMLButtonElement | null>(null);
   const bulkCustomizeRef = useRef<HTMLButtonElement | null>(null);
 
-  // Guided tour for Envelope Creator
   const [isCreatorTourOpen, setIsCreatorTourOpen] = useState<boolean>(false);
   const [creatorTourIndex, setCreatorTourIndex] = useState<number>(0);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -516,13 +461,10 @@ const EnvelopeCreator: React.FC = () => {
   useEffect(() => {
     if (!isCreatorTourOpen) return;
     const step = creatorTourSteps[creatorTourIndex];
-    // Wait a bit for any UI changes (like expanding sections) to complete
     const timeoutId = setTimeout(() => {
       const el = document.querySelector(step?.selector || '') as HTMLElement | null;
       if (el) {
-        // Scroll element into view first
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        // Wait for scroll to complete, then get position
         setTimeout(() => {
           const rect = el.getBoundingClientRect();
           setCreatorTargetRect(rect);
@@ -537,7 +479,6 @@ const EnvelopeCreator: React.FC = () => {
     setIsCreatorTourOpen(false); 
     setCreatorTourIndex(0); 
     setCreatorTargetRect(null);
-    // Mark tour as completed when user closes it
     markTourAsCompleted();
   };
   const nextCreatorStep = async () => {
@@ -550,17 +491,13 @@ const EnvelopeCreator: React.FC = () => {
         if (!recipients || recipients.length === 0) addRecipient();
       }
       if (step?.id === 'customize') {
-        // Ensure recipients section is open
         setShowRecipients(true);
-        // Ensure at least one recipient exists
         if (!recipients || recipients.length === 0) {
           addRecipient();
         }
-        // Set flag to open auth modal - useEffect will handle it
         setShouldOpenAuthModalFromTour(true);
       }
       if (step?.id === 'bulkSend') {
-        // Bulk send button is already visible, no action needed
       }
       if (step?.id === 'signingOrder') {
         if (recipients && recipients.length >= 2 && !setSigningOrder) {
@@ -580,7 +517,6 @@ const EnvelopeCreator: React.FC = () => {
   const prevCreatorStep = () => setCreatorTourIndex(i => Math.max(i - 1, 0));
   const creatorTourStartedRef = useRef<boolean>(false);
   
-  // Check if user has completed the creator tour
   const hasCompletedCreatorTour = () => {
     try {
       const completed = localStorage.getItem('creatorTourCompleted');
@@ -590,7 +526,6 @@ const EnvelopeCreator: React.FC = () => {
     }
   };
 
-  // Mark tour as completed
   const markTourAsCompleted = () => {
     try {
       localStorage.setItem('creatorTourCompleted', 'true');
@@ -600,11 +535,9 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   useEffect(() => {
-    // Only show tour if user is new (isFirstLogin) and hasn't completed it
     if (!creatorTourStartedRef.current) {
       creatorTourStartedRef.current = true;
       
-      // Check if user is new or hasn't completed the tour
       const isNewUser = user?.isFirstLogin === true;
       const hasCompleted = hasCompletedCreatorTour();
       
@@ -615,24 +548,18 @@ const EnvelopeCreator: React.FC = () => {
     }
   }, [user]);
 
-  // Handle opening auth modal from customize tour step
   useEffect(() => {
     if (!shouldOpenAuthModalFromTour) return;
     
-    // Wait for UI to update, then open auth modal
     const timeoutId = setTimeout(() => {
-      // Get the first customize button to find which recipient to use
       const customizeButton = document.querySelector('[data-tour="ec-customize"]') as HTMLElement;
       if (customizeButton) {
-        // Find the recipient row containing this button
         const recipientRow = customizeButton.closest('.recipient-row, [data-recipient-id]');
-        // Try to get recipient ID from data attribute or use first recipient from state
         let recipientId: string | null = null;
         if (recipientRow) {
           const dataId = (recipientRow as HTMLElement).getAttribute('data-recipient-id');
           if (dataId) recipientId = dataId;
         }
-        // Fallback to first recipient from state
         if (!recipientId && recipients && recipients.length > 0) {
           recipientId = recipients[0].id;
         }
@@ -643,7 +570,6 @@ const EnvelopeCreator: React.FC = () => {
           setShouldOpenAuthModalFromTour(false);
         }
       } else if (recipients && recipients.length > 0) {
-        // Fallback: use first recipient if button not found
         setAuthModalForRecipientId(recipients[0].id);
         setAuthModalForBulk(false);
         setShowAuthModal(true);
@@ -654,7 +580,6 @@ const EnvelopeCreator: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [shouldOpenAuthModalFromTour, recipients]);
 
-  // Drag handlers for tooltip
   const handleTooltipMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (tooltipRef.current) {
       const rect = tooltipRef.current.getBoundingClientRect();
@@ -715,7 +640,6 @@ const EnvelopeCreator: React.FC = () => {
   };
   const downloadSampleCsv = async () => {
     try {
-      // Fetch the CSV file from public folder
       const response = await fetch('/Sample-Bulk-Recipient.csv');
       if (!response.ok) {
         throw new Error('Failed to fetch sample CSV');
@@ -731,7 +655,6 @@ const EnvelopeCreator: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading sample CSV:', error);
-      // Fallback to generated CSV if file not found
       const header = ['role', 'name', 'email'];
       const rows = [
         ['signer', 'Alice Smith', 'alice@example.com'],
@@ -760,18 +683,13 @@ const EnvelopeCreator: React.FC = () => {
     }
     setBulkList({ role: roleToUse, items: cleaned });
     if (!bulkBatchName) setBulkBatchName('Bulk Send List');
-    // Prevent auto-adding a blank recipient and remove any auto-added empty one
     hasAutoAddedRecipient.current = true;
     
-    // Convert bulk recipients to Recipient[] format and add to recipients state
     setRecipients(prev => {
-      // Remove any empty recipients
       const filtered = prev.filter(r => r.name && r.name.trim() && r.email && r.email.trim());
       
-      // Get the next order number
       const nextOrder = filtered.length > 0 ? Math.max(...filtered.map(r => r.order || 0)) + 1 : 1;
       
-      // Convert bulk recipients to Recipient[] format
       const bulkRecipients: Recipient[] = cleaned.map((item, idx) => ({
         id: `bulk_recipient_${Date.now()}_${idx}`,
         name: item.name,
@@ -5572,66 +5490,80 @@ const EnvelopeCreator: React.FC = () => {
               });
               return hasSuggestions;
             })() ? (
-              <div className="mb-4 bg-indigo-50 border-2 border-indigo-300 rounded-lg p-4 shadow-lg">
+              <div className="mb-4 bg-indigo-50 border-2 border-indigo-300 rounded-lg p-1 shadow-lg">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-5 h-5 text-indigo-600" />
-                      <h4 className="font-semibold text-indigo-900">
-                        AI Field Suggestions Available
-                      </h4>
-                    </div>
-                    <p className="text-sm text-indigo-700 mb-3">
-                      {aiSuggestions.reduce((sum, s) => sum + (s.suggestions?.length || 0), 0)} field suggestion(s) found. Click "Apply All" to add them automatically.
-                    </p>
-                    <div className="flex gap-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-indigo-600" />
+                        <h4 className="font-semibold text-indigo-900">
+                          AI Field Suggestions Available
+                        </h4>
+                      </div>
                       <button
-                        onClick={() => {
-                          // Apply all suggestions
-                          const allFields: EditorSignatureFieldExt[] = [];
-                          aiSuggestions.forEach(({ suggestions, documentId }) => {
-                            if (suggestions && Array.isArray(suggestions)) {
-                              suggestions.forEach((suggestion: any) => {
-                                const doc = documents.find(d => d.id === documentId);
-                                if (doc && suggestion) {
-                                  // Backend returns coordinates in PDF points (pixels), not normalized
-                                  // Use coordinates directly, but ensure they're valid numbers
-                                  allFields.push({
-                                    id: `${Date.now()}_${Math.random()}`,
-                                    docId: documentId,
-                                    page: suggestion.page || 1,
-                                    x: typeof suggestion.x === 'number' ? suggestion.x : (suggestion.x || 0) * 612, // Already in points, or normalize if needed
-                                    y: typeof suggestion.y === 'number' ? suggestion.y : (suggestion.y || 0) * 792,
-                                    width: typeof suggestion.width === 'number' ? suggestion.width : (suggestion.width || 150),
-                                    height: typeof suggestion.height === 'number' ? suggestion.height : (suggestion.height || 50),
-                                    type: (suggestion.type || 'signature') as 'signature' | 'text' | 'date' | 'email' | 'number',
-                                    recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
-                                  } as EditorSignatureFieldExt);
+                        onClick={() => setIsAiSuggestionsExpanded(!isAiSuggestionsExpanded)}
+                        className="p-1 hover:bg-indigo-100 rounded transition-colors"
+                        aria-label={isAiSuggestionsExpanded ? "Collapse" : "Expand"}
+                      >
+                        {isAiSuggestionsExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-indigo-600" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-indigo-600" />
+                        )}
+                      </button>
+                    </div>
+                    {isAiSuggestionsExpanded && (
+                      <>
+                        <p className="text-sm text-indigo-700 mb-3">
+                          {aiSuggestions.reduce((sum, s) => sum + (s.suggestions?.length || 0), 0)} field suggestion(s) found. Click "Apply All" to add them automatically.
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const allFields: EditorSignatureFieldExt[] = [];
+                              aiSuggestions.forEach(({ suggestions, documentId }) => {
+                                if (suggestions && Array.isArray(suggestions)) {
+                                  suggestions.forEach((suggestion: any) => {
+                                    const doc = documents.find(d => d.id === documentId);
+                                    if (doc && suggestion) {                                    
+                                      allFields.push({
+                                        id: `${Date.now()}_${Math.random()}`,
+                                        docId: documentId,
+                                        page: suggestion.page || 1,
+                                        x: typeof suggestion.x === 'number' ? suggestion.x : (suggestion.x || 0) * 612,
+                                        y: typeof suggestion.y === 'number' ? suggestion.y : (suggestion.y || 0) * 792,
+                                        width: typeof suggestion.width === 'number' ? suggestion.width : (suggestion.width || 150),
+                                        height: typeof suggestion.height === 'number' ? suggestion.height : (suggestion.height || 50),
+                                        type: (suggestion.type || 'signature') as 'signature' | 'text' | 'date' | 'email' | 'number',
+                                        recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
+                                      } as EditorSignatureFieldExt);
+                                    }
+                                  });
                                 }
                               });
-                            }
-                          });
-                          if (allFields.length > 0) {
-                            setSignatureFields(prev => [...prev, ...allFields]);
-                            saveSignatureFieldsImmediate([...signatureFields, ...allFields]);
-                            setAiSuggestions([]);
-                            toast.success(`Applied ${allFields.length} field suggestion(s)`);
-                          } else {
-                            toast.error('No valid suggestions to apply');
-                          }
-                        }}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Apply All Suggestions
-                      </button>
-                      <button
-                        onClick={() => setAiSuggestions([])}
-                        className="px-4 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-50 text-sm font-medium"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
+                              if (allFields.length > 0) {
+                                setSignatureFields(prev => [...prev, ...allFields]);
+                                saveSignatureFieldsImmediate([...signatureFields, ...allFields]);
+                                setAiSuggestions([]);
+                                toast.success(`Applied ${allFields.length} field suggestion(s)`);
+                              } else {
+                                toast.error('No valid suggestions to apply');
+                              }
+                            }}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            Apply All Suggestions
+                          </button>
+                          <button
+                            onClick={() => setAiSuggestions([])}
+                            className="px-4 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-50 text-sm font-medium"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -6282,7 +6214,6 @@ const EnvelopeCreator: React.FC = () => {
               />
             )}
 
-            {/* Navigation (hidden on step 2; footer lives inside SigningEditorStep) */}
             {currentStep !== 2 && (
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200" id='clearBoth'>
                <button
@@ -6345,26 +6276,21 @@ const EnvelopeCreator: React.FC = () => {
         </div>
       </div>
 
-    {/* Guided Tour Overlay */}
     {isCreatorTourOpen && (
       creatorTargetRect && (() => {
-        // Calculate tooltip position relative to target element
-        const tooltipWidth = 384; // max-w-sm = 384px
-        const tooltipHeight = 200; // approximate height
-        const spacing = 12; // space between tooltip and target
-        const padding = 16; // padding from viewport edges
+        const tooltipWidth = 384; 
+        const tooltipHeight = 200;
+        const spacing = 12; 
+        const padding = 16; 
         
-        // Calculate horizontal position - center tooltip relative to target, but keep within viewport
         const targetCenterX = creatorTargetRect.left + (creatorTargetRect.width / 2);
         let tooltipLeft = targetCenterX - (tooltipWidth / 2);
-        // Keep tooltip within viewport bounds
         if (tooltipLeft < padding) {
           tooltipLeft = padding;
         } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
           tooltipLeft = window.innerWidth - tooltipWidth - padding;
         }
         
-        // Calculate vertical position - prefer below, but show above if not enough space
         const spaceBelow = window.innerHeight - creatorTargetRect.bottom - spacing;
         const spaceAbove = creatorTargetRect.top - spacing;
         const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
@@ -6373,21 +6299,15 @@ const EnvelopeCreator: React.FC = () => {
           ? creatorTargetRect.top - tooltipHeight - spacing
           : creatorTargetRect.bottom + spacing;
         
-        // Calculate arrow position (centered on target element)
-        // Arrow should point to the center of the target element
-        // Position is relative to tooltip's left edge
         const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
-        // Constrain arrow to be within tooltip bounds (with some padding)
         const arrowPadding = 20;
         const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
         
-        // Use dragged position if available, otherwise use calculated position
         const finalLeft = tooltipPosition ? tooltipPosition.x : tooltipLeft;
         const finalTop = tooltipPosition ? tooltipPosition.y : Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding));
 
         return (
           <>
-            {/* Tooltip - styled like the tooltip UI */}
             <div
               ref={tooltipRef}
               className="fixed z-50"
@@ -6396,9 +6316,7 @@ const EnvelopeCreator: React.FC = () => {
                 top: `${finalTop}px`
               }}
             >
-              {/* Tooltip box */}
               <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
-              {/* Draggable header */}
                 <div 
                   className="px-4 py-3 font-semibold cursor-move select-none"
                   onMouseDown={handleTooltipMouseDown}
@@ -6420,7 +6338,6 @@ const EnvelopeCreator: React.FC = () => {
                     )}
                   </div>
                 </div>
-                {/* Arrow pointing to target - positioned absolutely within tooltip */}
                 <div 
                   className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
                   style={{ 
@@ -6434,12 +6351,10 @@ const EnvelopeCreator: React.FC = () => {
         );
       })()
     )}
-      {/* Advanced Options Modal */}
       {showAdvanced && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowAdvanced(false)} />
           <div className="relative bg-white w-full h-full flex flex-col overflow-auto">
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
               <h2 className="text-xl font-semibold">Advanced Options</h2>
               <button onClick={() => setShowAdvanced(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100" title="Close">
@@ -6447,21 +6362,17 @@ const EnvelopeCreator: React.FC = () => {
               </button>
             </div>
             <div className="flex flex-1">
-              {/* Left Sidebar */}
               <div className="w-72 border-r border-gray-200 p-6 sticky top-16 self-start">
                 <nav className="space-y-3 text-sm">
                 <button onClick={() => sectionRefs.recipientPrivileges.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Recipient Privileges</button>
                 <button onClick={() => sectionRefs.reminders.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Reminders</button>
                 <button onClick={() => sectionRefs.expiration.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Expiration</button>
                 <button onClick={() => sectionRefs.mobileFriendly.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Mobile-Friendly</button>
-                {/* <button onClick={() => sectionRefs.comments.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Comments</button> */}
                 </nav>
               </div>
 
-              {/* Right Content */}
               <div className="flex-1 self-start sticky top-16" ref={advancedContentRef}>
               <div className="p-10 space-y-12">
-                {/* Recipient Privileges */}
                 <section ref={sectionRefs.recipientPrivileges}>
                   <h3 className="text-2xl text-gray-900">Recipient Privileges</h3>
                   <p className="text-gray-600 mt-2">Give recipients options for how they sign.</p>
@@ -6474,22 +6385,11 @@ const EnvelopeCreator: React.FC = () => {
                         onChange={(e) => setAdvancedOptions(prev => ({ ...prev, canSignOnPaper: e.target.checked }))}
                       /> 
                       Recipients can sign on paper
-                    </label>
-                    {/* <label className="flex items-center gap-3 text-gray-400 cursor-not-allowed">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4" 
-                        checked={advancedOptions.canDelegate}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, canDelegate: e.target.checked }))}
-                        disabled
-                      /> 
-                      Recipients can change signing responsibility or assign a delegate
-                    </label> */}
+                    </label>                  
                   </div>
                   <hr className="mt-8" />
                 </section>
 
-                {/* Reminders */}
                 <section ref={sectionRefs.reminders}>
                   <h3 className="text-2xl text-gray-900">Reminders</h3>
                   <p className="text-gray-600 mt-2">Follow up with automatic reminders. Signers will receive emails until they sign or decline the envelope.</p>
@@ -6520,7 +6420,6 @@ const EnvelopeCreator: React.FC = () => {
                   <hr className="mt-8" />
                 </section>
 
-                {/* Expiration */}
                 <section ref={sectionRefs.expiration}>
                   <h3 className="text-2xl text-gray-900">Expiration</h3>
                   <p className="text-gray-600 mt-2">By default, envelopes expire after 120 days. Recipients can no longer view or sign an envelope after it expires.</p>
@@ -6579,7 +6478,6 @@ const EnvelopeCreator: React.FC = () => {
                   <hr className="mt-8" />
                 </section>
 
-                {/* Mobile Friendly */}
                 <section ref={sectionRefs.mobileFriendly}>
                   <h3 className="text-2xl text-gray-900">Mobile-Friendly Viewing with Responsive Signing</h3>
                   <p className="text-gray-600 mt-2">View your document in preview mode to see how it looks on a mobile device</p>
@@ -6594,28 +6492,11 @@ const EnvelopeCreator: React.FC = () => {
                       Enable Responsive Signing for this envelope
                     </label>
                   </div>
-                  {/* <hr className="mt-8" /> */}
                 </section>
 
-                {/* Comments */}
-                {/* <section ref={sectionRefs.comments}>
-                  <h3 className="text-2xl text-gray-900">Comments</h3>
-                  <p className="text-gray-600 mt-2">Allow comments on documents. Both senders and recipients can comment.</p>
-                  <div className="mt-6">
-                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="w-5 h-5" 
-                        checked={advancedOptions.commentsEnabled}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, commentsEnabled: e.target.checked }))}
-                      />
-                      Enable comments for this envelope
-                    </label>
-                  </div>
-                </section> */}
               </div>
 
-                {/* Footer */}
+       
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end">
                   <button 
                     onClick={saveAdvancedOptions} 
@@ -6631,7 +6512,6 @@ const EnvelopeCreator: React.FC = () => {
         </div>
       )}
 
-      {/* Send Confirmation Modal */}
       {showSendConfirmationModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
           <div
@@ -6658,7 +6538,6 @@ const EnvelopeCreator: React.FC = () => {
               </button>
             )}
 
-            {/* Step Indicator */}
             <div className="flex items-center gap-3 mt-4 mb-8 pb-6 border-b border-gray-100">
               <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 1 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
@@ -6683,7 +6562,6 @@ const EnvelopeCreator: React.FC = () => {
               </div>
             </div>
 
-            {/* Step 1: Signing Order Diagram */}
             {sendModalStep === 1 && (
               <div>
                 <div className="mb-2">

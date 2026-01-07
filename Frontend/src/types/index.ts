@@ -48,6 +48,23 @@ export interface SubscriptionPlan {
   isFree: boolean;
 }
 
+export interface Invoice {
+  id?: string;
+  _id?: string;
+  userId?: string;
+  subscriptionId?: string;
+  planTemplateId?: string;
+  planName?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  amount: number;
+  currency: string;
+  invoiceNumber: string;
+  receiptNumber: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Document {
   id: string;
   name: string;

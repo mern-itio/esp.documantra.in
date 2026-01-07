@@ -1,5 +1,6 @@
 const Subscription = require('../models/Subscription');
 const PlanTemplate = require('../models/PlanTemplate');
+const { createInvoiceForUpgrade } = require('./invoiceController');
 
 // Extract userId from various possible JWT payload shapes
 const getUserIdFromRequest = (req) => {
@@ -179,7 +180,19 @@ const upgradePlan = async (req, res) => {
       isFree: (planTemplate.type === 'free') || (planTemplate.pricePerPeriod === 0),
     };
 
-    return res.status(200).json({ status: 200, message: 'Plan upgraded', data: response });
+    // Create invoice for this upgrade
+    let invoice = null;
+    try {
+      invoice = await createInvoiceForUpgrade({ userId, subscription, planTemplate });
+    } catch (invoiceErr) {
+      console.error('Failed to create invoice on upgrade:', invoiceErr);
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Plan upgraded',
+      data: { plan: response, invoice },
+    });
   } catch (error) {
     console.error('upgradePlan error:', error);
     return res.status(500).json({ status: 500, message: error.message || 'Server error', data: null });

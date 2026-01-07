@@ -9,7 +9,7 @@ interface SubscriptionContextType {
   loading: boolean;
   error: string | null;
   refreshPlan: () => Promise<void>;
-  upgradeToPlan: (planId: string) => Promise<SubscriptionPlan>;
+  upgradeToPlan: (planId: string) => Promise<{ plan: SubscriptionPlan; invoice: any }>;
   updatePlan: (planData: Partial<SubscriptionPlan>) => Promise<void>;
   hasSufficientCredits: (requiredCredits: number) => boolean;
   isServiceAvailable: (service: string) => boolean;
@@ -95,7 +95,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       setLoading(true);
       setError(null);
 
-      const upgradedPlan = await SubscriptionService.upgradeToPlan(planId);
+      const { plan: upgradedPlan, invoice } = await SubscriptionService.upgradeToPlan(planId);
       setUserPlan(upgradedPlan);
       SubscriptionStorage.savePlan(upgradedPlan);
       
@@ -116,7 +116,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         console.warn('Failed to update userData in localStorage:', err);
       }
       
-      return upgradedPlan;
+      return { plan: upgradedPlan, invoice };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade subscription plan';
       setError(errorMessage);

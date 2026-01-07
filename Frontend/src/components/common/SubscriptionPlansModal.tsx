@@ -3,6 +3,7 @@ import { X, Star } from 'lucide-react';
 import { subscriptionApi } from '../../services/apiHelper';
 import { useSubscription } from '../../context/SubscriptionContext';
 import toast from 'react-hot-toast';
+import type { Invoice } from '../../types';
 
 interface PlanTemplate {
   _id: string;
@@ -17,9 +18,10 @@ interface PlanTemplate {
 interface SubscriptionPlansModalProps {
   open: boolean;
   onClose: () => void;
+  onPlanPurchased?: (invoice: Invoice | null) => void;
 }
 
-export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ open, onClose }) => {
+export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ open, onClose, onPlanPurchased }) => {
   const [plans, setPlans] = useState<PlanTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
@@ -36,7 +38,6 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
         if (!mounted) return;
         setPlans(Array.isArray(list) ? list : []);
       } catch {
-        // Fallback to a simple three-tier display if API is restricted
         if (!mounted) return;
         setPlans([
           { _id: 'core', name: 'Core', type: 'paid', pricePerPeriod: 15, period: 'monthly', monthlyCredits: 100, services: ['pdf','esign','auth'] },
@@ -100,10 +101,13 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
                           try {
                             setUpgradingPlanId(plan._id);
                             const t = toast.loading('Upgrading plan...');
-                            await upgradeToPlan(plan._id);
+                            const { invoice } = await upgradeToPlan(plan._id);
                             // Optionally refresh in background
                             refreshPlan().catch(() => {});
                             toast.success('Plan upgraded successfully', { id: t });
+                            if (onPlanPurchased) {
+                              onPlanPurchased(invoice || null);
+                            }
                             onClose();
                           } catch (err: any) {
                             toast.error(err?.message || 'Failed to upgrade plan');

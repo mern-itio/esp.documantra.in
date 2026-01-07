@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import SubscriptionInfo from '../../components/common/SubscriptionInfo';
 import SubscriptionPlansModal from '../../components/common/SubscriptionPlansModal';
+import InvoiceModal from '../../components/common/InvoiceModal';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/DocumentService/ui/card';
 import { Button } from '../../components/DocumentService/ui/button';
 import { 
@@ -14,14 +15,19 @@ import {
   ArrowRight,
   Sparkles,
   Shield,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '../../context/SubscriptionContext';
+import type { Invoice } from '../../types';
+import { SubscriptionService } from '../../services/subscriptionService';
 
 const SubscriptionManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [latestInvoice, setLatestInvoice] = useState<Invoice | null>(null);
   const { userPlan, getRemainingCredits, isFreePlan } = useSubscription();
 
   const remainingCredits = getRemainingCredits();
@@ -30,6 +36,19 @@ const SubscriptionManagementPage: React.FC = () => {
   const creditsPercentage = creditsLimit > 0 
     ? Math.min((remainingCredits / creditsLimit) * 100, 100) 
     : 0;
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const invoice = await SubscriptionService.getLatestInvoice();
+      if (mounted) {
+        setLatestInvoice(invoice);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -53,11 +72,8 @@ const SubscriptionManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Credits Card */}
           <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 hover:shadow-lg transition-all duration-300">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -93,7 +109,6 @@ const SubscriptionManagementPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Plan Type Card */}
           <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-all duration-300">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -120,7 +135,6 @@ const SubscriptionManagementPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Services Card */}
           <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 hover:shadow-lg transition-all duration-300">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -155,7 +169,6 @@ const SubscriptionManagementPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Current Subscription */}
           <div className="lg:col-span-2">
             <Card className="hover:shadow-xl transition-shadow duration-300 border-gray-200">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
@@ -173,7 +186,6 @@ const SubscriptionManagementPage: React.FC = () => {
             
           </div>
 
-          {/* Quick Actions */}
           <div className="space-y-6">
             <Card className="hover:shadow-xl transition-shadow duration-300 border-gray-200">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
@@ -207,17 +219,98 @@ const SubscriptionManagementPage: React.FC = () => {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 {userPlan?.nextBillingAt && (
-                  <div className="pt-3 border-t border-gray-200">
+                  <div className="pt-3 border-t border-gray-200 space-y-2">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock className="w-4 h-4" />
                       <span>Next billing: {new Date(userPlan.nextBillingAt).toLocaleDateString()}</span>
                     </div>
+                    {latestInvoice && (
+                      <div className="flex items-start gap-2 text-xs text-gray-600">
+                        <FileText className="w-4 h-4 text-indigo-500 mt-0.5" />
+                        <div>
+                          <div className="font-semibold text-gray-900">
+                            Last invoice {latestInvoice.invoiceNumber || ''}
+                          </div>
+                          <div>
+                            {latestInvoice.currency || 'USD'}{' '}
+                            {typeof latestInvoice.amount === 'number'
+                              ? latestInvoice.amount.toFixed(2)
+                              : latestInvoice.amount}{' '}
+                            ·{' '}
+                            {latestInvoice.createdAt
+                              ? new Date(latestInvoice.createdAt).toLocaleDateString()
+                              : ''}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Help */}
+            <Card className="hover:shadow-xl transition-shadow duration-300 border-gray-200">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
+                    <FileText className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <span className="text-lg font-bold text-gray-900">Billing & Invoices</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-3">
+                {latestInvoice ? (
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Last invoice</span>
+                      <span className="text-xs text-gray-500">
+                        {latestInvoice.createdAt
+                          ? new Date(latestInvoice.createdAt).toLocaleDateString()
+                          : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-gray-600">
+                        <div className="font-semibold text-gray-900">
+                          {latestInvoice.invoiceNumber || 'Invoice'}
+                        </div>
+                        <div>
+                          {latestInvoice.currency || 'USD'}{' '}
+                          {typeof latestInvoice.amount === 'number'
+                            ? latestInvoice.amount.toFixed(2)
+                            : latestInvoice.amount}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="inline-flex items-center gap-2"
+                        onClick={() => setIsInvoiceModalOpen(true)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span className="text-xs font-semibold">View invoice</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="inline-flex items-center gap-2"
+                        onClick={() => navigate('/credits-usage')}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        <span className="text-xs font-semibold">Billing & usage history</span>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    You don&apos;t have any invoices yet. Upgrade to a paid plan to generate your first invoice.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
             <Card className="hover:shadow-xl transition-shadow duration-300 border-gray-200 bg-gradient-to-br from-blue-50 to-indigo-50">
               <CardHeader className="border-b border-gray-200">
                 <CardTitle className="flex items-center gap-3">
@@ -249,10 +342,24 @@ const SubscriptionManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Subscription Plans Modal */}
       <SubscriptionPlansModal 
         open={isPlansModalOpen} 
-        onClose={() => setIsPlansModalOpen(false)} 
+        onClose={() => setIsPlansModalOpen(false)}
+        onPlanPurchased={async (invoice) => {
+          let inv = invoice;
+          if (!inv) {
+            inv = await SubscriptionService.getLatestInvoice();
+          }
+          if (inv) {
+            setLatestInvoice(inv);
+            setIsInvoiceModalOpen(true);
+          }
+        }}
+      />
+      <InvoiceModal
+        open={isInvoiceModalOpen}
+        invoice={latestInvoice}
+        onClose={() => setIsInvoiceModalOpen(false)}
       />
     </div>
   );

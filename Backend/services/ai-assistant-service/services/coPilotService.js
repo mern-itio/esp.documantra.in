@@ -2,6 +2,31 @@ const { ChatOpenAI } = require('@langchain/openai');
 const { ChatPromptTemplate } = require('@langchain/core/prompts');
 const { StructuredOutputParser } = require('@langchain/core/output_parsers');
 const { z } = require('zod');
+
+
+const SUPPORTED_FIELD_TYPES = new Set([
+  'signature',
+  'text',
+  'email',
+  'number',
+  'id',
+  'dropdown',
+  'input',
+  'checkbox',
+  'phone',
+  'stamp',
+  'name',
+  'company',
+  'title',
+  'date',
+  'initial'
+]);
+
+function normalizeFieldType(type) {
+  if (!type || typeof type !== 'string') return 'text';
+  const lower = type.toLowerCase();
+  return SUPPORTED_FIELD_TYPES.has(lower) ? lower : 'text';
+}
 let pdfjsLib;
 try {
   pdfjsLib = require('pdfjs-dist');
@@ -34,14 +59,12 @@ class CoPilotService {
       documents = [],
       existingFields = [],
       currentPage = 1,
-      mode = 'normal', // 'normal' or 'power'
-      fieldTypes = [] // For form builder context
+      mode = 'normal', 
+      fieldTypes = [] 
     } = context;
 
-    // Detect if this is a form builder context (no documents/pages needed)
     const isFormBuilder = !documents || documents.length === 0;
     
-    // Different schemas for PDF placement vs Form Builder
     const PDFFieldPlacementSchema = z.object({
       fields: z.array(z.object({
         type: z.enum(['signature', 'text', 'email', 'name', 'date', 'initial', 'company', 'title', 'phone', 'checkbox', 'dropdown']),
@@ -49,10 +72,10 @@ class CoPilotService {
         slotId: z.string().nullable().optional(),
         page: z.number().int().positive(),
         position: z.enum(['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right', 'custom']),
-        x: z.number().optional(), // Custom x coordinate (0-1 normalized)
-        y: z.number().optional(), // Custom y coordinate (0-1 normalized)
-        width: z.number().optional(), // Field width in pixels
-        height: z.number().optional(), // Field height in pixels
+        x: z.number().optional(), 
+        y: z.number().optional(),
+        width: z.number().optional(), 
+        height: z.number().optional(), 
         label: z.string().optional(),
         required: z.boolean().optional()
       })),
@@ -228,9 +251,7 @@ Parse the user's command and return structured field placements.`;
         }
       }
 
-      // Process fields differently for form builder vs PDF placement
       if (isFormBuilder) {
-        // Form builder: just return fields as-is (no coordinates needed)
         return {
           success: true,
           data: {
@@ -244,7 +265,6 @@ Parse the user's command and return structured field placements.`;
           }
         };
       } else {
-        // PDF placement: add coordinates
         const fieldsWithCoords = await Promise.all(
           parsed.fields.map(async (field) => {
             if (field.position === 'custom' && field.x !== undefined && field.y !== undefined) {
@@ -293,14 +313,13 @@ Parse the user's command and return structured field placements.`;
       usePythonAnalyzer = process.env.USE_PYTHON_ANALYZER === 'true'
     } = options;
 
-    // Try Python analyzer first if enabled
     if (usePythonAnalyzer) {
       try {
         const pythonResult = await this.analyzePDFWithPython(pdfBuffer, options);
         if (pythonResult && pythonResult.success && pythonResult.suggestions?.length > 0) {
+          console.log(`Python analyzer found ${pythonResult.suggestions.length} field suggestions`);
           return pythonResult;
         }
-        // Fall back to Node.js if Python fails or returns no results
         console.log('Python analyzer returned no results, falling back to Node.js');
       } catch (pythonError) {
         console.warn('Python analyzer failed, falling back to Node.js:', pythonError.message);
@@ -308,7 +327,6 @@ Parse the user's command and return structured field placements.`;
     }
 
     try {
-      // Check if pdfjsLib is available
       if (!pdfjsLib) {
         return {
           success: false,
@@ -329,7 +347,6 @@ Parse the user's command and return structured field placements.`;
         pdfData = new Uint8Array(Object.values(pdfBuffer));
       }
 
-      // Load PDF
       const loadingTask = pdfjsLib.getDocument({ data: pdfData });
       const pdf = await loadingTask.promise;
       const numPages = pdf.numPages;
@@ -337,16 +354,13 @@ Parse the user's command and return structured field placements.`;
       const allSuggestions = [];
       const pageTexts = [];
 
-      // Extract text from each page and analyze with AI
       for (let pageNum = 1; pageNum <= numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
         const viewport = page.getViewport({ scale: 1.0 });
         
-        // Get text content
         const textContent = await page.getTextContent();
         const textItems = textContent.items;
         
-        // Build full page text for AI analysis
         const pageText = textItems.map(item => item.str).join(' ');
         pageTexts.push({
           pageNum,
@@ -356,7 +370,6 @@ Parse the user's command and return structured field placements.`;
         });
       }
 
-      // Try AI analysis first
       let aiSuggestions = [];
       try {
         aiSuggestions = await this.analyzePDFWithAI(pageTexts, fieldTypes);
@@ -364,23 +377,23 @@ Parse the user's command and return structured field placements.`;
         console.warn('AI analysis failed, falling back to heuristics:', aiError.message);
       }
       
-      // Also use heuristic-based detection for additional context
       for (const pageData of pageTexts) {
         const { pageNum, textItems, viewport } = pageData;
         
-        // Get heuristic-based suggestions (more conservative now)
         const signatureAreas = this.findSignatureAreas(textItems, viewport, pageNum);
         const dateAreas = this.findDateAreas(textItems, viewport, pageNum);
         const nameAreas = this.findNameAreas(textItems, viewport, pageNum);
+        const blankLineAreas = this.findBlankLineAreas(textItems, viewport, pageNum);
+        const underlineAreas = this.findUnderlineAreas(textItems, viewport, pageNum);
 
-        // Combine heuristic suggestions
         const heuristicSuggestions = [
           ...signatureAreas,
           ...dateAreas,
-          ...nameAreas
+          ...nameAreas,
+          ...blankLineAreas,
+          ...underlineAreas
         ];
 
-        // Merge AI and heuristic suggestions, prioritizing AI
         const mergedSuggestions = this.mergeAndDeduplicateSuggestions(
           aiSuggestions.filter(s => s.page === pageNum),
           heuristicSuggestions,
@@ -390,10 +403,12 @@ Parse the user's command and return structured field placements.`;
         allSuggestions.push(...mergedSuggestions);
       }
 
-      // Final deduplication across all pages
-      const finalSuggestions = this.deduplicateSuggestions(allSuggestions, minConfidence);
+      const finalSuggestions = this.deduplicateSuggestions(allSuggestions, minConfidence)
+        .map(s => ({
+          ...s,
+          type: normalizeFieldType(s.type)
+        }));
       
-      // Generate heatmap data
       const heatmapData = finalSuggestions.map(suggestion => {
         const pageData = pageTexts.find(p => p.pageNum === suggestion.page);
         const viewport = pageData?.viewport || { width: 612, height: 792 };
@@ -426,9 +441,7 @@ Parse the user's command and return structured field placements.`;
     }
   }
 
-  /**
-   * Use AI to intelligently analyze PDF text and suggest fields
-   */
+
   async analyzePDFWithAI(pageTexts, fieldTypes) {
     const FieldSuggestionSchema = z.object({
       suggestions: z.array(z.object({
@@ -446,7 +459,6 @@ Parse the user's command and return structured field placements.`;
 
     const parser = StructuredOutputParser.fromZodSchema(FieldSuggestionSchema);
 
-    // Build context for AI
     const pagesContext = pageTexts.map((p, idx) => 
       `Page ${p.pageNum}:\n${p.text.substring(0, 2000)}${p.text.length > 2000 ? '...' : ''}`
     ).join('\n\n---\n\n');
@@ -454,31 +466,34 @@ Parse the user's command and return structured field placements.`;
     const prompt = ChatPromptTemplate.fromMessages([
       ['system', `You are an expert at analyzing PDF documents to identify where form fields should be placed.
 
-Your task is to carefully analyze the PDF text and suggest ONLY the fields that are actually needed based on the document content.
+Your task is to analyze the PDF text and suggest form fields based on document content, labels, blank spaces, and underlines.
 
 IMPORTANT RULES:
-1. Be CONSERVATIVE - only suggest fields where there is clear evidence they are needed
-2. Do NOT suggest multiple signature fields on the same page unless the document explicitly requires multiple signers
-3. Look for actual field labels like "Signature:", "Date:", "Name:", etc. in the text
-4. Consider the document context - a contract typically needs 1-2 signatures, not 10
-5. Only suggest fields where there is space and context indicating a field is needed
-6. Avoid suggesting fields in headers, footers, or document metadata areas
-7. For signature fields, prefer suggesting them near the bottom of pages where signatures typically appear
-8. Do NOT add default/fallback fields - only suggest fields based on actual document content
+1. Look for field labels like "Signature:", "Date:", "Name:", "Email:", etc.
+2. Detect blank lines and empty spaces that indicate where fields should be placed
+3. Identify underlines (lines of underscores, dashes) that mark field areas
+4. Look for patterns like "Signature: ___________" or "Date: _____"
+5. If you see a label followed by blank space or underline, suggest a field there
+6. For signature fields, look for "signature", "sign here", "signature line", or blank lines near the bottom
+7. For date fields, look for "date", "dated", or blank spaces after date labels
+8. For name/email fields, look for corresponding labels with blank spaces or underlines
+9. Suggest text fields for blank lines that don't have specific labels
+10. Position fields accurately based on where labels and underlines appear
 
 FIELD TYPES TO LOOK FOR:
-- signature: Where "signature", "sign here", "signature line" appears
-- date: Where "date", "dated", "date signed" appears
-- name: Where "name", "printed name", "full name" appears
-- email: Where "email", "email address" appears
+- signature: Where "signature", "sign here", "signature line" appears, or blank lines at bottom
+- date: Where "date", "dated", "date signed" appears with blank space/underline
+- name: Where "name", "printed name", "full name" appears with blank space/underline
+- email: Where "email", "email address" appears with blank space/underline
+- text: Blank lines or empty spaces without specific labels
 
 Return suggestions with:
-- Normalized coordinates (0-1) for x and y
-- Confidence score (0.7-1.0) based on how certain you are
-- A clear reason explaining why this field was suggested
+- Normalized coordinates (0-1) for x and y based on actual label/underline positions
+- Confidence score (0.6-1.0) - higher for labels with underlines, lower for blank lines alone
+- A clear reason explaining why this field was suggested (e.g., "Found signature label with underline")
 - Context showing the surrounding text that led to this suggestion
 
-Be selective and accurate. Quality over quantity.`],
+Be thorough - detect all fields including those with blank lines and underlines.`],
       ['human', `Analyze this PDF document and suggest form fields:
 
 ${pagesContext}
@@ -504,7 +519,6 @@ Total pages: ${pageTexts.length}
 
       const parsed = await parser.parse(cleanedContent);
       
-      // Convert normalized coordinates to pixel coordinates
       return parsed.suggestions.map(suggestion => {
         const pageData = pageTexts.find(p => p.pageNum === suggestion.page);
         const viewport = pageData?.viewport || { width: 612, height: 792 };
@@ -515,7 +529,7 @@ Total pages: ${pageTexts.length}
           y: suggestion.y * viewport.height,
           width: suggestion.width || 150,
           height: suggestion.height || 50,
-          type: suggestion.type,
+          type: normalizeFieldType(suggestion.type),
           confidence: suggestion.confidence,
           reason: suggestion.reason,
           context: suggestion.context
@@ -523,24 +537,19 @@ Total pages: ${pageTexts.length}
       });
     } catch (error) {
       console.error('Error in AI analysis, falling back to heuristics:', error);
-      return []; // Fall back to heuristic-based analysis
+      return []; 
     }
   }
 
-  /**
-   * Merge AI and heuristic suggestions, removing duplicates
-   */
   mergeAndDeduplicateSuggestions(aiSuggestions, heuristicSuggestions, viewport) {
     const merged = [...aiSuggestions];
     
-    // Add heuristic suggestions that don't overlap with AI suggestions
     for (const heuristic of heuristicSuggestions) {
       const isDuplicate = aiSuggestions.some(ai => 
         this.areSuggestionsClose(ai, heuristic, viewport)
       );
       
       if (!isDuplicate) {
-        // Lower confidence for heuristic-only suggestions
         merged.push({
           ...heuristic,
           confidence: heuristic.confidence * 0.8
@@ -551,9 +560,6 @@ Total pages: ${pageTexts.length}
     return merged;
   }
 
-  /**
-   * Check if two suggestions are too close (within 100 pixels)
-   */
   areSuggestionsClose(s1, s2, viewport) {
     if (s1.page !== s2.page || s1.type !== s2.type) return false;
     
@@ -561,18 +567,15 @@ Total pages: ${pageTexts.length}
       Math.pow(s1.x - s2.x, 2) + Math.pow(s1.y - s2.y, 2)
     );
     
-    return distance < 100; // 100 pixels threshold
+    return distance < 100; 
   }
 
-  /**
-   * Final deduplication pass to remove close suggestions
-   */
   deduplicateSuggestions(suggestions, minConfidence) {
     const filtered = suggestions.filter(s => s.confidence >= minConfidence);
     const deduplicated = [];
     const processed = new Set();
     
-    // Sort by confidence (highest first)
+   
     filtered.sort((a, b) => b.confidence - a.confidence);
     
     for (let i = 0; i < filtered.length; i++) {
@@ -582,7 +585,6 @@ Total pages: ${pageTexts.length}
       deduplicated.push(current);
       processed.add(i);
       
-      // Mark nearby suggestions as processed
       for (let j = i + 1; j < filtered.length; j++) {
         if (processed.has(j)) continue;
         
@@ -592,7 +594,6 @@ Total pages: ${pageTexts.length}
             Math.pow(current.x - other.x, 2) + Math.pow(current.y - other.y, 2)
           );
           
-          // If within 100 pixels and same type, mark as duplicate
           if (distance < 100) {
             processed.add(j);
           }
@@ -603,77 +604,66 @@ Total pages: ${pageTexts.length}
     return deduplicated;
   }
 
-  /**
-   * Find signature areas in PDF text (conservative approach)
-   */
   findSignatureAreas(textItems, viewport, pageNum) {
     const areas = [];
-    // More specific keywords to reduce false positives
     const signatureKeywords = [
       'signature:', 'sign here', 'signature line', 'signature of',
-      'signature block', 'signature field', 'signature required'
+      'signature block', 'signature field', 'signature required',
+      'signature', 'sign', 'signed by', 'signer'
     ];
     
-    // Track found keywords to avoid duplicates
     const foundPositions = new Set();
-    const MIN_DISTANCE = 150; // Minimum distance between signature fields
+    const MIN_DISTANCE = 150; 
     
     textItems.forEach((item, index) => {
       const text = item.str.toLowerCase().trim();
       const hasSignatureKeyword = signatureKeywords.some(keyword => 
-        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword)
+        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword) ||
+        text.includes(keyword)
       );
       
       if (hasSignatureKeyword) {
         const x = item.transform[4];
         const y = item.transform[5];
+        const itemWidth = item.width || 0;
         
-        // Check if this position is too close to an already found signature
+        // Look for underline or blank space after the label
+        const fieldPosition = this.findFieldPositionAfterLabel(textItems, index, x, y, itemWidth, viewport);
+        
         const isTooClose = Array.from(foundPositions).some(pos => {
           const [px, py] = pos.split(',').map(Number);
-          const distance = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
+          const distance = Math.sqrt(Math.pow(fieldPosition.x - px, 2) + Math.pow(fieldPosition.y - py, 2));
           return distance < MIN_DISTANCE;
         });
         
         if (!isTooClose) {
-          // Check if there's space below for signature field
-          const nextItem = textItems[index + 1];
-          const hasSpaceBelow = !nextItem || (nextItem.transform[5] - item.transform[5] > 30);
+          const isInReasonableArea = fieldPosition.y > 50 && fieldPosition.y < viewport.height - 50;
           
-          // Only suggest if there's space and it's in a reasonable location (not in header/footer)
-          const isInReasonableArea = y > 50 && y < viewport.height - 50;
-          
-          if (hasSpaceBelow && isInReasonableArea) {
-            foundPositions.add(`${x},${y}`);
+          if (isInReasonableArea) {
+            foundPositions.add(`${fieldPosition.x},${fieldPosition.y}`);
             areas.push({
               page: pageNum,
-              x: x,
-              y: y + 20, // y coordinate (below text)
-              width: 150,
-              height: 50,
-              confidence: 0.8,
-              reason: `Found signature keyword: "${item.str}"`
+              x: fieldPosition.x,
+              y: fieldPosition.y, 
+              width: fieldPosition.width || 150,
+              height: fieldPosition.height || 50,
+              type: 'signature',
+              confidence: fieldPosition.confidence || 0.8,
+              reason: `Found signature keyword: "${item.str}"${fieldPosition.hasUnderline ? ' with underline' : ''}`
             });
           }
         }
       }
     });
 
-    // REMOVED: Automatic bottom-right signature field
-    // This was causing too many false positives
-
     return areas;
   }
 
-  /**
-   * Find date areas in PDF text (conservative approach)
-   */
   findDateAreas(textItems, viewport, pageNum) {
     const areas = [];
-    // More specific keywords
     const dateKeywords = [
       'date:', 'date signed', 'signature date', 'execution date',
-      'dated:', 'date of signature'
+      'dated:', 'date of signature', 'date'
     ];
     
     const foundPositions = new Set();
@@ -682,33 +672,133 @@ Total pages: ${pageTexts.length}
     textItems.forEach((item, index) => {
       const text = item.str.toLowerCase().trim();
       const hasDateKeyword = dateKeywords.some(keyword => 
-        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword)
+        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword) ||
+        text.includes(keyword)
       );
       
       if (hasDateKeyword) {
         const x = item.transform[4];
         const y = item.transform[5];
+        const itemWidth = item.width || 0;
         
-        // Check proximity
+        // Look for underline or blank space after the label
+        const fieldPosition = this.findFieldPositionAfterLabel(textItems, index, x, y, itemWidth, viewport);
+        
         const isTooClose = Array.from(foundPositions).some(pos => {
           const [px, py] = pos.split(',').map(Number);
-          const distance = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
+          const distance = Math.sqrt(Math.pow(fieldPosition.x - px, 2) + Math.pow(fieldPosition.y - py, 2));
           return distance < MIN_DISTANCE;
         });
         
         if (!isTooClose) {
-          const isInReasonableArea = y > 50 && y < viewport.height - 50;
+          const isInReasonableArea = fieldPosition.y > 50 && fieldPosition.y < viewport.height - 50;
           
           if (isInReasonableArea) {
-            foundPositions.add(`${x},${y}`);
+            foundPositions.add(`${fieldPosition.x},${fieldPosition.y}`);
             areas.push({
               page: pageNum,
-              x: x,
-              y: y + 20,
-              width: 120,
-              height: 40,
-              confidence: 0.75,
-              reason: `Found date keyword: "${item.str}"`
+              x: fieldPosition.x,
+              y: fieldPosition.y,
+              width: fieldPosition.width || 120,
+              height: fieldPosition.height || 40,
+              type: 'date',
+              confidence: fieldPosition.confidence || 0.75,
+              reason: `Found date keyword: "${item.str}"${fieldPosition.hasUnderline ? ' with underline' : ''}`
+            });
+          }
+        }
+      }
+    });
+
+    return areas;
+  }
+
+  findNameAreas(textItems, viewport, pageNum) {
+    const areas = [];
+    const nameKeywords = [
+      'name:', 'full name', 'printed name', 'name of signer',
+      'signer name', 'your name', 'signer\'s name', 'name'
+    ];
+    const emailKeywords = [
+      'email:', 'e-mail:', 'email address', 'e-mail address',
+      'your email', 'email address:', 'email'
+    ];
+    
+    const foundPositions = new Set();
+    const MIN_DISTANCE = 100;
+    
+    textItems.forEach((item, index) => {
+      const text = item.str.toLowerCase().trim();
+      const hasNameKeyword = nameKeywords.some(keyword => 
+        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword) ||
+        text.includes(keyword)
+      );
+      const hasEmailKeyword = emailKeywords.some(keyword => 
+        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword) ||
+        text.includes(keyword)
+      );
+      
+      if (hasNameKeyword) {
+        const x = item.transform[4];
+        const y = item.transform[5];
+        const itemWidth = item.width || 0;
+        
+        // Look for underline or blank space after the label
+        const fieldPosition = this.findFieldPositionAfterLabel(textItems, index, x, y, itemWidth, viewport);
+        
+        const isTooClose = Array.from(foundPositions).some(pos => {
+          const [px, py] = pos.split(',').map(Number);
+          const distance = Math.sqrt(Math.pow(fieldPosition.x - px, 2) + Math.pow(fieldPosition.y - py, 2));
+          return distance < MIN_DISTANCE;
+        });
+        
+        if (!isTooClose) {
+          const isInReasonableArea = fieldPosition.y > 50 && fieldPosition.y < viewport.height - 50;
+          
+          if (isInReasonableArea) {
+            foundPositions.add(`${fieldPosition.x},${fieldPosition.y}`);
+            areas.push({
+              page: pageNum,
+              x: fieldPosition.x,
+              y: fieldPosition.y,
+              width: fieldPosition.width || 200,
+              height: fieldPosition.height || 40,
+              type: 'name',
+              confidence: fieldPosition.confidence || 0.7,
+              reason: `Found name keyword: "${item.str}"${fieldPosition.hasUnderline ? ' with underline' : ''}`
+            });
+          }
+        }
+      }
+      
+      if (hasEmailKeyword) {
+        const x = item.transform[4];
+        const y = item.transform[5];
+        const itemWidth = item.width || 0;
+        
+        // Look for underline or blank space after the label
+        const fieldPosition = this.findFieldPositionAfterLabel(textItems, index, x, y, itemWidth, viewport);
+        
+        const isTooClose = Array.from(foundPositions).some(pos => {
+          const [px, py] = pos.split(',').map(Number);
+          const distance = Math.sqrt(Math.pow(fieldPosition.x - px, 2) + Math.pow(fieldPosition.y - py, 2));
+          return distance < MIN_DISTANCE;
+        });
+        
+        if (!isTooClose) {
+          const isInReasonableArea = fieldPosition.y > 50 && fieldPosition.y < viewport.height - 50;
+          
+          if (isInReasonableArea) {
+            foundPositions.add(`${fieldPosition.x},${fieldPosition.y}`);
+            areas.push({
+              page: pageNum,
+              x: fieldPosition.x,
+              y: fieldPosition.y,
+              width: fieldPosition.width || 250,
+              height: fieldPosition.height || 40,
+              type: 'email',
+              confidence: fieldPosition.confidence || 0.7,
+              reason: `Found email keyword: "${item.str}"${fieldPosition.hasUnderline ? ' with underline' : ''}`
             });
           }
         }
@@ -719,64 +809,213 @@ Total pages: ${pageTexts.length}
   }
 
   /**
-   * Find name/email areas in PDF text (conservative approach)
+   * Find field position after a label by looking for underlines or blank spaces
    */
-  findNameAreas(textItems, viewport, pageNum) {
-    const areas = [];
-    // More specific keywords to avoid false positives
-    const nameKeywords = [
-      'name:', 'full name', 'printed name', 'name of signer',
-      'signer name', 'your name', 'signer\'s name'
-    ];
-    const emailKeywords = [
-      'email:', 'e-mail:', 'email address', 'e-mail address',
-      'your email', 'email address:'
-    ];
+  findFieldPositionAfterLabel(textItems, labelIndex, labelX, labelY, labelWidth, viewport) {
+    const result = {
+      x: labelX + labelWidth + 10,
+      y: labelY + 5,
+      width: 150,
+      height: 40,
+      confidence: 0.7,
+      hasUnderline: false
+    };
+
+    // Look for items after the label (within reasonable distance)
+    for (let i = labelIndex + 1; i < Math.min(labelIndex + 20, textItems.length); i++) {
+      const item = textItems[i];
+      const itemX = item.transform[4];
+      const itemY = item.transform[5];
+      const itemText = item.str.trim();
+      
+      // Check if item is on the same line (within 15 pixels vertically)
+      if (Math.abs(itemY - labelY) < 15) {
+        // Check if it's to the right of the label
+        if (itemX > labelX + labelWidth) {
+          // Check if it's an underline (underscores, dashes, dots)
+          if (itemText.length > 3 && /^[_\-\s\.]+$/.test(itemText)) {
+            result.x = itemX;
+            result.y = itemY;
+            result.width = Math.min(item.width || 150, 300);
+            result.height = 40;
+            result.confidence = 0.85;
+            result.hasUnderline = true;
+            return result;
+          }
+          
+          // If there's a gap (blank space), use that position
+          const gap = itemX - (labelX + labelWidth);
+          if (gap > 20 && gap < 100) {
+            result.x = labelX + labelWidth + 10;
+            result.y = labelY + 5;
+            result.width = Math.min(gap - 10, 200);
+            result.confidence = 0.75;
+            return result;
+          }
+        }
+      }
+      
+      // Check if item is below the label (potential field area)
+      if (itemY > labelY + 10 && itemY < labelY + 50 && Math.abs(itemX - labelX) < 50) {
+        // If it's blank or just underscores, this might be the field
+        if (itemText.length === 0 || /^[_\-\s]+$/.test(itemText)) {
+          result.x = labelX;
+          result.y = itemY;
+          result.width = 200;
+          result.height = 40;
+          result.confidence = 0.8;
+          result.hasUnderline = itemText.length > 0;
+          return result;
+        }
+      }
+    }
     
+    // Default: position to the right of label
+    return result;
+  }
+
+  /**
+   * Find blank lines and empty spaces that could be text fields
+   */
+  findBlankLineAreas(textItems, viewport, pageNum) {
+    const areas = [];
+    const foundPositions = new Set();
+    const MIN_DISTANCE = 100;
+    const BLANK_LINE_THRESHOLD = 30; // Minimum gap to consider it a blank line
+    
+    // Sort text items by Y position
+    const sortedItems = [...textItems].sort((a, b) => {
+      const yA = a.transform[5];
+      const yB = b.transform[5];
+      if (Math.abs(yA - yB) < 10) {
+        // Same line, sort by X
+        return a.transform[4] - b.transform[4];
+      }
+      return yA - yB;
+    });
+    
+    // Look for gaps between text items that suggest blank lines
+    for (let i = 0; i < sortedItems.length - 1; i++) {
+      const current = sortedItems[i];
+      const next = sortedItems[i + 1];
+      
+      const currentY = current.transform[5];
+      const nextY = next.transform[5];
+      const currentX = current.transform[4];
+      const nextX = next.transform[4];
+      
+      // Check for vertical gap (blank line)
+      const verticalGap = nextY - currentY;
+      if (verticalGap > BLANK_LINE_THRESHOLD && verticalGap < 100) {
+        // Check if items are in similar X position (same column)
+        if (Math.abs(currentX - nextX) < 50) {
+          const blankY = currentY + (verticalGap / 2);
+          const blankX = currentX;
+          
+          // Check if this area is reasonable and not too close to other fields
+          const isTooClose = Array.from(foundPositions).some(pos => {
+            const [px, py] = pos.split(',').map(Number);
+            const distance = Math.sqrt(Math.pow(blankX - px, 2) + Math.pow(blankY - py, 2));
+            return distance < MIN_DISTANCE;
+          });
+          
+          if (!isTooClose && blankY > 50 && blankY < viewport.height - 50) {
+            foundPositions.add(`${blankX},${blankY}`);
+            areas.push({
+              page: pageNum,
+              x: blankX,
+              y: blankY,
+              width: 200,
+              height: 30,
+              type: 'text',
+              confidence: 0.65,
+              reason: 'Found blank line/empty space'
+            });
+          }
+        }
+      }
+      
+      // Check for horizontal gap (blank space on same line)
+      if (Math.abs(currentY - nextY) < 10) {
+        const horizontalGap = nextX - (currentX + (current.width || 0));
+        if (horizontalGap > 50 && horizontalGap < 300) {
+          const blankX = currentX + (current.width || 0) + 5;
+          const blankY = currentY;
+          
+          const isTooClose = Array.from(foundPositions).some(pos => {
+            const [px, py] = pos.split(',').map(Number);
+            const distance = Math.sqrt(Math.pow(blankX - px, 2) + Math.pow(blankY - py, 2));
+            return distance < MIN_DISTANCE;
+          });
+          
+          if (!isTooClose && blankY > 50 && blankY < viewport.height - 50) {
+            foundPositions.add(`${blankX},${blankY}`);
+            areas.push({
+              page: pageNum,
+              x: blankX,
+              y: blankY,
+              width: Math.min(horizontalGap - 10, 250),
+              height: 30,
+              type: 'text',
+              confidence: 0.6,
+              reason: 'Found blank space on line'
+            });
+          }
+        }
+      }
+    }
+    
+    return areas;
+  }
+
+  /**
+   * Find underlines (lines of underscores, dashes) that indicate field areas
+   */
+  findUnderlineAreas(textItems, viewport, pageNum) {
+    const areas = [];
     const foundPositions = new Set();
     const MIN_DISTANCE = 100;
     
     textItems.forEach((item, index) => {
-      const text = item.str.toLowerCase().trim();
-      const hasNameKeyword = nameKeywords.some(keyword => 
-        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword)
-      );
-      const hasEmailKeyword = emailKeywords.some(keyword => 
-        text === keyword || text.startsWith(keyword + ' ') || text.endsWith(' ' + keyword)
-      );
+      const text = item.str.trim();
       
-      if (hasNameKeyword) {
+      // Check if item is an underline (underscores, dashes, dots)
+      if (text.length > 5 && /^[_\-\s\.]+$/.test(text)) {
         const x = item.transform[4];
         const y = item.transform[5];
+        const width = item.width || 150;
         
-        const isTooClose = Array.from(foundPositions).some(pos => {
-          const [px, py] = pos.split(',').map(Number);
-          const distance = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
-          return distance < MIN_DISTANCE;
-        });
+        // Look for label before this underline
+        let fieldType = 'text';
+        let labelFound = false;
         
-        if (!isTooClose) {
-          const isInReasonableArea = y > 50 && y < viewport.height - 50;
+        // Check previous items for labels
+        for (let i = Math.max(0, index - 10); i < index; i++) {
+          const prevItem = textItems[i];
+          const prevText = prevItem.str.toLowerCase().trim();
+          const prevY = prevItem.transform[5];
           
-          if (isInReasonableArea) {
-            foundPositions.add(`${x},${y}`);
-            areas.push({
-              page: pageNum,
-              x: x,
-              y: y + 20,
-              width: 200,
-              height: 40,
-              confidence: 0.7,
-              reason: `Found name keyword: "${item.str}"`,
-              fieldType: 'name'
-            });
+          // Check if previous item is on same line or slightly above
+          if (Math.abs(prevY - y) < 20 && prevItem.transform[4] < x) {
+            if (prevText.includes('signature') || prevText.includes('sign')) {
+              fieldType = 'signature';
+              labelFound = true;
+              break;
+            } else if (prevText.includes('date') || prevText.includes('dated')) {
+              fieldType = 'date';
+              labelFound = true;
+              break;
+            } else if (prevText.includes('name')) {
+              fieldType = 'name';
+              labelFound = true;
+              break;
+            } else if (prevText.includes('email')) {
+              fieldType = 'email';
+              labelFound = true;
+              break;
+            }
           }
         }
-      }
-      
-      if (hasEmailKeyword) {
-        const x = item.transform[4];
-        const y = item.transform[5];
         
         const isTooClose = Array.from(foundPositions).some(pos => {
           const [px, py] = pos.split(',').map(Number);
@@ -784,26 +1023,22 @@ Total pages: ${pageTexts.length}
           return distance < MIN_DISTANCE;
         });
         
-        if (!isTooClose) {
-          const isInReasonableArea = y > 50 && y < viewport.height - 50;
-          
-          if (isInReasonableArea) {
-            foundPositions.add(`${x},${y}`);
-            areas.push({
-              page: pageNum,
-              x: x,
-              y: y + 20,
-              width: 250,
-              height: 40,
-              confidence: 0.7,
-              reason: `Found email keyword: "${item.str}"`,
-              fieldType: 'email'
-            });
-          }
+        if (!isTooClose && y > 50 && y < viewport.height - 50) {
+          foundPositions.add(`${x},${y}`);
+          areas.push({
+            page: pageNum,
+            x: x,
+            y: y,
+            width: Math.max(width, 150),
+            height: 40,
+            type: fieldType,
+            confidence: labelFound ? 0.85 : 0.7,
+            reason: labelFound ? `Found underline with ${fieldType} label` : 'Found underline/field indicator'
+          });
         }
       }
     });
-
+    
     return areas;
   }
 
@@ -823,7 +1058,6 @@ Total pages: ${pageTexts.length}
     const violations = [];
     const warnings = [];
 
-    // Check 1: Recipients without signature fields
     recipients.forEach(recipient => {
       if (recipient.role === 'signer' || recipient.role === 'approver') {
         const hasSignatureField = signatureFields.some(field => 
@@ -843,7 +1077,6 @@ Total pages: ${pageTexts.length}
       }
     });
 
-    // Check 2: Recipients without email
     recipients.forEach(recipient => {
       if (!recipient.email || recipient.email.trim() === '') {
         violations.push({
@@ -856,7 +1089,6 @@ Total pages: ${pageTexts.length}
       }
     });
 
-    // Check 3: Signature fields without recipients
     signatureFields.forEach(field => {
       if (field.type === 'signature' || field.type === 'initial') {
         const hasRecipient = mode === 'normal'
@@ -875,7 +1107,6 @@ Total pages: ${pageTexts.length}
       }
     });
 
-    // Check 4: Multiple signatures for same recipient on same page
     recipients.forEach(recipient => {
       const recipientFields = signatureFields.filter(field =>
         (mode === 'normal' && field.recipientId === recipient.id) ||
@@ -903,7 +1134,6 @@ Total pages: ${pageTexts.length}
       });
     });
 
-    // Check 5: Fields on non-existent pages
     const maxPages = Math.max(...documents.map(d => d.pages || 1), 1);
     signatureFields.forEach(field => {
       if (field.page > maxPages) {
@@ -918,7 +1148,6 @@ Total pages: ${pageTexts.length}
       }
     });
 
-    // Check 6: Sequential signing order validation
     if (context.signingOrder === 'sequential') {
       const recipientsWithOrder = recipients
         .filter(r => r.order !== undefined && r.order !== null)
@@ -949,13 +1178,9 @@ Total pages: ${pageTexts.length}
     };
   }
 
-  /**
-   * Convert position keyword to normalized coordinates
-   */
   positionToCoordinates(position, page) {
-    // Default page dimensions (will be adjusted based on actual PDF)
-    const defaultWidth = 612; // Letter size width in points
-    const defaultHeight = 792; // Letter size height in points
+    const defaultWidth = 612;
+    const defaultHeight = 792; 
 
     const positions = {
       'top-left': { x: 50, y: 50 },
@@ -972,41 +1197,36 @@ Total pages: ${pageTexts.length}
     return positions[position] || positions['bottom-right'];
   }
 
-  /**
-   * Infer coordinates from invalid position string
-   */
   inferCoordinatesFromPosition(positionString, page) {
     const defaultWidth = 612;
     const defaultHeight = 792;
     
     const lower = positionString.toLowerCase();
     
-    // Try to infer from keywords
     if (lower.includes('left')) {
       if (lower.includes('top')) return { x: 50, y: 50 };
       if (lower.includes('bottom')) return { x: 50, y: defaultHeight - 100 };
       if (lower.includes('middle') || lower.includes('center')) return { x: 50, y: defaultHeight / 2 };
-      return { x: 50, y: defaultHeight - 100 }; // Default to bottom-left
+      return { x: 50, y: defaultHeight - 100 };
     }
     if (lower.includes('right')) {
       if (lower.includes('top')) return { x: defaultWidth - 200, y: 50 };
       if (lower.includes('bottom')) return { x: defaultWidth - 200, y: defaultHeight - 100 };
       if (lower.includes('middle') || lower.includes('center')) return { x: defaultWidth - 200, y: defaultHeight / 2 };
-      return { x: defaultWidth - 200, y: defaultHeight - 100 }; // Default to bottom-right
+      return { x: defaultWidth - 200, y: defaultHeight - 100 };
     }
     if (lower.includes('center') || lower.includes('middle')) {
       if (lower.includes('top')) return { x: defaultWidth / 2 - 75, y: 50 };
       if (lower.includes('bottom')) return { x: defaultWidth / 2 - 75, y: defaultHeight - 100 };
-      return { x: defaultWidth / 2 - 75, y: defaultHeight / 2 }; // Default to middle-center
+      return { x: defaultWidth / 2 - 75, y: defaultHeight / 2 }; 
     }
     if (lower.includes('top')) {
-      return { x: defaultWidth / 2 - 75, y: 50 }; // Default to top-center
+      return { x: defaultWidth / 2 - 75, y: 50 };
     }
     if (lower.includes('bottom')) {
-      return { x: defaultWidth / 2 - 75, y: defaultHeight - 100 }; // Default to bottom-center
+      return { x: defaultWidth / 2 - 75, y: defaultHeight - 100 }; 
     }
     
-    // Default to bottom-right
     return { x: defaultWidth - 200, y: defaultHeight - 100 };
   }
 
@@ -1023,18 +1243,19 @@ Total pages: ${pageTexts.length}
     const os = require('os');
 
     try {
-      // Create temporary file for PDF
       const tempDir = os.tmpdir();
       const tempPdfPath = path.join(tempDir, `pdf_${Date.now()}_${Math.random().toString(36).substring(7)}.pdf`);
       const tempJsonPath = path.join(tempDir, `result_${Date.now()}_${Math.random().toString(36).substring(7)}.json`);
 
-      // Write PDF buffer to temp file
       await fs.writeFile(tempPdfPath, pdfBuffer);
 
-      // Get Python script path
-      const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_analyzer.py');
+      let scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_field_detector.py');
+      try {
+        await fs.access(scriptPath);
+      } catch (error) {
+        scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_analyzer.py');
+      }
 
-      // Check if Python script exists
       try {
         await fs.access(scriptPath);
       } catch (error) {
@@ -1042,8 +1263,8 @@ Total pages: ${pageTexts.length}
       }
 
       return new Promise((resolve, reject) => {
-        // Spawn Python process
-        const pythonProcess = spawn('python3', [
+        const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+        const pythonProcess = spawn(pythonCmd, [
           scriptPath,
           tempPdfPath,
           '--output',
@@ -1065,45 +1286,41 @@ Total pages: ${pageTexts.length}
 
         pythonProcess.on('close', async (code) => {
           try {
-            // Clean up temp PDF file
             try {
               await fs.unlink(tempPdfPath);
             } catch (e) {
-              // Ignore cleanup errors
             }
 
             if (code !== 0) {
-              // Clean up temp JSON file if it exists
               try {
                 await fs.unlink(tempJsonPath);
               } catch (e) {
-                // Ignore cleanup errors
               }
               reject(new Error(`Python script exited with code ${code}: ${stderr}`));
               return;
             }
 
-            // Read result JSON
             try {
               const resultJson = await fs.readFile(tempJsonPath, 'utf8');
               const result = JSON.parse(resultJson);
 
-              // Clean up temp JSON file
               await fs.unlink(tempJsonPath);
 
-              // Convert Python result format to Node.js format
               if (result.success && result.suggestions) {
-                // Generate heatmap data
-                const heatmapData = result.suggestions.map((suggestion) => {
-                  // Find page data to get viewport dimensions
-                  // We'll need to estimate or use default dimensions
+                const normalizedSuggestions = result.suggestions.map((s) => ({
+                  ...s,
+                  type: normalizeFieldType(s.type)
+                }));
+
+                const heatmapData = normalizedSuggestions.map((suggestion) => {
+               
                   const defaultWidth = 612;
                   const defaultHeight = 792;
 
                   return {
                     page: suggestion.page,
-                    x: suggestion.x / defaultWidth, // Normalize to 0-1
-                    y: suggestion.y / defaultHeight, // Normalize to 0-1
+                    x: suggestion.x / defaultWidth,
+                    y: suggestion.y / defaultHeight,
                     width: (suggestion.width || 150) / defaultWidth,
                     height: (suggestion.height || 50) / defaultHeight,
                     type: suggestion.type,
@@ -1114,7 +1331,7 @@ Total pages: ${pageTexts.length}
 
                 resolve({
                   success: true,
-                  suggestions: result.suggestions,
+                  suggestions: normalizedSuggestions,
                   heatmapData,
                   totalPages: result.totalPages || 1
                 });
@@ -1127,11 +1344,9 @@ Total pages: ${pageTexts.length}
                 });
               }
             } catch (parseError) {
-              // Clean up temp JSON file
               try {
                 await fs.unlink(tempJsonPath);
               } catch (e) {
-                // Ignore cleanup errors
               }
               reject(new Error(`Failed to parse Python script output: ${parseError.message}`));
             }
@@ -1141,12 +1356,12 @@ Total pages: ${pageTexts.length}
         });
 
         pythonProcess.on('error', async (error) => {
-          // Clean up temp files
+         
           try {
             await fs.unlink(tempPdfPath);
             await fs.unlink(tempJsonPath);
           } catch (e) {
-            // Ignore cleanup errors
+            
           }
           reject(new Error(`Failed to spawn Python process: ${error.message}. Make sure Python 3 is installed and pdf_analyzer.py dependencies are installed.`));
         });

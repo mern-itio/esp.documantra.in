@@ -205,6 +205,7 @@ import HelpSupportPage from '../pages/LandingPage/HelpSupportPage';
 // import { elements } from 'chart.js';
 import PowerFormCreate from '../pages/eSign/PowerFormCreate';
 import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
+import InvoicePage from '../pages/Account/InvoicePage';
 import ThankYouPage from '../pages/eSign/ThankYou';
 import NotificationsPage from '../pages/Notifications/NotificationsPage';
 import SignerCycle from '../pages/eSign/SignerCycle';
@@ -636,6 +637,7 @@ const guestRoutes = [
 const authRoutes = [
   { path: '/dashboard', element: <DashboardPage /> },
   { path: '/credits-usage', element: <CreditsUsagePage /> },
+  { path: '/invoice/:id', element: <InvoicePage /> },
   { path: '/audit-trail', element: <AuditTrailPage /> },
   { path: '/compliance', element: <CompliancePage /> },
   { path: '/risk-management', element: <RiskManagementPage /> },
