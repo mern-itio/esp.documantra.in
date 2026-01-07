@@ -3,7 +3,7 @@ const organizationUser = require('../models/organizationUser');
 const organizationRole = require('../models/organizationRole');
 const organizationPermission = require('../models/organizationPermission');
 const orgFolder = require('../models/orgFolder');
-const OrgFolderShare = require('../models/OrgFolderShare');
+const OrgFolderShare = require('../models/orgFolderShare');
 const folderEnvelope = require('../models/folderEnvelope');
 
 const mongoose = require('mongoose');
