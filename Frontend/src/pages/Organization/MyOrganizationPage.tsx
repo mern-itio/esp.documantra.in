@@ -116,7 +116,7 @@ const MyOrganizationPage: React.FC = () => {
                 <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
                   <Building className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900">My Organizations</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Organizations</h1>
               </div>
               <p className="text-gray-600 ml-14">
                 Manage your organizations and access shared organizations

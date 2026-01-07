@@ -213,6 +213,57 @@ const getOrganizationDetailsandAccess = async (req, res) => {
         });
     }
 }
+const createFolderInOrganization = async (req, res) => {
+    const userId = req?.user?.data?.id;
+    const accountType  = req?.header('x-account-type');
+    const organizationId  = req?.header('x-organization-id');
+    if(accountType !== 'organization' || !organizationId){
+        return res.status(400).json({
+            success: false,
+            message: "Invalid account type or missing organization ID"
+        });
+    }
+    const folderData = req.body;
+    try {
+        const folder = await orgService.createFolderInOrganization(organizationId, folderData,userId);
+        return res.status(201).json({
+            success: true,
+            message: "Folder created successfully",
+            data: folder
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const fetchFoldersInOrganization = async (req, res) =>{
+    const userId = req?.user?.data?.id;
+    const organizationId = req.header('x-organization-id');
+    const accountType = req.header('x-account-type');
+
+    if(accountType !== 'organization' || !organizationId){
+        return res.status(400).json({
+            success:false,
+            message:"Invalid account type or missing organization ID"
+        });
+    }
+    try{
+        const folders = await orgService.getFoldersInOrganization(organizationId, userId);
+
+        return res.status(200).json({
+            success:true,
+            data:folders
+        });
+    }catch (err){
+        return res.status(500).json({
+            success:false,
+            message:err.message || "Internal server error"
+        });
+    }
+}
+
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -221,5 +272,7 @@ module.exports = {
     fetchUserOrganizations,
     fetchAllOrganizationsVerificationRequest,
     verificationOrganization,
-    getOrganizationDetailsandAccess
+    getOrganizationDetailsandAccess,
+    createFolderInOrganization,
+    fetchFoldersInOrganization
 };

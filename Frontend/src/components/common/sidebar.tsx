@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard, Share } from 'lucide-react';
+import { useAuth } from '../AuthService/AuthContext';
 
 interface SidebarProps {
   activeView?: string;
@@ -116,6 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [expandedMenu, setExpandedMenu] = useState<string | null>("e-sign");
   const navigate = useNavigate();
   const location = useLocation();
+    const {accountType} = useAuth();
 
   // Function to determine active view based on current route
   const getActiveViewFromRoute = (pathname: string): string => {
@@ -141,6 +143,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       if (pathname.startsWith('/e-sign/create')) return 'create';
       if (pathname.startsWith('/e-sign/powerform')) return 'powerforms';
       if (pathname.startsWith('/e-sign/form-list')) return 'form-list';
+      if (pathname.startsWith('/organization/folder')) return 'folder-list';
       // Any other e-sign route - keep e-sign expanded but don't force dashboard
       return 'e-sign';
     }
@@ -211,7 +214,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         // { id: 'sent', label: 'Add Envelope', path: '/e-sign/sent', icon: MailPlus },
         { id: 'powerforms', label: 'PowerForms', path: '/e-sign/powerform', icon: FormInput },
         { id: 'form-list', label: 'Templates', path: '/e-sign/form-list', icon: Send },
-        { id: 'my-organizations', label: 'My Organization', path: '/organization/my-organizations', icon: Building2 },
+        //if accountType is organization then show folders menu
+        ...(accountType === 'organization' ? [{ id: 'folder-list', label: 'Folders', path: '/organization/folders', icon: Folder }] : []),
         // { id: 'aggrement', label: 'Aggrement', path: '/e-sign/aggrement', icon: FileSignature },
         // { id: 'manage_receipients', label: 'Manage Receipients', path: '/e-sign/manage_receipients', icon: MailIcon },
         // { id: 'envelope_types', label: 'Envelope Types', path: '/e-sign/envelope_types', icon: MailIcon },

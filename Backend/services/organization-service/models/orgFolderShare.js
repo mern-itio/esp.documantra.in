@@ -16,7 +16,7 @@ const OrgFolderShareSchema = new mongoose.Schema({
         share: { type: Boolean, default: false }
     },
 
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+    createdBy: { type: mongoose.Schema.Types.ObjectId }
 }, { timestamps: true });
 
 module.exports = mongoose.model('OrgFolderShare', OrgFolderShareSchema);
