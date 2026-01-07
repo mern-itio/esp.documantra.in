@@ -2,16 +2,17 @@ const mongoose = require('mongoose');
 
 const OrganizationUserSchema = new mongoose.Schema({
     organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    email: { type: String},
     roleId: { type: mongoose.Schema.Types.ObjectId, ref: "OrganizationRole", required: true },
 
     status: { 
         type: String, 
-        enum: ["ACTIVE", "DISABLED"],
-        default: "ACTIVE"
+        enum: ["PENDING","ACTIVE", "DISABLED"],
+        default: "PENDING"
     },
 
-    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+    addedBy: { type: mongoose.Schema.Types.ObjectId }
 }, { timestamps: true });
 
 OrganizationUserSchema.index({ organizationId: 1, userId: 1 }, { unique: true });

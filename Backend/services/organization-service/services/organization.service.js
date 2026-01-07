@@ -2,6 +2,10 @@ const Organization = require('../models/organization');
 const organizationUser = require('../models/organizationUser');
 const organizationRole = require('../models/organizationRole');
 const organizationPermission = require('../models/organizationPermission');
+const orgFolder = require('../models/orgFolder');
+const OrgFolderShare = require('../models/orgFolderShare');
+const folderEnvelope = require('../models/folderEnvelope');
+
 const mongoose = require('mongoose');
 const createOrganization = async (payload, userId) => {
     const { name, logo, website, gst } = payload;
@@ -146,6 +150,183 @@ const getOrganizationPermissionsByRoleId = async (roleId) => {
     const orgPermissions = await organizationPermission.findById(roleId).lean();
     return orgPermissions;
 }
+const createFolderInOrganization = async (orgId, folderData,userId) => {
+    const existingOrg = await orgFolder.findOne({organizationId:orgId, name: folderData.name});
+    if (existingOrg) {
+        throw new Error('Folder with the same name already exists in the organization');
+    }
+    const newFolder = await orgFolder.create({  
+        organizationId: orgId,
+        name: folderData.name,
+        color: folderData.color,
+        icon: folderData.icon,
+        createdBy: userId
+    });
+    return newFolder;
+};
+const getFoldersInOrganization = async (orgId, userId)=>{
+    userId =  new mongoose.Types.ObjectId(userId);
+    orgId = new mongoose.Types.ObjectId(orgId);
+    const orgUser = await organizationUser.findOne({
+      organizationId:orgId,
+      userId,
+      status: 'ACTIVE'
+    })
+      .select('roleId')
+      .lean();
+
+    const userRoleId = orgUser?.roleId || null;
+    const folders = await orgFolder.aggregate([
+      {
+        $match: { organizationId:orgId }
+      },
+
+      /* -------- Folder shares -------- */
+      {
+        $lookup: {
+          from: 'OrgFolderShare',
+          localField: '_id',
+          foreignField: 'folderId',
+          as: 'shares'
+        }
+      },
+
+      /* -------- Folder envelopes -------- */
+      {
+        $lookup: {
+          from: 'folderEnvelope',
+          localField: '_id',
+          foreignField: 'folderId',
+          as: 'envelopes'
+        }
+      },
+
+      /* -------- Ownership -------- */
+      {
+        $addFields: {
+          isOwner: { $eq: ['$createdBy', userId] }
+        }
+      },
+
+      /* -------- Resolve permissions ONLY for requesting user -------- */
+      {
+        $addFields: {
+          permissions: {
+            $cond: [
+              '$isOwner',
+              null,
+              {
+                $let: {
+                  vars: {
+                    userShare: {
+                      $first: {
+                        $filter: {
+                          input: '$shares',
+                          as: 's',
+                          cond: {
+                            $and: [
+                              { $eq: ['$$s.sharedWithType', 'USER'] },
+                              { $eq: ['$$s.sharedWithId', userId] }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    roleShare: {
+                      $first: {
+                        $filter: {
+                          input: '$shares',
+                          as: 's',
+                          cond: {
+                            $and: [
+                              { $eq: ['$$s.sharedWithType', 'ROLE'] },
+                              userRoleId
+                                ? { $eq: ['$$s.sharedWithId', userRoleId] }
+                                : false
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  in: {
+                    $ifNull: ['$$userShare.permission', '$$roleShare.permission']
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+
+      /* -------- Access filter -------- */
+      {
+        $match: {
+          $or: [
+            { isOwner: true },
+            { permissions: { $ne: null } }
+          ]
+        }
+      },
+
+      /* -------- Shared people & roles (ALL, ids only) -------- */
+      {
+        $addFields: {
+          sharedPeople: {
+            $map: {
+              input: {
+                $filter: {
+                  input: '$shares',
+                  as: 's',
+                  cond: { $eq: ['$$s.sharedWithType', 'USER'] }
+                }
+              },
+              as: 'sp',
+              in: '$$sp.sharedWithId'
+            }
+          },
+          sharedRole: {
+            $map: {
+              input: {
+                $filter: {
+                  input: '$shares',
+                  as: 's',
+                  cond: { $eq: ['$$s.sharedWithType', 'ROLE'] }
+                }
+              },
+              as: 'sr',
+              in: '$$sr.sharedWithId'
+            }
+          }
+        }
+      },
+
+      /* -------- Final shape -------- */
+      {
+        $project: {
+          _id: 1,
+          organization_id: '$organizationId',
+          folderName: '$name',
+          ownerId: '$createdBy',
+          isOwner: 1,
+          permissions: 1,
+          sharedPeople: 1,
+          sharedRole: 1,
+          envelopes: {
+            $map: {
+              input: '$envelopes',
+              as: 'e',
+              in: '$$e.envelopeId'
+            }
+          },
+          color: 1,
+          createdAt:1
+        }
+      }
+    ]);
+
+    return folders;
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -156,5 +337,7 @@ module.exports = {
     getAllOrganizationsRquest,
     getOrganizationUser,
     getOrganizationRoleById,
-    getOrganizationPermissionsByRoleId
+    getOrganizationPermissionsByRoleId,
+    createFolderInOrganization,
+    getFoldersInOrganization
 };
