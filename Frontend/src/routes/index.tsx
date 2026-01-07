@@ -210,6 +210,7 @@ import NotificationsPage from '../pages/Notifications/NotificationsPage';
 import SignerCycle from '../pages/eSign/SignerCycle';
 import CreateOrganizationPage from '../pages/Organization/CreateOrganizationPage';
 import MyOrganizationPage from '../pages/Organization/MyOrganizationPage';
+import OrganizationFolder from '../pages/Organization/organizationFolder';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -641,7 +642,9 @@ const authRoutes = [
   { path: '/risk-management', element: <RiskManagementPage /> },
   { path: '/subscription-management', element: <SubscriptionManagementPage /> },
   { path: '/organization/create', element: <CreateOrganizationPage /> },
-  { path: '/organization/my-organizations', element: <MyOrganizationPage /> },
+  { path: '/organizations/', element: <MyOrganizationPage /> },
+  { path: '/organization/folders', element: <OrganizationFolder /> },
+
   // { path: '/test', element: <DocumentUploadSection /> },
 
   //Document Management Module
