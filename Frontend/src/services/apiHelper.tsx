@@ -39,8 +39,14 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
     try {
       const acct = localStorage.getItem('accountType');
       const orgId = localStorage.getItem('organizationId');
+      const orgDetailRaw = localStorage.getItem('organizationDetail');
+      let orgDetail: any = null;
+      if (orgDetailRaw) {
+        orgDetail = JSON.parse(orgDetailRaw);
+      }
       if (acct) (config.headers as any)['X-Account-Type'] = acct;
       if (orgId) (config.headers as any)['X-Organization-Id'] = orgId;
+      if (orgDetail) (config.headers as any)['X-Organization-Owner-Id'] = orgDetail?.createdBy;
     } catch {}
 
     // Remove Content-Type header for FormData to let browser set it with boundary

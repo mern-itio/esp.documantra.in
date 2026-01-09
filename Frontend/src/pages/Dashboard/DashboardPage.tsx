@@ -22,7 +22,7 @@ import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tool
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, accountType } = useAuth();
   const [showTutorial, setShowTutorial] = useState(false);
   const navigate = useNavigate();
 
@@ -74,11 +74,11 @@ const DashboardPage: React.FC = () => {
     // get All envelope stats
     fetchAllEnvelopeStats();
   }
-    , []);
+    , [accountType]);
   const fetchAllEnvelopeStats = async () => {
     try {
       setEnvStatesLoading(true);
-      const response = await eSignApi.get('/api/e-sign/envelope/all-stats/user');
+      const response = await eSignApi.get(`/api/e-sign/envelope/all-stats/${accountType}`);
       const data = response.data;
       setEnvelopeStats(data);
       // Process the data as needed
@@ -116,7 +116,7 @@ const DashboardPage: React.FC = () => {
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [accountType]);
 
   // Helper function to categorize module from action
   const getModuleFromAction = (action: string, toolId?: string): string => {

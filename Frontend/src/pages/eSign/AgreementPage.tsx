@@ -178,7 +178,8 @@ const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string; scheduledTi
 const AgreementPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user,accountType } = useAuth();
+  console.log(accountType);
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [filteredAgreements, setFilteredAgreements] = useState<Agreement[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -655,7 +656,7 @@ const AgreementPage: React.FC = () => {
 
   useEffect(() => {
     fetchEnvelopes();
-  }, [fetchEnvelopes]);
+  }, [fetchEnvelopes,accountType]);
 
   useEffect(() => {
     const handleEnvelopesUpdated = (event?: Event) => {
