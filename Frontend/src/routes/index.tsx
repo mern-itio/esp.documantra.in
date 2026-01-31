@@ -86,6 +86,7 @@ import TermsOfServicePage from '../pages/LandingPage/TermsOfServicePage';
 import UseCasesPage from '../pages/LandingPage/UseCasesPage';
 import WorkspacePage from '../pages/LandingPage/WorkspacePage';
 import FeatureComparisonPage from '../pages/LandingPage/FeatureComparisonPage';
+import SitemapPage from '../pages/LandingPage/SitemapPage';
 
 // Dashboard Pages
 import DashboardPage from '../pages/Dashboard/DashboardPage';
@@ -582,6 +583,7 @@ const guestRoutes = [
   { path: '/use-cases', element: <UseCasesPage /> },
   { path: '/workspace', element: <WorkspacePage /> },
   { path: '/feature-comparison', element: <FeatureComparisonPage /> },
+  { path: '/sitemap', element: <SitemapPage /> },
   { path: '/security-overview', element: <SecurityOverviewPage /> },
   { path: '/terms-of-service', element: <TermsOfServicePage /> },
   { path: '/status', element: <StatusPage /> },

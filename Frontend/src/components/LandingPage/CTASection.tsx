@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 const CTASection = () => {
   return (
-    <section className="p-8 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#7b2fff]">
+    <section className="p-8 text-white rounded-sm bg-gradient-to-r from-[#260559] via-[#4b0ea0] to-[#260559]">
       <div className="container-max">
         <div className="text-center max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
