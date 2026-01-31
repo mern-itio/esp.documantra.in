@@ -2,10 +2,10 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
-import { 
-  TrendingDown, 
-  TrendingUp, 
-  ArrowRight, 
+import {
+  TrendingDown,
+  TrendingUp,
+  ArrowRight,
   CreditCard,
   Zap,
   Loader2,
@@ -42,7 +42,7 @@ const DashboardPage: React.FC = () => {
         parsed.isFirstLogin = false;
         localStorage.setItem('userData', JSON.stringify(parsed));
       }
-    } catch {}
+    } catch { }
   };
 
   const handleFeatureClick = (feature: string) => {
@@ -55,7 +55,7 @@ const DashboardPage: React.FC = () => {
         parsed.isFirstLogin = false;
         localStorage.setItem('userData', JSON.stringify(parsed));
       }
-    } catch {}
+    } catch { }
     // Navigate to the selected feature
     if (feature === 'esign') navigate('/e-sign/dashboard');
     else if (feature === 'pdf') navigate('/pdf-tools');
@@ -122,7 +122,7 @@ const DashboardPage: React.FC = () => {
   const getModuleFromAction = (action: string, toolId?: string): string => {
     if (!action) return 'Other';
     const actionLower = action.toLowerCase();
-    
+
     if (actionLower.startsWith('esign:') || actionLower.includes('envelope') || actionLower.includes('sign')) {
       return 'E-Sign';
     }
@@ -142,14 +142,14 @@ const DashboardPage: React.FC = () => {
   const chartData = useMemo(() => {
     // Group by date and module, aggregate
     const grouped: Record<string, any> = {};
-    
+
     // First, process all usage records
     usage.forEach((record: any) => {
       const date = new Date(record.createdAt);
       const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const dateTime = date.getTime();
       const module = getModuleFromAction(record.action, record.toolId);
-      
+
       if (!grouped[dateKey]) {
         grouped[dateKey] = {
           date: dateKey,
@@ -165,7 +165,7 @@ const DashboardPage: React.FC = () => {
           count: 0
         };
       }
-      
+
       if (record.creditsDelta < 0) {
         const creditsUsed = Math.abs(record.creditsDelta);
         grouped[dateKey].used += creditsUsed;
@@ -176,19 +176,19 @@ const DashboardPage: React.FC = () => {
       grouped[dateKey].balance = record.balanceAfter;
       grouped[dateKey].count += 1;
     });
-    
+
     // Add plan upgrade credits if periodStart is within last 7 days
     if (userPlan?.periodStart && userPlan?.conversionsLimit) {
       const periodStartDate = new Date(userPlan.periodStart);
       const now = new Date();
       const daysDiff = Math.floor((now.getTime() - periodStartDate.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       // If periodStart is within the last 7 days, add plan credits as "added"
       if (daysDiff >= 0 && daysDiff < 7) {
         const upgradeDateKey = periodStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const upgradeDateTime = periodStartDate.getTime();
         const planCredits = userPlan.conversionsLimit || 0;
-        
+
         if (!grouped[upgradeDateKey]) {
           grouped[upgradeDateKey] = {
             date: upgradeDateKey,
@@ -204,17 +204,17 @@ const DashboardPage: React.FC = () => {
             count: 0
           };
         }
-        
+
         // Add plan credits as "added" credits on the upgrade date
         grouped[upgradeDateKey].added += planCredits;
       }
     }
-    
+
     // Convert to array and sort by date
     const result = Object.values(grouped)
       .sort((a: any, b: any) => a.dateTime - b.dateTime)
       .slice(-7); // Show last 7 days
-    
+
     return result;
   }, [usage, userPlan]);
 
@@ -227,14 +227,14 @@ const DashboardPage: React.FC = () => {
       'Authentication': 0,
       'Other': 0
     };
-    
+
     usage.forEach((record) => {
       if (record.creditsDelta < 0) {
         const module = getModuleFromAction(record.action, record.toolId);
         totals[module] = (totals[module] || 0) + Math.abs(record.creditsDelta);
       }
     });
-    
+
     return totals;
   }, [usage]);
 
@@ -413,8 +413,8 @@ const DashboardPage: React.FC = () => {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <button 
-          onClick={() => navigate('/e-sign/create')} 
+        <button
+          onClick={() => navigate('/e-sign/create')}
           className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 text-left"
         >
           <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
@@ -426,8 +426,8 @@ const DashboardPage: React.FC = () => {
           </div>
           <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
-        <button 
-          onClick={() => navigate('/e-sign/aggrement')} 
+        <button
+          onClick={() => navigate('/e-sign/aggrement')}
           className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 text-left"
         >
           <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
@@ -439,8 +439,8 @@ const DashboardPage: React.FC = () => {
           </div>
           <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
-        <button 
-          onClick={() => navigate('/credits-usage')} 
+        <button
+          onClick={() => navigate('/credits-usage')}
           className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-purple-300 hover:shadow-lg transition-all duration-300 text-left"
         >
           <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
@@ -468,8 +468,8 @@ const DashboardPage: React.FC = () => {
                 <p className="text-sm text-slate-500 mt-0.5">Track your credit transactions and usage patterns</p>
               </div>
             </div>
-            <Link 
-              to="/credits-usage" 
+            <Link
+              to="/credits-usage"
               className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700 font-semibold transition-all hover:bg-indigo-50 rounded-lg group"
             >
               <span>View details</span>
@@ -508,42 +508,42 @@ const DashboardPage: React.FC = () => {
                       <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                         <defs>
                           <linearGradient id="colorUsed" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                           </linearGradient>
                           <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-                        <XAxis 
-                          dataKey="date" 
+                        <XAxis
+                          dataKey="date"
                           stroke="#64748b"
                           style={{ fontSize: '11px', fontWeight: 500 }}
                           tickLine={false}
                         />
-                        <YAxis 
+                        <YAxis
                           stroke="#64748b"
                           style={{ fontSize: '11px', fontWeight: 500 }}
                           tickLine={false}
                         />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'white', 
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'white',
                             border: '1px solid #e2e8f0',
                             borderRadius: '10px',
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                             padding: '10px 14px'
                           }}
-                          formatter={(value: any, name?: string) => {
+                          formatter={(value: any, name?: string | number) => {
                             if (name === 'used') return [`${value} credits`, 'Credits Used'];
                             if (name === 'added') return [`${value} credits`, 'Credits Added'];
-                            return [value, name];
+                            return [`${value}`, name ?? ''];
                           }}
                           labelFormatter={(label) => `Date: ${label}`}
                         />
-                        <Legend 
+                        <Legend
                           wrapperStyle={{ paddingTop: '10px' }}
                           iconType="circle"
                           formatter={(value) => {
@@ -552,20 +552,20 @@ const DashboardPage: React.FC = () => {
                             return value;
                           }}
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="used" 
-                          stroke="#ef4444" 
-                          fillOpacity={1} 
+                        <Area
+                          type="monotone"
+                          dataKey="used"
+                          stroke="#ef4444"
+                          fillOpacity={1}
                           fill="url(#colorUsed)"
                           strokeWidth={2.5}
                           name="used"
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="added" 
-                          stroke="#10b981" 
-                          fillOpacity={1} 
+                        <Area
+                          type="monotone"
+                          dataKey="added"
+                          stroke="#10b981"
+                          fillOpacity={1}
                           fill="url(#colorAdded)"
                           strokeWidth={2.5}
                           name="added"
@@ -599,23 +599,24 @@ const DashboardPage: React.FC = () => {
                               <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'white', 
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'white',
                               border: '1px solid #e2e8f0',
                               borderRadius: '10px',
                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                               padding: '10px 14px'
                             }}
-                            formatter={(value: any, name?: string) => [`${value} credits`, name]}
+                           formatter={(value: any, name?: string | number) => [`${value} credits`, name ?? '']}
+
                           />
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="w-full mt-2 flex flex-wrap items-center justify-center gap-3 px-2">
                         {pieChartData.map((entry: any, index: number) => (
                           <div key={entry.name} className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full flex-shrink-0" 
+                            <div
+                              className="w-3 h-3 rounded-full flex-shrink-0"
                               style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
                             />
                             <span className="text-xs font-medium text-slate-700 whitespace-nowrap">
@@ -661,8 +662,8 @@ const DashboardPage: React.FC = () => {
                     <p className="text-xs text-green-600/80 ml-12">credits purchased</p>
                   </div>
                 </div>
-                
-               
+
+
               </div>
             </div>
           ) : (
@@ -679,7 +680,7 @@ const DashboardPage: React.FC = () => {
         {/* Footer */}
         {!loading && usage.length > 0 && (
           <div className="px-6 py-4 bg-gradient-to-r from-slate-50/50 to-white border-t border-slate-200">
-            <Link 
+            <Link
               to="/credits-usage"
               className="flex items-center justify-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group"
             >
