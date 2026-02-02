@@ -9,21 +9,15 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import PublicSignerLayout from '../layouts/PublicSignerLayout';
 import SharedDocumentLayout from '../layouts/SharedDocumentLayout';
-// Landing Page Components
-import Hero from '../components/LandingPage/Hero';
-import ModernDocumentFeatures from '../components/LandingPage/ModernDocumentFeatures';
-import ComprehensivePlatform from '../components/LandingPage/ComprehensivePlatform';
-import PDFTools from '../components/LandingPage/PDFTools';
-import ESignature from '../components/LandingPage/ESignature';
-import LegalTemplates from '../components/LandingPage/LegalTemplates';
-import APISection from '../components/LandingPage/APISection';
-import Compliance from '../components/LandingPage/Compliance';
-import Pricing from '../components/LandingPage/Pricing';
-import FeatureComparison from '../components/LandingPage/FeatureComparison';
-import AIFeatures from '../components/LandingPage/AIFeatures';
-import Testimonials from '../components/LandingPage/Testimonials';
+// Landing Page Components (focused: e-sign, Aadhaar verification, PDF tools)
+import LandingHero from '../components/LandingPage/LandingHero';
+import ESignFlowSection from '../components/LandingPage/ESignFlowSection';
+import VerificationSection from '../components/LandingPage/VerificationSection';
+import SignatureExperienceSection from '../components/LandingPage/SignatureExperienceSection';
+import PDFToolsShowcaseSection from '../components/LandingPage/PDFToolsShowcaseSection';
+import LandingCTA from '../components/LandingPage/LandingCTA';
 import FAQ from '../components/LandingPage/FAQ';
-import CTASection from '../components/LandingPage/CTASection';
+import Pricing from '../components/LandingPage/Pricing';
 
 import PDFToolsMergePDFPage from '../pages/PDFTools/MergePDFPage';
 import PDFToolsSplitPDFPage from '../pages/PDFTools/SplitPDFPage';
@@ -553,23 +547,16 @@ function DocumentView() {
     </>
   );
 }
-// Landing Page Layout Component
+// Landing Page Layout Component — e-sign, Aadhaar verification, PDF tools
 const LandingPageLayout = () => (
   <div>
-    <Hero />
-    <ModernDocumentFeatures />
-    <ComprehensivePlatform />
-    <PDFTools />
-    <ESignature />
-    <LegalTemplates />
-    <APISection />
-    <Compliance />
-    <Pricing />
-    <FeatureComparison />
-    <AIFeatures />
-    <Testimonials />
+    <LandingHero />
+    <ESignFlowSection />
+    <VerificationSection />
+    <SignatureExperienceSection />
+    <PDFToolsShowcaseSection />
     <FAQ />
-    <CTASection />
+    <LandingCTA />
   </div>
 );
 

@@ -10,8 +10,8 @@ import { ArrowLeft } from 'lucide-react';
 // PDF.js imports
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Use the correct worker version that matches the installed pdfjs-dist
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+// Use worker from public folder
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const AddHeaderFooter: React.FC = () => {
    const location = useLocation();

@@ -662,8 +662,6 @@ const DashboardPage: React.FC = () => {
                     <p className="text-xs text-green-600/80 ml-12">credits purchased</p>
                   </div>
                 </div>
-
-
               </div>
             </div>
           ) : (

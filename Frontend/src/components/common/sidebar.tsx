@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard, Share } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Send, Plus, HelpCircle, CreditCard, Share, FileTextIcon } from 'lucide-react';
 import { useAuth } from '../AuthService/AuthContext';
 
 interface SidebarProps {
@@ -132,6 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (pathname === '/documents/folder') return 'folders';
     if (pathname === '/documents/trash') return 'trash';
     if (pathname === '/organization/my-organizations') return 'my-organizations';
+    if (pathname === '/invoice') return 'invoice';
 
     if (pathname.startsWith('/e-sign/')) {
       if (pathname === '/e-sign/aggrement' || pathname === '/e-sign/aggrement/all') return 'esignDashboard';
@@ -214,6 +215,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         // { id: 'sent', label: 'Add Envelope', path: '/e-sign/sent', icon: MailPlus },
         { id: 'powerforms', label: 'PowerForms', path: '/e-sign/powerform', icon: FormInput },
         { id: 'form-list', label: 'Templates', path: '/e-sign/form-list', icon: Send },
+        { id: 'invoice', label: 'Invoice', path: '/invoice', icon: FileTextIcon },
         //if accountType is organization then show folders menu
         ...(accountType === 'organization' ? [{ id: 'folder-list', label: 'Folders', path: '/organization/folders', icon: Folder }] : []),
         // { id: 'aggrement', label: 'Aggrement', path: '/e-sign/aggrement', icon: FileSignature },
