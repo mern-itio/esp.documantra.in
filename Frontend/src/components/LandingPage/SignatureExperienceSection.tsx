@@ -1,4 +1,4 @@
-import { Smartphone, MousePointer, FileSignature, CheckCircle } from 'lucide-react'
+import { Smartphone, MousePointer, FileSignature, CheckCircle, ChevronsLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const SignatureExperienceSection = () => {
@@ -11,8 +11,8 @@ const SignatureExperienceSection = () => {
               <FileSignature className="h-4 w-4" />
               Signing experience
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Sign from any device—no account needed
+            <h2 className="sub-heading gradient-text">
+              Sign from any device no account needed
             </h2>
             <p className="text-lg text-gray-600 mb-8 max-w-xl">
               Recipients open the link, review the document, and sign with a click or draw. They don’t need to create an account. You get the signed PDF and a legal audit trail.
@@ -32,10 +32,10 @@ const SignatureExperienceSection = () => {
             </ul>
             <Link
               to="/login"
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[#260559] text-white font-semibold px-5 py-3 hover:bg-[#1e0447] transition-colors"
+              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[#084bdc] text-white font-semibold px-5 py-3 hover:bg-[#084bdc]/90 transition-colors"
             >
               Send your first document
-              <span aria-hidden>→</span>
+            <ChevronsLeft className="h-4 w-4 rotate-180" />
             </Link>
           </div>
           <div className="relative">

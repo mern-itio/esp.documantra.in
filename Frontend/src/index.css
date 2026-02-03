@@ -336,9 +336,9 @@
     @apply max-w-7xl mx-auto;
   }
   
-  .gradient-text {
+  /* .gradient-text {
     @apply bg-gradient-to-r from-primary-600 to-accent-orange bg-clip-text text-transparent;
-  }
+  } */
   
   .card-hover {
     @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
@@ -2048,3 +2048,5 @@ canvas {
   text-align: center;
   /* padding: 50px; */
 }
+
+

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 const LandingCTA = () => {
   return (
-    <section className="section-padding bg-slate-900 text-white">
+    <section className="section-padding bg-[#001039] text-white">
       <div className="container-max text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4">
           E-sign, verify &amp; manage PDFs—all in one place

@@ -1,52 +1,60 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+:root{
+  --primary-color: #084bdc;
+  --primary-font: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
+/* body {
+  font-family: var(--font-family);
+} */
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/PlayfairDisplay-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/PlayfairDisplay-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/PlayfairDisplay-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: "Rosehot";
+  src: url("/fonts/Rosehot.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
 .bgColor{
-  background-color: #260559;
+  background-color: var(--primary-color);
 }
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+.heading {
+  font-family: var(--primary-font);
+  font-weight: 700;
+  font-size: 4rem;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.gradient-text{
+  color: var(--primary-color);
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.sub-heading{
+  font-family: var(--primary-font);
+  font-weight: 600;
+  font-size: 2.5rem;
+  color: var(--primary-color);
 }
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.details-text{
+  font-family: var(--primary-font);
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: rgb(109, 108, 108);
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.icon-bg{
+  background-color: var(--primary-color);
 }
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-@keyframes fade {
-  from { opacity: 0;}
-  to { opacity: 1;}
-}
-.animate-fade {
-  animation: fade 0.5s;
-}
-

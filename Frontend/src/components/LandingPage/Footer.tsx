@@ -5,8 +5,14 @@ const Footer = () => {
  
 
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-6">     
+    <footer className="relative overflow-hidden bg-gray-900 text-white">
+      {/* Background image */}
+      <div
+        className="pointer-events-none w-full absolute inset-0 bg-[url('/footer-bg.jpg')] bg-cover bg-center opacity-20 md:opacity-30"
+        aria-hidden="true"
+      />
+
+      <div className="relative max-w-7xl mx-auto px-6">     
         {/* Main Footer Content */}
         <div className="py-16 grid lg:grid-cols-5 md:grid-cols-3 sm:grid-cols-2 justify-center">
           <div>

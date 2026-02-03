@@ -328,40 +328,20 @@ const Header = () => {
     <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
       }`}>
       <Toast />
-      {/* Top Navigation Bar */}
-      <div className="text-white" style={{backgroundColor: '#260559'}}>
-        <div className="container-max">
-          <div className="flex items-center justify-between h-10 text-sm">
-            {/* Left side - Promotional message */}
-            <div className="flex items-center gap-2">
-              <span className="hidden md:block">🚀 New AI-powered document generation is here!</span>
-              <span className="md:hidden">🚀 AI document generation live!</span>
-            </div>
-
-            {/* Right side - Utility links + Login */}
-            <div className="flex items-center space-x-6">
-              <Link to="/blog" className="hover:text-primary-200 transition-colors">Blog</Link>
-              <a href="#" className="hover:text-primary-200 transition-colors">Docs</a>
-              {/* <a href="#" className="hover:text-primary-200 transition-colors">Get Support</a> */}
-              <Link to="/contact-sales" className="hover:text-primary-200 transition-colors">Contact Sales</Link>
-              {isAuthenticated ? (
-                <Link to="/dashboard" className="hover:text-primary-200 transition-colors font-medium">Dashboard</Link>
-
-              ) : (
-                <Link to="/login" className="hover:text-primary-200 transition-colors font-medium">Log in</Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Navigation Bar */}
-      <div className="bg-white border-b border-gray-200">
+      <div
+        className={`
+         bg-white/80 backdrop-blur-xl mx-auto px-6 transition-all duration-300 ease-in-out
+        ${isScrolled
+            ? "w-full rounded-none border-none shadow-md bg-none mt-0"
+            : "w-[95%] max-w-7xl border border-dashed border-blue-400/60 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white/80 mt-5"
+          }
+        `}
+      >
         <div className="container-max">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/" className="text-2xl font-bold gradient-text">Draft&Sign</Link>
+              <Link to="/"><img src="./Logo.png" alt="Draft&Sign Logo" className="h-15 w-auto " /></Link>
             </div>
 
             {/* Desktop Navigation */}
@@ -374,7 +354,7 @@ const Header = () => {
               >
                 <button
                   ref={pdfToolsButtonRef}
-                  className="flex items-center text-gray-700 hover:text-[#260559]-600 transition-colors"
+                  className="flex items-center text-sm text-gray-700 hover:text-[#260559]-600 transition-colors"
                 >
                   PDF Tools <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
