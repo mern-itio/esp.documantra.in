@@ -15,6 +15,7 @@ const Cycle = require('../models/Cycle');
 const { issueCertificate } = require('../services/pkiService');
 const { generateAndStoreCompletionCertificate,generateAndStoreCompletionCertificateOfPowerForm } = require('../services/certificateGenerator');
 const fs = require('fs');
+const path = require('path');
 const selfSigner = require('../models/selfSigner');
 const { sign } = require('crypto');
 const { values } = require('pdf-lib');
@@ -857,8 +858,16 @@ const sendToAllSelfSigners = async(envelope,signedFilePath,signedPdfFilename,cer
       if(signer){
         const html = envelopeCompletedTemplate(signer?.data?.name,envelope?.subject);
         const attachments = [
-          {filename:signedPdfFilename, path:signedFilePath},
-          {filename:certFilename, path:certFilePath}
+          {
+            filename: signedPdfFilename,
+            content: fs.readFileSync(signedFilePath).toString('base64'),
+            encoding: 'base64'
+          },
+          {
+            filename: certFilename,
+            content: fs.readFileSync(certFilePath).toString('base64'),
+            encoding: 'base64'
+          }
         ];
         try{
           await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${envelope?.sender}`, {
