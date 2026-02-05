@@ -120,7 +120,7 @@ async function generateAccessTokenUser(user, expireIn) {
   } catch (error) {
     console.log("Error while generating Access Token", error);
   }
-}
+};
 
 // Get current user details
 const getMe = async (req, res) => {
@@ -206,10 +206,35 @@ const switchAccount = async (req, res) => {
   }
    
 };
+const getUsersList = async (req, res) => {
+  try {
+    const users = await User.aggregate([
+      {
+        $project: {
+          _id: 1,
+          name: "$fullname",
+          email: 1
+        }
+      }
+    ]);
+    return res.status(200).json({
+      status: 200,
+      message: "Users list retrieved successfully",
+      data: users
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null
+    });
+  }
+};
 // Export functions
 module.exports = {
   login,
   register,
   getMe,
-  switchAccount
+  switchAccount,
+  getUsersList
 };

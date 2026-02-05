@@ -31,6 +31,6 @@ RUN npm install
 WORKDIR /app/services/email-service
 RUN npm install --legacy-peer-deps
 
-EXPOSE 2101
+EXPOSE 2112
 
 CMD ["npm", "run", "dev"]

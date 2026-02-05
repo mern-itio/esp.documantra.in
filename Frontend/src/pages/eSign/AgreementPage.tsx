@@ -28,7 +28,7 @@ interface Agreement {
 }
 
 interface EnvelopeData {
-  id: string;
+  id: string;               
   name?: string;
   subject: string;
   status: string;
@@ -154,14 +154,14 @@ const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string; scheduledTi
           </div>
         </div>
         {showTooltip && (
-          <div
-            className="fixed min-w-[280px] max-w-[320px] bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-[9999] pointer-events-none whitespace-normal"
-            style={{
-              left: `${tooltipPosition.left}px`,
-              top: `${tooltipPosition.top}px`,
-              transform: 'translateX(-50%)'
-            }}
-          >
+            <div
+              className="fixed min-w-[280px] max-w-[320px] bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-[9999] pointer-events-none whitespace-normal"
+              style={{
+                left: `${tooltipPosition.left}px`,
+                top: `${tooltipPosition.top}px`,
+                transform: 'translateX(-50%)'
+              }}
+            >
             <div className="mb-2 font-semibold text-base">Scheduled Delivery</div>
             <div className="text-xs text-gray-300 mb-1">Date: {formattedDate}</div>
             <div className="text-xs text-gray-300">Time: {formattedTime}</div>

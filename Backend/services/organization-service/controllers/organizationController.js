@@ -1,4 +1,6 @@
+const { inviteTemplate } = require('../email/emailTemplates');
 const orgService = require('../services/organization.service');
+const axios = require('axios');
 const ALL_PERMISSIONS = {
     ENVELOPE_CREATE: true,
     ENVELOPE_SHARE: true,
@@ -134,8 +136,6 @@ const deleteOrganization = async (req, res) => {
 const getOrganizationDetailsandAccess = async (req, res) => {
     const organizationId = req?.params?.orgId;
     const requestingUser = req?.user;
-    console.log("Requested User: ",requestingUser);
-    console.log("Organization ID: ",organizationId);
     try {
         if(!organizationId){
             return res.status(500).json({
@@ -207,6 +207,7 @@ const getOrganizationDetailsandAccess = async (req, res) => {
             organization: organizationEnvelope
         });
     } catch (err) {
+        console.error("Error in getOrganizationDetailsandAccess:", err);
         return res.status(500).json({
             success: false,
             message: err.message || "Internal server error"
@@ -263,7 +264,441 @@ const fetchFoldersInOrganization = async (req, res) =>{
         });
     }
 }
+// Fetch Member of Organization
+const fetchOrganizationMembers = async (req, res) => {
+    const organizationId = req.params.orgId;
+    try {
+        const members = await orgService.getOrganizationMembers(organizationId);
+        return res.status(200).json({
+            success: true,
+            data: members
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+// Fetch all existing user from authService exclude already members
+const fetchNonMemberUsers = async (req, res) => {
+  try {
+    const organizationId = req.params.orgId;
 
+    const members = await orgService.getOrganizationMembers(organizationId);
+
+    const memberUserIds = members
+      .map(m => m.userId)
+      .filter(Boolean)
+      .map(id => id.toString());
+
+    const allUsers = await axios.get(
+      `${process.env.AUTH_SERVICE_URL}/api/users-list`,
+      { headers: { Authorization: req.headers.authorization } }
+    );
+
+    const nonMembers = allUsers.data.data.filter(
+      user => !memberUserIds.includes(user._id.toString())
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: nonMembers
+    });
+
+  } catch (err) {
+    console.error("Error fetching non-member users:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch non-member users"
+    });
+  }
+};
+
+const createRole = async (req, res) => {
+    const organizationId = req.params.orgId;
+    const roleData = req.body;
+    console.log("Creating role with data:", roleData);
+    try {
+        const role = await orgService.createOrganizationRole(organizationId, roleData);
+        const permisions = await orgService.updateRolePermissions(role?._id, roleData.permissions || {});
+        return res.status(201).json({
+            success: true,
+            message: "Role created successfully",
+            data: role
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const updateRole = async (req, res) => {
+    const roleId = req.params.roleId;
+    const roleData = req.body;
+    try {
+        const role = await orgService.updateOrganizationRole(roleId, roleData);
+        const permisions = await orgService.updateRolePermissions(roleId, roleData.permissions || {});
+        return res.status(200).json({
+            success: true,
+            message: "Role updated successfully",
+            data: role
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const fetchOrganizationRoles = async (req, res) => {
+    const organizationId = req.params.orgId;
+    try {
+        const roles = await orgService.getOrganizationRoles(organizationId);
+        return res.status(200).json({
+            success: true,
+            data: roles
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const getOrgNotifications = async (req, res) => {
+  const organizationId = req.header('x-organization-id');
+  const { userId, role } = req.user.data;
+
+  const notifications = await orgService.getOrgNotifications(organizationId, userId, role);
+  const readIds = await orgService.getNotificcatoinReadIds(userId, notifications);
+
+  const unreadCount = notifications.filter(
+    n => !readIds.includes(n._id.toString())
+  ).length;
+
+  return res.json({
+    status: 'success',
+    data: {
+      notifications: notifications.map(n => ({
+        ...n,
+        isRead: readIds.includes(n._id.toString())
+      })),
+      unreadCount
+    }
+  });
+};
+const addMemberToOrganization = async (req, res) => {
+    const userId = req.user.data.id;
+    const organizationId = req.params.orgId;
+    const payload = req.body;
+    try {
+        const organizationDetails = await orgService.getOrganizationDetails(organizationId);
+        if(!organizationDetails){
+            return res.status(404).json({
+                success: false,
+                message: "Organization not found"
+            });
+        }
+        const result = await orgService.addMemberToOrganization(organizationId, payload,userId);
+        let Message = '';
+        let subject = '';
+        let link = `${process.env.FRONTEND_URL}/auth/login`;
+        let LinkButtonText = '';
+        const recipientName = result.name || 'User';
+        if(payload.userId){
+            subject = `You've been invited to join ${organizationDetails?.name}`;
+            Message = `You’ve been invited to join ${organizationDetails?.name}.
+                       Please log in to your account to accept the organization invitation to start collaborating on document signing and management.`;
+            LinkButtonText = 'Login to Your Account';
+        }else{
+            link = `${process.env.FRONTEND_URL}/auth/signup`;
+            subject = `Invitation to join ${organizationDetails?.name}  – Create your account`;
+            Message = `You’ve been invited to join ${organizationDetails?.name}.
+                       Please sign up to your account to accept the organization invitation to start collaborating on document signing and management.`;
+            LinkButtonText = 'Create Your Account';
+        }
+        const targetId = payload?.userId || null;
+        const source = 'ORG';
+        const type = 'ORG_INVITATION';
+        const title = subject;
+        const invitationLink = `${process.env.FRONTEND_URL}/organization/invitations/${result?._id}`;
+        const metadata = {
+            organizationId: organizationId,
+            inviteId: result._id,// Organization invited user ID
+            redirectUrl: invitationLink
+        };
+        const notificationMessage = `You have a new invitation to join the organization ${organizationDetails?.name}. Click to view details.`;       
+        const notificationPayload = {
+            targetId,
+            source,
+            type,
+            title,
+            message: notificationMessage,
+            metadata
+        };
+        try {
+            const notificationResponse = await axios.post(
+                `${process.env.AUTH_SERVICE_URL}/api/notifications/create`,
+                notificationPayload,
+                { headers: { Authorization: req.headers.authorization } }
+            );
+            console.log("Notification created in auth service:", notificationResponse.data);
+        } catch (error) {
+            console.error("Error creating notification in auth service:", error);
+        }    
+        const html = inviteTemplate(recipientName, subject, Message, link, LinkButtonText);
+        //Send email via email service
+        try{
+            await axios.post(
+                `${process.env.EMAIL_SERVICE_URL}/mail/send/${userId}`,
+                {
+                    toEmail: result.email,
+                    subject: subject,
+                    html: html
+                },
+                { headers: { Authorization: req.headers.authorization } }
+            );
+            console.log(`Invitation email sent to ${result.email}`);
+        }catch (err){
+            console.error("Error sending invitation email:", err);
+        }
+        return res.status(200).json({
+            success: true,
+            message: `User ${result._id} added to organization ${organizationId} successfully`,
+            data: result
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const fetchUserInvitation = async (req, res) => {
+    const invitationId = req.params.invitationId;
+    const userId = req?.user?.data?.id;
+    try {
+        const invitation = await orgService.getUserInvitationById(invitationId,userId);
+        if(!invitation){
+            return res.status(404).json({
+                success: false,
+                message: "Invitation not found"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            data: invitation
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const acceptInvitation = async (req, res) => {
+    const invitationId = req.params.invitationId;
+    const userId = req?.user?.data?.id;
+    try {
+        const result = await orgService.acceptOrganizationInvitation(invitationId,userId);
+        return res.status(200).json({
+            success: true,
+            message: "Invitation accepted successfully",
+            data: result
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const rejectInvitation = async (req, res) => {
+    const invitationId = req.params.invitationId;
+    const userId = req?.user?.data?.id;
+    try {
+        const result = await orgService.rejectOrganizationInvitation(invitationId,userId);
+        return res.status(200).json({
+            success: true,
+            message: "Invitation rejected successfully",
+            data: result
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Internal server error"
+        });
+    }
+}
+const shareFolder = async (req, res) => {
+  const { shares } = req.body;
+  const requestingUserId = req?.user?.data?.id;
+
+  if (!Array.isArray(shares) || !shares.length) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid request payload'
+    });
+  }
+
+  try {
+    const payloads = shares.map(share => ({
+      folderId: share.folderId,
+      sharedWithType: share.sharedWithType || 'USER',
+      sharedWithId: share.sharedWithId,
+      permission: share.permission,
+      createdBy: requestingUserId
+    }));
+
+    const result = await orgService.shareFolder(payloads);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Folder shared successfully',
+      data: result
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Internal server error'
+    });
+  }
+};
+const fetchFolderById = async (req, res) => {
+    const folderId = req.params.folderId;
+    const userId = req?.user?.data?.id;
+    const accountType = req.header('x-account-type');
+    const organizationId = req.header('x-organization-id');
+    if(accountType !== 'organization' || !organizationId){
+        return res.status(400).json({
+            success:false,
+            message:"Invalid account type or missing organization ID"
+        });
+    }
+    try{
+        const folder = await orgService.fetchFolderById(folderId);
+        if(!folder){
+            return res.status(404).json({
+                success:false,
+                message:"Folder not found"
+            });
+        }
+        return res.status(200).json({
+            success:true,
+            data:folder
+        });
+    }catch (err){
+        return res.status(500).json({
+            success:false,
+            message:err.message || "Internal server error"
+        });
+    }
+}
+const fetchEnvelopesByFolder = async (req, res) => {
+    const folderId = req.params.folderId;
+    const userId = req?.user?.data?.id;
+    const accountType = req.header('x-account-type');
+    const organizationId = req.header('x-organization-id');
+    if(accountType !== 'organization' || !organizationId){
+        return res.status(400).json({
+            success:false,
+            message:"Invalid account type or missing organization ID"
+        });
+    }
+    // Fetch allEnvelopeIds in the folder
+    try{
+        const envelopeIdsData = await orgService.fetchFolderEnvelopeIds(folderId);
+        const envelopeIds = envelopeIdsData || [];
+        if(envelopeIds.length === 0){
+            return res.status(200).json({
+                success:true,
+                data:[]
+            });
+        }
+        try{
+            const envelopes = await axios.post(
+                `${process.env.ESIGN_SERVICE_URL}/api/e-sign/envelopes/bulk-fetch`,
+                { envelopeIds },
+                { headers: { Authorization: req.headers.authorization } }
+            );
+            return res.status(200).json({
+                success:true,
+                data:envelopes.data.envelopes || []
+            });
+        }catch(err){
+            console.error("Error fetching envelopes from e-sign service:", err);
+            return res.status(500).json({
+                success:false,
+                message:"Failed to fetch envelopes from e-sign service"
+            });
+        }
+    }catch (err){
+        return res.status(500).json({
+            success:false,
+            message:err.message || "Internal server error"
+        });
+    }
+}
+const fetchRolesandUsers = async (req, res) =>{
+    const folderId = req.params.folderId;
+    try{
+        const data =  await orgService.getRolesandUsersByFolderId(folderId);
+        return res.status(200).json({
+            success:true,
+            data:data
+        });
+    }catch (err){
+        return res.status(500).json({
+            success:false,
+            message:err.message || "Internal server error"
+        });
+    }
+}
+const insertEnvelopesToFolder = async (req, res) =>{
+    const folderId = req.params.folderId;
+    const {envelopeIds} = req.body;
+    console.log(envelopeIds);
+    const userId = req?.user?.data?.id;
+    if (!folderId || !Array.isArray(envelopeIds) || envelopeIds.length === 0) {
+        return res.status(400).json({
+        success: false,
+        message: 'folderId and envelopeIds are required'
+        });
+    }
+    const existing  = await orgService.checkExistingEnvelope(folderId,envelopeIds);
+    const existingSet = new Set(existing.map(id => id.toString()));
+    console.log(existing);
+    const newEnvelopeIds = envelopeIds.filter(
+        id => !existingSet.has(id)
+    );
+    if(newEnvelopeIds.length ===0){
+        return res.status(400).json({
+        success: false,
+        message: 'Chosen envelope already exist'
+        });
+    }
+    try{
+        const result  =  await orgService.insertEnvelopesToFolder(folderId,newEnvelopeIds, userId);
+        return res.status(200).json({
+            success: true,
+            message: 'Envelopes added to folder successfully',
+            insertedCount: result.insertedCount
+        });
+    }catch (err){
+        console.log(err);
+        return res.status(500).json({
+            success:false,
+            message:err.message || "Internal server error"
+        });
+    }
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -274,5 +709,20 @@ module.exports = {
     verificationOrganization,
     getOrganizationDetailsandAccess,
     createFolderInOrganization,
-    fetchFoldersInOrganization
+    fetchFoldersInOrganization,
+    fetchOrganizationMembers,
+    fetchNonMemberUsers,
+    createRole,
+    updateRole,
+    fetchOrganizationRoles,
+    getOrgNotifications,
+    addMemberToOrganization,
+    fetchUserInvitation,
+    acceptInvitation,
+    rejectInvitation,
+    shareFolder,
+    fetchFolderById,
+    fetchEnvelopesByFolder,
+    fetchRolesandUsers,
+    insertEnvelopesToFolder
 };

@@ -151,3 +151,27 @@ services:
       - /app/services/organization-service/node_modules
       - ./services/organization-service/uploads:/app/services/organization-service/uploads  # <-- added
     command: npm run dev
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "2113:2113"
+    volumes:
+    - ./services/api-gateway:/app/services/api-gateway:cached
+    - /app/services/api-gateway/node_modules
+
+    command: npm run dev
+  
+  email-service:
+    build:
+      context: .
+      dockerfile: services/email-service/Dockerfile
+    ports:
+      - "2112:2112"
+    volumes:
+    - ./services/email-service:/app/services/email-service:cached
+    - /app/services/email-service/node_modules
+
+    command: npm run dev

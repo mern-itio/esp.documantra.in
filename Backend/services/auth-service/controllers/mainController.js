@@ -1,4 +1,5 @@
 // controllers/MainController.js
+const Notifications = require('../models/Notifications');
 const User = require('../models/User');
 
 const userDetails = async (req, res) => {
@@ -34,5 +35,56 @@ const findUserByEmail = async (req, res) => {
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
+const insertNotifications = async (req, res) => {
+    const userId = req.user.data.id;
+    const {source, type, title, message,metadata, targetId} = req.body;
+    try {
+        const newNotification = await Notifications.create({
+            createdBy:userId,
+            targetId,
+            source,
+            type,
+            title,
+            message,
+            metadata
+        });
+        return res.status(201).json({
+            status: 'success',
+            data: newNotification,
+        });
+    } catch (error) {
+        console.error('Error inserting notification:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+const getNotifications = async (req, res) => {
+  const userId = req.user.data.id;
+  const limit = Number(req.query.limit) || 20;
+
+  try {
+    const notifications = await Notifications.find({
+      $or: [
+        { targetId: userId },
+        { createdBy: userId }
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        notifications
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+};
+
 // Correct export
-module.exports = { userDetails,findUserByEmail };
+module.exports = { userDetails,findUserByEmail,insertNotifications,getNotifications };

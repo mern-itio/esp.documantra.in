@@ -76,7 +76,9 @@ const Upload = async (req, res) => {
     } else {
       // Create a new envelope with optional subject/message/name
       const { name, subject, message, envelopetype, isAIGenerated } = req.body || {};
-      
+      const accountType = req.headers['x-account-type'];
+      const organizationId = req.headers['x-organization-id'];
+      const isOrgContext = accountType === 'organization' && !!organizationId ;
       // Handle isAIGenerated - can come as string 'true'/'false' from FormData or as boolean
       let aiGenerated = false;
       if (typeof isAIGenerated === 'boolean') {
@@ -92,6 +94,8 @@ const Upload = async (req, res) => {
         envelopetype: typeof envelopetype === 'string' && envelopetype.trim().length > 0 ? envelopetype.trim() : (typeof subject === 'string' ? subject.trim() : undefined),
         message: typeof message === 'string' ? message.trim() : undefined,
         isAIGenerated: aiGenerated,
+        isOrganization: isOrgContext,
+        organizationId: isOrgContext ? organizationId : null
       });
       await envelope.save();
 

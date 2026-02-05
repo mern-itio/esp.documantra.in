@@ -102,7 +102,10 @@ export const pdfApi = createApiInstance(
   import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104',
   'PDF'
 );
-
+export const apiGateway = createApiInstance(
+  import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:2113',
+  'API-Gateway'
+);
 // Centralized credit gating for PDF conversions
 pdfApi.interceptors.request.use((config) => {
   try {
@@ -279,4 +282,8 @@ export const adminApi = createApiInstance(
 export const organizationApi = createApiInstance(
   import.meta.env.VITE_ORGANIZATION_SERVICE_URL || 'http://localhost:2111',
   'Organization-Service'
+);
+export const emailApi = createApiInstance(
+  import.meta.env.VITE_EMAIL_SERVICE_URL || 'http://localhost:2112',
+  'Email-Service'
 );
