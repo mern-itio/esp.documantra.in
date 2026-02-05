@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Building, Globe, FileText, CheckCircle2, Clock, MoreVertical, Settings, Users, ExternalLink, Edit, Trash2, Bell, Shield, Mail, Info, ShieldCheck } from 'lucide-react';
+import { Building, Globe, FileText, CheckCircle2, Clock, MoreVertical, Settings, Users, ExternalLink, Edit, Trash2, Bell, Shield, Mail, Info, ShieldCheck, PersonStanding } from 'lucide-react';
 import type { Organization } from '../../types/organization';
+import { useNavigate } from 'react-router-dom';
 
 interface MyOrganizationCardProps {
   organization: Organization;
@@ -28,7 +29,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const verificationRef = useRef<HTMLDivElement>(null);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -350,6 +351,17 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                     <Mail className="w-4 h-4" />
                     <span>Invitations</span>
                   </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSettingsDropdown(false);
+                    navigate(`/organization/roles/${organization._id}`);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <PersonStanding className="w-4 h-4" />
+                  <span>Roles</span>
+                </button>
                 </div>
               </div>
             )}

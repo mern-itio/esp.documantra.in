@@ -3,6 +3,8 @@ const organizationUser = require('../models/organizationUser');
 const organizationRole = require('../models/organizationRole');
 const organizationPermission = require('../models/organizationPermission');
 const orgFolder = require('../models/orgFolder');
+const OrganizationNotification = require('../models/OrganizationNotification');
+const OrganizationNotificationRead = require('../models/OrganizationNotificationRead');
 const OrgFolderShare = require('../models/orgFolderShare');
 const folderEnvelope = require('../models/folderEnvelope');
 
@@ -61,7 +63,6 @@ const createOrganization = async (payload, userId) => {
 
     return org;
 };
-
 const getOrganizationDetails = async (orgId) => {  
     const result = await Organization.findById(orgId);
     if (!result) {
@@ -84,11 +85,12 @@ const deleteOrganization = async (orgId) => {
     }
     return true;
 }
+// Fetch organizations where user is owner or member
 const getOrganizationsByUserId = async (userId) => {
   const objectId = new mongoose.Types.ObjectId(userId);
 
   const organizations = await Organization.aggregate([
-    // 1. Organizations the user owns
+    // 1. Organizations user OWNS
     {
       $match: { createdBy: objectId }
     },
@@ -96,25 +98,34 @@ const getOrganizationsByUserId = async (userId) => {
       $addFields: { isOwner: true }
     },
 
-    // 2. Union with organizations shared with the user
+    // 2. Organizations user is MEMBER of
     {
       $unionWith: {
-        coll: "organizationusers", // collection name for OrganizationUser
+        coll: "organizationusers",
         pipeline: [
-          { $match: { userId: objectId } },
+          { 
+            $match: { 
+              userId: objectId,
+              status: "ACTIVE"
+            } 
+          },
           {
             $lookup: {
               from: "organizations",
               localField: "organizationId",
               foreignField: "_id",
-              as: "organization"
+              as: "org"
             }
           },
-          { $unwind: "$organization" },
+          { $unwind: "$org" },
           {
-            $project: {
-              organization: 1,
-              isOwner: { $literal: false }
+            $replaceRoot: {
+              newRoot: {
+                $mergeObjects: [
+                  "$org",
+                  { isOwner: false }
+                ]
+              }
             }
           }
         ]
@@ -124,7 +135,6 @@ const getOrganizationsByUserId = async (userId) => {
 
   return organizations;
 };
-
 const getAllOrganizations = async () => {
     const organizations = await Organization.find();
     return organizations;
@@ -135,7 +145,7 @@ const getAllOrganizationsRquest = async () => {
 }
 const getOrganizationUser = async (orgId, userId) => {
       const orgUser = await organizationUser.findOne({
-            orgId,
+            organizationId: orgId,
             userId: userId,
             status: "ACTIVE"
         }).lean();
@@ -164,169 +174,404 @@ const createFolderInOrganization = async (orgId, folderData,userId) => {
     });
     return newFolder;
 };
-const getFoldersInOrganization = async (orgId, userId)=>{
-    userId =  new mongoose.Types.ObjectId(userId);
-    orgId = new mongoose.Types.ObjectId(orgId);
-    const orgUser = await organizationUser.findOne({
-      organizationId:orgId,
+const getFoldersInOrganization = async (orgId, userId) => {
+  const mongoose = require('mongoose');
+
+  orgId = new mongoose.Types.ObjectId(orgId);
+  userId = new mongoose.Types.ObjectId(userId);
+
+  /* --------------------------------------------------
+     1. Fetch org membership (OPTIONAL, not mandatory)
+  -------------------------------------------------- */
+  const orgUser = await organizationUser
+    .findOne({
+      organizationId: orgId,
       userId,
       status: 'ACTIVE'
     })
-      .select('roleId')
-      .lean();
+    .select('_id roleId')
+    .lean();
 
-    const userRoleId = orgUser?.roleId || null;
-    const folders = await orgFolder.aggregate([
-      {
-        $match: { organizationId:orgId }
-      },
+  // These may be null — and that's OK
+  const orgUserId = orgUser?._id || null;
+  const userRoleId = orgUser?.roleId || null;
 
-      /* -------- Folder shares -------- */
-      {
-        $lookup: {
-          from: 'OrgFolderShare',
-          localField: '_id',
-          foreignField: 'folderId',
-          as: 'shares'
-        }
-      },
+  /* --------------------------------------------------
+     2. Folder aggregation
+  -------------------------------------------------- */
+  const folders = await orgFolder.aggregate([
+    /* ---------- Only folders in org ---------- */
+    {
+      $match: { organizationId: orgId }
+    },
 
-      /* -------- Folder envelopes -------- */
-      {
-        $lookup: {
-          from: 'folderEnvelope',
-          localField: '_id',
-          foreignField: 'folderId',
-          as: 'envelopes'
-        }
-      },
+    /* ---------- Folder shares ---------- */
+    {
+      $lookup: {
+        from: 'orgfoldershares',
+        localField: '_id',
+        foreignField: 'folderId',
+        as: 'shares'
+      }
+    },
 
-      /* -------- Ownership -------- */
-      {
-        $addFields: {
-          isOwner: { $eq: ['$createdBy', userId] }
-        }
-      },
+    /* ---------- Folder envelopes ---------- */
+    {
+      $lookup: {
+        from: 'folderenvelopes',
+        localField: '_id',
+        foreignField: 'folderId',
+        as: 'envelopes'
+      }
+    },
 
-      /* -------- Resolve permissions ONLY for requesting user -------- */
-      {
-        $addFields: {
-          permissions: {
-            $cond: [
-              '$isOwner',
-              null,
-              {
-                $let: {
-                  vars: {
-                    userShare: {
-                      $first: {
-                        $filter: {
-                          input: '$shares',
-                          as: 's',
-                          cond: {
-                            $and: [
-                              { $eq: ['$$s.sharedWithType', 'USER'] },
-                              { $eq: ['$$s.sharedWithId', userId] }
-                            ]
-                          }
-                        }
-                      }
-                    },
-                    roleShare: {
-                      $first: {
-                        $filter: {
-                          input: '$shares',
-                          as: 's',
-                          cond: {
-                            $and: [
-                              { $eq: ['$$s.sharedWithType', 'ROLE'] },
-                              userRoleId
-                                ? { $eq: ['$$s.sharedWithId', userRoleId] }
-                                : false
-                            ]
-                          }
+    /* ---------- Ownership ---------- */
+    {
+      $addFields: {
+        isOwner: { $eq: ['$createdBy', userId] }
+      }
+    },
+
+    /* ---------- Resolve permissions (OWNER > USER > ROLE) ---------- */
+    {
+      $addFields: {
+        permissions: {
+          $cond: [
+            '$isOwner',
+            { view: true, edit: true, share: true },
+            {
+              $let: {
+                vars: {
+                  userShare: {
+                    $first: {
+                      $filter: {
+                        input: '$shares',
+                        as: 's',
+                        cond: {
+                          $and: [
+                            { $eq: ['$$s.sharedWithType', 'USER'] },
+                            orgUserId
+                              ? { $eq: ['$$s.sharedWithId', orgUserId] }
+                              : false
+                          ]
                         }
                       }
                     }
                   },
-                  in: {
-                    $ifNull: ['$$userShare.permission', '$$roleShare.permission']
+                  roleShare: {
+                    $first: {
+                      $filter: {
+                        input: '$shares',
+                        as: 's',
+                        cond: {
+                          $and: [
+                            { $eq: ['$$s.sharedWithType', 'ROLE'] },
+                            userRoleId
+                              ? { $eq: ['$$s.sharedWithId', userRoleId] }
+                              : false
+                          ]
+                        }
+                      }
+                    }
                   }
+                },
+                in: {
+                  $ifNull: ['$$userShare.permission', '$$roleShare.permission']
                 }
               }
-            ]
-          }
-        }
-      },
-
-      /* -------- Access filter -------- */
-      {
-        $match: {
-          $or: [
-            { isOwner: true },
-            { permissions: { $ne: null } }
+            }
           ]
         }
-      },
+      }
+    },
 
-      /* -------- Shared people & roles (ALL, ids only) -------- */
-      {
-        $addFields: {
-          sharedPeople: {
-            $map: {
-              input: {
-                $filter: {
-                  input: '$shares',
-                  as: 's',
-                  cond: { $eq: ['$$s.sharedWithType', 'USER'] }
-                }
-              },
-              as: 'sp',
-              in: '$$sp.sharedWithId'
-            }
-          },
-          sharedRole: {
-            $map: {
-              input: {
-                $filter: {
-                  input: '$shares',
-                  as: 's',
-                  cond: { $eq: ['$$s.sharedWithType', 'ROLE'] }
-                }
-              },
-              as: 'sr',
-              in: '$$sr.sharedWithId'
-            }
+    /* ---------- Access filter ---------- */
+    {
+      $match: {
+        $or: [
+          { isOwner: true },
+          { permissions: { $ne: null } }
+        ]
+      }
+    },
+
+    /* ---------- Collect ALL shared users & roles ---------- */
+    {
+      $addFields: {
+        sharedPeople: {
+          $map: {
+            input: {
+              $filter: {
+                input: '$shares',
+                as: 's',
+                cond: { $eq: ['$$s.sharedWithType', 'USER'] }
+              }
+            },
+            as: 'sp',
+            in: '$$sp.sharedWithId'
+          }
+        },
+        sharedRoles: {
+          $map: {
+            input: {
+              $filter: {
+                input: '$shares',
+                as: 's',
+                cond: { $eq: ['$$s.sharedWithType', 'ROLE'] }
+              }
+            },
+            as: 'sr',
+            in: '$$sr.sharedWithId'
           }
         }
-      },
+      }
+    },
 
-      /* -------- Final shape -------- */
+    /* ---------- Final shape ---------- */
+    {
+      $project: {
+        _id: 1,
+        organizationId: 1,
+        folderName: '$name',
+        color: 1,
+        isOwner: 1,
+        permissions: 1,
+        sharedPeople: 1,
+        sharedRoles: 1,
+        envelopes: {
+          $map: {
+            input: '$envelopes',
+            as: 'e',
+            in: '$$e.envelopeId'
+          }
+        },
+        createdAt: 1
+      }
+    }
+  ]);
+
+  return folders;
+};
+const getOrganizationMembers = async (orgId) => {
+  const members = await organizationUser.find({
+    organizationId: orgId, // orgId
+  })
+  .populate({
+    path: 'roleId',
+    select: 'name description' // only what you need
+  })
+  .select('_id userId email name status roleId createdAt, addedBy');
+
+  return members;
+
+}
+const createOrganizationRole = async (orgId, roleData) => {
+    const existingRole = await organizationRole.findOne({organizationId:orgId, name: roleData.name});
+    if (existingRole) {
+        throw new Error('Role with the same name already exists in the organization');
+    }
+    const newRole = await organizationRole.create({  
+        organizationId: orgId,
+        name: roleData.name,
+        description: roleData?.description || ""
+    });
+    return newRole;
+};
+const getOrganizationRoles = async (orgId) => {
+  const roles = await organizationRole.aggregate([
       {
-        $project: {
-          _id: 1,
-          organization_id: '$organizationId',
-          folderName: '$name',
-          ownerId: '$createdBy',
-          isOwner: 1,
-          permissions: 1,
-          sharedPeople: 1,
-          sharedRole: 1,
-          envelopes: {
-            $map: {
-              input: '$envelopes',
-              as: 'e',
-              in: '$$e.envelopeId'
-            }
-          },
-          color: 1,
-          createdAt:1
+        $match: {
+          organizationId: new mongoose.Types.ObjectId(orgId)
+        }
+      },
+      {
+        $lookup: {
+          from: "organizationpermissions", // Mongo collection name (lowercase + plural)
+          localField: "_id",
+          foreignField: "roleId",
+          as: "permissions"
+        }
+      },
+      {
+        $unwind: {
+          path: "$permissions",
+          preserveNullAndEmptyArrays: true // role without permissions still returned
         }
       }
     ]);
 
-    return folders;
+    return roles;
+};
+const updateOrganizationRole = async (roleId, roleData) => {
+    const existingRole = await organizationRole.findOne({ _id: { $ne: roleId }, organizationId: roleData.organizationId, name: roleData.name });
+    if (existingRole) {
+        throw new Error('Role with the same name already exists in the organization');
+    }
+    const updatedRole = await organizationRole.findByIdAndUpdate(roleId, {
+        name: roleData.name,
+        description: roleData?.description || ""
+    }, { new: true });
+    if (!updatedRole) {
+        throw new Error('Role not found');
+    }
+    return updatedRole;
 }
+const updateRolePermissions = async (roleId, permissions) => {
+    let orgPermissions = await organizationPermission.findOne({ roleId });
+    if (!orgPermissions) {
+        orgPermissions = await organizationPermission.create({
+            roleId,
+            permissions: permissions
+        });
+    } else {
+        orgPermissions.permissions = permissions;
+        await orgPermissions.save();
+    }
+    return orgPermissions;
+};
+const getOrgNotifications = async (organizationId, userId,role) => {
+    const notifications = await OrganizationNotification.find({
+    organizationId,
+    $or: [
+      { targetUserIds: { $size: 0 } },
+      { targetUserIds: userId },
+      { targetRoles: role }
+    ]
+  })
+  .sort({ createdAt: -1 })
+  .limit(20)
+  .lean();
+    return notifications;
+}
+const getNotificcatoinReadIds = async(userId,notifications )=>{
+  const result = await OrganizationNotificationRead.find({
+    userId,
+    notificationId: { $in: notifications.map(n => n._id) }
+  }).distinct('notificationId');
+  return result
+}
+const addMemberToOrganization = async (orgId, payload,addedBy) => {
+  const result = await organizationUser.create({
+    organizationId: orgId,
+    ...payload,     // ✅ spreads fields correctly
+    addedBy
+  });
+
+  return result;
+}
+const getUserInvitationById = async (invitationId,userId) => {
+    const invitation = await organizationUser.findOne({_id:invitationId, userId:userId})
+    .populate({
+      path: 'organizationId',
+      select: 'name logo'
+    })
+    .lean();
+    return invitation;
+};
+const acceptOrganizationInvitation = async (invitationId,userId) => {
+    const invitation = await organizationUser.findOne({_id:invitationId,userId:userId});
+    if (!invitation) {
+        throw new Error('Invitation not found');
+    }
+    invitation.status = 'ACTIVE';
+    await invitation.save();
+    return invitation;
+}
+const rejectOrganizationInvitation = async (invitationId,userId) => {
+    const invitation = await organizationUser.findOne({_id:invitationId,userId:userId});
+    if (!invitation) {
+        throw new Error('Invitation not found');
+    }
+    invitation.status = 'REJECTED';
+    await invitation.save();
+    return invitation;
+}
+const shareFolder = async (payload) => {
+  const result =  await OrgFolderShare.create(payload);
+  return result;
+};
+const fetchFolderById = async (folderId) => {
+    const folder = await orgFolder.findById(folderId).lean();
+    if (!folder) {
+        throw new Error('Folder not found');
+    }
+    return folder;
+}
+const fetchFolderEnvelopeIds = async (folderId) => {
+    const envelopes = await folderEnvelope.find({ folderId }).select('envelopeId -_id').lean();
+    return envelopes.map(e => e.envelopeId);
+}
+const getRolesandUsersByFolderId = async (folderId) =>{
+  const shares = await OrgFolderShare.find({ folderId }).lean();
+  const userIds = shares
+    .filter(s => s.sharedWithType === 'USER')
+    .map(s => s.sharedWithId);
+
+  const roleIds = shares
+    .filter(s => s.sharedWithType === 'ROLE')
+    .map(s => s.sharedWithId);
+  const users = await organizationUser.find({ _id: { $in: userIds } })
+  .select('name email roleId')
+  .populate('roleId', 'name')
+  .lean();
+
+  const roles = await organizationRole.find({ _id: { $in: roleIds } })
+    .select('name description')
+    .lean();
+  const formattedUsers = users.map(u => ({
+    _id: u._id,
+    name: u.name,
+    email: u.email,
+    role: u.roleId?.name || null
+  }));
+
+  const formattedRoles = roles.map(r => ({
+    _id: r._id,
+    name: r.name,
+    description: r.description
+  }));
+
+  const result = {
+    users: formattedUsers,
+    roles: formattedRoles
+  };
+  return result;
+
+}
+const checkExistingEnvelope = async(folderId,envelopeIds) =>{
+  const docs = await folderEnvelope
+      .find(
+        { folderId, envelopeId: { $in: envelopeIds } },
+        { envelopeId: 1, _id: 0 }
+      )
+      .lean();
+
+  return docs.map(d => d.envelopeId);
+}
+const insertEnvelopesToFolder = async(folderId, envelopeIds, userId) =>{
+  const records = envelopeIds.map(envelopeId => ({
+    folderId: folderId,
+    envelopeId: envelopeId,
+    addedBy: userId
+  }));
+
+  try{
+    const result = await folderEnvelope.insertMany(records,{ordered:false});
+    return{
+      insertedCount: result.length
+    }
+  }catch (err){
+    console.log(err);
+    if (err.code === 11000) {
+      return {
+        insertedCount: err.result?.nInserted || 0
+      };
+    }
+    throw err;
+  }
+
+}
+
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -339,5 +584,22 @@ module.exports = {
     getOrganizationRoleById,
     getOrganizationPermissionsByRoleId,
     createFolderInOrganization,
-    getFoldersInOrganization
+    getFoldersInOrganization,
+    getOrganizationMembers,
+    createOrganizationRole,
+    getOrganizationRoles,
+    updateOrganizationRole,
+    updateRolePermissions,
+    getOrgNotifications,
+    getNotificcatoinReadIds,
+    addMemberToOrganization,
+    getUserInvitationById,
+    acceptOrganizationInvitation,
+    rejectOrganizationInvitation,
+    shareFolder,
+    fetchFolderById,
+    fetchFolderEnvelopeIds,
+    getRolesandUsersByFolderId,
+    insertEnvelopesToFolder,
+    checkExistingEnvelope
 };

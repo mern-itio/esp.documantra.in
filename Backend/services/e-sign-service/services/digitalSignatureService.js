@@ -24,7 +24,7 @@ Notes: signing is done incrementally (sign -> sign the signed result -> ...). Fo
 
 const fs = require('fs');
 const path = require('path');
-const { PDFDocument } = require('pdf-lib');
+const { PDFDocument, rgb } = require('pdf-lib');
 const { SignPdf } = require('node-signpdf');
 const plainAddPlaceholder = require('node-signpdf/dist/helpers/plainAddPlaceholder').default;
 const forge = require('node-forge');
@@ -45,6 +45,11 @@ const Cycle = require('../models/Cycle');
 
 const signer = new SignPdf();
 
+// Match frontend base page width so coordinates scale identically
+const BASE_PAGE_WIDTH = 800;
+// Small nudge (in frontend pixels) to correct minor alignment differences
+const NUDGE_PX_X = 3; // move right by 3 frontend pixels
+const NUDGE_PX_Y = 3; // move down by 3 frontend pixels
 function normalizePem(pem) {
   if (!pem) return pem;
   return pem.toString().replace(/\r/g, '\n').replace(/\n+/g, '\n').trim() + '\n';
@@ -77,7 +82,12 @@ async function addPlaceholderToPdf(pdfBuffer, field) {
   return plainAddPlaceholder(options);
 }
 
-async function signPdfWithCert(pdfBuffer, privateKeyPem, certPem, envelopeId, recipientId, fallbackPassword = 'changeit') {
+async function signPdfWithCert(pdfBuffer, privateKeyPem, certPem, options = {}) {
+  const envelopeId = options && options.envelopeId ? options.envelopeId : undefined;
+  const recipientId = options && options.recipientId ? options.recipientId : undefined;
+  const placeholderName = options && options.placeholderName ? options.placeholderName : undefined;
+  const fallbackPassword = options && options.fallbackPassword ? options.fallbackPassword : 'changeit';
+
   try {
     const signed = signer.sign(pdfBuffer, { key: privateKeyPem, cert: certPem, passphrase: '' });
     return Buffer.isBuffer(signed) ? signed : Buffer.from(signed);
@@ -152,31 +162,29 @@ async function initiateRecipientSignature({fieldId, envelopeId, documentId, reci
   return { signatureField: sField };
 }
 
+
 async function prepareDocumentForFinalSigning(
   envelopeId,
   documentId,
   cycleId,
   isSelfSign = false
 ) {
-   // 1. Load base document
   const docRecord = await Document.findById(documentId);
   if (!docRecord) throw new Error('Document not found');
-  if (!docRecord.filePath || !fs.existsSync(docRecord.filePath)) {
+  if (!fs.existsSync(docRecord.filePath)) {
     throw new Error('Original document file missing');
   }
 
-  let pdfBuffer = fs.readFileSync(docRecord.filePath);
+  const pdfBuffer = fs.readFileSync(docRecord.filePath);
   const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
-
-   // 2. Load field definitions
 
   const allFields = await SignatureFields
     .find({ documentId })
     .sort({ order: 1, _id: 1 })
     .lean();
 
-  // 3. Resolve field values for SELF SIGN flow
- 
+  /* ---------------- RESOLVE VALUES ---------------- */
+
   const resolvedFieldMap = new Map();
 
   if (isSelfSign && cycleId) {
@@ -191,98 +199,110 @@ async function prepareDocumentForFinalSigning(
     if (!cycle) throw new Error('Cycle not found');
 
     for (const signer of cycle.signers || []) {
-
-      // Non-signature fields
       for (const f of signer.nonSignatureFields || []) {
         resolvedFieldMap.set(String(f.fieldId), {
           type: 'text',
-          value: f.value,
-          signerId: signer._id,
-          signingOrder: signer.signingOrder,
+          value: f.value
         });
       }
 
-      // Signature fields
       if (signer.signature) {
         for (const f of signer.signatureFields || []) {
           resolvedFieldMap.set(String(f.fieldId), {
             type: 'signature',
-            value: signer.signature,
-            signerId: signer._id,
-            signingOrder: signer.signingOrder,
+            value: signer.signature
           });
         }
       }
     }
   }
 
-  // 4. Embed visible values into PDF
+  /* 🔥 CRITICAL STEP — FLATTEN FORM */
+  try {
+    const form = pdfDoc.getForm();
+    form.flatten();
+  } catch (e) {
+    // no form present — safe to ignore
+  }
+  /* ---------------- EMBED VALUES ---------------- */
+
   for (const f of allFields) {
-    try {
-      const resolved = isSelfSign
-        ? resolvedFieldMap.get(String(f._id))
-        : (f.signature ? { type: f.type, value: f.signature } : null);
+    const resolved = isSelfSign
+      ? resolvedFieldMap.get(String(f._id))
+      : (f.value || f.signature
+          ? { type: f.type, value: f.value || f.signature }
+          : null);
 
-      if (!resolved || !resolved.value) continue;
+    if (!resolved || !resolved.value) continue;
+    const rawX = Number(f.x || 50);
+    const rawY = Number(f.y || 50);
+    const rawW = Number(f.width || 150);
+    const rawH = Number(f.height || 40);
+    const pageIndex = Math.max(0, Number(f.page || 1) - 1);
+    const page = pdfDoc.getPages()[pageIndex] || pdfDoc.getPages()[0];
 
-      const pageIndex = Math.max(0, Number(f.page || 1) - 1);
-      const page = pdfDoc.getPages()[pageIndex] || pdfDoc.getPages()[0];
+    // Scale coordinates from frontend base (pixels @ BASE_PAGE_WIDTH) to PDF points
+    const scale = page.getWidth() / BASE_PAGE_WIDTH;
+    const x = rawX * scale;
+    const w = Math.max(1, rawW * scale);
+    const h = Math.max(1, rawH * scale);
+    const yTop = rawY * scale;
+    const y = page.getHeight() - yTop - h + NUDGE_PX_Y;
 
-      const x = Number(f.x || 50);
-      const w = Number(f.width || 150);
-      const h = Number(f.height || 40);
-      const topY = Number(f.y || 50);
-      const y = page.getHeight() - topY - h;
+    if (
+      resolved.type === 'signature' &&
+      typeof resolved.value === 'string' &&
+      resolved.value.startsWith('data:image')
+    ) {
+      const img = await pdfDoc.embedPng(
+        Buffer.from(resolved.value.split(',')[1], 'base64')
+      );
 
-      if (
-        resolved.type === 'signature' &&
-        typeof resolved.value === 'string' &&
-        resolved.value.startsWith('data:image')
-      ) {
-        const base64 = resolved.value.split(',')[1];
-        if (!base64) continue;
-
-        const img = await pdfDoc.embedPng(Buffer.from(base64, 'base64'));
-        page.drawImage(img, { x, y, width: w, height: h });
-      } else {
-        page.drawText(String(resolved.value), {
-          x,
-          y,
-          size: 12,
-          color: rgb(0, 0, 0),
-        });
-      }
-    } catch (e) {
-      await AuditTrail.create({
-        envelopeId,
-        action: 'EMBED_FIELD_FAILED',
-        details: {
-          fieldId: f._id,
-          error: e.message,
-        },
-      }).catch(() => {});
+      page.drawImage(img, { x, y, width: w, height: h });
+    } else {
+      // scale text size to match frontend appearance
+      const textSize = Math.max(8, 10 * (page.getWidth() / BASE_PAGE_WIDTH));
+      page.drawText(String(resolved.value), {
+        x,
+        y,
+        size: textSize,
+        color: rgb(0, 0, 0)
+      });
     }
   }
 
-  // 5. Normalize PDF for cryptographic signing
-  const normalizedBytes = await pdfDoc.save({ useObjectStreams: false });
-  let workingBuffer = Buffer.from(normalizedBytes);
+  /* ---------------- NORMALIZE ---------------- */
 
-  // 6. Add signature placeholders
+  let workingBuffer = Buffer.from(
+    await pdfDoc.save({ useObjectStreams: false })
+  );
+
+  /* ---------------- PLACEHOLDERS  ---------------- */
    
   const sigFields = allFields.filter(f => f.type === 'signature');
 
   for (const f of sigFields) {
+  const pageIndex = Math.max(0, Number(f.page || 1) - 1);
+  const page = pdfDoc.getPages()[pageIndex] || pdfDoc.getPages()[0];
+
+  const scale = page.getWidth() / BASE_PAGE_WIDTH;
+
+  const px = f.x * scale;
+  const pw = f.width * scale;
+  const ph = f.height * scale;
+  const py = page.getHeight() - (f.y * scale) - ph + NUDGE_PX_Y;
+
     const placeholderField = {
-      page: Math.max(1, Number(f.page || 1)),
-      x: Number(f.x || 50),
-      y: Number(f.y || 50),
-      width: Number(f.width || 150),
-      height: Number(f.height || 40),
-      name: `sig_${String(f._id)}`,
-      reason: `Signature placeholder for field ${String(f._id)}`,
+      page: pageIndex + 1,
+      x: px,
+      y: py,
+      width: pw,
+      height: ph,
+      name: `sig_${f._id}`,
+      reason: `Signature placeholder for field ${f._id}`,
       signatureLength: 65536,
     };
+
 
     try {
       workingBuffer = await addPlaceholderToPdf(
@@ -301,39 +321,30 @@ async function prepareDocumentForFinalSigning(
     }
   }
 
-  // 7. Persist prepared PDF against Cycle
-   
+  /* ---------------- SAVE ---------------- */
+
   const preparedDir = path.join(process.cwd(), 'uploads', 'prepared');
   if (!fs.existsSync(preparedDir)) {
     fs.mkdirSync(preparedDir, { recursive: true });
   }
-  let outname = `prepared_${Date.now()}_${path.basename(docRecord.filePath)}`;
-  if (isSelfSign) {
-    outname = `cycle_${cycleId}_${Date.now()}_${path.basename(docRecord.filePath)}`;
-  }
-  const outPath = path.join(preparedDir, outname);
+  const outPath = path.join(
+    preparedDir,
+    `${isSelfSign ? 'cycle' : 'prepared'}_${Date.now()}_${path.basename(docRecord.filePath)}`
+  );
 
   fs.writeFileSync(outPath, workingBuffer);
-  if(isSelfSign){
-    await Cycle.findByIdAndUpdate(cycleId, {
-      preparedDoc: outPath
-    });
-  }else{
-      docRecord.preparedDoc = outPath;
-      await docRecord.save();
+
+  if (isSelfSign) {
+    await Cycle.findByIdAndUpdate(cycleId, { preparedDoc: outPath });
+  } else {
+    docRecord.preparedDoc = outPath;
+    await docRecord.save();
   }
-  await AuditTrail.create({
-    envelopeId,
-    action: 'DOCUMENT_PREPARED',
-    details: {
-      preparedPath: outPath,
-      cycleId,
-      isSelfSign,
-    },
-  }).catch(() => {});
 
   return { preparedPath: outPath };
 }
+
+
 
 
 async function finalizeSigning(envelopeId, documentId,cycleId=null, isSelfSign = false) {
@@ -506,7 +517,7 @@ async function finalizeSigning(envelopeId, documentId,cycleId=null, isSelfSign =
   }
 
   // Optional: release the lock here (if you implemented locking)
-  return { finalPath: docRecord.signedFilePath || docRecord.preparedDoc };
+  return { finalPath: docRecord.signedFilePath,signedFileName:docRecord.signedFileName};
 }
 
 
