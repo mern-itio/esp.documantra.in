@@ -1,29 +1,29 @@
-import { ShieldCheck, Fingerprint, FileCheck, Lock } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const VerificationSection = () => {
-  const points = [
-    {
-      icon: Fingerprint,
-      title: 'Aadhaar-based verification',
-      description: 'Verify signer identity using Aadhaar for high-assurance agreements.',
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Secure & compliant',
-      description: 'Data encrypted at rest and in transit. Compliant with Indian IT Act and eSign guidelines.',
-    },
-    {
-      icon: FileCheck,
-      title: 'Audit trail',
-      description: 'Every view, sign, and verification event is logged with timestamp and IP.',
-    },
-    {
-      icon: Lock,
-      title: 'Access control',
-      description: 'Role-based permissions and optional expiry for signing links.',
-    },
-  ]
+  // const points = [
+  //   {
+  //     icon: Fingerprint,
+  //     title: 'Aadhaar-based verification',
+  //     description: 'Verify signer identity using Aadhaar for high-assurance agreements.',
+  //   },
+  //   {
+  //     icon: ShieldCheck,
+  //     title: 'Secure & compliant',
+  //     description: 'Data encrypted at rest and in transit. Compliant with Indian IT Act and eSign guidelines.',
+  //   },
+  //   {
+  //     icon: FileCheck,
+  //     title: 'Audit trail',
+  //     description: 'Every view, sign, and verification event is logged with timestamp and IP.',
+  //   },
+  //   {
+  //     icon: Lock,
+  //     title: 'Access control',
+  //     description: 'Role-based permissions and optional expiry for signing links.',
+  //   },
+  // ]
 
   return (
     <section className="section-padding bg-gradient-to-br from-[#260559] via-[#3d0d7a] to-[#260559] text-white">
