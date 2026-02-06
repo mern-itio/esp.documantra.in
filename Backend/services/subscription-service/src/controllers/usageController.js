@@ -16,14 +16,55 @@ const getUserIdFromRequest = (req) => {
 const getBalance = async (req, res) => {
   try {
     const userId = getUserIdFromRequest(req);
-    if (!userId) return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
+    const accountType = req.headers['x-account-type'];
+    const orgOwnerId = req.headers['x-organization-owner-id'];
 
-    const subscription = await Subscription.findOne({ userId }).lean();
-    if (!subscription) return res.status(404).json({ status: 404, message: 'Subscription not found', data: null });
+    if (!userId) {
+      return res.status(401).json({
+        status: 401,
+        message: 'Unauthorized',
+        data: null,
+      });
+    }
 
-    return res.status(200).json({ status: 200, data: { creditsBalance: subscription.creditsBalance } });
+    let subscriptionUserId = userId;
+
+    // If switched to organization account, use org owner id
+    if (accountType === 'organization') {
+      if (!orgOwnerId) {
+        return res.status(400).json({
+          status: 400,
+          message: 'Organization owner id missing in headers',
+          data: null,
+        });
+      }
+      subscriptionUserId = orgOwnerId;
+    }
+
+    const subscription = await Subscription.findOne({
+      userId: subscriptionUserId,
+    }).lean();
+
+    if (!subscription) {
+      return res.status(404).json({
+        status: 404,
+        message: 'Subscription not found',
+        data: null,
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      data: {
+        creditsBalance: subscription.creditsBalance,
+      },
+    });
   } catch (e) {
-    return res.status(500).json({ status: 500, message: e.message, data: null });
+    return res.status(500).json({
+      status: 500,
+      message: e.message,
+      data: null,
+    });
   }
 };
 
@@ -31,9 +72,22 @@ const getBalance = async (req, res) => {
 const consumeCredits = async (req, res) => {
   try {
     const userId = getUserIdFromRequest(req);
+    const accountType = req.headers['x-account-type'];
+    const orgOwnerId = req.headers['x-organization-owner-id'];
     if (!userId) return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
-
-    const subscription = await Subscription.findOne({ userId });
+    let subscriptionUserId = userId;
+        // If switched to organization account, use org owner id
+    if (accountType === 'organization') {
+      if (!orgOwnerId) {
+        return res.status(400).json({
+          status: 400,
+          message: 'Organization owner id missing in headers',
+          data: null,
+        });
+      }
+      subscriptionUserId = orgOwnerId;
+    }
+    const subscription = await Subscription.findOne({ userId:subscriptionUserId });
     if (!subscription) return res.status(404).json({ status: 404, message: 'Subscription not found', data: null });
 
     // Handle e-sign envelope credit consumption
@@ -171,12 +225,27 @@ module.exports = { getBalance, consumeCredits };
 const listUsage = async (req, res) => {
   try {
     const userId = getUserIdFromRequest(req);
+    const accountType = req.headers['x-account-type'];
+    const orgOwnerId = req.headers['x-organization-owner-id'];
     if (!userId) return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
+
+    let forUseId = userId;
+    // If switched to organization account, use org owner id
+    if (accountType === 'organization') {
+      if (!orgOwnerId) {
+        return res.status(400).json({
+          status: 400,
+          message: 'Organization owner id missing in headers',
+          data: null,
+        });
+      }
+      forUseId = orgOwnerId;
+    }
 
     const { page = 1, limit = 20 } = req.query || {};
     const skip = (Number(page) - 1) * Number(limit);
-    const records = await UsageRecord.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean();
-    const total = await UsageRecord.countDocuments({ userId });
+    const records = await UsageRecord.find({ userId: forUseId}).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean();
+    const total = await UsageRecord.countDocuments({ userId:forUseId });
     return res.status(200).json({ status: 200, data: { records, pagination: { currentPage: Number(page), itemsPerPage: Number(limit), totalItems: total, totalPages: Math.ceil(total / Number(limit)) } } });
   } catch (e) {
     return res.status(500).json({ status: 500, message: e.message, data: null });

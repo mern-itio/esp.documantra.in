@@ -3,9 +3,12 @@ import { Card, CardContent } from '../../components/DocumentService/ui/card';
 import Badge from '../../components/DocumentService/ui/badge'
 import { Folder, FolderOpen, MailOpen, Plus, User, Users } from 'lucide-react'
 import { CreateFolderModal } from '../../components/Organization/CreateFolderModal';
+import { ShareFolderModal } from '../../components/Organization/ShareFolderModal';
+import { ShareFolderWithRoleModal } from '../../components/Organization/ShareFolderWithRoleModal';
 import { organizationApi } from '../../services/apiHelper';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../components/AuthService/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface SharedPerson {
   _id: string
@@ -20,7 +23,7 @@ interface FolderRecord {
   ownerId: string
   isOwner:boolean
   sharedPeople?: SharedPerson[]
-  sharedRole?: string[]
+  sharedRoles?: string[]
   envelopes?: string[]
   permissions?:string[]
   color?: string
@@ -29,6 +32,7 @@ interface FolderRecord {
 
 const OrganizationFolder: React.FC = () => {
   const { organizationId, accountType } = useAuth();
+   const nevigate = useNavigate();
   console.log(accountType);
   const [folders, setFolders] = useState<FolderRecord[]>([]);
    useEffect(() => {
@@ -45,7 +49,15 @@ const OrganizationFolder: React.FC = () => {
         console.error('Error fetching folders:', err);
       }
     }
+    const handleFolderClick = (folderId: string) => () => {
+      // Navigate to folder details page
+      console.log('Folder clicked:', folderId);
+      nevigate(`/organization/folder/${folderId}`);
+    }
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [showShareRoleModal, setShowShareRoleModal] = useState(false);
+    const [selectedFolder, setSelectedFolder] = useState<FolderRecord | null>(null);
     const handleCreateFolder = async (folderData: { name: string; color: string; icon: string }) => {
         const response = await organizationApi.post(`/api/organization/create-folder`, folderData);
         if (response.status === 201) {
@@ -68,15 +80,27 @@ const OrganizationFolder: React.FC = () => {
                 </button>
         </div>
       </div>
-    <CreateFolderModal
-        isOpen={showCreateModal}
-        onClose={() => {
-        setShowCreateModal(false);
-        }}
-        onSubmit={async (folderData) => {
-        await handleCreateFolder(folderData);
-        }}
-    />
+      <CreateFolderModal
+          isOpen={showCreateModal}
+          onClose={() => {
+          setShowCreateModal(false);
+          }}
+          onSubmit={async (folderData) => {
+          await handleCreateFolder(folderData);
+          }}
+      />
+      <ShareFolderModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          folder={selectedFolder}
+          onShared={fetchFolders}
+      />
+      <ShareFolderWithRoleModal
+          isOpen={showShareRoleModal}
+          onClose={() => setShowShareRoleModal(false)}
+          folder={selectedFolder}
+          onShared={fetchFolders}
+      />
       <div className="space-y-6">
         {folders.length === 0 ? (
         <div className="text-center py-12">
@@ -88,7 +112,7 @@ const OrganizationFolder: React.FC = () => {
             <div className="mt-6">
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="w-full inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap">
+                    className="w-small inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap">
                     <Plus className="w-4 h-4" /> Create Your First Folder
                 </button>
             </div>
@@ -97,6 +121,7 @@ const OrganizationFolder: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {folders.map((folder) =>(
             <Card
+            onClick={handleFolderClick(folder?._id)}
             key={folder?._id}
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
             >
@@ -126,7 +151,7 @@ const OrganizationFolder: React.FC = () => {
                               </div>
 
                               {/* Shared People */}
-                              <div className="relative group flex items-center space-x-1 cursor-pointer">
+                              <div className="relative group flex items-center space-x-1 cursor-pointer" onClick={() => { setSelectedFolder(folder); setShowShareModal(true); }}>
                                 <User className="h-3 w-3" />
                                 <span>{folder.sharedPeople?.length || 0}</span>
                                 <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
@@ -135,11 +160,11 @@ const OrganizationFolder: React.FC = () => {
                               </div>
 
                               {/* Shared Roles */}
-                              <div className="relative group flex items-center space-x-1 cursor-pointer">
+                              <div className="relative group flex items-center space-x-1 cursor-pointer" onClick={() => { setSelectedFolder(folder); setShowShareRoleModal(true); }}>
                                 <Users className="h-3 w-3" />
-                                <span>{folder.sharedRole?.length || 0}</span>
+                                <span>{folder.sharedRoles?.length || 0}</span>
                                 <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
-                                  {folder.sharedRole?.length || 0} roles
+                                  {folder.sharedRoles?.length || 0} roles
                                 </div>
                               </div>
 

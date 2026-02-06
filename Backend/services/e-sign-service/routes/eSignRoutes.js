@@ -24,7 +24,8 @@ const {
          getSigners,getAllEnvelopeStats,getAllRecipients,
          getNotifications,
          markNotificationAsRead,
-         markAllNotificationsAsRead  } = require('../controllers/mainController');
+         markAllNotificationsAsRead,
+         fetchBulkEnvelopes  } = require('../controllers/mainController');
 const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = require('../controllers/recipientController');
 const multer = require('multer');
 const path = require('path');
@@ -69,6 +70,7 @@ router.post('/envelope/remove-signature-field/:fieldId', removeDocSignField);
 router.post('/envelope/connect/powerform', connectPowerForm);
 router.get('/envelope/signers/:envelopeId', getSigners);
 router.get('/envelope/all-stats/:userType', getAllEnvelopeStats);
+router.post('/envelopes/bulk-fetch', fetchBulkEnvelopes);
 // Notifications
 router.get('/notifications', getNotifications);
 router.post('/notifications/:notificationId/read', markNotificationAsRead);

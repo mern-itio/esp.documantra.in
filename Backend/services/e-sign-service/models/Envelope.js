@@ -54,8 +54,9 @@ const EnvelopeSchema = new mongoose.Schema({
   scheduledDate: { type: Date }, // Combined date and time for when to send
   scheduledTime: { type: String }, // Optional separate time field for UI convenience
   // AI Assistant tracking
-  isAIGenerated: { type: Boolean, default: false } // Track if envelope was created/sent by AI assistant
-
+  isAIGenerated: { type: Boolean, default: false }, // Track if envelope was created/sent by AI assistant
+  isOrganization: { type: Boolean, default: false }, // Track if envelope belongs to an organization
+  organizationId: { type: mongoose.Schema.Types.ObjectId, default:null } // Link to organization if applicable
 }, { timestamps: true });
 
 module.exports = mongoose.model('Envelope', EnvelopeSchema);

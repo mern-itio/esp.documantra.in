@@ -27,7 +27,7 @@ export const SharedOrganizationCard: React.FC<SharedOrganizationCardProps> = ({ 
                 <img
                   src={organization.logo}
                   alt={organization.name}
-                  className="w-full h-full rounded-lg object-cover"
+                  className="w-full h-full rounded-lg object-fit"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';

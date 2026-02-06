@@ -207,9 +207,14 @@ import SignerCycle from '../pages/eSign/SignerCycle';
 import CreateOrganizationPage from '../pages/Organization/CreateOrganizationPage';
 import MyOrganizationPage from '../pages/Organization/MyOrganizationPage';
 import OrganizationFolder from '../pages/Organization/organizationFolder';
+
 import ClientsSection from '../components/LandingPage/clientSection';
 import IndustriesSection from '../components/LandingPage/IndustriesSection';
 import BookDemoPage from '../pages/LandingPage/BookDemoPage';
+
+import EmailPage from '../pages/EmailService/EmailPage';
+import InvitationPage from '../pages/Organization/invitaionPage';
+import FolderDetailPage from '../pages/Organization/folderDetailPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -642,7 +647,8 @@ const authRoutes = [
   { path: '/organization/create', element: <CreateOrganizationPage /> },
   { path: '/organizations/', element: <MyOrganizationPage /> },
   { path: '/organization/folders', element: <OrganizationFolder /> },
-
+  { path: '/organization/invitations/:invUserId', element: <InvitationPage/>},
+  { path: '/organization/folder/:folderId', element: <FolderDetailPage /> },
   // { path: '/test', element: <DocumentUploadSection /> },
 
   //Document Management Module
@@ -766,7 +772,7 @@ const authRoutes = [
   // Account
   { path: '/account/profile', element: <UserProfile /> },
   { path: '/notifications', element: <NotificationsPage /> },
-
+  { path: '/account/email-configuration', element: <EmailPage/>},
   // API-service routes
   { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
   { path: '/api-service/analytics', element: <ApiServiceAnalytics /> },

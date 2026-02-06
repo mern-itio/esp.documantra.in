@@ -65,3 +65,37 @@ export interface GetOrganizationResponse {
   data: Organization;
 }
 
+export interface Role {
+  _id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  permissions?: {
+    permissions: {
+    ENVELOPE_CREATE: boolean;
+    ENVELOPE_SHARE: boolean;
+    FOLDER_CREATE: boolean;
+    FOLDER_SHARE: boolean;
+    ORG_SHARE: boolean;
+    ORG_SETTINGS_EDIT: boolean;
+    }
+
+  };
+}
+
+export interface Permission {
+  _id: string;
+  roleId: string;
+  permissions: {
+    ENVELOPE_CREATE: boolean;
+    ENVELOPE_SHARE: boolean;
+    FOLDER_CREATE: boolean;
+    FOLDER_SHARE: boolean;
+    ORG_SHARE: boolean;
+    ORG_SETTINGS_EDIT: boolean;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
