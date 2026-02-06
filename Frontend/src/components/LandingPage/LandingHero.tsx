@@ -1,65 +1,104 @@
-import { ChevronsLeft } from 'lucide-react'
+
 import { Link } from 'react-router-dom'
 
 const LandingHero = () => {
   return (
-    <section className="relative overflow-hidden bg-[#fdfdfd] pt-24 pb-16 md:pt-28 md:pb-20">
-      <div className="absolute inset-0 z-0 pointer-events-none">
+    <section className="relative overflow-hidden bg-[#e9f3ff] text-slate-900 pt-24 pb-24 md:pt-28 md:pb-32">
+    <div className="absolute inset-0 z-0 pointer-events-none">
         <img
-          src="/bg.svg"
+          src="/images/bg-hero.avif"
           alt=""
           className="h-full w-full object-cover opacity-80"
         />
         
       </div>
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_20%,rgba(38,5,89,0.08),transparent_50%),radial-gradient(circle_at_20%_80%,rgba(99,102,241,0.06),transparent_50%)]" />
-      <div className="container-max section-padding relative z-10">
-        <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-10 items-center">
-          {/* Left: copy + actions */}
-          <div className="max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
-            <h1 className="heading  text-gray-900 tracking-tight leading-[1.1] mb-6">
-              E-Sign, verify &amp; manage PDFs
-              <span className="block gradient-text mt-1">in one secure platform</span>
-            </h1>
-            <p className="text-sm  max-w-xl mb-8 ">
-              Upload documents, verify signers with Aadhaar, collect e-signatures, and use 30+ PDF tools all with a full audit trail and legal compliance.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-              <Link to="/signup" className="inline-flex items-center justify-center gap-2 bgColor text-white font-semibold px-6 py-3.5 rounded-xl shadow-lg hover:bgColor/100 transition-colors">
-               Try Now
-               <ChevronsLeft className="h-4 w-4 rotate-180" />              
-              </Link>
-              <Link to="#e-sign-flow" className="inline-flex items-center justify-center gap-2 border-2 border-[#084bdc] text-[#084bdc] font-semibold px-6 py-3.5 rounded-xl hover:bg-[#260559]/5 transition-colors">
-                See e-sign flow
-              </Link>
-              <Link to="/login" className="inline-flex items-center justify-center gap-2 text-gray-600 font-medium px-6 py-3.5 rounded-xl hover:bg-gray-100 transition-colors">
-                PDF tools
-              </Link>
-            </div>
+      {/* Soft blue gradient background */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(255,255,255,0.9),transparent_55%),radial-gradient(circle_at_90%_0%,rgba(219,234,254,0.9),transparent_60%),radial-gradient(circle_at_50%_70%,rgba(59,130,246,0.4),transparent_60%)]" />
+
+      <div className="relative z-10 container-max px-4 md:px-6">
+        {/* Top content */}
+        <div className="max-w-4xl mx-auto text-center">
+         
+          <h1 className="mt-2 text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-5">
+           Sign, verify, and manage 
+            <span className="block text-indigo-600">
+              documents faster and smarter
+            </span>
+          </h1>
+          <p className="text-sm md:text-base text-slate-700/90 max-w-2xl mx-auto mb-8">
+            Upload documents, verify signers, collect secure e-signatures, and manage PDFs all in one compliant platform with real-time tracking and full audit trails.
+          </p>
+
+          {/* Primary actions */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-6">
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center rounded-full bg-[#2563eb] px-7 py-3 text-sm md:text-base font-semibold text-white shadow-[0_14px_30px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] transition-colors"
+            >
+              Get started for free
+            </Link>
+            <Link
+              to="/book-demo"
+              className="inline-flex items-center justify-center rounded-full border border-sky-200 bg-white/80 px-7 py-3 text-sm md:text-base font-semibold text-sky-700 shadow-sm hover:bg-white transition-colors"
+            >
+              Get a demo
+            </Link>
           </div>
 
-          {/* Right: signature video preview */}
-          <div className="hidden md:block">
-            <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-slate-900 shadow-2xl">
-              <div className="aspect-video">
-                <video
-                  className="h-full w-full object-cover"
-                  src="/videos/signature.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                />
+          {/* Small perks row */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs md:text-sm text-sky-900/80">
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Secure & encrypted document workflows
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Real-time tracking & activity logs
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Fast setup with instant signing links
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom card with video preview (instead of table) */}
+        <div className="mt-10 md:mt-14 flex justify-center">
+          <div className="relative w-full max-w-7xl rounded-2xl bg-white/95 shadow-[0_24px_70px_rgba(15,23,42,0.18)] border border-sky-50 overflow-hidden">
+            {/* Card header */}
+            {/* <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 bg-slate-50/80">
+              <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-slate-700">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-700 text-xs font-semibold">
+                  DS
+                </span>
+                <span>Live signing session</span>
               </div>
-              <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-black/65 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Live signing preview
+              <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Real‑time signer view
               </div>
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-xs text-white/80 flex items-center justify-between gap-3">
-                <span>Sign from any device in seconds.</span>
-                <span className="hidden sm:inline text-white/60">No account needed for signers.</span>
+            </div> */}
+
+            {/* Video body */}
+              <div className="border border-slate-200/80 bg-slate-900 overflow-hidden shadow-sm">
+                <div >
+                  {/* <video
+                    className="h-full w-full object-cover"
+                    src="/videos/ai-features.mp4"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  /> */}
+                  <img
+                    className="h-full w-full object-cover"
+                    src="./Hero-image.png"
+                    alt="Live signing session preview"
+                  />
+                </div>
               </div>
-            </div>
+
+             
           </div>
         </div>
       </div>

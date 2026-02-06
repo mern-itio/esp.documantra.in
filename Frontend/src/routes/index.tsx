@@ -187,7 +187,7 @@ import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 import { PowerForm } from '../pages/eSign/PowerForm';
 import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
-import { AccessibilityPage, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
+import { AccessibilityPage, AIFeatures, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
 import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
 import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
 import EnvelopeDetailPage from '../pages/eSign/EnvelopeDetailPage';
@@ -207,6 +207,9 @@ import SignerCycle from '../pages/eSign/SignerCycle';
 import CreateOrganizationPage from '../pages/Organization/CreateOrganizationPage';
 import MyOrganizationPage from '../pages/Organization/MyOrganizationPage';
 import OrganizationFolder from '../pages/Organization/organizationFolder';
+import ClientsSection from '../components/LandingPage/clientSection';
+import IndustriesSection from '../components/LandingPage/IndustriesSection';
+import BookDemoPage from '../pages/LandingPage/BookDemoPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -555,6 +558,9 @@ const LandingPageLayout = () => (
     <VerificationSection />
     <SignatureExperienceSection />
     <PDFToolsShowcaseSection />
+    <AIFeatures />
+    <ClientsSection />
+    <IndustriesSection />
     <FAQ />
     <LandingCTA />
   </div>
@@ -592,6 +598,7 @@ const guestRoutes = [
   { path: '/bug-bounty', element: <BugBountyPage /> },
   { path: '/data-residency', element:<DataResidencyPage /> },
   { path: '/accessibility', element:<AccessibilityPage /> },
+  { path: '/book-demo', element:<BookDemoPage /> },
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages

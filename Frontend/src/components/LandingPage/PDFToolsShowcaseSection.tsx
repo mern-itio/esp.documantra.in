@@ -67,7 +67,7 @@ const PDFToolsShowcaseSection = () => {
     >
       {/* Subtle background */}
       <div
-        className="pointer-events-none absolute inset-0 bg-[url('/pdf-section.jpg')] bg-cover bg-center opacity-100 md:opacity-30"
+        className="pointer-events-none absolute inset-0 bg-[url('/pdf-section.jpg')] bg-cover bg-center opacity-100 md:opacity-10"
         aria-hidden="true"
       />
 
@@ -76,7 +76,7 @@ const PDFToolsShowcaseSection = () => {
         {/* Header */}
         <div className="mb-12 flex flex-col items-center text-center">
          
-          <h2 className="heading gradient-text">
+          <h2 className="heading ">
             Power up every PDF in your workflow
           </h2>
           <p className="mt-3 max-w-2xl text-sm md:text-base details-text">

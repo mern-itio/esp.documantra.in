@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} */
+// import type { Config } from "tailwindcss";
 export default {
   content: [
     "./index.html",
@@ -10,22 +10,58 @@ export default {
         'sans': ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
+       
+      
+       border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          orange: '#f97316',
-          green: '#10b981',
-        }
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        paper: "hsl(var(--paper))",
+        signature: "hsl(var(--signature))",
+        highlight: "hsl(var(--highlight))",
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
+        },
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
@@ -33,6 +69,9 @@ export default {
         'bounce-slow': 'bounce 2s infinite',
         pulseSoft: 'pulseSoft 1.6s ease-in-out infinite', 
         dot: 'dot 1.4s infinite ease-in-out',
+        'orbit-slow': 'orbit 22s linear infinite',
+        'orbit-slower': 'orbit 30s linear infinite',
+        'orbit-reverse-slower': 'orbitReverse 32s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -53,8 +92,16 @@ export default {
           '50%': { opacity: '1' },
           '100%': { opacity: '0' },
         },
+        orbit: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        orbitReverse: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(-360deg)' },
+        }
       }
     },
   },
   plugins: [],
-}
+} 
