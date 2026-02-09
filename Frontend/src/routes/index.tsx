@@ -14,8 +14,8 @@ import LandingHero from '../components/LandingPage/LandingHero';
 import ESignFlowSection from '../components/LandingPage/ESignFlowSection';
 import VerificationSection from '../components/LandingPage/VerificationSection';
 import SignatureExperienceSection from '../components/LandingPage/SignatureExperienceSection';
-import PDFToolsShowcaseSection from '../components/LandingPage/PDFToolsShowcaseSection';
-import LandingCTA from '../components/LandingPage/LandingCTA';
+// import PDFToolsShowcaseSection from '../components/LandingPage/PDFToolsShowcaseSection';
+// import LandingCTA from '../components/LandingPage/LandingCTA';
 import FAQ from '../components/LandingPage/FAQ';
 import Pricing from '../components/LandingPage/Pricing';
 
@@ -215,6 +215,9 @@ import BookDemoPage from '../pages/LandingPage/BookDemoPage';
 import EmailPage from '../pages/EmailService/EmailPage';
 import InvitationPage from '../pages/Organization/invitaionPage';
 import FolderDetailPage from '../pages/Organization/folderDetailPage';
+import AadhaarSignatureJourneySection from '../components/LandingPage/AadhaarSignatureJourneySection';
+import ExploreServicesSection from '../components/LandingPage/ExploreServicesSection';
+import ContractManagementSection from '../components/LandingPage/ContractManagementSection';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -561,13 +564,15 @@ const LandingPageLayout = () => (
     <LandingHero />
     <ESignFlowSection />
     <VerificationSection />
+    <ContractManagementSection />
     <SignatureExperienceSection />
-    <PDFToolsShowcaseSection />
+    {/* <PDFToolsShowcaseSection /> */}
+    <AadhaarSignatureJourneySection />
     <AIFeatures />
     <ClientsSection />
     <IndustriesSection />
     <FAQ />
-    <LandingCTA />
+    <ExploreServicesSection />
   </div>
 );
 

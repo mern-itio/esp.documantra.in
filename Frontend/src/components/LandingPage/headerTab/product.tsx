@@ -18,7 +18,7 @@ const ProductSection = () => {
 
                     <div className="relative h-32 md:h-40 w-full overflow-hidden bg-gradient-to-r from-sky-500/10 via-sky-300/20 to-sky-500/10">
                         <img
-                            src="/images/e-sign.jpeg"
+                            src="/images/e-sign.jpg"
                             alt="Web app dashboard"
                             className="h-full w-full object-cover"
                         />
@@ -40,7 +40,7 @@ const ProductSection = () => {
                 >
                     <div className="relative h-32 md:h-40 w-full overflow-hidden bg-slate-900">
                         <img
-                            src="/images/pdf.jpeg"
+                            src="/images/pdf.jpg"
                             alt="API quickstart"
                             className="h-full w-full object-cover opacity-90"
                         />
@@ -62,7 +62,7 @@ const ProductSection = () => {
                 >
                     <div className="relative h-32 md:h-40 w-full overflow-hidden bg-gradient-to-r from-emerald-400/15 via-sky-300/15 to-emerald-400/15">
                         <img
-                            src="/images/bulk-send.png"
+                            src="/images/bulk-send.jpg"
                             alt="Bulk send & sign"
                             className="h-full w-full object-cover"
                         />

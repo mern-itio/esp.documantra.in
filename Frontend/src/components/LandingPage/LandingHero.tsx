@@ -1,5 +1,6 @@
 
 import { Link } from 'react-router-dom'
+import { APP_NAME } from '../constants/appConfig'
 
 const LandingHero = () => {
   return (
@@ -20,13 +21,13 @@ const LandingHero = () => {
         <div className="max-w-4xl mx-auto text-center">
          
           <h1 className="mt-2 text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-5">
-           Sign, verify, and manage 
+          Sign Documents Faster with 
             <span className="block text-indigo-600">
-              documents faster and smarter
+              {APP_NAME}
             </span>
           </h1>
           <p className="text-sm md:text-base text-slate-700/90 max-w-2xl mx-auto mb-8">
-            Upload documents, verify signers, collect secure e-signatures, and manage PDFs all in one compliant platform with real-time tracking and full audit trails.
+            Upload documents, verify signers, and collect secure e-signatures in minutes. Track every step in real time with a complete audit trail for transparency and compliance.
           </p>
 
           {/* Primary actions */}

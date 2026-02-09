@@ -39,13 +39,13 @@ const VerificationSection = () => {
             <h2 className="text-3xl md:text-4xl aadhar-heading text-slate-900 tracking-tight mb-3">
               Aadhaar verification {''}
               <span className="text-primary">
-                built into every signature
+                built into service
               </span>
             </h2>
 
             <p className="text-base md:text-lg text-slate-600 max-w-xl mb-6 details-text">
               Add Aadhaar e‑KYC to your signing flows in a few clicks. We handle consent, OTP, and
-              secure storage so every signature is backed by a verified Indian identity.
+              secure storage so that signature is backed by a verified Indian identity.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-8">

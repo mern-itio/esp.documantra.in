@@ -156,3 +156,8 @@ border-top: #084bdc 3px solid;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
 }
+.desc-text{
+  font-family: var(--primary-font);
+  font-weight: 600;
+  color: var(--primary-color);
+}
