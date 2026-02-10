@@ -14,8 +14,8 @@ import LandingHero from '../components/LandingPage/LandingHero';
 import ESignFlowSection from '../components/LandingPage/ESignFlowSection';
 import VerificationSection from '../components/LandingPage/VerificationSection';
 import SignatureExperienceSection from '../components/LandingPage/SignatureExperienceSection';
-import PDFToolsShowcaseSection from '../components/LandingPage/PDFToolsShowcaseSection';
-import LandingCTA from '../components/LandingPage/LandingCTA';
+// import PDFToolsShowcaseSection from '../components/LandingPage/PDFToolsShowcaseSection';
+// import LandingCTA from '../components/LandingPage/LandingCTA';
 import FAQ from '../components/LandingPage/FAQ';
 import Pricing from '../components/LandingPage/Pricing';
 
@@ -187,7 +187,7 @@ import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 import { PowerForm } from '../pages/eSign/PowerForm';
 import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
-import { AccessibilityPage, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
+import { AccessibilityPage, AIFeatures, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
 import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
 import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
 import EnvelopeDetailPage from '../pages/eSign/EnvelopeDetailPage';
@@ -207,10 +207,18 @@ import SignerCycle from '../pages/eSign/SignerCycle';
 import CreateOrganizationPage from '../pages/Organization/CreateOrganizationPage';
 import MyOrganizationPage from '../pages/Organization/MyOrganizationPage';
 import OrganizationFolder from '../pages/Organization/organizationFolder';
+
+import ClientsSection from '../components/LandingPage/clientSection';
+import IndustriesSection from '../components/LandingPage/IndustriesSection';
+import BookDemoPage from '../pages/LandingPage/BookDemoPage';
+
 import EmailPage from '../pages/EmailService/EmailPage';
 import InvitationPage from '../pages/Organization/invitaionPage';
 import FolderDetailPage from '../pages/Organization/folderDetailPage';
 import RolePage from '../pages/Organization/RolePage';
+import AadhaarSignatureJourneySection from '../components/LandingPage/AadhaarSignatureJourneySection';
+import ExploreServicesSection from '../components/LandingPage/ExploreServicesSection';
+import ContractManagementSection from '../components/LandingPage/ContractManagementSection';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -557,10 +565,15 @@ const LandingPageLayout = () => (
     <LandingHero />
     <ESignFlowSection />
     <VerificationSection />
+    <ContractManagementSection />
     <SignatureExperienceSection />
-    <PDFToolsShowcaseSection />
+    {/* <PDFToolsShowcaseSection /> */}
+    <AadhaarSignatureJourneySection />
+    <AIFeatures />
+    <ClientsSection />
+    <IndustriesSection />
     <FAQ />
-    <LandingCTA />
+    <ExploreServicesSection />
   </div>
 );
 
@@ -596,6 +609,7 @@ const guestRoutes = [
   { path: '/bug-bounty', element: <BugBountyPage /> },
   { path: '/data-residency', element:<DataResidencyPage /> },
   { path: '/accessibility', element:<AccessibilityPage /> },
+  { path: '/book-demo', element:<BookDemoPage /> },
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages
