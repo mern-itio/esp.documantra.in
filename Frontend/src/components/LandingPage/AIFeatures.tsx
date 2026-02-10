@@ -1,143 +1,162 @@
-import { Brain, Scan, FileSearch, PenTool, Zap, ArrowRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { 
+  Sparkles, 
+  Send, 
+  FormInput,
+  CheckCircle2,
+  ArrowRight,
+  Wand2,
+  FileSearch
+} from 'lucide-react';
+import { Button } from '../DocumentService/ui/button';
+
 const AIFeatures = () => {
-  const features = [
-    {
-      icon: Scan,
-      title: "Auto-detect Signature Fields",
-      description: "AI automatically identifies where signatures are needed in uploaded documents",
-      color: "bg-blue-500"
-    },
+  const aiFeatures = [
     {
       icon: FileSearch,
-      title: "Smart Template Generation",
-      description: "Generate legal templates from document uploads using advanced AI analysis",
-      color: "bg-purple-500"
+      title: 'Document Summarization',
+      description: 'Transform lengthy documents into concise summaries. Our AI extracts key points, important clauses, and critical information so you can understand any document in seconds.',
+      benefits: ['Save hours of reading time', 'Never miss important details', 'Multi-language support'],
     },
     {
-      icon: PenTool,
-      title: "AI-Assisted Legal Writing",
-      description: "Get suggestions for legal language and proofreading assistance",
-      color: "bg-green-500"
+      icon: Sparkles,
+      title: 'Content Generation',
+      description: 'Generate professional document content, clauses, and templates with AI assistance. From legal agreements to business proposals, create polished content effortlessly.',
+      benefits: ['Industry-specific templates', 'Customizable tone & style', 'Grammar-perfect output'],
     },
     {
-      icon: Brain,
-      title: "OCR & Summarization",
-      description: "Extract text from images and generate document summaries automatically",
-      color: "bg-orange-500"
-    }
-  ]
+      icon: Send,
+      title: 'Smart Document Sending',
+      description: 'AI optimizes your document delivery with intelligent recipient suggestions, optimal send times, and automated follow-ups to ensure documents reach the right people.',
+      benefits: ['Auto-detect recipients', 'Schedule optimal delivery', 'Track engagement'],
+    },
+    {
+      icon: FormInput,
+      title: 'Smart Form Filling',
+      description: 'Automatically populate form fields by extracting information from existing documents or databases. Reduce manual entry errors and accelerate your workflows.',
+      benefits: ['Auto-extract data', 'Validate entries instantly', 'Learn from patterns'],
+    },
+  ];
 
   return (
-    <section className="section-padding bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white">
-      <div className="container-max">
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Brain className="h-8 w-8 text-purple-300" />
-            <span className="text-purple-300 font-medium">AI-Powered</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Intelligent Document Processing
+    <section id="ai-solutions" className="py-10 bg-card relative overflow-hidden">
+      {/* <div
+        className="pointer-events-none absolute inset-0 bg-[url('/auto4.jpg')] bg-cover bg-center opacity-100 md:opacity-10"
+        aria-hidden="true"
+      /> */}
+      {/* Decorative Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-0 w-96 h-96 backdropColor rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 w-96 h-96 backdropColor rounded-full blur-3xl" />
+      </div>
+
+      <div className="container-max mx-auto relative z-10">
+        {/* Header */}
+        <div className="text-center mx-auto mb-16">
+         
+
+          <h2 className="heading">
+            Work Smarter with
+            <span className="max-w-4xl primary"> AI Automation</span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Leverage artificial intelligence to streamline your document workflows
+
+          <p className="text-lg text-muted-foreground leading-relaxed details-text">
+            Harness the power of artificial intelligence to automate tedious tasks, extract insights 
+            from documents, and streamline your entire document workflow. Our AI understands context, 
+            learns from patterns, and delivers results that match human intelligence.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {features.map((feature, index) => (
-            <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 card-hover">
-              <div className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-6`}>
-                <feature.icon className="h-6 w-6 text-white" />
+        {/* AI Features */}
+        <div className="space-y-8 max-w-7xl mx-auto">
+          {aiFeatures.map((feature, index) => (
+            <div 
+              key={index}
+              className={`grid lg:grid-cols-2 gap-8 items-start ${index % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
+            >
+              {/* Content */}
+              <div className={`${index % 2 === 1 ? 'lg:order-2' : ''} animate-fade-in-up ` }>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 primary rounded-xl flex items-center justify-center">
+                    <feature.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-display font-bold text-2xl text-foreground">
+                    {feature.title}
+                  </h3>
+                </div>
+                
+                <p className="details-text mb-6 ">
+                  {feature.description}
+                </p>
+
+                <div className="space-y-3">
+                  {feature.benefits.map((benefit, bIndex) => (
+                    <div key={bIndex} className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-success rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-success" />
+                      </div>
+                      <span className="text-foreground font-medium">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-4">{feature.title}</h3>
-              <p className="text-gray-300 leading-relaxed">{feature.description}</p>
+
+              {/* Visual Card */}
+              <div
+                className={ 
+                  index % 2 === 1
+                    ? 'ai-feature-visual-wrapper ai-feature-visual-wrapper-reverse'
+                    : 'ai-feature-visual-wrapper'
+                }
+              >
+                <div className="ai-feature-card">
+                  {/* Top header skeleton */}
+                  <div className="ai-feature-card-header">
+                    <div className="ai-feature-card-header-icon">
+                      <Wand2 className="ai-feature-card-header-icon-svg" />
+                    </div>
+                    <div className="ai-feature-card-header-lines">
+                      <div className="ai-feature-card-header-line ai-feature-card-header-line-primary" />
+                      <div className="ai-feature-card-header-line ai-feature-card-header-line-secondary" />
+                    </div>
+                  </div>
+
+                  {/* Processing block */}
+                  <div className="ai-feature-processing-block">
+                    <div className="ai-feature-processing-header">
+                      <div className="ai-feature-processing-dot" />
+                      <span className="ai-feature-processing-label">AI Processing</span>
+                    </div>
+                    <div className="ai-feature-processing-bars">
+                      <div className="ai-feature-processing-bar ai-feature-processing-bar-1" />
+                      <div className="ai-feature-processing-bar ai-feature-processing-bar-2" />
+                      <div className="ai-feature-processing-bar ai-feature-processing-bar-3" />
+                    </div>
+                  </div>
+
+                  {/* Status footer */}
+                  <div className="ai-feature-status-row">
+                    <div className="ai-feature-status-left">
+                      <CheckCircle2 className="ai-feature-status-icon" />
+                      <span className="ai-feature-status-text">Analysis Complete</span>
+                    </div>
+                    <span className="ai-feature-status-time">1.2s</span>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Demo Section */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <Zap className="h-6 w-6 text-yellow-400" />
-                <span className="text-yellow-400 font-medium">Coming Soon</span>
-              </div>
-              <h3 className="text-2xl font-bold text-white">
-                AI Document Assistant
-              </h3>
-              <p className="text-gray-300 leading-relaxed">
-                Our AI assistant will help you create, review, and optimize your documents with intelligent suggestions and automated workflows.
-              </p>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                  <span>Natural language document creation</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                  <span>Intelligent field placement</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                  <span>Automated compliance checking</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                  <span>Smart recipient suggestions</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Mock AI Interface */}
-            <div className="bg-gray-900 rounded-lg p-6 space-y-4">
-              <div className="flex items-center gap-3 pb-4 border-b border-gray-700">
-                <Brain className="h-5 w-5 text-purple-400" />
-                <span className="text-white font-medium">AI Assistant</span>
-                <div className="ml-auto w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="bg-purple-600/20 rounded-lg p-3">
-                  <p className="text-purple-200 text-sm">
-                    "Create a non-disclosure agreement for a software development project"
-                  </p>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-3">
-                  <p className="text-gray-300 text-sm">
-                    I'll create an NDA template for your software project. I've identified the key fields needed:
-                  </p>
-                  <ul className="mt-2 space-y-1 text-xs text-gray-400">
-                    <li>• Company names and addresses</li>
-                    <li>• Project description</li>
-                    <li>• Confidentiality period</li>
-                    <li>• Signature fields</li>
-                  </ul>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"></div>
-                  <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"></div>
-                  <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"></div>
-                  <span>AI is typing...</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* CTA */}
+        <div className="text-center mt-16">
+          <Button className="btn-hero bgColor group">
+            Explore AI Features
+            <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+          </Button>
         </div>
-
-        <div className="text-center mt-12">
-          <Link to="/ai-powered-features">
-          <button className="flex items-center justify-center gap-2 bg-white text-gray-900 hover:bg-gray-100 font-semibold text-base px-6 py-3 rounded-md shadow-md hover:shadow-lg transition-all duration-200 mx-auto">
-            See AI in Action
-            <ArrowRight className="h-4 w-4 align-middle" />
-          </button>
-          </Link>
-        </div>
-
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default AIFeatures
+export default AIFeatures;
