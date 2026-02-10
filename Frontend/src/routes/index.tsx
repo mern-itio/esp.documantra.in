@@ -210,6 +210,7 @@ import OrganizationFolder from '../pages/Organization/organizationFolder';
 import EmailPage from '../pages/EmailService/EmailPage';
 import InvitationPage from '../pages/Organization/invitaionPage';
 import FolderDetailPage from '../pages/Organization/folderDetailPage';
+import RolePage from '../pages/Organization/RolePage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -640,6 +641,7 @@ const authRoutes = [
   { path: '/organization/folders', element: <OrganizationFolder /> },
   { path: '/organization/invitations/:invUserId', element: <InvitationPage/>},
   { path: '/organization/folder/:folderId', element: <FolderDetailPage /> },
+  { path: '/organization/roles/:orgId', element: <RolePage/>},
   // { path: '/test', element: <DocumentUploadSection /> },
 
   //Document Management Module
