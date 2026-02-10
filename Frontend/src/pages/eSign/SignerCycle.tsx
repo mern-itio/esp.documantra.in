@@ -13,7 +13,8 @@ import {
   // FileSignature,
   Users,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Download
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -24,6 +25,8 @@ const SignerCycle: React.FC = () => {
   const [openCycle, setOpenCycle] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [hoveredSigner, setHoveredSigner] = useState<string | null>(null);
+  const [downloadingCycleId, setDownloadingCycleId] = useState<string | null>(null);
+
 
   const dataToPlainObject = (data?: Record<string, string> | Map<string, string>): Record<string, string> => {
     if (!data) return {};
@@ -178,6 +181,34 @@ const SignerCycle: React.FC = () => {
       fetchCycles();
     }
   }, [id]);
+  const handleDownloadCompletion = async (cycleId: string) => {
+  try {
+     setDownloadingCycleId(cycleId);
+    const response = await eSignApi.get(
+      `/api/e-sign/cycles/${cycleId}/download-completion`,
+      {
+        responseType: "blob", // 🔥 critical
+      }
+    );
+
+    const blob = new Blob([response.data], { type: "application/zip" });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cycle-${cycleId}-completion.zip`;
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Download failed", err);
+  }finally {
+    setDownloadingCycleId(null);
+  }
+};
+
 
   if (loading) {
     return (
@@ -248,7 +279,9 @@ const SignerCycle: React.FC = () => {
             const status = (s.status || "").toLowerCase();
             return status === "completed" || status === "submitted" || status === "signed";
           }).length;
-
+          const canDownloadCompletion =
+          cycle?.completionCertificate?.path &&
+          cycle?.signedFilePath;
           return (
             <div key={cycle._id} className="overflow-hidden">
               {/* Cycle Header - Interactive */}
@@ -284,6 +317,34 @@ const SignerCycle: React.FC = () => {
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           {completedCount} Completed
                         </span>
+                      )}
+                      {canDownloadCompletion && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadCompletion(cycle._id);
+                          }}
+                          disabled={downloadingCycleId === cycle._id}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
+                            transition-all shadow-md
+                            ${downloadingCycleId === cycle._id
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:scale-105 hover:shadow-lg"
+                            }`}
+                        >
+                          {downloadingCycleId === cycle._id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Downloading…
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4" />
+                              Download Completion Files
+                            </>
+                          )}
+                        </button>
+
                       )}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">

@@ -25,7 +25,8 @@ const {
          getNotifications,
          markNotificationAsRead,
          markAllNotificationsAsRead,
-         fetchBulkEnvelopes  } = require('../controllers/mainController');
+         fetchBulkEnvelopes,
+        downloadCompletionZip  } = require('../controllers/mainController');
 const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = require('../controllers/recipientController');
 const multer = require('multer');
 const path = require('path');
@@ -71,6 +72,7 @@ router.post('/envelope/connect/powerform', connectPowerForm);
 router.get('/envelope/signers/:envelopeId', getSigners);
 router.get('/envelope/all-stats/:userType', getAllEnvelopeStats);
 router.post('/envelopes/bulk-fetch', fetchBulkEnvelopes);
+router.get('/cycles/:cycleId/download-completion',downloadCompletionZip)
 // Notifications
 router.get('/notifications', getNotifications);
 router.post('/notifications/:notificationId/read', markNotificationAsRead);

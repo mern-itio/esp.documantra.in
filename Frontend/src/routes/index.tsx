@@ -215,6 +215,7 @@ import BookDemoPage from '../pages/LandingPage/BookDemoPage';
 import EmailPage from '../pages/EmailService/EmailPage';
 import InvitationPage from '../pages/Organization/invitaionPage';
 import FolderDetailPage from '../pages/Organization/folderDetailPage';
+import RolePage from '../pages/Organization/RolePage';
 import AadhaarSignatureJourneySection from '../components/LandingPage/AadhaarSignatureJourneySection';
 import ExploreServicesSection from '../components/LandingPage/ExploreServicesSection';
 import ContractManagementSection from '../components/LandingPage/ContractManagementSection';
@@ -654,6 +655,7 @@ const authRoutes = [
   { path: '/organization/folders', element: <OrganizationFolder /> },
   { path: '/organization/invitations/:invUserId', element: <InvitationPage/>},
   { path: '/organization/folder/:folderId', element: <FolderDetailPage /> },
+  { path: '/organization/roles/:orgId', element: <RolePage/>},
   // { path: '/test', element: <DocumentUploadSection /> },
 
   //Document Management Module
