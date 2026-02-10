@@ -20,6 +20,7 @@ const selfSigner = require('../models/selfSigner');
 const { sign } = require('crypto');
 const { values } = require('pdf-lib');
 const Notification = require('../models/Notification');
+const archiver = require('archiver');
 
 const envelopesData = async (req, res) => {
   const userId = req?.user?.data?.id;
