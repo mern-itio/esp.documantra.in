@@ -20,6 +20,7 @@ const selfSigner = require('../models/selfSigner');
 const { sign } = require('crypto');
 const { values } = require('pdf-lib');
 const Notification = require('../models/Notification');
+const archiver = require('archiver');
 
 const envelopesData = async (req, res) => {
   const userId = req?.user?.data?.id;
@@ -1607,8 +1608,8 @@ const getSigners = async (req, res) => {
   try {
     const { envelopeId } = req.params;
 
-    // Find all cycles for the envelope and populate the signers
     const cycles = await Cycle.find({ envelopeId })
+      .sort({ createdAt: -1 }) // 🔥 latest cycle first
       .populate({
         path: 'signers',
         model: 'SelfSigner',
@@ -1625,6 +1626,7 @@ const getSigners = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 const envelopeStats = async (req, res) => {
   try {
     const { userId, startDate, endDate } = req.query;
@@ -2237,6 +2239,44 @@ const fetchBulkEnvelopes = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const downloadCompletionZip = async (req, res) =>{
+    try {
+    const { cycleId } = req.params;
+
+    const cycle = await Cycle.findById(cycleId).lean();
+    if (!cycle) {
+      return res.status(404).json({ message: "Cycle not found" });
+    }
+
+    const certPath = cycle.completionCertificate?.path;
+    const signedPath = cycle.signedFilePath;
+
+    if (!certPath || !signedPath) {
+      return res.status(400).json({ message: "Completion files not available" });
+    }
+
+    if (!fs.existsSync(certPath) || !fs.existsSync(signedPath)) {
+      return res.status(404).json({ message: "Files missing on server" });
+    }
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=cycle-${cycleId}-completion.zip`
+    );
+    res.setHeader("Content-Type", "application/zip");
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    archive.file(certPath, { name: "completion-certificate.pdf" });
+    archive.file(signedPath, { name: "signed-document.pdf" });
+
+    await archive.finalize();
+  } catch (err) {
+    console.error("downloadCompletionZip error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+}
 
 module.exports = {
   getAllRecipients,
@@ -2275,5 +2315,6 @@ module.exports = {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   LinkUserRecipient,
-  fetchBulkEnvelopes
+  fetchBulkEnvelopes,
+  downloadCompletionZip
 };
