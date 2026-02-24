@@ -1,5 +1,5 @@
 const express = require('express');
-const { login, register, getMe, switchAccount,getUsersList } = require('../controllers/authController');
+const { login, register, getMe, switchAccount, getUsersList, forgotPassword, resetPassword } = require('../controllers/authController');
 const {adminLogin} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
@@ -8,6 +8,8 @@ router.get('/status', (_, res) => res.send('Auth Service is running and changing
 router.post('/login', login);
 router.post('/admin/login', adminLogin);
 router.post('/register', register);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 router.get('/api/user-details/:id', userDetails);
 router.get('/api/find-user/:email', findUserByEmail);
 router.get('/api/auth/me', verifyJWT, getMe);

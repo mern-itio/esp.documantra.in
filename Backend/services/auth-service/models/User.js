@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema({
   plan: { type: String, enum: ['free', 'pro', 'custom'], default: null },
   // Flag for first login tutorial
   isFirstLogin: { type: Boolean, default: true },
+  // Forgot password
+  resetPasswordToken: { type: String, default: null },
+  resetPasswordExpires: { type: Date, default: null },
+  // Log of reset requests (for 24h limit: max 2 per 24 hours)
+  resetPasswordRequestLog: [{ requestedAt: { type: Date, required: true } }],
 }, { timestamps: true });
 
 // 🔐 Hash password before saving

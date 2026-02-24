@@ -1352,11 +1352,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           MIN_FIELD_WIDTH
                         );
                         const scaledHeight = Math.max(
-                          rawHeight * pageScale-20,
+                          rawHeight * pageScale,
                           MIN_FIELD_HEIGHT
                         );
-                        console.log("scaleHeight", scaledHeight);
-                        console.log("scaleWidth", scaledWidth);
                         const labelOffset = Math.max(
                           12,
                           Math.min(18, scaledHeight * 0.25)

@@ -6,86 +6,187 @@ const lifecycleSteps = [
     id: 1,
     title: 'Intake & request',
     description:
-      'Start new contracts from structured request forms instead of email. Capture business owner, counterparties, value, and due dates up front so legal has all the context they need.',
+      'The contract management process begins when a business need is identified and a formal request for a contract is initiated. This stage ensures that the purpose, scope, and objectives of the agreement are clearly defined before any drafting begins. Proper initiation helps align stakeholders, reduces ambiguity, and ensures that contracts are created only when there is a valid commercial, legal, or operational requirement.',
+    image: '/images/contract/first.jpg',
+    bullets: [
+      "Identify the business, legal, or operational need for a contract",
+      "Define the scope, objectives, and key requirements of the agreement",
+      "Initiate a formal contract request through an approved process or system",
+      "Assign ownership and identify relevant stakeholders early in the process"
+    ]
   },
   {
     id: 2,
     title: 'Draft & collaborate',
     description:
-      'Generate contracts from approved templates with the right clauses every time. Let legal, sales, and stakeholders collaborate in real time with comments, suggestions, and redlines all in one place.',
+      'During the drafting and collaboration stage, the contract is prepared using standardized templates, approved clauses, and established legal language. Collaboration between legal, business, and other stakeholders ensures that the contract accurately reflects the agreed terms while remaining compliant with applicable laws and organizational policies.',
+    image: '/images/contract/second.jpg',
+    bullets: [
+      "Use approved contract templates and clause libraries to ensure consistency",
+      "Customize terms to reflect specific business requirements and risk levels",
+      "Collaborate with legal, procurement, finance, and business teams",
+      "Maintain version control to track changes and avoid conflicting drafts"
+    ]
   },
   {
     id: 3,
     title: 'Review & approve',
     description:
-      'Route contracts through the right approval path automatically—finance for pricing, security for data terms, leadership for high‑value deals—so nothing gets stuck waiting in inboxes.',
+      'At this stage, the drafted contract undergoes a structured review by required stakeholders to ensure legal compliance, financial accuracy, and business alignment. Formal approvals are obtained to confirm that risks are understood and accepted before the contract is executed.',
+    image: '/images/contract/third.jpg',
+    bullets: [
+      "Conduct legal review to ensure compliance with laws and regulations",
+      "Perform financial and commercial review to validate pricing and obligations",
+      "Obtain management or executive approval based on authority levels",
+      "Document approvals to maintain audit and compliance records"
+    ]
   },
   {
     id: 4,
     title: 'Sign & execute',
     description:
-      'Send contracts for e‑signature with predefined signing order and roles. Track who has signed, who is pending, and send reminders with a single click until everything is fully executed.',
+      'Once approvals are secured, the contract is formally signed and executed by all authorized parties. Execution makes the contract legally binding and enforceable. Increasingly, organizations use electronic signature tools to improve efficiency, security, and traceability.',
+    image: '/images/contract/fourth.jpg',
+    bullets: [
+      "Verify that all signatories have proper authority to execute the contract",
+      "Execute the agreement using physical or approved e-signature platforms",
+      "Ensure all parties receive fully signed copies of the contract",
+      "Confirm the contract’s effective date and execution status"
+    ]
   },
   {
     id: 5,
     title: 'Store & search',
     description:
-      'Once signed, contracts are stored in a central, searchable repository with version history, custom tags, and role‑based permissions so every team can safely find what they need.',
+      'After execution, the finalized contract is securely stored in a centralized repository to ensure accessibility, traceability, and compliance. Active monitoring helps organizations track contractual obligations, deadlines, and performance throughout the contract lifecycle.',
+    image: '/images/contract/fifth.jpg',
+    bullets: [
+      "Store contracts in a centralized and secure contract repository",
+      "Track key obligations, deliverables, and performance requirements",
+      "Monitor critical dates such as renewals, expirations, and milestones",
+      "Use alerts and reporting to prevent missed deadlines or non-compliance"
+    ]
   },
   {
     id: 6,
     title: 'Monitor & renew',
     description:
-      'Stay ahead of expirations, renewals, and key obligations with automated reminders. See upcoming renewals by owner, customer, or value and take action before revenue or compliance risks appear.',
+      'As the contract approaches expiration, a decision is made to renew, amend, or terminate the agreement based on performance, business needs, and strategic considerations. Proper closure or renewal ensures legal clarity and minimizes future risks.',
+    image: '/images/contract/sixth.jpg',
+    bullets: [
+      "Review contract performance before expiration",
+      "Decide whether to renew, amend, or terminate",
+      "Execute amendments or renewal agreements when applicable",
+      "Formally close terminated contracts and archive records as required"
+    ]
   },
 ]
 
 const ContractManagementSection: React.FC = () => {
+  const [activeStepId, setActiveStepId] = React.useState<number>(1)
+
+  const activeStep = lifecycleSteps.find((step) => step.id === activeStepId) ?? lifecycleSteps[0]
+
   return (
     <section className="relative bg-slate-50 py-20 sm:py-24">
+       <div
+        className="pointer-events-none absolute inset-0 bg-[url('/images/contract-section.jpg')] bg-cover bg-center opacity-20 md:opacity-30"
+        aria-hidden="true"
+      />
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-12 flex flex-col gap-4 text-left sm:text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500">
-            Contract management flow
-          </p>
-          <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl lg:text-[32px]">
+
+          <h2 className="heading">
             See your entire contract lifecycle in one place
           </h2>
-          <p className="mx-auto max-w-3xl text-sm text-slate-600 sm:text-[15px]">
+          <p className="details-text">
             From the first request to renewal, {APP_NAME} gives teams a single, consistent workflow for every
             agreement. No more lost versions, missed renewals, or unclear owners.
           </p>
         </div>
 
-        {/* Horizontal flow on desktop, stacked on mobile */}
-        <div className="relative">
-          {/* background line for the flow */}
-          <div className="pointer-events-none absolute inset-x-4 top-7 hidden h-px bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 sm:block lg:inset-x-10" />
+        <div className="space-y-8">
+          {/* Horizontal flow with arrows */}
+          <div className="flex flex-wrap items-stretch gap-3 lg:gap-4">
+            {lifecycleSteps.map((step, index) => (
+              <React.Fragment key={step.id}>
+                <button
+                  type="button"
+                  onClick={() => setActiveStepId(step.id)}
+                  className={`group flex items-center gap-2 rounded-md border px-4 py-2 text-left text-sm shadow-sm ring-1 transition ${activeStepId === step.id
+                    ? 'border-indigo-500/70 ring-indigo-500/30 shadow-md bg-white text-black'
+                    : 'border-slate-200 ring-slate-100 hover:border-indigo-300 hover:ring-indigo-100 bg-[#084bdc] text-white hover:bg-blue-600'
+                    }`}
+                >
+                  <div
+                    className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold ${activeStepId === step.id
+                      ? 'bg-[#2563eb] text-white'
+                      : 'bg-white text-black'
+                      }`}
+                  >
+                    {step.id}
+                  </div>
+                  <div className="flex flex-col">
 
-          <div className="grid gap-8 sm:grid-cols-3 lg:grid-cols-6">
-            {lifecycleSteps.map((step) => (
-              <div
-                key={step.id}
-                className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 pt-7 shadow-sm ring-1 ring-slate-100 transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                {/* Number pill */}
-                <div className="absolute -top-3 left-4 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white shadow-sm">
-                  {step.id}
-                </div>
+                    <span
+                      className={`text-[13px] font-semibold ${activeStepId === step.id ? 'text-slate-900' : 'text-white'
+                        }`}
+                    >
+                      {step.title}
+                    </span>
+                  </div>
+                </button>
 
-                <h3 className="text-sm font-semibold text-slate-900 sm:text-[15px]">{step.title}</h3>
-                <p className="mt-2 text-xs text-slate-600 sm:text-[13px]">{step.description}</p>
-              </div>
+                {index < lifecycleSteps.length - 1 && (
+                  <svg viewBox="0 0 100 20" width="50" height="40" xmlns="http://www.w3.org">
+
+                    <line x1="0" y1="10" x2="80" y2="10" stroke="blue" stroke-width="5" />
+
+                    <polygon points="80,2 110,10 80,18" fill="blue" />
+                  </svg>
+
+                )}
+              </React.Fragment>
             ))}
           </div>
-        </div>
 
-        {/* Summary band */}
-        <div className="mt-12 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-sm sm:px-6 sm:py-5">
-          <span className="font-semibold text-slate-900">Outcome:&nbsp;</span>
-          Every team works from the same reliable workflow, with contracts that are easy to create, approve, sign, and
-          report on—whether you manage ten agreements a month or thousands.
+          {/* Tab content with text + image */}
+          <div className="relative p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 lg:p-7">
+           
+            <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
+              {/* Left: content */}
+              <div>
+
+                <h3 className="desc-text text-3xl ">
+                  Streamline the {activeStep.title.toLowerCase()} stage
+                </h3>
+                <p className="mt-2 text-sm text-black sm:text-[15px]">{activeStep.description}</p>
+
+                <ul className="mt-4 space-y-2 text-sm text-black-800 sm:text-[14px]">
+                  {activeStep.bullets.map((item, index) => (
+                    <li key={index} className="flex gap-2">
+                      <span className="mt-[6px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-500" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                  <li className="flex gap-2">
+                    <span className="mt-[6px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-500" />
+                    <span>Reduce manual follow‑ups with clear next steps at every stage.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Right: illustrative image panel */}
+              <div className="relative overflow-hidden rounded-2xl bg-slate-100">
+                <img
+                  src={activeStep.image}
+                  alt={`${activeStep.title} illustration`}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

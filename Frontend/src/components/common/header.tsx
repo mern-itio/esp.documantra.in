@@ -455,7 +455,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                         ? formatName(organizationDetail.name)
                         : formatName((user as any)?.fullname)}
                     </p>
-                                        {/* Switcher icon button */}
                     <div className="relative group">
                       <button
                         onClick={() => setShowSwitcher(prev => !prev)}
@@ -465,7 +464,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                                   transition"
                         aria-label="Switch account"
                       >
-                        {/* Switch icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="w-4 h-4"

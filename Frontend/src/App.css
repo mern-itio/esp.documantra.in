@@ -42,9 +42,8 @@
 }
 .heading {
   font-family: black;
-  font-weight: 700;
+  font-weight: 900;
   font-size: 3rem;
-  font-weight: 100;
   color: black;
 }
 .gradient-text{
@@ -59,8 +58,9 @@
 .details-text{
   font-family: var(--primary-font);
   font-weight: 400;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: rgb(109, 108, 108);
+  line-height: 1.2;
 }
 .icon-bg{
   background-color: var(--primary-color);
@@ -95,6 +95,23 @@
 }
 .animate-marquee {
   animation: marquee 30s linear infinite;
+}
+
+@keyframes tap-hand {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+.animate-tap-hand {
+  animation: tap-hand 1.2s ease-in-out infinite;
+}
+
+/* Drag hand: left (standard fields) → right (PDF) to suggest drag-and-drop */
+@keyframes drag-hand-left-to-right {
+  0%, 100% { transform: translateX(-160px); }
+  50% { transform: translateX(160px); }
+}
+.animate-drag-hand {
+  animation: drag-hand-left-to-right 2.5s ease-in-out infinite;
 }
 
 @keyframes marquee {
@@ -150,14 +167,48 @@ border-top: #084bdc 3px solid;
   }
 .text-heading{
   color: rgb(53, 3, 87);
-  font-weight: 600;
+  font-weight: 900;
   font-size: 15px;
   margin-bottom: 2px;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+}
+.price-heading{
+  color: rgb(53, 3, 87);
+  font-weight: 900;
+  font-size: 20px;
+  margin-bottom: 2px;
+  font-family: var(--primary-font);
 
 }
 .desc-text{
   font-family: var(--primary-font);
   font-weight: 600;
   color: var(--primary-color);
+}
+.inside-heading{
+  font-family: var(--primary-font);
+  font-weight: 600;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  color: var(--primary-color);
+}
+.partial-heading{
+  font-family: var(--primary-font);
+  font-weight: 600;
+  font-size: 2.5rem;
+  /* color: var(--primary-color); */
+}
+.css-fnVRaW{
+      position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid rgb(39, 110, 241);
+    animation-name: ripple;
+    animation-duration: 2s;
+    animation-timing-function: ease-out;
+    animation-iteration-count: infinite;
 }

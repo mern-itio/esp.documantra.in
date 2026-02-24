@@ -74,6 +74,8 @@ import AboutPage from '../pages/LandingPage/AboutPage';
 import WhyDocuSignerPage from '../pages/LandingPage/WhyDocuSignerPage';
 import LoginPage from '../pages/LandingPage/LoginPage';
 import SignupPage from '../pages/LandingPage/SignupPage';
+import ForgotPasswordPage from '../pages/LandingPage/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/LandingPage/ResetPasswordPage';
 import PrivacyPolicyPage from '../pages/LandingPage/PrivacyPolicyPage';
 import CookiePolicyPage from '../pages/LandingPage/CookiePolicyPage';
 import TermsOfServicePage from '../pages/LandingPage/TermsOfServicePage';
@@ -81,6 +83,7 @@ import UseCasesPage from '../pages/LandingPage/UseCasesPage';
 import WorkspacePage from '../pages/LandingPage/WorkspacePage';
 import FeatureComparisonPage from '../pages/LandingPage/FeatureComparisonPage';
 import SitemapPage from '../pages/LandingPage/SitemapPage';
+import ChoosePlanPage from '../pages/LandingPage/ChoosePlanPage';
 
 // Dashboard Pages
 import DashboardPage from '../pages/Dashboard/DashboardPage';
@@ -187,8 +190,9 @@ import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
 import { PowerForm } from '../pages/eSign/PowerForm';
 import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
-import { AccessibilityPage, AIFeatures, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage } from '../pages/LandingPage';
+import { AccessibilityPage, AIFeatures, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage, UploadDocumentPage, SignerPage } from '../pages/LandingPage';
 import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
+import ESignServiceWebAppPage from '../pages/LandingPage/InsidePages/ESignServiceWebAppPage';
 import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
 import EnvelopeDetailPage from '../pages/eSign/EnvelopeDetailPage';
 import EnvelopeCreator from '../pages/eSign/EnvelopeCreator';
@@ -218,6 +222,7 @@ import FolderDetailPage from '../pages/Organization/folderDetailPage';
 import AadhaarSignatureJourneySection from '../components/LandingPage/AadhaarSignatureJourneySection';
 import ExploreServicesSection from '../components/LandingPage/ExploreServicesSection';
 import ContractManagementSection from '../components/LandingPage/ContractManagementSection';
+import DigitaCertificate from '../components/LandingPage/DigitaCertificate';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -572,7 +577,7 @@ const LandingPageLayout = () => (
     <ClientsSection />
     <IndustriesSection />
     <FAQ />
-    <ExploreServicesSection />
+    <DigitaCertificate />
   </div>
 );
 
@@ -581,6 +586,8 @@ const guestRoutes = [
   { path: '/', element: <LandingPageLayout /> },
   { path: '/login', element: <GuestRoute><LoginPage /></GuestRoute> },
   { path: '/signup', element: <GuestRoute><SignupPage /></GuestRoute> },
+  { path: '/forgot-password', element: <GuestRoute><ForgotPasswordPage /></GuestRoute> },
+  { path: '/reset-password', element: <GuestRoute><ResetPasswordPage /></GuestRoute> },
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
   { path: '/cookie-policy', element: <CookiePolicyPage /> },
   { path: '/use-cases', element: <UseCasesPage /> },
@@ -609,6 +616,10 @@ const guestRoutes = [
   { path: '/data-residency', element:<DataResidencyPage /> },
   { path: '/accessibility', element:<AccessibilityPage /> },
   { path: '/book-demo', element:<BookDemoPage /> },
+  { path: '/e-sign/web-app', element: <ESignServiceWebAppPage /> },
+  { path: '/sign-pdf-online', element: <UploadDocumentPage /> },
+  { path: '/sign-pdf-online/signer', element: <SignerPage /> },
+  { path: '/sign-pdf-online/plan', element: <ChoosePlanPage /> },
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages

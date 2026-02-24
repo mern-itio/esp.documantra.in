@@ -12,9 +12,9 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
-  const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pdfToolsButtonRef = useRef<HTMLButtonElement | null>(null)
   const resourcesButtonRef = useRef<HTMLButtonElement | null>(null)
+  const dropdownContainerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,7 +22,20 @@ const Header = () => {
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, []) 
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (dropdownContainerRef.current?.contains(target)) return
+      setActiveDropdown(null)
+    }
+    if (activeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [activeDropdown])
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
@@ -33,18 +46,8 @@ const Header = () => {
     setActiveDropdown(null)
   }
 
-  const handleDropdownEnter = (dropdownName: string) => {
-    if (dropdownTimeoutRef.current) {
-      clearTimeout(dropdownTimeoutRef.current)
-      dropdownTimeoutRef.current = null
-    }
-    setActiveDropdown(dropdownName)
-  }
-
-  const handleDropdownLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null)
-    }, 150) // 150ms delay
+  const handleDropdownClick = (dropdownName: string) => {
+    setActiveDropdown((current) => (current === dropdownName ? null : dropdownName))
   }
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   useLayoutEffect(() => {
@@ -116,16 +119,16 @@ const Header = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-6">
-              {/* PDF Tools Dropdown */}
-              <div
-                className="relative group"
-                onMouseEnter={() => handleDropdownEnter('pdf-tools')}
-                onMouseLeave={handleDropdownLeave}
-              >
+            <nav ref={dropdownContainerRef} className="hidden lg:flex items-center space-x-6">
+              {/* Products Dropdown - click to open */}
+              <div className="relative group">
                 <button
                   ref={pdfToolsButtonRef}
-                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559]-600 transition-colors"
+                  type="button"
+                  onClick={() => handleDropdownClick('pdf-tools')}
+                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559] transition-colors"
+                  aria-expanded={activeDropdown === 'pdf-tools'}
+                  aria-haspopup="true"
                 >
                   Products
                 </button>
@@ -142,13 +145,14 @@ const Header = () => {
                 )}
               </div>
 
-              <div
-                className="relative group"
-                onMouseEnter={() => handleDropdownEnter('use-cases')}
-                onMouseLeave={handleDropdownLeave}
-              >
+              {/* Solutions Dropdown - click to open */}
+              <div className="relative group">
                 <button
-                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559]-600  transition-colors"
+                  type="button"
+                  onClick={() => handleDropdownClick('use-cases')}
+                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559] transition-colors"
+                  aria-expanded={activeDropdown === 'use-cases'}
+                  aria-haspopup="true"
                 >
                   Solutions
                 </button>
@@ -160,20 +164,20 @@ const Header = () => {
                     }}
                     className="mx-auto w-[95vw] max-w-[1200px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden z-50"
                   >
-                   <UseCases />
+                    <UseCases />
                   </div>
                 )}
               </div>
 
-              {/* Resources Dropdown */}
-              <div
-                className="relative group"
-                onMouseEnter={() => handleDropdownEnter('resources')}
-                onMouseLeave={handleDropdownLeave}
-              >
+              {/* Resources Dropdown - click to open */}
+              <div className="relative group">
                 <button
                   ref={resourcesButtonRef}
-                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559]-600 transition-colors"
+                  type="button"
+                  onClick={() => handleDropdownClick('resources')}
+                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559] transition-colors"
+                  aria-expanded={activeDropdown === 'resources'}
+                  aria-haspopup="true"
                 >
                   Resources
                 </button>
@@ -184,37 +188,30 @@ const Header = () => {
                     className="mx-auto w-[95vw] max-w-[1100px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden"
                     style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', top: 88, zIndex: 9999, maxHeight: 'min(80vh, calc(100vh - 88px))' }}
                   >
-                   <ResourceTab />
+                    <ResourceTab />
                   </div>
                 )}
               </div>
 
-              {/* Developer Dropdown */}
-              <div
-                className="relative group"
-                onMouseEnter={() => handleDropdownEnter('developer')}
-                onMouseLeave={handleDropdownLeave}
-              >
-                <Link to='/developer'
-                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559]-600  transition-colors"
+              {/* Developer - link only */}
+              <div className="relative group">
+                <Link
+                  to="/developer"
+                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559] transition-colors"
                 >
                   Developer
                 </Link>
-
               </div>
 
-              {/* Workspace Dropdown */}
-              <div
-                className="relative group"
-              >
-                <Link to='/pricing'
-                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559]-600  transition-colors"
+              {/* Pricing - link only */}
+              <div className="relative group">
+                <Link
+                  to="/pricing"
+                  className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559] transition-colors"
                 >
                   Pricing
                 </Link>
-
               </div>
-
             </nav>
 
             <div>

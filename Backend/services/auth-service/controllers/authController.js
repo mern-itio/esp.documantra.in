@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User  = require('../models/User');
 const { isEmailValid } = require('@draftnsign/validators');
+const { sendPasswordResetEmail } = require('../utils/email');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
@@ -230,11 +232,100 @@ const getUsersList = async (req, res) => {
     });
   }
 };
+// Forgot password: generate token and save; optionally send email later
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+  if (!isEmailValid(email)) return res.status(400).json({ message: 'Invalid email format' });
+
+  try {
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      return res.status(404).json({
+        status: 404,
+        message: 'We don\'t find any account with this email address. Please check the email or sign up for a new account.',
+      });
+    }
+
+    // Already have an active reset link (within 1 hour)
+    if (user.resetPasswordToken && user.resetPasswordExpires && user.resetPasswordExpires > new Date()) {
+      return res.status(429).json({
+        status: 429,
+        message: 'You already have a password reset link. Please check your email and use that link to reset your password. You can request a new link only after 1 hour.',
+      });
+    }
+
+    // Max 2 reset requests per 24 hours
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentRequests = (user.resetPasswordRequestLog || []).filter(
+      (entry) => entry.requestedAt && new Date(entry.requestedAt) > twentyFourHoursAgo
+    );
+    if (recentRequests.length >= 2) {
+      return res.status(429).json({
+        status: 429,
+        message: 'You can only request a password reset 2 times in 24 hours. Please try again later.',
+      });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const prunedLog = recentRequests.concat([{ requestedAt: new Date() }]);
+    user.resetPasswordRequestLog = prunedLog;
+    await user.save({ validateBeforeSave: false });
+
+    const frontendBase = process.env.FRONTEND_BASE_URL || process.env.BASE_URL || 'http://165.22.215.73:8081/';
+    const resetLink = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${token}`;
+
+    await sendPasswordResetEmail(user.email, resetLink, user.fullname || null);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'If an account exists with this email, you will receive a password reset link shortly.',
+    });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    return res.status(500).json({ message: 'Something went wrong. Please try again later.' });
+  }
+};
+
+// Reset password: verify token and set new password
+const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token) return res.status(400).json({ message: 'Reset token is required' });
+  if (!newPassword || newPassword.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Password has been reset successfully. You can now sign in.',
+    });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    return res.status(500).json({ message: 'Something went wrong. Please try again later.' });
+  }
+};
+
 // Export functions
 module.exports = {
   login,
   register,
   getMe,
   switchAccount,
-  getUsersList
+  getUsersList,
+  forgotPassword,
+  resetPassword,
 };

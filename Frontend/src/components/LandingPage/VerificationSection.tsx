@@ -26,7 +26,7 @@ const VerificationSection = () => {
   ]
 
   return (
-    <section className="section-padding bg-gray-100">
+    <section className="section-padding bg-white">
       <div className="container-max">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Left: copy */}
@@ -89,7 +89,7 @@ const VerificationSection = () => {
           {/* Right: verification card */}
           <div className="relative">
             <img
-                src="/adhar.gif"
+                src="./images/adhar-img.png"
                 alt="Aadhaar verification flow"
                 className="w-full h-auto object-contain max-h-[380px] object-center"
               />

@@ -7,26 +7,12 @@ import Footer from '../components/LandingPage/Footer';
 const GuestLayout: React.FC = () => {
   const location = useLocation();
 
-  const HIDE_FOOTER_ROUTES: string[] = [
-    // Convert to PDF
-    '/img-to-pdf', '/word-to-pdf', '/powerpoint-to-pdf', '/excel-to-pdf', '/html-to-pdf',
-    // Convert from PDF
-    '/pdf-to-word', '/pdf-to-powerpoint', '/pdf-to-excel', '/pdf-to-jpg', '/pdf-to-pdfa', '/pdf-to-text',
-    // Organize
-    '/merge-pdf', '/split-pdf', '/delete-pages', '/extract-pages', '/organize-pdf', '/scan-to-pdf',
-    // Optimize
-    '/compress-pdf', '/repair-pdf', '/ocr-pdf',
-    // Edit
-    '/rotate-pdf', '/add-page-numbers', '/watermark-pdf', '/crop-pdf', '/edit-pdf',
-    // Security
-    '/unlock-pdf', '/protect-pdf', '/sign-pdf', '/redact-pdf', '/compare-pdf',
-  ];
 
   const HIDE_HEADER_FOOTER_ROUTES: string[] = [
     '/signup',
+    '/sign-pdf-online/signer',
+    '/sign-pdf-online/plan',
   ];
-
-  const shouldHideFooter = HIDE_FOOTER_ROUTES.some((path) => location.pathname.startsWith(path));
   const shouldHideHeaderFooter = HIDE_HEADER_FOOTER_ROUTES.some((path) => location.pathname === path);
   
   return (
@@ -36,7 +22,7 @@ const GuestLayout: React.FC = () => {
       <main>
         <Outlet />
       </main>
-      {!shouldHideFooter && !shouldHideHeaderFooter && <Footer />}
+      {!shouldHideHeaderFooter && <Footer />}
     </div>
   );
 };
