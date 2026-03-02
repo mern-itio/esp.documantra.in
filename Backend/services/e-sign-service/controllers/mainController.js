@@ -806,10 +806,12 @@ const scheduleEnvelope = async (req, res) => {
 }
 const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage,userId) => {
   try {
-    // Step 1: Find the first waiting recipientPermission for this envelope
+    // Step 1: Find the first waiting recipient who is NOT in_person_signer (in-person signers
+    // do not receive email; host opens the signing link for them)
     const waitingPermission = await RecipientPermission.findOne({
       envelopeId,
-      status: 'waiting'
+      status: 'waiting',
+      role: { $nin: ['in_person_signer'] }
     })
       .sort({ order: 1, createdAt: 1 }) // respect signing order
       .populate('recipientId'); // fetch the recipient details (name, email, etc.)
@@ -822,7 +824,7 @@ const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage,use
     waitingPermission.status = 'sent';
     await waitingPermission.save();
 
-    // Step 3: Send email
+    // Step 3: Send email (never sent to in_person_signer - they sign via host-opened link)
     const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
     const html = signRequestTemplate(
       waitingPermission.recipientId.name, 

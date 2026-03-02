@@ -63,11 +63,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   });
 
-  // Check for existing authentication on component mount
-  useEffect(() => {
+  // Helper to hydrate auth state from localStorage (used on mount and when extension syncs auth).
+  const hydrateFromLocalStorage = () => {
     const token = localStorage.getItem('accessToken');
     const userData = localStorage.getItem('userData');
-    
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData);
@@ -103,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.warn('Could not decode JWT token on load:', jwtError);
           setUser(parsedUser);
         }
-        
+
         setIsAuthenticated(true);
         // initialize accountType and organizationId from storage (if present)
         const storedAccountType = localStorage.getItem('accountType');
@@ -123,7 +122,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('userData');
       }
     }
+  };
+
+  // Check for existing authentication on component mount
+  useEffect(() => {
+    hydrateFromLocalStorage();
     setLoading(false);
+  }, []);
+
+  // Also hydrate again when the extension syncs auth into localStorage.
+  useEffect(() => {
+    const handler = () => {
+      hydrateFromLocalStorage();
+    };
+    window.addEventListener('dns-extension-auth-synced', handler as EventListener);
+    return () => {
+      window.removeEventListener('dns-extension-auth-synced', handler as EventListener);
+    };
   }, []);
 
   // Listen for subscription updates and update user plan

@@ -21,6 +21,10 @@ interface Props {
   cycleId?: string;
   allRecipients?: any[];
   setSignatureFields: (fields: any[] | ((prev: any[]) => any[])) => void;
+  /** When true (e.g. CC recipient), all signing and form fields are view-only */
+  isViewOnly?: boolean;
+  /** Called when current recipient completes all required signing actions (fieldRemmaning === false) */
+  onRecipientComplete?: () => void;
 }
 
 Modal.setAppElement("#root");
@@ -64,7 +68,9 @@ const DocumentViewerContent: React.FC<Props> = ({
   onSignatureSave,
   cycleId,
   allRecipients,
-  setSignatureFields
+  setSignatureFields,
+  isViewOnly = false,
+  onRecipientComplete
 }) => {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
@@ -463,7 +469,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
   // build actionable (user-specific) fields (signature + other inputs)
   const actionableFields = useMemo(() => {
-    if (!signatureFields || !Array.isArray(signatureFields)) return [];
+    if (isViewOnly || !signatureFields || !Array.isArray(signatureFields)) return [];
     return signatureFields
       .map((f) => ({ ...f, pageNum: normalizePage(f) }))
       .filter((field) => {
@@ -517,7 +523,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         // Then sort by page number
         return a.pageNum - b.pageNum;
       });
-  }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues]);
+  }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues, isViewOnly]);
 
   // Track if there were fields initially
   useEffect(() => {
@@ -576,6 +582,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   // click-to-sign behavior removed dependency on page concept; keep disabled to avoid unintended opens on scroll viewport clicks
 
   const handleFieldClick = (fieldOrId: any, options?: { isEdit?: boolean }) => {
+    if (isViewOnly) return;
     let field = fieldOrId;
     if (typeof fieldOrId === "string") {
       field =
@@ -1007,7 +1014,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           }
         }
         
-        if(response?.data?.fieldRemmaning===false){
+        if (response?.data?.fieldRemmaning === false) {
+          if (mode === MODE.RECIPIENT) {
+            try {
+              onRecipientComplete?.();
+            } catch (err) {
+              console.error('onRecipientComplete callback error:', err);
+            }
+          }
           navigate("/e-sign/signer/thank-you");
         }
       }else{
@@ -1261,6 +1275,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     pageWidth: number;
     pageScale: number;
     signingFieldIds: Record<string, boolean>;
+    isViewOnly?: boolean;
   }> = ({
     doc,
     signatureFields,
@@ -1274,6 +1289,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     pageWidth,
     pageScale,
     signingFieldIds,
+    isViewOnly = false,
   }) => {
       const [numPages, setNumPages] = useState<number>(0);
 
@@ -1462,12 +1478,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   left: 0,
                                   width: scaledWidth,
                                   height: scaledHeight,
-                                  pointerEvents: isSigned ? "auto" : allowSigning ? "auto" : "none",
+                                  pointerEvents: isViewOnly ? "none" : (isSigned ? "auto" : allowSigning ? "auto" : "none"),
                                   fontSize: fieldFontSize,
                                   padding: `0px ${boxPaddingX-15}px`,
                                 }}
                                 className={`flex items-center justify-center font-semibold rounded ${isSigned
                                   ? "border-0"
+                                  : isViewOnly && isCurrentUser
+                                    ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-default"
                                   : isCurrentUser
                                     ? isSigning
                                       ? "bg-blue-100 border-2 border-blue-400 text-blue-600 cursor-progress"
@@ -1475,9 +1493,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
                                   }`}
                                 onClick={() => {
+                                  if (isViewOnly) return;
                                   if (isSigning) return;
                                   if (isCurrentUser && !recipientSignature) {
-                                    console.log(recipientSignature);
                                     onFieldClick(field);
                                   } else if (isCurrentUser && recipientSignature) {
                                     doSign(field);
@@ -1497,8 +1515,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       alt="Signed"
                                       className="h-full w-full object-contain rounded"
                                     />
-                                    {/* Only show edit button for current user's signed fields */}
-                                    {isCurrentUser && (
+                                    {/* Only show edit button for current user's signed fields (not for CC view-only) */}
+                                    {isCurrentUser && !isViewOnly && (
                                       <button
                                         type="button"
                                         className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg border-2 border-white p-1.5 hover:scale-105 focus:scale-105 transition-transform focus:outline-none"
@@ -1741,8 +1759,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         };
 
                         // In self-signer mode, if field has value in nonSignatureFields, make it read-only
-                        // For recipient mode, fields are always editable if currentUser
-                        const editable = isCurrentUser && !(mode === MODE.SELF_SIGNER && hasValueInSelfSigner);
+                        // For recipient mode, fields are always editable if currentUser. CC (isViewOnly) = view-only
+                        const editable = !isViewOnly && isCurrentUser && !(mode === MODE.SELF_SIGNER && hasValueInSelfSigner);
                         const commonBox =
                           "w-full h-full flex items-center justify-center rounded " +
                           ( (isFieldCompleted && mode === MODE.SELF_SIGNER) || isSigned ? "border-0" : editable ? "bg-blue-50 border border-blue-400 text-blue-700" : "bg-gray-100 border border-gray-300 text-gray-500 opacity-80");
@@ -2014,7 +2032,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       <div className="relative flex flex-col items-stretch min-h-screen bg-gray-50">
         {/* Header (sticky full-width) */}
         <div className="fixed top-0 left-0 right-0 h-12 bg-[#1b0c3e] text-white flex items-center justify-between px-4 z-50">
-          <div className="text-sm font-medium">Review and complete</div>
+          <div className="text-sm font-medium">
+            {isViewOnly ? "View only (CC)" : "Review and complete"}
+          </div>
         </div>
 
       {/* PDF(s) container */}
@@ -2050,6 +2070,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 pageWidth={pageWidth}
                 pageScale={pageScale}
                 signingFieldIds={signingFieldIds}
+                isViewOnly={isViewOnly}
               />
 
               {/* separator between documents with next document name */}
@@ -2067,8 +2088,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           ));
         })()}
 
-        {/* Navigation button - positioned relative to current field */}
+        {/* Navigation button - positioned relative to current field (hidden for CC view-only) */}
         {(() => {
+        if (isViewOnly) return null;
         // Get the current field at currentActionableIndex
         const currentField = currentActionableIndex < actionableFields.length 
           ? actionableFields[currentActionableIndex] 
@@ -2201,8 +2223,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       })()}
       </div>
 
-      {/* SignPad Modal */}
-      {activeField && (
+      {/* SignPad Modal - never show for CC view-only */}
+      {activeField && !isViewOnly && (
         <SignPad
           isSignPad={!!activeField}
           setIsSignPad={(open: boolean) => {
@@ -2314,7 +2336,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   goToNext();
                 }, 300);
                 
-                if(fieldRemmaning===false){
+                if (fieldRemmaning === false) {
+                  try {
+                    onRecipientComplete?.();
+                  } catch (err) {
+                    console.error('onRecipientComplete callback error:', err);
+                  }
                   navigate("/e-sign/signer/thank-you");
                 }
                 break;

@@ -1039,6 +1039,22 @@ const AgreementPage: React.FC = () => {
     }
   };
 
+  const openInPersonSigning = (envelopeId: string) => {
+    const env = envelopesData.find(e => e.id === envelopeId);
+    if (!env || !Array.isArray(env.recipients)) return;
+    const firstInPerson = env.recipients.find((r) => {
+      const role = (r.role || '').toString().toLowerCase();
+      const status = (r.status || '').toString().toLowerCase();
+      const isCompleted = status === 'completed' || status === 'signed';
+      return role === 'in_person_signer' && !isCompleted;
+    });
+    if (!firstInPerson) return;
+    const base = window.location.origin.replace(/\/+$/, '');
+    if (!base || !firstInPerson.id) return;
+    const url = `${base}/e-sign/signer/${envelopeId}/${firstInPerson.id}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const getVisibleColumns = (): ColumnConfig[] => {
     return columnConfig
       .filter(col => col.visible)
@@ -1735,21 +1751,56 @@ const AgreementPage: React.FC = () => {
                       })}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
                         <div className="flex items-center justify-end gap-2 relative">
-                          {agreement.status === 'in-progress' && agreement.direction !== 'Received' && (
-                            <button
-                              onClick={() => handleRowResend(agreement)}
-                              disabled={rowResendLoadingId === agreement.id}
-                              className={`resend-envelope-button ${rowResendLoadingId === agreement.id ? 'opacity-60 cursor-not-allowed' : ''}`}
-                            >
-                              {!rowResendLoadingId && (
-                                <div>
-                                  <Mail className="envelope-icon envelope-closed" />
-                                  <MailOpen className="envelope-icon envelope-open" />
-                                </div>
-                              )}
-                              {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
-                            </button>
-                          )}
+                          {agreement.status === 'in-progress' && agreement.direction !== 'Received' && (() => {
+                            const env = envelopesData.find(e => e.id === agreement.id);
+                            const recipientList = env?.recipients || [];
+                            const hasPendingNonInPerson = recipientList.some((r) => {
+                              const role = (r.role || '').toString().toLowerCase();
+                              const status = (r.status || '').toString().toLowerCase();
+                              const isCompleted = status === 'completed' || status === 'signed';
+                              const isCopy = role === 'carbon_copy' || role === 'cc';
+                              const isInPerson = role === 'in_person_signer';
+                              return !isCompleted && !isCopy && !isInPerson;
+                            });
+                            const hasPendingInPerson = recipientList.some((r) => {
+                              const role = (r.role || '').toString().toLowerCase();
+                              const status = (r.status || '').toString().toLowerCase();
+                              const isCompleted = status === 'completed' || status === 'signed';
+                              return role === 'in_person_signer' && !isCompleted;
+                            });
+
+                            if (hasPendingNonInPerson) {
+                              return (
+                                <button
+                                  onClick={() => handleRowResend(agreement)}
+                                  disabled={rowResendLoadingId === agreement.id}
+                                  className={`resend-envelope-button ${rowResendLoadingId === agreement.id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                >
+                                  {!rowResendLoadingId && (
+                                    <div>
+                                      <Mail className="envelope-icon envelope-closed" />
+                                      <MailOpen className="envelope-icon envelope-open" />
+                                    </div>
+                                  )}
+                                  {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
+                                </button>
+                              );
+                            }
+
+                            if (hasPendingInPerson) {
+                              return (
+                                <button
+                                  onClick={() => openInPersonSigning(agreement.id)}
+                                  className="px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-[#3E2B66] text-[#3E2B66] hover:bg-purple-50"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  Sign now
+                                </button>
+                              );
+                            }
+
+                            return null;
+                          })()}
                           {agreement.status === "draft" && agreement.direction !== 'Received' && (
                             <button
                               onClick={() =>

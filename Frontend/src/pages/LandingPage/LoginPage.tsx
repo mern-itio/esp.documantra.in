@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
@@ -14,6 +14,31 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // If a valid token/userData already exists (e.g. synced from the Chrome extension),
+  // skip the login form and send the user to their workspace.
+  useEffect(() => {
+    const attemptAutoRedirect = () => {
+      try {
+        const token = localStorage.getItem('accessToken')
+        const userData = localStorage.getItem('userData')
+        if (token && userData) {
+          const returnTo = (location.state as any)?.returnTo || '/dashboard'
+          navigate(returnTo)
+        }
+      } catch {
+        // ignore localStorage errors
+      }
+    }
+
+    attemptAutoRedirect()
+
+    const handler = () => attemptAutoRedirect()
+    window.addEventListener('dns-extension-auth-synced', handler as EventListener)
+    return () => {
+      window.removeEventListener('dns-extension-auth-synced', handler as EventListener)
+    }
+  }, [navigate, location.state])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

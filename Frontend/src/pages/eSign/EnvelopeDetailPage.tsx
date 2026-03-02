@@ -714,17 +714,21 @@ const EnvelopeDetailPage: React.FC = () => {
                                                 status === 'waiting' || status === 'needs to sign' || status === 'pending';
                                             const isCopy =
                                                 (r.role || '').toLowerCase() === 'cc' ||
-                                                (r.role || '').toLowerCase() === 'copy';
+                                                (r.role || '').toLowerCase() === 'carbon_copy';
+                                            const isInPerson = (r.role || '').toLowerCase() === 'in_person_signer';
                                             const rightTitle = isCopy
                                                 ? 'Copy Received'
-                                                : isWaiting
-                                                    ? 'Needs to Sign'
-                                                    : isSigned
-                                                        ? 'Signed'
-                                                        : status.charAt(0).toUpperCase() + status.slice(1);
+                                                : isInPerson && isWaiting
+                                                    ? 'In-person signer'
+                                                    : isWaiting
+                                                        ? 'Needs to Sign'
+                                                        : isSigned
+                                                            ? 'Signed'
+                                                            : status.charAt(0).toUpperCase() + status.slice(1);
                                             const rightTime = formatDateTime(
                                                 envelope.updatedAt || envelope.sentAt || envelope.createdAt
                                             );
+                                            const signerUrl = id && r.id ? `${window.location.origin}/e-sign/signer/${id}/${r.id}` : '';
 
                                             return (
                                                 <div key={r.id || idx} className="flex items-start justify-between p-4">
@@ -741,16 +745,22 @@ const EnvelopeDetailPage: React.FC = () => {
                                                     </div>
                                                     <div className="text-right min-w-[220px]">
                                                         <div className="flex items-center justify-end gap-2 text-gray-900 font-semibold">
-                                                            {!isCopy && <PenLine className="w-4 h-4" />}
+                                                            {!isCopy && !isInPerson && <PenLine className="w-4 h-4" />}
                                                             {isCopy && <span className="text-gray-700">CC</span>}
                                                             <span>{rightTitle}</span>
                                                         </div>
                                                         <div className="text-sm text-gray-600">on {rightTime}</div>
-                                                        {/* {isSigned && (
-                                    <a href="#" className="text-indigo-600 text-sm hover:underline">
-                                        Signed in location
-                                    </a>
-                                    )} */}
+                                                        {isInPerson && !isSigned && signerUrl && (
+                                                            <a
+                                                                href={signerUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 mt-2 text-indigo-600 hover:underline text-sm"
+                                                            >
+                                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                                Start in-person signing
+                                                            </a>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );

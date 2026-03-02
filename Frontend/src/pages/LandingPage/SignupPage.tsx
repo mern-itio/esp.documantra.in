@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
 
 const SignupPage = () => {
@@ -223,7 +223,9 @@ const SignupPage = () => {
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
-                    <FileText className="h-4 w-4 text-white" />
+                    <Link to="/login">
+                      <ArrowLeft className="h-4 w-4 text-white" />
+                    </Link>
                   </div>
                   <h1 className="text-xl font-bold text-gray-900">Create Your Account</h1>
                 </div>

@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 
-const { createEnvelope, forwardRecipientsRequest, getEnvelopeDetail, saveSignatureFields, updateEnvelope, sendEnvelope, getSignatureFields, addSignature } = require('../controllers/e-signController');
+const { createEnvelope, forwardRecipientsRequest, getEnvelopeDetail, saveSignatureFields, updateEnvelope, sendEnvelope, getSignatureFields, addSignature, getEnvelopes } = require('../controllers/e-signController');
 const validateSandboxApiKey = require('../middleware/apiKeyValidate');
 
 // Multer config - temp storage for uploaded files

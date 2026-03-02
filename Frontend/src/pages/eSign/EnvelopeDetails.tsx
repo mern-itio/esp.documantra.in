@@ -563,7 +563,18 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {recipient.status !== 'completed' && recipient.status !== 'signed' && (
+              {recipient.role === 'in_person_signer' && recipient.status !== 'completed' && recipient.status !== 'signed' && (
+                <a
+                  href={`${window.location.origin}/e-sign/signer/${id}/${recipient.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-colors border border-[#3E2B66]"
+                >
+                  <User className="w-4 h-4" />
+                  Start in-person signing
+                </a>
+              )}
+              {recipient.role !== 'in_person_signer' && recipient.status !== 'completed' && recipient.status !== 'signed' && (
                 <button
                   onClick={() => handleSendReminder(recipient.id)}
                   className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

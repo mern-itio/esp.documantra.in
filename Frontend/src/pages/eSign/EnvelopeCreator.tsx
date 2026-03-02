@@ -126,6 +126,22 @@ const EnvelopeCreator: React.FC = () => {
   const [showRecipients, setShowRecipients] = useState(false);
   const [showAddMessage, setShowAddMessage] = useState(false);
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(null);
+  const hasInPersonSigner = useMemo(
+    () =>
+      recipients.some(
+        (r) => (r.role || '').toString().toLowerCase() === 'in_person_signer'
+      ),
+    [recipients]
+  );
+  const hasNonInPersonSigner = useMemo(
+    () =>
+      recipients.some((r) => {
+        const role = (r.role || 'signer').toString().toLowerCase();
+        return role !== 'in_person_signer' && role !== 'carbon_copy';
+      }),
+    [recipients]
+  );
+  const isInPersonOnlyFlow = hasInPersonSigner && !hasNonInPersonSigner;
   useEffect(() => {
     const loadDocument = async () => {
       const documentData = location.state?.documentData;
@@ -2329,6 +2345,18 @@ const EnvelopeCreator: React.FC = () => {
     const totalCost = calculateTotalCost();
     const creditsBalance = subscriptionPlan?.creditsBalance || 0;
     
+    // Pure in-person flow (only in_person_signer + CC): skip the two-step
+    // confirmation modal and go straight to confirmAndSendEnvelope so there
+    // is no mail-sending summary/success UI.
+    if (!isScheduled && isInPersonOnlyFlow) {
+      try {
+        await confirmAndSendEnvelope();
+      } catch (error) {
+        console.error('Error in in-person send flow:', error);
+      }
+      return;
+    }
+
     if (totalCost > 0 && creditsBalance < totalCost) {
       setShowSubscriptionModal(true);
       toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
@@ -2473,7 +2501,21 @@ const EnvelopeCreator: React.FC = () => {
       
       // Close modal before navigation
       setShowSendConfirmationModal(false);
-      
+
+      // For pure in-person flows (no email signers), immediately open the first in-person
+      // signer link so the host can hand over the device.
+      if (isInPersonOnlyFlow) {
+        const firstInPerson = normalizedRecipients.find((r) => {
+          const role = (r.role || '').toString().toLowerCase();
+          return role === 'in_person_signer';
+        });
+        const base = window.location.origin.replace(/\/+$/, '');
+        if (firstInPerson && firstInPerson.id && base) {
+          const url = `${base}/e-sign/signer/${envelopeId}/${firstInPerson.id}`;
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+      }
+
       // Navigate to agreement page with success parameter
       navigate('/e-sign/aggrement?sent=true');
     } catch (err) {
@@ -7265,8 +7307,12 @@ const EnvelopeCreator: React.FC = () => {
                           </div>
                         )}
                         {sending 
-                          ? (isScheduled ? 'Scheduling Envelope...' : 'Sending Envelope...')
-                          : (isScheduled ? 'Confirm & Schedule' : 'Confirm & Send')
+                          ? (isScheduled
+                              ? 'Scheduling Envelope...'
+                              : (isInPersonOnlyFlow ? 'Starting in-person signing...' : 'Sending Envelope...'))
+                          : (isScheduled
+                              ? 'Confirm & Schedule'
+                              : (isInPersonOnlyFlow ? 'Start in-person signing' : 'Confirm & Send'))
                         }
                       </button>
                     </div>
