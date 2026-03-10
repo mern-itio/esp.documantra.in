@@ -20,9 +20,15 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, recaptchaToken?: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => void;
-  signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; }) => Promise<void>;
+  signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string }) => Promise<{ signupToken: string }>;
+  sendSignupEmailOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
+  verifySignupEmailOtp: (signupToken: string, emailOtp: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean; loggedIn: boolean }>;
+  sendSignupPhoneOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
+  verifySignupPhoneOtp: (signupToken: string, phoneOtp: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean; loggedIn: boolean }>;
+  verifyTwoFaLogin: (twoFaToken: string, otp: string) => Promise<void>;
   accountType: 'user' | 'organization';
   organizationId: string | null;
   organizationDetail: any | null;
@@ -116,6 +122,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch {
           setOrganizationDetail(null);
         }
+
+        // Verify session in background
+        fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(async (res) => {
+          if (res.status === 401 || res.status === 403) {
+            console.warn('Session is invalid or revoked, logging out.');
+            // dispatch logout event to clear local state
+            window.dispatchEvent(new CustomEvent('app:auth-logout'));
+          }
+        }).catch(() => {
+          // ignore network errors
+        });
+
       } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('accessToken');
@@ -124,10 +144,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Check for existing authentication on component mount
+  // Check for existing authentication on component mount, window focus, and periodically
   useEffect(() => {
     hydrateFromLocalStorage();
     setLoading(false);
+
+    const checkSession = () => {
+      const token = localStorage.getItem('accessToken');
+      if (token && document.visibilityState === 'visible') {
+        fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
+          headers: { 'Authorization': `Bearer ${token}` },
+          cache: 'no-store' // Ensure we don't get a cached 200 response
+        }).then(async (res) => {
+          if (res.status === 401 || res.status === 403) {
+            console.warn('Session is invalid or revoked, logging out.');
+            window.dispatchEvent(new CustomEvent('app:auth-logout'));
+          }
+        }).catch(() => {});
+      }
+    };
+
+    // Check on focus and visibility change
+    window.addEventListener('visibilitychange', checkSession);
+    window.addEventListener('focus', checkSession);
+
+    // Also poll every 15 seconds to catch revocations even if the user is just staring at the screen
+    const intervalId = setInterval(checkSession, 15000);
+
+    return () => {
+      window.removeEventListener('visibilitychange', checkSession);
+      window.removeEventListener('focus', checkSession);
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  // Listen for global auth logout events (e.g. from 401 interceptors or session revocation)
+  useEffect(() => {
+    const handleGlobalLogout = () => {
+      logout();
+    };
+    window.addEventListener('app:auth-logout', handleGlobalLogout as EventListener);
+    return () => {
+      window.removeEventListener('app:auth-logout', handleGlobalLogout as EventListener);
+    };
   }, []);
 
   // Also hydrate again when the extension syncs auth into localStorage.
@@ -168,12 +227,134 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [user]);
 
-  const login = async (email: string, password: string) => {
+  class VerificationRequiredError extends Error {
+    signupToken?: string;
+    step?: 'email' | 'phone';
+    emailVerified?: boolean;
+    phoneVerified?: boolean;
+    canSendPhoneOtp?: boolean;
+    constructor(
+      message: string,
+      signupToken?: string,
+      step?: 'email' | 'phone',
+      emailVerified?: boolean,
+      phoneVerified?: boolean,
+      canSendPhoneOtp?: boolean
+    ) {
+      super(message);
+      this.name = 'VerificationRequiredError';
+      this.signupToken = signupToken;
+      this.step = step;
+      this.emailVerified = emailVerified;
+      this.phoneVerified = phoneVerified;
+      this.canSendPhoneOtp = canSendPhoneOtp;
+    }
+  }
+
+  class TwoFaRequiredError extends Error {
+    twoFaToken?: string;
+    method?: 'email' | 'sms';
+    constructor(message: string, twoFaToken?: string, method?: 'email' | 'sms') {
+      super(message);
+      this.name = 'TwoFaRequiredError';
+      this.twoFaToken = twoFaToken;
+      this.method = method;
+    }
+  }
+
+  const getOrCreateDeviceId = () => {
     try {
-      const data = await apiRequest(API_ENDPOINTS.AUTH.LOGIN, {
+      const existing = localStorage.getItem('deviceId');
+      if (existing) return existing;
+      const id = (crypto as any)?.randomUUID ? (crypto as any).randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      localStorage.setItem('deviceId', id);
+      return id;
+    } catch {
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+  };
+
+  const applyLoginPayload = async (data: any) => {
+    let fullname = '';
+    let phone = data.phone || '';
+    let address = '';
+    let company = '';
+    let email = '';
+    try {
+      const token = data.token;
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        fullname = payload.data?.fullname || payload.fullname || '';
+        phone = payload.data?.phone || payload.phone || phone;
+        address = payload.data?.address || payload.address || '';
+        company = payload.data?.company || payload.company || '';
+        email = payload.data?.email || payload.email || '';
+      }
+    } catch (jwtError) {
+      console.warn('Could not decode JWT token:', jwtError);
+    }
+    const initialUserData = {
+      id: data.user_id,
+      email: data.email || email || '',
+      fullname,
+      type: data.type || 'user',
+      plan: data.plan || 'free',
+      phone,
+      address: data.address || address || '',
+      company: data.company || company || '',
+      isFirstLogin: data.isFirstLogin
+    };
+    localStorage.setItem('accessToken', data.token);
+    localStorage.setItem('userData', JSON.stringify(initialUserData));
+    localStorage.setItem('accountType', 'user');
+    localStorage.removeItem('organizationId');
+    localStorage.removeItem('currentSupportTicket');
+    setAccountType('user');
+    setOrganizationId(null);
+    setUser(initialUserData);
+    setIsAuthenticated(true);
+
+    try {
+      const subscriptionPlan = await SubscriptionService.getUserPlan();
+      SubscriptionStorage.savePlan(subscriptionPlan);
+      const updatedUserData = { ...initialUserData, plan: subscriptionPlan.name || subscriptionPlan.type || 'free' };
+      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+      setUser(updatedUserData);
+    } catch (error) {
+      console.error('Error fetching subscription plan after verify:', error);
+    }
+  };
+
+  const login = async (email: string, password: string, recaptchaToken?: string) => {
+    try {
+      const deviceId = getOrCreateDeviceId();
+      const resp = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, deviceId, deviceLabel: 'browser', recaptchaToken }),
       });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        if (resp.status === 403 && data?.code === 'VERIFICATION_REQUIRED') {
+          throw new VerificationRequiredError(
+            data?.message || 'Verification required',
+            data?.signupToken,
+            data?.step,
+            data?.emailVerified,
+            data?.phoneVerified,
+            data?.canSendPhoneOtp
+          );
+        }
+        if (resp.status === 403 && data?.code === 'TWO_FA_REQUIRED') {
+          throw new TwoFaRequiredError(
+            data?.message || 'Two-factor authentication required',
+            data?.twoFaToken,
+            data?.method
+          );
+        }
+        throw new Error(data?.message || 'Login failed');
+      }
       
       // Decode JWT token to get fullname, phone, address, company
       let fullname = email.split('@')[0]; // fallback
@@ -218,6 +399,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // default to user account after login
       localStorage.setItem('accountType', 'user');
       localStorage.removeItem('organizationId');
+      localStorage.removeItem('currentSupportTicket');
       setAccountType('user');
       setOrganizationId(null);
 
@@ -245,6 +427,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const googleLogin = async (credential: string) => {
+    try {
+      const deviceId = getOrCreateDeviceId();
+      const resp = await fetch(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: credential, deviceId, deviceLabel: 'browser' }),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Google Login failed');
+      }
+
+      await applyLoginPayload({ ...data, token: data.token, user_id: data.user_id, email: data.email || '' });
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw error;
+    }
+  };
+
+  const verifyTwoFaLogin = async (twoFaToken: string, otp: string) => {
+    const deviceId = getOrCreateDeviceId();
+    const data = await apiRequest(API_ENDPOINTS.AUTH.VERIFY_2FA_LOGIN, {
+      method: 'POST',
+      body: JSON.stringify({ twoFaToken, otp: otp.trim(), deviceId, deviceLabel: 'browser' }),
+    });
+    await applyLoginPayload(data);
+  };
+
   const logout = () => {
     // Clear authentication data
     localStorage.removeItem('accessToken');
@@ -252,6 +464,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('accountType');
     localStorage.removeItem('organizationId');
     localStorage.removeItem('organizationDetail');
+    localStorage.removeItem('currentSupportTicket');
     
     // Clear subscription data
     SubscriptionStorage.clearPlan();
@@ -346,19 +559,71 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string }) => {
-    try {
-      await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      });
-      
-      // After successful registration, automatically log in
-      await login(userData.email, userData.password);
-    } catch (error) {
-      console.error('Signup error:', error);
-      throw error;
+  const signup = async (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string }) => {
+    const data = await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    if (!data.signupToken) throw new Error('Signup succeeded but no verification token received');
+    return { signupToken: data.signupToken };
+  };
+
+  const sendSignupEmailOtp = async (signupToken: string) => {
+    const data = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_SEND_EMAIL_OTP, {
+      method: 'POST',
+      body: JSON.stringify({ signupToken }),
+    });
+    return {
+      emailVerified: !!data.emailVerified,
+      phoneVerified: !!data.phoneVerified,
+      canSendPhoneOtp: !!data.canSendPhoneOtp,
+    };
+  };
+
+  const verifySignupEmailOtp = async (signupToken: string, emailOtp: string) => {
+    const data = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_VERIFY_EMAIL_OTP, {
+      method: 'POST',
+      body: JSON.stringify({ signupToken, emailOtp: emailOtp.trim() }),
+    });
+    if (data?.token) {
+      await applyLoginPayload(data);
+      return { emailVerified: true, phoneVerified: true, canSendPhoneOtp: false, loggedIn: true };
     }
+    return {
+      emailVerified: !!data.emailVerified,
+      phoneVerified: !!data.phoneVerified,
+      canSendPhoneOtp: !!data.canSendPhoneOtp,
+      loggedIn: false
+    };
+  };
+
+  const sendSignupPhoneOtp = async (signupToken: string) => {
+    const data = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_SEND_PHONE_OTP, {
+      method: 'POST',
+      body: JSON.stringify({ signupToken }),
+    });
+    return {
+      emailVerified: !!data.emailVerified,
+      phoneVerified: !!data.phoneVerified,
+      canSendPhoneOtp: !!data.canSendPhoneOtp,
+    };
+  };
+
+  const verifySignupPhoneOtp = async (signupToken: string, phoneOtp: string) => {
+    const data = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_VERIFY_PHONE_OTP, {
+      method: 'POST',
+      body: JSON.stringify({ signupToken, phoneOtp: phoneOtp.trim() }),
+    });
+    if (data?.token) {
+      await applyLoginPayload(data);
+      return { emailVerified: true, phoneVerified: true, canSendPhoneOtp: false, loggedIn: true };
+    }
+    return {
+      emailVerified: !!data.emailVerified,
+      phoneVerified: !!data.phoneVerified,
+      canSendPhoneOtp: !!data.canSendPhoneOtp,
+      loggedIn: false
+    };
   };
 
   const value: AuthContextType = {
@@ -366,8 +631,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     loading,
     login,
+    googleLogin,
     logout,
     signup,
+    sendSignupEmailOtp,
+    verifySignupEmailOtp,
+    sendSignupPhoneOtp,
+    verifySignupPhoneOtp,
+    verifyTwoFaLogin,
     accountType,
     organizationId,
     organizationDetail,

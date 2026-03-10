@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Smartphone } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
 import { APP_NAME } from '../../components/constants/appConfig'
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import ReCAPTCHA from 'react-google-recaptcha'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY_HERE"
+
+type LoginStep = 'login' | 'verify'
 
 const LoginPage = () => {
-  const { login } = useAuth()
+  const { login, googleLogin, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, verifyTwoFaLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
@@ -14,6 +21,18 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [step, setStep] = useState<LoginStep>('login')
+  const [signupToken, setSignupToken] = useState<string>('')
+  const [emailOtp, setEmailOtp] = useState('')
+  const [phoneOtp, setPhoneOtp] = useState('')
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [phoneVerified, setPhoneVerified] = useState(false)
+  const [canSendPhoneOtp, setCanSendPhoneOtp] = useState(false)
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false)
+  const [twoFaToken, setTwoFaToken] = useState<string>('')
+  const [twoFaOtp, setTwoFaOtp] = useState('')
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
 
   // If a valid token/userData already exists (e.g. synced from the Chrome extension),
   // skip the login form and send the user to their workspace.
@@ -43,20 +62,183 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    
+    if (!recaptchaToken) {
+      setError('Please complete the reCAPTCHA verification.')
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      await login(email, password)
+      await login(email, password, recaptchaToken)
       const returnTo = (location.state as any)?.returnTo || '/dashboard'
       navigate(returnTo)
     } catch (error) {
-      setError('Invalid email or password. Please try again.')
+      // Reset reCAPTCHA on error
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset()
+      }
+      setRecaptchaToken(null)
+      
+      const anyErr: any = error
+      if (anyErr?.name === 'VerificationRequiredError') {
+        if (anyErr?.signupToken) setSignupToken(anyErr.signupToken)
+        setStep('verify')
+        setEmailVerified(!!anyErr?.emailVerified)
+        setPhoneVerified(!!anyErr?.phoneVerified)
+        // if backend says canSendPhoneOtp, trust it; otherwise infer from step
+        setCanSendPhoneOtp(
+          typeof anyErr?.canSendPhoneOtp === 'boolean'
+            ? anyErr.canSendPhoneOtp
+            : anyErr?.step === 'phone'
+        )
+        setPhoneOtpSent(false)
+        setError(anyErr?.message || 'Please verify your account to continue.')
+      } else if (anyErr?.name === 'TwoFaRequiredError') {
+        setTwoFaToken(anyErr?.twoFaToken || '')
+        setTwoFaOtp('')
+        // Reuse verify step UI area, but render a 2FA block
+        setStep('verify')
+        // Hide signup verification blocks by marking email verified, and disabling phone otp send
+        setEmailVerified(true)
+        setPhoneVerified(true)
+        setCanSendPhoneOtp(false)
+        setError(anyErr?.message || 'Enter the 2FA code to continue.')
+      } else {
+        setError(anyErr?.message || 'Invalid email or password. Please try again.')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError('')
+    setIsLoading(true)
+    try {
+      if (credentialResponse.credential) {
+        await googleLogin(credentialResponse.credential)
+        const returnTo = (location.state as any)?.returnTo || '/dashboard'
+        navigate(returnTo)
+      } else {
+        setError('Google Login failed. No credential received.')
+      }
+    } catch (error: any) {
+      setError(error.message || 'Google Login failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    setError('Google Login was unsuccessful. Please try again.')
+  }
+
+  const handleVerifyTwoFa = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    const code = twoFaOtp.replace(/\D/g, '').slice(0, 6)
+    if (!twoFaToken) {
+      setError('2FA session expired. Please login again.')
+      setStep('login')
+      return
+    }
+    if (code.length !== 6) {
+      setError('Please enter the 6-digit code.')
+      return
+    }
+    setIsLoading(true)
+    try {
+      await verifyTwoFaLogin(twoFaToken, code)
+      const returnTo = (location.state as any)?.returnTo || '/dashboard'
+      navigate(returnTo)
+    } catch (err) {
+      setError((err as Error)?.message || 'Invalid code. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    const emailTrim = emailOtp.replace(/\D/g, '').slice(0, 6)
+    if (!signupToken) {
+      setError('Verification session expired. Please login again to resend codes.')
+      setStep('login')
+      return
+    }
+    if (emailTrim.length !== 6) {
+      setError('Please enter the 6-digit code from your email.')
+      return
+    }
+    setIsLoading(true)
+    try {
+      const st = await verifySignupEmailOtp(signupToken, emailTrim)
+      setEmailVerified(st.emailVerified)
+      setPhoneVerified(st.phoneVerified)
+      setCanSendPhoneOtp(st.canSendPhoneOtp)
+      if (st.loggedIn) {
+        const returnTo = (location.state as any)?.returnTo || '/dashboard'
+        navigate(returnTo)
+      }
+    } catch (err) {
+      setError((err as Error)?.message || 'Email verification failed. Please check the code and try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSendPhoneOtp = async () => {
+    setError('')
+    if (!signupToken) return
+    setIsLoading(true)
+    try {
+      const st = await sendSignupPhoneOtp(signupToken)
+      setEmailVerified(st.emailVerified)
+      setPhoneVerified(st.phoneVerified)
+      setCanSendPhoneOtp(st.canSendPhoneOtp)
+      setPhoneOtpSent(true)
+    } catch (err) {
+      setError((err as Error)?.message || 'Failed to send phone OTP. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerifyPhone = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    const phoneTrim = phoneOtp.replace(/\D/g, '').slice(0, 6)
+    if (!signupToken) {
+      setError('Verification session expired. Please login again to resend codes.')
+      setStep('login')
+      return
+    }
+    if (phoneTrim.length !== 6) {
+      setError('Please enter the 6-digit code from your phone.')
+      return
+    }
+    setIsLoading(true)
+    try {
+      const st = await verifySignupPhoneOtp(signupToken, phoneTrim)
+      setEmailVerified(st.emailVerified)
+      setPhoneVerified(st.phoneVerified)
+      setCanSendPhoneOtp(st.canSendPhoneOtp)
+      if (st.loggedIn) {
+        const returnTo = (location.state as any)?.returnTo || '/dashboard'
+        navigate(returnTo)
+      }
+    } catch (err) {
+      setError((err as Error)?.message || 'Phone verification failed. Please check the code and try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-sky-50 pt-34 relative overflow-hidden">
       {/* Decorative background orbs */}
       <div className="pointer-events-none absolute inset-0">
@@ -139,10 +321,174 @@ const LoginPage = () => {
                 </div>
               )}
 
+              {step === 'verify' ? (
+                twoFaToken ? (
+                  <form onSubmit={handleVerifyTwoFa} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label htmlFor="twoFaOtp" className="block text-xs font-medium text-slate-800">
+                        2FA code
+                      </label>
+                      <div className="relative">
+                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          id="twoFaOtp"
+                          value={twoFaOtp}
+                          onChange={(e) => setTwoFaOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          inputMode="numeric"
+                          maxLength={6}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
+                          placeholder="000000"
+                          autoComplete="one-time-code"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#084bdc] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#084bdc]/30 transition hover:bg-[#084bdc]/90 disabled:cursor-not-allowed disabled:bg-[#084bdc]/50"
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="inline-flex h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                          Verifying...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Continue
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep('login')
+                        setTwoFaToken('')
+                        setTwoFaOtp('')
+                      }}
+                      className="w-full text-xs font-medium text-slate-600 hover:text-slate-800"
+                    >
+                      Back to login
+                    </button>
+                  </form>
+                ) : (
+                <form className="space-y-4">
+                  {!emailVerified && (
+                    <>
+                      <div className="space-y-1.5">
+                        <label htmlFor="emailOtp" className="block text-xs font-medium text-slate-800">
+                          Email verification code
+                        </label>
+                        <div className="relative">
+                          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            id="emailOtp"
+                            value={emailOtp}
+                            onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            inputMode="numeric"
+                            maxLength={6}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
+                            placeholder="000000"
+                            autoComplete="one-time-code"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleVerifyEmail(e as any)}
+                        disabled={isLoading}
+                        className="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#084bdc] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#084bdc]/30 transition hover:bg-[#084bdc]/90 disabled:cursor-not-allowed disabled:bg-[#084bdc]/50"
+                      >
+                        {isLoading ? 'Verifying email...' : 'Verify email'}
+                      </button>
+                    </>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="phoneOtp" className="block text-xs font-medium text-slate-800">
+                      Phone verification code
+                    </label>
+                    <div className="relative">
+                      <Smartphone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        id="phoneOtp"
+                        value={phoneOtp}
+                        onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        inputMode="numeric"
+                        maxLength={6}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
+                        placeholder="000000"
+                        autoComplete="one-time-code"
+                        disabled={!emailVerified}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleSendPhoneOtp}
+                      disabled={isLoading || !canSendPhoneOtp}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {phoneOtpSent ? 'Resend phone OTP' : 'Send phone OTP'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleVerifyPhone(e as any)}
+                      disabled={isLoading || !emailVerified || phoneVerified}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#084bdc] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#084bdc]/30 transition hover:bg-[#084bdc]/90 disabled:cursor-not-allowed disabled:bg-[#084bdc]/50"
+                    >
+                      {phoneVerified ? 'Phone verified' : (isLoading ? 'Verifying phone...' : 'Verify phone')}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('login')
+                      setEmailOtp('')
+                      setPhoneOtp('')
+                    }}
+                    className="w-full text-xs font-medium text-slate-600 hover:text-slate-800"
+                  >
+                    Back to login
+                  </button>
+                </form>
+                )
+              ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex justify-center w-full mb-4">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    useOneTap
+                    shape="rectangular"
+                    theme="outline"
+                    text="signin_with"
+                    size="large"
+                    width="100%"
+                  />
+                </div>
+                
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or continue with email</span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+
                 <div className="space-y-1.5">
                   <label htmlFor="email" className="block text-xs font-medium text-slate-800">
-                    Work email
+                    E-mail ID
                   </label>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -201,9 +547,17 @@ const LoginPage = () => {
                   </Link>
                 </div>
 
+                <div className="flex justify-center my-4">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    onChange={(token) => setRecaptchaToken(token)}
+                  />
+                </div>
+
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !recaptchaToken}
                   className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#084bdc] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#084bdc]/30 transition hover:bg-[#084bdc]/90 disabled:cursor-not-allowed disabled:bg-[#084bdc]/50"
                 >
                   {isLoading ? (
@@ -219,6 +573,7 @@ const LoginPage = () => {
                   )}
                 </button>
               </form>
+              )}
 
               <div className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
                 <div className="flex items-center justify-between gap-3">
@@ -245,6 +600,7 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
+    </GoogleOAuthProvider>
   )
 }
 

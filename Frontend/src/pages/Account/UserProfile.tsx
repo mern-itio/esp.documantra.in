@@ -1,13 +1,35 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useNavigate } from 'react-router-dom';
-import { Crown } from 'lucide-react';
+import { Crown, Edit2, X, XCircle } from 'lucide-react';
+import { authApi } from '../../services/apiHelper';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 
 const UserProfile: React.FC = () => {
   const { user } = useAuth();
   const { userPlan, isFreePlan } = useSubscription();
   const navigate = useNavigate();
+
+  const [twoFaEnabled, setTwoFaEnabled] = useState<boolean>(false);
+  const [twoFaMethod, setTwoFaMethod] = useState<'email' | 'sms'>('email');
+  const [twoFaLoading, setTwoFaLoading] = useState(false);
+  const [twoFaMsg, setTwoFaMsg] = useState<string>('');
+  const [twoFaErr, setTwoFaErr] = useState<string>('');
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    fullname: '',
+    email: '',
+    company: '',
+    phone: '',
+    address: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  
+  const [otpModal, setOtpModal] = useState<{ type: 'email' | 'phone' | null, visible: boolean, otp: string, loading: boolean, error: string }>({ type: null, visible: false, otp: '', loading: false, error: '' });
   
   // Get plan name from subscription context (most up-to-date) or fallback to user.plan
   const planName = userPlan?.name || (user as any)?.plan || null;
@@ -27,6 +49,169 @@ const UserProfile: React.FC = () => {
     .slice(0, 2)
     .map(w => w[0])
     .join('');
+
+  const phoneRaw = (user as any)?.phone as string | undefined;
+
+  const userTwoFaFromAuth = useMemo(() => {
+    const u: any = user || {};
+    return {
+      enabled: !!u.twoFaEnabled,
+      method: (u.twoFaMethod === 'sms' ? 'sms' : 'email') as 'email' | 'sms',
+    };
+  }, [user]);
+
+  useEffect(() => {
+    // Initialize from auth context first, then refresh from backend
+    setTwoFaEnabled(userTwoFaFromAuth.enabled);
+    setTwoFaMethod(userTwoFaFromAuth.method);
+
+    const load = async () => {
+      try {
+        const resp = await authApi.get('/api/auth/2fa');
+        setTwoFaEnabled(!!resp.data?.twoFaEnabled);
+        setTwoFaMethod(resp.data?.twoFaMethod === 'sms' ? 'sms' : 'email');
+      } catch (e: any) {
+        // ignore if endpoint not reachable; UI still shows from context
+      }
+    };
+    load();
+
+    const loadSessions = async () => {
+      setLoadingSessions(true);
+      try {
+        const resp = await authApi.get('/api/auth/sessions');
+        setSessions(resp.data?.sessions || []);
+      } catch (e: any) {
+        console.error('Failed to load sessions');
+      } finally {
+        setLoadingSessions(false);
+      }
+    };
+    loadSessions();
+  }, [userTwoFaFromAuth.enabled, userTwoFaFromAuth.method]);
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await authApi.post('/api/auth/sessions/revoke', { sessionId });
+      setSessions(prev => prev.filter(s => s.sessionId !== sessionId));
+    } catch (e) {
+      console.error('Failed to revoke session', e);
+    }
+  };
+
+  const saveTwoFa = async () => {
+    setTwoFaMsg('');
+    setTwoFaErr('');
+    setTwoFaLoading(true);
+    try {
+      const resp = await authApi.post('/api/auth/2fa', { enabled: twoFaEnabled, method: twoFaMethod });
+      setTwoFaEnabled(!!resp.data?.twoFaEnabled);
+      setTwoFaMethod(resp.data?.twoFaMethod === 'sms' ? 'sms' : 'email');
+      setTwoFaMsg('2FA settings saved.');
+    } catch (e: any) {
+      setTwoFaErr(e?.response?.data?.message || 'Failed to save 2FA settings.');
+    } finally {
+      setTwoFaLoading(false);
+    }
+  };
+
+  const handleEditClick = () => {
+    setFormData({
+      fullname: (user as any)?.fullname || '',
+      email: (user as any)?.email || '',
+      company: (user as any)?.company || '',
+      phone: (user as any)?.phone || '',
+      address: (user as any)?.address || ''
+    });
+    setSaveError('');
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setSaveError('');
+  };
+
+  const handleSaveProfile = async () => {
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      let emailChanged = formData.email !== (user as any)?.email;
+      let phoneChanged = formData.phone !== (user as any)?.phone;
+
+      // Save basic profile
+      const profileResp = await authApi.put('/api/auth/profile', {
+        fullname: formData.fullname,
+        company: formData.company,
+        address: formData.address
+      });
+      
+      // Update local storage and context
+      if (profileResp.data?.token) {
+        localStorage.setItem('accessToken', profileResp.data.token);
+        localStorage.setItem('userData', JSON.stringify({ ...user, ...profileResp.data.user }));
+        window.dispatchEvent(new Event('dns-extension-auth-synced'));
+      }
+
+      if (emailChanged) {
+        await authApi.post('/api/auth/profile/email/send-otp', { email: formData.email });
+        setOtpModal({ type: 'email', visible: true, otp: '', loading: false, error: '' });
+        setIsSaving(false);
+        return; // wait for OTP verify
+      }
+
+      if (phoneChanged) {
+        await authApi.post('/api/auth/profile/phone/send-otp', { phone: formData.phone });
+        setOtpModal({ type: 'phone', visible: true, otp: '', loading: false, error: '' });
+        setIsSaving(false);
+        return; // wait for OTP verify
+      }
+
+      setIsEditing(false);
+    } catch (error: any) {
+      setSaveError(error.response?.data?.message || 'Failed to save profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    setOtpModal(prev => ({ ...prev, loading: true, error: '' }));
+    try {
+      if (otpModal.type === 'email') {
+        const resp = await authApi.post('/api/auth/profile/email/verify-otp', { otp: otpModal.otp });
+        if (resp.data?.token) {
+          localStorage.setItem('accessToken', resp.data.token);
+          const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
+          currentUser.email = formData.email;
+          localStorage.setItem('userData', JSON.stringify(currentUser));
+          window.dispatchEvent(new Event('dns-extension-auth-synced'));
+        }
+        
+        let phoneChanged = formData.phone !== (user as any)?.phone;
+        if (phoneChanged) {
+          await authApi.post('/api/auth/profile/phone/send-otp', { phone: formData.phone });
+          setOtpModal({ type: 'phone', visible: true, otp: '', loading: false, error: '' });
+        } else {
+          setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' });
+          setIsEditing(false);
+        }
+      } else if (otpModal.type === 'phone') {
+        const resp = await authApi.post('/api/auth/profile/phone/verify-otp', { otp: otpModal.otp });
+        if (resp.data?.token) {
+          localStorage.setItem('accessToken', resp.data.token);
+          const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
+          currentUser.phone = formData.phone;
+          localStorage.setItem('userData', JSON.stringify(currentUser));
+          window.dispatchEvent(new Event('dns-extension-auth-synced'));
+        }
+        setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' });
+        setIsEditing(false);
+      }
+    } catch (error: any) {
+      setOtpModal(prev => ({ ...prev, error: error.response?.data?.message || 'Invalid OTP', loading: false }));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -64,53 +249,341 @@ const UserProfile: React.FC = () => {
               {planName}
             </div>
           )}
+          <button
+            onClick={isEditing ? handleCancelEdit : handleEditClick}
+            className="ml-4 p-2 text-gray-500 hover:text-gray-900 transition-colors"
+            title={isEditing ? 'Cancel Edit' : 'Edit Profile'}
+          >
+            {isEditing ? <X className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {saveError && (
+        <div className="max-w-7xl mx-auto px-6 mt-4">
+          <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm flex items-center gap-2">
+            <XCircle className="w-4 h-4" />
+            {saveError}
+          </div>
+        </div>
+      )}
 
       {/* Details grid */}
       <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Name</h3>
-          <p className="text-gray-900">{formatName((user as any)?.fullname)}</p>
+          {isEditing ? (
+            <input
+              type="text"
+              value={formData.fullname}
+              onChange={e => setFormData({ ...formData, fullname: e.target.value })}
+              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
+            />
+          ) : (
+            <p className="text-gray-900">{formatName((user as any)?.fullname)}</p>
+          )}
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Email Address</h3>
-          <p className="text-gray-900">{(user as any)?.email || '—'}</p>
+          {isEditing ? (
+            <input
+              type="email"
+              value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
+            />
+          ) : (
+            <p className="text-gray-900">{(user as any)?.email || '—'}</p>
+          )}
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 bg-gray-50">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Account ID</h3>
-          <p className="text-gray-900">{accountId}</p>
+          <p className="text-gray-500">{accountId}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Company</h3>
-          <p className="text-gray-900">{(user as any)?.company || '—'}</p>
+          {isEditing ? (
+            <input
+              type="text"
+              value={formData.company}
+              onChange={e => setFormData({ ...formData, company: e.target.value })}
+              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
+            />
+          ) : (
+            <p className="text-gray-900">{(user as any)?.company || '—'}</p>
+          )}
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Phone Number</h3>
-          <p className="text-gray-900">{(user as any)?.phone || '—'}</p>
+          {isEditing ? (
+            <div className="relative group">
+              <PhoneInput
+                country="in"
+                value={formData.phone}
+                onChange={val => setFormData({ ...formData, phone: val })}
+                inputProps={{
+                  name: 'phone',
+                  id: 'phone',
+                  required: true
+                }}
+                containerClass="w-full"
+                inputClass="!w-full !pl-12 !pr-3 !py-1.5 !text-sm !border !border-gray-300 !rounded !bg-white focus:!outline-none focus:!ring-1 focus:!ring-[#4D0080] !transition-all !duration-300"
+                buttonClass="!border-y !border-l !border-r-0 !border-gray-300 !bg-white !rounded-l"
+              />
+            </div>
+          ) : (
+            <>
+              {phoneRaw ? (
+                <div className="pointer-events-none flex items-center -ml-3">
+                  <PhoneInput
+                    value={phoneRaw}
+                    disabled={true}
+                    containerClass="w-full"
+                    inputClass="!w-full !pl-12 !pr-0 !py-0 !text-gray-900 !text-base !border-none !bg-transparent !opacity-100"
+                    buttonClass="!border-none !bg-transparent !opacity-100"
+                  />
+                </div>
+              ) : (
+                <p className="text-gray-900">—</p>
+              )}
+            </>
+          )}
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Address</h3>
-          <p className="text-gray-900">{(user as any)?.address || '—'}</p>
+          {isEditing ? (
+            <input
+              type="text"
+              value={formData.address}
+              onChange={e => setFormData({ ...formData, address: e.target.value })}
+              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
+            />
+          ) : (
+            <p className="text-gray-900">{(user as any)?.address || '—'}</p>
+          )}
         </div>
+
+
+        {/* Security / 2FA */}
+        <div
+          className={`bg-white rounded-xl border p-5 md:col-span-2 lg:col-span-3 transition-colors ${
+            twoFaEnabled ? 'border-emerald-200 shadow-sm' : 'border-gray-200'
+          }`}
+        >
+          <h3 className="text-sm font-semibold text-gray-900">Security</h3>
+          <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-gray-600 max-w-lg">
+              {twoFaEnabled
+                ? 'Two-factor authentication adds an extra layer of protection. You’ll be asked for a code when you sign in on new browsers and devices.'
+                : 'Enable two-factor authentication (2FA) to require a one-time code when you sign in on a new device.'}
+            </p>
+            <div className="flex items-center gap-2 mt-1 sm:mt-0">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  twoFaEnabled ? 'bg-emerald-500' : 'bg-gray-300'
+                }`}
+              />
+              <span
+                className={`text-[11px] font-medium uppercase tracking-wide ${
+                  twoFaEnabled ? 'text-emerald-700' : 'text-gray-500'
+                }`}
+              >
+                {twoFaEnabled ? '2FA ENABLED' : '2FA NOT ENABLED'}
+              </span>
+            </div>
+          </div>
+
+          {(twoFaErr || twoFaMsg) && (
+            <div
+              className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
+                twoFaErr
+                  ? 'border-red-200 bg-red-50 text-red-700'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              }`}
+            >
+              {twoFaErr || twoFaMsg}
+            </div>
+          )}
+
+          <div className="mt-4 space-y-4">
+            {!twoFaEnabled && (
+              <ul className="text-[11px] text-gray-500 grid gap-1 sm:grid-cols-2">
+                <li>• Prevents logins from unknown devices</li>
+                <li>• Protects your drafts and documents</li>
+                <li>• Uses a one-time code sent to you</li>
+                <li>• You can turn it off anytime</li>
+              </ul>
+            )}
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <label className="inline-flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={twoFaEnabled}
+                  onChange={(e) => setTwoFaEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-[#4D0080] focus:ring-[#4D0080]/30"
+                />
+                <span className="text-sm font-medium text-gray-900">
+                  {twoFaEnabled
+                    ? 'Two-factor authentication is turned on'
+                    : 'Turn on two-factor authentication'}
+                </span>
+              </label>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <div className={`flex items-center gap-3 ${!twoFaEnabled ? 'opacity-60' : ''}`}>
+                  <span className="text-xs font-semibold text-gray-700">
+                    {twoFaEnabled ? 'Active method' : 'Preferred method'}
+                  </span>
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-800">
+                    <input
+                      type="radio"
+                      name="twoFaMethod"
+                      value="email"
+                      checked={twoFaMethod === 'email'}
+                      onChange={() => setTwoFaMethod('email')}
+                      disabled={!twoFaEnabled}
+                      className="h-3.5 w-3.5 text-[#4D0080] focus:ring-[#4D0080]/30"
+                    />
+                    Email
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-800">
+                    <input
+                      type="radio"
+                      name="twoFaMethod"
+                      value="sms"
+                      checked={twoFaMethod === 'sms'}
+                      onChange={() => setTwoFaMethod('sms')}
+                      disabled={!twoFaEnabled}
+                      className="h-3.5 w-3.5 text-[#4D0080] focus:ring-[#4D0080]/30"
+                    />
+                    Phone
+                  </label>
+                </div>
+
+                <button
+                  onClick={saveTwoFa}
+                  disabled={twoFaLoading}
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: twoFaEnabled ? '#047857' : '#4D0080' }}
+                >
+                  {twoFaLoading
+                    ? 'Saving…'
+                    : twoFaEnabled
+                    ? 'Update 2FA settings'
+                    : 'Enable 2FA'}
+                </button>
+              </div>
+            </div>
+
+            {twoFaEnabled && (
+              <p className="text-[11px] text-gray-500">
+                Lost access to your email or phone? Contact support so we can help you securely
+                recover your account.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Active Sessions */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 md:col-span-2 lg:col-span-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Device & Session Management</h3>
+              <p className="text-xs text-gray-600">Review devices that have logged into your account and manage active sessions.</p>
+            </div>
+            <button
+              onClick={() => navigate('/account/session-management')}
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white bg-[#4D0080] hover:bg-[#3a0061] transition-colors whitespace-nowrap"
+            >
+              Manage Sessions
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Action footer */}
       <div className="max-w-7xl mx-auto px-6 mt-8 mb-12 flex flex-col sm:flex-row gap-3">
-        <button
-          className="inline-flex items-center justify-center px-5 py-3 rounded-lg border border-gray-300 text-gray-900 hover:bg-gray-50"
-          onClick={() => navigate('/subscription-management')}
-        >
-          Manage Subscription
-        </button>
-        <button
-          className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-white"
-          style={{ backgroundColor: '#4D0080' }}
-          onClick={() => navigate('/credits-usage')}
-        >
-          View Credit Usage
-        </button>
+        {isEditing ? (
+          <button
+            className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-white"
+            style={{ backgroundColor: '#4D0080' }}
+            onClick={handleSaveProfile}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Save Profile'}
+          </button>
+        ) : (
+          <>
+            <button
+              className="inline-flex items-center justify-center px-5 py-3 rounded-lg border border-gray-300 text-gray-900 hover:bg-gray-50"
+              onClick={() => navigate('/subscription-management')}
+            >
+              Manage Subscription
+            </button>
+            <button
+              className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-white"
+              style={{ backgroundColor: '#4D0080' }}
+              onClick={() => navigate('/credits-usage')}
+            >
+              View Credit Usage
+            </button>
+          </>
+        )}
       </div>
+
+      {/* OTP Modal */}
+      {otpModal.visible && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 relative">
+            <button 
+              onClick={() => setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' })}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900">
+              Verify {otpModal.type === 'email' ? 'Email' : 'Phone'}
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Please enter the code sent to your new {otpModal.type}.
+            </p>
+            
+            {otpModal.error && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100 flex items-center gap-2">
+                <XCircle className="w-4 h-4" />
+                {otpModal.error}
+              </div>
+            )}
+            
+            <input
+              type="text"
+              placeholder="Enter OTP"
+              value={otpModal.otp}
+              onChange={e => setOtpModal(prev => ({ ...prev, otp: e.target.value }))}
+              className="w-full text-center text-2xl tracking-widest p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4D0080]"
+            />
+            
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' })}
+                className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={verifyOtp}
+                disabled={otpModal.loading || !otpModal.otp}
+                className="px-6 py-2 bg-[#4D0080] text-white font-medium rounded hover:bg-[#3a0061] disabled:opacity-50"
+              >
+                {otpModal.loading ? 'Verifying...' : 'Verify'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

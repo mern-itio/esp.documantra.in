@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+const { isMailgunConfigured, sendEmail } = require('@draftnsign/email-lib');
 
 const APP_NAME = process.env.APP_NAME || 'Draft and Sign';
 
@@ -10,40 +10,15 @@ function isValidEmailAddress(value) {
   return s.includes('@') && s.indexOf('@') > 0 && s.indexOf('@') < s.length - 1;
 }
 
-/**
- * Create nodemailer transporter from env (EMAIL_USER, EMAIL_PASSWORD, EMAIL_SERVICE).
- * Returns null if not configured.
- */
-function getTransporter() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) return null;
-  try {
-    const isSendGrid = process.env.EMAIL_SERVICE === 'sendgrid';
-    const config = isSendGrid
-      ? {
-          host: 'smtp.sendgrid.net',
-          port: 587,
-          secure: false,
-          auth: { user: 'apikey', pass: process.env.EMAIL_PASSWORD },
-        }
-      : {
-          service: process.env.EMAIL_SERVICE || 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD,
-          },
-        };
-    return nodemailer.createTransport(config);
-  } catch (e) {
-    console.error('Email transporter error:', e);
-    return null;
-  }
+function getFromDisplayName() {
+  return (process.env.EMAIL_FROM_NAME || APP_NAME).trim().replace(/"/g, '');
 }
 
 /**
  * Build HTML body for password reset email (responsive, modern template).
  */
 function getPasswordResetHtml(resetLink, recipientEmail, expiresInMinutes = 60) {
-  const fromName = process.env.EMAIL_FROM_NAME || APP_NAME;
+  const fromName = getFromDisplayName();
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -97,31 +72,96 @@ function getPasswordResetHtml(resetLink, recipientEmail, expiresInMinutes = 60) 
 }
 
 /**
+ * Build HTML body for signup verification OTP email.
+ */
+function getVerificationOtpHtml(otpCode, recipientName = null, expiresInMinutes = 10) {
+  const fromName = getFromDisplayName();
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify your email</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f0f4f8;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; margin: 0 auto; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); background: #ffffff;">
+          <tr>
+            <td style="background: linear-gradient(90deg, #4D0080, #8E2DE2); padding: 32px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">${fromName}</h1>
+              <p style="margin: 8px 0 0; font-size: 14px; color: rgba(255,255,255,0.9);">Verify your account</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 40px 36px;">
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${recipientName}</strong>` : ''},</p>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">Use the code below to verify your email. This code expires in <strong>${expiresInMinutes} minutes</strong>.</p>
+              <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px; font-size: 28px; font-weight: 700; letter-spacing: 8px; color: #4D0080;">${otpCode}</div>
+              <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8;">If you didn't sign up for an account, you can safely ignore this email.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">&copy; ${new Date().getFullYear()} ${fromName}. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Send signup verification OTP email. Resolves to true if sent, false if skipped.
+ */
+async function sendVerificationOtpEmail(toEmail, otpCode, recipientName = null, expiresInMinutes = 10) {
+  if (!isValidEmailAddress(toEmail)) {
+    console.warn('Verification OTP email skipped: invalid recipient email:', toEmail);
+    return false;
+  }
+  if (!isMailgunConfigured()) {
+    // Development fallback: log OTP so local signup flow can continue without Mailgun
+    console.warn('Verification OTP email not sent: Mailgun not configured');
+    console.log(`[EMAIL OTP fallback] To ${toEmail}: Your verification code is ${otpCode}`);
+    return true;
+  }
+  const html = getVerificationOtpHtml(otpCode, recipientName, expiresInMinutes);
+  try {
+    await sendEmail({
+      to: toEmail,
+      subject: `Verify your email – ${APP_NAME}`,
+      html,
+    });
+    return true;
+  } catch (err) {
+    console.error('Send verification OTP email error:', err);
+    console.log(`[EMAIL OTP fallback] To ${toEmail}: Your verification code is ${otpCode}`);
+    return false;
+  }
+}
+
+/**
  * Send password reset email. Resolves to true if sent, false if skipped (e.g. no SMTP config).
  */
 async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) {
-  const transporter = getTransporter();
-  if (!transporter) {
-    console.warn('Password reset email skipped: EMAIL_USER/EMAIL_PASSWORD not set');
+  if (!isMailgunConfigured()) {
+    console.warn('Password reset email skipped: Mailgun not configured');
     return false;
   }
 
-  // Inbox should show only "DraftandSign": From header = display name only; real address in envelope for SMTP
-  const fromName = (process.env.EMAIL_FROM_NAME || APP_NAME).trim().replace(/"/g, '');
-  let envelopeEmail = (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim();
-  if (!isValidEmailAddress(envelopeEmail)) envelopeEmail = (process.env.EMAIL_USER || '').trim();
-  if (!isValidEmailAddress(envelopeEmail)) {
-    console.warn('Password reset email: EMAIL_FROM/EMAIL_USER is not a valid email; sender may show incorrectly.');
-  }
   const html = getPasswordResetHtml(resetLink, recipientName || toEmail, 60);
 
   try {
-    await transporter.sendMail({
-      from: envelopeEmail ? `"${fromName}"` : fromName,
+    await sendEmail({
       to: toEmail,
-      subject: `Reset your password – ${APP_NAME}`,
+      subject: `Reset your password - ${APP_NAME}`,
       html,
-      envelope: envelopeEmail ? { from: envelopeEmail } : undefined,
     });
     return true;
   } catch (err) {
@@ -130,8 +170,91 @@ async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) 
   }
 }
 
+/**
+ * Build HTML body for New Login Alert email.
+ */
+function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time) {
+  const fromName = getFromDisplayName();
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Alert: New Login Detected</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f0f4f8;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; margin: 0 auto; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); background: #ffffff;">
+          <tr>
+            <td style="background: linear-gradient(90deg, #d32f2f, #f44336); padding: 32px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">${fromName} Security Alert</h1>
+              <p style="margin: 8px 0 0; font-size: 14px; color: rgba(255,255,255,0.9);">New login detected</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 40px 36px;">
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${recipientName}</strong>` : ''},</p>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">We noticed a new login to your account from a device or location we haven't seen before.</p>
+              
+              <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #f44336; margin: 0 0 24px;">
+                <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Device/Browser:</strong> <span style="color: #64748b;">${deviceInfo || 'Unknown Device'}</span></p>
+                <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>IP Address:</strong> <span style="color: #64748b;">${ipAddress || 'Unknown IP'}</span></p>
+                <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">${new Date(time).toUTCString()}</span></p>
+              </div>
+
+              <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.65; color: #475569;">If this was you, you can safely ignore this email.</p>
+              <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #d32f2f; font-weight: bold;">If this wasn't you, your account may be compromised.</p>
+              <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: #475569;">Please log in to your account, review your active sessions in Profile > Session Management, and log out any unrecognized devices immediately. You should also change your password.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">&copy; ${new Date().getFullYear()} ${fromName}. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Send new login alert email. Resolves to true if sent, false if skipped.
+ */
+async function sendNewLoginAlertEmail(toEmail, fullname, deviceInfo, ipAddress, time) {
+  if (!isValidEmailAddress(toEmail)) {
+    return false;
+  }
+  if (!isMailgunConfigured()) {
+    console.warn('New login alert email skipped: Mailgun not configured');
+    return false;
+  }
+  
+  const html = getNewLoginAlertHtml(fullname, deviceInfo, ipAddress, time);
+  
+  try {
+    await sendEmail({
+      to: toEmail,
+      subject: `Security Alert: New Login Detected - ${APP_NAME}`,
+      html,
+    });
+    return true;
+  } catch (err) {
+    console.error('Send new login alert email error:', err);
+    return false;
+  }
+}
+
 module.exports = {
-  getTransporter,
   getPasswordResetHtml,
+  getVerificationOtpHtml,
   sendPasswordResetEmail,
+  sendVerificationOtpEmail,
+  sendNewLoginAlertEmail,
 };

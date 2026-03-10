@@ -7,7 +7,13 @@ const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: `${API_CONFIG.BASE_URL}/login`,
+    GOOGLE_LOGIN: `${API_CONFIG.BASE_URL}/google-login`,
+    VERIFY_2FA_LOGIN: `${API_CONFIG.BASE_URL}/2fa/verify-login`,
     REGISTER: `${API_CONFIG.BASE_URL}/register`,
+    SIGNUP_SEND_EMAIL_OTP: `${API_CONFIG.BASE_URL}/signup/send-email-otp`,
+    SIGNUP_VERIFY_EMAIL_OTP: `${API_CONFIG.BASE_URL}/signup/verify-email-otp`,
+    SIGNUP_SEND_PHONE_OTP: `${API_CONFIG.BASE_URL}/signup/send-phone-otp`,
+    SIGNUP_VERIFY_PHONE_OTP: `${API_CONFIG.BASE_URL}/signup/verify-phone-otp`,
     STATUS: `${API_CONFIG.BASE_URL}/api/auth/status`,
   },
 };

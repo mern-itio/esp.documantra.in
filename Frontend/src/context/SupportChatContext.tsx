@@ -517,16 +517,28 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Load ticket from localStorage on mount
   useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setCurrentTicket(null);
+      return;
+    }
+    
     try {
       const stored = localStorage.getItem('currentSupportTicket');
       if (stored) {
         const ticket = JSON.parse(stored);
-        setCurrentTicket(ticket);
+        // Ensure ticket belongs to the current user to prevent "Access denied" errors on login
+        if (ticket.customerId === user.id) {
+          setCurrentTicket(ticket);
+        } else {
+          localStorage.removeItem('currentSupportTicket');
+          setCurrentTicket(null);
+        }
       }
     } catch (error) {
       console.error('Error loading stored ticket:', error);
+      localStorage.removeItem('currentSupportTicket');
     }
-  }, []);
+  }, [isAuthenticated, user]);
 
   const createTicket = useCallback(async (subject: string, initialMessage: string, category?: string, priority?: string): Promise<Ticket | null> => {
     try {

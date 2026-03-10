@@ -60,6 +60,11 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
+      // Dispatch logout event on 401 Unauthorized globally
+      if (error.response?.status === 401 && typeof window !== 'undefined') {
+        try { window.dispatchEvent(new CustomEvent('app:auth-logout')); } catch {}
+      }
+
       console.error(`${serviceName} API Error:`, {
         message: error.message,
         status: error.response?.status,

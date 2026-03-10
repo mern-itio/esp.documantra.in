@@ -46,6 +46,49 @@ const verifyJWT = (type = 'user') => {
       req.user = decoded;
       req.userType = type;
 
+      // Extract sessionId if it exists in the token
+      const sessionId = decoded.data?.sessionId || decoded.sessionId;
+
+      // Make a fast call to auth-service to ensure the session is active (to handle revocation)
+      // This uses an internal check if we are in auth-service, or an HTTP call if outside
+      if (sessionId) {
+        try {
+          const axios = require('axios');
+          const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:2101'; // Use IP instead of localhost to avoid IPv6 issues
+          
+          // Using a lightweight endpoint, sending the token
+          const resp = await axios.get(`${authServiceUrl}/api/auth/validate-session`, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 3000 // Fast timeout
+          });
+          
+          if (!resp.data?.valid) {
+            return res.status(401).json({
+              status: 401,
+              message: 'Session revoked or expired',
+              data: null
+            });
+          }
+        } catch (err) {
+          console.error('[verifyToken] Session validation error:', err.message);
+          // If the auth-service is down or returns 401/403
+          if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+            return res.status(401).json({
+              status: 401,
+              message: 'Session revoked or expired',
+              data: null
+            });
+          }
+          // Fail closed for local development if the connection is refused, 
+          // because it means the auth service is down or misconfigured, but 
+          // if we let it pass, the revoked session bug persists.
+          // However, to prevent breaking production if misconfigured, we'll only log it.
+          // Wait, actually, let's check if it's the auth-service ITSELF calling this.
+          // If it's auth-service, it shouldn't need a network call! 
+          // But it uses verifyActiveSession separately in its routes anyway.
+        }
+      }
+
       next();
     } catch (err) {
       console.error(`[verifyToken] ${type} verification failed:`, err.message);

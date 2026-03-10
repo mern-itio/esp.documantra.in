@@ -1,11 +1,28 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft, Smartphone } from 'lucide-react'
+import PhoneInput from 'react-phone-input-2'
+import 'react-phone-input-2/lib/style.css'
 import { useAuth } from '../../components/AuthService/AuthContext'
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import ReCAPTCHA from 'react-google-recaptcha'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY_HERE"
+
+type SignupStep = 'form' | 'verify'
 
 const SignupPage = () => {
-  const { signup } = useAuth()
+  const { signup, googleLogin, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp } = useAuth()
   const navigate = useNavigate()
+  const [step, setStep] = useState<SignupStep>('form')
+  const [signupToken, setSignupToken] = useState<string>('')
+  const [emailOtp, setEmailOtp] = useState('')
+  const [phoneOtp, setPhoneOtp] = useState('')
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [phoneVerified, setPhoneVerified] = useState(false)
+  const [canSendPhoneOtp, setCanSendPhoneOtp] = useState(false)
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -14,6 +31,8 @@ const SignupPage = () => {
   const [passwordChecks, setPasswordChecks] = useState({ letter: false, number: false, length: false })
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [bookOpen, setBookOpen] = useState(false)
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
 
   useEffect(() => {
     // Trigger book opening animation on mount
@@ -43,9 +62,9 @@ const SignupPage = () => {
         return ''
       }
       case 'phone': {
-        const v = String(value).trim()
-        if (!v) return 'Phone is required'
-        if (!/^\d{10}$/.test(v)) return 'Phone must be 10 digits'
+        const digits = String(value || '').replace(/\D/g, '')
+        if (!digits) return 'Phone is required'
+        if (digits.length < 10) return 'Enter a valid phone number'
         return ''
       }
       case 'email': {
@@ -93,41 +112,134 @@ const SignupPage = () => {
     setFormError('')
 
     if (!validateAll(formData)) return
+    
+    if (!recaptchaToken) {
+      setFormError('Please complete the reCAPTCHA verification.')
+      return
+    }
 
     setIsLoading(true)
-
     try {
-      await signup({
+      const { signupToken: token } = await signup({
         fullname: formData.firstName,
         email: formData.email,
         phone: formData.phone,
         company: formData.company,
         address: formData.address,
-        password: formData.password
+        password: formData.password,
+        recaptchaToken: recaptchaToken
       })
-      navigate('/dashboard')
+      setSignupToken(token)
+      // email OTP is already sent by register; keep phone OTP gated
+      setEmailVerified(false)
+      setPhoneVerified(false)
+      setCanSendPhoneOtp(false)
+      setPhoneOtpSent(false)
+      setStep('verify')
     } catch (error) {
-      setFormError('An error occurred during signup. Please try again.')
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset()
+      }
+      setRecaptchaToken(null)
+      
+      setFormError((error as Error)?.message || 'An error occurred during signup. Please try again.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError('')
+    const emailTrim = emailOtp.replace(/\D/g, '').slice(0, 6)
+    if (emailTrim.length !== 6) {
+      setFormError('Please enter the 6-digit code from your email.')
+      return
+    }
+    setIsLoading(true)
+    try {
+      const st = await verifySignupEmailOtp(signupToken, emailTrim)
+      setEmailVerified(st.emailVerified)
+      setPhoneVerified(st.phoneVerified)
+      setCanSendPhoneOtp(st.canSendPhoneOtp)
+      if (st.loggedIn) navigate('/dashboard')
+    } catch (error) {
+      setFormError((error as Error)?.message || 'Email verification failed. Please check the code and try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSendPhoneOtp = async () => {
+    setFormError('')
+    if (!signupToken) return
+    setIsLoading(true)
+    try {
+      const st = await sendSignupPhoneOtp(signupToken)
+      setEmailVerified(st.emailVerified)
+      setPhoneVerified(st.phoneVerified)
+      setCanSendPhoneOtp(st.canSendPhoneOtp)
+      setPhoneOtpSent(true)
+    } catch (error) {
+      setFormError((error as Error)?.message || 'Failed to send phone OTP. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerifyPhone = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError('')
+    const phoneTrim = phoneOtp.replace(/\D/g, '').slice(0, 6)
+    if (phoneTrim.length !== 6) {
+      setFormError('Please enter the 6-digit code from your phone.')
+      return
+    }
+    setIsLoading(true)
+    try {
+      const st = await verifySignupPhoneOtp(signupToken, phoneTrim)
+      setEmailVerified(st.emailVerified)
+      setPhoneVerified(st.phoneVerified)
+      setCanSendPhoneOtp(st.canSendPhoneOtp)
+      if (st.loggedIn) navigate('/dashboard')
+    } catch (error) {
+      setFormError((error as Error)?.message || 'Phone verification failed. Please check the code and try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setFormError('')
+    setIsLoading(true)
+    try {
+      if (credentialResponse.credential) {
+        await googleLogin(credentialResponse.credential)
+        navigate('/dashboard')
+      } else {
+        setFormError('Google Signup failed. No credential received.')
+      }
+    } catch (error: any) {
+      setFormError(error.message || 'Google Signup failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    setFormError('Google Signup was unsuccessful. Please try again.')
   }
 
   // Social signup providers can be integrated here later
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
-    // Special handling for phone: digits only and capped at 10
-    const nextValue = name === 'phone'
-      ? value.replace(/\D/g, '').slice(0, 10)
-      : value
-
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : nextValue
+      [name]: type === 'checkbox' ? checked : value
     }))
     if (name === 'password') {
-      const v = String(nextValue)
+      const v = String(value)
       setPasswordChecks({
         letter: /[A-Za-z]/.test(v),
         number: /\d/.test(v),
@@ -135,14 +247,28 @@ const SignupPage = () => {
       })
     }
     // Validate on change (lightweight)
-    const msg = validateField(name, type === 'checkbox' ? checked : nextValue, {
+    const msg = validateField(name, type === 'checkbox' ? checked : value, {
       ...formData,
-      [name]: type === 'checkbox' ? checked : nextValue
+      [name]: type === 'checkbox' ? checked : value
     })
     setErrors(prev => ({ ...prev, [name]: msg }))
   }
 
+  const handlePhoneChange = (val: string) => {
+    // react-phone-input-2 gives digits with country code, e.g. "919876543210" for India
+    setFormData(prev => ({
+      ...prev,
+      phone: val
+    }))
+    const msg = validateField('phone', val, {
+      ...formData,
+      phone: val
+    })
+    setErrors(prev => ({ ...prev, phone: msg }))
+  }
+
   return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <div className="min-h-screen bg-gradient-to-br from-[#260559] via-[#3E2B66] to-[#4d3577] flex items-center justify-center p-4 relative">
       {/* Blurred Dashboard Background */}
       <div className="absolute inset-0 bg-gray-100 overflow-y-auto">
@@ -237,8 +363,108 @@ const SignupPage = () => {
                 </div>
               )}
 
-              {/* Signup Form */}
+              {step === 'verify' ? (
+                /* Verification step: Email OTP + Phone OTP */
+                <div className="space-y-5">
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Verify your account</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      We sent 6-digit codes to your email and phone. Enter both below.
+                    </p>
+                  </div>
+                  <form className="space-y-5">
+                    <div className="form-field-group">
+                      <label htmlFor="emailOtp" className="block text-xs font-semibold text-gray-700 mb-1">
+                        Email verification code
+                      </label>
+                      <div className="relative group">
+                        <Mail className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          id="emailOtp"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={emailOtp}
+                          onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full pl-8 pr-3 py-2 text-sm border-2 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
+                          placeholder="000000"
+                          autoComplete="one-time-code"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleVerifyEmail(e as any)}
+                      disabled={isLoading || emailVerified}
+                      className="group w-full bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-base font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-300 shadow-lg hover:shadow-xl"
+                    >
+                      {emailVerified ? 'Email verified' : (isLoading ? 'Verifying email...' : 'Verify email')}
+                    </button>
+                    <div className="form-field-group">
+                      <label htmlFor="phoneOtp" className="block text-xs font-semibold text-gray-700 mb-1">
+                        Phone verification code
+                      </label>
+                      <div className="relative group">
+                        <Smartphone className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          id="phoneOtp"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={phoneOtp}
+                          onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full pl-8 pr-3 py-2 text-sm border-2 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
+                          placeholder="000000"
+                          autoComplete="one-time-code"
+                          disabled={!emailVerified}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSendPhoneOtp}
+                        disabled={isLoading || !canSendPhoneOtp}
+                        className="w-full border-2 border-[#3E2B66] text-[#3E2B66] font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#3E2B66]/5 transition-all duration-300"
+                      >
+                        {phoneOtpSent ? 'Resend phone OTP' : 'Send phone OTP'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleVerifyPhone(e as any)}
+                        disabled={isLoading || !emailVerified || phoneVerified}
+                        className="w-full bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-300 shadow-lg"
+                      >
+                        {phoneVerified ? 'Phone verified' : (isLoading ? 'Verifying phone...' : 'Verify phone')}
+                      </button>
+                    </div>
+                  </form>
+                  <p className="text-xs text-gray-500 text-center">
+                    Codes expire in 10 minutes. Check your email and SMS.
+                  </p>
+                </div>
+              ) : (
+              /* Signup Form */
               <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="flex justify-center w-full mb-4">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    useOneTap
+                    shape="rectangular"
+                    theme="outline"
+                    text="signup_with"
+                    size="large"
+                    width="100%"
+                  />
+                </div>
+                
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or continue with email</span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="form-field-group">
                     <label htmlFor="firstName" className="block text-xs font-semibold text-gray-700 mb-1">
@@ -269,22 +495,22 @@ const SignupPage = () => {
                       Phone Number
                     </label>
                     <div className="relative group">
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
+                      <PhoneInput
+                        country="in"
                         value={formData.phone}
-                        onChange={handleInputChange}
-                        className={`w-full px-3 py-2 text-sm border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 ${
-                          errors.phone 
-                            ? 'border-red-400 focus:border-red-500' 
-                            : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
+                        onChange={handlePhoneChange}
+                        inputProps={{
+                          name: 'phone',
+                          id: 'phone',
+                          required: true
+                        }}
+                        containerClass="w-full"
+                        inputClass={`w-full !pl-12 !pr-3 !py-2 !text-sm !border-2 !rounded-lg !bg-white focus:!outline-none focus:!ring-2 !transition-all !duration-300 ${
+                          errors.phone
+                            ? '!border-red-400 focus:!border-red-500 focus:!ring-red-200'
+                            : '!border-gray-300 focus:!border-[#3E2B66] focus:!ring-[#3E2B66]/20 hover:!border-gray-400'
                         }`}
-                        inputMode="numeric"
-                        pattern="\d{10}"
-                        maxLength={10}
-                        placeholder="1234567890"
-                        required
+                        buttonClass="!border-2 !border-gray-300 !bg-white"
                       />
                     </div>
                     {errors.phone && <p className="text-red-600 text-xs mt-1 animate-fade-in">{errors.phone}</p>}
@@ -490,9 +716,18 @@ const SignupPage = () => {
                     </span>
                   </label>
                 </div>
+
+                <div className="flex justify-center my-4">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    onChange={(token) => setRecaptchaToken(token)}
+                  />
+                </div>
+
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !recaptchaToken}
                   className="group w-full bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-base font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-100"
                 >
                   {isLoading ? (
@@ -508,6 +743,7 @@ const SignupPage = () => {
                   )}
                 </button>
               </form>
+              )}
               <div className="mt-4 text-center">
                 <p className="text-xs text-gray-600">
                   Already have an account?{' '}
@@ -638,6 +874,7 @@ const SignupPage = () => {
         </div>
       </div>
     </div>
+    </GoogleOAuthProvider>
   );
 }
 
