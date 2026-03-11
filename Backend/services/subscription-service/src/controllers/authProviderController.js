@@ -230,7 +230,7 @@ const availableAuthMethods = async (req, res) => {
       isRecommended: p.isRecommended || false
     }));
     return res.json({ status: 200, message: 'OK', data: { methods } });
-
+    
   } catch (error) {
     console.error('Error fetching available authentication methods:', error);
     return res.status(500).json({
