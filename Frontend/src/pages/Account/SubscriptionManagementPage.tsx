@@ -62,12 +62,21 @@ const SubscriptionManagementPage: React.FC = () => {
       return;
     }
 
+    // If we've already handled this session in this tab, just clean the URL and bail out
+    if (sessionId && sessionStorage.getItem(`stripe_session_handled_${sessionId}`)) {
+      searchParams.delete('session_id');
+      const newUrl =
+        location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      navigate(newUrl, { replace: true });
+      return;
+    }
+
     if (canceled) {
       toast('Payment canceled.');
       searchParams.delete('canceled');
       const newUrl =
         location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-      window.history.replaceState({}, '', newUrl);
+      navigate(newUrl, { replace: true });
       return;
     }
 
@@ -88,6 +97,8 @@ const SubscriptionManagementPage: React.FC = () => {
           }
 
           toast.success('Subscription upgraded successfully', { id: t });
+          // Mark this session as handled in this tab
+          sessionStorage.setItem(`stripe_session_handled_${sessionId}`, 'true');
         } catch (err: any) {
           toast.error(err?.message || 'Failed to confirm payment', { id: t });
         } finally {
@@ -95,11 +106,11 @@ const SubscriptionManagementPage: React.FC = () => {
           const newUrl =
             location.pathname +
             (searchParams.toString() ? `?${searchParams.toString()}` : '');
-          window.history.replaceState({}, '', newUrl);
+          navigate(newUrl, { replace: true });
         }
       })();
     }
-  }, [location.search, location.pathname, refreshPlan]);
+  }, [location.search, location.pathname, refreshPlan, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
