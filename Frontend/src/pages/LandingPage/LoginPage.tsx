@@ -12,7 +12,7 @@ const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECA
 type LoginStep = 'login' | 'verify'
 
 const LoginPage = () => {
-  const { login, googleLogin, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, verifyTwoFaLogin } = useAuth()
+  const { login, googleLogin, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, verifyTwoFaLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)

@@ -222,7 +222,6 @@ import InvitationPage from '../pages/Organization/invitaionPage';
 import FolderDetailPage from '../pages/Organization/folderDetailPage';
 import RolePage from '../pages/Organization/RolePage';
 import AadhaarSignatureJourneySection from '../components/LandingPage/AadhaarSignatureJourneySection';
-import ExploreServicesSection from '../components/LandingPage/ExploreServicesSection';
 import ContractManagementSection from '../components/LandingPage/ContractManagementSection';
 import DigitaCertificate from '../components/LandingPage/DigitaCertificate';
 

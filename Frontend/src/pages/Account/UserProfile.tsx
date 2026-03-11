@@ -74,30 +74,9 @@ const UserProfile: React.FC = () => {
         // ignore if endpoint not reachable; UI still shows from context
       }
     };
-    load();
-
-    const loadSessions = async () => {
-      setLoadingSessions(true);
-      try {
-        const resp = await authApi.get('/api/auth/sessions');
-        setSessions(resp.data?.sessions || []);
-      } catch (e: any) {
-        console.error('Failed to load sessions');
-      } finally {
-        setLoadingSessions(false);
-      }
-    };
-    loadSessions();
+    load();    
   }, [userTwoFaFromAuth.enabled, userTwoFaFromAuth.method]);
 
-  const handleRevokeSession = async (sessionId: string) => {
-    try {
-      await authApi.post('/api/auth/sessions/revoke', { sessionId });
-      setSessions(prev => prev.filter(s => s.sessionId !== sessionId));
-    } catch (e) {
-      console.error('Failed to revoke session', e);
-    }
-  };
 
   const saveTwoFa = async () => {
     setTwoFaMsg('');
