@@ -34,6 +34,22 @@ const LoginPage = () => {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
   const recaptchaRef = useRef<ReCAPTCHA>(null)
 
+  const REMEMBER_ME_KEY = 'dns_rememberMe'
+  const REMEMBERED_EMAIL_KEY = 'dns_rememberedEmail'
+
+  // Restore "remember me" preferences (safe: we only remember email, never password)
+  useEffect(() => {
+    try {
+      const remembered = localStorage.getItem(REMEMBER_ME_KEY) === 'true'
+      const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || ''
+      setRememberMe(remembered)
+      if (remembered && rememberedEmail) setEmail(rememberedEmail)
+    } catch {
+      // ignore localStorage errors
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // If a valid token/userData already exists (e.g. synced from the Chrome extension),
   // skip the login form and send the user to their workspace.
   useEffect(() => {
@@ -71,6 +87,17 @@ const LoginPage = () => {
     setIsLoading(true)
 
     try {
+      try {
+        if (rememberMe) {
+          localStorage.setItem(REMEMBER_ME_KEY, 'true')
+          localStorage.setItem(REMEMBERED_EMAIL_KEY, email)
+        } else {
+          localStorage.setItem(REMEMBER_ME_KEY, 'false')
+          localStorage.removeItem(REMEMBERED_EMAIL_KEY)
+        }
+      } catch {
+        // ignore localStorage errors
+      }
       await login(email, password, recaptchaToken)
       const returnTo = (location.state as any)?.returnTo || '/dashboard'
       navigate(returnTo)
@@ -534,7 +561,16 @@ const LoginPage = () => {
                     <input
                       type="checkbox"
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={(e) => {
+                        const checked = e.target.checked
+                        setRememberMe(checked)
+                        try {
+                          localStorage.setItem(REMEMBER_ME_KEY, checked ? 'true' : 'false')
+                          if (!checked) localStorage.removeItem(REMEMBERED_EMAIL_KEY)
+                        } catch {
+                          // ignore localStorage errors
+                        }
+                      }}
                       className="h-3.5 w-3.5 rounded border-slate-300 bg-white text-[#260559] focus:ring-[#260559]/40"
                     />
                     <span>Remember this device</span>
