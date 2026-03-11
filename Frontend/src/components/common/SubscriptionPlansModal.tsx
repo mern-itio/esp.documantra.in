@@ -22,7 +22,7 @@ interface SubscriptionPlansModalProps {
   onPlanPurchased?: (invoice: Invoice | null) => void;
 }
 
-export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ open, onClose, onPlanPurchased }) => {
+export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ open, onClose }) => {
   const [plans, setPlans] = useState<PlanTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
