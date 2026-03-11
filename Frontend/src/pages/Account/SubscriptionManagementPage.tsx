@@ -18,17 +18,19 @@ import {
   Clock,
   FileText
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '../../context/SubscriptionContext';
 import type { Invoice } from '../../types';
 import { SubscriptionService } from '../../services/subscriptionService';
+import toast from 'react-hot-toast';
 
 const SubscriptionManagementPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [latestInvoice, setLatestInvoice] = useState<Invoice | null>(null);
-  const { userPlan, getRemainingCredits, isFreePlan } = useSubscription();
+  const { userPlan, getRemainingCredits, isFreePlan, refreshPlan } = useSubscription();
 
   const remainingCredits = getRemainingCredits();
   const isFree = isFreePlan();
@@ -49,6 +51,55 @@ const SubscriptionManagementPage: React.FC = () => {
       mounted = false;
     };
   }, []);
+
+  // Handle Stripe redirect back with session_id or canceled flag
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const sessionId = searchParams.get('session_id');
+    const canceled = searchParams.get('canceled');
+
+    if (!sessionId && !canceled) {
+      return;
+    }
+
+    if (canceled) {
+      toast('Payment canceled.');
+      searchParams.delete('canceled');
+      const newUrl =
+        location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      window.history.replaceState({}, '', newUrl);
+      return;
+    }
+
+    if (sessionId) {
+      (async () => {
+        const t = toast.loading('Confirming payment...');
+        try {
+          const { invoice } = await SubscriptionService.confirmStripeCheckoutSession(sessionId);
+          await refreshPlan().catch(() => {});
+
+          let inv = invoice;
+          if (!inv) {
+            inv = await SubscriptionService.getLatestInvoice();
+          }
+          if (inv) {
+            setLatestInvoice(inv);
+            setIsInvoiceModalOpen(true);
+          }
+
+          toast.success('Subscription upgraded successfully', { id: t });
+        } catch (err: any) {
+          toast.error(err?.message || 'Failed to confirm payment', { id: t });
+        } finally {
+          searchParams.delete('session_id');
+          const newUrl =
+            location.pathname +
+            (searchParams.toString() ? `?${searchParams.toString()}` : '');
+          window.history.replaceState({}, '', newUrl);
+        }
+      })();
+    }
+  }, [location.search, location.pathname, refreshPlan]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">

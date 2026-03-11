@@ -6,6 +6,11 @@ export interface SubscriptionUpgradeResult {
   invoice: Invoice | null;
 }
 
+export interface StripeCheckoutSessionResponse {
+  id: string;
+  url: string | null;
+}
+
 export class SubscriptionService {
   /**
    * Fetch user's current subscription plan
@@ -66,6 +71,39 @@ export class SubscriptionService {
       return { plan, invoice };
     } catch (error) {
       console.error('Error upgrading user plan:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a Stripe Checkout session for a given plan
+   */
+  static async createStripeCheckoutSession(planId: string): Promise<StripeCheckoutSessionResponse> {
+    try {
+      const response = await subscriptionApi.post('/user-plan/stripe/create-checkout-session', { planId });
+      const data = response.data?.data || {};
+      return {
+        id: data.id,
+        url: data.url || null,
+      };
+    } catch (error) {
+      console.error('Error creating Stripe checkout session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirm a Stripe Checkout session and apply the plan upgrade
+   */
+  static async confirmStripeCheckoutSession(sessionId: string): Promise<SubscriptionUpgradeResult> {
+    try {
+      const response = await subscriptionApi.post('/user-plan/stripe/confirm', { sessionId });
+      const data = response.data?.data || {};
+      const plan: SubscriptionPlan = data.plan;
+      const invoice: Invoice | null = data.invoice || null;
+      return { plan, invoice };
+    } catch (error) {
+      console.error('Error confirming Stripe checkout session:', error);
       throw error;
     }
   }

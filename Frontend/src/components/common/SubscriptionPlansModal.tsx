@@ -4,6 +4,7 @@ import { subscriptionApi } from '../../services/apiHelper';
 import { useSubscription } from '../../context/SubscriptionContext';
 import toast from 'react-hot-toast';
 import type { Invoice } from '../../types';
+import { SubscriptionService } from '../../services/subscriptionService';
 
 interface PlanTemplate {
   _id: string;
@@ -25,7 +26,7 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
   const [plans, setPlans] = useState<PlanTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
-  const { upgradeToPlan, refreshPlan, userPlan } = useSubscription();
+  const { userPlan } = useSubscription();
 
   useEffect(() => {
     if (!open) return;
@@ -100,18 +101,16 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
                         onClick={async () => {
                           try {
                             setUpgradingPlanId(plan._id);
-                            const t = toast.loading('Upgrading plan...');
-                            const { invoice } = await upgradeToPlan(plan._id);
-                            // Optionally refresh in background
-                            refreshPlan().catch(() => {});
-                            toast.success('Plan upgraded successfully', { id: t });
-                            if (onPlanPurchased) {
-                              onPlanPurchased(invoice || null);
+                            const t = toast.loading('Redirecting to secure payment...');
+                            const session = await SubscriptionService.createStripeCheckoutSession(plan._id);
+                            if (session.url) {
+                              toast.dismiss(t);
+                              window.location.href = session.url;
+                            } else {
+                              toast.error('Failed to start payment session', { id: t });
                             }
-                            onClose();
                           } catch (err: any) {
-                            toast.error(err?.message || 'Failed to upgrade plan');
-                          } finally {
+                            toast.error(err?.message || 'Failed to start payment');
                             setUpgradingPlanId(null);
                           }
                         }}
