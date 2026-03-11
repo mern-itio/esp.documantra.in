@@ -222,7 +222,11 @@ const SignerPage: React.FC = () => {
             urls.push(null);
             continue;
           }
-          await page.render({ canvasContext: ctx, viewport, canvas:null }).promise;
+          // pdfjs-dist typings differ across versions (some require `canvas`, some forbid it).
+          // Runtime supports rendering into the provided 2D context either way.
+          const renderParams: any = { canvasContext: ctx, viewport };
+          renderParams.canvas = canvas;
+          await page.render(renderParams).promise;
           if (cancelled) break;
           urls.push(canvas.toDataURL('image/jpeg', 0.75));
         }
