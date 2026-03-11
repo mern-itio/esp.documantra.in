@@ -1,4 +1,4 @@
-const { isMailgunConfigured, sendEmail } = require('@draftnsign/email-lib');
+const nodemailer = require('nodemailer');
 
 const APP_NAME = process.env.APP_NAME || 'Draft and Sign';
 
@@ -12,6 +12,66 @@ function isValidEmailAddress(value) {
 
 function getFromDisplayName() {
   return (process.env.EMAIL_FROM_NAME || APP_NAME).trim().replace(/"/g, '');
+}
+
+function getEmailTransportConfig() {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+  if (!user || !pass) {
+    return null;
+  }
+
+  const service = process.env.EMAIL_SERVICE;
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const secure = port === 465;
+
+  if (service) {
+    return {
+      service,
+      auth: { user, pass },
+    };
+  }
+
+  return {
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+  };
+}
+
+function isEmailConfigured() {
+  return !!getEmailTransportConfig();
+}
+
+let cachedTransport = null;
+function getTransport() {
+  if (cachedTransport) return cachedTransport;
+  const config = getEmailTransportConfig();
+  if (!config) return null;
+  cachedTransport = nodemailer.createTransport(config);
+  return cachedTransport;
+}
+
+async function sendEmail({ to, subject, html }) {
+  const transport = getTransport();
+  if (!transport) {
+    console.warn('Email not sent: SMTP / email configuration is missing');
+    return false;
+  }
+
+  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+  const fromName = getFromDisplayName();
+  const from = fromEmail ? `${fromName} <${fromEmail}>` : fromName;
+
+  await transport.sendMail({
+    from,
+    to,
+    subject,
+    html,
+  });
+  return true;
 }
 
 /**
@@ -125,9 +185,9 @@ async function sendVerificationOtpEmail(toEmail, otpCode, recipientName = null, 
     console.warn('Verification OTP email skipped: invalid recipient email:', toEmail);
     return false;
   }
-  if (!isMailgunConfigured()) {
-    // Development fallback: log OTP so local signup flow can continue without Mailgun
-    console.warn('Verification OTP email not sent: Mailgun not configured');
+  if (!isEmailConfigured()) {
+    // Development fallback: log OTP so local signup flow can continue without SMTP
+    console.warn('Verification OTP email not sent: SMTP/email not configured');
     console.log(`[EMAIL OTP fallback] To ${toEmail}: Your verification code is ${otpCode}`);
     return true;
   }
@@ -150,8 +210,8 @@ async function sendVerificationOtpEmail(toEmail, otpCode, recipientName = null, 
  * Send password reset email. Resolves to true if sent, false if skipped (e.g. no SMTP config).
  */
 async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) {
-  if (!isMailgunConfigured()) {
-    console.warn('Password reset email skipped: Mailgun not configured');
+  if (!isEmailConfigured()) {
+    console.warn('Password reset email skipped: SMTP/email not configured');
     return false;
   }
 
@@ -231,8 +291,8 @@ async function sendNewLoginAlertEmail(toEmail, fullname, deviceInfo, ipAddress, 
   if (!isValidEmailAddress(toEmail)) {
     return false;
   }
-  if (!isMailgunConfigured()) {
-    console.warn('New login alert email skipped: Mailgun not configured');
+  if (!isEmailConfigured()) {
+    console.warn('New login alert email skipped: SMTP/email not configured');
     return false;
   }
   
