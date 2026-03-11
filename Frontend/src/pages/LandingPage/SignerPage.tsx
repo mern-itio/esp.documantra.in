@@ -222,7 +222,7 @@ const SignerPage: React.FC = () => {
             urls.push(null);
             continue;
           }
-          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+          await page.render({ canvasContext: ctx, viewport, canvas:null }).promise;
           if (cancelled) break;
           urls.push(canvas.toDataURL('image/jpeg', 0.75));
         }
