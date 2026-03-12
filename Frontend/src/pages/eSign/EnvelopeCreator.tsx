@@ -3699,7 +3699,6 @@ const EnvelopeCreator: React.FC = () => {
                                       <option value="signer">Needs to Sign</option>
                                       <option value="in_person_signer">In Person Signer</option>
                                       <option value="carbon_copy">Receives a Copy</option>
-                                      <option value="approver">Approver</option>
                                       <option value="needs_to_view">Needs to View</option>
                                     </select>
                                     <div className="text-xs text-gray-500 mt-1">All recipients share this role.</div>
@@ -4323,74 +4322,6 @@ const EnvelopeCreator: React.FC = () => {
                                 <div className="w-full h-10 border rounded-sm flex items-center justify-center">1</div>
                               </div>
                             )}
-
-                            <div className="flex-1 bg-white border border-gray-200 shadow-sm relative" style={{ borderLeft: '7px solid #86e4ef' }}>
-                              <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="text-xs uppercase text-gray-500 tracking-wide">{bulkList.role}</div>
-                                    <div className="mt-2 text-base text-gray-900 font-medium">Bulk Recipient</div>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <div className="relative" ref={bulkRoleRef as any}>
-                                      <button type="button" onMouseDown={(e) => e.stopPropagation()} onClick={() => setBulkRoleDropdownOpen(prev => !prev)} className="px-4 py-2 bg-gray-100 text-black-700 rounded-sm border border-gray-300 flex items-center gap-2">
-                                        <PenLine className="w-4 h-4 " />
-                                        <span className="text-sm">{bulkList.role === 'signer' ? 'Needs to Sign' : bulkList.role === 'in_person_signer' ? 'In Person Signer' : bulkList.role === 'carbon_copy' ? 'Receives a Copy' : bulkList.role === 'approver' ? 'Approver' : 'Needs to View'}</span>
-                                        <ChevronDown className="w-4 h-4" />
-                                      </button>
-                                      {bulkRoleDropdownOpen && (
-                                        <div onMouseDown={(e) => e.stopPropagation()} className="absolute right-0 top-full mt-1 w-52 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
-                                          <div className="py-2 text-sm text-gray-800">
-                                            <button type="button" onClick={() => { setBulkList(prev => prev ? { ...prev, role: 'signer' } : prev); setBulkRoleDropdownOpen(false); }} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
-                                              <PenLine className="w-4 h-4" />
-                                              <span>Needs to Sign</span>
-                                            </button>
-                                            <button type="button" onClick={() => { setBulkList(prev => prev ? { ...prev, role: 'carbon_copy' } : prev); setBulkRoleDropdownOpen(false); }} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
-                                              <span className="text-xs font-semibold">CC</span>
-                                              <span>Receives a Copy</span>
-                                            </button>
-                                            <button type="button" onClick={() => { setBulkList(prev => prev ? { ...prev, role: 'needs_to_view' } : prev); setBulkRoleDropdownOpen(false); }} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
-                                              <Eye className="w-4 h-4" />
-                                              <span>Needs to View</span>
-                                            </button>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="relative" ref={bulkCustomizeRef as any}>
-                                      <button type="button" onMouseDown={(e) => e.stopPropagation()} onClick={() => setBulkCustomizeOpen(prev => !prev)} className="px-4 py-2 bg-gray-100 text-black-700 rounded-sm border border-gray-300 flex items-center gap-2">
-                                        <span className="text-sm font-bold">Customize</span>
-                                        <ChevronDown className="w-4 h-4" />
-                                      </button>
-                                      {bulkCustomizeOpen && (
-                                        <div onMouseDown={(e) => e.stopPropagation()} className="absolute right-0 top-full mt-1 w-80 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
-                                          <div className="py-2">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setBulkCustomizeOpen(false);
-                                                setAuthModalForBulk(true);
-                                                setAuthModalForRecipientId(null);
-                                                setShowAuthModal(true);
-                                              }}
-                                              className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100"
-                                            >
-                                              <div className="flex items-start gap-3">
-                                                <Key className="w-5 h-5 text-gray-600 mt-0.5" />
-                                                <div>
-                                                  <div className="font-medium text-gray-900">Add authentication method</div>
-                                                  <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
-                                                </div>
-                                              </div>
-                                            </button>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
                           </div>
                         </div>
                       )}

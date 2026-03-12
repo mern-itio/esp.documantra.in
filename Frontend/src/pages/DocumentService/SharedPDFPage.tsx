@@ -131,7 +131,11 @@ const SharedPDFPage: React.FC = () => {
       // Search query filter
       const matchesSearch = !searchQuery || 
         (doc.document?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.recipients.some((recipient: any) => 
+        [
+          ...(doc.toRecipients || []),
+          ...(doc.ccRecipients || []),
+          ...(doc.bccRecipients || [])
+        ].some((recipient: any) => 
           recipient.email.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
@@ -500,14 +504,14 @@ const SharedPDFPage: React.FC = () => {
               <div className="mb-4">
                 <p className="text-xs text-gray-600 mb-2">Recipients:</p>
                 <div className="flex flex-wrap gap-1">
-                  {doc.recipients.slice(0, 3).map((recipient: any, index: number) => (
+                  {[...(doc.toRecipients || []), ...(doc.ccRecipients || []), ...(doc.bccRecipients || [])].slice(0, 3).map((recipient: any, index: number) => (
                     <Badge key={index} variant="outline" className="text-xs">
                       {recipient.email}
                     </Badge>
                   ))}
-                  {doc.recipients.length > 3 && (
+                  {[...(doc.toRecipients || []), ...(doc.ccRecipients || []), ...(doc.bccRecipients || [])].length > 3 && (
                     <Badge variant="outline" className="text-xs">
-                      +{doc.recipients.length - 3} more
+                      +{[...(doc.toRecipients || []), ...(doc.ccRecipients || []), ...(doc.bccRecipients || [])].length - 3} more
                     </Badge>
                   )}
                 </div>

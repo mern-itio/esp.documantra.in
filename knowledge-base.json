@@ -509,7 +509,7 @@
       "relatedFeatures": ["pdf-service"]
     },
     "How do I create a document template?": {
-      "answer": "Go to the Template Service section, browse our 45+ legal templates, or create a custom template. You can use AI-powered generation to create templates from natural language prompts. The template service includes a form builder, template marketplace, and workflow automation features.",
+      "answer": "Go to the Template Service section, create a custom template. You can use AI-powered generation to create templates from natural language prompts. The template service includes a form builder, template marketplace, and workflow automation features.",
       "category": "templates",
       "relatedFeatures": ["template-service"]
     },
