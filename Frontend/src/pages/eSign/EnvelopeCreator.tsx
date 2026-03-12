@@ -48,8 +48,6 @@ import SignatureTypeSelector from '../../components/ESign/advanced/SignatureType
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
-import { AICoPilot } from '../../components/ESign/AICoPilot';
-import { aiAssistantApiService } from '../../services/aiAssistantService';
 import { SubscriptionPlansModal } from '../../components/common/SubscriptionPlansModal';
 import { debounce } from '../../components/common/lib/utils';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
@@ -116,8 +114,6 @@ const EnvelopeCreator: React.FC = () => {
   const [_files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<EditorSignatureFieldExt[]>([]);
-  const [aiSuggestions, setAiSuggestions] = useState<Array<{ suggestions: any[]; documentId: string }>>([]);
-  const [isAiSuggestionsExpanded, setIsAiSuggestionsExpanded] = useState(true);
   const [sending, setSending] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -5520,96 +5516,6 @@ const EnvelopeCreator: React.FC = () => {
       case 2:
         return (
           <>
-            {/* AI Suggestions Banner */}
-            {(() => {
-              const totalSuggestions = aiSuggestions.reduce((sum, s) => sum + (s.suggestions?.length || 0), 0);
-              const hasSuggestions = totalSuggestions > 0;
-              console.log('Rendering suggestions banner check:', { 
-                aiSuggestions, 
-                totalSuggestions, 
-                hasSuggestions,
-                aiSuggestionsLength: aiSuggestions.length 
-              });
-              return hasSuggestions;
-            })() ? (
-              <div className="mb-4 bg-indigo-50 border-2 border-indigo-300 rounded-lg p-1 shadow-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-indigo-600" />
-                        <h4 className="font-semibold text-indigo-900">
-                          AI Field Suggestions Available
-                        </h4>
-                      </div>
-                      <button
-                        onClick={() => setIsAiSuggestionsExpanded(!isAiSuggestionsExpanded)}
-                        className="p-1 hover:bg-indigo-100 rounded transition-colors"
-                        aria-label={isAiSuggestionsExpanded ? "Collapse" : "Expand"}
-                      >
-                        {isAiSuggestionsExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-indigo-600" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-indigo-600" />
-                        )}
-                      </button>
-                    </div>
-                    {isAiSuggestionsExpanded && (
-                      <>
-                        <p className="text-sm text-indigo-700 mb-3">
-                          {aiSuggestions.reduce((sum, s) => sum + (s.suggestions?.length || 0), 0)} field suggestion(s) found. Click "Apply All" to add them automatically.
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              const allFields: EditorSignatureFieldExt[] = [];
-                              aiSuggestions.forEach(({ suggestions, documentId }) => {
-                                if (suggestions && Array.isArray(suggestions)) {
-                                  suggestions.forEach((suggestion: any) => {
-                                    const doc = documents.find(d => d.id === documentId);
-                                    if (doc && suggestion) {                                    
-                                      allFields.push({
-                                        id: `${Date.now()}_${Math.random()}`,
-                                        docId: documentId,
-                                        page: suggestion.page || 1,
-                                        x: typeof suggestion.x === 'number' ? suggestion.x : (suggestion.x || 0) * 612,
-                                        y: typeof suggestion.y === 'number' ? suggestion.y : (suggestion.y || 0) * 792,
-                                        width: typeof suggestion.width === 'number' ? suggestion.width : (suggestion.width || 150),
-                                        height: typeof suggestion.height === 'number' ? suggestion.height : (suggestion.height || 50),
-                                        type: (suggestion.type || 'signature') as 'signature' | 'text' | 'date' | 'email' | 'number',
-                                        recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
-                                      } as EditorSignatureFieldExt);
-                                    }
-                                  });
-                                }
-                              });
-                              if (allFields.length > 0) {
-                                setSignatureFields(prev => [...prev, ...allFields]);
-                                saveSignatureFieldsImmediate([...signatureFields, ...allFields]);
-                                setAiSuggestions([]);
-                                toast.success(`Applied ${allFields.length} field suggestion(s)`);
-                              } else {
-                                toast.error('No valid suggestions to apply');
-                              }
-                            }}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2"
-                          >
-                            <Sparkles className="w-4 h-4" />
-                            Apply All Suggestions
-                          </button>
-                          <button
-                            onClick={() => setAiSuggestions([])}
-                            className="px-4 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-50 text-sm font-medium"
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : null}
             <SigningEditorStep
               documents={documents}
               recipients={recipients}
@@ -5622,7 +5528,6 @@ const EnvelopeCreator: React.FC = () => {
               sending={sending}
               onFieldsChange={(fields) => saveSignatureFieldsImmediate(fields as EditorSignatureFieldExt[])}
               envelopeId={envelopeId}
-              aiSuggestions={aiSuggestions}
               onBack={() => {
                 setCurrentStep(1);
                 if (envelopeId) {
@@ -6207,55 +6112,7 @@ const EnvelopeCreator: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1">
           <div className="max-w-6xlVV mx-auto">
-            {renderStepContent()}
-            
-            {/* AI Co-Pilot - Only show on field placement steps */}
-            {(currentStep === 2 || currentStep === 3) && (
-              <AICoPilot
-                recipients={recipients}
-                signatureFields={signatureFields}
-                documents={documents}
-                currentPage={1} // This should come from SigningEditorStep if available
-                mode={mode}
-                onFieldsAdded={(fields) => {
-                  setSignatureFields(prev => [...prev, ...fields]);
-                  saveSignatureFieldsImmediate([...signatureFields, ...fields] as EditorSignatureFieldExt[]);
-                }}
-                onRecipientsUpdated={(updatedRecipients) => {
-                  setRecipients(updatedRecipients);
-                }}
-                onAnalyzePDF={async (documentId) => {
-                  // Find the document and analyze it
-                  const document = documents.find(d => d.id === documentId);
-                  if (document && document.file) {
-                    try {
-                      const response = await aiAssistantApiService.analyzePDFForSuggestions(document.file);
-                      if (response.success && response.data) {
-                        // Suggestions are handled internally by AICoPilot component
-                        toast.success(`Found ${response.data.suggestions?.length || 0} field suggestions`);
-                      }
-                    } catch (error) {
-                      console.error('Error analyzing PDF:', error);
-                      toast.error('Failed to analyze PDF');
-                    }
-                  }
-                }}
-                onSuggestionsReceived={(suggestions, documentId) => {
-                  console.log('Suggestions received:', suggestions, 'for document:', documentId);
-                  // Store suggestions for display
-                  setAiSuggestions(prev => {
-                    const existing = prev.find(s => s.documentId === documentId);
-                    if (existing) {
-                      return prev.map(s => s.documentId === documentId ? { ...s, suggestions } : s);
-                    }
-                    const newState = [...prev, { suggestions, documentId }];
-                    console.log('Updated aiSuggestions state:', newState);
-                    return newState;
-                  });
-                }}
-              />
-            )}
-
+            {renderStepContent()}            
             {currentStep !== 2 && (
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200" id='clearBoth'>
                <button

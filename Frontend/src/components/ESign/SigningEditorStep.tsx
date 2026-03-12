@@ -2101,16 +2101,6 @@ export default function SigningEditorStep({
                               if (onFieldsChange) {
                                 onFieldsChange([...signatureFields, ...newFields]);
                               }
-                              suggestions.forEach(s => {
-                                setRejectedSuggestions(prev => new Set([...prev, `${s.page}-${s.x}-${s.y}`]));
-                              });
-                              toast.success(`Added ${newFields.length} field suggestion(s)`);
-                            }}
-                            onRejectAll={() => {
-                              suggestions.forEach(s => {
-                                setRejectedSuggestions(prev => new Set([...prev, `${s.page}-${s.x}-${s.y}`]));
-                              });
-                              toast.success('All suggestions dismissed');
                             }}
                             showOverlay={showAISuggestions}
                             onToggleOverlay={() => setShowAISuggestions(!showAISuggestions)}
