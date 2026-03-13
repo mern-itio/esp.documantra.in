@@ -1,19 +1,19 @@
 const axios = require("axios");
 const https = require("https");
 
-exports.createSession = async (userId) => {
+exports.createSession = async (userId, verificationUrl, workFLowId, webhookUrl, apiKey, envelopeId, authProviderId) => {
   try {
     const res = await axios.post(
-      "https://verification.didit.me/v3/session",
+      verificationUrl || "https://verification.didit.me/v3/session",
       {
-        workflow_id: process.env.DIDIT_WORKFLOW_ID,
+        workflow_id: workFLowId || process.env.DIDIT_WORKFLOW_ID,
         vendor_data: userId,
-        callback: process.env.DIDIT_WEBHOOK_URL,
-        metadata: { userId }
+        callback: webhookUrl || process.env.DIDIT_WEBHOOK_URL,
+        metadata: { userId, envelopeId, authProviderId }
       },
       {
         headers: {
-          "x-api-key": process.env.DIDIT_API_KEY,
+          "x-api-key": apiKey || process.env.DIDIT_API_KEY,
           "Content-Type": "application/json"
         },
         timeout: 10000,

@@ -240,4 +240,26 @@ const availableAuthMethods = async (req, res) => {
     });
   }
 }
-module.exports = {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider,availableAuthMethods};
+const bulkFetchByIds = async (req, res) => {
+  const { methodIds } = req.body || {};
+  if (!Array.isArray(methodIds) || methodIds.length === 0) {
+    return res.status(400).json({ status: 400, message: 'methodIds must be a non-empty array', data: null });
+  }
+  try {
+    console.log('bulkFetchByIds called with methodIds:', methodIds);
+    const providers = await AuthProvider.find({ _id: { $in: methodIds } });
+    const data = providers.map(p => ({
+      id: p._id,
+      name: p.name,
+      description: p.description,
+      uiSchema: p.uiSchema,
+      constraints: p.constraints,
+      isRecommended: p.isRecommended || false
+    }));
+    return res.status(200).json({ status: 200, message: 'Auth providers fetched successfully', methods: data });
+  } catch (error) {
+    console.error('Error in bulkFetchByIds:', error);
+    return res.status(500).json({ status: 500, message: 'Internal Server Error', data: null });
+  }
+}
+module.exports = {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider,availableAuthMethods,bulkFetchByIds};

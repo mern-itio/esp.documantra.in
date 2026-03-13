@@ -365,7 +365,7 @@ const envelopesDetail = async (req, res) => {
       .populate("documentIds")   // fetch docs
       .populate({
         path: 'recipientIds',           // populate recipients
-        select: 'name email UserId signature initials',    // only global info
+        select: 'name email phone UserId signature initials',    // only global info
         populate: {
           path: 'permissions',          // populate envelope-specific permissions
           model: 'RecipientPermission',
@@ -434,6 +434,7 @@ const envelopesDetail = async (req, res) => {
           id: recipient._id,
           name: recipient.name,
           email: recipient.email,
+          phone: recipient.phone || '',
           initials: recipient.initials || '',
           role: perm.role,
           order: perm.order,

@@ -63,6 +63,29 @@ const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments =
 
   return info;
 };
+const sendEmailBySystem = async ({ to, subject, html, attachments = [] }) => {
 
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'draftnsign@gmail.com',
+      pass: 'tbqhooitksgusmpc'
+    }
+  });
 
-module.exports = { sendEmailByUserId };
+  const mailOptions = {
+    from: '"DraftandSign" <draftnsign@gmail.com>',
+    to: to,
+    subject,
+    html,
+    attachments
+  };
+
+  const info = await transporter.sendMail(mailOptions);
+
+  return info;
+};
+
+module.exports = { sendEmailByUserId, sendEmailBySystem };

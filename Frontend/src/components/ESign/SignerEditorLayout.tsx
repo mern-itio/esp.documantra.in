@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  FileText,
   FileSignature,
   PenLine,
   Stamp,
@@ -13,7 +12,6 @@ import {
   Check,
   Search,
   X,
-  SaveAll,
 } from "lucide-react";
 
 // Static list of standard fields matching SigningEditorStep left panel (UI only)

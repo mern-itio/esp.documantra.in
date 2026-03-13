@@ -252,4 +252,27 @@ const sendMail = async (req, res) =>{
     });
   }
 }
-module.exports = { createSmtpConfig, getSmtpConfigs, updateSmtpConfig, setDefaultSmtpConfig, deleteSmtpConfig,testSmtpConfig,sendMail };
+const sendMailBySystem = async (req, res) =>{
+const {to, subject, html, attachments} = req.body;
+  try{
+    if(!to || !subject || !html){
+      return res.status(400).json({
+        success: false,
+        message: 'toEmail, subject and html are required fields'
+      });
+    }
+    const response = await email.sendEmailBySystem({ to, subject, html, attachments });
+      console.log(response);
+      return res.json({   
+        success: true,
+        message: 'Email sent successfully',
+        sentTo: to
+      });
+  }catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    }); 
+  }
+}
+module.exports = { createSmtpConfig, getSmtpConfigs, updateSmtpConfig, setDefaultSmtpConfig, deleteSmtpConfig,testSmtpConfig,sendMail,sendMailBySystem };

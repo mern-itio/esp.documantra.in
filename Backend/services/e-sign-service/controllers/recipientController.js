@@ -1,5 +1,5 @@
 const Recipient = require('../models/Recipient');
-
+const RecipientPermission = require('../models/RecipientPermission');
 // List recipients filtered by current user
 exports.listRecipients = async (req, res) => {
   try {
@@ -99,5 +99,46 @@ exports.deleteRecipient = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete recipient' });
   }
 };
+exports.updateAuthStatus = async (req, res) => {
+  try {
+    const { recipientId, providerId, verificationStatus, envelopeId } = req.body;
 
+    if (!recipientId || !providerId || !verificationStatus || !envelopeId) {
+      return res.status(400).json({
+        message: 'recipientId, providerId, verificationStatus, and envelopeId are required'
+      });
+    }
 
+    const updatedRecord = await RecipientPermission.findOneAndUpdate(
+      {
+        recipientId,
+        envelopeId,
+        "authLevel.authMethodId": providerId
+      },
+      {
+        $set: {
+          "authLevel.$.status": verificationStatus
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!updatedRecord) {
+      return res.status(404).json({
+        message: 'Recipient auth method not found'
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Authentication status updated successfully',
+    });
+
+  } catch (err) {
+    console.error('updateAuthStatus error', err);
+    return res.status(500).json({
+      message: 'Failed to update authentication status'
+    });
+  }
+};
