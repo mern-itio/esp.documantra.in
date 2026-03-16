@@ -6,5 +6,4 @@ const controller = require('../controllers/identityController');
 
 router.post('/start', controller.startIdentity);
 router.get('/:userId', controller.getStatus);
-
 module.exports = router;

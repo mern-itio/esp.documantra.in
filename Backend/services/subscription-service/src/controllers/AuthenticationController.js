@@ -1,0 +1,157 @@
+const { verify } = require('jsonwebtoken');
+const authProviderServices = require('../services/authProviderServices');
+const axios = require('axios');
+const initiateAuth = async (req, res) => {
+  try {
+    const { providerId, recipientData, envelopeId } = req.body;
+    console.log("Envelope ID:", envelopeId);
+    if (!providerId || !recipientData) {
+      return res.status(400).json({
+        message: "Missing providerId or recipientData"
+      });
+    }
+
+    const provider = await authProviderServices.getProviderById(providerId);
+
+    if (!provider) {
+      return res.status(404).json({
+        message: "Auth provider not found"
+      });
+    }
+
+    const type = provider.config.providerType;
+
+    switch (type) {
+
+      case "email_otp":
+
+        if (!recipientData.email) {
+          return res.status(400).json({
+            message: "Missing email in Recipient Data",
+            errorCode: "MISSING_INFO",
+            missingRequirement: "email"
+          });
+        }
+
+        const emailResponse = await authProviderServices.initiateEmailOtpVerification(providerId, recipientData);
+        console.log("Email OTP initiation response:", emailResponse);
+        return res.status(200).json({
+          status: "pending",
+          message: "OTP has been sent to your registered email",
+          action: "ENTER_OTP",
+          verificationId: emailResponse.verificationId,
+          metadata: {
+            otpLength: emailResponse.otpLength
+          }
+        });
+
+      case "sms_otp":
+        if (!recipientData.mobile && !recipientData.phone && !recipientData.phoneNumber) {
+          return res.status(400).json({
+            message: "Missing mobile number in Recipient Data",
+            errorCode: "MISSING_INFO",
+            missingRequirement: "mobile"
+          });
+        }
+        const phoneResponse = await authProviderServices.initiateSmsOtpVerification(providerId, recipientData);
+          if(!phoneResponse.success){
+            return res.status(500).json({
+              message: phoneResponse.error || "Failed to initiate SMS OTP verification"
+            });
+          }
+          return res.status(200).json({
+            status: "pending",
+            message: phoneResponse.message,
+            action: "ENTER_OTP",
+            verificationId: phoneResponse.verificationId,
+            metadata: {
+              otpLength: phoneResponse.otpLength
+            }
+          });
+
+        case "didit":
+         const extraFields = provider?.config?.extraFields;
+         const workFLowId = extraFields?.get("DIDIT_WORKFLOW_ID");
+         const webhookUrl = provider?.config?.callbackUrl;
+         const verificationUrl = extraFields?.get("Verification_URL");
+         const diditResponse = await axios.post(process.env.IDENTITY_SERVICE_URL + '/api/identity/start', {
+          userId: recipientData.id,
+          authProviderId: providerId,
+          verificationUrl: verificationUrl,
+          workFLowId: workFLowId,
+          webhookUrl: webhookUrl,
+          apiKey: provider.config.apiKeyRef,
+          envelopeId: envelopeId
+          });
+          if(diditResponse.data.success){
+            return res.status(200).json({
+              status: "pending",
+              message: "Identity verification initiated. Please complete the verification process using the provided URL.",
+              action: "COMPLETE_IDENTITY_VERIFICATION",
+              verificationUrl: diditResponse.data.url
+            });
+          }else{
+            return res.status(500).json({
+              message: "Failed to initiate identity verification"
+            });
+          }
+
+
+        // Other Cases like sms, totp etc can be handled here in future
+      default:
+        return res.status(400).json({
+          message: `Unsupported auth provider type: ${type}`
+        });
+    }
+
+  } catch (err) {
+    console.error("Auth initiation failed:", err);
+
+    return res.status(500).json({
+      message: "Authentication initiation failed",
+      error: err.message
+    });
+  }
+};
+const verifyOtp = async (req, res) => {
+  try {
+    const { providerId, recipientId, otp, verificationId, envelopeId } = req.body;
+    if (!providerId || !recipientId || !otp || !verificationId || !envelopeId) {
+      return res.status(400).json({
+        message: "Missing required fields: providerId, recipientId, otp, verificationId, or envelopeId"
+      });
+    }
+    const verificationResult = await authProviderServices.verifyOtp(providerId, recipientId, otp, verificationId);
+    if (!verificationResult.success) {
+      return res.status(400).json({
+        message: verificationResult.message
+      });
+    }
+    // Update recipient record
+    try{
+      await axios.post(process.env.ESING_SERVICE_URL + '/api/e-sign/public/recipients/update-verification-status', {
+        recipientId: recipientId,
+        providerId: providerId,
+        envelopeId: envelopeId,
+        verificationStatus: 'completed'
+      });
+
+    }catch (err){
+      console.error("Failed to update recipient record after OTP verification:", err);
+    }
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully"
+    });
+  } catch (err) {
+    console.error("OTP verification failed:", err);
+    return res.status(500).json({
+      success: false,
+      message: "OTP verification failed",
+      error: err.message
+    });
+  }
+};
+
+
+module.exports = {initiateAuth, verifyOtp };

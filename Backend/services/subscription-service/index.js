@@ -11,6 +11,8 @@ const authProviderRoutes = require('./src/routes/authProviderRoutes');
 const invoiceRoutes = require('./src/routes/invoiceRoutes');
 const { createFreePlanForUser } = require('./src/controllers/userPlanController');
 const usageRoutes = require('./src/routes/usageRoutes');
+const userAuthProviderRoutes = require('./src/routes/userAuthProviderRoutes');
+const authProviderOpenRoutes = require('./src/routes/authProviderOpenRoutes');
 
 const app = express();
 
@@ -23,7 +25,6 @@ app.use('/admin', verifyJWT('admin'));
 app.use('/admin/plan-templates', plansRoutes);
 app.use('/admin', toolSettingsRoutes);
 app.use('/admin/auth-providers', authProviderRoutes);
-const userAuthProviderRoutes = require('./src/routes/userAuthProviderRoutes');
 // Internal route used by auth-service to create free plan (no auth)
 app.post('/user-plan/create-free', createFreePlanForUser);
 
@@ -46,6 +47,9 @@ app.use('/invoices', invoiceRoutes);
 // User authProvider routes - require user token
 app.use('/user', verifyJWT('user'));
 app.use('/user', userAuthProviderRoutes);
+
+//Authprovider callback routes - no auth required
+app.use('/api/authproviders',authProviderOpenRoutes);
 
 
 const PORT = process.env.PORT || 2110;

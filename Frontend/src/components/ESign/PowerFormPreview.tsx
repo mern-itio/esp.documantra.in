@@ -111,24 +111,24 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
     }, 1500);
   };
 
-  // Handle authentication failure
-  const handleAuthFailure = () => {
-    if (retryCount < 2) {
-      // Show failure, allow retry
-      setAuthStatus('failed');
-      setTimeout(() => {
-        setRetryCount(retryCount + 1);
-        setAuthStatus('pending');
-        setOtpCode('');
-      }, 2000);
-    } else {
-      // Max retries reached
-      setAuthStatus('failed');
-      // Show error message
-      alert('Authentication failed. Maximum retry attempts reached. Please try again later.');
-      setShowAuthModal(false);
-    }
-  };
+    // Handle authentication failure
+    const handleAuthFailure = () => {
+      if (retryCount < 2) {
+        // Show failure, allow retry
+        setAuthStatus('failed');
+        setTimeout(() => {
+          setRetryCount(retryCount + 1);
+          setAuthStatus('pending');
+          setOtpCode('');
+        }, 2000);
+      } else {
+        // Max retries reached
+        setAuthStatus('failed');
+        // Show error message
+        alert('Authentication failed. Maximum retry attempts reached. Please try again later.');
+        setShowAuthModal(false);
+      }
+    };
 
   // Dummy authentication simulation
   const handleAuthenticate = async () => {
