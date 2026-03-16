@@ -7,12 +7,12 @@ COPY packages/auth-lib/package*.json ./packages/auth-lib/
 COPY packages/validators/package*.json ./packages/validators/
 
 # Copy package.json and package-lock.json for service
-COPY services/e-sign-service/package*.json ./services/e-sign-service/
+COPY services/identity-service/package*.json ./services/identity-service/
 
 # Copy all code after package.json (to leverage docker cache)
 COPY packages/auth-lib ./packages/auth-lib
 COPY packages/validators ./packages/validators
-COPY services/e-sign-service ./services/e-sign-service
+COPY services/identity-service ./services/identity-service
 
 # Install dependencies inside local packages
 WORKDIR /app/packages/auth-lib
@@ -22,9 +22,9 @@ WORKDIR /app/packages/validators
 RUN npm install
 
 # Install service dependencies (links local packages)
-WORKDIR /app/services/e-sign-service
+WORKDIR /app/services/identity-service
 RUN npm install --legacy-peer-deps
 
-EXPOSE 2103
+EXPOSE 2114
 
 CMD ["npm", "run", "dev"]

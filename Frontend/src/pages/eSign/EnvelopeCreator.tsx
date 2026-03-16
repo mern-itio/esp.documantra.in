@@ -284,20 +284,43 @@ const EnvelopeCreator: React.FC = () => {
   const [authModalForBulk, setAuthModalForBulk] = useState<boolean>(false);
   const [tempAuthSelection, setTempAuthSelection] = useState<string[] | undefined>(undefined);
   const [hasUserChangedSelection, setHasUserChangedSelection] = useState<boolean>(false);
+
+  const DEFAULT_AUTH_METHOD_ID = '68ee2a18ba0c0738eb275d34';
+  const DEFAULT_AUTH_JSON = JSON.stringify([{ authMethodId: DEFAULT_AUTH_METHOD_ID, status: 'pending' }]);
+
   const parseAuthentication = (auth: string | undefined | null): string[] => {
     if (!auth) return [];
     try {
       const parsed = JSON.parse(auth);
-      if (Array.isArray(parsed)) return parsed;
-      return [auth];
+      if (Array.isArray(parsed)) {
+        // Handle array of auth IDs (e.g. ["id1", "id2"]) or array of auth objects
+        if (parsed.every((item) => typeof item === 'string')) {
+          return parsed as string[];
+        }
+        return (parsed as any[])
+          .map((item) => {
+            if (!item || typeof item !== 'object') return null;
+            return item.authMethodId ?? item.id ?? null;
+          })
+          .filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+      }
+      if (typeof parsed === 'string') return [parsed];
+      if (parsed && typeof parsed === 'object') {
+        const id = (parsed as any).authMethodId ?? (parsed as any).id;
+        return id ? [id] : [];
+      }
+      return [];
     } catch {
-      return [auth];
+      return typeof auth === 'string' && auth.trim().length > 0 ? [auth] : [];
     }
   };
 
   const stringifyAuthentication = (auth: string[] | null | undefined): string | null => {
     if (!auth || auth.length === 0) return null;
-    return JSON.stringify(auth);
+    const items = auth
+      .filter((id) => typeof id === 'string' && id.trim().length > 0)
+      .map((id) => ({ authMethodId: id, status: 'pending' }));
+    return items.length > 0 ? JSON.stringify(items) : null;
   };
 
   useEffect(() => {
@@ -709,7 +732,7 @@ const EnvelopeCreator: React.FC = () => {
         role: roleToUse,
         order: nextOrder + idx,
         status: 'waiting' as const,
-        authentication: '68ee2a18ba0c0738eb275d34' as Recipient['authentication'] // Default: secret email verification
+        authentication: DEFAULT_AUTH_JSON as Recipient['authentication'] // Default: secret email verification
       }));
       
       // Combine and normalize orders
@@ -2006,7 +2029,7 @@ const EnvelopeCreator: React.FC = () => {
       role: 'signer',
       order: (recipients?.length || 0) + 1 + base,
       status: 'waiting',
-      authentication: '68ee2a18ba0c0738eb275d34' // Default: secret email verification
+      authentication: DEFAULT_AUTH_JSON // Default: secret email verification
     };
     setRecipients(prev => {
       const updated = [...prev, newRecipient];
@@ -2452,7 +2475,7 @@ const EnvelopeCreator: React.FC = () => {
       if (totalCost > 0 && subscriptionPlan) {
         try {
           // Include all recipients with authentication, including email verification
-          const recipientsWithAuth = recipients.filter(r => r.authentication);
+          const recipientsWithAuth = recipients.filter(r => parseAuthentication(r.authentication).length > 0);
           if (recipientsWithAuth.length > 0) {
             await Promise.all(recipientsWithAuth.flatMap(recipient => {
               const authArray = parseAuthentication(recipient.authentication);
@@ -2534,21 +2557,26 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   // Calculate total cost based on authentication methods
-  const calculateTotalCost = (): number => {
-    let total = 0;
-    recipients.forEach(recipient => {
-      if (recipient.authentication) {
-        const authArray = parseAuthentication(recipient.authentication);
-        authArray.forEach(authId => {
-          const authMethod = authMethods.find(m => m.id === authId);
-          if (authMethod) {
-            total += authMethod.cost || 0;
-          }
-        });
+const calculateTotalCost = (): number => {
+  let total = 0;
+
+  recipients.forEach((recipient) => {
+    const authArray = parseAuthentication(recipient.authentication);
+    if (authArray.length === 0) return;
+
+    authArray.forEach((auth: any) => {
+      const methodId = typeof auth === "string" ? auth : auth.authMethodId;
+
+      const authMethod = authMethods.find((m) => m.id === methodId);
+
+      if (authMethod) {
+        total += authMethod.cost || 0;
       }
     });
-    return total;
-  };
+  });
+
+  return total;
+};
   useEffect(() => {
     getSteps();
   }, [location.search, routeEnvelopeId]);
@@ -3532,7 +3560,7 @@ const EnvelopeCreator: React.FC = () => {
                               role: 'signer',
                               order: 1,
                               status: 'waiting',
-                              authentication: '68ee2a18ba0c0738eb275d34' 
+                              authentication: DEFAULT_AUTH_JSON 
                             }]);
                           } else {
                             setRecipients([]);
@@ -3602,7 +3630,7 @@ const EnvelopeCreator: React.FC = () => {
                                       role: bulkList.role,
                                       order: idx + 1,
                                       status: 'waiting' as const,
-                                      authentication: '68ee2a18ba0c0738eb275d34' as Recipient['authentication'] 
+                                      authentication: DEFAULT_AUTH_JSON as Recipient['authentication'] 
                                     }))
                                   );
                                   setShowBulkModal(true);
@@ -5002,7 +5030,7 @@ const EnvelopeCreator: React.FC = () => {
                                             <label className="flex items-center space-x-2 cursor-pointer">
                                               <input
                                                 type="checkbox"
-                                                checked={!recipient.authentication}
+                                                checked={parseAuthentication(recipient.authentication).length === 0}
                                                 onChange={() => {
                                                   updateRecipient(recipient.id, { authentication: undefined });
                                                 }}

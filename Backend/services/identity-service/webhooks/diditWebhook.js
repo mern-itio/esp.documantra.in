@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
             envelopeId: sessionData.envelopeId,
             verificationStatus: 'completed'
           });
-          const redirectUrl = `${process.env.FRONTEND_URL}/e-sign/signing/${sessionData.envelopeId}/${sessionData.userId}`;
+          const redirectUrl = `${process.env.FRONTEND_URL}/e-sign/signer/${sessionData.envelopeId}/${sessionData.userId}`;
           // Redirect the user
           return res.redirect(redirectUrl);
     
