@@ -2131,7 +2131,9 @@ const EnvelopeCreator: React.FC = () => {
       // Normalize to array: handle both single string and array
       let normalizedMethods: string[] = [];
       if (Array.isArray(methodIds)) {
-        normalizedMethods = methodIds.filter(id => id && id.trim().length > 0);
+        normalizedMethods = methodIds
+          .map((item: any) => item?.authMethodId || item)
+          .filter((id: any) => typeof id === "string" && id.trim().length > 0);
       } else if (methodIds && typeof methodIds === 'string' && methodIds.trim().length > 0) {
         normalizedMethods = [methodIds];
       }
