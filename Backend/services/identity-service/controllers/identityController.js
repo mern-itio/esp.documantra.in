@@ -4,12 +4,20 @@ const identitySession = require('../models/identityModal');
 
 exports.startIdentity = async (req, res) => {
   try {
-    const { userId } = req.body;  
-
-     const data = await diditProvider.createSession(userId);
+    const { userId,authProviderId,verificationUrl, workFLowId, webhookUrl,apiKey,envelopeId } = req.body;  
+    console.log("User Id:", userId);
+    console.log("Auth Provider Id:", authProviderId);
+    console.log("Verification URL:", verificationUrl);
+    console.log("Workflow ID:", workFLowId);
+    console.log("Webhook URL:", webhookUrl);
+    console.log("API Key:", apiKey);
+    console.log("Envelope ID:", envelopeId);
+     const data = await diditProvider.createSession(userId, verificationUrl, workFLowId, webhookUrl, apiKey, envelopeId, authProviderId);
      console.log('Didit response:', data);
        await identitySession.create({
             userId,
+            envelopeId,
+            authProviderId,
             sessionId: data.session_id
         });
 

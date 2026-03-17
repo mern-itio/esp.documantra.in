@@ -11,7 +11,6 @@ services:
 
     command: npm run dev
 
-
   pdf-service:
     build:
       context: .
@@ -37,6 +36,7 @@ services:
         reservations:
           memory: 1G
     command: npm run dev
+
   document-service:
     build:
       context: .
@@ -47,7 +47,7 @@ services:
       - ./services/document-service:/app/services/document-service:cached
       - /app/services/document-service/node_modules
     command: npm run dev
-    
+
   e-sign-service:
     build:
       context: .
@@ -59,6 +59,7 @@ services:
       - /app/services/e-sign-service/node_modules
       - ./services/e-sign-service/uploads:/app/services/e-sign-service/uploads  # <-- added
     command: npm run dev
+
   subscription-service:
     build:
       context: .
@@ -173,5 +174,17 @@ services:
     volumes:
     - ./services/email-service:/app/services/email-service:cached
     - /app/services/email-service/node_modules
+
+    command: npm run dev
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: services/identity-service/Dockerfile
+    ports:
+      - "2114:2114"
+    volumes:
+    - ./services/identity-service:/app/services/identity-service:cached
+    - /app/services/identity-service/node_modules
 
     command: npm run dev

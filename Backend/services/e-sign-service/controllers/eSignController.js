@@ -9,34 +9,53 @@ const { logActivity } = require("../services/activityLogService");
 const mongoose = require('mongoose');
 const axios = require('axios');
 
-// Helper function to parse authentication and return array of valid ObjectIds
 const parseAuthLevel = (authentication) => {
   if (!authentication) return [];
-  
-  // If it's already a valid ObjectId string, return it as array
-  if (mongoose.Types.ObjectId.isValid(authentication) && typeof authentication === 'string' && authentication.length === 24) {
-    return [authentication];
+
+  let authArray = [];
+
+  // Case 1: already array
+  if (Array.isArray(authentication)) {
+    authArray = authentication;
   }
-  
-  // Try to parse as JSON (handles stringified arrays)
-  try {
-    const parsed = JSON.parse(authentication);
-    if (Array.isArray(parsed)) {
-      // Filter and return only valid ObjectIds
-      return parsed.filter(auth => mongoose.Types.ObjectId.isValid(auth));
-    }
-    // If parsed but not an array, check if it's a valid ObjectId
-    if (mongoose.Types.ObjectId.isValid(parsed)) {
-      return [parsed];
-    }
-  } catch (e) {
-    // Not JSON, check if it's a valid ObjectId string
-    if (mongoose.Types.ObjectId.isValid(authentication)) {
-      return [authentication];
+
+  // Case 2: single ObjectId string
+  else if (
+    typeof authentication === "string" &&
+    mongoose.Types.ObjectId.isValid(authentication) &&
+    authentication.length === 24
+  ) {
+    authArray = [authentication];
+  }
+
+  // Case 3: JSON string
+  else if (typeof authentication === "string") {
+    try {
+      const parsed = JSON.parse(authentication);
+
+      if (Array.isArray(parsed)) {
+        authArray = parsed;
+      } else if (mongoose.Types.ObjectId.isValid(parsed)) {
+        authArray = [parsed];
+      }
+    } catch (e) {
+      if (mongoose.Types.ObjectId.isValid(authentication)) {
+        authArray = [authentication];
+      }
     }
   }
-  
-  return [];
+
+  // Final mapping to schema format
+  return authArray
+    .filter((auth) =>
+      mongoose.Types.ObjectId.isValid(
+        auth.authMethodId || auth
+      )
+    )
+    .map((auth) => ({
+      authMethodId: auth.authMethodId || auth,
+      status: auth.status || "pending"
+    }));
 };
 // Documents Upload 
 const Upload = async (req, res) => {

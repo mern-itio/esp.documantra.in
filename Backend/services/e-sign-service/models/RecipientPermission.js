@@ -6,7 +6,19 @@ const RecipientPermissionSchema = new mongoose.Schema({
   role: { type: String, enum: ["signer", "approver", "carbon_copy","in_person_signer"], default: "Signer" },
   order: { type: Number, default: 0 },
   status: { type: String, enum: ["waiting","sent", "completed", "declined"], default: "waiting" },
-  authLevel: { type: [mongoose.Schema.Types.ObjectId], default: [] },
+  authLevel: [
+    {
+      authMethodId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AuthMethod"
+      },
+      status: {
+        type: String,
+        enum: ["pending", "completed", "rejected"],
+        default: "pending"
+      }
+    }
+  ],
 }, { timestamps: true });
 
 module.exports = mongoose.model('RecipientPermission', RecipientPermissionSchema);
