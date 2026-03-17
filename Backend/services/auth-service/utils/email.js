@@ -1,4 +1,10 @@
-const nodemailer = require('nodemailer');
+const {
+  sendEmail: globalSendEmail,
+  getEmailProvider,
+  isMailgunConfigured,
+  isBrevoConfigured,
+  isSmtpConfigured,
+} = require('@draftnsign/email-lib');
 
 const APP_NAME = process.env.APP_NAME || 'Draft and Sign';
 
@@ -14,64 +20,39 @@ function getFromDisplayName() {
   return (process.env.EMAIL_FROM_NAME || APP_NAME).trim().replace(/"/g, '');
 }
 
-function getEmailTransportConfig() {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
-  if (!user || !pass) {
-    return null;
-  }
-
-  const service = process.env.EMAIL_SERVICE;
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT) || 587;
-  const secure = port === 465;
-
-  if (service) {
-    return {
-      service,
-      auth: { user, pass },
-    };
-  }
-
-  return {
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  };
-}
-
 function isEmailConfigured() {
-  return !!getEmailTransportConfig();
-}
-
-let cachedTransport = null;
-function getTransport() {
-  if (cachedTransport) return cachedTransport;
-  const config = getEmailTransportConfig();
-  if (!config) return null;
-  cachedTransport = nodemailer.createTransport(config);
-  return cachedTransport;
+  const provider = getEmailProvider(process.env);
+  if (provider === 'smtp') {
+    return isSmtpConfigured(process.env);
+  }
+  if (provider === 'brevo') {
+    return isBrevoConfigured(process.env);
+  }
+  return isMailgunConfigured(process.env);
 }
 
 async function sendEmail({ to, subject, html }) {
-  const transport = getTransport();
-  if (!transport) {
-    console.warn('Email not sent: SMTP / email configuration is missing');
+  if (!isEmailConfigured()) {
+    console.warn('Email not sent: email provider configuration is missing');
     return false;
   }
 
-  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
-  const fromName = getFromDisplayName();
-  const from = fromEmail ? `${fromName} <${fromEmail}>` : fromName;
+  try {
+    const fromEmail = process.env.EMAIL_FROM || undefined;
+    const fromName = getFromDisplayName();
+    const from = fromEmail ? `${fromName} <${fromEmail}>` : undefined;
 
-  await transport.sendMail({
-    from,
-    to,
-    subject,
-    html,
-  });
-  return true;
+    await globalSendEmail({
+      to,
+      subject,
+      html,
+      from,
+    });
+    return true;
+  } catch (err) {
+    console.error('Global email send error:', err);
+    return false;
+  }
 }
 
 /**
@@ -262,7 +243,7 @@ function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time) {
               <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #f44336; margin: 0 0 24px;">
                 <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Device/Browser:</strong> <span style="color: #64748b;">${deviceInfo || 'Unknown Device'}</span></p>
                 <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>IP Address:</strong> <span style="color: #64748b;">${ipAddress || 'Unknown IP'}</span></p>
-                <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">${new Date(time).toUTCString()}</span></p>
+                <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">$${new Date(time).toLocaleString()}</span></p>
               </div>
 
               <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.65; color: #475569;">If this was you, you can safely ignore this email.</p>

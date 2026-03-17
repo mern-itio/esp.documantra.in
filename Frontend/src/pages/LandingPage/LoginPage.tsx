@@ -131,7 +131,7 @@ const LoginPage = () => {
         setEmailVerified(true)
         setPhoneVerified(true)
         setCanSendPhoneOtp(false)
-        setError(anyErr?.message || 'Enter the 2FA code to continue.')
+        setError(anyErr?.message || 'Enter the verification code to continue.')
       } else {
         setError(anyErr?.message || 'Invalid email or password. Please try again.')
       }
@@ -167,7 +167,7 @@ const LoginPage = () => {
     setError('')
     const code = twoFaOtp.replace(/\D/g, '').slice(0, 6)
     if (!twoFaToken) {
-      setError('2FA session expired. Please login again.')
+      setError('Verification code session expired. Please login again.')
       setStep('login')
       return
     }
@@ -353,7 +353,7 @@ const LoginPage = () => {
                   <form onSubmit={handleVerifyTwoFa} className="space-y-4">
                     <div className="space-y-1.5">
                       <label htmlFor="twoFaOtp" className="block text-xs font-medium text-slate-800">
-                        2FA code
+                     Enter Verification Code
                       </label>
                       <div className="relative">
                         <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

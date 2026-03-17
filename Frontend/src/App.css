@@ -212,3 +212,7 @@ border-top: #084bdc 3px solid;
     animation-timing-function: ease-out;
     animation-iteration-count: infinite;
 }
+.auth-img{
+  width: 100px;
+  height: 100px;
+}

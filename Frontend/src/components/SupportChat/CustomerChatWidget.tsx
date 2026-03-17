@@ -97,10 +97,9 @@ const CustomerChatWidget: React.FC = () => {
             }
           }
         } else {
-          // Auto-open most recent active ticket
           const activeTicket = response.data.data.tickets.find((t: any) => t.status !== 'closed');
           if (activeTicket) {
-            handleOpenTicket(activeTicket);
+            setCurrentTicket(activeTicket);
           }
         }
       }
@@ -112,7 +111,6 @@ const CustomerChatWidget: React.FC = () => {
   // Open ticket and join socket room
   const handleOpenTicket = async (ticket: any) => {
     try {
-      // Check if ticket is closed - if so, show message and don't allow opening
       if (ticket.status === 'closed') {
         setCurrentTicket(ticket); // Set it so we can show the closed message
         setIsOpen(true);
@@ -125,12 +123,9 @@ const CustomerChatWidget: React.FC = () => {
       setIsOpen(true);
       setIsMinimized(false);
 
-      // Messages will be loaded automatically by context when currentTicket changes
-      // Just join the socket room for real-time updates
       if (isConnected && socket) {
         joinTicket(ticket._id);
       } else {
-        // Wait a bit if socket not connected yet
         setTimeout(() => {
           if (socket) {
             joinTicket(ticket._id);

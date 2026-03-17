@@ -31,6 +31,24 @@ async function verifyRecaptcha(token) {
   }
 }
 
+function isChromeExtensionClient(req) {
+  const clientType = String(req?.headers?.['x-client-type'] || '').toLowerCase().trim();
+  if (clientType !== 'chrome-extension') return false;
+
+  const extId = String(req?.headers?.['x-extension-id'] || '').trim();
+  if (!extId) return false;
+
+  const allow = String(process.env.EXTENSION_ID_ALLOWLIST || '').trim();
+  if (!allow) return true; // If not configured, accept any extension id
+
+  const allowedIds = allow
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  return allowedIds.includes(extId);
+}
+
 function generateOtp() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -154,9 +172,11 @@ const login = async (req, res) => {
   if (!email) return res.status(400).json({ message: 'Email required' });
   if (!password) return res.status(400).json({ message: 'Password required' });
 
-  const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
-  if (!isValidRecaptcha) {
-    return res.status(400).json({ message: 'Invalid reCAPTCHA. Please try again.' });
+  if (!isChromeExtensionClient(req)) {
+    const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
+    if (!isValidRecaptcha) {
+      return res.status(400).json({ message: 'Invalid reCAPTCHA. Please try again.' });
+    }
   }
 
   const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -401,9 +421,11 @@ const updateTwoFaSettings = async (req, res) => {
 const register = async (req, res) => {
   const { fullname, email, phone, password, company, address, recaptchaToken } = req.body;
 
-  const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
-  if (!isValidRecaptcha) {
-    return res.status(400).json({ message: 'Invalid reCAPTCHA. Please try again.' });
+  if (!isChromeExtensionClient(req)) {
+    const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
+    if (!isValidRecaptcha) {
+      return res.status(400).json({ message: 'Invalid reCAPTCHA. Please try again.' });
+    }
   }
 
   const normalizedFullname = String(fullname || '').trim();

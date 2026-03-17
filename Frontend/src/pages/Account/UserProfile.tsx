@@ -14,9 +14,6 @@ const UserProfile: React.FC = () => {
 
   const [twoFaEnabled, setTwoFaEnabled] = useState<boolean>(false);
   const [twoFaMethod, setTwoFaMethod] = useState<'email' | 'sms'>('email');
-  const [twoFaLoading, setTwoFaLoading] = useState(false);
-  const [twoFaMsg, setTwoFaMsg] = useState<string>('');
-  const [twoFaErr, setTwoFaErr] = useState<string>('');
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -76,23 +73,6 @@ const UserProfile: React.FC = () => {
     };
     load();    
   }, [userTwoFaFromAuth.enabled, userTwoFaFromAuth.method]);
-
-
-  const saveTwoFa = async () => {
-    setTwoFaMsg('');
-    setTwoFaErr('');
-    setTwoFaLoading(true);
-    try {
-      const resp = await authApi.post('/api/auth/2fa', { enabled: twoFaEnabled, method: twoFaMethod });
-      setTwoFaEnabled(!!resp.data?.twoFaEnabled);
-      setTwoFaMethod(resp.data?.twoFaMethod === 'sms' ? 'sms' : 'email');
-      setTwoFaMsg('2FA settings saved.');
-    } catch (e: any) {
-      setTwoFaErr(e?.response?.data?.message || 'Failed to save 2FA settings.');
-    } finally {
-      setTwoFaLoading(false);
-    }
-  };
 
   const handleEditClick = () => {
     setFormData({
@@ -343,124 +323,49 @@ const UserProfile: React.FC = () => {
         </div>
 
 
-        {/* Security / 2FA */}
+        {/* Security / 2FA summary */}
         <div
           className={`bg-white rounded-xl border p-5 md:col-span-2 lg:col-span-3 transition-colors ${
             twoFaEnabled ? 'border-emerald-200 shadow-sm' : 'border-gray-200'
           }`}
         >
           <h3 className="text-sm font-semibold text-gray-900">Security</h3>
-          <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-gray-600 max-w-lg">
-              {twoFaEnabled
-                ? 'Two-factor authentication adds an extra layer of protection. You’ll be asked for a code when you sign in on new browsers and devices.'
-                : 'Enable two-factor authentication (2FA) to require a one-time code when you sign in on a new device.'}
-            </p>
-            <div className="flex items-center gap-2 mt-1 sm:mt-0">
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  twoFaEnabled ? 'bg-emerald-500' : 'bg-gray-300'
-                }`}
-              />
-              <span
-                className={`text-[11px] font-medium uppercase tracking-wide ${
-                  twoFaEnabled ? 'text-emerald-700' : 'text-gray-500'
-                }`}
-              >
-                {twoFaEnabled ? '2FA ENABLED' : '2FA NOT ENABLED'}
-              </span>
-            </div>
-          </div>
-
-          {(twoFaErr || twoFaMsg) && (
-            <div
-              className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
-                twoFaErr
-                  ? 'border-red-200 bg-red-50 text-red-700'
-                  : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              }`}
-            >
-              {twoFaErr || twoFaMsg}
-            </div>
-          )}
-
-          <div className="mt-4 space-y-4">
-            {!twoFaEnabled && (
-              <ul className="text-[11px] text-gray-500 grid gap-1 sm:grid-cols-2">
-                <li>• Prevents logins from unknown devices</li>
-                <li>• Protects your drafts and documents</li>
-                <li>• Uses a one-time code sent to you</li>
-                <li>• You can turn it off anytime</li>
-              </ul>
-            )}
-
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <label className="inline-flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={twoFaEnabled}
-                  onChange={(e) => setTwoFaEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-[#4D0080] focus:ring-[#4D0080]/30"
-                />
-                <span className="text-sm font-medium text-gray-900">
-                  {twoFaEnabled
-                    ? 'Two-factor authentication is turned on'
-                    : 'Turn on two-factor authentication'}
-                </span>
-              </label>
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                <div className={`flex items-center gap-3 ${!twoFaEnabled ? 'opacity-60' : ''}`}>
-                  <span className="text-xs font-semibold text-gray-700">
-                    {twoFaEnabled ? 'Active method' : 'Preferred method'}
-                  </span>
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-800">
-                    <input
-                      type="radio"
-                      name="twoFaMethod"
-                      value="email"
-                      checked={twoFaMethod === 'email'}
-                      onChange={() => setTwoFaMethod('email')}
-                      disabled={!twoFaEnabled}
-                      className="h-3.5 w-3.5 text-[#4D0080] focus:ring-[#4D0080]/30"
-                    />
-                    Email
-                  </label>
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-800">
-                    <input
-                      type="radio"
-                      name="twoFaMethod"
-                      value="sms"
-                      checked={twoFaMethod === 'sms'}
-                      onChange={() => setTwoFaMethod('sms')}
-                      disabled={!twoFaEnabled}
-                      className="h-3.5 w-3.5 text-[#4D0080] focus:ring-[#4D0080]/30"
-                    />
-                    Phone
-                  </label>
-                </div>
-
-                <button
-                  onClick={saveTwoFa}
-                  disabled={twoFaLoading}
-                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  style={{ backgroundColor: twoFaEnabled ? '#047857' : '#4D0080' }}
-                >
-                  {twoFaLoading
-                    ? 'Saving…'
-                    : twoFaEnabled
-                    ? 'Update 2FA settings'
-                    : 'Enable 2FA'}
-                </button>
-              </div>
-            </div>
-
-            {twoFaEnabled && (
-              <p className="text-[11px] text-gray-500">
-                Lost access to your email or phone? Contact support so we can help you securely
-                recover your account.
+          <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-xs text-gray-600 max-w-lg">
+                Manage how you verify new logins to your Draft &amp; Sign account. You can enable email
+                or phone one-time codes from the authentication settings page.
               </p>
-            )}
+              <p className="text-xs text-gray-600">
+                Current status:{' '}
+                <span className="font-medium">
+                  {twoFaEnabled ? 'Enabled' : 'Not enabled'}{' '}
+                  {twoFaEnabled && `(method: ${twoFaMethod === 'sms' ? 'Phone OTP' : 'Email code'})`}
+                </span>
+              </p>
+            </div>
+            <div className="flex items-center gap-3 mt-1 sm:mt-0">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    twoFaEnabled ? 'bg-emerald-500' : 'bg-gray-300'
+                  }`}
+                />
+                <span
+                  className={`text-[11px] font-medium uppercase tracking-wide ${
+                    twoFaEnabled ? 'text-emerald-700' : 'text-gray-500'
+                  }`}
+                >
+                  {twoFaEnabled ? 'Verification ENABLED' : 'Verification NOT ENABLED'}
+                </span>
+              </div>
+              <button
+                onClick={() => navigate('/account/security')}
+                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white bg-[#4D0080] hover:bg-[#3a0061] transition-colors whitespace-nowrap"
+              >
+                Manage authentication
+              </button>
+            </div>
           </div>
         </div>
 

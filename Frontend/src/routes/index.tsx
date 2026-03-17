@@ -139,6 +139,7 @@ import { FormSubmissions } from '../pages/Template/FormSubmissions';
 import AITemplateGenerator from '../pages/Template/AITemplateGenerator';
 import UserProfile from '../pages/Account/UserProfile';
 import SessionManagementPage from '../pages/Account/SessionManagementPage';
+import AuthMethodsPage from '../pages/Account/AuthMethodsPage';
 // Template Pages Ended
 
 
@@ -790,6 +791,7 @@ const authRoutes = [
   // Account
   { path: '/account/profile', element: <UserProfile /> },
   { path: '/account/session-management', element: <SessionManagementPage /> },
+  { path: '/account/security', element: <AuthMethodsPage /> },
   { path: '/notifications', element: <NotificationsPage /> },
   { path: '/account/email-configuration', element: <EmailPage/>},
   // API-service routes

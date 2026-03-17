@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/common/sidebar';
 import Header from '../components/common/header';
 import ScrollToTop from '../components/common/ScrollToTop';
+import GiftWidget from '../components/common/GiftWidget';
 
 import { useSidebar } from '../context/SidebarContext';
 const DashboardLayout: React.FC = () => {
@@ -16,7 +17,7 @@ const DashboardLayout: React.FC = () => {
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         <Header 
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
@@ -25,6 +26,7 @@ const DashboardLayout: React.FC = () => {
           <ScrollToTop />
           <Outlet />
         </main>
+        <GiftWidget />
       </div>
     </div>
   );
