@@ -6,7 +6,7 @@ import { eSignApi } from "../../services/apiHelper";
 import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
-import { Upload, Stamp as StampIcon, X, Pencil } from "lucide-react";
+import { Upload, Stamp as StampIcon, X, Pencil, Check } from "lucide-react";
 
 interface Props {
   // Backward compatible single document
@@ -197,6 +197,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
   const [isEditingSignature, setIsEditingSignature] = useState<boolean>(false);
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
+  const [showCompleteButton, setShowCompleteButton] = useState(false);
+  const [completeCtaState, setCompleteCtaState] = useState<"idle" | "done">("idle");
   
   // Update signature when selfSigner changes (self-signer mode)
   // Skip this update if we're currently refreshing to avoid re-render loops
@@ -1022,7 +1024,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               console.error('onRecipientComplete callback error:', err);
             }
           }
-          navigate("/e-sign/signer/thank-you");
+          setShowCompleteButton(true);
+          // If parent provided a completion handler, it controls what happens next.
+          // Fallback to legacy thank-you navigation when no callback is provided.
+          if (!onRecipientComplete) {
+            navigate("/e-sign/signer/thank-you");
+          }
         }
       }else{
         console.error("submit response:", response);
@@ -2031,9 +2038,42 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     >
       <div className="relative flex flex-col items-stretch min-h-screen bg-gray-50">
         {/* Header (sticky full-width) */}
-        <div className="fixed top-0 left-0 right-0 h-12 bg-[#1b0c3e] text-white flex items-center justify-between px-4 z-50">
-          <div className="text-sm font-medium">
-            {isViewOnly ? "View only (CC)" : "Review and complete"}
+        <div className="fixed top-0 left-0 right-0 h-12 bg-[#1b0c3e] text-white px-4 z-50 flex items-center">
+          <div className="w-full flex items-center justify-between">
+            <div className="text-sm font-medium">
+              {isViewOnly ? "View only (CC)" : "Review and complete"}
+            </div>
+
+            <div className="flex items-center">
+              {!isViewOnly && showCompleteButton && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (completeCtaState === "done") return;
+                    setCompleteCtaState("done");
+                    window.setTimeout(() => {
+                      const env = String(envelopeID ?? "");
+                      const rid = String(currentUserId ?? "");
+                      navigate(`/e-sign/signer/status/${env}/${rid}`);
+                    }, 1500);
+                  }}
+                  className={
+                    completeCtaState === "done"
+                      ? "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white"
+                      : "inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-white/90"
+                  }
+                >
+                  {completeCtaState === "done" ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Completed
+                    </>
+                  ) : (
+                    "Complete"
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -2342,7 +2382,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   } catch (err) {
                     console.error('onRecipientComplete callback error:', err);
                   }
-                  navigate("/e-sign/signer/thank-you");
+                  setShowCompleteButton(true);
+                  if (!onRecipientComplete) {
+                    navigate("/e-sign/signer/thank-you");
+                  }
                 }
                 break;
               }

@@ -19,10 +19,16 @@ const userDetails = async (req, res) => {
     }
 };
 const findUserByEmail = async (req, res) => {
-    const email = req.params.email;
+    const rawEmail = req.params.email;
+    const email = String(rawEmail || '').trim().toLowerCase();
     console.log(`Finding user by email: ${email}`);
     try {
-        const user = await User.findOne({ email });
+        if (!email) {
+            return res.status(400).json({ message: 'Email required' });
+        }
+        // Case-insensitive exact match (safer if legacy rows have mixed casing)
+        const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const user = await User.findOne({ email: { $regex: new RegExp(`^${escaped}$`, 'i') } });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }

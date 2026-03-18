@@ -208,6 +208,7 @@ import PowerFormCreate from '../pages/eSign/PowerFormCreate';
 import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
 import InvoicePage from '../pages/Account/InvoicePage';
 import ThankYouPage from '../pages/eSign/ThankYou';
+import SignerStatusPage from '../pages/eSign/SignerStatusPage';
 import NotificationsPage from '../pages/Notifications/NotificationsPage';
 import SignerCycle from '../pages/eSign/SignerCycle';
 import CreateOrganizationPage from '../pages/Organization/CreateOrganizationPage';
@@ -622,6 +623,8 @@ const guestRoutes = [
   { path: '/sign-pdf-online', element: <UploadDocumentPage /> },
   { path: '/sign-pdf-online/signer', element: <SignerPage /> },
   { path: '/sign-pdf-online/plan', element: <ChoosePlanPage /> },
+  // Public signer status page should show landing header/footer
+  { path: '/e-sign/signer/status/:envelopeId/:recipientId', element: <SignerStatusPage /> },
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages
