@@ -115,7 +115,7 @@ const Header = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/"><img src="./Logo.png" alt="Draft&Sign Logo" className="h-15 w-auto " /></Link>
+              <Link to="/"><img src="/Logo.png" alt="Draft&Sign Logo" className="h-15 w-auto " /></Link>
             </div>
 
             {/* Desktop Navigation */}

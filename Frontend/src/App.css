@@ -143,6 +143,19 @@
   font-family: black;
   font-weight: 100;
 }
+.thankyou-heading{
+   font-family: black;
+  font-weight: 900;
+  color: rgb(38, 7, 63);
+}
+.thankyou-para{
+   font-family: black;
+  font-weight: 100;
+}
+.thankyou-desc{
+  font-family: black;
+  font-weight: 900;
+}
  .paper-card {
   background-color: var(--card);
   border-radius: 0.5rem; /* same as rounded-lg */
