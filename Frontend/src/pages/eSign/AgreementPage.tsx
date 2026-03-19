@@ -28,7 +28,7 @@ interface Agreement {
 }
 
 interface EnvelopeData {
-  id: string;               
+  id: string;
   name?: string;
   subject: string;
   status: string;
@@ -154,14 +154,14 @@ const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string; scheduledTi
           </div>
         </div>
         {showTooltip && (
-            <div
-              className="fixed min-w-[280px] max-w-[320px] bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-[9999] pointer-events-none whitespace-normal"
-              style={{
-                left: `${tooltipPosition.left}px`,
-                top: `${tooltipPosition.top}px`,
-                transform: 'translateX(-50%)'
-              }}
-            >
+          <div
+            className="fixed min-w-[280px] max-w-[320px] bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-[9999] pointer-events-none whitespace-normal"
+            style={{
+              left: `${tooltipPosition.left}px`,
+              top: `${tooltipPosition.top}px`,
+              transform: 'translateX(-50%)'
+            }}
+          >
             <div className="mb-2 font-semibold text-base">Scheduled Delivery</div>
             <div className="text-xs text-gray-300 mb-1">Date: {formattedDate}</div>
             <div className="text-xs text-gray-300">Time: {formattedTime}</div>
@@ -178,7 +178,7 @@ const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string; scheduledTi
 const AgreementPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user,accountType } = useAuth();
+  const { user, accountType } = useAuth();
   console.log(accountType);
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [filteredAgreements, setFilteredAgreements] = useState<Agreement[]>([]);
@@ -456,7 +456,50 @@ const AgreementPage: React.FC = () => {
 
   const currentTab = getCurrentTab();
   const isPowerForm = isPowerFormRoute();
+  const capitalizeWords = (value: any) => {
+    const normalizePart = (s: string) => {
+      const part = String(s ?? "").trim();
+      if (!part) return "";
+      // If it looks like an email, keep as-is (don't lowercase names in domains unexpectedly)
+      if (part.includes("@")) return part;
+      return part
+        .replace(/[_-]+/g, " ")
+        .trim()
+        .split(/\s+/)
+        .map((word) => {
+          if (!word) return "";
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .join(" ");
+    };
 
+    if (Array.isArray(value)) {
+      const parts = value.map((v) => normalizePart(String(v))).filter(Boolean);
+      return parts.length ? parts.join(", ") : "Recipient";
+    }
+
+    if (value && typeof value === "object") {
+      const candidate =
+        (value.name ?? value.fullname ?? value.email ?? value.value ?? "").toString();
+      const normalized = normalizePart(candidate);
+      return normalized || "Recipient";
+    }
+
+    const raw = String(value ?? "").trim();
+    if (!raw) return "Recipient";
+
+    // Handle comma-separated names/emails
+    if (raw.includes(",")) {
+      const parts = raw
+        .split(",")
+        .map((p) => normalizePart(p))
+        .filter(Boolean);
+      return parts.length ? parts.join(", ") : "Recipient";
+    }
+
+    const normalized = normalizePart(raw);
+    return normalized || "Recipient";
+  };
   const isAISentEnvelope = (agreement: Agreement, envelopeData?: EnvelopeData): boolean => {
 
     return envelopeData?.isAIGenerated === true || agreement.isAIGenerated === true;
@@ -490,10 +533,10 @@ const AgreementPage: React.FC = () => {
             {!agreement.isPowerForm && (
               <>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  To: {agreement.primaryRecipientName || '-'}
+                  To: {capitalizeWords(agreement.primaryRecipientName)}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  By: {agreement?.sender?.name || '-'}
+                  By: {capitalizeWords(agreement?.sender?.name)}
                 </div>
               </>
             )}
@@ -511,7 +554,7 @@ const AgreementPage: React.FC = () => {
               <span className="absolute right-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
             </div>
             <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
-              {`Waiting for ${agreement.waitingFor || 'recipient'}`}
+            {`Waiting for ${capitalizeWords(agreement.waitingFor)}`}
             </div>
             {!agreement.isPowerForm && agreement.direction && (
               <div className="text-xs text-gray-500 mt-0.5">
@@ -624,15 +667,51 @@ const AgreementPage: React.FC = () => {
             recipient.status === 'completed' || recipient.status === 'signed'
           ).length || 0,
           waitingFor: (() => {
-            const firstWaiting = (envelope.recipients || []).find(r => {
-              const s = (r.status || '').toLowerCase();
-              return s === 'waiting' || s === 'pending' || s === 'needs to sign';
-            });
+            const normalize = (v: any) =>
+              String(v || "")
+                .toLowerCase()
+                .replace(/[_-]+/g, " ")
+                .trim();
+
+            const isCc = (r: any) => {
+              const role = normalize(r?.role);
+              return role === "carbon copy" || role === "cc";
+            };
+
+            const isCompleted = (status: any) => {
+              const s = normalize(status);
+              return s === "completed" || s === "signed" || s === "declined";
+            };
+
+            const isWaiting = (status: any) => {
+              const s = normalize(status);
+              return (
+                s === "waiting" ||
+                s === "pending" ||
+                s === "needs to sign" ||
+                s === "in progress" ||
+                s === "sent" ||
+                s === "delivered"
+              );
+            };
+
+            const recipients = (envelope.recipients || []).filter((r) => !isCc(r));
+            if (recipients.length === 0) return undefined;
+
+            // Prefer an explicitly waiting/pending recipient
+            const firstWaiting = recipients.find((r) => isWaiting(r.status) && !isCompleted(r.status));
             if (firstWaiting) return firstWaiting.name || firstWaiting.email;
-            if (((envelope.status || '').toLowerCase()) === 'in-progress') {
-              const first = (envelope.recipients || [])[0];
+
+            // Fallback: first recipient that is not completed
+            const firstIncomplete = recipients.find((r) => !isCompleted(r.status));
+            if (firstIncomplete) return firstIncomplete.name || firstIncomplete.email;
+
+            // If envelope is in-progress but everyone looks completed, show first recipient
+            if (normalize(envelope.status) === "in progress") {
+              const first = recipients[0];
               return first?.name || first?.email;
             }
+
             return undefined;
           })(),
           primaryRecipientName: (() => {
@@ -656,7 +735,7 @@ const AgreementPage: React.FC = () => {
 
   useEffect(() => {
     fetchEnvelopes();
-  }, [fetchEnvelopes,accountType]);
+  }, [fetchEnvelopes, accountType]);
 
   useEffect(() => {
     const handleEnvelopesUpdated = (event?: Event) => {

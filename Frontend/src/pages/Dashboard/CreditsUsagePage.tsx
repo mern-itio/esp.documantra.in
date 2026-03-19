@@ -330,13 +330,12 @@ const CreditsUsagePage: React.FC = () => {
                           {typeof invoice.amount === 'number' ? invoice.amount.toFixed(2) : invoice.amount} {invoice.currency || 'USD'}
                         </td>
                         <td className="py-3 px-4 text-sm text-right">
-                          <button
-                            onClick={() => window.open(invoiceUrl, '_blank')}
+                          <Link to={invoiceUrl}
                             className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium"
                           >
                             View
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
+                          </Link>
                         </td>
                       </tr>
                     );

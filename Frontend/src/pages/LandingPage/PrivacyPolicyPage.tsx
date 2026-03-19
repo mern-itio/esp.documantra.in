@@ -99,7 +99,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <p className="text-blue-800 font-medium">Privacy Officer Contact Information</p>
                 <p className="text-blue-700 text-sm mt-1">
-                  If you have any questions about this Privacy Policy or our data practices, please contact our Privacy Officer at privacy@docusigner.com or call us at (800) 555-0123.
+                  If you have any questions about this Privacy Policy or our data practices, please contact our Privacy Officer at privacy@draftandsign.com or call us at (800) 555-0123.
                 </p>
               </div>
             </div>
@@ -381,7 +381,7 @@ const PrivacyPolicyPage = () => {
           <ul className="list-disc pl-6 mb-4">
             <li>Through your account settings</li>
             <li>By contacting our support team</li>
-            <li>By emailing privacy@docusigner.com</li>
+            <li>By emailing privacy@draftandsign.com</li>
           </ul>
           <p className="mb-4">
             We will process your request within the timeframe required by applicable law (typically 30 days), subject to legal retention requirements.
@@ -577,7 +577,7 @@ const PrivacyPolicyPage = () => {
           <ul className="list-disc pl-6 mb-4">
             <li><strong>Self-Service Portal:</strong> Account dashboard for common requests</li>
             <li><strong>Privacy Request Form:</strong> Dedicated form for formal requests</li>
-            <li><strong>Email Contact:</strong> Direct communication with privacy team at privacy@docusigner.com</li>
+            <li><strong>Email Contact:</strong> Direct communication with privacy team at privacy@draftandsign.com</li>
             <li><strong>Phone Support:</strong> Call (800) 555-0123 for assistance</li>
           </ul>
           <p className="mb-4">
@@ -709,7 +709,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <p className="text-yellow-800 font-medium">Notice to Parents</p>
                 <p className="text-yellow-700 text-sm mt-1">
-                  If you believe your child has provided us with personal information without your consent, please contact us at privacy@docusigner.com, and we will take prompt action to remove the information.
+                  If you believe your child has provided us with personal information without your consent, please contact us at privacy@draftandsign.com, and we will take prompt action to remove the information.
                 </p>
               </div>
             </div>
@@ -762,7 +762,7 @@ const PrivacyPolicyPage = () => {
           <ul className="list-disc pl-6 mb-4">
             <li>All previous versions are retained for reference</li>
             <li>A summary of significant changes between versions is available</li>
-            <li>You can request access to previous versions by contacting privacy@docusigner.com</li>
+            <li>You can request access to previous versions by contacting privacy@draftandsign.com</li>
           </ul>
           
           <h4 className="text-lg font-semibold mb-2">Effective Dates</h4>
@@ -800,7 +800,7 @@ const PrivacyPolicyPage = () => {
           
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h4 className="font-semibold mb-2">Privacy Team</h4>
-            <p className="mb-1"><strong>Email:</strong> privacy@docusigner.com</p>
+            <p className="mb-1"><strong>Email:</strong> privacy@draftandsign.com</p>
             <p className="mb-1"><strong>Address:</strong> 123 Legal Avenue, Suite 400, San Francisco, CA 94103</p>
             <p><strong>Phone:</strong> (800) 555-0123</p>
           </div>
@@ -810,7 +810,7 @@ const PrivacyPolicyPage = () => {
             For users in the European Economic Area, United Kingdom, or Switzerland, you may also contact our Data Protection Officer:
           </p>
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <p className="mb-1"><strong>Email:</strong> dpo@docusigner.com</p>
+            <p className="mb-1"><strong>Email:</strong> dpo@draftandsign.com</p>
             <p><strong>Address:</strong> 123 Legal Avenue, Suite 400, San Francisco, CA 94103</p>
           </div>
           
@@ -820,7 +820,7 @@ const PrivacyPolicyPage = () => {
           </p>
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
             <p className="mb-1"><strong>Name:</strong> Draft&Sign EU Representative</p>
-            <p className="mb-1"><strong>Email:</strong> eu-representative@docusigner.com</p>
+            <p className="mb-1"><strong>Email:</strong> eu-representative@draftandsign.com</p>
             <p><strong>Address:</strong> 1 Dublin Square, Dublin, Ireland</p>
           </div>
           
@@ -830,7 +830,7 @@ const PrivacyPolicyPage = () => {
           </p>
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
             <p className="mb-1"><strong>Name:</strong> Draft&Sign UK Representative</p>
-            <p className="mb-1"><strong>Email:</strong> uk-representative@docusigner.com</p>
+            <p className="mb-1"><strong>Email:</strong> uk-representative@draftandsign.com</p>
             <p><strong>Address:</strong> 1 London Bridge, London, UK</p>
           </div>
           
@@ -863,7 +863,7 @@ const PrivacyPolicyPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-              <div className="text-gray-600">
+              <div className="text-xs text-gray-600">
                 <p>Last Updated: {lastUpdated}</p>
                 <p>Effective Date: {effectiveDate}</p>
               </div>

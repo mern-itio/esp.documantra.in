@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Download, Printer, ChevronDown, ChevronUp, Shield, Scale, FileText, Globe, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Shield, Scale, FileText, Globe, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { APP_NAME } from '../../components/constants/appConfig';
 
 const TermsOfServicePage = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -24,10 +25,10 @@ const TermsOfServicePage = () => {
       content: (
         <>
           <p className="mb-4">
-            By accessing or using DocuSigner's website, mobile applications, APIs, or any other services provided by DocuSigner (collectively, the "Services"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our Services.
+            By accessing or using {APP_NAME}'s website, mobile applications, APIs, or any other services provided by {APP_NAME} (collectively, the "Services"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our Services.
           </p>
           <p className="mb-4">
-            These Terms of Service apply to all services offered by DocuSigner, including but not limited to e-signature services, PDF tools, document management features, legal templates, and API access. These terms constitute a legally binding agreement between you and DocuSigner regarding your use of the Services.
+            These Terms of Service apply to all services offered by {APP_NAME}, including but not limited to e-signature services, PDF tools, document management features, legal templates, and API access. These terms constitute a legally binding agreement between you and {APP_NAME} regarding your use of the Services.
           </p>
           <p className="mb-4">
             <strong>Age Restrictions:</strong> You must be at least 18 years of age or the age of legal majority in your jurisdiction to use the Services. If you are using the Services on behalf of an organization, you represent and warrant that you have the authority to bind that organization to these Terms of Service.
@@ -56,7 +57,7 @@ const TermsOfServicePage = () => {
             <strong>Document Management:</strong> Our document management services include storage, sharing, collaboration, version control, and template management. These services help you organize, track, and maintain your documents.
           </p>
           <p className="mb-4">
-            <strong>API Services:</strong> Our API services allow developers to integrate DocuSigner functionality into their own applications, including webhook functionality and developer tools. These services enable programmatic access to DocuSigner features.
+            <strong>API Services:</strong> Our API services allow developers to integrate {APP_NAME} functionality into their own applications, including webhook functionality and developer tools. These services enable programmatic access to {APP_NAME} features.
           </p>
           <p className="mb-4">
             <strong>AI Features:</strong> Our AI-powered features include document generation, field detection, content analysis, and other machine learning capabilities. These features automate and enhance document workflows.
@@ -114,16 +115,16 @@ const TermsOfServicePage = () => {
         <>
           <h4 className="text-lg font-semibold mb-3">E-Signature Disclaimers</h4>
           <p className="mb-4">
-            <strong>Legal Binding Subject to Local Laws:</strong> While DocuSigner's electronic signatures are designed to comply with major e-signature laws such as the ESIGN Act (US), eIDAS (EU), and similar regulations worldwide, the legal validity of electronic signatures may vary by jurisdiction. You are responsible for verifying that electronic signatures meet your specific legal requirements.
+            <strong>Legal Binding Subject to Local Laws:</strong> While {APP_NAME}'s electronic signatures are designed to comply with major e-signature laws such as the ESIGN Act (US), eIDAS (EU), and similar regulations worldwide, the legal validity of electronic signatures may vary by jurisdiction. You are responsible for verifying that electronic signatures meet your specific legal requirements.
           </p>
           <p className="mb-4">
-            <strong>Court Acceptance:</strong> DocuSigner does not guarantee that documents signed through our Services will be accepted by all courts or regulatory bodies. Acceptance may depend on jurisdiction-specific requirements, the type of document, and other factors outside our control.
+            <strong>Court Acceptance:</strong> {APP_NAME} does not guarantee that documents signed through our Services will be accepted by all courts or regulatory bodies. Acceptance may depend on jurisdiction-specific requirements, the type of document, and other factors outside our control.
           </p>
           <p className="mb-4">
-            <strong>Signer Identity Verification:</strong> While we provide various authentication methods, DocuSigner cannot guarantee the actual identity of signers. Our verification methods are designed to provide reasonable assurance but are not infallible. You are responsible for ensuring appropriate verification methods are used for your specific needs.
+            <strong>Signer Identity Verification:</strong> While we provide various authentication methods, {APP_NAME} cannot guarantee the actual identity of signers. Our verification methods are designed to provide reasonable assurance but are not infallible. You are responsible for ensuring appropriate verification methods are used for your specific needs.
           </p>
           <p className="mb-4">
-            <strong>Document Integrity:</strong> The integrity of electronically signed documents depends on proper usage of the Services. DocuSigner is not responsible for document alterations that occur outside our system or due to improper handling of documents after signing.
+            <strong>Document Integrity:</strong> The integrity of electronically signed documents depends on proper usage of the Services. {APP_NAME} is not responsible for document alterations that occur outside our system or due to improper handling of documents after signing.
           </p>
           
           <h4 className="text-lg font-semibold mb-3 mt-6">PDF Tool Disclaimers</h4>
@@ -148,13 +149,13 @@ const TermsOfServicePage = () => {
             <strong>Temporary Storage:</strong> Unless you have a paid account with extended storage features, documents are stored temporarily during processing and may be automatically deleted after a specified period (typically 1 hour for free users).
           </p>
           <p className="mb-4">
-            <strong>Data Loss:</strong> While we implement reasonable safeguards, DocuSigner cannot guarantee against data loss due to technical failures, service interruptions, or other causes. You are responsible for maintaining backups of important documents.
+            <strong>Data Loss:</strong> While we implement reasonable safeguards, {APP_NAME} cannot guarantee against data loss due to technical failures, service interruptions, or other causes. You are responsible for maintaining backups of important documents.
           </p>
           <p className="mb-4">
-            <strong>Third-Party Integrations:</strong> DocuSigner integrates with various third-party services. We are not responsible for the availability, security, or functionality of these third-party services.
+            <strong>Third-Party Integrations:</strong> {APP_NAME} integrates with various third-party services. We are not responsible for the availability, security, or functionality of these third-party services.
           </p>
           <p className="mb-4">
-            <strong>Service Availability:</strong> DocuSigner strives for high availability but does not guarantee uninterrupted access to the Services. Maintenance, technical issues, or factors beyond our control may cause temporary service unavailability.
+            <strong>Service Availability:</strong> {APP_NAME} strives for high availability but does not guarantee uninterrupted access to the Services. Maintenance, technical issues, or factors beyond our control may cause temporary service unavailability.
           </p>
         </>
       )
@@ -168,19 +169,19 @@ const TermsOfServicePage = () => {
             Your use of our Services is also governed by our <Link to="/privacy-policy" className="text-primary-600 hover:text-primary-700">Privacy Policy</Link>, which is incorporated by reference into these Terms of Service. The Privacy Policy describes how we collect, use, and share information in connection with your use of our Services.
           </p>
           <p className="mb-4">
-            <strong>Data Processing:</strong> DocuSigner processes your data as necessary to provide the Services. This includes processing document content, metadata, user information, and usage data. We implement appropriate technical and organizational measures to protect your data during processing.
+            <strong>Data Processing:</strong> {APP_NAME} processes your data as necessary to provide the Services. This includes processing document content, metadata, user information, and usage data. We implement appropriate technical and organizational measures to protect your data during processing.
           </p>
           <p className="mb-4">
             <strong>Temporary File Storage:</strong> For free users, files uploaded for processing are automatically deleted after 1 hour. Paid accounts may have different retention periods as specified in their service tier. You can manually delete your files at any time.
           </p>
           <p className="mb-4">
-            <strong>International Data Transfers:</strong> DocuSigner may transfer, store, and process your information in countries other than your own. We ensure that such transfers comply with applicable data protection laws, including by using standard contractual clauses or other appropriate safeguards.
+            <strong>International Data Transfers:</strong> {APP_NAME} may transfer, store, and process your information in countries other than your own. We ensure that such transfers comply with applicable data protection laws, including by using standard contractual clauses or other appropriate safeguards.
           </p>
           <p className="mb-4">
             <strong>User Control:</strong> You maintain control over your data and can access, correct, or delete your information as described in our Privacy Policy. You can also export your data from the Services at any time.
           </p>
           <p className="mb-4">
-            <strong>Compliance with Regulations:</strong> DocuSigner complies with applicable data protection regulations, including the General Data Protection Regulation (GDPR) for users in the European Union and the California Consumer Privacy Act (CCPA) for California residents. Additional information about your rights under these regulations is available in our Privacy Policy.
+            <strong>Compliance with Regulations:</strong> {APP_NAME} complies with applicable data protection regulations, including the General Data Protection Regulation (GDPR) for users in the European Union and the California Consumer Privacy Act (CCPA) for California residents. Additional information about your rights under these regulations is available in our Privacy Policy.
           </p>
           <p className="mb-4">
             <strong>Subprocessors:</strong> We may use third-party subprocessors to help provide our Services. A current list of subprocessors is available upon request. We ensure that our subprocessors provide at least the same level of data protection as we do.
@@ -194,13 +195,13 @@ const TermsOfServicePage = () => {
       content: (
         <>
           <p className="mb-4">
-            <strong>Platform IP:</strong> The Services, including all software, designs, text, graphics, logos, icons, images, audio clips, digital downloads, data compilations, and code, are owned by DocuSigner or its licensors and are protected by copyright, trademark, patent, and other intellectual property laws. You may not copy, modify, reproduce, republish, distribute, display, or transmit for commercial, non-profit, or public purposes all or any portion of the Services without our prior written permission.
+            <strong>Platform IP:</strong> The Services, including all software, designs, text, graphics, logos, icons, images, audio clips, digital downloads, data compilations, and code, are owned by {APP_NAME} or its licensors and are protected by copyright, trademark, patent, and other intellectual property laws. You may not copy, modify, reproduce, republish, distribute, display, or transmit for commercial, non-profit, or public purposes all or any portion of the Services without our prior written permission.
           </p>
           <p className="mb-4">
             <strong>User Content Ownership:</strong> You retain all rights to the content you upload, submit, or create using the Services. By using our Services, you grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, process, adapt, and publish your content solely for the purpose of providing and improving the Services.
           </p>
           <p className="mb-4">
-            <strong>License Grants:</strong> DocuSigner grants you a limited, non-exclusive, non-transferable, revocable license to use the Services for their intended purposes in accordance with these Terms of Service. This license is personal to you and may not be sublicensed.
+            <strong>License Grants:</strong> {APP_NAME} grants you a limited, non-exclusive, non-transferable, revocable license to use the Services for their intended purposes in accordance with these Terms of Service. This license is personal to you and may not be sublicensed.
           </p>
           <p className="mb-4">
             <strong>Third-Party Content:</strong> The Services may display or include content from third parties. Such content is the sole responsibility of the entity that makes it available. We may review third-party content to determine whether it is illegal or violates our policies, and we may remove or refuse to display content that we reasonably believe violates our policies or the law.
@@ -209,7 +210,7 @@ const TermsOfServicePage = () => {
             <strong>DMCA Compliance:</strong> If you believe that material on our Services infringes your copyright, please notify us in accordance with our Digital Millennium Copyright Act (DMCA) policy. We will respond to notices of alleged copyright infringement that comply with applicable law and terminate the accounts of repeat infringers.
           </p>
           <p className="mb-4">
-            <strong>Patent and Trademark Protection:</strong> The DocuSigner name, logo, and all related names, logos, product and service names, designs, and slogans are trademarks of DocuSigner or its affiliates. You may not use such marks without our prior written permission. Additionally, our Services are protected by various patents, and unauthorized use may constitute patent infringement.
+            <strong>Patent and Trademark Protection:</strong> The {APP_NAME} name, logo, and all related names, logos, product and service names, designs, and slogans are trademarks of {APP_NAME} or its affiliates. You may not use such marks without our prior written permission. Additionally, our Services are protected by various patents, and unauthorized use may constitute patent infringement.
           </p>
           <p className="mb-4">
             <strong>Feedback:</strong> If you provide feedback or suggestions about our Services, we may use this feedback without restriction or obligation to you.
@@ -226,19 +227,19 @@ const TermsOfServicePage = () => {
             <strong>Service Performance:</strong> THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICES WILL BE UNINTERRUPTED, ERROR-FREE, OR COMPLETELY SECURE.
           </p>
           <p className="mb-4">
-            <strong>Data Loss:</strong> TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, DOCUSIGNER WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF DATA, LOSS OF PROFITS, COSTS OF PROCUREMENT OF SUBSTITUTE PRODUCTS OR SERVICES, OR OTHER INTANGIBLE LOSSES, RESULTING FROM (i) YOUR ACCESS TO OR USE OF OR INABILITY TO ACCESS OR USE THE SERVICES; (ii) ANY CONDUCT OR CONTENT OF ANY THIRD PARTY ON THE SERVICES; OR (iii) UNAUTHORIZED ACCESS, USE, OR ALTERATION OF YOUR TRANSMISSIONS OR CONTENT.
+            <strong>Data Loss:</strong> TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, {APP_NAME} WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF DATA, LOSS OF PROFITS, COSTS OF PROCUREMENT OF SUBSTITUTE PRODUCTS OR SERVICES, OR OTHER INTANGIBLE LOSSES, RESULTING FROM (i) YOUR ACCESS TO OR USE OF OR INABILITY TO ACCESS OR USE THE SERVICES; (ii) ANY CONDUCT OR CONTENT OF ANY THIRD PARTY ON THE SERVICES; OR (iii) UNAUTHORIZED ACCESS, USE, OR ALTERATION OF YOUR TRANSMISSIONS OR CONTENT.
           </p>
           <p className="mb-4">
-            <strong>Business Interruption:</strong> IN NO EVENT SHALL DOCUSIGNER BE LIABLE FOR ANY LOSS OF BUSINESS, BUSINESS INTERRUPTION, LOSS OF BUSINESS OPPORTUNITY, OR LOSS OF PROFITS. THIS LIMITATION APPLIES REGARDLESS OF THE LEGAL THEORY ON WHICH THE CLAIM IS BASED AND EVEN IF DOCUSIGNER HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+            <strong>Business Interruption:</strong> IN NO EVENT SHALL {APP_NAME} BE LIABLE FOR ANY LOSS OF BUSINESS, BUSINESS INTERRUPTION, LOSS OF BUSINESS OPPORTUNITY, OR LOSS OF PROFITS. THIS LIMITATION APPLIES REGARDLESS OF THE LEGAL THEORY ON WHICH THE CLAIM IS BASED AND EVEN IF {APP_NAME} HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           </p>
           <p className="mb-4">
-            <strong>Third-Party Services:</strong> DOCUSIGNER IS NOT RESPONSIBLE FOR THE ACTIONS, CONTENT, INFORMATION, OR DATA OF THIRD PARTIES, AND YOU RELEASE US, OUR DIRECTORS, OFFICERS, EMPLOYEES, AND AGENTS FROM ANY CLAIMS AND DAMAGES, KNOWN AND UNKNOWN, ARISING OUT OF OR IN ANY WAY CONNECTED WITH ANY CLAIM YOU HAVE AGAINST ANY SUCH THIRD PARTIES.
+            <strong>Third-Party Services:</strong> {APP_NAME} IS NOT RESPONSIBLE FOR THE ACTIONS, CONTENT, INFORMATION, OR DATA OF THIRD PARTIES, AND YOU RELEASE US, OUR DIRECTORS, OFFICERS, EMPLOYEES, AND AGENTS FROM ANY CLAIMS AND DAMAGES, KNOWN AND UNKNOWN, ARISING OUT OF OR IN ANY WAY CONNECTED WITH ANY CLAIM YOU HAVE AGAINST ANY SUCH THIRD PARTIES.
           </p>
           <p className="mb-4">
-            <strong>Legal Compliance:</strong> YOU ARE SOLELY RESPONSIBLE FOR ENSURING THAT YOUR USE OF THE SERVICES COMPLIES WITH APPLICABLE LAW. DOCUSIGNER IS NOT RESPONSIBLE FOR DETERMINING WHETHER THE SERVICES ARE SUITABLE FOR YOUR PARTICULAR USE CASE OR WHETHER YOUR USE COMPLIES WITH LAWS APPLICABLE TO YOU.
+            <strong>Legal Compliance:</strong> YOU ARE SOLELY RESPONSIBLE FOR ENSURING THAT YOUR USE OF THE SERVICES COMPLIES WITH APPLICABLE LAW. {APP_NAME} IS NOT RESPONSIBLE FOR DETERMINING WHETHER THE SERVICES ARE SUITABLE FOR YOUR PARTICULAR USE CASE OR WHETHER YOUR USE COMPLIES WITH LAWS APPLICABLE TO YOU.
           </p>
           <p className="mb-4">
-            <strong>Maximum Liability:</strong> TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE TOTAL LIABILITY OF DOCUSIGNER, ITS AFFILIATES, OFFICERS, EMPLOYEES, AGENTS, SUPPLIERS, AND LICENSORS, ARISING OUT OF OR IN ANY WAY RELATED TO THESE TERMS SHALL NOT EXCEED THE AMOUNTS PAID BY YOU TO DOCUSIGNER DURING THE TWELVE (12) MONTHS IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO SUCH LIABILITY, OR $100 IF YOU HAVE NOT PAID DOCUSIGNER FOR THE USE OF THE SERVICES.
+            <strong>Maximum Liability:</strong> TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE TOTAL LIABILITY OF {APP_NAME}, ITS AFFILIATES, OFFICERS, EMPLOYEES, AGENTS, SUPPLIERS, AND LICENSORS, ARISING OUT OF OR IN ANY WAY RELATED TO THESE TERMS SHALL NOT EXCEED THE AMOUNTS PAID BY YOU TO {APP_NAME} DURING THE TWELVE (12) MONTHS IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO SUCH LIABILITY, OR $100 IF YOU HAVE NOT PAID {APP_NAME} FOR THE USE OF THE SERVICES.
           </p>
           <p className="mb-4">
             THE LIMITATIONS OF LIABILITY IN THIS SECTION APPLY TO THE FULLEST EXTENT PERMITTED BY LAW IN THE APPLICABLE JURISDICTION. Some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages, so the above limitations or exclusions may not apply to you.
@@ -252,7 +253,7 @@ const TermsOfServicePage = () => {
       content: (
         <>
           <p className="mb-4">
-            You agree to indemnify, defend, and hold harmless DocuSigner, its affiliates, officers, directors, employees, agents, licensors, and suppliers from and against all losses, expenses, damages, liabilities, costs, or demands, including reasonable attorneys' fees, arising from or relating to:
+            You agree to indemnify, defend, and hold harmless {APP_NAME}, its affiliates, officers, directors, employees, agents, licensors, and suppliers from and against all losses, expenses, damages, liabilities, costs, or demands, including reasonable attorneys' fees, arising from or relating to:
           </p>
           <ul className="list-disc pl-6 mb-4">
             <li>Your use of the Services</li>
@@ -280,10 +281,10 @@ const TermsOfServicePage = () => {
             <strong>Termination by You:</strong> You may terminate your account at any time by following the instructions on our website or by contacting our support team. Upon termination, you will no longer have access to your account or any content stored within it.
           </p>
           <p className="mb-4">
-            <strong>Termination by DocuSigner:</strong> We may terminate or suspend your access to all or part of the Services immediately, without prior notice or liability, for any reason, including, without limitation, if you breach these Terms of Service. Upon termination, your right to use the Services will immediately cease.
+            <strong>Termination by {APP_NAME}:</strong> We may terminate or suspend your access to all or part of the Services immediately, without prior notice or liability, for any reason, including, without limitation, if you breach these Terms of Service. Upon termination, your right to use the Services will immediately cease.
           </p>
           <p className="mb-4">
-            <strong>Suspension for Policy Violations:</strong> We may suspend your account or restrict your access to the Services if we believe you have violated these Terms of Service, used the Services fraudulently, or engaged in activities that may harm DocuSigner, other users, or third parties. During a suspension, you may be unable to access your account or certain features of the Services.
+            <strong>Suspension for Policy Violations:</strong> We may suspend your account or restrict your access to the Services if we believe you have violated these Terms of Service, used the Services fraudulently, or engaged in activities that may harm {APP_NAME}, other users, or third parties. During a suspension, you may be unable to access your account or certain features of the Services.
           </p>
           <p className="mb-4">
             <strong>Data Retention After Termination:</strong> Unless legally prohibited, we will retain your data for a limited time after termination in accordance with our data retention policies. For free accounts, data may be deleted immediately upon termination. For paid accounts, data may be retained for a period specified in your service agreement to allow for account recovery.
@@ -306,16 +307,16 @@ const TermsOfServicePage = () => {
             <strong>Governing Law:</strong> These Terms of Service shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict of law provisions. If you are a consumer residing in the European Union, these Terms will be governed by the laws of your country of residence to the extent required by applicable law.
           </p>
           <p className="mb-4">
-            <strong>Jurisdiction and Venue:</strong> Any legal action or proceeding relating to your access to or use of the Services shall be instituted in the federal or state courts located in Delaware. You and DocuSigner agree to submit to the personal jurisdiction of such courts.
+            <strong>Jurisdiction and Venue:</strong> Any legal action or proceeding relating to your access to or use of the Services shall be instituted in the federal or state courts located in Delaware. You and {APP_NAME} agree to submit to the personal jurisdiction of such courts.
           </p>
           <p className="mb-4">
-            <strong>Arbitration:</strong> For any dispute you have with DocuSigner, you agree to first contact us and attempt to resolve the dispute informally. If DocuSigner has not been able to resolve the dispute with you informally, we each agree to resolve any claim, dispute, or controversy by binding arbitration administered by the American Arbitration Association in accordance with its Commercial Arbitration Rules.
+            <strong>Arbitration:</strong> For any dispute you have with {APP_NAME}, you agree to first contact us and attempt to resolve the dispute informally. If {APP_NAME} has not been able to resolve the dispute with you informally, we each agree to resolve any claim, dispute, or controversy by binding arbitration administered by the American Arbitration Association in accordance with its Commercial Arbitration Rules.
           </p>
           <p className="mb-4">
-            <strong>Class Action Waiver:</strong> YOU AND DOCUSIGNER AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE PROCEEDING. Further, unless both you and DocuSigner agree otherwise, the arbitrator may not consolidate more than one person's claims, and may not otherwise preside over any form of a representative or class proceeding.
+            <strong>Class Action Waiver:</strong> YOU AND {APP_NAME} AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE PROCEEDING. Further, unless both you and {APP_NAME} agree otherwise, the arbitrator may not consolidate more than one person's claims, and may not otherwise preside over any form of a representative or class proceeding.
           </p>
           <p className="mb-4">
-            <strong>Informal Dispute Resolution:</strong> Before filing a claim against DocuSigner, you agree to try to resolve the dispute by contacting us at legal@docusigner.com. We'll try to resolve the dispute by contacting you via email. If the dispute is not resolved within 60 days of submission, you or DocuSigner may bring a formal proceeding.
+            <strong>Informal Dispute Resolution:</strong> Before filing a claim against {APP_NAME}, you agree to try to resolve the dispute by contacting us at legal@{APP_NAME}.com. We'll try to resolve the dispute by contacting you via email. If the dispute is not resolved within 60 days of submission, you or {APP_NAME} may bring a formal proceeding.
           </p>
           <p className="mb-4">
             <strong>Exceptions:</strong> Nothing in these Terms of Service will be deemed to waive, preclude, or otherwise limit the right of either party to: (a) bring an individual action in small claims court; (b) pursue an enforcement action through the applicable federal, state, or local agency if that action is available; (c) seek injunctive relief in a court of law; or (d) file suit in a court of law to address an intellectual property infringement claim.
@@ -338,10 +339,10 @@ const TermsOfServicePage = () => {
             <strong>Export Control:</strong> You agree to comply with all applicable export and re-export control laws and regulations, including the Export Administration Regulations maintained by the U.S. Department of Commerce and trade and economic sanctions maintained by the Treasury Department's Office of Foreign Assets Control. You represent and warrant that you are not located in, under the control of, or a national or resident of any country to which the United States has embargoed goods or services.
           </p>
           <p className="mb-4">
-            <strong>Accessibility Standards:</strong> DocuSigner strives to make its Services accessible to all users, including those with disabilities. We aim to comply with the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA and applicable provisions of Section 508 of the Rehabilitation Act. However, we cannot guarantee that all aspects of our Services will meet all accessibility requirements.
+            <strong>Accessibility Standards:</strong> {APP_NAME} strives to make its Services accessible to all users, including those with disabilities. We aim to comply with the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA and applicable provisions of Section 508 of the Rehabilitation Act. However, we cannot guarantee that all aspects of our Services will meet all accessibility requirements.
           </p>
           <p className="mb-4">
-            <strong>Security Framework Adherence:</strong> DocuSigner implements security measures aligned with industry standards, including ISO 27001, SOC 2, and other relevant security frameworks. Details about our security practices are available in our Security Documentation, which may be provided upon request.
+            <strong>Security Framework Adherence:</strong> {APP_NAME} implements security measures aligned with industry standards, including ISO 27001, SOC 2, and other relevant security frameworks. Details about our security practices are available in our Security Documentation, which may be provided upon request.
           </p>
           <p className="mb-4">
             <strong>Compliance Updates:</strong> As regulations evolve, we may update our Services to maintain compliance. We will notify users of significant compliance-related changes that may affect their use of the Services.
@@ -358,25 +359,25 @@ const TermsOfServicePage = () => {
             <strong>Severability:</strong> If any provision of these Terms of Service is found to be unenforceable or invalid, that provision will be limited or eliminated to the minimum extent necessary so that these Terms of Service will otherwise remain in full force and effect and enforceable.
           </p>
           <p className="mb-4">
-            <strong>Force Majeure:</strong> DocuSigner shall not be liable for any failure to perform its obligations hereunder where such failure results from any cause beyond DocuSigner's reasonable control, including, without limitation, mechanical, electronic, or communications failure or degradation, acts of God, terrorism, natural disaster, pandemic, or government restriction.
+            <strong>Force Majeure:</strong> {APP_NAME} shall not be liable for any failure to perform its obligations hereunder where such failure results from any cause beyond {APP_NAME}'s reasonable control, including, without limitation, mechanical, electronic, or communications failure or degradation, acts of God, terrorism, natural disaster, pandemic, or government restriction.
           </p>
           <p className="mb-4">
-            <strong>Assignment:</strong> These Terms of Service are personal to you, and you may not assign, transfer, or sublicense your rights or obligations under these Terms of Service without DocuSigner's prior written consent. DocuSigner may assign, transfer, or delegate any of its rights and obligations hereunder without your consent.
+            <strong>Assignment:</strong> These Terms of Service are personal to you, and you may not assign, transfer, or sublicense your rights or obligations under these Terms of Service without {APP_NAME}'s prior written consent. {APP_NAME} may assign, transfer, or delegate any of its rights and obligations hereunder without your consent.
           </p>
           <p className="mb-4">
-            <strong>Notice Requirements:</strong> Any notice required or permitted to be given under these Terms of Service shall be in writing and delivered by email to the email address associated with your account or to legal@docusigner.com for notices to DocuSigner. Notices shall be deemed given upon receipt.
+            <strong>Notice Requirements:</strong> Any notice required or permitted to be given under these Terms of Service shall be in writing and delivered by email to the email address associated with your account or to legal@{APP_NAME}.com for notices to {APP_NAME}. Notices shall be deemed given upon receipt.
           </p>
           <p className="mb-4">
-            <strong>Entire Agreement:</strong> These Terms of Service, together with the Privacy Policy and any other legal notices published by DocuSigner, constitute the entire agreement between you and DocuSigner concerning the Services. These Terms of Service supersede all prior or contemporaneous communications, whether electronic, oral, or written, between you and DocuSigner regarding the Services.
+            <strong>Entire Agreement:</strong> These Terms of Service, together with the Privacy Policy and any other legal notices published by {APP_NAME}, constitute the entire agreement between you and {APP_NAME} concerning the Services. These Terms of Service supersede all prior or contemporaneous communications, whether electronic, oral, or written, between you and {APP_NAME} regarding the Services.
           </p>
           <p className="mb-4">
-            <strong>Amendment Procedures:</strong> No amendment to these Terms of Service will be effective unless it is in writing and signed by an authorized representative of DocuSigner, or unless it is posted on our website. Your continued use of the Services after any amendment becomes effective constitutes your acceptance of the amended Terms of Service.
+            <strong>Amendment Procedures:</strong> No amendment to these Terms of Service will be effective unless it is in writing and signed by an authorized representative of {APP_NAME}, or unless it is posted on our website. Your continued use of the Services after any amendment becomes effective constitutes your acceptance of the amended Terms of Service.
           </p>
           <p className="mb-4">
-            <strong>No Waiver:</strong> The failure of DocuSigner to exercise or enforce any right or provision of these Terms of Service shall not constitute a waiver of such right or provision. No waiver by either party of any breach or default hereunder shall be deemed to be a waiver of any preceding or subsequent breach or default.
+            <strong>No Waiver:</strong> The failure of {APP_NAME} to exercise or enforce any right or provision of these Terms of Service shall not constitute a waiver of such right or provision. No waiver by either party of any breach or default hereunder shall be deemed to be a waiver of any preceding or subsequent breach or default.
           </p>
           <p className="mb-4">
-            <strong>Relationship of Parties:</strong> Nothing in these Terms of Service shall be construed as creating a partnership, joint venture, agency, or employment relationship between you and DocuSigner.
+            <strong>Relationship of Parties:</strong> Nothing in these Terms of Service shall be construed as creating a partnership, joint venture, agency, or employment relationship between you and {APP_NAME}.
           </p>
         </>
       )
@@ -391,12 +392,12 @@ const TermsOfServicePage = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Terms of Service</h1>
-              <div className="text-gray-600">
+              <div className="text-gray-600 text-xs">
                 <p>Last Updated: {lastUpdated}</p>
                 <p>Effective Date: {effectiveDate}</p>
               </div>
             </div>
-            <div className="flex gap-4 mt-4 md:mt-0">
+            {/* <div className="flex gap-4 mt-4 md:mt-0">
               <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors">
                 <Download className="h-4 w-4" />
                 <span>Download PDF</span>
@@ -405,7 +406,7 @@ const TermsOfServicePage = () => {
                 <Printer className="h-4 w-4" />
                 <span>Print</span>
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* Quick Navigation */}
@@ -429,7 +430,7 @@ const TermsOfServicePage = () => {
             <div className="flex items-center gap-3 mb-4 bg-blue-50 p-4 rounded-lg">
               <Globe className="h-6 w-6 text-blue-600 flex-shrink-0" />
               <p className="text-blue-800">
-                These Terms of Service govern your use of DocuSigner's platform, which provides e-signature, PDF tools, document management, and related services. Please read these terms carefully.
+                These Terms of Service govern your use of {APP_NAME}'s platform, which provides e-signature, PDF tools, document management, and related services. Please read these terms carefully.
               </p>
             </div>
           </div>
@@ -467,7 +468,7 @@ const TermsOfServicePage = () => {
             <div className="flex flex-col space-y-2">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-gray-500" />
-                <span className="text-gray-700">Email: legal@docusigner.com</span>
+                <span className="text-gray-700">Email: legal@{APP_NAME}.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-gray-500" />
@@ -483,7 +484,7 @@ const TermsOfServicePage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-yellow-800 mb-2">Legal Compliance Notice</h3>
                 <p className="text-yellow-700">
-                  These Terms of Service are designed to comply with applicable laws and regulations governing electronic signatures, document management, and online services. However, laws vary by jurisdiction, and you are responsible for ensuring your use of DocuSigner complies with all laws applicable to you.
+                  These Terms of Service are designed to comply with applicable laws and regulations governing electronic signatures, document management, and online services. However, laws vary by jurisdiction, and you are responsible for ensuring your use of {APP_NAME} complies with all laws applicable to you.
                 </p>
               </div>
             </div>
@@ -496,7 +497,7 @@ const TermsOfServicePage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-green-800 mb-2">Security & Privacy Commitment</h3>
                 <p className="text-green-700">
-                  DocuSigner is committed to protecting your data and privacy. We implement industry-standard security measures and comply with major data protection regulations. For more information, please review our <Link to="/privacy-policy" className="text-green-800 underline">Privacy Policy</Link>.
+                  {APP_NAME} is committed to protecting your data and privacy. We implement industry-standard security measures and comply with major data protection regulations. For more information, please review our <Link to="/privacy-policy" className="text-green-800 underline">Privacy Policy</Link>.
                 </p>
               </div>
             </div>
@@ -509,7 +510,7 @@ const TermsOfServicePage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-red-800 mb-2">Acceptance of Terms</h3>
                 <p className="text-red-700">
-                  By using DocuSigner's services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
+                  By using {APP_NAME}'s services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
                 </p>
               </div>
             </div>

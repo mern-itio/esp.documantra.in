@@ -6,7 +6,7 @@ import { eSignApi } from "../../services/apiHelper";
 import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
-import { Upload, Stamp as StampIcon, X, Pencil, Check } from "lucide-react";
+import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp } from "lucide-react";
 
 interface Props {
   // Backward compatible single document
@@ -25,6 +25,8 @@ interface Props {
   isViewOnly?: boolean;
   /** Called when current recipient completes all required signing actions (fieldRemmaning === false) */
   onRecipientComplete?: () => void;
+  /** Opens the terms/conditions modal (with the same options dropdown) */
+  onRequestActions?: () => void;
 }
 
 Modal.setAppElement("#root");
@@ -70,7 +72,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   allRecipients,
   setSignatureFields,
   isViewOnly = false,
-  onRecipientComplete
+  onRecipientComplete,
+  onRequestActions
 }) => {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
@@ -199,6 +202,18 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
   const [showCompleteButton, setShowCompleteButton] = useState(false);
   const [completeCtaState, setCompleteCtaState] = useState<"idle" | "done">("idle");
+  const [isCompleteCtaGuidanceDismissed, setIsCompleteCtaGuidanceDismissed] = useState(false);
+  const shouldHighlightCompleteCta =
+    !isViewOnly &&
+    showCompleteButton &&
+    completeCtaState === "idle" &&
+    !isCompleteCtaGuidanceDismissed;
+
+  useEffect(() => {
+    if (showCompleteButton && completeCtaState === "idle") {
+      setIsCompleteCtaGuidanceDismissed(false);
+    }
+  }, [showCompleteButton, completeCtaState]);
   
   // Update signature when selfSigner changes (self-signer mode)
   // Skip this update if we're currently refreshing to avoid re-render loops
@@ -2044,43 +2059,75 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               {isViewOnly ? "View only (CC)" : "Review and complete"}
             </div>
 
-            <div className="flex items-center">
-              {!isViewOnly && showCompleteButton && (
+            <div className="flex items-center gap-2">
+              {!isViewOnly && onRequestActions && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (completeCtaState === "done") return;
-                    setCompleteCtaState("done");
-                    window.setTimeout(() => {
-                      const env = String(envelopeID ?? "");
-                      const rid = String(currentUserId ?? "");
-                      navigate(`/e-sign/signer/status/${env}/${rid}`);
-                    }, 1500);
-                  }}
-                  className={
-                    completeCtaState === "done"
-                      ? "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white"
-                      : "inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-white/90"
-                  }
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={() => onRequestActions?.()}
+                  className="inline-flex items-center justify-center gap-2 rounded-sm bg-white px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-white/90"
                 >
-                  {completeCtaState === "done" ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Completed
-                    </>
-                  ) : (
-                    "Complete"
-                  )}
+                  Actions
+                  <ChevronDown className="h-4 w-4" />
                 </button>
+              )}
+
+              {!isViewOnly && showCompleteButton && (
+                <div className={`relative ${shouldHighlightCompleteCta ? "z-[60]" : ""}`}>
+                  {shouldHighlightCompleteCta && (
+                    <div className="pointer-events-none absolute top-full mt-2 right-0 flex flex-col items-center rounded-full bg-amber-300 px-3 py-1.5 text-[11px] font-semibold text-[#1b0c3e] shadow-md whitespace-nowrap">
+                      <ArrowUp className="h-3.5 w-3.5 animate-bounce" />
+                      <span>Click to complete signing</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (completeCtaState === "done") return;
+                      setCompleteCtaState("done");
+                      window.setTimeout(() => {
+                        const env = String(envelopeID ?? "");
+                        const rid = String(currentUserId ?? "");
+                        navigate(`/e-sign/signer/status/${env}/${rid}`);
+                      }, 1500);
+                    }}
+                    className={
+                      completeCtaState === "done"
+                        ? "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white"
+                        : shouldHighlightCompleteCta
+                          ? "inline-flex items-center justify-center rounded-lg bg-amber-300 px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] shadow-[0_0_0_3px_rgba(251,191,36,0.65)] animate-pulse"
+                          : "inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-white/90"
+                    }
+                  >
+                    {completeCtaState === "done" ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Completed
+                      </>
+                    ) : (
+                      "Complete"
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>
         </div>
 
+        {shouldHighlightCompleteCta && (
+          <div
+            className="fixed inset-0 z-40 bg-black/45"
+            onMouseDown={() => setIsCompleteCtaGuidanceDismissed(true)}
+            aria-hidden="true"
+          />
+        )}
+
       {/* PDF(s) container */}
       <div
         ref={pdfContainerRef}
-        className="relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-white overflow-auto self-center mt-14 sm:mt-16 lg:mt-20 mb-20 px-3 sm:px-4 py-4"
+        className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-white overflow-auto self-center mt-14 sm:mt-16 lg:mt-20 mb-20 px-3 sm:px-4 py-4 ${
+          shouldHighlightCompleteCta ? "pointer-events-none" : ""
+        }`}
         style={{ maxHeight: "calc(100vh - 160px)" }}
         onKeyDown={(e) => {
           // Prevent Enter key from submitting any form anywhere in the container
@@ -2412,9 +2459,23 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   );
 };
 
-const DocumentViewer: React.FC<Props> = (props) => {
-  return <DocumentViewerContent {...props} />;
-};
+const DocumentViewer: React.FC<Props> = React.memo(
+  (props) => <DocumentViewerContent {...props} />,
+  (prevProps, nextProps) => {
+    // Ignore callback identity changes from parent UI state (e.g. dropdown open/close)
+    // so PDF rendering doesn't remount/reload unnecessarily.
+    return (
+      prevProps.document === nextProps.document &&
+      prevProps.documents === nextProps.documents &&
+      prevProps.signatureFields === nextProps.signatureFields &&
+      prevProps.currentUserId === nextProps.currentUserId &&
+      prevProps.envelopeID === nextProps.envelopeID &&
+      prevProps.cycleId === nextProps.cycleId &&
+      prevProps.allRecipients === nextProps.allRecipients &&
+      prevProps.isViewOnly === nextProps.isViewOnly
+    );
+  }
+);
 
 export default DocumentViewer;
 
