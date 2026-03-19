@@ -2073,7 +2073,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               )}
 
               {!isViewOnly && showCompleteButton && (
-                <div className={`relative ${shouldHighlightCompleteCta ? "z-[60]" : ""}`}>
+                <div className={`relative ${shouldHighlightCompleteCta ? "z-[70]" : ""}`}>
                   {shouldHighlightCompleteCta && (
                     <div className="pointer-events-none absolute top-full mt-2 right-0 flex flex-col items-center rounded-full bg-amber-300 px-3 py-1.5 text-[11px] font-semibold text-[#1b0c3e] shadow-md whitespace-nowrap">
                       <ArrowUp className="h-3.5 w-3.5 animate-bounce" />
@@ -2116,7 +2116,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
         {shouldHighlightCompleteCta && (
           <div
-            className="fixed inset-0 z-40 bg-black/45"
+            className="fixed inset-0 z-[45] bg-black/45"
             onMouseDown={() => setIsCompleteCtaGuidanceDismissed(true)}
             aria-hidden="true"
           />
@@ -2261,7 +2261,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             <button
               onClick={goToNext}
               disabled={!hasNextField}
-              className="fixed z-50 font-medium shadow disabled:opacity-50"
+              className="fixed z-30 font-medium shadow disabled:opacity-50"
               style={{ 
                 backgroundColor: '#ffc107', 
                 color: '#1a1a1a', 
@@ -2286,7 +2286,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           <button
             onClick={goToNext}
             disabled={!hasNextField || actionableFields.length === 0}
-            className="absolute z-50 font-medium shadow disabled:opacity-50"
+            className="absolute z-30 font-medium shadow disabled:opacity-50"
             style={{ 
               backgroundColor: '#ffc107', 
               color: '#1a1a1a', 
