@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/common/sidebar';
 import Header from '../components/common/header';
 import ScrollToTop from '../components/common/ScrollToTop';
-import GiftWidget from '../components/common/GiftWidget';
+// import GiftWidget from '../components/common/GiftWidget';
 
 import { useSidebar } from '../context/SidebarContext';
 const DashboardLayout: React.FC = () => {
@@ -26,7 +26,7 @@ const DashboardLayout: React.FC = () => {
           <ScrollToTop />
           <Outlet />
         </main>
-        <GiftWidget />
+        {/* <GiftWidget /> */}
       </div>
     </div>
   );

@@ -212,16 +212,33 @@ const login = async (req, res) => {
   }
 
   const isPasswdCorrect = await bcrypt.compare(password, user.password);
+
   if (!isPasswdCorrect) {
     user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-    if (user.failedLoginAttempts >= 3) {
-      user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // Lock for 15 mins
+  
+    const maxAttempts = 3;
+    const attemptsLeft = Math.max(maxAttempts - user.failedLoginAttempts, 0);
+  
+    // Lock account if attempts exceeded
+    if (user.failedLoginAttempts >= maxAttempts) {
+      user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins lock
     }
+  
     await user.save({ validateBeforeSave: false });
-
+  
+    let message = "";
+  
+    if (attemptsLeft > 0) {
+      message = `Invalid email or password. You have ${attemptsLeft} attempt${attemptsLeft > 1 ? "s" : ""} left. Please check your credentials or reset your password.`;
+    } else {
+      message = "Your account has been temporarily locked due to multiple failed login attempts. Please try again after 15 minutes.";
+    }
+  
     return res.status(401).json({
       status: 401,
-      message: "Invalid Credentials!!!",
+      message,
+      attemptsLeft,
+      failedLoginAttempts: user.failedLoginAttempts,
       data: null
     });
   }

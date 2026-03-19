@@ -14,19 +14,19 @@ import {
 } from "lucide-react";
 
 interface UISchema {
- securityLevel: string;
- estimatedTime: string;
- costInfo: string;
- complianceInfo: [string];
- icon: string;
+  securityLevel: string;
+  estimatedTime: string;
+  costInfo: string;
+  complianceInfo: [string];
+  icon: string;
 }
-interface AuthMethod{
+interface AuthMethod {
   id: string;
   name: string;
   description: string;
-  uiSchema:UISchema;
+  uiSchema: UISchema;
 }
-interface AuthList{
+interface AuthList {
   _id: string;
   authMethodId: string;
   status: "pending" | "completed" | "rejected";
@@ -50,6 +50,7 @@ const EnvelopeDetails: React.FC = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [showOtherOptions, setShowOtherOptions] = useState(false);
+  const otherOptionsRef = useRef<HTMLDivElement | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignName, setAssignName] = useState("");
   const [assignEmail, setAssignEmail] = useState("");
@@ -59,11 +60,28 @@ const EnvelopeDetails: React.FC = () => {
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [isDeclineSubmitting, setIsDeclineSubmitting] = useState(false);
   const [declineSubmitError, setDeclineSubmitError] = useState<string>("");
+  const [isFinishLaterSubmitting, setIsFinishLaterSubmitting] = useState(false);
   const [showSessionInfoModal, setShowSessionInfoModal] = useState(false);
   const [sessionCopyStatus, setSessionCopyStatus] = useState<"" | "copied" | "failed">("");
   const [showSigningDoneModal, setShowSigningDoneModal] = useState(false);
   const initialCompletionRedirectRef = useRef(true);
   const [sessionIp, setSessionIp] = useState<string>(""); // best-effort
+
+  useEffect(() => {
+    // Close the dropdown when clicking outside it
+    if (!showOtherOptions) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!otherOptionsRef.current) return;
+      if (event.target instanceof Node && otherOptionsRef.current.contains(event.target)) return;
+      setShowOtherOptions(false);
+    };
+
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showOtherOptions]);
 
   useEffect(() => {
     // Best-effort public IP lookup for Session Information
@@ -760,7 +778,16 @@ const EnvelopeDetails: React.FC = () => {
       // { label: "Page URL", value: pageUrlValue },
     ];
   })();
-
+  const capitalizeWords = (value:any) => {
+    if (!value || typeof value !== 'string') return 'Sender';
+  
+    return value
+      .replace(/[_-]+/g, ' ')   // handle john_doe / john-doe
+      .trim()
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
   const copySessionInfoToClipboard = async () => {
     const text = sessionInfoRows
       .map((r) => `${r.label}: ${r.value}`)
@@ -819,7 +846,49 @@ const EnvelopeDetails: React.FC = () => {
                   if (isInPerson) handleRecipientComplete();
                   handleSigningCompleted();
                 }}
+                onRequestActions={() => {
+                  // Show the same dropdown options that are normally on the Terms modal
+                  setShowOtherOptions((v) => !v);
+                  setShowTermsModal(false);
+                }}
               />
+            </div>
+          )}
+
+          {showOtherOptions && !showTermsModal && (
+            <div ref={otherOptionsRef} className="fixed right-4 top-10 z-50">
+              <div className="w-56 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg max-h-64">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOtherOptions(false);
+                    setShowAssignModal(true);
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Reassign Document
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOtherOptions(false);
+                    setShowDeclineModal(true);
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Reject Request
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOtherOptions(false);
+                    setShowSessionInfoModal(true);
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Session Details
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -840,7 +909,7 @@ const EnvelopeDetails: React.FC = () => {
                 <span className="mx-auto">
                   <img src="/Logo.png" alt="docusign" className="h-15 w-auto " />
                 </span>
-              
+
               </div>
 
               <div className="mt-6 text-[20px] thankyou-heading font-semibold text-gray-900">
@@ -848,19 +917,29 @@ const EnvelopeDetails: React.FC = () => {
               </div>
 
               <div className=" text-sm text-gray-700">
-                <div className="text-xs text-gray-500">Message from {(envelope?.sender?.name || envelope?.senderName || envelope?.createdBy?.name || envelope?.owner?.name || "Sender")}</div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="text-xs text-gray-500">
+                  Message from <b>{
+                    capitalizeWords(
+                      envelope?.sender?.name ||
+                      envelope?.senderName ||
+                      envelope?.createdBy?.name ||
+                      envelope?.owner?.name ||
+                      "Sender"
+                    )
+                  }</b> 
+                </div>
+                <div className="mt-2 h-8 p-1 bg-emerald-100 rounded-sm text-sm text-gray-700">
                   {(envelope?.message || envelope?.note || envelope?.emailMessage || "").toString()}
                 </div>
               </div>
 
-              <div className="mt-4 aadhar-heading text-sm text-gray-700">
+              <div className="mt-12 aadhar-heading text-sm text-gray-700">
                 Please read the{" "}
                 <a
                   href="/terms-of-service"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-gray-800 underline"
+                  className="text-gray-800 underline hover:text-blue-900"
                 >
                   Electronic Record and Signature Disclosure
                 </a>
@@ -882,7 +961,7 @@ const EnvelopeDetails: React.FC = () => {
                       href="/terms-of-service"
                       target="_blank"
                       rel="noreferrer"
-                      className="mr-3 text-gray-700 underline"
+                      className="mr-3 text-gray-700 underline hover:text-blue-900"
                     >
                       Terms and Conditions
                     </a>
@@ -891,7 +970,7 @@ const EnvelopeDetails: React.FC = () => {
                       href="/privacy-policy"
                       target="_blank"
                       rel="noreferrer"
-                      className="ml-3 text-gray-700 underline"
+                      className="ml-3 text-gray-700 underline hover:text-blue-900"
                     >
                       Privacy Policy
                     </a>
@@ -900,7 +979,7 @@ const EnvelopeDetails: React.FC = () => {
               </div>
 
               <div className="mt-6 flex items-center justify-end pb-8">
-              
+
                 <div className="relative flex items-center gap-3">
                   <button
                     type="button"
@@ -931,7 +1010,7 @@ const EnvelopeDetails: React.FC = () => {
                         }}
                         className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
                       >
-                       Reject Request
+                        Reject Request
                       </button>
                       <button
                         type="button"
@@ -941,7 +1020,7 @@ const EnvelopeDetails: React.FC = () => {
                         }}
                         className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
                       >
-                       Session Details
+                        Session Details
                       </button>
                     </div>
                   )}
@@ -1083,7 +1162,7 @@ const EnvelopeDetails: React.FC = () => {
 
             <div className="px-10 thankyou-para pb-8 pt-6 text-[#2b164a]">
               <p className="text-base leading-relaxed">
-              If you decline, this document will be cancelled and cannot be signed again. Need changes? You can  {" "}
+                If you decline, this document will be cancelled and cannot be signed again. Need changes? You can  {" "}
                 <span className="font-semibold">Finish Later</span> and reach out to the sender.
               </p>
               <p className="mt-4 text-base leading-relaxed">
@@ -1101,11 +1180,19 @@ const EnvelopeDetails: React.FC = () => {
             <div className="flex items-center justify-end gap-6 px-10 pb-10">
               <button
                 type="button"
-                onClick={() => setShowDeclineModal(false)}
-                disabled={isDeclineSubmitting}
+                onClick={() => {
+                  if (isFinishLaterSubmitting || isDeclineSubmitting) return;
+                  setIsFinishLaterSubmitting(true);
+                  window.setTimeout(() => {
+                    const env = String(id ?? "");
+                    const rid = String(recipientId ?? "");
+                    window.location.assign(`/e-sign/signer/finish-later/${env}/${rid}`);
+                  }, 1400);
+                }}
+                disabled={isDeclineSubmitting || isFinishLaterSubmitting}
                 className="rounded-md border border-[#2b164a]/40 bg-white px-6 py-3 text-base font-medium text-[#2b164a] hover:bg-[#2b164a]/5 disabled:opacity-50"
               >
-                Finish Later
+                {isFinishLaterSubmitting ? "Finishing..." : "Finish Later"}
               </button>
               <button
                 type="button"
@@ -1181,7 +1268,7 @@ const EnvelopeDetails: React.FC = () => {
       {/* Signing completed CTA moved into `DocumentViewer` header */}
 
       {/* ---------- AUTH MODAL (Condition 1 UI) ---------- */}
-      { showAuthModal && !isAuthenticated && currentAuthMethod && (
+      {showAuthModal && !isAuthenticated && currentAuthMethod && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-[1px] z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-[0_24px_60px_rgba(0,0,0,0.22)] w-full max-w-lg overflow-hidden border border-gray-200">
             {/* Header */}
@@ -1305,7 +1392,7 @@ const EnvelopeDetails: React.FC = () => {
                       <button
                         type="button"
                         onClick={() =>
-                          requestSkipAuthMethod("Moved to next authentication option.")
+                          requestSkipAuthMethod("Authentication skipped.")
                         }
                         disabled={isVerifying}
                         className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
@@ -1348,7 +1435,7 @@ const EnvelopeDetails: React.FC = () => {
                           className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-base tracking-[0.22em] font-mono focus:outline-none focus:ring-2 focus:ring-[#260559]"
                           maxLength={otpLength}
                           disabled={isVerifying}
-                        />                       
+                        />
                       </div>
 
                       <div className="flex items-center justify-end gap-3">
@@ -1460,7 +1547,7 @@ const EnvelopeDetails: React.FC = () => {
             </div>
           </div>
         </div>
-      ) }
+      )}
 
       {/* ---------- SKIP AUTH WARNING MODAL ---------- */}
       {showSkipWarningModal && (

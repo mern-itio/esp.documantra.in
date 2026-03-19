@@ -57,7 +57,7 @@ const FAQ = () => {
               Can't find the answer you're looking for? Contact our support team.
             </p>
             <a 
-              href="#contact" 
+              href="/contact-sales" 
               className="inline-flex items-center gap-2 text-primary font-medium hover:underline"
             >
               Contact Support

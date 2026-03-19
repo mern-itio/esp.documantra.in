@@ -774,13 +774,15 @@ export default function SignerStatusPage() {
                             className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#260559] text-white hover:bg-[#260559]/90"
                             aria-label="Copy referral link"
                           >
-                            <Copy className="h-4 w-4" />
+                            {copyHint === "copied" ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
                           </button>
                         </div>
-                        {copyHint && (
-                          <div className={`mt-2 text-xs ${copyHint === "copied" ? "text-emerald-700" : "text-red-700"}`}>
-                            {copyHint === "copied" ? "Copied" : "Copy failed"}
-                          </div>
+                        {copyHint === "failed" && (
+                          <div className="mt-2 text-xs text-red-700">Copy failed</div>
                         )}
                       </div>
 
