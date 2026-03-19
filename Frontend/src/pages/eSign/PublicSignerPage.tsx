@@ -778,9 +778,9 @@ const EnvelopeDetails: React.FC = () => {
       // { label: "Page URL", value: pageUrlValue },
     ];
   })();
-  const capitalizeWords = (value:any) => {
+  const capitalizeWords = (value: any) => {
     if (!value || typeof value !== 'string') return 'Sender';
-  
+
     return value
       .replace(/[_-]+/g, ' ')   // handle john_doe / john-doe
       .trim()
@@ -926,11 +926,13 @@ const EnvelopeDetails: React.FC = () => {
                       envelope?.owner?.name ||
                       "Sender"
                     )
-                  }</b> 
+                  }</b>
                 </div>
-                <div className="mt-2 h-8 p-1 bg-emerald-100 rounded-sm text-sm text-gray-700">
-                  {(envelope?.message || envelope?.note || envelope?.emailMessage || "").toString()}
-                </div>
+                {(envelope?.message || envelope?.note || envelope?.emailMessage) && (
+                  <div className="mt-2 h-8 p-1 bg-emerald-100 rounded-sm text-sm text-gray-700">
+                    {(envelope?.message || envelope?.note || envelope?.emailMessage).toString()}
+                  </div>
+                )}
               </div>
 
               <div className="mt-12 aadhar-heading text-sm text-gray-700">
