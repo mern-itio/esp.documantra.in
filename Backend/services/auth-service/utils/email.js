@@ -243,7 +243,7 @@ function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time) {
               <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #f44336; margin: 0 0 24px;">
                 <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Device/Browser:</strong> <span style="color: #64748b;">${deviceInfo || 'Unknown Device'}</span></p>
                 <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>IP Address:</strong> <span style="color: #64748b;">${ipAddress || 'Unknown IP'}</span></p>
-                <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">$${new Date(time).toLocaleString()}</span></p>
+                <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">${new Date(time).toLocaleString()}</span></p>
               </div>
 
               <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.65; color: #475569;">If this was you, you can safely ignore this email.</p>
