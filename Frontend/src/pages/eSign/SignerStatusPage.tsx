@@ -243,15 +243,48 @@ export default function SignerStatusPage() {
     return `${base}/signup?ref=${encodeURIComponent(rid || "signer")}`;
   }, [recipientId]);
 
-  const copyText = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyHint("copied");
-      window.setTimeout(() => setCopyHint(""), 1200);
-    } catch {
+  const copyText = async (raw: string) => {
+    const text = String(raw ?? "").trim();
+    if (!text) {
       setCopyHint("failed");
       window.setTimeout(() => setCopyHint(""), 1200);
+      return;
     }
+
+    const tryModern = async (): Promise<boolean> => {
+      if (!navigator.clipboard || !window.isSecureContext) return false;
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const tryExecCommand = (): boolean => {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.top = "0";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    };
+
+    const ok = (await tryModern()) || tryExecCommand();
+    setCopyHint(ok ? "copied" : "failed");
+    window.setTimeout(() => setCopyHint(""), ok ? 1200 : 2200);
   };
 
   const lastThreeDocs = useMemo(() => {
