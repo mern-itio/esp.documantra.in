@@ -793,30 +793,49 @@ const EnvelopeDetails: React.FC = () => {
   const copySessionInfoToClipboard = async () => {
     const text = sessionInfoRows
       .map((r) => `${r.label}: ${r.value}`)
-      .join("\n");
+      .join("\n")
+      .trim();
 
-    try {
-      await navigator.clipboard.writeText(text);
-      setSessionCopyStatus("copied");
-      window.setTimeout(() => setSessionCopyStatus(""), 1500);
-    } catch {
-      try {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.setAttribute("readonly", "true");
-        textarea.style.position = "fixed";
-        textarea.style.left = "-9999px";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-        setSessionCopyStatus("copied");
-        window.setTimeout(() => setSessionCopyStatus(""), 1500);
-      } catch {
-        setSessionCopyStatus("failed");
-        window.setTimeout(() => setSessionCopyStatus(""), 1500);
-      }
+    if (!text) {
+      setSessionCopyStatus("failed");
+      window.setTimeout(() => setSessionCopyStatus(""), 2200);
+      return;
     }
+
+    const tryModern = async (): Promise<boolean> => {
+      if (!navigator.clipboard || !window.isSecureContext) return false;
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const tryExecCommand = (): boolean => {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.top = "0";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    };
+
+    const ok = (await tryModern()) || tryExecCommand();
+    setSessionCopyStatus(ok ? "copied" : "failed");
+    window.setTimeout(() => setSessionCopyStatus(""), ok ? 1500 : 2200);
   };
 
   return (
