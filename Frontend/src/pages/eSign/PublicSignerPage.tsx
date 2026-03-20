@@ -108,7 +108,9 @@ const EnvelopeDetails: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
   const [currentAuthIndex, setCurrentAuthIndex] = useState(0);
-  const [authStatus, setAuthStatus] = useState<'pending' | 'verifying' | 'success' | 'failed'>('pending');
+  const [authStatus, setAuthStatus] = useState<
+    'pending' | 'verifying' | 'success' | 'failed' | 'skipping'
+  >('pending');
   const [retryCount, setRetryCount] = useState(0);
   const [otpCode, setOtpCode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -417,7 +419,7 @@ const EnvelopeDetails: React.FC = () => {
       setSkipMessage(reason);
     }
 
-    setAuthStatus('pending');
+    setAuthStatus('skipping');
     setCurrentAction('');
     setOtpCode('');
     setVerificationUrl('');
@@ -1342,7 +1344,9 @@ const EnvelopeDetails: React.FC = () => {
                         ? "inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-green-100 text-green-700"
                         : authStatus === "failed"
                           ? "inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-red-100 text-red-700"
-                          : "inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#260559]/10 text-[#260559]"
+                          : authStatus === "skipping"
+                            ? "inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"
+                            : "inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#260559]/10 text-[#260559]"
                     }
                   >
                     <IconComponent className="h-5 w-5" />
@@ -1380,15 +1384,27 @@ const EnvelopeDetails: React.FC = () => {
                 </div>
               )}
 
+              {authStatus === "skipping" && (
+                <div className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                  <RefreshCw className="h-5 w-5 shrink-0 text-amber-700 animate-spin" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-amber-950">
+                      Skipping this step…
+                    </div>
+                    {skipMessage ? (
+                      <div className="mt-1 text-xs text-amber-900">{skipMessage}</div>
+                    ) : (
+                      <div className="mt-1 text-xs text-amber-800">
+                        Moving to the next verification option.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Pending / method-specific */}
               {authStatus === "pending" && (
                 <div className="mt-4 space-y-4">
-                  {skipMessage && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                      {skipMessage}
-                    </div>
-                  )}
-
                   {!currentAction && (
                     <div className="flex items-center justify-end gap-3">
                       <button
