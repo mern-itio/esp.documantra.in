@@ -105,7 +105,12 @@ export default function SignerStatusPage() {
 
   const isCompletedStatus = (status: any) => {
     const s = (status || "").toString().toLowerCase();
-    return s === "completed" || s === "signed" || s === "declined";
+    return s === "completed" || s === "signed";
+  };
+
+  const isDeclinedStatus = (status: any) => {
+    const s = (status || "").toString().toLowerCase();
+    return s === "declined" || s === "rejected";
   };
 
   const isCcRole = (r: any) => {
@@ -176,6 +181,27 @@ export default function SignerStatusPage() {
     return recipients.filter((r: any) => !isCcRole(r));
   }, [envelope]);
 
+  const currentSigner = useMemo(() => {
+    const normId = (x: any) => {
+      if (x == null) return "";
+      if (typeof x === "string") return x;
+      if (typeof x === "object" && x.$oid) return String(x.$oid);
+      if (typeof x === "object" && x._id) return String(x._id);
+      return String(x);
+    };
+    return signers.find((r: any) => normId(r?.id ?? r?._id) === normId(recipientId));
+  }, [signers, recipientId]);
+
+  const currentSignerDeclined = useMemo(
+    () => !!currentSigner && isDeclinedStatus(currentSigner.status),
+    [currentSigner]
+  );
+
+  const anySignerDeclined = useMemo(
+    () => signers.some((r: any) => isDeclinedStatus(r.status)),
+    [signers]
+  );
+
   const allSignersCompleted = useMemo(() => {
     if (signers.length === 0) return false;
     return signers.every((r: any) => isCompletedStatus(r.status));
@@ -223,10 +249,20 @@ export default function SignerStatusPage() {
   //   window.open(url, "_blank");
   // };
 
-  const title = allSignersCompleted ? "All signatures completed" : "Signing completed";
-  const subtitle = allSignersCompleted
-    ? "Download the signed document and audit certificate."
-    : "You’ve completed signing. You’ll receive the certificate by email once all signers finish.";
+  const title = currentSignerDeclined
+    ? "You have declined this document"
+    : allSignersCompleted
+      ? "All signatures completed"
+      : anySignerDeclined
+        ? "Signing closed"
+        : "Signing completed";
+  const subtitle = currentSignerDeclined
+    ? "You have rejected this document for signing. Contact sales to regain access."
+    : allSignersCompleted
+      ? "Download the signed document and audit certificate."
+      : anySignerDeclined
+        ? "A signer has declined this envelope, so signing is no longer active."
+        : "You’ve completed signing. You’ll receive the certificate by email once all signers finish.";
 
   const referralUrl = useMemo(() => {
     const rid = String(recipientId ?? "").trim();
@@ -461,6 +497,56 @@ export default function SignerStatusPage() {
     }
   }, [showScratchModal, scratchDone]);
 
+  if (!loading && !error && currentSignerDeclined) {
+    return (
+      <div className="min-h-screen mt-18 bg-gradient-to-b from-rose-50 via-white to-white px-4 py-12">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="overflow-hidden rounded-3xl border border-rose-200 bg-white shadow-sm">
+            <div className="border-b border-rose-100 bg-rose-50/70 px-8 py-7">
+              <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
+                <ShieldCheck className="h-7 w-7" />
+              </div>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                You have rejected this document
+              </h1>
+              <p className="mt-2 text-sm text-gray-700">
+                Your signing access is closed for this envelope. Contact support if this was a mistake or if you need access restored.
+              </p>
+            </div>
+
+            <div className="px-8 py-7">
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                <div>
+                  <span className="font-medium text-gray-900">Document:</span>{" "}
+                  {documentName || "—"}
+                </div>
+                <div className="mt-1">
+                  <span className="font-medium text-gray-900">Envelope ID:</span>{" "}
+                  {String(envelopeId ?? "—")}
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <a
+                  href="/help-support"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#260559] px-4 py-2.5 text-sm font-semibold text-[#260559] transition-colors hover:bg-[#260559] hover:text-white"
+                >
+                  Help & Support
+                </a>
+                <a
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#260559] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#260559]/90"
+                >
+                  Go to Login
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 mt-14 px-4 py-10">
       <div className="mx-auto w-full max-w-7xl">
@@ -485,7 +571,11 @@ export default function SignerStatusPage() {
                 <div className="rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-white px-6 py-10 shadow-sm">
                   <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
                     <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-emerald-200">
-                      <CheckCircle className="h-8 w-8 text-emerald-600" />
+                      {currentSignerDeclined ? (
+                        <ShieldCheck className="h-8 w-8 text-rose-600" />
+                      ) : (
+                        <CheckCircle className="h-8 w-8 text-emerald-600" />
+                      )}
                     </div>
                     <h1 className="text-2xl thankyou-heading font-semibold text-gray-900">{title}</h1>
                     <p className="mt-2 thankyou-para max-w-2xl text-gray-600">{subtitle}</p>
@@ -502,7 +592,13 @@ export default function SignerStatusPage() {
                       />
                     </div>
                     <div className="text-sm text-gray-600">
-                      {allSignersCompleted ? "signers-have-signed" : "signing-in-progress"}
+                      {currentSignerDeclined
+                        ? "signing-declined"
+                        : allSignersCompleted
+                          ? "signers-have-signed"
+                          : anySignerDeclined
+                            ? "signing-closed"
+                            : "signing-in-progress"}
                     </div>
                     <div className="h-1.5 w-full max-w-[260px] rounded-full bg-gray-100 overflow-hidden">
                       <div

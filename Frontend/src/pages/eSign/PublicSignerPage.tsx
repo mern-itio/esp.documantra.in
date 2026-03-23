@@ -32,6 +32,23 @@ interface AuthList {
   status: "pending" | "completed" | "rejected";
 }
 
+const parseAuthList = (rawAuthentication: any): AuthList[] => {
+  if (!rawAuthentication) return [];
+  try {
+    const parsed = JSON.parse(rawAuthentication);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item: any) =>
+        item &&
+        typeof item === "object" &&
+        typeof item.authMethodId === "string" &&
+        typeof item.status === "string"
+    ) as AuthList[];
+  } catch {
+    return [];
+  }
+};
+
 const EnvelopeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { recipientId } = useParams<{ recipientId: string }>();
@@ -57,9 +74,13 @@ const EnvelopeDetails: React.FC = () => {
   const [assignReason, setAssignReason] = useState("");
   const [isAssignSubmitting, setIsAssignSubmitting] = useState(false);
   const [assignSubmitError, setAssignSubmitError] = useState<string>("");
+  const [showAssignedAwayPage, setShowAssignedAwayPage] = useState(false);
+  const [assignedAwayToName, setAssignedAwayToName] = useState("");
+  const [assignedAwayToEmail, setAssignedAwayToEmail] = useState("");
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [isDeclineSubmitting, setIsDeclineSubmitting] = useState(false);
   const [declineSubmitError, setDeclineSubmitError] = useState<string>("");
+  const [declineReason, setDeclineReason] = useState("");
   const [isFinishLaterSubmitting, setIsFinishLaterSubmitting] = useState(false);
   const [showSessionInfoModal, setShowSessionInfoModal] = useState(false);
   const [sessionCopyStatus, setSessionCopyStatus] = useState<"" | "copied" | "failed">("");
@@ -248,7 +269,7 @@ const EnvelopeDetails: React.FC = () => {
 
     const envStatus = (envelope.status || "").toString().toLowerCase();
     const rawAuthentication = currentRecipient.authentication;
-    const authList: AuthList[] = JSON.parse(rawAuthentication);
+    const authList: AuthList[] = parseAuthList(rawAuthentication);
     const authCompleted = authList.every(a => a.status === "completed");
     const pendingAuth = authList.filter(a => a.status === "pending");
 
@@ -372,6 +393,15 @@ const EnvelopeDetails: React.FC = () => {
         }
     } catch {
       // ignore storage failures; keep in-memory acceptance for this session
+    }
+    setTermsAccepted(true);
+    setShowTermsModal(false);
+    setShowOtherOptions(false);
+    // After accepting terms, show auth modal if auth is still pending
+    if (currentRecipient && envelope && (envelope.status || "").toString().toLowerCase() !== "completed") {
+      const authList: AuthList[] = parseAuthList(currentRecipient.authentication);
+      const authCompleted = authList.every((a: AuthList) => a.status === "completed");
+      if (!authCompleted) setShowAuthModal(true);
     }
   };
 
@@ -660,6 +690,42 @@ const EnvelopeDetails: React.FC = () => {
       </div>
     );
   }
+  if (showAssignedAwayPage) {
+    return (
+      <div className="min-h-screen bg-slate-100 px-4 py-10">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-green-700">
+            <CheckCircle className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Signing request reassigned
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
+            You have assigned this document to another signer. Your signing session is now closed.
+          </p>
+
+          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <div><span className="font-medium">New signer:</span> {assignedAwayToName || "—"}</div>
+            <div className="mt-1"><span className="font-medium">Email:</span> {assignedAwayToEmail || "—"}</div>
+          </div>
+
+          <p className="mt-5 text-xs text-gray-500">
+            The sender and new signer are notified. You will receive further updates as a Carbon Copy recipient.
+          </p>
+
+          <div className="mt-8 flex justify-end">
+            <button
+              type="button"
+              onClick={() => window.location.assign("/")}
+              className="inline-flex items-center justify-center rounded-lg bg-[#260559] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#260559]/90"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const IconComponent = (Icons[currentAuthMethod?.uiSchema?.icon as keyof typeof Icons] as any) ||
     Icons.HelpCircle;
 
@@ -693,7 +759,13 @@ const EnvelopeDetails: React.FC = () => {
         reason: assignReason.trim(),
       });
 
+      setAssignedAwayToName(assignName.trim());
+      setAssignedAwayToEmail(assignEmail.trim());
+      setShowAssignedAwayPage(true);
       setShowAssignModal(false);
+      setShowAuthModal(false);
+      setShowTermsModal(false);
+      setShowOtherOptions(false);
       setAssignName("");
       setAssignEmail("");
       setAssignReason("");
@@ -710,17 +782,27 @@ const EnvelopeDetails: React.FC = () => {
 
   const submitDeclineToSign = async () => {
     if (isDeclineSubmitting) return;
+    if (!declineReason.trim()) {
+      setDeclineSubmitError("Please provide a reason to decline.");
+      return;
+    }
     setIsDeclineSubmitting(true);
     setDeclineSubmitError("");
     try {
-      // Dummy endpoint: replace with real endpoint later.
       await eSignApi.post(`/api/e-sign/public/envelope/decline`, {
         envelopeId: String(id ?? ""),
         recipientId: String(recipientId ?? ""),
+        reason: declineReason.trim(),
       });
       setShowDeclineModal(false);
-      // For now, mimic exit flow after declining.
-      window.location.assign("/");
+      setDeclineReason("");
+      const envId = String(id ?? "").trim();
+      const rid = String(recipientId ?? "").trim();
+      if (envId && rid) {
+        window.location.assign(`/e-sign/signer/status/${envId}/${rid}`);
+      } else {
+        window.location.assign("/");
+      }
     } catch (error: any) {
       const serverMessage =
         error?.response?.data?.message ||
@@ -1183,7 +1265,11 @@ const EnvelopeDetails: React.FC = () => {
               </h2>
               <button
                 type="button"
-                onClick={() => setShowDeclineModal(false)}
+                onClick={() => {
+                  setShowDeclineModal(false);
+                  setDeclineReason("");
+                  setDeclineSubmitError("");
+                }}
                 disabled={isDeclineSubmitting}
                 className="text-[#2b164a]/70 hover:text-[#2b164a] disabled:opacity-50"
               >
@@ -1200,6 +1286,24 @@ const EnvelopeDetails: React.FC = () => {
                 Select <span className="font-semibold">Continue</span> to finish
                 declining.
               </p>
+
+              <div className="mt-5">
+                <label className="block text-sm font-medium text-[#2b164a]">
+                  Reason for declining <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={declineReason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                  maxLength={300}
+                  rows={4}
+                  disabled={isDeclineSubmitting}
+                  className="mt-2 w-full resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:border-[#260559] focus:outline-none focus:ring-1 focus:ring-[#260559]"
+                  placeholder="Please tell the sender why you are declining..."
+                />
+                <div className="mt-1 text-xs text-gray-500">
+                  {300 - declineReason.length} characters remaining
+                </div>
+              </div>
 
               {declineSubmitError && (
                 <div className="mt-6 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -1228,7 +1332,7 @@ const EnvelopeDetails: React.FC = () => {
               <button
                 type="button"
                 onClick={submitDeclineToSign}
-                disabled={isDeclineSubmitting}
+                disabled={isDeclineSubmitting || !declineReason.trim()}
                 className="rounded-md bg-[#260559] px-7 py-3 text-base font-semibold text-white hover:bg-[#260559]/90 disabled:opacity-50"
               >
                 {isDeclineSubmitting ? "Continuing..." : "Continue"}

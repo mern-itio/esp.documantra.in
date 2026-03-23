@@ -72,6 +72,8 @@ const EnvelopeDetailPage: React.FC = () => {
     const [_showEmbedUrl, setShowEmbedUrl] = useState<boolean>(false);
     const [copiedEmbedUrl, setCopiedEmbedUrl] = useState<boolean>(false);
     const [copiedEmbedCode, setCopiedEmbedCode] = useState<boolean>(false);
+    const [declineMessage, setDeclineMessage] = useState<string>('');
+    const [declinedByName, setDeclinedByName] = useState<string>('');
 
     // scaling handled below with baseW/baseH for signer view
     // Preview now uses signer iframe; canvas kept for future
@@ -220,6 +222,46 @@ const EnvelopeDetailPage: React.FC = () => {
     };
 
     const recipients = useMemo(() => envelope?.recipients || [], [envelope]);
+    const isDeclinedEnvelope = useMemo(() => {
+        const status = (envelope?.status || '').toLowerCase();
+        if (status === 'declined' || status === 'rejected') return true;
+        return recipients.some((r) => {
+            const rs = (r?.status || '').toLowerCase();
+            return rs === 'declined' || rs === 'rejected';
+        });
+    }, [envelope, recipients]);
+
+    useEffect(() => {
+        const loadDeclineMessage = async () => {
+            if (!id || !isDeclinedEnvelope) {
+                setDeclineMessage('');
+                setDeclinedByName('');
+                return;
+            }
+            try {
+                const res = await eSignApi.get(`/api/e-sign/envelope/activity-log/${id}`);
+                const logs = Array.isArray(res?.data?.logs) ? res.data.logs : [];
+                const declinedLog = logs.find((log: any) => String(log?.action || '').toUpperCase() === 'RECIPIENT_DECLINED');
+                const reason = String(
+                    declinedLog?.details?.reason ||
+                    declinedLog?.reason ||
+                    ''
+                ).trim();
+                const declinedBy = String(
+                    declinedLog?.details?.recipientName ||
+                    declinedLog?.details?.recipientEmail ||
+                    ''
+                ).trim();
+                setDeclineMessage(reason);
+                setDeclinedByName(declinedBy);
+            } catch {
+                setDeclineMessage('');
+                setDeclinedByName('');
+            }
+        };
+        loadDeclineMessage();
+    }, [id, isDeclinedEnvelope]);
+
     const isCompleted = useMemo(() => {
         const s = (envelope?.status || '').toLowerCase();
         if (s === 'completed') return true;
@@ -446,6 +488,8 @@ const EnvelopeDetailPage: React.FC = () => {
                                     ? 'bg-gray-100 text-xs text-gray-900 border border-gray-300'
                                     : kind === 'completed'
                                         ? 'bg-green-50 text-xs text-green-700 border border-green-200'
+                                        : kind === 'declined' || kind === 'rejected'
+                                            ? 'bg-rose-50 text-xs text-rose-700 border border-rose-200'
                                         : kind === 'in progress'
                                             ? 'bg-yellow-50 text-xs text-yellow-800 border border-yellow-200'
                                             : 'bg-gray-100 text-xs text-gray-900 border border-gray-300';
@@ -457,6 +501,8 @@ const EnvelopeDetailPage: React.FC = () => {
                                     ? 'bg-gray-600'
                                     : kind === 'completed'
                                         ? 'bg-green-500'
+                                        : kind === 'declined' || kind === 'rejected'
+                                            ? 'bg-rose-500'
                                         : kind === 'in progress'
                                             ? 'bg-yellow-500'
                                             : 'bg-gray-600';
@@ -470,6 +516,20 @@ const EnvelopeDetailPage: React.FC = () => {
                             </div>
                         );
                     })()}
+
+                    {isDeclinedEnvelope && (
+                        <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                            <div className="text-sm font-semibold text-rose-800">
+                                Rejected by recipient
+                            </div>
+                            <div className="mt-1 text-sm text-rose-700">
+                                {declinedByName ? `${declinedByName} declined this envelope.` : 'A recipient declined this envelope.'}
+                            </div>
+                            <div className="mt-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">
+                                {declineMessage || 'No rejection message was provided.'}
+                            </div>
+                        </div>
+                    )}
 
 
                     {/* Actions */}

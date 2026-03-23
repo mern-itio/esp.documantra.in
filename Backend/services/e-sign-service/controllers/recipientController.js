@@ -1,13 +1,17 @@
+const mongoose = require('mongoose');
 const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
-// List recipients filtered by current user
+
+// List recipients filtered by current user (UserId must match; null/other owners excluded)
 exports.listRecipients = async (req, res) => {
   try {
     const userId = req.user?.data?.id;
     if (!userId) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
-    const recipients = await Recipient.find({ UserId: userId }).sort({ createdAt: -1 }).lean();
+    const recipients = await Recipient.find({ UserId: userId })
+      .sort({ createdAt: -1 })
+      .lean();
     return res.status(200).json({ data: recipients });
   } catch (err) {
     console.error('listRecipients error', err);
@@ -26,17 +30,40 @@ exports.createRecipient = async (req, res) => {
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
-    const created = await Recipient.create({ 
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const existing = await Recipient.findOne({ UserId: userId, email: normalizedEmail });
+    if (existing) {
+      const $set = {};
+      if (name !== undefined && String(name).trim()) $set.name = String(name).trim();
+      if (phone !== undefined && String(phone).trim()) $set.phone = String(phone).trim();
+      // For optional profile fields, avoid wiping existing details with empty strings.
+      if (title !== undefined && String(title).trim()) $set.title = String(title).trim();
+      if (company !== undefined && String(company).trim()) $set.company = String(company).trim();
+      if (address !== undefined && String(address).trim()) $set.address = String(address).trim();
+      if (signature !== undefined && String(signature).trim()) $set.signature = String(signature).trim();
+
+      const updated = Object.keys($set).length
+        ? await Recipient.findOneAndUpdate(
+          { _id: existing._id, UserId: userId },
+          { $set },
+          { new: true }
+        )
+        : existing;
+
+      return res.status(200).json({ data: updated, updatedExisting: true });
+    }
+
+    const created = await Recipient.create({
       UserId: userId,
-      name, 
-      email, 
-      title, 
-      company, 
-      phone, 
-      address, 
-      signature 
+      name: String(name).trim(),
+      email: normalizedEmail,
+      title: String(title || '').trim(),
+      company: String(company || '').trim(),
+      phone: String(phone || '').trim(),
+      address: String(address || '').trim(),
+      signature: String(signature || '').trim()
     });
-    return res.status(201).json({ data: created });
+    return res.status(201).json({ data: created, updatedExisting: false });
   } catch (err) {
     console.error('createRecipient error', err);
     return res.status(500).json({ message: 'Failed to create recipient' });
@@ -52,21 +79,32 @@ exports.updateRecipient = async (req, res) => {
     }
     const { id } = req.params;
     const { name, email, title, company, phone, address, signature } = req.body;
-    
-    // First check if recipient exists and belongs to the user
-    const recipient = await Recipient.findById(id);
-    if (!recipient) {
-      return res.status(404).json({ message: 'Recipient not found' });
+
+    const $set = {};
+    if (name !== undefined) $set.name = name;
+    if (email !== undefined) $set.email = email;
+    if (title !== undefined) $set.title = title;
+    if (company !== undefined) $set.company = company;
+    if (phone !== undefined) $set.phone = phone;
+    if (address !== undefined) $set.address = address;
+    if (signature !== undefined) $set.signature = signature;
+
+    if (Object.keys($set).length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
     }
-    if (recipient.UserId && recipient.UserId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: 'You do not have permission to update this recipient' });
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid recipient id' });
     }
-    
-    const updated = await Recipient.findByIdAndUpdate(
-      id,
-      { $set: { name, email, title, company, phone, address, signature } },
+
+    const updated = await Recipient.findOneAndUpdate(
+      { _id: id, UserId: userId },
+      { $set },
       { new: true }
     );
+    if (!updated) {
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
     return res.status(200).json({ data: updated });
   } catch (err) {
     console.error('updateRecipient error', err);
@@ -82,17 +120,15 @@ exports.deleteRecipient = async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
     const { id } = req.params;
-    
-    // First check if recipient exists and belongs to the user
-    const recipient = await Recipient.findById(id);
-    if (!recipient) {
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid recipient id' });
+    }
+
+    const deleted = await Recipient.findOneAndDelete({ _id: id, UserId: userId });
+    if (!deleted) {
       return res.status(404).json({ message: 'Recipient not found' });
     }
-    if (recipient.UserId && recipient.UserId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: 'You do not have permission to delete this recipient' });
-    }
-    
-    const deleted = await Recipient.findByIdAndDelete(id);
     return res.status(200).json({ message: 'Recipient deleted' });
   } catch (err) {
     console.error('deleteRecipient error', err);

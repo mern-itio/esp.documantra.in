@@ -20,6 +20,7 @@ const selfSigner = require('../models/selfSigner');
 const { sign } = require('crypto');
 const { values } = require('pdf-lib');
 const Notification = require('../models/Notification');
+const { AuditTrail } = require('../models/AuditTrail');
 const archiver = require('archiver');
 
 const envelopesData = async (req, res) => {
@@ -397,7 +398,35 @@ const envelopesDetail = async (req, res) => {
       return res.status(404).json({ message: 'Sender not found' });
     }
 
-    // Step 3: Format the response (single envelope object)
+    // Step 3: Collect decline metadata from activity logs (if any)
+    const declineLogs = await ActivityLogs.find({
+      envelopeId: envelope._id,
+      action: 'RECIPIENT_DECLINED',
+    })
+      .sort({ timestamp: -1 })
+      .lean();
+
+    const declineByRecipient = new Map();
+    for (const log of declineLogs) {
+      const recipientKey = String(log?.details?.recipientId || '');
+      if (!recipientKey || declineByRecipient.has(recipientKey)) continue; // keep latest only
+      declineByRecipient.set(recipientKey, {
+        reason: String(log?.details?.reason || '').trim(),
+        timestamp: log?.timestamp || null,
+        recipientName: String(log?.details?.recipientName || '').trim(),
+        recipientEmail: String(log?.details?.recipientEmail || '').trim(),
+      });
+    }
+
+    const latestDecline = declineLogs[0] || null;
+    const envelopeRejectionReason = String(latestDecline?.details?.reason || '').trim();
+    const envelopeRejectedBy = String(
+      latestDecline?.details?.recipientName ||
+      latestDecline?.details?.recipientEmail ||
+      ''
+    ).trim();
+
+    // Step 4: Format the response (single envelope object)
     const formattedEnvelope = {
       id: envelope._id,
       name: envelope.name,
@@ -413,6 +442,9 @@ const envelopesDetail = async (req, res) => {
       powerFormId: envelope.powerFormId,
       direction: direction,
       currRecipient: currentRecipient?._id || null,
+      rejectionReason: envelopeRejectionReason || null,
+      rejectedBy: envelopeRejectedBy || null,
+      rejectedAt: latestDecline?.timestamp || null,
       sender: {
         id: senderDetails?.data?._id,
         name: senderDetails?.data?.fullname,
@@ -430,6 +462,7 @@ const envelopesDetail = async (req, res) => {
       })),
       recipients: envelope.recipientIds.map(recipient => {
         const perm = recipient.permissions?.[0] || {};
+        const declineMeta = declineByRecipient.get(String(recipient._id)) || null;
         return {
           id: recipient._id,
           name: recipient.name,
@@ -448,12 +481,14 @@ const envelopesDetail = async (req, res) => {
             // Old format: single ObjectId - convert to array format for frontend
             return JSON.stringify([perm.authLevel]);
           })(),
-          signature: recipient.signature
+          signature: recipient.signature,
+          rejectionReason: declineMeta?.reason || null,
+          rejectedAt: declineMeta?.timestamp || null,
         };
       })
     };
 
-    // Step 4: Return single envelope
+    // Step 5: Return single envelope
     return res.status(200).json({
       status: 'success',
       data: formattedEnvelope
@@ -2106,6 +2141,373 @@ const LinkUserRecipient = async (req, res) => {
     return res.status(200).json({ message: 'Recipient linked to user successfully', Recipient });
   }
 }
+
+const assignEnvelopeToSomeoneElsePublic = async (req, res) => {
+  try {
+    const { envelopeId, recipientId, newSignerName, newSignerEmail, reason = '' } = req.body || {};
+
+    if (!envelopeId || !recipientId || !newSignerName || !newSignerEmail) {
+      return res.status(400).json({
+        message: 'envelopeId, recipientId, newSignerName and newSignerEmail are required'
+      });
+    }
+
+    const email = String(newSignerEmail).trim().toLowerCase();
+    const name = String(newSignerName).trim();
+    const assignmentReason = String(reason || '').trim();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Enter a valid email address' });
+    }
+    if (!name) {
+      return res.status(400).json({ message: 'New signer name is required' });
+    }
+
+    const envelope = await Envelope.findById(envelopeId);
+    if (!envelope) {
+      return res.status(404).json({ message: 'Envelope not found' });
+    }
+    if (String(envelope.status || '').toLowerCase() === 'completed') {
+      return res.status(400).json({ message: 'This envelope is already completed' });
+    }
+
+    const currentRecipient = await Recipient.findById(recipientId);
+    if (!currentRecipient) {
+      return res.status(404).json({ message: 'Current recipient not found' });
+    }
+
+    const currentPermission = await RecipientPermission.findOne({
+      envelopeId: envelope._id,
+      recipientId: currentRecipient._id,
+    });
+    if (!currentPermission) {
+      return res.status(404).json({ message: 'Recipient permission not found for this envelope' });
+    }
+    if (['completed', 'declined'].includes(String(currentPermission.status || '').toLowerCase())) {
+      return res.status(400).json({ message: 'This recipient already completed/declined and cannot be reassigned' });
+    }
+
+    // Resolve or create the replacement signer recipient.
+    let replacementRecipient = await Recipient.findOne({ email });
+    if (!replacementRecipient) {
+      let recUserId = null;
+      try {
+        const response = await axios.get(`${process.env.AUTH_URL}/api/find-user/${email}`);
+        if (response.data?.data?._id) {
+          recUserId = response.data.data._id;
+        }
+      } catch (_) {
+        // best effort; recipient can exist without linked auth user
+      }
+      replacementRecipient = await Recipient.create({
+        UserId: recUserId,
+        name,
+        email,
+      });
+    } else if (name && replacementRecipient.name !== name) {
+      replacementRecipient.name = name;
+      await replacementRecipient.save();
+    }
+
+    const originalRole = currentPermission.role || 'signer';
+    const originalOrder = typeof currentPermission.order === 'number' ? currentPermission.order : 1;
+    const originalStatus = currentPermission.status || 'waiting';
+    const originalAuth = Array.isArray(currentPermission.authLevel) ? currentPermission.authLevel : [];
+
+    // Turn current signer into carbon copy so they no longer block/receive signer steps.
+    currentPermission.role = 'carbon_copy';
+    currentPermission.status = 'completed';
+    currentPermission.authLevel = [];
+    await currentPermission.save();
+
+    // Add/update permission for replacement signer.
+    let replacementPermission = await RecipientPermission.findOne({
+      envelopeId: envelope._id,
+      recipientId: replacementRecipient._id,
+    });
+
+    if (replacementPermission) {
+      replacementPermission.role = 'signer';
+      replacementPermission.order = originalOrder;
+      replacementPermission.authLevel = originalAuth;
+      replacementPermission.status = originalStatus;
+      await replacementPermission.save();
+    } else {
+      replacementPermission = await RecipientPermission.create({
+        recipientId: replacementRecipient._id,
+        envelopeId: envelope._id,
+        role: 'signer',
+        order: originalOrder,
+        status: originalStatus,
+        authLevel: originalAuth,
+      });
+    }
+
+    // Keep both in recipientIds: replacement signer + current as CC.
+    const hasReplacement = (envelope.recipientIds || []).some(
+      (rid) => String(rid) === String(replacementRecipient._id)
+    );
+    if (!hasReplacement) {
+      envelope.recipientIds.push(replacementRecipient._id);
+      await envelope.save();
+    }
+
+    // Transfer unsigned fields assigned to old recipient to new signer.
+    await SignatureField.updateMany(
+      {
+        envelopeId: envelope._id,
+        recipientId: currentRecipient._id,
+        status: { $ne: 'completed' },
+      },
+      { $set: { recipientId: replacementRecipient._id } }
+    );
+
+    // Notify sender in in-app notifications.
+    try {
+      if (envelope.sender) {
+        await Notification.create({
+          userId: envelope.sender.toString(),
+          envelopeId: envelope._id,
+          recipientId: replacementRecipient._id,
+          recipientName: replacementRecipient.name,
+          envelopeSubject: envelope.subject || 'Untitled envelope',
+          type: 'signature_completed',
+          message: `${currentRecipient.name || currentRecipient.email} reassigned signing to ${replacementRecipient.name} (${replacementRecipient.email})`,
+        });
+      }
+    } catch (notifErr) {
+      console.error('Error creating reassignment notification:', notifErr);
+    }
+
+    // Send signer link immediately if old recipient was currently in "sent" state.
+    try {
+      if (String(originalStatus).toLowerCase() === 'sent') {
+        const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelope._id}/${replacementRecipient._id}`;
+        const html = signRequestTemplate(
+          replacementRecipient.name,
+          envelope.subject,
+          `${envelope.message || ''}${assignmentReason ? `\n\nReassignment reason: ${assignmentReason}` : ''}`,
+          signLink
+        );
+        await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${envelope.sender}`, {
+          toEmail: replacementRecipient.email,
+          subject: `Action Required: Sign "${envelope.subject}"`,
+          html,
+        });
+      }
+    } catch (mailErr) {
+      console.error('Error sending reassignment signer email:', mailErr?.message || mailErr);
+    }
+
+    // Inform old signer they are now CC (best effort).
+    try {
+      if (currentRecipient.email && currentRecipient.email !== replacementRecipient.email) {
+        const html = `
+          <div style="font-family:Arial,sans-serif;font-size:14px;color:#111827;">
+            <p>Hello ${currentRecipient.name || 'Signer'},</p>
+            <p>You have reassigned your signing request for <strong>${envelope.subject || 'an envelope'}</strong> to <strong>${replacementRecipient.name}</strong> (${replacementRecipient.email}).</p>
+            <p>You will now receive updates as a carbon copy recipient.</p>
+            ${assignmentReason ? `<p><strong>Reason:</strong> ${assignmentReason}</p>` : ''}
+          </div>
+        `;
+        await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${envelope.sender}`, {
+          toEmail: currentRecipient.email,
+          subject: `Signing reassigned for "${envelope.subject}"`,
+          html,
+        });
+      }
+    } catch (mailErr) {
+      console.error('Error sending reassignment CC email:', mailErr?.message || mailErr);
+    }
+
+    await logActivity(envelope._id, 'RECIPIENT_REASSIGNED', 'Recipient', {
+      previousRecipientId: currentRecipient._id,
+      previousRecipientEmail: currentRecipient.email,
+      newRecipientId: replacementRecipient._id,
+      newRecipientEmail: replacementRecipient.email,
+      reason: assignmentReason,
+    });
+    await AuditTrail.create({
+      envelopeId: envelope._id,
+      recipientId: currentRecipient._id,
+      action: 'RECIPIENT_REASSIGNED',
+      details: {
+        previousRecipientId: currentRecipient._id,
+        previousRecipientName: currentRecipient.name || '',
+        previousRecipientEmail: currentRecipient.email || '',
+        newRecipientId: replacementRecipient._id,
+        newRecipientName: replacementRecipient.name || '',
+        newRecipientEmail: replacementRecipient.email || '',
+        reason: assignmentReason,
+      },
+      ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '',
+      userAgent: req.headers['user-agent'] || '',
+      timestamp: new Date(),
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Envelope recipient reassigned successfully',
+      data: {
+        envelopeId: envelope._id,
+        previousRecipientId: currentRecipient._id,
+        newRecipientId: replacementRecipient._id,
+      }
+    });
+  } catch (error) {
+    console.error('assignEnvelopeToSomeoneElsePublic error:', error);
+    return res.status(500).json({
+      message: 'Failed to assign to someone else',
+      error: error.message
+    });
+  }
+};
+
+const declineEnvelopePublic = async (req, res) => {
+  try {
+    const { envelopeId, recipientId, reason = '' } = req.body || {};
+    if (!envelopeId || !recipientId) {
+      return res.status(400).json({ message: 'envelopeId and recipientId are required' });
+    }
+
+    const declineReason = String(reason || '').trim();
+    if (!declineReason) {
+      return res.status(400).json({ message: 'Decline reason is required' });
+    }
+
+    const envelope = await Envelope.findById(envelopeId);
+    if (!envelope) {
+      return res.status(404).json({ message: 'Envelope not found' });
+    }
+
+    const recipient = await Recipient.findById(recipientId);
+    if (!recipient) {
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
+
+    const permission = await RecipientPermission.findOne({
+      envelopeId: envelope._id,
+      recipientId: recipient._id,
+    });
+    if (!permission) {
+      return res.status(404).json({ message: 'Recipient permission not found for this envelope' });
+    }
+
+    const currentStatus = String(permission.status || '').toLowerCase();
+    if (currentStatus === 'completed') {
+      return res.status(400).json({ message: 'Completed recipient cannot decline this envelope' });
+    }
+    if (currentStatus === 'declined' || String(envelope.status || '').toLowerCase() === 'declined') {
+      return res.status(200).json({ status: 'success', message: 'Envelope already declined' });
+    }
+
+    permission.status = 'declined';
+    if (Array.isArray(permission.authLevel) && permission.authLevel.length > 0) {
+      permission.authLevel = permission.authLevel.map((a) => ({
+        ...a.toObject?.(),
+        status: 'rejected',
+      }));
+    }
+    await permission.save();
+
+    envelope.status = 'declined';
+    await envelope.save();
+
+    await logActivity(envelope._id, 'RECIPIENT_DECLINED', 'Recipient', {
+      recipientId: recipient._id,
+      recipientName: recipient.name || '',
+      recipientEmail: recipient.email || '',
+      reason: declineReason,
+    });
+
+    await AuditTrail.create({
+      envelopeId: envelope._id,
+      recipientId: recipient._id,
+      action: 'RECIPIENT_DECLINED',
+      details: {
+        recipientId: recipient._id,
+        recipientName: recipient.name || '',
+        recipientEmail: recipient.email || '',
+        reason: declineReason,
+      },
+      ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '',
+      userAgent: req.headers['user-agent'] || '',
+      timestamp: new Date(),
+    });
+
+    try {
+      if (envelope.sender) {
+        await Notification.create({
+          userId: envelope.sender.toString(),
+          envelopeId: envelope._id,
+          recipientId: recipient._id,
+          recipientName: recipient.name || recipient.email || 'Recipient',
+          envelopeSubject: envelope.subject || 'Untitled envelope',
+          type: 'signature_completed',
+          message: `${recipient.name || recipient.email} declined "${envelope.subject || 'envelope'}"`,
+        });
+      }
+    } catch (notifErr) {
+      console.error('Error creating decline notification:', notifErr);
+    }
+
+    try {
+      if (envelope.sender) {
+        let ownerEmail = '';
+        try {
+          const resp = await axios.get(`${process.env.AUTH_URL}/api/user-details/${envelope.sender}`, {
+            headers: req.headers?.authorization ? { Authorization: req.headers.authorization } : {}
+          });
+          ownerEmail = String(resp?.data?.data?.email || '').trim();
+        } catch (_) {
+          // best effort only
+        }
+
+        if (!ownerEmail) {
+          console.warn(`declineEnvelopePublic: sender email unavailable for user ${envelope.sender}`);
+        } else {
+        const safeReason = declineReason
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+        const html = `
+          <div style="font-family:Segoe UI,Arial,sans-serif;max-width:680px;margin:0 auto;background:#fff;border:1px solid #ececf3;border-radius:10px;overflow:hidden">
+            <div style="background:linear-gradient(90deg,#4D0080,#8E2DE2);padding:18px 22px;color:#fff">
+              <h2 style="margin:0;font-size:18px;font-weight:600;">Recipient Declined to Sign</h2>
+            </div>
+            <div style="padding:20px 22px;color:#1f2937;font-size:14px;line-height:1.6">
+              <p style="margin:0 0 10px 0;">A recipient has declined your envelope.</p>
+              <p style="margin:0;"><strong>Envelope:</strong> ${envelope.subject || 'Untitled envelope'}</p>
+              <p style="margin:0;"><strong>Recipient:</strong> ${recipient.name || 'Recipient'} (${recipient.email || 'N/A'})</p>
+              <p style="margin:10px 0 0 0;"><strong>Reason:</strong></p>
+              <div style="background:#f8f8ff;border-left:4px solid #4D0080;padding:10px 12px;border-radius:4px;margin-top:6px;white-space:pre-wrap">${safeReason}</div>
+            </div>
+          </div>`;
+        await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${envelope.sender}`, {
+          toEmail: ownerEmail,
+          subject: `Recipient declined: "${envelope.subject || 'Envelope'}"`,
+          html,
+        });
+        }
+      }
+    } catch (mailErr) {
+      console.error('Error sending decline email to owner:', mailErr?.message || mailErr);
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Envelope declined successfully'
+    });
+  } catch (error) {
+    console.error('declineEnvelopePublic error:', error);
+    return res.status(500).json({
+      message: 'Failed to decline envelope',
+      error: error.message
+    });
+  }
+};
 // Export functions
 // Process scheduled envelopes (to be called by a cron job or worker)
 const processScheduledEnvelopes = async () => {
@@ -2361,6 +2763,8 @@ module.exports = {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   LinkUserRecipient,
+  assignEnvelopeToSomeoneElsePublic,
+  declineEnvelopePublic,
   fetchBulkEnvelopes,
   downloadCompletionZip,
   acceptTerms
