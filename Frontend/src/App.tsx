@@ -89,7 +89,12 @@ const App: React.FC = () => {
               <SidebarProvider>
                 <ThemeConfig>
                   <RouterProvider router={router} />
-                  <Toaster />
+                  <Toaster
+                    containerStyle={{ zIndex: 10100 }}
+                    toastOptions={{
+                      style: { zIndex: 10100 },
+                    }}
+                  />
                   <GlobalPlansModalPortal />
                   <ConditionalWidgets />
                 </ThemeConfig>

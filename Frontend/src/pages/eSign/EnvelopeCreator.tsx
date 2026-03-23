@@ -48,6 +48,14 @@ import SignatureTypeSelector from '../../components/ESign/advanced/SignatureType
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
+import SavedRecipientContactFields from '../../components/ESign/SavedRecipientContactFields';
+import {
+  validateSavedRecipientForm,
+  validateSavedRecipientField,
+  isSavedRecipientFormValid,
+  type SavedRecipientFormValues,
+  type SavedRecipientFormErrors,
+} from '../../components/ESign/recipientContactFormValidation';
 import { SubscriptionPlansModal } from '../../components/common/SubscriptionPlansModal';
 import { debounce } from '../../components/common/lib/utils';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
@@ -59,17 +67,49 @@ type EditorSignatureFieldExt = EditorSignatureField & {
 };
 import type { AxiosProgressEvent } from 'axios';
 type Party = {
-  id: string;                 
-  name: string;               
-  slot: number;               
+  id: string;
+  name: string;
+  slot: number;
   role?: 'signer' | 'approver' | 'carbon_copy' | string;
   authMethod?: 'email' | 'sms' | 'access_code' | 'none' | string;
   required?: boolean;
 };
+type EnvelopeRecipient = Recipient & { phone?: string };
 
 import { Document as PDFDocument, Page as PDFPage } from 'react-pdf';
 import DatePicker from 'react-datepicker';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 import "react-datepicker/dist/react-datepicker.css";
+
+/** Match saved recipient rows by name, email, company, title, or phone (digits normalized). */
+function recipientListRowMatchesQuery(
+  r: {
+    name: string;
+    email: string;
+    title?: string;
+    company?: string;
+    phone?: string;
+  },
+  rawQuery: string
+): boolean {
+  const q = rawQuery.trim();
+  if (!q) return true;
+
+  const searchLower = q.toLowerCase();
+  const textMatch =
+    r.name.toLowerCase().includes(searchLower) ||
+    r.email.toLowerCase().includes(searchLower) ||
+    (r.company?.toLowerCase().includes(searchLower) ?? false) ||
+    (r.title?.toLowerCase().includes(searchLower) ?? false);
+  if (textMatch) return true;
+
+  const queryDigits = q.replace(/\D/g, '');
+  if (queryDigits.length < 1) return false;
+
+  const phoneDigits = (r.phone || '').replace(/\D/g, '');
+  return phoneDigits.length > 0 && phoneDigits.includes(queryDigits);
+}
 
 const EnvelopeCreator: React.FC = () => {
   const location = useLocation();
@@ -110,7 +150,7 @@ const EnvelopeCreator: React.FC = () => {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [documentTitle, setDocumentTitle] = useState<string>('');
   const [documents, setDocuments] = useState<ESDocument[]>([]);
-  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [recipients, setRecipients] = useState<EnvelopeRecipient[]>([]);
   const [_files, setFiles] = useState<FileList | null>(null);
   const [envelopeId, setEnvelopeId] = useState<string | null>(null);
   const [signatureFields, setSignatureFields] = useState<EditorSignatureFieldExt[]>([]);
@@ -160,7 +200,7 @@ const EnvelopeCreator: React.FC = () => {
             id: `doc_${Date.now()}_${Math.random()}`,
             name: file.name,
             size: file.size,
-            pages: pageCount, 
+            pages: pageCount,
             type: file.type,
             url: URL.createObjectURL(file),
             file: file,
@@ -179,12 +219,12 @@ const EnvelopeCreator: React.FC = () => {
       } else if (documents.length === 0) {
         const pendingDocId = localStorage.getItem('pendingDocumentId');
         const pendingSessionId = localStorage.getItem('pendingSessionId');
-        
+
         if (pendingDocId || pendingSessionId) {
           try {
             const { aiContentService } = await import('../../services/aiContentService');
             const response = await aiContentService.getPendingDocument(pendingDocId || undefined, pendingSessionId || undefined);
-            
+
             if (response.success && response.data) {
               const pdfResponse = await aiContentService.convertToPDF({
                 content: response.data.content,
@@ -208,7 +248,7 @@ const EnvelopeCreator: React.FC = () => {
                   id: `doc_${Date.now()}_${Math.random()}`,
                   name: file.name,
                   size: file.size,
-                  pages: pageCount, 
+                  pages: pageCount,
                   type: file.type,
                   url: URL.createObjectURL(file),
                   file: file,
@@ -253,7 +293,7 @@ const EnvelopeCreator: React.FC = () => {
     }
   }, [documents?.length]);
   const [showDocuments, setShowDocuments] = useState(true);
-  const [stackedDocIndex, setStackedDocIndex] = useState(0); 
+  const [stackedDocIndex, setStackedDocIndex] = useState(0);
   const [openRoleDropdownId, setOpenRoleDropdownId] = useState<string | null>(null);
   const [openCustomizeDropdownId, setOpenCustomizeDropdownId] = useState<string | null>(null);
   const [setSigningOrder, setSetSigningOrder] = useState(false);
@@ -284,6 +324,12 @@ const EnvelopeCreator: React.FC = () => {
   const [authModalForBulk, setAuthModalForBulk] = useState<boolean>(false);
   const [tempAuthSelection, setTempAuthSelection] = useState<string[] | undefined>(undefined);
   const [hasUserChangedSelection, setHasUserChangedSelection] = useState<boolean>(false);
+  const [showMissingRecipientPhoneModal, setShowMissingRecipientPhoneModal] = useState<boolean>(false);
+  const [missingPhoneRecipientId, setMissingPhoneRecipientId] = useState<string | null>(null);
+  const [missingPhoneValue, setMissingPhoneValue] = useState<string>('');
+  const [missingPhoneError, setMissingPhoneError] = useState<string>('');
+  const [pendingAuthSelectionAfterPhone, setPendingAuthSelectionAfterPhone] = useState<string[] | null>(null);
+  const [savingMissingPhone, setSavingMissingPhone] = useState<boolean>(false);
 
   const DEFAULT_AUTH_METHOD_ID = '68ee2a18ba0c0738eb275d34';
   const DEFAULT_AUTH_JSON = JSON.stringify([{ authMethodId: DEFAULT_AUTH_METHOD_ID, status: 'pending' }]);
@@ -323,6 +369,68 @@ const EnvelopeCreator: React.FC = () => {
     return items.length > 0 ? JSON.stringify(items) : null;
   };
 
+  const loadAvailableAuthMethods = async (): Promise<any[]> => {
+    if (authMethods.length > 0) return authMethods;
+    try {
+      const authResponse = await subscriptionApi.get('/user/available/auth/methods');
+      const methods = authResponse?.data?.data?.methods || [];
+      if (Array.isArray(methods) && methods.length > 0) {
+        setAuthMethods(methods);
+        return methods;
+      }
+    } catch (err) {
+      console.warn('Failed to load auth methods for recipient requirement checks', err);
+    }
+    return authMethods;
+  };
+
+  const selectionRequiresPhone = async (selectedMethodIds: string[]): Promise<boolean> => {
+    if (!selectedMethodIds || selectedMethodIds.length === 0) return false;
+    const hasSmsLikeText = (value: any): boolean => {
+      const t = String(value || '').toLowerCase();
+      return t.includes('sms') || t.includes('phone') || t.includes('mobile');
+    };
+    const hasPhoneRequirement = (method: any): boolean => {
+      const reqArrays = [
+        method?.requiredFields,
+        method?.requirements,
+        method?.metadata?.requiredFields,
+        method?.inputFields,
+        method?.uiSchema?.requiredFields,
+      ].filter(Array.isArray);
+
+      return reqArrays.some((arr: any[]) =>
+        arr.some((f: any) => {
+          const v = typeof f === 'string' ? f : (f?.name || f?.field || f?.key || '');
+          const t = String(v || '').toLowerCase();
+          return t.includes('phone') || t.includes('mobile') || t.includes('sms');
+        })
+      );
+    };
+
+    const methodsPool = await loadAvailableAuthMethods();
+
+    return selectedMethodIds.some((id) => {
+      const method = methodsPool.find((m: any) => {
+        const methodId = String(m?.id ?? m?._id ?? m?.authMethodId ?? '').trim();
+        return methodId === String(id).trim();
+      });
+      if (!method) return hasSmsLikeText(id);
+      return (
+        hasPhoneRequirement(method) ||
+        hasSmsLikeText(method?.name) ||
+        hasSmsLikeText(method?.key) ||
+        hasSmsLikeText(method?.slug) ||
+        hasSmsLikeText(method?.type) ||
+        hasSmsLikeText(method?.verificationType) ||
+        hasSmsLikeText(method?.channel) ||
+        hasSmsLikeText(method?.description) ||
+        hasSmsLikeText(method?.uiSchema?.title) ||
+        hasSmsLikeText(method?.uiSchema?.description)
+      );
+    });
+  };
+
   useEffect(() => {
     if (showAuthModal && !hasUserChangedSelection) {
       if (authModalForBulk) {
@@ -356,7 +464,7 @@ const EnvelopeCreator: React.FC = () => {
   const getTomorrowDate = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0]; 
+    return d.toISOString().split('T')[0];
   };
   const [shouldOpenAuthModalFromTour, setShouldOpenAuthModalFromTour] = useState<boolean>(false);
   const [showSendConfirmationModal, setShowSendConfirmationModal] = useState<boolean>(false);
@@ -370,7 +478,7 @@ const EnvelopeCreator: React.FC = () => {
     tomorrow.setHours(10, 0, 0, 0);
     return tomorrow;
   });
-  
+
   const getMinTime = (): Date => {
     const now = new Date();
     const selected = scheduledDateTime;
@@ -394,11 +502,11 @@ const EnvelopeCreator: React.FC = () => {
   const helpMenuRef = useRef<HTMLDivElement | null>(null);
   const helpButtonRef = useRef<HTMLButtonElement | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState<boolean>(false);
-  const [showSummary, setShowSummary] = useState<boolean>(false);  
+  const [showSummary, setShowSummary] = useState<boolean>(false);
   const hasRecipientsWithAuth = useMemo(() => {
     return recipients.some((recipient) => {
       const authArray = parseAuthentication(recipient.authentication);
-      const authMethodList = authArray.map(authId => 
+      const authMethodList = authArray.map(authId =>
         authMethods.find(m => m.id === authId)
       ).filter(Boolean);
       return authMethodList.length > 0;
@@ -411,14 +519,14 @@ const EnvelopeCreator: React.FC = () => {
       setShowSummary(false);
     }
   }, [hasRecipientsWithAuth, recipients.length]);
-  
+
   useEffect(() => {
     if (!helpMenuOpen) return;
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (
-        helpMenuRef.current && 
+        helpMenuRef.current &&
         !helpMenuRef.current.contains(target) &&
         helpButtonRef.current &&
         !helpButtonRef.current.contains(target)
@@ -426,13 +534,13 @@ const EnvelopeCreator: React.FC = () => {
         setHelpMenuOpen(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [helpMenuOpen]);
-  
+
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const advancedContentRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = {
@@ -442,7 +550,7 @@ const EnvelopeCreator: React.FC = () => {
     mobileFriendly: useRef<HTMLDivElement | null>(null),
     comments: useRef<HTMLDivElement | null>(null),
   } as const;
-  
+
   const [advancedOptions, setAdvancedOptions] = useState({
     canSignOnPaper: true,
     canDelegate: false,
@@ -510,9 +618,9 @@ const EnvelopeCreator: React.FC = () => {
     }, 100);
     return () => clearTimeout(timeoutId);
   }, [isCreatorTourOpen, creatorTourIndex, showRecipients, setSigningOrder, showAddMessage]);
-  const closeCreatorTour = () => { 
-    setIsCreatorTourOpen(false); 
-    setCreatorTourIndex(0); 
+  const closeCreatorTour = () => {
+    setIsCreatorTourOpen(false);
+    setCreatorTourIndex(0);
     setCreatorTargetRect(null);
     markTourAsCompleted();
   };
@@ -551,7 +659,7 @@ const EnvelopeCreator: React.FC = () => {
   };
   const prevCreatorStep = () => setCreatorTourIndex(i => Math.max(i - 1, 0));
   const creatorTourStartedRef = useRef<boolean>(false);
-  
+
   const hasCompletedCreatorTour = () => {
     try {
       const completed = localStorage.getItem('creatorTourCompleted');
@@ -572,10 +680,10 @@ const EnvelopeCreator: React.FC = () => {
   useEffect(() => {
     if (!creatorTourStartedRef.current) {
       creatorTourStartedRef.current = true;
-      
+
       const isNewUser = user?.isFirstLogin === true;
       const hasCompleted = hasCompletedCreatorTour();
-      
+
       if (isNewUser && !hasCompleted) {
         setIsCreatorTourOpen(true);
         setCreatorTourIndex(0);
@@ -585,7 +693,7 @@ const EnvelopeCreator: React.FC = () => {
 
   useEffect(() => {
     if (!shouldOpenAuthModalFromTour) return;
-    
+
     const timeoutId = setTimeout(() => {
       const customizeButton = document.querySelector('[data-tour="ec-customize"]') as HTMLElement;
       if (customizeButton) {
@@ -719,12 +827,12 @@ const EnvelopeCreator: React.FC = () => {
     setBulkList({ role: roleToUse, items: cleaned });
     if (!bulkBatchName) setBulkBatchName('Bulk Send List');
     hasAutoAddedRecipient.current = true;
-    
+
     setRecipients(prev => {
       const filtered = prev.filter(r => r.name && r.name.trim() && r.email && r.email.trim());
-      
+
       const nextOrder = filtered.length > 0 ? Math.max(...filtered.map(r => r.order || 0)) + 1 : 1;
-      
+
       const bulkRecipients: Recipient[] = cleaned.map((item, idx) => ({
         id: `bulk_recipient_${Date.now()}_${idx}`,
         name: item.name,
@@ -734,21 +842,21 @@ const EnvelopeCreator: React.FC = () => {
         status: 'waiting' as const,
         authentication: DEFAULT_AUTH_JSON as Recipient['authentication'] // Default: secret email verification
       }));
-      
+
       // Combine and normalize orders
       const combined = [...filtered, ...bulkRecipients];
       const normalized = normalizeOrders(combined);
-      
+
       // If total recipients exceed 3, set the first bulk recipient as active
       if (normalized.length > 3 && bulkRecipients.length > 0) {
         setActiveRecipientId(bulkRecipients[0].id);
       } else if (normalized.length <= 3) {
         setActiveRecipientId(null);
       }
-      
+
       return normalized;
     });
-    
+
     setShowRecipients(true);
     setShowBulkModal(false);
   };
@@ -1150,19 +1258,80 @@ const EnvelopeCreator: React.FC = () => {
   const emailSuggestionsContainerRef = useRef<HTMLDivElement | null>(null);
   const [showRecipientListModal, setShowRecipientListModal] = useState(false);
   const [recipientListModalForId, setRecipientListModalForId] = useState<string | null>(null);
-  const [savedRecipients, setSavedRecipients] = useState<Array<{ _id: string; name: string; email: string; title?: string; company?: string; phone?: string; address?: string }>>([]);
+  type SavedRecipientRow = {
+    _id: string;
+    name: string;
+    email: string;
+    title?: string;
+    company?: string;
+    phone?: string;
+    address?: string;
+    /** True only if row came from GET /recipients (your address book). Envelope-only rows are not deletable via that API. */
+    addressBookEntry: boolean;
+  };
+  const [savedRecipients, setSavedRecipients] = useState<SavedRecipientRow[]>([]);
   const [loadingSavedRecipients, setLoadingSavedRecipients] = useState(false);
   const [recipientListSearch, setRecipientListSearch] = useState('');
   const [showAddRecipientForm, setShowAddRecipientForm] = useState(false);
-  const [newRecipientForm, setNewRecipientForm] = useState({
+  const [newRecipientForm, setNewRecipientForm] = useState<SavedRecipientFormValues>({
     name: '',
     email: '',
     title: '',
     company: '',
     phone: '',
-    address: ''
+    address: '',
   });
+  const [recipientFormErrors, setRecipientFormErrors] = useState<SavedRecipientFormErrors>({});
   const [savingNewRecipient, setSavingNewRecipient] = useState(false);
+  /** Mongo ObjectId for saved address-book row; only those rows can be edited/deleted via API */
+  const [editingSavedRecipientId, setEditingSavedRecipientId] = useState<string | null>(null);
+  const [deletingSavedRecipientId, setDeletingSavedRecipientId] = useState<string | null>(null);
+
+  const isPersistedAddressBookRecipientId = (id: string) => /^[a-f\d]{24}$/i.test(String(id || ''));
+
+  const resetNewRecipientFormState = () => {
+    setNewRecipientForm({
+      name: '',
+      email: '',
+      title: '',
+      company: '',
+      phone: '',
+      address: '',
+    });
+    setRecipientFormErrors({});
+  };
+
+  const handleSavedRecipientFieldChange = (
+    field: keyof SavedRecipientFormValues,
+    value: string
+  ) => {
+    setNewRecipientForm((prev) => {
+      const next = { ...prev, [field]: value };
+      const msg = validateSavedRecipientField(field, next);
+      setRecipientFormErrors((er) => {
+        const copy: SavedRecipientFormErrors = { ...er };
+        if (msg) copy[field] = msg;
+        else delete copy[field];
+        return copy;
+      });
+      return next;
+    });
+  };
+
+  const handleSavedRecipientPhoneChange = (val: string) => {
+    setNewRecipientForm((prev) => {
+      const next = { ...prev, phone: val };
+      const msg = validateSavedRecipientField('phone', next);
+      setRecipientFormErrors((er) => {
+        const copy: SavedRecipientFormErrors = { ...er };
+        if (msg) copy.phone = msg;
+        else delete copy.phone;
+        return copy;
+      });
+      return next;
+    });
+  };
+
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
@@ -1584,7 +1753,7 @@ const EnvelopeCreator: React.FC = () => {
           type: doc.type || 'application/pdf',
           url: doc.url || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${encodeURIComponent(doc.name || '')}`,
         }));
-        
+
         // Verify and update page counts for documents loaded from backend
         const docsWithPageCounts = await Promise.all(
           apiDocs.map(async (doc: any) => {
@@ -1607,7 +1776,7 @@ const EnvelopeCreator: React.FC = () => {
             return doc;
           })
         );
-        
+
         setDocuments(docsWithPageCounts);
         console.log('Fetched documents:', apiDocs);
         const loadedRecipients = response.data.data.recipients || [];
@@ -1636,7 +1805,7 @@ const EnvelopeCreator: React.FC = () => {
         if (typeof env.envelopetype === 'string' && env.envelopetype) {
           setSelectedEnvelopeType(env.envelopetype);
         }
-        
+
         // Load advanced options from envelope
         if (env.expirationDate) {
           const expirationDate = new Date(env.expirationDate);
@@ -1655,7 +1824,7 @@ const EnvelopeCreator: React.FC = () => {
             expirationAlertDays: typeof env.expirationAlertDays === 'number' ? env.expirationAlertDays : prev.expirationAlertDays,
           }));
         }
-        
+
         // Load other advanced options if they exist
         setAdvancedOptions(prev => ({
           ...prev,
@@ -1664,7 +1833,7 @@ const EnvelopeCreator: React.FC = () => {
           responsiveSigning: typeof env.responsiveSigning === 'boolean' ? env.responsiveSigning : prev.responsiveSigning,
           commentsEnabled: typeof env.commentsEnabled === 'boolean' ? env.commentsEnabled : prev.commentsEnabled,
         }));
-        
+
         setEnvelopeId(envelopeId);
       }
     } catch (error) {
@@ -1833,7 +2002,7 @@ const EnvelopeCreator: React.FC = () => {
       if (element) {
         // Scroll to element with more padding to ensure it's centered
         element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        
+
         // Get the input field (either the element itself or one inside it)
         let inputField: HTMLElement | null = null;
         if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
@@ -1841,15 +2010,15 @@ const EnvelopeCreator: React.FC = () => {
         } else {
           inputField = element.querySelector('input, select, textarea') as HTMLElement;
         }
-        
+
         if (inputField) {
           setTimeout(() => {
             // Scroll the field into view again to ensure it's centered
             inputField!.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-            
+
             // Focus the field (this moves the text cursor there and positions the caret)
             inputField!.focus();
-            
+
             // If it's an input, also select the text if any (makes it more obvious where to type)
             if (inputField instanceof HTMLInputElement || inputField instanceof HTMLTextAreaElement) {
               // Small delay to ensure focus is complete before selecting
@@ -1857,14 +2026,14 @@ const EnvelopeCreator: React.FC = () => {
                 inputField!.select();
               }, 50);
             }
-            
+
             // Highlight the field with prominent red border and animation
             inputField.style.borderColor = '#ef4444';
             inputField.style.borderWidth = '2px';
             inputField.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.2), 0 0 20px rgba(239, 68, 68, 0.3)';
             inputField.style.transition = 'all 0.3s ease';
             inputField.style.zIndex = '9999';
-            
+
             // Add a pulsing animation to draw attention
             let pulseCount = 0;
             const pulseInterval = setInterval(() => {
@@ -1878,7 +2047,7 @@ const EnvelopeCreator: React.FC = () => {
                 clearInterval(pulseInterval);
               }
             }, 600);
-            
+
             // Remove highlight after 4 seconds
             setTimeout(() => {
               inputField!.style.borderColor = '';
@@ -1898,7 +2067,7 @@ const EnvelopeCreator: React.FC = () => {
             element.style.outlineOffset = '';
           }, 4000);
         }
-        
+
         // Show toast message
         toast.error(message, {
           duration: 4000,
@@ -1917,7 +2086,7 @@ const EnvelopeCreator: React.FC = () => {
   // Update your "Next" button handler:
   const handleNext = async () => {
     if (nextLoading) return;
-    
+
     // Validate fields first
     const validation = validateAndScrollToField();
     if (!validation.isValid) {
@@ -1926,7 +2095,7 @@ const EnvelopeCreator: React.FC = () => {
       }
       return;
     }
-    
+
     setNextLoading(true);
     try {
       if (currentStep === 1) {
@@ -2052,13 +2221,13 @@ const EnvelopeCreator: React.FC = () => {
   const handleOrderChange = (recipientId: string, newOrder: number) => {
     const maxOrder = recipients.length;
     const clampedOrder = Math.max(1, Math.min(newOrder, maxOrder));
-    
+
     setRecipients(prev => {
       const recipient = prev.find(r => r.id === recipientId);
       if (!recipient) return prev;
-      
+
       const oldOrder = recipient.order || prev.findIndex(r => r.id === recipientId) + 1;
-      
+
       // If order didn't change, return as is
       if (oldOrder === clampedOrder) {
         setTempOrderValues(prev => {
@@ -2068,11 +2237,11 @@ const EnvelopeCreator: React.FC = () => {
         });
         return prev;
       }
-      
+
       // Trigger animation
       setIsReordering(true);
       setReorderingRecipientId(recipientId);
-      
+
       // Create updated list
       const updated = prev.map(r => {
         if (r.id === recipientId) {
@@ -2092,23 +2261,23 @@ const EnvelopeCreator: React.FC = () => {
         }
         return r;
       });
-      
+
       // Normalize orders to ensure they're sequential
       const normalized = normalizeOrders(updated);
-      
+
       // Clear temp value after applying
       setTempOrderValues(prev => {
         const next = { ...prev };
         delete next[recipientId];
         return next;
       });
-      
+
       // End animation after transition completes
       setTimeout(() => {
         setIsReordering(false);
         setReorderingRecipientId(null);
       }, 600);
-      
+
       return normalized;
     });
   };
@@ -2132,20 +2301,23 @@ const EnvelopeCreator: React.FC = () => {
     }
   };
 
-  const updateRecipient = (id: string, updates: Partial<Recipient>) => {
+  const updateRecipient = (id: string, updates: Partial<EnvelopeRecipient>) => {
     // If order is being updated, use the special handler
     if (updates.order !== undefined) {
       handleOrderChange(id, updates.order);
       return;
     }
-    
+
     setRecipients(prev => prev.map(recipient =>
       recipient.id === id ? { ...recipient, ...updates } : recipient
     ));
   };
 
   // Handle authentication method selection
-  const handleAuthMethodSelect = async (methodIds: string | null | string[]) => {
+  const handleAuthMethodSelect = async (
+    methodIds: string | null | string[],
+    options?: { bypassRecipientPhoneCheck?: boolean; forceRecipientId?: string }
+  ) => {
     try {
       // Normalize to array: handle both single string and array
       let normalizedMethods: string[] = [];
@@ -2156,7 +2328,7 @@ const EnvelopeCreator: React.FC = () => {
       } else if (methodIds && typeof methodIds === 'string' && methodIds.trim().length > 0) {
         normalizedMethods = [methodIds];
       }
-      
+
       const authString = stringifyAuthentication(normalizedMethods);
 
       if (authModalForBulk) {
@@ -2166,22 +2338,23 @@ const EnvelopeCreator: React.FC = () => {
           authentication: authString || undefined
         }));
         setRecipients(newRecipients);
-        
+
         // If we have an envelopeId, persist the recipient authentication in DB
         if (envelopeId) {
           const recipientPayload = newRecipients.map(r => ({
             name: r.name,
             email: r.email,
+            phone: r.phone || null,
             role: r.role,
             order: r.order,
             authentication: r.authentication || null
           }));
-          
+
           const resp = await eSignApi.post('/api/e-sign/add-recipients', {
             envelopeId,
             recipients: recipientPayload
           });
-          
+
           if (resp.status === 200) {
             await getEnvelopeDetail(envelopeId);
             toast.success(normalizedMethods.length > 0 ? `${normalizedMethods.length} authentication method(s) applied to all recipients` : 'Cleared authentication for all recipients');
@@ -2189,27 +2362,50 @@ const EnvelopeCreator: React.FC = () => {
         } else {
           toast.success(normalizedMethods.length > 0 ? 'Authentication methods will be saved when recipients are added' : 'Authentication cleared (will save with recipients)');
         }
-      } else if (authModalForRecipientId) {
+      } else if (authModalForRecipientId || options?.forceRecipientId) {
+        const targetRecipientId = options?.forceRecipientId || authModalForRecipientId;
+        const targetRecipient = recipients.find(r => r.id === targetRecipientId);
+        const requiresPhone = await selectionRequiresPhone(normalizedMethods);
+
+        if (
+          targetRecipientId &&
+          targetRecipient &&
+          !options?.bypassRecipientPhoneCheck &&
+          requiresPhone &&
+          String(targetRecipient.phone || '').replace(/\D/g, '').length === 0
+        ) {
+          setShowAuthModal(false);
+          setMissingPhoneRecipientId(targetRecipientId);
+          setPendingAuthSelectionAfterPhone(normalizedMethods);
+          setMissingPhoneValue(String(targetRecipient.phone || ''));
+          setMissingPhoneError('');
+          setShowMissingRecipientPhoneModal(true);
+          return;
+        }
+
         // Apply to specific recipient
-        updateRecipient(authModalForRecipientId, { authentication: authString || undefined });
-        
+        if (targetRecipientId) {
+          updateRecipient(targetRecipientId, { authentication: authString || undefined });
+        }
+
         // If we have an envelopeId, persist the recipient authentication in DB
         if (envelopeId) {
-          const recipient = recipients.find(r => r.id === authModalForRecipientId);
+          const recipient = recipients.find(r => r.id === targetRecipientId);
           if (recipient) {
             const recipientPayload = [{
               name: recipient.name,
               email: recipient.email,
+              phone: recipient.phone || null,
               role: recipient.role,
               order: recipient.order,
               authentication: authString || null
             }];
-            
+
             const resp = await eSignApi.post('/api/e-sign/add-recipients', {
               envelopeId,
               recipients: recipientPayload
             });
-            
+
             if (resp.status === 200) {
               await getEnvelopeDetail(envelopeId);
               toast.success(normalizedMethods.length > 0 ? `${normalizedMethods.length} authentication method(s) applied to recipient` : 'Cleared authentication for recipient');
@@ -2219,7 +2415,7 @@ const EnvelopeCreator: React.FC = () => {
           toast.success(normalizedMethods.length > 0 ? 'Authentication methods will be saved when recipient is added' : 'Authentication cleared (will save with recipient)');
         }
       }
-      
+
       // Close modal
       setShowAuthModal(false);
       setAuthModalForRecipientId(null);
@@ -2248,18 +2444,18 @@ const EnvelopeCreator: React.FC = () => {
   const handleRecipientDragStart = (e: React.DragEvent, recipientId: string) => {
     if (!setSigningOrder) {
       e.preventDefault();
-      return; 
+      return;
     }
-    
+
     const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.tagName === 'TEXTAREA' || 
-        target.closest('button') || target.closest('input') || target.closest('textarea') || 
-        target.closest('.role-dropdown-container') || target.closest('.customize-dropdown-container') ||
-        target.closest('[data-recipient-name-id]') || target.closest('[data-recipient-email-id]')) {
+    if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.tagName === 'TEXTAREA' ||
+      target.closest('button') || target.closest('input') || target.closest('textarea') ||
+      target.closest('.role-dropdown-container') || target.closest('.customize-dropdown-container') ||
+      target.closest('[data-recipient-name-id]') || target.closest('[data-recipient-email-id]')) {
       e.preventDefault();
       return;
     }
-    
+
     setDraggedRecipientId(recipientId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', recipientId);
@@ -2288,7 +2484,7 @@ const EnvelopeCreator: React.FC = () => {
     setRecipients(prev => {
       const draggedRecipient = prev.find(r => r.id === draggedRecipientId);
       const targetRecipient = prev.find(r => r.id === targetRecipientId);
-      
+
       if (!draggedRecipient || !targetRecipient) return prev;
 
       const draggedOrder = draggedRecipient.order || prev.findIndex(r => r.id === draggedRecipientId) + 1;
@@ -2320,7 +2516,7 @@ const EnvelopeCreator: React.FC = () => {
 
     if (isDbRecord) {
       try {
-        await eSignApi.post(`/api/e-sign/envelope/remove-recipient/${id}/${envelopeId}`);        
+        await eSignApi.post(`/api/e-sign/envelope/remove-recipient/${id}/${envelopeId}`);
       } catch (error) {
         console.error('Failed to delete recipient from DB:', error);
       }
@@ -2336,7 +2532,7 @@ const EnvelopeCreator: React.FC = () => {
         }
       } else if (normalized.length <= 3) {
         setActiveRecipientId(null);
-      }      
+      }
       return normalized;
     });
   };
@@ -2365,7 +2561,7 @@ const EnvelopeCreator: React.FC = () => {
     }
     const totalCost = calculateTotalCost();
     const creditsBalance = subscriptionPlan?.creditsBalance || 0;
-    
+
     // Pure in-person flow (only in_person_signer + CC): skip the two-step
     // confirmation modal and go straight to confirmAndSendEnvelope so there
     // is no mail-sending summary/success UI.
@@ -2383,7 +2579,7 @@ const EnvelopeCreator: React.FC = () => {
       toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
       return;
     }
-    
+
     try {
       await fetchSendConfirmationData();
       setSendModalStep(1);
@@ -2398,16 +2594,16 @@ const EnvelopeCreator: React.FC = () => {
 
   const confirmAndSendEnvelope = async () => {
     if (!envelopeId) return;
-    
+
     if (isScheduled && scheduledDate) {
-      setShowSendConfirmationModal(false);      
+      setShowSendConfirmationModal(false);
       try {
         const timezoneOffset = new Date().getTimezoneOffset() * -1;
         await eSignApi.post(`/api/e-sign/schedule-envelope/${envelopeId}`, {
           scheduledDate,
           scheduledTime: scheduledTime || null,
           timezoneOffset: timezoneOffset
-        });       
+        });
         navigate(`/e-sign/aggrement?scheduled=true&envelopeId=${envelopeId}`);
       } catch (err: any) {
         console.error('Error scheduling envelope:', err);
@@ -2423,7 +2619,7 @@ const EnvelopeCreator: React.FC = () => {
     }
     const totalCost = calculateTotalCost();
     const creditsBalance = subscriptionPlan?.creditsBalance || 0;
-    
+
     if (totalCost > 0 && creditsBalance < totalCost) {
       setShowSendConfirmationModal(false);
       setSending(false);
@@ -2431,7 +2627,7 @@ const EnvelopeCreator: React.FC = () => {
       toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
       return;
     }
-    
+
     setSending(true);
     // Keep modal open to show loading state
     try {
@@ -2446,7 +2642,7 @@ const EnvelopeCreator: React.FC = () => {
         status: r.status,
         authentication: r.authentication || null
       }));
-      
+
       console.log('Saving recipients with updated order before sending:', recipientPayload);
       try {
         const saveResponse = await eSignApi.post('/api/e-sign/add-recipients', {
@@ -2454,10 +2650,10 @@ const EnvelopeCreator: React.FC = () => {
           recipients: recipientPayload
         });
         console.log('Recipients order saved successfully', saveResponse.data);
-        
+
         // Update local state with normalized recipients to keep UI in sync
         setRecipients(normalizedRecipients);
-        
+
         // Refresh envelope details to ensure backend state is reflected
         await getEnvelopeDetail(envelopeId);
       } catch (saveErr) {
@@ -2466,10 +2662,10 @@ const EnvelopeCreator: React.FC = () => {
         setSending(false);
         return;
       }
-      
+
       // Send the envelope immediately (only if not scheduled)
       await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
-      
+
       // Record credit usage
       const totalCost = calculateTotalCost();
       if (totalCost > 0 && subscriptionPlan) {
@@ -2494,12 +2690,12 @@ const EnvelopeCreator: React.FC = () => {
                 return null;
               }).filter(Boolean);
             }));
-            
+
             // Update credits in localStorage
             const newBalance = (subscriptionPlan.creditsBalance || 0) - totalCost;
             SubscriptionStorage.updateCredits(newBalance);
             setSubscriptionPlan((prev: any) => prev ? { ...prev, creditsBalance: newBalance } : null);
-            
+
             // Dispatch custom event to notify header and other components to refresh credits
             window.dispatchEvent(new CustomEvent('credits-updated'));
           }
@@ -2519,7 +2715,7 @@ const EnvelopeCreator: React.FC = () => {
           }
         }
       }
-      
+
       // Close modal before navigation
       setShowSendConfirmationModal(false);
 
@@ -2543,7 +2739,7 @@ const EnvelopeCreator: React.FC = () => {
       console.error(err);
       // Close modal before showing error alert
       setShowSendConfirmationModal(false);
-      
+
       Swal.fire({
         title: "Error",
         text: "Failed to send envelope. Please try again.",
@@ -2557,26 +2753,26 @@ const EnvelopeCreator: React.FC = () => {
   };
 
   // Calculate total cost based on authentication methods
-const calculateTotalCost = (): number => {
-  let total = 0;
+  const calculateTotalCost = (): number => {
+    let total = 0;
 
-  recipients.forEach((recipient) => {
-    const authArray = parseAuthentication(recipient.authentication);
-    if (authArray.length === 0) return;
+    recipients.forEach((recipient) => {
+      const authArray = parseAuthentication(recipient.authentication);
+      if (authArray.length === 0) return;
 
-    authArray.forEach((auth: any) => {
-      const methodId = typeof auth === "string" ? auth : auth.authMethodId;
+      authArray.forEach((auth: any) => {
+        const methodId = typeof auth === "string" ? auth : auth.authMethodId;
 
-      const authMethod = authMethods.find((m) => m.id === methodId);
+        const authMethod = authMethods.find((m) => m.id === methodId);
 
-      if (authMethod) {
-        total += authMethod.cost || 0;
-      }
+        if (authMethod) {
+          total += authMethod.cost || 0;
+        }
+      });
     });
-  });
 
-  return total;
-};
+    return total;
+  };
   useEffect(() => {
     getSteps();
   }, [location.search, routeEnvelopeId]);
@@ -2789,7 +2985,7 @@ const calculateTotalCost = (): number => {
         eSignApi.get('/api/e-sign/get-envelopes'),
         eSignApi.get('/api/e-sign/recipients')
       ]);
-      const recipientsMap = new Map<string, { _id: string; name: string; email: string; title?: string; company?: string; phone?: string; address?: string }>();
+      const recipientsMap = new Map<string, SavedRecipientRow>();
       if (savedRecipientsResponse.status === 'fulfilled') {
         const response = savedRecipientsResponse.value;
         const savedRecipients = response?.data?.data || [];
@@ -2797,14 +2993,16 @@ const calculateTotalCost = (): number => {
           savedRecipients.forEach((r: any) => {
             if (r?.email) {
               const email = r.email.toLowerCase();
+              const rawId = r._id ?? r.id;
               recipientsMap.set(email, {
-                _id: r._id || r.id,
+                _id: rawId != null ? String(rawId) : '',
                 name: r.name || '',
                 email: r.email,
                 title: r.title,
                 company: r.company,
                 phone: r.phone,
-                address: r.address
+                address: r.address,
+                addressBookEntry: true,
               });
             }
           });
@@ -2822,14 +3020,17 @@ const calculateTotalCost = (): number => {
                 if (r?.email) {
                   const email = r.email.toLowerCase();
                   if (!recipientsMap.has(email)) {
+                    const rawId = r.id ?? r._id;
                     recipientsMap.set(email, {
-                      _id: r.id || r._id || email,
+                      // Stable id for picker UI; not used for address-book DELETE (addressBookEntry is false).
+                      _id: rawId != null ? String(rawId) : `env:${email}`,
                       name: r.name || r.email,
                       email: r.email,
                       title: r.title,
                       company: r.company,
                       phone: r.phone,
-                      address: r.address
+                      address: r.address,
+                      addressBookEntry: false,
                     });
                   }
                 }
@@ -2859,32 +3060,116 @@ const calculateTotalCost = (): number => {
     if (recipientListModalForId) {
       updateRecipient(recipientListModalForId, {
         name: savedRecipient.name,
-        email: savedRecipient.email
+        email: savedRecipient.email,
+        phone: savedRecipient.phone || ''
       });
       setShowRecipientListModal(false);
       setRecipientListModalForId(null);
       setShowAddRecipientForm(false);
-      setNewRecipientForm({ name: '', email: '', title: '', company: '', phone: '', address: '' });
+      setEditingSavedRecipientId(null);
+      resetNewRecipientFormState();
     }
   };
 
-  // Handle add new recipient
+  // Handle add new recipient or update existing address-book entry
   const handleAddNewRecipient = async () => {
-    if (!newRecipientForm.name.trim() || !newRecipientForm.email.trim()) {
-      alert('Name and Email are required');
+    const errs = validateSavedRecipientForm(newRecipientForm);
+    if (Object.keys(errs).length > 0) {
+      setRecipientFormErrors(errs);
+      toast.error('Please fix the highlighted fields.');
       return;
     }
+    const normalizeEmail = (v: string) => String(v || '').trim().toLowerCase();
+    const normalizePhone = (v: string) => String(v || '').replace(/\D/g, '');
+    const formEmail = normalizeEmail(newRecipientForm.email);
+    const formPhone = normalizePhone(newRecipientForm.phone);
+
+    const duplicateRecipient = savedRecipients.find((r) => {
+      const sameRecordWhileEditing =
+        !!editingSavedRecipientId && String(r._id) === String(editingSavedRecipientId);
+      if (sameRecordWhileEditing) return false;
+      if (!r.addressBookEntry || !isPersistedAddressBookRecipientId(r._id)) return false;
+
+      const emailMatches = formEmail.length > 0 && normalizeEmail(r.email) === formEmail;
+      const phoneMatches =
+        formPhone.length > 0 && normalizePhone(r.phone || '') === formPhone;
+      return emailMatches || phoneMatches;
+    });
+
+    if (!editingSavedRecipientId && duplicateRecipient) {
+      const duplicateReason = (() => {
+        const emailMatches = normalizeEmail(duplicateRecipient.email) === formEmail;
+        const phoneMatches =
+          formPhone.length > 0 &&
+          normalizePhone(duplicateRecipient.phone || '') === formPhone;
+        if (emailMatches && phoneMatches) return 'email and phone number';
+        if (emailMatches) return 'email';
+        return 'phone number';
+      })();
+
+      const confirmation = await Swal.fire({
+        title: 'Recipient already exists',
+        html: `A recipient with this ${duplicateReason} already exists.<br/><br/>If you continue, the existing recipient will be updated with the current form data.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Continue and Update',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#7c3aed',
+        cancelButtonColor: '#6b7280',
+        didOpen: () => {
+          const container = Swal.getContainer();
+          if (container) container.style.zIndex = '10050';
+        },
+      });
+
+      if (!confirmation.isConfirmed) {
+        return;
+      }
+      setEditingSavedRecipientId(duplicateRecipient._id);
+    }
+
+    setRecipientFormErrors({});
     setSavingNewRecipient(true);
     try {
+      const targetEditId =
+        editingSavedRecipientId ||
+        (duplicateRecipient ? duplicateRecipient._id : null);
+
+      if (targetEditId && isPersistedAddressBookRecipientId(targetEditId)) {
+        const res = await eSignApi.put(
+          `/api/e-sign/recipients/${targetEditId}`,
+          newRecipientForm
+        );
+        if (res.status === 200) {
+          setEditingSavedRecipientId(null);
+          setShowAddRecipientForm(false);
+          resetNewRecipientFormState();
+          await fetchSavedRecipients();
+          toast.success('Recipient updated');
+        }
+        return;
+      }
+
       const res = await eSignApi.post('/api/e-sign/recipients', newRecipientForm);
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 200) {
         // Add the new recipient to the list
         const newRecipient = res.data.data || {
           _id: res.data._id || Date.now().toString(),
-          ...newRecipientForm
+          ...newRecipientForm,
+          addressBookEntry: true as const,
         };
-        setSavedRecipients(prev => [newRecipient, ...prev]);
-        
+        const row: SavedRecipientRow = {
+          _id: String(newRecipient._id),
+          name: newRecipient.name,
+          email: newRecipient.email,
+          title: newRecipient.title,
+          company: newRecipient.company,
+          phone: newRecipient.phone,
+          address: newRecipient.address,
+          addressBookEntry: true,
+        };
+        await fetchSavedRecipients();
+
         // Also add to recipient suggestions so it shows up when typing
         setRecipientSuggestions(prev => {
           const emailKey = newRecipient.email.toLowerCase();
@@ -2893,23 +3178,155 @@ const calculateTotalCost = (): number => {
             return [{ name: newRecipient.name, email: newRecipient.email }, ...prev];
           }
           // Update existing if name is better
-          return prev.map(r => 
+          return prev.map(r =>
             r.email.toLowerCase() === emailKey && (!r.name || r.name === r.email)
               ? { name: newRecipient.name, email: r.email }
               : r
           );
         });
-        
+
         // Automatically select the new recipient
-        selectRecipientFromList(newRecipient);
-        toast.success('Recipient added successfully');
+        selectRecipientFromList(row);
+        toast.success(res.status === 201 ? 'Recipient added successfully' : 'Recipient updated successfully');
       }
     } catch (err: any) {
-      console.error('Failed to add recipient', err);
-      const message = err?.response?.data?.message || 'Failed to add recipient';
+      console.error('Failed to save recipient', err);
+      const message = err?.response?.data?.message || 'Failed to save recipient';
       alert(message);
     } finally {
       setSavingNewRecipient(false);
+    }
+  };
+
+  const handleDeleteSavedRecipient = async (
+    e: React.MouseEvent,
+    recipient: SavedRecipientRow
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!recipient.addressBookEntry || !isPersistedAddressBookRecipientId(recipient._id)) {
+      toast.error('Only contacts in your saved address book can be deleted here.');
+      return;
+    }
+    const ok = await Swal.fire({
+      title: 'Delete contact?',
+      text: `${recipient.name} (${recipient.email}) will be removed from your saved recipients.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#7c3aed',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Delete',
+      // Recipient picker modal uses z-[10000]; Swal defaults ~1060 and would sit behind it
+      didOpen: () => {
+        const container = Swal.getContainer();
+        if (container) container.style.zIndex = '10050';
+      },
+    });
+    if (!ok.isConfirmed) return;
+    setDeletingSavedRecipientId(recipient._id);
+    try {
+      await eSignApi.delete(`/api/e-sign/recipients/${recipient._id}`);
+      setSavedRecipients((prev) => prev.filter((r) => r._id !== recipient._id));
+      setRecipientSuggestions((prev) =>
+        prev.filter((r) => r.email.toLowerCase() !== recipient.email.toLowerCase())
+      );
+      if (editingSavedRecipientId === recipient._id) {
+        setEditingSavedRecipientId(null);
+        setShowAddRecipientForm(false);
+        resetNewRecipientFormState();
+      }
+      toast.success('Recipient deleted');
+    } catch (err: any) {
+      console.error('Failed to delete recipient', err);
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || 'Failed to delete recipient';
+      if (status === 404) {
+        await fetchSavedRecipients();
+        toast.error(
+          'That contact is not in your saved list anymore (for example, it only appeared from a past envelope). The list was refreshed.'
+        );
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setDeletingSavedRecipientId(null);
+    }
+  };
+
+  const handleSaveMissingRecipientPhone = async () => {
+    const targetRecipientId = missingPhoneRecipientId;
+    const pendingMethods = pendingAuthSelectionAfterPhone;
+    if (!targetRecipientId || !pendingMethods || pendingMethods.length === 0) {
+      setShowMissingRecipientPhoneModal(false);
+      return;
+    }
+
+    const phoneDigits = String(missingPhoneValue || '').replace(/\D/g, '');
+    if (phoneDigits.length < 10) {
+      setMissingPhoneError('Please enter a valid phone number to continue.');
+      return;
+    }
+
+    setMissingPhoneError('');
+    setSavingMissingPhone(true);
+    try {
+      const updatedRecipient = recipients.find((r) => r.id === targetRecipientId);
+      updateRecipient(targetRecipientId, { phone: missingPhoneValue });
+
+      // Persist through the same recipients CRUD API (edit if exists, else create).
+      const isDirectRecipientId = /^[a-fA-F0-9]{24}$/.test(targetRecipientId);
+      const mappedSavedRecipientId = (() => {
+        const email = String(updatedRecipient?.email || '').toLowerCase();
+        if (!email) return null;
+        const row = savedRecipients.find(
+          (r) =>
+            r.addressBookEntry &&
+            isPersistedAddressBookRecipientId(r._id) &&
+            r.email.toLowerCase() === email
+        );
+        return row?._id || null;
+      })();
+
+      if (isDirectRecipientId || mappedSavedRecipientId) {
+        const recipientDbId = isDirectRecipientId ? targetRecipientId : mappedSavedRecipientId!;
+        await eSignApi.put(`/api/e-sign/recipients/${recipientDbId}`, {
+          phone: missingPhoneValue
+        });
+      } else if (updatedRecipient?.name && updatedRecipient?.email) {
+        await eSignApi.post('/api/e-sign/recipients', {
+          name: updatedRecipient.name,
+          email: updatedRecipient.email,
+          title: '',
+          company: '',
+          phone: missingPhoneValue,
+          address: ''
+        });
+      }
+
+      if (updatedRecipient?.email) {
+        const email = updatedRecipient.email.toLowerCase();
+        setSavedRecipients((prev) =>
+          prev.map((r) =>
+            r.email.toLowerCase() === email ? { ...r, phone: missingPhoneValue } : r
+          )
+        );
+      }
+      await fetchSavedRecipients();
+
+      setShowMissingRecipientPhoneModal(false);
+      setMissingPhoneRecipientId(null);
+      setPendingAuthSelectionAfterPhone(null);
+
+      await handleAuthMethodSelect(pendingMethods, {
+        bypassRecipientPhoneCheck: true,
+        forceRecipientId: targetRecipientId,
+      });
+    } catch (err: any) {
+      console.error('Failed to save missing recipient phone', err);
+      const msg = err?.response?.data?.message || 'Failed to save phone number.';
+      setMissingPhoneError(msg);
+    } finally {
+      setSavingMissingPhone(false);
     }
   };
 
@@ -3095,25 +3512,25 @@ const calculateTotalCost = (): number => {
                           // Calculate relative position: 0 is on top (stackedDocIndex), others are below
                           const position = index - stackedDocIndex;
                           const absPosition = position < 0 ? documents.length + position : position;
-                          
+
                           const previewMinHeight = '180px';
                           const pdfWidth = 100;
                           const paddingClass = 'p-2';
                           const fontSizeClass = 'text-xs';
                           const closeButtonSize = 'w-5 h-5';
                           const closeIconSize = 'w-2.5 h-2.5';
-                          const verticalOffset = 10; 
-                          const horizontalOffset = absPosition === 0 ? 0 : 20 + (absPosition * 6); 
+                          const verticalOffset = 10;
+                          const horizontalOffset = absPosition === 0 ? 0 : 20 + (absPosition * 6);
                           if (absPosition >= 4) return null;
                           const scale = absPosition === 0 ? 1 : Math.max(0.98 - absPosition * 0.01, 0.95);
                           const cardColors = [
                             { border: '#260559', shadow: 'rgba(38, 5, 89, 0.2)', accent: '#6366f1' },
-                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#8b5cf6' }, 
+                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#8b5cf6' },
                             { border: '#8b5cf6', shadow: 'rgba(139, 92, 246, 0.12)', accent: '#a78bfa' },
                             { border: '#a78bfa', shadow: 'rgba(167, 139, 250, 0.1)', accent: '#c4b5fd' }
                           ];
                           const cardColor = cardColors[Math.min(absPosition, 3)];
-                          
+
                           return (
                             <div
                               key={doc.id}
@@ -3147,14 +3564,14 @@ const calculateTotalCost = (): number => {
                               )}
 
                               {!doc.isUploading && doc.url && (
-                                <div 
+                                <div
                                   className="w-full flex-1 border-b overflow-hidden bg-gradient-to-br from-gray-50 to-white min-h-0 relative group"
-                                  style={{ 
+                                  style={{
                                     minHeight: previewMinHeight,
                                     borderBottomColor: absPosition === 0 ? cardColor.border + '40' : 'rgba(0, 0, 0, 0.1)'
                                   }}
                                 >
-                                  <div 
+                                  <div
                                     className="absolute inset-0 opacity-30 pointer-events-none"
                                     style={{
                                       background: `linear-gradient(135deg, ${cardColor.accent}15 0%, transparent 50%)`
@@ -3168,7 +3585,7 @@ const calculateTotalCost = (): number => {
                                     </div>
                                   </div>
                                   {absPosition === 0 && (
-                                    <div 
+                                    <div
                                       className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-sm group-hover:opacity-100 transition-all duration-300 flex items-center justify-center opacity-0 z-20"
                                       style={{ pointerEvents: 'none' }}
                                     >
@@ -3193,15 +3610,15 @@ const calculateTotalCost = (): number => {
                                 <div className={paddingClass} style={{ background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 1))' }}>
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
-                                      <p className={`font-semibold ${fontSizeClass} mb-1 truncate`} 
-                                         style={{ color: absPosition === 0 ? cardColor.border : '#374151' }}
-                                         title={doc.name}>
+                                      <p className={`font-semibold ${fontSizeClass} mb-1 truncate`}
+                                        style={{ color: absPosition === 0 ? cardColor.border : '#374151' }}
+                                        title={doc.name}>
                                         {doc.name}
                                       </p>
                                       <div className="flex items-center justify-between">
                                         <p className="text-xs font-medium" style={{ color: absPosition === 0 ? cardColor.accent : '#6b7280' }}>
                                           {doc.pages} page{doc.pages !== 1 ? 's' : ''}
-                                        </p>                                        
+                                        </p>
                                       </div>
                                     </div>
                                   </div>
@@ -3221,7 +3638,7 @@ const calculateTotalCost = (): number => {
                             </div>
                           );
                         })}
-                        
+
                         {documents.length > 1 && (
                           <>
                             <button
@@ -3235,7 +3652,7 @@ const calculateTotalCost = (): number => {
                             >
                               <ChevronLeft className="w-6 h-6" style={{ color: '#260559' }} />
                             </button>
-                            
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -3321,198 +3738,198 @@ const calculateTotalCost = (): number => {
                 ) : (
                   /* Default grid layout for 0-3 documents */
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-1">
-                  {/* Document Cards */}
-                  {documents && documents.map((doc) => {
-                    const docCount = documents.length;
-                    // Calculate sizes based on document count
-                    const previewMinHeight = docCount === 1 ? '220px' : docCount === 2 ? '180px' : docCount === 3 ? '150px' : '120px';
-                    const pdfWidth = docCount === 1 ? 150 : docCount === 2 ? 150 : docCount === 3 ? 120 : 100;
-                    const paddingClass = docCount === 1 ? 'p-1 sm:p-2' : docCount === 2 ? 'p-2 sm:p-3' : 'p-2';
-                    const fontSizeClass = docCount === 1 ? 'text-xs sm:text-sm' : 'text-xs';
-                    const closeButtonSize = docCount >= 4 ? 'w-5 h-5' : 'w-6 h-6';
-                    const closeIconSize = docCount >= 4 ? 'w-2.5 h-2.5' : 'w-3 h-3';
-                    
-                    return (
-                      <div key={doc.id} className="w-full h-auto relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
-                        {/* Close button at top right */}
-                        {!doc.isUploading && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeDocument(doc.id);
-                            }}
-                            className={`absolute top-2 right-2 z-10 ${closeButtonSize} bg-black bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all`}
-                          >
-                            <X className={`${closeIconSize} text-white`} />
-                          </button>
-                        )}
+                    {/* Document Cards */}
+                    {documents && documents.map((doc) => {
+                      const docCount = documents.length;
+                      // Calculate sizes based on document count
+                      const previewMinHeight = docCount === 1 ? '220px' : docCount === 2 ? '180px' : docCount === 3 ? '150px' : '120px';
+                      const pdfWidth = docCount === 1 ? 150 : docCount === 2 ? 150 : docCount === 3 ? 120 : 100;
+                      const paddingClass = docCount === 1 ? 'p-1 sm:p-2' : docCount === 2 ? 'p-2 sm:p-3' : 'p-2';
+                      const fontSizeClass = docCount === 1 ? 'text-xs sm:text-sm' : 'text-xs';
+                      const closeButtonSize = docCount >= 4 ? 'w-5 h-5' : 'w-6 h-6';
+                      const closeIconSize = docCount >= 4 ? 'w-2.5 h-2.5' : 'w-3 h-3';
 
-                        {/* PDF Preview/Thumbnail */}
-                        {!doc.isUploading && doc.url && (
-                          <div 
-                            className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
-                            style={{ minHeight: previewMinHeight }}
-                          >
-                            {/* React-PDF thumbnail (first page) */}
-                            <div className="w-full h-full flex items-center justify-center bg-white">
-                              <PDFDocument file={doc.url}>
-                                <PDFPage pageNumber={1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
-                              </PDFDocument>
-                            </div>
-                            {/* View Button - appears on hover */}
-                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedPdfForPreview(doc);
-                                  setPdfPreviewModalOpen(true);
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
-                              >
-                                <Eye className="w-4 h-4" />
-                                <span className="text-sm font-medium">View</span>
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* File Info Section */}
-                        {!doc.isUploading ? (
-                          <div className={paddingClass}>
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                {/* File Name */}
-                                <p className={`font-semibold text-gray-900 ${fontSizeClass} mb-1 truncate`} title={doc.name}>
-                                  {doc.name}
-                                </p>
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs text-gray-600">
-                                    {doc.pages} page{doc.pages !== 1 ? 's' : ''}
-                                  </p>
-                                </div>
-
-                              </div>
-                            </div>
-                          </div>
-                      ) : (
-                        /* Uploading state */
-                        <div className={paddingClass}>
-                          <p className={`font-medium text-gray-900 ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
-                          <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
-                            <div
-                              className="h-full bg-blue-500 transition-all"
-                              style={{ width: `${doc.uploadProgress ?? 0}%` }}
-                            />
-                          </div>
-                          <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
-                        </div>
-                      )}
-                    </div>
-                    );
-                  })}
-
-                  {(() => {
-                    const docCount = documents?.length || 0;
-                    let colSpanClasses = '';
-                    
-                    if (docCount === 0) {
-                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
-                    } else if (docCount >= 4) {
-                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
-                    } else if (docCount === 1) {
-                      colSpanClasses = 'col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-3';
-                    } else if (docCount === 2) {
-                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2';
-                    } else if (docCount === 3) {
-                      colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1';
-                    }
-                    
-                    return (
-                      <div className={`w-full h-auto ${colSpanClasses}`} data-tour="ec-upload">
-                    <div
-                      onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
-                      onDragOver={handleDragOver}
-                      onDragEnter={handleDragEnter}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={`bg-gray-100 transition-colors ${isDragOver
-                        ? 'border-2 border-blue-400 bg-blue-50'
-                        : 'border border-gray-200'
-                        } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
-                        } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[200px] flex items-center justify-center`}
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept=".pdf"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-
-                      {(!documents || documents.length === 0) ? (
-                        <div className="flex flex-col items-center justify-center w-full">
-                            <div className="bg-gray-700 rounded-lg p-3 mb-4">
-                              <ArrowUpToLine className="w-6 h-6 text-white" />
-                            </div>
-                            <p className="text-sm text-gray-700 mb-4">Drop your files here or</p>
-                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  fileInputRef.current?.click();
-                                }}
-                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex-1 sm:flex-none min-w-[140px]"
-                                style={{ backgroundColor: '#260559' }}
-                              >
-                                <span>Upload</span>
-                                <Triangle className="w-3 h-2 fill-white rotate-180" />
-                              </button>
-                              <div className="flex items-center gap-2 my-2 sm:my-0">
-                                <div className="h-px bg-gray-300 w-8"></div>
-                                <span className="text-xs text-gray-500 font-medium">OR</span>
-                                <div className="h-px bg-gray-300 w-8"></div>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate('/template/ai-generator');
-                                }}
-                                className="ai-generate-button flex items-center justify-center gap-2 flex-1 sm:flex-none min-w-[180px]"
-                              >
-                                <Sparkles className="w-4 h-4 relative z-10" />
-                                <span className="relative z-10 text-sm sm:text-base">Generate with AI</span>
-                              </button>
-                            </div>
-                          </div>
-                      ) : (
-                        <div
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex flex-col items-center justify-center w-full cursor-pointer text-gray-500 hover:text-gray-700"
-                        >
-                          <div className="flex flex-col items-center justify-center space-y-4">
-                            <div className="bg-gray-700 rounded-lg p-3">
-                              <Upload className="w-6 h-6 text-white" />
-                            </div>
-                            <p className="text-sm text-gray-700">Drop your files here or</p>
+                      return (
+                        <div key={doc.id} className="w-full h-auto relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
+                          {/* Close button at top right */}
+                          {!doc.isUploading && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                fileInputRef.current?.click();
+                                removeDocument(doc.id);
                               }}
-                              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                              style={{ backgroundColor: '#260559' }}
+                              className={`absolute top-2 right-2 z-10 ${closeButtonSize} bg-black bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all`}
                             >
-                              <span>Upload</span>
-                              <ArrowDown className="w-4 h-4 text-white" />
+                              <X className={`${closeIconSize} text-white`} />
                             </button>
+                          )}
+
+                          {/* PDF Preview/Thumbnail */}
+                          {!doc.isUploading && doc.url && (
+                            <div
+                              className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
+                              style={{ minHeight: previewMinHeight }}
+                            >
+                              {/* React-PDF thumbnail (first page) */}
+                              <div className="w-full h-full flex items-center justify-center bg-white">
+                                <PDFDocument file={doc.url}>
+                                  <PDFPage pageNumber={1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
+                                </PDFDocument>
+                              </div>
+                              {/* View Button - appears on hover */}
+                              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPdfForPreview(doc);
+                                    setPdfPreviewModalOpen(true);
+                                  }}
+                                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span className="text-sm font-medium">View</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* File Info Section */}
+                          {!doc.isUploading ? (
+                            <div className={paddingClass}>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  {/* File Name */}
+                                  <p className={`font-semibold text-gray-900 ${fontSizeClass} mb-1 truncate`} title={doc.name}>
+                                    {doc.name}
+                                  </p>
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs text-gray-600">
+                                      {doc.pages} page{doc.pages !== 1 ? 's' : ''}
+                                    </p>
+                                  </div>
+
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Uploading state */
+                            <div className={paddingClass}>
+                              <p className={`font-medium text-gray-900 ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
+                              <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
+                                <div
+                                  className="h-full bg-blue-500 transition-all"
+                                  style={{ width: `${doc.uploadProgress ?? 0}%` }}
+                                />
+                              </div>
+                              <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {(() => {
+                      const docCount = documents?.length || 0;
+                      let colSpanClasses = '';
+
+                      if (docCount === 0) {
+                        colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
+                      } else if (docCount >= 4) {
+                        colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4';
+                      } else if (docCount === 1) {
+                        colSpanClasses = 'col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-3';
+                      } else if (docCount === 2) {
+                        colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2';
+                      } else if (docCount === 3) {
+                        colSpanClasses = 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1';
+                      }
+
+                      return (
+                        <div className={`w-full h-auto ${colSpanClasses}`} data-tour="ec-upload">
+                          <div
+                            onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
+                            onDragOver={handleDragOver}
+                            onDragEnter={handleDragEnter}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`bg-gray-100 transition-colors ${isDragOver
+                              ? 'border-2 border-blue-400 bg-blue-50'
+                              : 'border border-gray-200'
+                              } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
+                              } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[200px] flex items-center justify-center`}
+                          >
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              multiple
+                              accept=".pdf"
+                              onChange={handleFileUpload}
+                              className="hidden"
+                            />
+
+                            {(!documents || documents.length === 0) ? (
+                              <div className="flex flex-col items-center justify-center w-full">
+                                <div className="bg-gray-700 rounded-lg p-3 mb-4">
+                                  <ArrowUpToLine className="w-6 h-6 text-white" />
+                                </div>
+                                <p className="text-sm text-gray-700 mb-4">Drop your files here or</p>
+                                <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      fileInputRef.current?.click();
+                                    }}
+                                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex-1 sm:flex-none min-w-[140px]"
+                                    style={{ backgroundColor: '#260559' }}
+                                  >
+                                    <span>Upload</span>
+                                    <Triangle className="w-3 h-2 fill-white rotate-180" />
+                                  </button>
+                                  <div className="flex items-center gap-2 my-2 sm:my-0">
+                                    <div className="h-px bg-gray-300 w-8"></div>
+                                    <span className="text-xs text-gray-500 font-medium">OR</span>
+                                    <div className="h-px bg-gray-300 w-8"></div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate('/template/ai-generator');
+                                    }}
+                                    className="ai-generate-button flex items-center justify-center gap-2 flex-1 sm:flex-none min-w-[180px]"
+                                  >
+                                    <Sparkles className="w-4 h-4 relative z-10" />
+                                    <span className="relative z-10 text-sm sm:text-base">Generate with AI</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex flex-col items-center justify-center w-full cursor-pointer text-gray-500 hover:text-gray-700"
+                              >
+                                <div className="flex flex-col items-center justify-center space-y-4">
+                                  <div className="bg-gray-700 rounded-lg p-3">
+                                    <Upload className="w-6 h-6 text-white" />
+                                  </div>
+                                  <p className="text-sm text-gray-700">Drop your files here or</p>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      fileInputRef.current?.click();
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                    style={{ backgroundColor: '#260559' }}
+                                  >
+                                    <span>Upload</span>
+                                    <ArrowDown className="w-4 h-4 text-white" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -3560,7 +3977,7 @@ const calculateTotalCost = (): number => {
                               role: 'signer',
                               order: 1,
                               status: 'waiting',
-                              authentication: DEFAULT_AUTH_JSON 
+                              authentication: DEFAULT_AUTH_JSON
                             }]);
                           } else {
                             setRecipients([]);
@@ -3584,7 +4001,7 @@ const calculateTotalCost = (): number => {
                             transition duration-200 z-50
                           "
                           >
-                           You'll be the only signer. Add your fields and finish the signing.
+                            You'll be the only signer. Add your fields and finish the signing.
 
                           </div>
                         </span>
@@ -3630,7 +4047,7 @@ const calculateTotalCost = (): number => {
                                       role: bulkList.role,
                                       order: idx + 1,
                                       status: 'waiting' as const,
-                                      authentication: DEFAULT_AUTH_JSON as Recipient['authentication'] 
+                                      authentication: DEFAULT_AUTH_JSON as Recipient['authentication']
                                     }))
                                   );
                                   setShowBulkModal(true);
@@ -3779,7 +4196,7 @@ const calculateTotalCost = (): number => {
                                 {showCsvExceptions ? (
                                   <>
                                     <div className="max-w-3xl mx-auto flex-1 flex flex-col px-6 pb-6">
-                                      
+
                                       <p className="text-sm text-gray-700 mb-6" style={{ fontFamily: 'sans-serif' }}>
                                         The following items could not be matched between entries on your envelope and the imported bulk list. You can accept these matching exceptions and continue with the envelope. Or you can discard the imported CSV, edit it to update column headers as required, and then re-import the edited file.
                                       </p>
@@ -3816,7 +4233,7 @@ const calculateTotalCost = (): number => {
                                           </ul>
                                         </div>
                                       )}
-                                       </div>
+                                    </div>
                                     <div className="flex items-center justify-end gap-3 mt-auto">
                                       <button
                                         onClick={handleDiscardCsv}
@@ -4167,8 +4584,8 @@ const calculateTotalCost = (): number => {
                                 }
 
                                 // Sequential order (R1 -> R2 -> ...)
-                                const ordered = items.map((it, idx) => ({ 
-                                  key: `csv-${idx}`, 
+                                const ordered = items.map((it, idx) => ({
+                                  key: `csv-${idx}`,
                                   order: idx + 1,
                                   name: formatSentenceCase(it.name || it.email || 'Recipient'),
                                   email: it.email
@@ -4297,7 +4714,7 @@ const calculateTotalCost = (): number => {
                                     setAuthModalForRecipientId(null);
                                     setAuthModalForBulk(false);
                                     setTempAuthSelection(undefined);
-                    setHasUserChangedSelection(false);
+                                    setHasUserChangedSelection(false);
                                   }}
                                   className="text-[#3E2B66] hover:text-gray-800 z-10"
                                 >
@@ -4339,6 +4756,83 @@ const calculateTotalCost = (): number => {
                                 riskLevel="medium"
                                 complianceRequirements={[]}
                               />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {showMissingRecipientPhoneModal && (
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+                          <div
+                            className="absolute inset-0 bg-black/50"
+                            onClick={() => {
+                              if (savingMissingPhone) return;
+                              setShowMissingRecipientPhoneModal(false);
+                              setMissingPhoneRecipientId(null);
+                              setPendingAuthSelectionAfterPhone(null);
+                              setMissingPhoneError('');
+                              setAuthModalForRecipientId(null);
+                              setAuthModalForBulk(false);
+                            }}
+                          />
+                          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+                            <h3 className="text-lg font-semibold text-[#3E2B66]">
+                              Add phone number to proceed
+                            </h3>
+                            <p className="mt-2 text-sm text-gray-600">
+                              This verification method requires a phone number to send verification code. Add it now to continue.
+                            </p>
+
+                            <div className="mt-4">
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                Phone Number <span className="text-red-500">*</span>
+                              </label>
+                              <PhoneInput
+                                country="in"
+                                value={missingPhoneValue}
+                                onChange={(val) => {
+                                  setMissingPhoneValue(val);
+                                  if (missingPhoneError) setMissingPhoneError('');
+                                }}
+                                disabled={savingMissingPhone}
+                                inputProps={{ name: 'missingRecipientPhone', id: 'missingRecipientPhone' }}
+                                containerClass="w-full"
+                                dropdownStyle={{ zIndex: 10080 }}
+                                inputClass={`w-full !pl-12 !pr-3 !py-2 !text-sm !border !rounded-lg !bg-white focus:!outline-none focus:!ring-2 !transition-colors ${
+                                  missingPhoneError
+                                    ? '!border-red-400 focus:!border-red-500 focus:!ring-red-200'
+                                    : '!border-gray-300 focus:!border-purple-500 focus:!ring-purple-200'
+                                }`}
+                                buttonClass="!border !border-gray-300 !bg-white !rounded-l-lg"
+                              />
+                              {missingPhoneError ? (
+                                <p className="mt-1 text-xs text-red-600">{missingPhoneError}</p>
+                              ) : null}
+                            </div>
+
+                            <div className="mt-6 flex items-center justify-end gap-3">
+                              <button
+                                type="button"
+                                disabled={savingMissingPhone}
+                                onClick={() => {
+                                  setShowMissingRecipientPhoneModal(false);
+                                  setMissingPhoneRecipientId(null);
+                                  setPendingAuthSelectionAfterPhone(null);
+                                  setMissingPhoneError('');
+                                  setAuthModalForRecipientId(null);
+                                  setAuthModalForBulk(false);
+                                }}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                disabled={savingMissingPhone}
+                                onClick={handleSaveMissingRecipientPhone}
+                                className="rounded-lg bg-[#3E2B66] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                              >
+                                {savingMissingPhone ? 'Saving...' : 'Save and Continue'}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -4486,7 +4980,7 @@ const calculateTotalCost = (): number => {
                                           if (draggedRecipientId && draggedRecipientId !== recipient.id) {
                                             // Trigger reorder animation for both pills
                                             setReorderedPillIds(prev => new Set([...prev, draggedRecipientId, recipient.id]));
-                                            
+
                                             // Remove animation class after animation completes
                                             setTimeout(() => {
                                               setReorderedPillIds(prev => {
@@ -4496,12 +4990,12 @@ const calculateTotalCost = (): number => {
                                                 return next;
                                               });
                                             }, 600); // Match animation duration
-                                            
+
                                             // Reorder recipients
                                             setRecipients(prev => {
                                               const draggedRecipient = prev.find(r => r.id === draggedRecipientId);
                                               const targetRecipient = prev.find(r => r.id === recipient.id);
-                                              
+
                                               if (!draggedRecipient || !targetRecipient) return prev;
 
                                               const draggedOrder = draggedRecipient.order || prev.findIndex(r => r.id === draggedRecipientId) + 1;
@@ -4520,7 +5014,7 @@ const calculateTotalCost = (): number => {
 
                                               // Normalize orders to ensure they're sequential
                                               const normalized = normalizeOrders(updated);
-                                              
+
                                               // Save order to backend if envelope exists
                                               if (envelopeId) {
                                                 const recipientPayload = normalized.map(r => ({
@@ -4536,7 +5030,7 @@ const calculateTotalCost = (): number => {
                                                   envelopeData: { recipients: recipientPayload }
                                                 }).catch(err => console.error('Failed to update recipient order:', err));
                                               }
-                                              
+
                                               return normalized;
                                             });
                                           }
@@ -4547,19 +5041,16 @@ const calculateTotalCost = (): number => {
                                           setDraggedRecipientId(null);
                                           setDragOverRecipientId(null);
                                         }}
-                                        className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 shadow-sm cursor-grab active:cursor-grabbing ${
-                                          isDraggingPill 
-                                            ? 'opacity-60 scale-110 rotate-2 shadow-xl z-50 border-purple-500 bg-purple-100' 
+                                        className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 shadow-sm cursor-grab active:cursor-grabbing ${isDraggingPill
+                                          ? 'opacity-60 scale-110 rotate-2 shadow-xl z-50 border-purple-500 bg-purple-100'
+                                          : ''
+                                          } ${isDragOverPill
+                                            ? 'border-purple-600 scale-110 shadow-lg ring-2 ring-purple-300 ring-opacity-50 bg-purple-50'
                                             : ''
-                                        } ${
-                                          isDragOverPill 
-                                            ? 'border-purple-600 scale-110 shadow-lg ring-2 ring-purple-300 ring-opacity-50 bg-purple-50' 
+                                          } ${isReorderedPill
+                                            ? 'animate-reorder-pill'
                                             : ''
-                                        } ${
-                                          isReorderedPill 
-                                            ? 'animate-reorder-pill' 
-                                            : ''
-                                        }`}
+                                          }`}
                                         style={{
                                           borderLeft: `4px solid ${RECIPIENT_COLORS[originalIndex % RECIPIENT_COLORS.length]}`,
                                           transform: isReorderedPill ? undefined : (isDraggingPill ? 'scale(1.1) rotate(2deg)' : isDragOverPill ? 'scale(1.1)' : undefined),
@@ -4579,7 +5070,7 @@ const calculateTotalCost = (): number => {
                                   })}
                               </div>
                             )}
-                            
+
                             {sortedRecipients.map((recipient, index) => {
                               // In pill mode, only show the active recipient as a card
                               if (usePillMode && recipient.id !== activeRecipientId) {
@@ -4591,15 +5082,13 @@ const calculateTotalCost = (): number => {
                               const isDragOver = dragOverRecipientId === recipient.id;
                               const isThisReordering = reorderingRecipientId === recipient.id;
                               const originalIndex = recipients.findIndex(r => r.id === recipient.id);
-                              
+
                               return (
-                                <div 
-                                  key={recipient.id} 
-                                  className={`flex items-stretch gap-4 transition-all duration-500 ease-in-out ${
-                                    isDragging ? 'opacity-50 scale-95' : ''
-                                  } ${isDragOver ? 'transform translate-y-1' : ''} ${
-                                    isThisReordering ? 'transform transition-all duration-500 ease-in-out' : ''
-                                  }`}
+                                <div
+                                  key={recipient.id}
+                                  className={`flex items-stretch gap-4 transition-all duration-500 ease-in-out ${isDragging ? 'opacity-50 scale-95' : ''
+                                    } ${isDragOver ? 'transform translate-y-1' : ''} ${isThisReordering ? 'transform transition-all duration-500 ease-in-out' : ''
+                                    }`}
                                   draggable={setSigningOrder}
                                   title={setSigningOrder ? "Drag to reorder" : undefined}
                                   onDragStart={(e) => handleRecipientDragStart(e, recipient.id)}
@@ -4650,13 +5139,11 @@ const calculateTotalCost = (): number => {
                                       )}
                                     </div>
                                   )}
-                                  <div 
-                                    className={`flex-1 bg-white border shadow-sm relative transition-all duration-500 ease-in-out ${
-                                      isDragOver ? 'border-blue-500 border-2 shadow-lg' : 'border-gray-200'
-                                    } ${setSigningOrder ? 'cursor-grab active:cursor-grabbing' : ''} ${
-                                      isThisReordering ? 'shadow-2xl scale-[1.02] z-20 ring-2 ring-blue-400 ring-opacity-50' : ''
-                                    }`}
-                                    style={{ 
+                                  <div
+                                    className={`flex-1 bg-white border shadow-sm relative transition-all duration-500 ease-in-out ${isDragOver ? 'border-blue-500 border-2 shadow-lg' : 'border-gray-200'
+                                      } ${setSigningOrder ? 'cursor-grab active:cursor-grabbing' : ''} ${isThisReordering ? 'shadow-2xl scale-[1.02] z-20 ring-2 ring-blue-400 ring-opacity-50' : ''
+                                      }`}
+                                    style={{
                                       borderLeft: `7px solid ${RECIPIENT_COLORS[originalIndex % RECIPIENT_COLORS.length]}`,
                                       transition: isThisReordering ? 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease-in-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.2s ease-in-out'
                                     }}
@@ -4668,541 +5155,541 @@ const calculateTotalCost = (): number => {
                                       }
                                     }}
                                   >
-                                  <div className="p-6">
-                                    <div className="space-y-4">
-                                      <div className="flex items-start gap-4">
-                                        <div className="flex-1">
-                                          <label className="block text-sm font-medium text-gray-900 mb-2">
-                                            Name <span className="text-red-500">*</span>
-                                          </label>
-                                          <div
-                                            className="relative"
-                                            ref={(el) => {
-                                              if (suggestionsOpenForId === recipient.id) {
-                                                suggestionsContainerRef.current = el;
-                                              }
-                                            }}
-                                          >
-                                            <Contact className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#260559' }} />
-                                            <input
-                                              type="text"
-                                              value={recipient.name}
-                                              data-recipient-name-id={recipient.id}
-                                              onChange={(e) => {
-                                                const value = e.target.value;
-                                                updateRecipient(recipient.id, { name: value });
-                                                // Update search query ref immediately
-                                                searchQueryRef.current = value;
-                                                // Debounce the search query update
-                                                debouncedSearch(value);
-                                                // Show suggestions if user is typing
-                                                if (value.trim().length > 0) {
-                                                  setSuggestionsOpenForId(recipient.id);
-                                                  loadRecipientSuggestions();
-                                                } else {
-                                                  setDebouncedSearchQuery('');
+                                    <div className="p-6">
+                                      <div className="space-y-4">
+                                        <div className="flex items-start gap-4">
+                                          <div className="flex-1">
+                                            <label className="block text-sm font-medium text-gray-900 mb-2">
+                                              Name <span className="text-red-500">*</span>
+                                            </label>
+                                            <div
+                                              className="relative"
+                                              ref={(el) => {
+                                                if (suggestionsOpenForId === recipient.id) {
+                                                  suggestionsContainerRef.current = el;
                                                 }
                                               }}
-                                              onBlur={() => {
-                                                // Close dropdown after a short delay to allow click on suggestion
-                                                setTimeout(() => {
-                                                  setSuggestionsOpenForId(null);
-                                                }, 200);
-                                              }}
-                                              onFocus={() => { setSuggestionsOpenForId(recipient.id); loadRecipientSuggestions(); }}
-                                              onDragStart={(e) => e.stopPropagation()}
-                                              draggable="false"
-                                              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
-                                              placeholder="Full name"
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={() => openRecipientListModal(recipient.id)}
-                                              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
-                                              title="Open recipient list"
                                             >
-                                              <BookOpen className="w-5 h-5" style={{ color: '#260559' }} />
-                                            </button>
-                                            {suggestionsOpenForId === recipient.id && (
-                                              <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
-                                                {loadingRecipientSuggestions ? (
-                                                  <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
-                                                ) : (() => {
-                                                  const currentName = recipient.name.trim();
-                                                  
-                                                  // If no input, show only logged-in user's name
-                                                  if (!currentName) {
-                                                    const userName = user?.fullname?.toLowerCase() || '';
-                                                    const userSuggestion = recipientSuggestions.find(s => 
-                                                      s.name.toLowerCase() === userName || 
-                                                      s.email.toLowerCase() === (user?.email?.toLowerCase() || '')
-                                                    );
-                                                    if (userSuggestion) {
-                                                      return (
-                                                        <button
-                                                          key={userSuggestion.email}
-                                                          type="button"
-                                                          onMouseDown={(e) => {
-                                                            e.preventDefault(); // Prevent input blur
-                                                            updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
-                                                            setSuggestionsOpenForId(null);
-                                                          }}
-                                                          onClick={(e) => {
-                                                            e.preventDefault();
-                                                            updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
-                                                            setSuggestionsOpenForId(null);
-                                                          }}
-                                                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                                                        >
-                                                          <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
-                                                          <div className="text-xs text-gray-600">{userSuggestion.email}</div>
-                                                        </button>
+                                              <Contact className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#260559' }} />
+                                              <input
+                                                type="text"
+                                                value={recipient.name}
+                                                data-recipient-name-id={recipient.id}
+                                                onChange={(e) => {
+                                                  const value = e.target.value;
+                                                  updateRecipient(recipient.id, { name: value });
+                                                  // Update search query ref immediately
+                                                  searchQueryRef.current = value;
+                                                  // Debounce the search query update
+                                                  debouncedSearch(value);
+                                                  // Show suggestions if user is typing
+                                                  if (value.trim().length > 0) {
+                                                    setSuggestionsOpenForId(recipient.id);
+                                                    loadRecipientSuggestions();
+                                                  } else {
+                                                    setDebouncedSearchQuery('');
+                                                  }
+                                                }}
+                                                onBlur={() => {
+                                                  // Close dropdown after a short delay to allow click on suggestion
+                                                  setTimeout(() => {
+                                                    setSuggestionsOpenForId(null);
+                                                  }, 200);
+                                                }}
+                                                onFocus={() => { setSuggestionsOpenForId(recipient.id); loadRecipientSuggestions(); }}
+                                                onDragStart={(e) => e.stopPropagation()}
+                                                draggable="false"
+                                                className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                                                placeholder="Full name"
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => openRecipientListModal(recipient.id)}
+                                                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                                                title="Open recipient list"
+                                              >
+                                                <BookOpen className="w-5 h-5" style={{ color: '#260559' }} />
+                                              </button>
+                                              {suggestionsOpenForId === recipient.id && (
+                                                <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                                                  {loadingRecipientSuggestions ? (
+                                                    <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                                                  ) : (() => {
+                                                    const currentName = recipient.name.trim();
+
+                                                    // If no input, show only logged-in user's name
+                                                    if (!currentName) {
+                                                      const userName = user?.fullname?.toLowerCase() || '';
+                                                      const userSuggestion = recipientSuggestions.find(s =>
+                                                        s.name.toLowerCase() === userName ||
+                                                        s.email.toLowerCase() === (user?.email?.toLowerCase() || '')
                                                       );
+                                                      if (userSuggestion) {
+                                                        return (
+                                                          <button
+                                                            key={userSuggestion.email}
+                                                            type="button"
+                                                            onMouseDown={(e) => {
+                                                              e.preventDefault(); // Prevent input blur
+                                                              updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
+                                                              setSuggestionsOpenForId(null);
+                                                            }}
+                                                            onClick={(e) => {
+                                                              e.preventDefault();
+                                                              updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
+                                                              setSuggestionsOpenForId(null);
+                                                            }}
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                          >
+                                                            <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
+                                                            <div className="text-xs text-gray-600">{userSuggestion.email}</div>
+                                                          </button>
+                                                        );
+                                                      }
+                                                      return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
                                                     }
-                                                    return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
-                                                  }
-                                                  
-                                                  // Use debounced search query for filtering (200-300ms debounce)
-                                                  // If debounce hasn't fired yet, use current input for immediate feedback
-                                                  const query = (debouncedSearchQuery.trim() || currentName).toLowerCase();
-                                                  
-                                                  if (!query) {
-                                                    return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
-                                                  }
-                                                  
-                                                  // Exact matches: 
-                                                  // 1. Whole string match (entire name or email equals query exactly)
-                                                  // 2. Starts with query (name or email starts with the query - prefix match)
-                                                  const exactMatches = recipientSuggestions.filter(s => {
-                                                    const nameLower = s.name.trim().toLowerCase();
-                                                    const emailLower = s.email.trim().toLowerCase();
-                                                    
-                                                    // Whole string exact match
-                                                    const nameExact = nameLower === query;
-                                                    const emailExact = emailLower === query;
-                                                    
-                                                    // Starts with query (prefix match) - this makes "sne" match "sneha"
-                                                    const nameStartsWith = nameLower.startsWith(query);
-                                                    const emailStartsWith = emailLower.startsWith(query);
-                                                    
-                                                    return nameExact || emailExact || nameStartsWith || emailStartsWith;
-                                                  });
-                                                  
-                                                  // Broad matches: contains query anywhere (case-insensitive), excluding exact matches
-                                                  // Examples: "ha" in "sneha", "gmail" in email addresses, etc.
-                                                  const exactMatchEmails = new Set(exactMatches.map(s => s.email.toLowerCase()));
-                                                  const broadMatches = recipientSuggestions.filter(s => {
-                                                    // Skip if already in exact matches
-                                                    if (exactMatchEmails.has(s.email.toLowerCase())) {
-                                                      return false;
+
+                                                    // Use debounced search query for filtering (200-300ms debounce)
+                                                    // If debounce hasn't fired yet, use current input for immediate feedback
+                                                    const query = (debouncedSearchQuery.trim() || currentName).toLowerCase();
+
+                                                    if (!query) {
+                                                      return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
                                                     }
-                                                    // Check if name or email contains the query anywhere
-                                                    // Trim and lowercase for consistent matching
-                                                    const nameLower = s.name.trim().toLowerCase();
-                                                    const emailLower = s.email.trim().toLowerCase();
-                                                    const nameContains = nameLower.includes(query);
-                                                    const emailContains = emailLower.includes(query);
-                                                    return nameContains || emailContains;
-                                                  });
-                                                  
-                                                  // Render results
-                                                  const hasExactMatches = exactMatches.length > 0;
-                                                  const hasBroadMatches = broadMatches.length > 0;
-                                                  
-                                                  if (!hasExactMatches && !hasBroadMatches) {
-                                                    return <div className="px-3 py-2 text-sm text-gray-500">No results found</div>;
-                                                  }
-                                                  
-                                                  const renderSuggestion = (s: { name: string; email: string }) => (
-                                                    <button
-                                                      key={s.email}
-                                                      type="button"
-                                                      onMouseDown={(e) => {
-                                                        e.preventDefault(); // Prevent input blur
-                                                        updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
-                                                        setSuggestionsOpenForId(null);
-                                                      }}
-                                                      onClick={(e) => {
-                                                        e.preventDefault();
-                                                        updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
-                                                        setSuggestionsOpenForId(null);
-                                                      }}
-                                                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                                                    >
-                                                      <div className="font-medium text-gray-900">{s.name || s.email}</div>
-                                                      <div className="text-xs text-gray-600">{s.email}</div>
-                                                    </button>
-                                                  );
-                                                  
-                                                  return (
-                                                    <>
-                                                      {/* Exact Matches Section */}
-                                                      {hasExactMatches && (
-                                                        <>
-                                                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
-                                                            Exact Matches
+
+                                                    // Exact matches: 
+                                                    // 1. Whole string match (entire name or email equals query exactly)
+                                                    // 2. Starts with query (name or email starts with the query - prefix match)
+                                                    const exactMatches = recipientSuggestions.filter(s => {
+                                                      const nameLower = s.name.trim().toLowerCase();
+                                                      const emailLower = s.email.trim().toLowerCase();
+
+                                                      // Whole string exact match
+                                                      const nameExact = nameLower === query;
+                                                      const emailExact = emailLower === query;
+
+                                                      // Starts with query (prefix match) - this makes "sne" match "sneha"
+                                                      const nameStartsWith = nameLower.startsWith(query);
+                                                      const emailStartsWith = emailLower.startsWith(query);
+
+                                                      return nameExact || emailExact || nameStartsWith || emailStartsWith;
+                                                    });
+
+                                                    // Broad matches: contains query anywhere (case-insensitive), excluding exact matches
+                                                    // Examples: "ha" in "sneha", "gmail" in email addresses, etc.
+                                                    const exactMatchEmails = new Set(exactMatches.map(s => s.email.toLowerCase()));
+                                                    const broadMatches = recipientSuggestions.filter(s => {
+                                                      // Skip if already in exact matches
+                                                      if (exactMatchEmails.has(s.email.toLowerCase())) {
+                                                        return false;
+                                                      }
+                                                      // Check if name or email contains the query anywhere
+                                                      // Trim and lowercase for consistent matching
+                                                      const nameLower = s.name.trim().toLowerCase();
+                                                      const emailLower = s.email.trim().toLowerCase();
+                                                      const nameContains = nameLower.includes(query);
+                                                      const emailContains = emailLower.includes(query);
+                                                      return nameContains || emailContains;
+                                                    });
+
+                                                    // Render results
+                                                    const hasExactMatches = exactMatches.length > 0;
+                                                    const hasBroadMatches = broadMatches.length > 0;
+
+                                                    if (!hasExactMatches && !hasBroadMatches) {
+                                                      return <div className="px-3 py-2 text-sm text-gray-500">No results found</div>;
+                                                    }
+
+                                                    const renderSuggestion = (s: { name: string; email: string }) => (
+                                                      <button
+                                                        key={s.email}
+                                                        type="button"
+                                                        onMouseDown={(e) => {
+                                                          e.preventDefault(); // Prevent input blur
+                                                          updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
+                                                          setSuggestionsOpenForId(null);
+                                                        }}
+                                                        onClick={(e) => {
+                                                          e.preventDefault();
+                                                          updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
+                                                          setSuggestionsOpenForId(null);
+                                                        }}
+                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                      >
+                                                        <div className="font-medium text-gray-900">{s.name || s.email}</div>
+                                                        <div className="text-xs text-gray-600">{s.email}</div>
+                                                      </button>
+                                                    );
+
+                                                    return (
+                                                      <>
+                                                        {/* Exact Matches Section */}
+                                                        {hasExactMatches && (
+                                                          <>
+                                                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
+                                                              Exact Matches
+                                                            </div>
+                                                            {exactMatches.map(renderSuggestion)}
+                                                          </>
+                                                        )}
+
+                                                        {/* No exact match message */}
+                                                        {!hasExactMatches && (
+                                                          <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                                                            No exact match found
                                                           </div>
-                                                          {exactMatches.map(renderSuggestion)}
-                                                        </>
+                                                        )}
+
+                                                        {/* Broad Matches Section */}
+                                                        {hasBroadMatches && (
+                                                          <>
+                                                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
+                                                              Broad Matches
+                                                            </div>
+                                                            {broadMatches.map(renderSuggestion)}
+                                                          </>
+                                                        )}
+                                                      </>
+                                                    );
+                                                  })()}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Needs to Sign Button - fixed width */}
+                                          <div className="relative role-dropdown-container" style={{ width: '180px' }}>
+                                            <label className="block text-sm font-bold text-gray-900 mb-2 invisible">Role</label>
+                                            <button
+                                              onClick={() => setOpenRoleDropdownId(openRoleDropdownId === recipient.id ? null : recipient.id)}
+                                              className="w-full px-4 py-2 bg-gray-100 text-black-700 font-bold rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300"
+                                              style={{ height: '42px' }}
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <PenLine className="w-4 h-4 font-bold text-black-700" />
+                                                <span className="text-sm whitespace-nowrap">
+                                                  {recipient.role === 'signer' ? 'Needs to Sign' :
+                                                    recipient.role === 'in_person_signer' ? 'In Person Signer' :
+                                                      recipient.role === 'carbon_copy' ? 'Receives a Copy' :
+                                                        'Needs to View'}
+                                                </span>
+                                              </div>
+                                              <ChevronDown className="w-4 h-4 ml-2 mt-1 text-black-900 flex-shrink-0" />
+                                            </button>
+
+                                            {/* Role Dropdown Menu */}
+                                            {openRoleDropdownId === recipient.id && (
+                                              <div className="absolute right-0 top-full mt-1 w-50 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
+                                                <div className="py-2">
+
+                                                  {/* Option Template Example */}
+                                                  {/* Needs to Sign */}
+                                                  <button
+                                                    onClick={() => {
+                                                      updateRecipient(recipient.id, { role: "signer" });
+                                                      setOpenRoleDropdownId(null);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                  >
+                                                    {/* ✔ placeholder box */}
+                                                    <span className="w-4 flex justify-center">
+                                                      {recipient.role === "signer" && (
+                                                        <Check className="w-4 h-4 text-purple-600" />
                                                       )}
-                                                      
-                                                      {/* No exact match message */}
-                                                      {!hasExactMatches && (
-                                                        <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
-                                                          No exact match found
-                                                        </div>
+                                                    </span>
+
+                                                    {/* icon */}
+                                                    <PenLine className="w-4 h-4" />
+
+                                                    {/* text */}
+                                                    <span>Needs to Sign</span>
+                                                  </button>
+
+                                                  {/* In Person Signer */}
+                                                  <button
+                                                    onClick={() => {
+                                                      updateRecipient(recipient.id, { role: "in_person_signer" });
+                                                      setOpenRoleDropdownId(null);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                  >
+                                                    <span className="w-4 flex justify-center">
+                                                      {recipient.role === "in_person_signer" && (
+                                                        <Check className="w-4 h-4 text-purple-600" />
                                                       )}
-                                                      
-                                                      {/* Broad Matches Section */}
-                                                      {hasBroadMatches && (
-                                                        <>
-                                                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
-                                                            Broad Matches
-                                                          </div>
-                                                          {broadMatches.map(renderSuggestion)}
-                                                        </>
+                                                    </span>
+
+                                                    <User className="w-4 h-4" />
+                                                    <span>In Person Signer</span>
+                                                  </button>
+
+                                                  {/* CC */}
+                                                  <button
+                                                    onClick={() => {
+                                                      updateRecipient(recipient.id, { role: "carbon_copy" });
+                                                      setOpenRoleDropdownId(null);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                  >
+                                                    <span className="w-4 flex justify-center">
+                                                      {recipient.role === "carbon_copy" && (
+                                                        <Check className="w-4 h-4 text-purple-600" />
                                                       )}
-                                                    </>
-                                                  );
-                                                })()}
+                                                    </span>
+
+                                                    <span className="text-xs font-semibold">
+                                                      CC
+                                                    </span>
+                                                    <span>Receives a Copy</span>
+                                                  </button>
+
+                                                  {/* Needs to View */}
+                                                  <button
+                                                    onClick={() => {
+                                                      updateRecipient(recipient.id, { role: "needs_to_view" });
+                                                      setOpenRoleDropdownId(null);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                  >
+                                                    <span className="w-4 flex justify-center">
+                                                      {recipient.role === "needs_to_view" && (
+                                                        <Check className="w-4 h-4 text-purple-600" />
+                                                      )}
+                                                    </span>
+
+                                                    <Eye className="w-4 h-4" />
+                                                    <span>Needs to View</span>
+                                                  </button>
+
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Customize Button - fixed width */}
+                                          <div className="relative customize-dropdown-container" style={{ width: '120px' }}>
+                                            <label className="block text-sm font-medium text-gray-900 mb-2 invisible">Customize</label>
+                                            <button
+                                              onClick={() => setOpenCustomizeDropdownId(openCustomizeDropdownId === recipient.id ? null : recipient.id)}
+                                              className="w-full px-2 py-2 font-bold text-white-700 rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300 animate-shine relative overflow-hidden"
+                                              style={{ height: '42px', backgroundColor: '#260559' }}
+                                              data-tour="ec-customize"
+                                            >
+                                              <span className="text-sm text-white relative z-10">Customize</span>
+                                              <ChevronDown className="w-4 h-4 mt-1 text-white flex-shrink-0 relative z-10" />
+                                            </button>
+
+                                            {/* Customize Dropdown Menu */}
+                                            {openCustomizeDropdownId === recipient.id && (
+                                              <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
+                                                <div className="py-2">
+                                                  <button
+                                                    onClick={() => {
+                                                      setAuthModalForRecipientId(recipient.id);
+                                                      setAuthModalForBulk(false);
+                                                      setOpenCustomizeDropdownId(null);
+                                                      setShowAuthModal(true);
+                                                    }}
+                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100"
+                                                  >
+                                                    <div className="flex items-start gap-3">
+                                                      <Key className="w-5 h-5 text-gray-600 mt-0.5" />
+                                                      <div>
+                                                        <div className="font-medium text-gray-900">Add authentication method</div>
+                                                        <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
+                                                      </div>
+                                                    </div>
+                                                  </button>
+                                                </div>
                                               </div>
                                             )}
                                           </div>
                                         </div>
 
-                                        {/* Needs to Sign Button - fixed width */}
-                                        <div className="relative role-dropdown-container" style={{ width: '180px' }}>
-                                          <label className="block text-sm font-bold text-gray-900 mb-2 invisible">Role</label>
-                                          <button
-                                            onClick={() => setOpenRoleDropdownId(openRoleDropdownId === recipient.id ? null : recipient.id)}
-                                            className="w-full px-4 py-2 bg-gray-100 text-black-700 font-bold rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300"
-                                            style={{ height: '42px' }}
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              <PenLine className="w-4 h-4 font-bold text-black-700" />
-                                              <span className="text-sm whitespace-nowrap">
-                                                {recipient.role === 'signer' ? 'Needs to Sign' :
-                                                  recipient.role === 'in_person_signer' ? 'In Person Signer' :
-                                                    recipient.role === 'carbon_copy' ? 'Receives a Copy' :
-                                                      'Needs to View'}
-                                              </span>
-                                            </div>
-                                            <ChevronDown className="w-4 h-4 ml-2 mt-1 text-black-900 flex-shrink-0" />
-                                          </button>
-
-                                          {/* Role Dropdown Menu */}
-                                          {openRoleDropdownId === recipient.id && (
-                                            <div className="absolute right-0 top-full mt-1 w-50 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
-                                              <div className="py-2">
-
-                                                {/* Option Template Example */}
-                                                {/* Needs to Sign */}
-                                                <button
-                                                  onClick={() => {
-                                                    updateRecipient(recipient.id, { role: "signer" });
-                                                    setOpenRoleDropdownId(null);
-                                                  }}
-                                                  className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
-                                                >
-                                                  {/* ✔ placeholder box */}
-                                                  <span className="w-4 flex justify-center">
-                                                    {recipient.role === "signer" && (
-                                                      <Check className="w-4 h-4 text-purple-600" />
-                                                    )}
-                                                  </span>
-
-                                                  {/* icon */}
-                                                  <PenLine className="w-4 h-4" />
-
-                                                  {/* text */}
-                                                  <span>Needs to Sign</span>
-                                                </button>
-
-                                                {/* In Person Signer */}
-                                                <button
-                                                  onClick={() => {
-                                                    updateRecipient(recipient.id, { role: "in_person_signer" });
-                                                    setOpenRoleDropdownId(null);
-                                                  }}
-                                                  className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
-                                                >
-                                                  <span className="w-4 flex justify-center">
-                                                    {recipient.role === "in_person_signer" && (
-                                                      <Check className="w-4 h-4 text-purple-600" />
-                                                    )}
-                                                  </span>
-
-                                                  <User className="w-4 h-4" />
-                                                  <span>In Person Signer</span>
-                                                </button>
-
-                                                {/* CC */}
-                                                <button
-                                                  onClick={() => {
-                                                    updateRecipient(recipient.id, { role: "carbon_copy" });
-                                                    setOpenRoleDropdownId(null);
-                                                  }}
-                                                  className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
-                                                >
-                                                  <span className="w-4 flex justify-center">
-                                                    {recipient.role === "carbon_copy" && (
-                                                      <Check className="w-4 h-4 text-purple-600" />
-                                                    )}
-                                                  </span>
-
-                                                  <span className="text-xs font-semibold">
-                                                    CC
-                                                  </span>
-                                                  <span>Receives a Copy</span>
-                                                </button>
-
-                                                {/* Needs to View */}
-                                                <button
-                                                  onClick={() => {
-                                                    updateRecipient(recipient.id, { role: "needs_to_view" });
-                                                    setOpenRoleDropdownId(null);
-                                                  }}
-                                                  className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
-                                                >
-                                                  <span className="w-4 flex justify-center">
-                                                    {recipient.role === "needs_to_view" && (
-                                                      <Check className="w-4 h-4 text-purple-600" />
-                                                    )}
-                                                  </span>
-
-                                                  <Eye className="w-4 h-4" />
-                                                  <span>Needs to View</span>
-                                                </button>
-
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* Customize Button - fixed width */}
-                                        <div className="relative customize-dropdown-container" style={{ width: '120px' }}>
-                                          <label className="block text-sm font-medium text-gray-900 mb-2 invisible">Customize</label>
-                                          <button
-                                            onClick={() => setOpenCustomizeDropdownId(openCustomizeDropdownId === recipient.id ? null : recipient.id)}
-                                            className="w-full px-2 py-2 font-bold text-white-700 rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300 animate-shine relative overflow-hidden"
-                                            style={{ height: '42px', backgroundColor: '#260559' }}
-                                            data-tour="ec-customize"
-                                          >
-                                            <span className="text-sm text-white relative z-10">Customize</span>
-                                            <ChevronDown className="w-4 h-4 mt-1 text-white flex-shrink-0 relative z-10" />
-                                          </button>
-
-                                          {/* Customize Dropdown Menu */}
-                                          {openCustomizeDropdownId === recipient.id && (
-                                            <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
-                                              <div className="py-2">
-                                                <button
-                                                  onClick={() => {
-                                                    setAuthModalForRecipientId(recipient.id);
-                                                    setAuthModalForBulk(false);
-                                                    setOpenCustomizeDropdownId(null);
-                                                    setShowAuthModal(true);
-                                                  }}
-                                                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100"
-                                                >
-                                                  <div className="flex items-start gap-3">
-                                                    <Key className="w-5 h-5 text-gray-600 mt-0.5" />
-                                                    <div>
-                                                      <div className="font-medium text-gray-900">Add authentication method</div>
-                                                      <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
-                                                    </div>
-                                                  </div>
-                                                </button>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      {/* Second Row: Delivery (left column) with Email below it in same column */}
-                                      <div className="flex-1">
-                                        {/* Delivery Options */}
-                                        <div className="mb-4">
-                                          <label className="block text-sm font-medium text-gray-900 mb-2">
-                                            Delivery <span className="text-red-500">*</span>
-                                          </label>
-                                          <div className="flex items-center gap-4">
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                              <input
-                                                type="checkbox"
-                                                checked={parseAuthentication(recipient.authentication).length === 0}
-                                                onChange={() => {
-                                                  updateRecipient(recipient.id, { authentication: undefined });
-                                                }}
-                                                className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                                style={{
-                                                  accentColor: '#6d28d9'
-                                                }}
-                                              />
-                                              <span className="text-sm text-gray-900">Email</span>
+                                        {/* Second Row: Delivery (left column) with Email below it in same column */}
+                                        <div className="flex-1">
+                                          {/* Delivery Options */}
+                                          <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-900 mb-2">
+                                              Delivery <span className="text-red-500">*</span>
                                             </label>
-                                            <label className="flex items-center space-x-2 cursor-not-allowed">
-                                              <input
-                                                type="checkbox"
-                                                disabled
-                                                className="w-4 h-4 rounded border-gray-300"
-                                              />
-                                              <span className="text-sm text-gray-300">SMS</span>
-                                              <div className="relative inline-block">
-                                                {/* Icon */}
-                                                <span
-                                                  onMouseEnter={() => setShowTip(true)}
-                                                  onMouseLeave={() => setShowTip(false)}
-                                                  className="cursor-pointer inline-flex items-center"
-                                                >
-                                                  <LockKeyhole className="w-4 h-4 text-blue-600" />
-                                                </span>
+                                            <div className="flex items-center gap-4">
+                                              <label className="flex items-center space-x-2 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={parseAuthentication(recipient.authentication).length === 0}
+                                                  onChange={() => {
+                                                    updateRecipient(recipient.id, { authentication: undefined });
+                                                  }}
+                                                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                                  style={{
+                                                    accentColor: '#6d28d9'
+                                                  }}
+                                                />
+                                                <span className="text-sm text-gray-900">Email</span>
+                                              </label>
+                                              <label className="flex items-center space-x-2 cursor-not-allowed">
+                                                <input
+                                                  type="checkbox"
+                                                  disabled
+                                                  className="w-4 h-4 rounded border-gray-300"
+                                                />
+                                                <span className="text-sm text-gray-300">SMS</span>
+                                                <div className="relative inline-block">
+                                                  {/* Icon */}
+                                                  <span
+                                                    onMouseEnter={() => setShowTip(true)}
+                                                    onMouseLeave={() => setShowTip(false)}
+                                                    className="cursor-pointer inline-flex items-center"
+                                                  >
+                                                    <LockKeyhole className="w-4 h-4 text-blue-600" />
+                                                  </span>
 
-                                                {/* Tooltip */}
-                                                {showTip && (
-                                                  <div className="absolute bottom-[140%] left-1/2 -translate-x-1/2 z-50">
-                                                    {/* Tooltip box */}
-                                                    <div className="bg-[#26263d] text-white text-sm px-4 py-2 rounded shadow-md whitespace-nowrap">
-                                                      Learn about the SMS delivery add-on trial
+                                                  {/* Tooltip */}
+                                                  {showTip && (
+                                                    <div className="absolute bottom-[140%] left-1/2 -translate-x-1/2 z-50">
+                                                      {/* Tooltip box */}
+                                                      <div className="bg-[#26263d] text-white text-sm px-4 py-2 rounded shadow-md whitespace-nowrap">
+                                                        Learn about the SMS delivery add-on trial
+                                                      </div>
+
+                                                      {/* Arrow */}
+                                                      <div className="h-0 w-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-[#26263d] mx-auto"></div>
                                                     </div>
-
-                                                    {/* Arrow */}
-                                                    <div className="h-0 w-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-[#26263d] mx-auto"></div>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </label>
+                                                  )}
+                                                </div>
+                                              </label>
+                                            </div>
                                           </div>
-                                        </div>
 
-                                        {/* Email Field - Below Delivery in same column */}
-                                        <div className='w-125 relative'>
-                                          <label className="block text-sm font-medium text-gray-900 mb-2">
-                                            Email <span className="text-red-500">*</span>
-                                          </label>
-                                          <div
-                                            className="relative"
-                                            ref={(el) => {
-                                              if (emailSuggestionsOpenForId === recipient.id) {
-                                                emailSuggestionsContainerRef.current = el;
-                                              }
-                                            }}
-                                          >
-                                            <input
-                                              type="email"
-                                              value={recipient.email}
-                                              data-recipient-email-id={recipient.id}
-                                              onChange={(e) => {
-                                                updateRecipient(recipient.id, { email: e.target.value });
-                                                // Show suggestions if user is typing
-                                                if (e.target.value.trim().length > 0) {
+                                          {/* Email Field - Below Delivery in same column */}
+                                          <div className='w-125 relative'>
+                                            <label className="block text-sm font-medium text-gray-900 mb-2">
+                                              Email <span className="text-red-500">*</span>
+                                            </label>
+                                            <div
+                                              className="relative"
+                                              ref={(el) => {
+                                                if (emailSuggestionsOpenForId === recipient.id) {
+                                                  emailSuggestionsContainerRef.current = el;
+                                                }
+                                              }}
+                                            >
+                                              <input
+                                                type="email"
+                                                value={recipient.email}
+                                                data-recipient-email-id={recipient.id}
+                                                onChange={(e) => {
+                                                  updateRecipient(recipient.id, { email: e.target.value });
+                                                  // Show suggestions if user is typing
+                                                  if (e.target.value.trim().length > 0) {
+                                                    setEmailSuggestionsOpenForId(recipient.id);
+                                                    loadRecipientSuggestions();
+                                                  }
+                                                }}
+                                                onBlur={(e) => {
+                                                  handleEmailOnBlur(recipient.id, e.target.value);
+                                                  // Close dropdown after a short delay to allow click on suggestion
+                                                  setTimeout(() => {
+                                                    setEmailSuggestionsOpenForId(null);
+                                                  }, 200);
+                                                }}
+                                                onFocus={() => {
                                                   setEmailSuggestionsOpenForId(recipient.id);
                                                   loadRecipientSuggestions();
-                                                }
-                                              }}
-                                              onBlur={(e) => {
-                                                handleEmailOnBlur(recipient.id, e.target.value);
-                                                // Close dropdown after a short delay to allow click on suggestion
-                                                setTimeout(() => {
-                                                  setEmailSuggestionsOpenForId(null);
-                                                }, 200);
-                                              }}
-                                              onFocus={() => {
-                                                setEmailSuggestionsOpenForId(recipient.id);
-                                                loadRecipientSuggestions();
-                                              }}
-                                              onDragStart={(e) => e.stopPropagation()}
-                                              draggable="false"
-                                              className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                              placeholder="email@example.com"
-                                            />
-                                            {emailSuggestionsOpenForId === recipient.id && (
-                                              <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
-                                                {loadingRecipientSuggestions ? (
-                                                  <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
-                                                ) : (() => {
-                                                  // Filter suggestions: initially show only logged-in user's email, then show matching suggestions
-                                                  const userEmail = user?.email?.toLowerCase() || '';
-                                                  const currentEmail = recipient.email.toLowerCase().trim();
-                                                  
-                                                  // If no input, show only logged-in user's email
-                                                  if (!currentEmail) {
-                                                    const userSuggestion = recipientSuggestions.find(s => s.email.toLowerCase() === userEmail);
-                                                    if (userSuggestion) {
-                                                      return (
-                                                        <button
-                                                          key={userSuggestion.email}
-                                                          type="button"
-                                                          onMouseDown={(e) => {
-                                                            e.preventDefault(); // Prevent input blur
-                                                            updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
-                                                            setEmailSuggestionsOpenForId(null);
-                                                          }}
-                                                          onClick={(e) => {
-                                                            e.preventDefault();
-                                                            updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
-                                                            setEmailSuggestionsOpenForId(null);
-                                                          }}
-                                                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                                                        >
-                                                          <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
-                                                          <div className="text-xs text-gray-600">{userSuggestion.email}</div>
-                                                        </button>
-                                                      );
+                                                }}
+                                                onDragStart={(e) => e.stopPropagation()}
+                                                draggable="false"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                                placeholder="email@example.com"
+                                              />
+                                              {emailSuggestionsOpenForId === recipient.id && (
+                                                <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                                                  {loadingRecipientSuggestions ? (
+                                                    <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                                                  ) : (() => {
+                                                    // Filter suggestions: initially show only logged-in user's email, then show matching suggestions
+                                                    const userEmail = user?.email?.toLowerCase() || '';
+                                                    const currentEmail = recipient.email.toLowerCase().trim();
+
+                                                    // If no input, show only logged-in user's email
+                                                    if (!currentEmail) {
+                                                      const userSuggestion = recipientSuggestions.find(s => s.email.toLowerCase() === userEmail);
+                                                      if (userSuggestion) {
+                                                        return (
+                                                          <button
+                                                            key={userSuggestion.email}
+                                                            type="button"
+                                                            onMouseDown={(e) => {
+                                                              e.preventDefault(); // Prevent input blur
+                                                              updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
+                                                              setEmailSuggestionsOpenForId(null);
+                                                            }}
+                                                            onClick={(e) => {
+                                                              e.preventDefault();
+                                                              updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
+                                                              setEmailSuggestionsOpenForId(null);
+                                                            }}
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                          >
+                                                            <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
+                                                            <div className="text-xs text-gray-600">{userSuggestion.email}</div>
+                                                          </button>
+                                                        );
+                                                      }
+                                                      return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
                                                     }
-                                                    return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
-                                                  }
-                                                  
-                                                  // Filter suggestions that match the typed email
-                                                  const matchingSuggestions = recipientSuggestions.filter(s => 
-                                                    s.email.toLowerCase().includes(currentEmail) || 
-                                                    s.name.toLowerCase().includes(currentEmail)
-                                                  );
-                                                  
-                                                  if (matchingSuggestions.length === 0) {
-                                                    return <div className="px-3 py-2 text-sm text-gray-500">No matching suggestions</div>;
-                                                  }
-                                                  
-                                                  return matchingSuggestions.map((s) => (
-                                                    <button
-                                                      key={s.email}
-                                                      type="button"
-                                                      onMouseDown={(e) => {
-                                                        e.preventDefault(); // Prevent input blur
-                                                        updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
-                                                        setEmailSuggestionsOpenForId(null);
-                                                      }}
-                                                      onClick={(e) => {
-                                                        e.preventDefault();
-                                                        updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
-                                                        setEmailSuggestionsOpenForId(null);
-                                                      }}
-                                                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                                                    >
-                                                      <div className="font-medium text-gray-900">{s.name || s.email}</div>
-                                                      <div className="text-xs text-gray-600">{s.email}</div>
-                                                    </button>
-                                                  ));
-                                                })()}
-                                              </div>
-                                            )}
+
+                                                    // Filter suggestions that match the typed email
+                                                    const matchingSuggestions = recipientSuggestions.filter(s =>
+                                                      s.email.toLowerCase().includes(currentEmail) ||
+                                                      s.name.toLowerCase().includes(currentEmail)
+                                                    );
+
+                                                    if (matchingSuggestions.length === 0) {
+                                                      return <div className="px-3 py-2 text-sm text-gray-500">No matching suggestions</div>;
+                                                    }
+
+                                                    return matchingSuggestions.map((s) => (
+                                                      <button
+                                                        key={s.email}
+                                                        type="button"
+                                                        onMouseDown={(e) => {
+                                                          e.preventDefault(); // Prevent input blur
+                                                          updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
+                                                          setEmailSuggestionsOpenForId(null);
+                                                        }}
+                                                        onClick={(e) => {
+                                                          e.preventDefault();
+                                                          updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
+                                                          setEmailSuggestionsOpenForId(null);
+                                                        }}
+                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                      >
+                                                        <div className="font-medium text-gray-900">{s.name || s.email}</div>
+                                                        <div className="text-xs text-gray-600">{s.email}</div>
+                                                      </button>
+                                                    ));
+                                                  })()}
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
                                     </div>
+                                    {recipients.length > 1 && (
+                                      <button
+                                        onClick={() => removeRecipient(recipient.id)}
+                                        className="absolute top-4 right-4 w-6 h-6 bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all"
+                                      >
+                                        <Trash2 className="w-5 h-5 text-[#2C2441]" />
+                                      </button>
+                                    )}
                                   </div>
-                                  {recipients.length > 1 && (
-                                    <button
-                                      onClick={() => removeRecipient(recipient.id)}
-                                      className="absolute top-4 right-4 w-6 h-6 bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all"
-                                    >
-                                      <Trash2 className="w-5 h-5 text-[#2C2441]" />
-                                    </button>
-                                  )}
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
                           </div>
                         );
                       })()}
@@ -5213,23 +5700,22 @@ const calculateTotalCost = (): number => {
                   {/* Add Recipient Button - only show when not only signer */}
                   {!isOnlySigner && (() => {
                     // Check if all recipients have name and email filled
-                    const allRecipientsFilled = recipients.every(r => 
-                      r.name && r.name.trim() !== '' && 
+                    const allRecipientsFilled = recipients.every(r =>
+                      r.name && r.name.trim() !== '' &&
                       r.email && r.email.trim() !== ''
                     );
-                    
+
                     return (
                       <div className="relative group">
                         <button
                           onClick={allRecipientsFilled ? addRecipient : undefined}
                           disabled={!allRecipientsFilled}
-                          className={`flex items-center border border-black-300 rounded-sm overflow-hidden transition-opacity ${
-                            allRecipientsFilled 
-                              ? 'cursor-pointer hover:opacity-90' 
-                              : 'cursor-not-allowed opacity-50'
-                          }`}
+                          className={`flex items-center border border-black-300 rounded-sm overflow-hidden transition-opacity ${allRecipientsFilled
+                            ? 'cursor-pointer hover:opacity-90'
+                            : 'cursor-not-allowed opacity-50'
+                            }`}
                           data-tour="ec-add-recipient"
-                          // title={!allRecipientsFilled ? "Fill all detail of the recipient to add new" : ""}
+                        // title={!allRecipientsFilled ? "Fill all detail of the recipient to add new" : ""}
                         >
                           {/* Left section */}
                           <div className="flex items-center gap-2 px-4 py-2 bg-white">
@@ -5245,7 +5731,7 @@ const calculateTotalCost = (): number => {
                             <ChevronDown className="w-4 h-4 text-[#2C2441]" />
                           </div>
                         </button>
-                        
+
                         {/* Tooltip on hover when disabled */}
                         {!allRecipientsFilled && (
                           <div className="absolute bottom-full left-1/9 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
@@ -5829,7 +6315,7 @@ const calculateTotalCost = (): number => {
 
             {/* LEFT — Back + Title */}
             <div className="flex items-center space-x-3">
-             <button
+              <button
                 onClick={() =>
                   window.history.length > 1 ? navigate(-1) : navigate('/e-sign/dashboard')
                 }
@@ -5888,7 +6374,7 @@ const calculateTotalCost = (): number => {
                     </button>
                   )}
                 </div>
-              )} 
+              )}
             </div>
 
             {/* RIGHT — Help + Advanced Options */}
@@ -5903,7 +6389,7 @@ const calculateTotalCost = (): number => {
               </button>
 
               {helpMenuOpen && (
-                <div 
+                <div
                   ref={helpMenuRef}
                   className="absolute right-24 top-10 w-70 bg-white border border-gray-200 rounded-md shadow-xl z-50"
                 >
@@ -5927,9 +6413,9 @@ const calculateTotalCost = (): number => {
                       <button
                         onClick={() => window.open('/help-support', '_blank')}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md text-white"
-                      style={{ backgroundColor: '#260559' }}
+                        style={{ backgroundColor: '#260559' }}
                       >
-                       <Phone className='w-4 h-4'/>                        
+                        <Phone className='w-4 h-4' />
                         <span className="font-semibold">Contact Support</span>
                       </button>
                     </div>
@@ -6073,144 +6559,144 @@ const calculateTotalCost = (): number => {
         {/* Main Content */}
         <div className="flex-1">
           <div className="max-w-6xlVV mx-auto">
-            {renderStepContent()}            
+            {renderStepContent()}
             {currentStep !== 2 && (
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200" id='clearBoth'>
-               <button
-                 onClick={() => {
-                   setCurrentStep(1);
-                   if (envelopeId) {
-                     navigate(`/e-sign/create?step=1&envelopeId=${envelopeId}`);
-                   } else {
-                     navigate(`/e-sign/create?step=1`);
-                   }
-                 }}
-                 disabled={currentStep === 1}
-                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-               >
-                 <ArrowLeft className="w-4 h-4" />
-                 Previous
-               </button>
+              <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200" id='clearBoth'>
+                <button
+                  onClick={() => {
+                    setCurrentStep(1);
+                    if (envelopeId) {
+                      navigate(`/e-sign/create?step=1&envelopeId=${envelopeId}`);
+                    } else {
+                      navigate(`/e-sign/create?step=1`);
+                    }
+                  }}
+                  disabled={currentStep === 1}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Previous
+                </button>
 
-               <div className="flex items-center space-x-2">
-                 {steps.map((step) => (
-                   <div
-                     key={step.id}
-                     className={`w-2 h-2 rounded-full ${currentStep >= step.id ? 'bg-blue-600' : 'bg-gray-300'
-                       }`}
-                   />
-                 ))}
-               </div>
+                <div className="flex items-center space-x-2">
+                  {steps.map((step) => (
+                    <div
+                      key={step.id}
+                      className={`w-2 h-2 rounded-full ${currentStep >= step.id ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}
+                    />
+                  ))}
+                </div>
 
-               {currentStep < 2 ? (
-                 <button
-                   onClick={handleNext}
-                   disabled={nextLoading}
-                   className="flex items-center gap-2 px-6 py-2 bg-[#260559] text-white rounded-lg hover:bg-[#260559]/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                   data-tour="ec-next-button"
-                 >
-                   {nextLoading ? (
-                     <>
-                       <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                       </svg>
-                       Processing...
-                     </>
-                   ) : (
-                     <>Next<ArrowLeft className="w-4 h-4 rotate-180" /></>
-                   )}
-                 </button>
-               ) : (
-                 <button
-                   onClick={() => navigate(`/e-sign/envelope/${envelopeId}`)}
-                   className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
-                 >
-                   <Eye className="w-4 h-4" />
-                   Preview
-                 </button>
-               )}
-             </div>
+                {currentStep < 2 ? (
+                  <button
+                    onClick={handleNext}
+                    disabled={nextLoading}
+                    className="flex items-center gap-2 px-6 py-2 bg-[#260559] text-white rounded-lg hover:bg-[#260559]/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-tour="ec-next-button"
+                  >
+                    {nextLoading ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      <>Next<ArrowLeft className="w-4 h-4 rotate-180" /></>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate(`/e-sign/envelope/${envelopeId}`)}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Preview
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-    {isCreatorTourOpen && (
-      creatorTargetRect && (() => {
-        const tooltipWidth = 384; 
-        const tooltipHeight = 200;
-        const spacing = 12; 
-        const padding = 16; 
-        
-        const targetCenterX = creatorTargetRect.left + (creatorTargetRect.width / 2);
-        let tooltipLeft = targetCenterX - (tooltipWidth / 2);
-        if (tooltipLeft < padding) {
-          tooltipLeft = padding;
-        } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
-          tooltipLeft = window.innerWidth - tooltipWidth - padding;
-        }
-        
-        const spaceBelow = window.innerHeight - creatorTargetRect.bottom - spacing;
-        const spaceAbove = creatorTargetRect.top - spacing;
-        const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
-        
-        const tooltipTop = showAbove 
-          ? creatorTargetRect.top - tooltipHeight - spacing
-          : creatorTargetRect.bottom + spacing;
-        
-        const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
-        const arrowPadding = 20;
-        const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
-        
-        const finalLeft = tooltipPosition ? tooltipPosition.x : tooltipLeft;
-        const finalTop = tooltipPosition ? tooltipPosition.y : Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding));
+      {isCreatorTourOpen && (
+        creatorTargetRect && (() => {
+          const tooltipWidth = 384;
+          const tooltipHeight = 200;
+          const spacing = 12;
+          const padding = 16;
 
-        return (
-          <>
-            <div
-              ref={tooltipRef}
-              className="fixed z-50"
-              style={{
-                left: `${finalLeft}px`,
-                top: `${finalTop}px`
-              }}
-            >
-              <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
-                <div 
-                  className="px-4 py-3 font-semibold cursor-move select-none"
-                  onMouseDown={handleTooltipMouseDown}
-                >
-                  {creatorTourSteps[creatorTourIndex]?.title}
-                </div>
-                <div className="px-4 py-2 text-sm leading-relaxed">
-                  {creatorTourSteps[creatorTourIndex]?.content}
-                </div>
-                <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
-                  <div className="text-xs text-white-900">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
-                    <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${creatorTourIndex===0 ? 'cursor-not-allowed text-white-900' : 'hover:bg-white-700 text-white'}`}>Back</button>
-                    {creatorTourIndex < creatorTourSteps.length - 1 ? (
-                      <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
-                    ) : (
-                      <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
-                    )}
+          const targetCenterX = creatorTargetRect.left + (creatorTargetRect.width / 2);
+          let tooltipLeft = targetCenterX - (tooltipWidth / 2);
+          if (tooltipLeft < padding) {
+            tooltipLeft = padding;
+          } else if (tooltipLeft + tooltipWidth > window.innerWidth - padding) {
+            tooltipLeft = window.innerWidth - tooltipWidth - padding;
+          }
+
+          const spaceBelow = window.innerHeight - creatorTargetRect.bottom - spacing;
+          const spaceAbove = creatorTargetRect.top - spacing;
+          const showAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+
+          const tooltipTop = showAbove
+            ? creatorTargetRect.top - tooltipHeight - spacing
+            : creatorTargetRect.bottom + spacing;
+
+          const arrowOffsetFromTooltipLeft = targetCenterX - tooltipLeft;
+          const arrowPadding = 20;
+          const constrainedArrowLeft = Math.max(arrowPadding, Math.min(arrowOffsetFromTooltipLeft, tooltipWidth - arrowPadding));
+
+          const finalLeft = tooltipPosition ? tooltipPosition.x : tooltipLeft;
+          const finalTop = tooltipPosition ? tooltipPosition.y : Math.max(padding, Math.min(tooltipTop, window.innerHeight - tooltipHeight - padding));
+
+          return (
+            <>
+              <div
+                ref={tooltipRef}
+                className="fixed z-50"
+                style={{
+                  left: `${finalLeft}px`,
+                  top: `${finalTop}px`
+                }}
+              >
+                <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                  <div
+                    className="px-4 py-3 font-semibold cursor-move select-none"
+                    onMouseDown={handleTooltipMouseDown}
+                  >
+                    {creatorTourSteps[creatorTourIndex]?.title}
                   </div>
+                  <div className="px-4 py-2 text-sm leading-relaxed">
+                    {creatorTourSteps[creatorTourIndex]?.content}
+                  </div>
+                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
+                    <div className="text-xs text-white-900">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
+                      <button onClick={prevCreatorStep} disabled={creatorTourIndex === 0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${creatorTourIndex === 0 ? 'cursor-not-allowed text-white-900' : 'hover:bg-white-700 text-white'}`}>Back</button>
+                      {creatorTourIndex < creatorTourSteps.length - 1 ? (
+                        <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                      ) : (
+                        <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                    style={{
+                      left: `${constrainedArrowLeft}px`,
+                      transform: 'translateX(-50%)'
+                    }}
+                  ></div>
                 </div>
-                <div 
-                  className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d]/30 border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
-                  style={{ 
-                    left: `${constrainedArrowLeft}px`,
-                    transform: 'translateX(-50%)'
-                  }}
-                ></div>
               </div>
-            </div>
-          </>
-        );
-      })()
-    )}
+            </>
+          );
+        })()
+      )}
       {showAdvanced && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowAdvanced(false)} />
@@ -6224,143 +6710,141 @@ const calculateTotalCost = (): number => {
             <div className="flex flex-1">
               <div className="w-72 border-r border-gray-200 p-6 sticky top-16 self-start">
                 <nav className="space-y-3 text-sm">
-                <button onClick={() => sectionRefs.recipientPrivileges.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Recipient Privileges</button>
-                <button onClick={() => sectionRefs.reminders.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Reminders</button>
-                <button onClick={() => sectionRefs.expiration.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Expiration</button>
-                <button onClick={() => sectionRefs.mobileFriendly.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Mobile-Friendly</button>
+                  <button onClick={() => sectionRefs.recipientPrivileges.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Recipient Privileges</button>
+                  <button onClick={() => sectionRefs.reminders.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Reminders</button>
+                  <button onClick={() => sectionRefs.expiration.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Expiration</button>
+                  <button onClick={() => sectionRefs.mobileFriendly.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Mobile-Friendly</button>
                 </nav>
               </div>
 
               <div className="flex-1 self-start sticky top-16" ref={advancedContentRef}>
-              <div className="p-10 space-y-12">
-                <section ref={sectionRefs.recipientPrivileges}>
-                  <h3 className="text-2xl text-gray-900">Recipient Privileges</h3>
-                  <p className="text-gray-600 mt-2">Give recipients options for how they sign.</p>
-                  <div className="mt-6 space-y-4">
-                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4" 
-                        checked={advancedOptions.canSignOnPaper}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, canSignOnPaper: e.target.checked }))}
-                      /> 
-                      Recipients can sign on paper
-                    </label>                  
-                  </div>
-                  <hr className="mt-8" />
-                </section>
-
-                <section ref={sectionRefs.reminders}>
-                  <h3 className="text-2xl text-gray-900">Reminders</h3>
-                  <p className="text-gray-600 mt-2">Follow up with automatic reminders. Signers will receive emails until they sign or decline the envelope.</p>
-                  <div className="mt-6 flex items-center gap-3">
-                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="w-5 h-5" 
-                        checked={envelopeData.reminderEnabled}
-                        onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderEnabled: e.target.checked }))}
-                      />
-                      Turn on auto reminders
-                    </label>
-                  </div>
-                  {envelopeData.reminderEnabled && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Reminder interval (days)</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max="30"
-                        className="w-full border rounded px-3 py-2" 
-                        value={envelopeData.reminderInterval}
-                        onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderInterval: parseInt(e.target.value) || 3 }))}
-                      />
+                <div className="p-10 space-y-12">
+                  <section ref={sectionRefs.recipientPrivileges}>
+                    <h3 className="text-2xl text-gray-900">Recipient Privileges</h3>
+                    <p className="text-gray-600 mt-2">Give recipients options for how they sign.</p>
+                    <div className="mt-6 space-y-4">
+                      <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4"
+                          checked={advancedOptions.canSignOnPaper}
+                          onChange={(e) => setAdvancedOptions(prev => ({ ...prev, canSignOnPaper: e.target.checked }))}
+                        />
+                        Recipients can sign on paper
+                      </label>
                     </div>
-                  )}
-                  <hr className="mt-8" />
-                </section>
+                    <hr className="mt-8" />
+                  </section>
 
-                <section ref={sectionRefs.expiration}>
-                  <h3 className="text-2xl text-gray-900">Expiration</h3>
-                  <p className="text-gray-600 mt-2">By default, envelopes expire after 120 days. Recipients can no longer view or sign an envelope after it expires.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Days until envelope expires</label>
-                      <select 
-                        className="w-full border rounded px-3 py-2"
-                        value={advancedOptions.expirationType}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationType: e.target.value as 'custom' | 'never' }))}
-                      >
-                        <option value="custom">Custom days</option>
-                        <option value="never">Never expire</option>
-                      </select>
+                  <section ref={sectionRefs.reminders}>
+                    <h3 className="text-2xl text-gray-900">Reminders</h3>
+                    <p className="text-gray-600 mt-2">Follow up with automatic reminders. Signers will receive emails until they sign or decline the envelope.</p>
+                    <div className="mt-6 flex items-center gap-3">
+                      <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5"
+                          checked={envelopeData.reminderEnabled}
+                          onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderEnabled: e.target.checked }))}
+                        />
+                        Turn on auto reminders
+                      </label>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max="365"
-                        className={`w-full border rounded px-3 py-2 ${
-                          advancedOptions.expirationType === 'never' ? 'cursor-not-allowed bg-gray-100' : ''
-                        }`}
-                        value={advancedOptions.expirationDays}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationDays: parseInt(e.target.value) || 120 }))}
-                        disabled={advancedOptions.expirationType === 'never'}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Send alert</label>
-                      <select 
-                        className="w-full border rounded px-3 py-2"
-                        value={advancedOptions.alertType}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, alertType: e.target.value as 'custom' | 'never' }))}
-                      >
-                        <option value="custom">Custom days</option>
-                        <option value="never">Never</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
-                      <input 
-                        type="number" 
-                        min="0" 
-                        max="365"
-                        className={`w-full border rounded px-3 py-2 ${
-                          advancedOptions.expirationType === 'never' ? 'cursor-not-allowed bg-gray-100' : ''
-                        }`}
-                        value={advancedOptions.expirationAlertDays}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationAlertDays: parseInt(e.target.value) || 0 }))}
-                        disabled={advancedOptions.alertType === 'never'}
-                      />
-                    </div>
-                  </div>
-                  <hr className="mt-8" />
-                </section>
+                    {envelopeData.reminderEnabled && (
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Reminder interval (days)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          className="w-full border rounded px-3 py-2"
+                          value={envelopeData.reminderInterval}
+                          onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderInterval: parseInt(e.target.value) || 3 }))}
+                        />
+                      </div>
+                    )}
+                    <hr className="mt-8" />
+                  </section>
 
-                <section ref={sectionRefs.mobileFriendly}>
-                  <h3 className="text-2xl text-gray-900">Mobile-Friendly Viewing with Responsive Signing</h3>
-                  <p className="text-gray-600 mt-2">View your document in preview mode to see how it looks on a mobile device</p>
-                  <div className="mt-6">
-                    <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="w-5 h-5" 
-                        checked={advancedOptions.responsiveSigning}
-                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, responsiveSigning: e.target.checked }))}
-                      />
-                      Enable Responsive Signing for this envelope
-                    </label>
-                  </div>
-                </section>
+                  <section ref={sectionRefs.expiration}>
+                    <h3 className="text-2xl text-gray-900">Expiration</h3>
+                    <p className="text-gray-600 mt-2">By default, envelopes expire after 120 days. Recipients can no longer view or sign an envelope after it expires.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Days until envelope expires</label>
+                        <select
+                          className="w-full border rounded px-3 py-2"
+                          value={advancedOptions.expirationType}
+                          onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationType: e.target.value as 'custom' | 'never' }))}
+                        >
+                          <option value="custom">Custom days</option>
+                          <option value="never">Never expire</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          className={`w-full border rounded px-3 py-2 ${advancedOptions.expirationType === 'never' ? 'cursor-not-allowed bg-gray-100' : ''
+                            }`}
+                          value={advancedOptions.expirationDays}
+                          onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationDays: parseInt(e.target.value) || 120 }))}
+                          disabled={advancedOptions.expirationType === 'never'}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Send alert</label>
+                        <select
+                          className="w-full border rounded px-3 py-2"
+                          value={advancedOptions.alertType}
+                          onChange={(e) => setAdvancedOptions(prev => ({ ...prev, alertType: e.target.value as 'custom' | 'never' }))}
+                        >
+                          <option value="custom">Custom days</option>
+                          <option value="never">Never</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="365"
+                          className={`w-full border rounded px-3 py-2 ${advancedOptions.expirationType === 'never' ? 'cursor-not-allowed bg-gray-100' : ''
+                            }`}
+                          value={advancedOptions.expirationAlertDays}
+                          onChange={(e) => setAdvancedOptions(prev => ({ ...prev, expirationAlertDays: parseInt(e.target.value) || 0 }))}
+                          disabled={advancedOptions.alertType === 'never'}
+                        />
+                      </div>
+                    </div>
+                    <hr className="mt-8" />
+                  </section>
 
-              </div>
+                  <section ref={sectionRefs.mobileFriendly}>
+                    <h3 className="text-2xl text-gray-900">Mobile-Friendly Viewing with Responsive Signing</h3>
+                    <p className="text-gray-600 mt-2">View your document in preview mode to see how it looks on a mobile device</p>
+                    <div className="mt-6">
+                      <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5"
+                          checked={advancedOptions.responsiveSigning}
+                          onChange={(e) => setAdvancedOptions(prev => ({ ...prev, responsiveSigning: e.target.checked }))}
+                        />
+                        Enable Responsive Signing for this envelope
+                      </label>
+                    </div>
+                  </section>
 
-       
+                </div>
+
+
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end">
-                  <button 
-                    onClick={saveAdvancedOptions} 
-                    className="px-6 py-2 rounded text-white hover:opacity-90 transition-opacity" 
+                  <button
+                    onClick={saveAdvancedOptions}
+                    className="px-6 py-2 rounded text-white hover:opacity-90 transition-opacity"
                     style={{ backgroundColor: '#260559' }}
                   >
                     Save
@@ -6400,22 +6884,20 @@ const calculateTotalCost = (): number => {
 
             <div className="flex items-center gap-3 mt-4 mb-8 pb-6 border-b border-gray-100">
               <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 1 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                  sendModalStep >= 1 
-                    ? 'bg-[#3E2B66] text-white shadow-sm' 
-                    : 'bg-gray-100 text-gray-500'
-                }`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${sendModalStep >= 1
+                  ? 'bg-[#3E2B66] text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-500'
+                  }`}>
                   {sendModalStep > 1 ? <Check className="w-5 h-5" /> : '1'}
                 </div>
                 <span className="font-semibold text-sm">Signing Order</span>
               </div>
               <div className={`flex-1 h-0.5 transition-colors ${sendModalStep >= 2 ? 'bg-[#3E2B66]' : 'bg-gray-200'}`} />
               <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 2 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                  sendModalStep >= 2 
-                    ? 'bg-[#3E2B66] text-white shadow-sm' 
-                    : 'bg-gray-100 text-gray-500'
-                }`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${sendModalStep >= 2
+                  ? 'bg-[#3E2B66] text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-500'
+                  }`}>
                   2
                 </div>
                 <span className="font-semibold text-sm">Summary</span>
@@ -6461,7 +6943,7 @@ const calculateTotalCost = (): number => {
                       <div className="relative">
                         {/* Vertical Timeline Line */}
                         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 z-0" />
-                        
+
                         {/* Sender Row */}
                         <div className="relative flex items-center py-4 mb-2">
                           <div className="relative z-10 flex items-center gap-4 w-full">
@@ -6482,17 +6964,16 @@ const calculateTotalCost = (): number => {
                           const isDragging = draggedSignerId === p.key;
                           const isDragOver = dragOverSignerId === p.key;
                           const isCurrent = index === 0; // First signer is current
-                          
+
                           return (
                             <div
                               key={`signer-${p.key}`}
-                              className={`relative flex items-center py-3 mb-1 rounded-lg transition-all duration-200 ${
-                                isDragging 
-                                  ? 'opacity-50 scale-95 shadow-lg bg-white' 
-                                  : isDragOver 
-                                    ? 'bg-blue-50 border-2 border-blue-200' 
-                                    : 'hover:bg-gray-50'
-                              }`}
+                              className={`relative flex items-center py-3 mb-1 rounded-lg transition-all duration-200 ${isDragging
+                                ? 'opacity-50 scale-95 shadow-lg bg-white'
+                                : isDragOver
+                                  ? 'bg-blue-50 border-2 border-blue-200'
+                                  : 'hover:bg-gray-50'
+                                }`}
                               draggable
                               onDragStart={(e) => {
                                 setDraggedSignerId(p.key);
@@ -6536,24 +7017,23 @@ const calculateTotalCost = (): number => {
                               <div className="relative z-10 flex items-center gap-4 w-full">
                                 {/* Timeline Circle */}
                                 <div className="flex-shrink-0 w-12 flex justify-center">
-                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm border-2 ${
-                                    isCurrent 
-                                      ? 'bg-[#3E2B66] border-[#3E2B66] text-white' 
-                                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                                  }`}>
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm border-2 ${isCurrent
+                                    ? 'bg-[#3E2B66] border-[#3E2B66] text-white'
+                                    : 'bg-gray-100 border-gray-300 text-gray-600'
+                                    }`}>
                                     {getInitials(p.name, p.email)}
                                   </div>
                                 </div>
-                                
+
                                 {/* Drag Handle */}
-                                <div 
+                                <div
                                   className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
                                   title="Drag to reorder"
                                   onMouseDown={(e) => e.stopPropagation()}
                                 >
                                   <GripVertical className="w-5 h-5" />
                                 </div>
-                                
+
                                 {/* Signer Info */}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
@@ -6620,11 +7100,11 @@ const calculateTotalCost = (): number => {
                             {/* Envelope Body */}
                             <div className="relative w-28 h-20 bg-gradient-to-br from-[#3E2B66] to-[#5a3f8a] rounded-sm shadow-2xl envelope-body overflow-hidden">
                               {/* Envelope Flap (Triangle shape) */}
-                              <div className="absolute -top-4 left-0 w-full h-8 bg-gradient-to-br from-[#4d3577] to-[#3E2B66] envelope-flap" 
-                                   style={{
-                                     clipPath: 'polygon(0 100%, 50% 0, 100% 100%)',
-                                     transformOrigin: 'center bottom'
-                                   }}>
+                              <div className="absolute -top-4 left-0 w-full h-8 bg-gradient-to-br from-[#4d3577] to-[#3E2B66] envelope-flap"
+                                style={{
+                                  clipPath: 'polygon(0 100%, 50% 0, 100% 100%)',
+                                  transformOrigin: 'center bottom'
+                                }}>
                               </div>
                               {/* Envelope Content Area */}
                               <div className="absolute inset-0 flex items-center justify-center pt-2">
@@ -6649,74 +7129,74 @@ const calculateTotalCost = (): number => {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Small Envelopes - Flying around */}
                         {/* Small Envelope 1 - Top Left */}
                         <div className="absolute top-8 left-12 small-envelope-1">
                           <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
-                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                              style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
                               <Mail className="w-4 h-4 text-white/80" />
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Small Envelope 2 - Top Right */}
                         <div className="absolute top-6 right-16 small-envelope-2">
                           <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
-                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                              style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
                               <Mail className="w-4 h-4 text-white/80" />
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Small Envelope 3 - Bottom Left */}
                         <div className="absolute bottom-8 left-16 small-envelope-3">
                           <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
-                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                              style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
                               <Mail className="w-4 h-4 text-white/80" />
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Small Envelope 4 - Bottom Right */}
                         <div className="absolute bottom-6 right-12 small-envelope-4">
                           <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80" 
-                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                              style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
                               <Mail className="w-4 h-4 text-white/80" />
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Small Envelope 5 - Top Center */}
                         <div className="absolute top-2 left-1/2 -translate-x-1/2 small-envelope-5">
                           <div className="relative w-10 h-7 bg-gradient-to-br from-[#3E2B66]/70 to-[#5a3f8a]/70 rounded-sm shadow-md overflow-hidden">
-                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70" 
-                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70"
+                              style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-0.5">
                               <Mail className="w-3 h-3 text-white/70" />
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Small Envelope 6 - Bottom Center */}
                         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 small-envelope-6">
                           <div className="relative w-10 h-7 bg-gradient-to-br from-[#3E2B66]/70 to-[#5a3f8a]/70 rounded-sm shadow-md overflow-hidden">
-                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70" 
-                                 style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
+                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70"
+                              style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-0.5">
                               <Mail className="w-3 h-3 text-white/70" />
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Destination Indicators */}
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 opacity-40">
                           <div className="w-4 h-4 bg-[#3E2B66] rounded-full animate-ping"></div>
@@ -6728,7 +7208,7 @@ const calculateTotalCost = (): number => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <h3 className="text-2xl font-semibold text-[#3E2B66] mb-3">Sending Envelope...</h3>
                     <p className="text-gray-600 text-center max-w-md mb-6">
                       Please wait while we send your envelope to all recipients. This may take a few moments.
@@ -6792,7 +7272,7 @@ const calculateTotalCost = (): number => {
                     {/* Invoice Line Items */}
                     <div className="mb-6">
                       {/* <h3 className="text-lg font-semibold text-gray-900 mb-4">Line Items</h3> */}
-                      
+
                       {/* Table Header - Only show when there are recipients with authentication */}
                       {hasRecipientsWithAuth && (
                         <div className="bg-gradient-to-r from-[#260559]/100 to-[#3E2B66] border border-[#260559] rounded-t-lg overflow-hidden">
@@ -6810,7 +7290,7 @@ const calculateTotalCost = (): number => {
                         {recipients
                           .filter((recipient) => {
                             const authArray = parseAuthentication(recipient.authentication);
-                            const authMethodList = authArray.map(authId => 
+                            const authMethodList = authArray.map(authId =>
                               authMethods.find(m => m.id === authId)
                             ).filter(Boolean);
                             return authMethodList.length > 0;
@@ -6818,18 +7298,17 @@ const calculateTotalCost = (): number => {
                           .map((recipient, index) => {
                             // Parse authentication - can be JSON stringified array or single value
                             const authArray = parseAuthentication(recipient.authentication);
-                            const authMethodList = authArray.map(authId => 
+                            const authMethodList = authArray.map(authId =>
                               authMethods.find(m => m.id === authId)
                             ).filter(Boolean);
                             const totalCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
                             const authDisplay = authMethodList.map(m => m?.name).join(', ');
-                            
+
                             return (
-                              <div 
-                                key={recipient.id} 
-                                className={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-200 last:border-b-0 hover:bg-purple-50 transition-colors ${
-                                  index % 2 === 0 ? 'bg-white' : 'bg-purple-50/30'
-                                }`}
+                              <div
+                                key={recipient.id}
+                                className={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-200 last:border-b-0 hover:bg-purple-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-purple-50/30'
+                                  }`}
                               >
                                 <div className="col-span-1 text-sm font-medium text-gray-700 flex items-center">{recipient.order}</div>
                                 <div className="col-span-4">
@@ -6865,21 +7344,21 @@ const calculateTotalCost = (): number => {
                           })}
                         {recipients.filter((recipient) => {
                           const authArray = parseAuthentication(recipient.authentication);
-                          const authMethodList = authArray.map(authId => 
+                          const authMethodList = authArray.map(authId =>
                             authMethods.find(m => m.id === authId)
                           ).filter(Boolean);
                           return authMethodList.length === 0;
                         }).length === 0 && recipients.filter((recipient) => {
                           const authArray = parseAuthentication(recipient.authentication);
-                          const authMethodList = authArray.map(authId => 
+                          const authMethodList = authArray.map(authId =>
                             authMethods.find(m => m.id === authId)
                           ).filter(Boolean);
                           return authMethodList.length > 0;
                         }).length === 0 && (
-                          <div className="px-4 py-8 text-center text-gray-500">
-                            <p className="text-sm">No recipients with authentication methods</p>
-                          </div>
-                        )}
+                            <div className="px-4 py-8 text-center text-gray-500">
+                              <p className="text-sm">No recipients with authentication methods</p>
+                            </div>
+                          )}
                       </div>
                     </div>
 
@@ -6901,53 +7380,53 @@ const calculateTotalCost = (): number => {
                           {/* Recipients without authentication */}
                           {recipients.filter((recipient) => {
                             const authArray = parseAuthentication(recipient.authentication);
-                            const authMethodList = authArray.map(authId => 
+                            const authMethodList = authArray.map(authId =>
                               authMethods.find(m => m.id === authId)
                             ).filter(Boolean);
                             return authMethodList.length === 0;
                           }).length > 0 && (
-                            <div className="mb-6">
-                              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                                Recipients Without Authentication
-                              </h4>
-                              <div className="space-y-2">
-                                {recipients
-                                  .filter((recipient) => {
-                                    const authArray = parseAuthentication(recipient.authentication);
-                                    const authMethodList = authArray.map(authId => 
-                                      authMethods.find(m => m.id === authId)
-                                    ).filter(Boolean);
-                                    return authMethodList.length === 0;
-                                  })
-                                  .map((recipient) => (
-                                    <div
-                                      key={recipient.id}
-                                      className="flex items-center justify-between p-3 bg-white border border-yellow-200 rounded-lg hover:border-yellow-300 transition-colors"
-                                    >
-                                      <div className="flex-1">
-                                        <p className="text-sm font-semibold text-gray-900">
-                                          {recipient.name || recipient.email}
-                                        </p>
-                                        <p className="text-xs text-gray-500">{recipient.email}</p>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setAuthModalForRecipientId(recipient.id);
-                                          setAuthModalForBulk(false);
-                                          setShowAuthModal(true);
-                                        }}
-                                        className="inline-flex items-center gap-2 px-2 py-1 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-400 rounded-full text-xs font-semibold text-yellow-900 hover:from-yellow-100 hover:via-amber-100 hover:to-yellow-100 hover:border-yellow-500 transition-all duration-200 shadow-md hover:shadow-xl hover:scale-105 animate-golden-shine relative group"
+                              <div className="mb-6">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                  <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                                  Recipients Without Authentication
+                                </h4>
+                                <div className="space-y-2">
+                                  {recipients
+                                    .filter((recipient) => {
+                                      const authArray = parseAuthentication(recipient.authentication);
+                                      const authMethodList = authArray.map(authId =>
+                                        authMethods.find(m => m.id === authId)
+                                      ).filter(Boolean);
+                                      return authMethodList.length === 0;
+                                    })
+                                    .map((recipient) => (
+                                      <div
+                                        key={recipient.id}
+                                        className="flex items-center justify-between p-3 bg-white border border-yellow-200 rounded-lg hover:border-yellow-300 transition-colors"
                                       >
-                                        <LockKeyhole className="w-4 h-4 relative z-10 text-yellow-700 group-hover:text-yellow-800 transition-colors" />
-                                        <span className="relative z-10">Select Authentication</span>
-                                      </button>
-                                    </div>
-                                  ))}
+                                        <div className="flex-1">
+                                          <p className="text-sm font-semibold text-gray-900">
+                                            {recipient.name || recipient.email}
+                                          </p>
+                                          <p className="text-xs text-gray-500">{recipient.email}</p>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setAuthModalForRecipientId(recipient.id);
+                                            setAuthModalForBulk(false);
+                                            setShowAuthModal(true);
+                                          }}
+                                          className="inline-flex items-center gap-2 px-2 py-1 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-400 rounded-full text-xs font-semibold text-yellow-900 hover:from-yellow-100 hover:via-amber-100 hover:to-yellow-100 hover:border-yellow-500 transition-all duration-200 shadow-md hover:shadow-xl hover:scale-105 animate-golden-shine relative group"
+                                        >
+                                          <LockKeyhole className="w-4 h-4 relative z-10 text-yellow-700 group-hover:text-yellow-800 transition-colors" />
+                                          <span className="relative z-10">Select Authentication</span>
+                                        </button>
+                                      </div>
+                                    ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
                           {/* Balance Summary */}
                           <div className="space-y-3">
@@ -6962,11 +7441,10 @@ const calculateTotalCost = (): number => {
                             <div className="border-t border-gray-300 pt-3 mt-3">
                               <div className="flex justify-between items-center">
                                 <span className="text-base font-semibold text-gray-900">Remaining Balance:</span>
-                                <span className={`text-xl font-bold ${
-                                  ((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0 
-                                    ? 'text-green-600' 
-                                    : 'text-red-600'
-                                }`}>
+                                <span className={`text-xl font-bold ${((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                                  }`}>
                                   {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} credits
                                 </span>
                               </div>
@@ -6996,7 +7474,7 @@ const calculateTotalCost = (): number => {
                           Schedule envelope to send later
                         </label>
                       </div>
-                      
+
                       {isScheduled && (
                         <div className="ml-7 space-y-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
                           <div>
@@ -7089,33 +7567,32 @@ const calculateTotalCost = (): number => {
                           // Check if credits are insufficient
                           const totalCost = calculateTotalCost();
                           const creditsBalance = subscriptionPlan?.creditsBalance || 0;
-                          
+
                           if (totalCost > 0 && creditsBalance < totalCost) {
                             // Show subscription modal instead of sending
                             setShowSubscriptionModal(true);
                             toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
                             return;
                           }
-                          
+
                           // Validate scheduling if enabled
                           if (isScheduled && !scheduledDate) {
                             toast.error('Please select a date for scheduling');
                             return;
                           }
-                          
+
                           // If credits are sufficient, proceed with sending/scheduling
                           if (!sending) {
                             confirmAndSendEnvelope();
                           }
                         }}
                         disabled={sending}
-                        className={`px-6 py-2.5 rounded-lg text-white font-medium transition-all flex items-center gap-2 ${
-                          (subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : sending
+                        className={`px-6 py-2.5 rounded-lg text-white font-medium transition-all flex items-center gap-2 ${(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : sending
                             ? 'bg-[#3E2B66] cursor-wait opacity-90'
                             : 'bg-[#3E2B66] hover:bg-[#4d3577] shadow-sm hover:shadow-md'
-                        }`}
+                          }`}
                       >
                         {sending && (
                           <div className="flex items-center gap-1">
@@ -7124,13 +7601,13 @@ const calculateTotalCost = (): number => {
                             <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
                         )}
-                        {sending 
+                        {sending
                           ? (isScheduled
-                              ? 'Scheduling Envelope...'
-                              : (isInPersonOnlyFlow ? 'Starting in-person signing...' : 'Sending Envelope...'))
+                            ? 'Scheduling Envelope...'
+                            : (isInPersonOnlyFlow ? 'Starting in-person signing...' : 'Sending Envelope...'))
                           : (isScheduled
-                              ? 'Confirm & Schedule'
-                              : (isInPersonOnlyFlow ? 'Start in-person signing' : 'Confirm & Send'))
+                            ? 'Confirm & Schedule'
+                            : (isInPersonOnlyFlow ? 'Start in-person signing' : 'Confirm & Send'))
                         }
                       </button>
                     </div>
@@ -7169,11 +7646,11 @@ const calculateTotalCost = (): number => {
                 <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-            
+
             {/* PDF Viewer (React-PDF with local worker) */}
             <div className="flex-1 overflow-hidden bg-gray-100">
               <div className="w-full h-full overflow-auto flex flex-col items-center p-4 gap-4">
-                <PDFDocument 
+                <PDFDocument
                   file={selectedPdfForPreview.url}
                   onLoadSuccess={({ numPages }) => {
                     setPdfNumPages(numPages);
@@ -7184,9 +7661,9 @@ const calculateTotalCost = (): number => {
                   }}
                 >
                   {pdfNumPages && [...Array(pdfNumPages)].map((_, index) => (
-                    <PDFPage 
+                    <PDFPage
                       key={`page_${index + 1}`}
-                      pageNumber={index + 1} 
+                      pageNumber={index + 1}
                       width={900}
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
@@ -7293,34 +7770,58 @@ const calculateTotalCost = (): number => {
               setShowRecipientListModal(false);
               setRecipientListModalForId(null);
               setRecipientListSearch('');
+              setShowAddRecipientForm(false);
+              setEditingSavedRecipientId(null);
+              resetNewRecipientFormState();
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-[20px] font-semibold text-[#3E2B66]">
-                Select Recipient
+              <h2 className="text-[25px] thankyou-heading font-semibold text-[#3E2B66]">
+                {editingSavedRecipientId
+                  ? "Edit Recipient"
+                  : showAddRecipientForm
+                    ? "Add Recipient"
+                    : "Select Recipient"}
               </h2>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   onClick={() => {
-                    setShowAddRecipientForm(!showAddRecipientForm);
                     if (showAddRecipientForm) {
-                      setNewRecipientForm({ name: '', email: '', title: '', company: '', phone: '', address: '' });
+                      setShowAddRecipientForm(false);
+                      setEditingSavedRecipientId(null);
+                      resetNewRecipientFormState();
+                    } else {
+                      setEditingSavedRecipientId(null);
+                      resetNewRecipientFormState();
+                      setShowAddRecipientForm(true);
                     }
                   }}
-                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                  className={`inline-flex items-center px-4 py-2 font-medium rounded-lg transition-colors text-sm
+                    ${showAddRecipientForm
+                      ? ""
+                      : "bg-[#3E2B66] text-white hover:bg-[#4d3577]"
+                    }
+                  `}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {showAddRecipientForm ? 'Cancel' : 'Add New'}
+                  {showAddRecipientForm ? (
+                    " "
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  {showAddRecipientForm ? '' : 'Add New'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setShowRecipientListModal(false);
                     setRecipientListModalForId(null);
                     setRecipientListSearch('');
                     setShowAddRecipientForm(false);
-                    setNewRecipientForm({ name: '', email: '', title: '', company: '', phone: '', address: '' });
+                    setEditingSavedRecipientId(null);
+                    resetNewRecipientFormState();
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -7331,77 +7832,32 @@ const calculateTotalCost = (): number => {
 
             {/* Add Recipient Form */}
             {showAddRecipientForm && (
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newRecipientForm.name}
-                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="Full name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={newRecipientForm.email}
-                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                    <input
-                      type="text"
-                      value={newRecipientForm.title}
-                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="Job title"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                    <input
-                      type="text"
-                      value={newRecipientForm.company}
-                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, company: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="Company name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <input
-                      type="text"
-                      value={newRecipientForm.phone}
-                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="Phone number"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input
-                      type="text"
-                      value={newRecipientForm.address}
-                      onChange={(e) => setNewRecipientForm({ ...newRecipientForm, address: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="Address"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-end mt-4">
+              <div className="p-4 border-b border-gray-200 bg-gray-50">                
+                <SavedRecipientContactFields
+                  values={newRecipientForm}
+                  errors={recipientFormErrors}
+                  onFieldChange={handleSavedRecipientFieldChange}
+                  onPhoneChange={handleSavedRecipientPhoneChange}
+                  disabled={savingNewRecipient}
+                  phoneDropdownZIndex={10020}
+                />
+                <div className="flex items-center gap-4 justify-end mt-4">
                   <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddRecipientForm(false);
+                      setEditingSavedRecipientId(null);
+                      resetNewRecipientFormState();
+                    }}
+                    className="inline-flex items-center px-4 py-2 font-medium rounded-lg transition-colors text-sm bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleAddNewRecipient}
-                    disabled={savingNewRecipient || !newRecipientForm.name.trim() || !newRecipientForm.email.trim()}
+                    disabled={savingNewRecipient || !isSavedRecipientFormValid(newRecipientForm)}
                     className="inline-flex items-center px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {savingNewRecipient ? (
@@ -7412,7 +7868,7 @@ const calculateTotalCost = (): number => {
                     ) : (
                       <>
                         <Save className="w-4 h-4 mr-2" />
-                        Save & Select
+                        {editingSavedRecipientId ? 'Save changes' : 'Save & Select'}
                       </>
                     )}
                   </button>
@@ -7425,11 +7881,13 @@ const calculateTotalCost = (): number => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
-                  type="text"
+                  type="search"
+                  inputMode="search"
+                  autoComplete="off"
                   value={recipientListSearch}
                   onChange={(e) => setRecipientListSearch(e.target.value)}
-                  placeholder="Search recipients..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Search by name, email, company, or phone…"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder:text-xs"
                 />
               </div>
             </div>
@@ -7446,15 +7904,9 @@ const calculateTotalCost = (): number => {
                   </div>
                 </div>
               ) : (() => {
-                // Filter recipients based on search
-                const filteredRecipients = savedRecipients.filter(r => {
-                  const searchLower = recipientListSearch.toLowerCase();
-                  const nameMatch = r.name.toLowerCase().includes(searchLower);
-                  const emailMatch = r.email.toLowerCase().includes(searchLower);
-                  const companyMatch = r.company?.toLowerCase().includes(searchLower);
-                  const titleMatch = r.title?.toLowerCase().includes(searchLower);
-                  return nameMatch || emailMatch || companyMatch || titleMatch;
-                });
+                const filteredRecipients = savedRecipients.filter((r) =>
+                  recipientListRowMatchesQuery(r, recipientListSearch)
+                );
 
                 if (filteredRecipients.length === 0) {
                   return (
@@ -7472,34 +7924,85 @@ const calculateTotalCost = (): number => {
 
                 return (
                   <div className="space-y-2">
-                    {filteredRecipients.map((recipient) => (
-                      <button
-                        key={recipient._id}
-                        onClick={() => selectRecipientFromList(recipient)}
-                        className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900 mb-1">
-                              {recipient.name}
-                            </div>
-                            <div className="text-sm text-gray-600 mb-1">
-                              {recipient.email}
-                            </div>
-                            {(recipient.title || recipient.company) && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                {recipient.title && <span>{recipient.title}</span>}
-                                {recipient.title && recipient.company && <span> • </span>}
-                                {recipient.company && <span>{recipient.company}</span>}
+                    {filteredRecipients.map((recipient) => {
+                      const resolvedPhone = (() => {
+                        const direct = String(recipient.phone || '').trim();
+                        if (direct) return direct;
+                        const emailKey = String(recipient.email || '').toLowerCase().trim();
+                        if (!emailKey) return '';
+                        const fromCurrentRecipients = recipients.find(
+                          (r) => String(r.email || '').toLowerCase().trim() === emailKey
+                        );
+                        return String((fromCurrentRecipients as any)?.phone || '').trim();
+                      })();
+                      const canManage =
+                        recipient.addressBookEntry &&
+                        isPersistedAddressBookRecipientId(recipient._id);
+                      return (
+                        <div
+                          key={recipient._id}
+                          className="group flex w-full items-stretch overflow-hidden rounded-lg border border-gray-200 bg-white transition-colors hover:border-purple-300"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => selectRecipientFromList(recipient)}
+                            className="min-w-0 flex-1 text-left p-4 hover:bg-purple-50 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-gray-900 mb-1">
+                                  {recipient.name}
+                                </div>
+                                <div className="flex text-xs text-gray-600 mb-1 break-all">
+                                  {recipient.email}
+                                  {resolvedPhone ? ` | ${resolvedPhone}` : ''}                                  
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          <div className="ml-4">
-                            <Check className="w-5 h-5 text-purple-600 opacity-0 group-hover:opacity-100" />
-                          </div>
+                            </div>
+                          </button>
+                          {canManage && (
+                            <div className="flex shrink-0 flex-col justify-center gap-1 border-l border-gray-100 bg-gray-50/80 px-2 py-2">
+                              <button
+                                type="button"
+                                aria-label="Edit recipient"
+                                disabled={deletingSavedRecipientId === recipient._id}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setEditingSavedRecipientId(recipient._id);
+                                  setNewRecipientForm({
+                                    name: recipient.name || '',
+                                    email: recipient.email || '',
+                                    title: recipient.title || '',
+                                    company: recipient.company || '',
+                                    phone: recipient.phone || '',
+                                    address: recipient.address || '',
+                                  });
+                                  setRecipientFormErrors({});
+                                  setShowAddRecipientForm(true);
+                                }}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-purple-700 hover:bg-purple-100 disabled:opacity-40"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Delete recipient"
+                                disabled={deletingSavedRecipientId === recipient._id}
+                                onClick={(e) => handleDeleteSavedRecipient(e, recipient)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40"
+                              >
+                                {deletingSavedRecipientId === recipient._id ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })()}
@@ -7509,8 +8012,8 @@ const calculateTotalCost = (): number => {
       )}
 
       {/* Subscription Plans Modal */}
-      <SubscriptionPlansModal 
-        open={showSubscriptionModal} 
+      <SubscriptionPlansModal
+        open={showSubscriptionModal}
         onClose={() => {
           setShowSubscriptionModal(false);
           // Refresh subscription plan after modal closes (in case user upgraded)
@@ -7527,7 +8030,7 @@ const calculateTotalCost = (): number => {
             }
           };
           refreshPlan();
-        }} 
+        }}
       />
     </div>
   );

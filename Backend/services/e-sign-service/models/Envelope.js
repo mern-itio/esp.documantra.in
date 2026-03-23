@@ -38,7 +38,7 @@ const EnvelopeSchema = new mongoose.Schema({
   documentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
   recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipient" }],
   signatureType: { type: String, enum: ["standard", "advanced", "qualified"], default: "standard" },
-  status: { type: String, enum: ["draft", "in-progress", "completed", "archived", "active", "inactive", "deleted"], default: "draft" },
+  status: { type: String, enum: ["draft", "in-progress", "completed", "declined", "archived", "active", "inactive", "deleted"], default: "draft" },
   // NEW FLAG
   isPowerForm: { type: Boolean, default: false },   // <--- mark if this is a PowerForm
   // NEW FIELDS for PowerForm slots

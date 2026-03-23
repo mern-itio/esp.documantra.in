@@ -2077,7 +2077,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   {shouldHighlightCompleteCta && (
                     <div className="pointer-events-none absolute top-full mt-2 right-0 flex flex-col items-center rounded-full bg-amber-300 px-3 py-1.5 text-[11px] font-semibold text-[#1b0c3e] shadow-md whitespace-nowrap">
                       <ArrowUp className="h-3.5 w-3.5 animate-bounce" />
-                      <span>Click to complete signing</span>
+                      <span>Click here to complete signing</span>
                     </div>
                   )}
                   <button
