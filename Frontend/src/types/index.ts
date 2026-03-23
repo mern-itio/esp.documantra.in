@@ -52,6 +52,7 @@ export interface Invoice {
   id?: string;
   _id?: string;
   userId?: string;
+  type?:String;
   subscriptionId?: string;
   planTemplateId?: string;
   planName?: string;
@@ -736,6 +737,20 @@ export interface RecentError {
   error: string
   timestamp: string
   userId?: string
+}
+
+export interface CreditPackage {
+  _id?: string;
+  id?: string;
+  name: string;
+  credits: number;
+  price: number;
+  currency?: string;
+  description?: string;
+  isPopular?: boolean;
+  discount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TestCase {

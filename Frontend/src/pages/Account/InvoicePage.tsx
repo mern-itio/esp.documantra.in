@@ -175,6 +175,7 @@ const InvoicePage: React.FC = () => {
                   </div>
                 </div>
               </div>
+              {invoice.type !== 'credit' && (
               <div className="space-y-4">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
@@ -199,6 +200,7 @@ const InvoicePage: React.FC = () => {
                   </div>
                 </div>
               </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-gray-200">

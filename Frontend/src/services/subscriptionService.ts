@@ -202,6 +202,58 @@ export class SubscriptionService {
       throw error;
     }
   }
+
+  /**
+   * Fetch all available credit packages
+   */
+static async getCreditPackages(): Promise<any[]> {
+  try {
+    const response = await subscriptionApi.get('/user/credit-packages');
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    if (Array.isArray(response.data?.data)) {
+      return response.data.data;
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error fetching credit packages:', error);
+    return [];
+  }
+}
+
+  /**
+   * Create a Stripe Checkout session for credit purchase
+   */
+  static async createCreditPurchaseCheckoutSession(creditPackageId: string): Promise<StripeCheckoutSessionResponse> {
+    try {
+      const response = await subscriptionApi.post('/user/credit-packages/stripe/create-checkout-session', { creditPackageId });
+      const data = response.data?.data || {};
+      return {
+        id: data.id,
+        url: data.url || null,
+      };
+    } catch (error) {
+      console.error('Error creating credit purchase checkout session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirm a credit purchase Stripe Checkout session
+   */
+  static async confirmCreditPurchaseCheckoutSession(creditSessionId: string): Promise<any> {
+    try {
+      const response = await subscriptionApi.post('/user/credit-packages/stripe/confirm', { creditSessionId });
+      return response.data?.data || {};
+    } catch (error) {
+      console.error('Error confirming credit purchase checkout session:', error);
+      throw error;
+    }
+  }
 }
 
 // Local storage helpers for subscription data
