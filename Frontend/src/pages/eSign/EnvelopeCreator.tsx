@@ -2538,17 +2538,21 @@ const EnvelopeCreator: React.FC = () => {
   };
   const fetchSendConfirmationData = async () => {
     try {
+      let latestPlan: any = null;
       const planResponse = await subscriptionApi.get('/user-plan/me');
       if (planResponse.status === 200) {
-        setSubscriptionPlan(planResponse.data.data);
-        SubscriptionStorage.savePlan(planResponse.data.data);
+        latestPlan = planResponse.data.data;
+        setSubscriptionPlan(latestPlan);
+        SubscriptionStorage.savePlan(latestPlan);
       }
       const authResponse = await subscriptionApi.get('/user/available/auth/methods');
       if (authResponse.status === 200) {
         setAuthMethods(authResponse.data.data.methods || []);
       }
+      return latestPlan;
     } catch (error) {
       console.error('Error fetching send confirmation data:', error);
+      return null;
     }
   };
 
@@ -2559,9 +2563,6 @@ const EnvelopeCreator: React.FC = () => {
       console.error('Cannot send envelope: envelopeId is missing');
       return;
     }
-    const totalCost = calculateTotalCost();
-    const creditsBalance = subscriptionPlan?.creditsBalance || 0;
-
     // Pure in-person flow (only in_person_signer + CC): skip the two-step
     // confirmation modal and go straight to confirmAndSendEnvelope so there
     // is no mail-sending summary/success UI.
@@ -2574,14 +2575,18 @@ const EnvelopeCreator: React.FC = () => {
       return;
     }
 
-    if (totalCost > 0 && creditsBalance < totalCost) {
-      setShowSubscriptionModal(true);
-      toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
-      return;
-    }
-
     try {
-      await fetchSendConfirmationData();
+      const latestPlan = await fetchSendConfirmationData();
+      const effectivePlan = latestPlan || subscriptionPlan || SubscriptionStorage.getPlan();
+      const totalCost = calculateTotalCost();
+      const creditsBalance = Number(effectivePlan?.creditsBalance || 0);
+
+      if (totalCost > 0 && creditsBalance < totalCost) {
+        setShowSubscriptionModal(true);
+        toast.error(`Insufficient credits. You need ${totalCost} credits but only have ${creditsBalance}. Please upgrade your plan.`);
+        return;
+      }
+
       setSendModalStep(1);
       setShowSendConfirmationModal(true);
     } catch (error) {
@@ -2618,7 +2623,8 @@ const EnvelopeCreator: React.FC = () => {
       return;
     }
     const totalCost = calculateTotalCost();
-    const creditsBalance = subscriptionPlan?.creditsBalance || 0;
+    const effectivePlan = subscriptionPlan || SubscriptionStorage.getPlan();
+    const creditsBalance = Number(effectivePlan?.creditsBalance || 0);
 
     if (totalCost > 0 && creditsBalance < totalCost) {
       setShowSendConfirmationModal(false);
