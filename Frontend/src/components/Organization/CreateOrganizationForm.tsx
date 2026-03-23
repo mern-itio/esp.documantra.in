@@ -106,7 +106,7 @@ const handleSubmit = async (e: FormEvent) => {
       onSuccess(response.data.data);
     } else {
       setTimeout(() => {
-        navigate('/organization');
+        navigate('/organizations');
       }, 2000);
     }
   } catch (err: any) {

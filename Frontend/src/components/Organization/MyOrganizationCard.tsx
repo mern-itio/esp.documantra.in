@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Building, Globe, FileText, CheckCircle2, Clock, MoreVertical, Settings, Users, ExternalLink, Edit, Trash2, Bell, Shield, Mail, Info, ShieldCheck, PersonStanding } from 'lucide-react';
+import { Building, Globe, FileText, CheckCircle2, Clock, MoreVertical, Settings, Users, ExternalLink, Edit, Trash2, Info, ShieldCheck, PersonStanding } from 'lucide-react';
 import type { Organization } from '../../types/organization';
 import { useNavigate } from 'react-router-dom';
 
@@ -318,7 +318,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                     <span>Delete Organization</span>
                   </button>
                   <div className="border-t border-gray-200 my-1"></div>
-                  <button
+                  {/* <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowSettingsDropdown(false);
@@ -328,8 +328,8 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                   >
                     <Bell className="w-4 h-4" />
                     <span>Notifications</span>
-                  </button>
-                  <button
+                  </button> */}
+                  {/* <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowSettingsDropdown(false);
@@ -339,8 +339,8 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                   >
                     <Shield className="w-4 h-4" />
                     <span>Permissions</span>
-                  </button>
-                  <button
+                  </button> */}
+                  {/* <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowSettingsDropdown(false);
@@ -350,7 +350,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                   >
                     <Mail className="w-4 h-4" />
                     <span>Invitations</span>
-                  </button>
+                  </button> */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
-const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature,LinkUserRecipient } = require('../controllers/mainController');
+const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature,LinkUserRecipient,acceptTerms } = require('../controllers/mainController');
 const {updateAuthStatus} = require('../controllers/recipientController');
 const vSignController = require('../controllers/vSignController');
 const storage = multer.diskStorage({
@@ -29,6 +29,7 @@ router.get('/envelope/self-signer/:cycleId',getSelfSigner);
 router.post('/save-non-signature-field', saveNonSignatureField);
 router.post('/link-user-recipient', LinkUserRecipient);
 router.post('/recipients/update-verification-status',updateAuthStatus);
+router.post('/envelope/accept-terms',acceptTerms);
 //V Sign
 router.post('/start-esign', vSignController.startEsign);
 router.post('/v-sign/response', vSignController.esignResponse);

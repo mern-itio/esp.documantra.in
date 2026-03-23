@@ -345,25 +345,33 @@ const EnvelopeDetails: React.FC = () => {
     setTermsChecked(false);
   }, [envelope, termsStorageKey]);
 
-  const acceptTerms = () => {
+  const acceptTerms = async() => {
     if (!termsChecked) return;
     try {
-      window.localStorage.setItem(termsStorageKey, "true");
+      const response = await eSignApi.post(
+        `/api/e-sign/public/envelope/accept-terms`,
+        {
+          envelopeId: String(id ?? ""),
+          recipientId: String(recipientId ?? ""),
+        });
+        if(response.status==200){
+            window.localStorage.setItem(termsStorageKey, "true");
+            setTermsAccepted(true);
+            setShowTermsModal(false);
+            setShowOtherOptions(false);
+            // After accepting terms, show auth modal if auth is still pending
+            if (currentRecipient && envelope && (envelope.status || "").toString().toLowerCase() !== "completed") {
+              try {
+                const authList: AuthList[] = JSON.parse(currentRecipient.authentication);
+                const authCompleted = authList.every((a: AuthList) => a.status === "completed");
+                if (!authCompleted) setShowAuthModal(true);
+              } catch {
+                // ignore parse errors
+              }
+            }
+        }
     } catch {
       // ignore storage failures; keep in-memory acceptance for this session
-    }
-    setTermsAccepted(true);
-    setShowTermsModal(false);
-    setShowOtherOptions(false);
-    // After accepting terms, show auth modal if auth is still pending
-    if (currentRecipient && envelope && (envelope.status || "").toString().toLowerCase() !== "completed") {
-      try {
-        const authList: AuthList[] = JSON.parse(currentRecipient.authentication);
-        const authCompleted = authList.every((a: AuthList) => a.status === "completed");
-        if (!authCompleted) setShowAuthModal(true);
-      } catch {
-        // ignore parse errors
-      }
     }
   };
 
