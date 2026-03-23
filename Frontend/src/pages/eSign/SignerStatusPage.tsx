@@ -9,7 +9,7 @@ import {
   Check,
   Link as LinkIcon,
   Users,
-  ShieldCheck,
+  ShieldCheck, //added
 } from "lucide-react";
 import { authApi, eSignApi } from "../../services/apiHelper";
 import confetti from "canvas-confetti";
