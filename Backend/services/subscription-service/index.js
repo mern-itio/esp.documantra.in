@@ -13,7 +13,8 @@ const { createFreePlanForUser } = require('./src/controllers/userPlanController'
 const usageRoutes = require('./src/routes/usageRoutes');
 const userAuthProviderRoutes = require('./src/routes/userAuthProviderRoutes');
 const authProviderOpenRoutes = require('./src/routes/authProviderOpenRoutes');
-
+const creditPackageRoutes = require('./src/routes/creditPackagesRoutes');//Admin
+const userCreditPackageRoutes = require('./src/routes/userCreditPackagesRoutes');//User
 const app = express();
 
 app.use(cors({ origin: '*' }));
@@ -23,6 +24,7 @@ connectDB();
 // Admin routes (protected)
 app.use('/admin', verifyJWT('admin'));
 app.use('/admin/plan-templates', plansRoutes);
+app.use('/admin/credit-packages', creditPackageRoutes);
 app.use('/admin', toolSettingsRoutes);
 app.use('/admin/auth-providers', authProviderRoutes);
 // Internal route used by auth-service to create free plan (no auth)
@@ -47,6 +49,7 @@ app.use('/invoices', invoiceRoutes);
 // User authProvider routes - require user token
 app.use('/user', verifyJWT('user'));
 app.use('/user', userAuthProviderRoutes);
+app.use('/user/credit-packages', userCreditPackageRoutes);
 
 //Authprovider callback routes - no auth required
 app.use('/api/authproviders',authProviderOpenRoutes);

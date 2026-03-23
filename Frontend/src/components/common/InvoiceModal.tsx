@@ -19,7 +19,8 @@ const formatDate = (value?: string) => {
 
 export const InvoiceModal: React.FC<InvoiceModalProps> = ({ open, onClose, invoice }) => {
   if (!open || !invoice) return null;
-
+  console.log(invoice);
+  
   const handleDownload = async (type: 'invoice' | 'receipt') => {
     const id = String(invoice._id || invoice.id);
     if (!id) return;
@@ -92,17 +93,19 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ open, onClose, invoi
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500">
-                    Billing Period
-                  </p>
-                  <p className="font-medium text-gray-900 text-sm">
-                    {formatDate(invoice.periodStart)} – {formatDate(invoice.periodEnd)}
-                  </p>
+              {invoice.type !== 'credit' && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-gray-500">
+                      Billing Period
+                    </p>
+                    <p className="font-medium text-gray-900 text-sm">
+                      {formatDate(invoice.periodStart)} – {formatDate(invoice.periodEnd)}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-500" />
                 <div>

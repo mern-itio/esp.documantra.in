@@ -12,7 +12,28 @@ const getUserIdFromRequest = (req) => {
     return null;
   }
 };
+const createInvoiceForCreditPurchase = async (userId, creditPackage) => {
+  if(!userId || !creditPackage){
+    throw new Error('Invalid parameters for invoice creation');
+  }
+    const now = new Date();
 
+  // Simple invoice / receipt numbering scheme
+  const seq = Math.floor(now.getTime() / 1000);
+  const invoiceNumber = `INV-${seq}`;
+  const receiptNumber = `RCT-${seq}`;
+  const invoice = await Invoice.create({
+    userId,
+    creditPackageId: creditPackage._id,
+    planName: creditPackage.name,
+    amount:creditPackage?.price,
+    currency:creditPackage?.currency,
+    invoiceNumber,
+    receiptNumber
+  });
+  return invoice;
+  
+}
 // Internal helper to create an invoice when a user upgrades a plan
 const createInvoiceForUpgrade = async ({ userId, subscription, planTemplate }) => {
   if (!userId || !subscription || !planTemplate) return null;
@@ -353,6 +374,7 @@ module.exports = {
   getInvoiceById,
   downloadInvoice,
   downloadReceipt,
+  createInvoiceForCreditPurchase
 };
 
 

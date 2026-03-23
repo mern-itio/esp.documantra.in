@@ -19,6 +19,7 @@ const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, ge
 
 const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
 const {listOrganizations} = require('../controllers/organizationController');
+const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage} = require('../controllers/creditPackageController');
 
 // User management routes
 router.get('/user-list', userList);
@@ -83,6 +84,12 @@ router.get('/auth-providers', listAuthProviders);
 router.put('/auth-providers/:id', updateAuthProvider);
 router.post('/auth-providers/toggle', toggleAuthProvider);
 router.delete('/auth-providers/:id', deleteAuthProvider);
+
+//Credit Packages routes
+router.get('/credit-packages', listCreditPackages);
+router.post('/credit-packages', createCreditPackage);
+router.put('/credit-packages/:id', updateCreditPackage);
+router.delete('/credit-packages/:id', deleteCreditPackage);
 
 // Organization routes
 router.get('/organization-request-list', listOrganizations);

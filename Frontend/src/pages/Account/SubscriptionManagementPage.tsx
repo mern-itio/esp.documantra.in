@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import SubscriptionInfo from '../../components/common/SubscriptionInfo';
 import SubscriptionPlansModal from '../../components/common/SubscriptionPlansModal';
+import CreditPurchaseModal from '../../components/common/CreditPurchaseModal';
 import InvoiceModal from '../../components/common/InvoiceModal';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/DocumentService/ui/card';
 import { Button } from '../../components/DocumentService/ui/button';
@@ -28,6 +29,7 @@ const SubscriptionManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
+  const [isCreditPurchaseModalOpen, setIsCreditPurchaseModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [latestInvoice, setLatestInvoice] = useState<Invoice | null>(null);
   const { userPlan, getRemainingCredits, isFreePlan, refreshPlan } = useSubscription();
@@ -38,6 +40,8 @@ const SubscriptionManagementPage: React.FC = () => {
   const creditsPercentage = creditsLimit > 0 
     ? Math.min((remainingCredits / creditsLimit) * 100, 100) 
     : 0;
+
+  const processingStripeSession = React.useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -55,10 +59,17 @@ const SubscriptionManagementPage: React.FC = () => {
   // Handle Stripe redirect back with session_id or canceled flag
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
+    const creditSessionId = searchParams.get('credit_session_id');
     const sessionId = searchParams.get('session_id');
     const canceled = searchParams.get('canceled');
 
-    if (!sessionId && !canceled) {
+    // Prevent re-entrancy while already processing
+    if (processingStripeSession.current) {
+      return;
+    }
+
+    // Continue only when we have at least one actionable query param
+    if (!sessionId && !creditSessionId && !canceled) {
       return;
     }
 
@@ -70,17 +81,28 @@ const SubscriptionManagementPage: React.FC = () => {
       navigate(newUrl, { replace: true });
       return;
     }
-
-    if (canceled) {
-      toast('Payment canceled.');
-      searchParams.delete('canceled');
+    // If we've already handled this credit session in this tab, just clean the URL and bail out
+    if (creditSessionId && sessionStorage.getItem(`stripe_session_handled_${creditSessionId}`)) {
+      searchParams.delete('credit_session_id');
       const newUrl =
         location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
       navigate(newUrl, { replace: true });
       return;
     }
 
+    if (canceled) {
+      processingStripeSession.current = true;
+      toast('Payment canceled.');
+      searchParams.delete('canceled');
+      const newUrl =
+        location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      navigate(newUrl, { replace: true });
+      processingStripeSession.current = false;
+      return;
+    }
+    // Plan Confirmation Block 
     if (sessionId) {
+      processingStripeSession.current = true;
       (async () => {
         const t = toast.loading('Confirming payment...');
         try {
@@ -107,6 +129,38 @@ const SubscriptionManagementPage: React.FC = () => {
             location.pathname +
             (searchParams.toString() ? `?${searchParams.toString()}` : '');
           navigate(newUrl, { replace: true });
+          processingStripeSession.current = false;
+        }
+      })();
+    }
+    // Credit purchase confirmation Block
+    if (creditSessionId) {
+      processingStripeSession.current = true;
+      (async () => {
+        const t = toast.loading('Confirming payment...');
+        try {
+          const {invoice} = await SubscriptionService.confirmCreditPurchaseCheckoutSession(creditSessionId);
+          await refreshPlan().catch(() => {});
+          let inv = invoice;
+          if (!inv){
+            inv = await SubscriptionService.getLatestInvoice();
+          }
+          if (inv) {
+          setLatestInvoice(inv);
+          setIsInvoiceModalOpen(true);
+          }
+          toast.success('Credit Purchased successfully', { id: t });
+          // Mark this session as handled in this tab
+          sessionStorage.setItem(`stripe_session_handled_${creditSessionId}`, 'true');
+        } catch (err:any) {
+          toast.error(err?.message || 'Failed to confirm payment', { id: t });
+        } finally {
+          searchParams.delete('credit_session_id');
+          const newUrl =
+            location.pathname +
+            (searchParams.toString() ? `?${searchParams.toString()}` : '');
+          navigate(newUrl, { replace: true });
+          processingStripeSession.current = false;
         }
       })();
     }
@@ -270,6 +324,16 @@ const SubscriptionManagementPage: React.FC = () => {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button 
+                  className="w-full justify-between group hover:shadow-md transition-all duration-200 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white border-0" 
+                  onClick={() => setIsCreditPurchaseModalOpen(true)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    <span className="font-semibold">Buy Credits</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <Button 
                   className="w-full justify-between group hover:shadow-md transition-all duration-200" 
                   variant="outline"
                   onClick={() => navigate('/credits-usage')}
@@ -415,6 +479,16 @@ const SubscriptionManagementPage: React.FC = () => {
           if (inv) {
             setLatestInvoice(inv);
             setIsInvoiceModalOpen(true);
+          }
+        }}
+      />
+      <CreditPurchaseModal
+        open={isCreditPurchaseModalOpen}
+        onClose={() => setIsCreditPurchaseModalOpen(false)}
+        onPurchased={async (invoice) => {
+          if (invoice) {
+            await refreshPlan().catch(() => {});
+            setLatestInvoice(invoice);
           }
         }}
       />

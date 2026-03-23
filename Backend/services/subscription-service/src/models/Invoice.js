@@ -3,8 +3,10 @@ const mongoose = require('mongoose');
 const InvoiceSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    type: {type: String, enum:["plan", "credit"], default:"credit"},
     subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription' },
     planTemplateId: { type: mongoose.Schema.Types.ObjectId, ref: 'PlanTemplate' },
+    creditPackageId:{ type: mongoose.Schema.Types.ObjectId, ref: 'CreditPackage'},
     planName: { type: String },
     periodStart: { type: Date },
     periodEnd: { type: Date },
