@@ -37,13 +37,23 @@ const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments =
     secure,
     auth
   });
+  const normalizedAttachments = attachments.map(file => ({
+  filename: file.filename,
+  content:
+    typeof file.content === 'string'
+      ? Buffer.from(file.content, 'base64')
+      : file.content?.data
+      ? Buffer.from(file.content.data)
+      : file.content,
+  contentType: file.contentType
+}));
 
   const mailOptions = {
     from: `"${fromName}" <${fromEmail}>`,
     to: toEmail,
     subject,
     html,
-    attachments
+    attachments:normalizedAttachments
   };
 
   const info = await transporter.sendMail(mailOptions);

@@ -37,7 +37,7 @@ const initiateAuth = async (req, res) => {
         console.log("Email OTP initiation response:", emailResponse);
         return res.status(200).json({
           status: "pending",
-          message: "OTP has been sent to your registered email",
+          message: `OTP has been sent to your registered email (${recipientData.email} )`,
           action: "ENTER_OTP",
           verificationId: emailResponse.verificationId,
           metadata: {

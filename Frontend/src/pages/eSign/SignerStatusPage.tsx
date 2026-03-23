@@ -4,12 +4,10 @@ import {
   CheckCircle,
   Copy,
   Download,
-  FileSignature,
   FileText,
   Gift,
   Check,
   Link as LinkIcon,
-  ShieldCheck,
   Users,
 } from "lucide-react";
 import { authApi, eSignApi } from "../../services/apiHelper";
@@ -239,17 +237,17 @@ export default function SignerStatusPage() {
   };
 
   // Dummy placeholders for future APIs (separate buttons like the screenshot)
-  const handleDownloadDocument = () => {
-    if (!envelopeId || !esignBase) return;
-    const url = `${esignBase}/api/e-sign/signatures/download/${envelopeId}`; // placeholder
-    window.open(url, "_blank");
-  };
+  // const handleDownloadDocument = () => {
+  //   if (!envelopeId || !esignBase) return;
+  //   const url = `${esignBase}/api/e-sign/signatures/download/${envelopeId}`; // placeholder
+  //   window.open(url, "_blank");
+  // };
 
-  const handleDownloadAuditCertificate = () => {
-    if (!envelopeId || !esignBase) return;
-    const url = `${esignBase}/api/e-sign/audit-trail/download/${envelopeId}`; // placeholder
-    window.open(url, "_blank");
-  };
+  // const handleDownloadAuditCertificate = () => {
+  //   if (!envelopeId || !esignBase) return;
+  //   const url = `${esignBase}/api/e-sign/audit-trail/download/${envelopeId}`; // placeholder
+  //   window.open(url, "_blank");
+  // };
 
   const title = currentSignerDeclined
     ? "You have declined this document"
@@ -643,7 +641,7 @@ export default function SignerStatusPage() {
 
                     <div className="shrink-0 w-full md:w-auto">
                       <div className="flex flex-col gap-3 sm:flex-row">
-                        <button
+                        {/* <button
                           type="button"
                           onClick={handleDownloadDocument}
                           disabled={!allSignersCompleted}
@@ -669,7 +667,7 @@ export default function SignerStatusPage() {
                         >
                           <ShieldCheck className="h-4 w-4" />
                           Audit Certificate
-                        </button>
+                        </button> */}
                       </div>
 
                       <div className="mt-3 flex items-center justify-end">

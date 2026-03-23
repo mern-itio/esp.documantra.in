@@ -6,6 +6,7 @@ const RecipientPermissionSchema = new mongoose.Schema({
   role: { type: String, enum: ["signer", "approver", "carbon_copy","in_person_signer"], default: "Signer" },
   order: { type: Number, default: 0 },
   status: { type: String, enum: ["waiting","sent", "completed", "declined"], default: "waiting" },
+  accepted_terms: { type: Boolean, default: false },
   authLevel: [
     {
       authMethodId: {

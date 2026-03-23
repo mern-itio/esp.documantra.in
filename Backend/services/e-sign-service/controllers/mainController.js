@@ -671,30 +671,19 @@ const sendEnvelope = async (req, res) => {
       await envelope.save();
     }
 
-    // Send to all waiting recipients (for both draft and in-progress envelopes)
+    // Send to First recipient in Signing Order
     const sentRecipients = [];
-    let hasMoreRecipients = true;
-    let attempts = 0;
-    const maxAttempts = 100; // Safety limit to prevent infinite loops
 
-    while (hasMoreRecipients && attempts < maxAttempts) {
-      attempts++;
       const result = await sendToRecipients(envelope._id, envelope.subject, envelope.message,userId);
       
       if (result.error) {
-        if (result.error === "No waiting recipients") {
-          hasMoreRecipients = false;
-        } else {
           console.error("Error sending to recipient:", result.error);
-          // Continue trying other recipients even if one fails
-        }
       } else if (result.success) {
         sentRecipients.push({
           recipientId: result.recipientId,
           permissionId: result.permissionId
         });
       }
-    }
 
     // If we sent to at least one recipient, return success
     if (sentRecipients.length > 0) {
@@ -924,40 +913,68 @@ const sendToAllSelfSigners = async(envelope,signedFilePath,signedPdfFilename,cer
     console.log(err)
   }
 }
-const sendToAllRecipients = async (envelope, certBuffer, certFilename, signedBuffer, signedFilename,userId) => {
+const sendToAllRecipients = async (
+  envelope,
+  certBuffer,
+  certFilename,
+  signedBuffer,
+  signedFilename,
+  userId
+) => {
   try {
-    const AllRecipients = await RecipientPermission.find({
+    console.log('Test 2: Reached The Send to all recipients');
+    console.log('User Id',userId);
+    const allRecipients = await RecipientPermission.find({
       envelopeId: envelope._id
     }).populate('recipientId');
-    for (const Recipient of AllRecipients) {
-      if (Recipient) {
+
+    for (const recipient of allRecipients) {
+      if (recipient?.recipientId?.email) {
+        console.log('Test 3: Recipient Email Triggering');
+
         const html = envelopeCompletedTemplate(
-          Recipient.recipientId.name,
+          recipient.recipientId.name,
           envelope.subject
         );
+
         const attachments = [
-          { filename: certFilename, content: certBuffer, contentType: 'application/pdf' },
-          { filename: signedFilename, content: signedBuffer, contentType: 'application/pdf' }
+          {
+            filename: certFilename,
+            content: certBuffer.toString('base64'),
+            encoding: 'base64',
+            contentType: 'application/pdf'
+          },
+          {
+            filename: signedFilename,
+            content: signedBuffer.toString('base64'),
+            encoding: 'base64',
+            contentType: 'application/pdf'
+          }
         ];
-        // Send email via Email Service
-        try{
-          await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${userId}`, {
-            toEmail: Recipient.recipientId.email,
-            subject: `Document "${envelope.subject}" Completed and Signed`,
-            html: html,
-            attachments
-          });
-        }catch(err){
-          console.error("Error generating completion email:", err);
+
+        try {
+          await axios.post(
+            `${process.env.EMAIL_SERVICE_URL}/mail/send/${userId}`,
+            {
+              toEmail: recipient.recipientId.email,
+              subject: `Document "${envelope.subject}" Completed and Signed`,
+              html,
+              attachments
+            }
+          );
+
+          console.log('✅ Recipient Email Sent');
+        } catch (err) {
+          console.log('Test 4: Recipient Email Sending Failed');
+          console.error(err.response?.data || err.message);
         }
       }
     }
-
   } catch (error) {
-    console.error("Error sending to all recipients:", error);
-    return { error: "Internal error while sending recipient email" };
+    console.error('Error sending to all recipients:', error);
+    return { error: 'Internal error while sending recipient email' };
   }
-}
+};
 
 
 const addSignature = async (req, res) => {
@@ -1041,6 +1058,7 @@ const addSignature = async (req, res) => {
                     };
                     await envelope.save();
                     //Send completion email to all recipients
+                    console.log('Test 1: Reached The correct If block');
                     await sendToAllRecipients(envelope,buffer,filename,signedPdfBuffer,signedPdfFilename,envelope?.sender);
 
                 }catch(err){
@@ -1864,7 +1882,7 @@ const saveTextField = async (req, res) => {
 
         // Send updated PDF to all recipients
 
-        await sendToAllRecipients(envelope, certBuffer, certFilename, signedPdfBuffer, signedPdfFilename);
+        await sendToAllRecipients(envelope, certBuffer, certFilename, signedPdfBuffer, signedPdfFilename,envelope.sender);
 
         console.log(`PDF updated successfully: ${outputPath}`);
       }
@@ -2682,7 +2700,32 @@ const downloadCompletionZip = async (req, res) =>{
     res.status(500).json({ message: "Server error" });
   }
 }
+const acceptTerms = async (req, res) =>{
+  const {recipientId, envelopeId} = req.body;
+  console.log(recipientId,envelopeId);
 
+  try{
+    const permission = await RecipientPermission.findOneAndUpdate(
+      {
+        recipientId,
+        envelopeId
+      },
+      {
+        accepted_terms: true
+      },
+      {
+        new: true
+      }
+    );
+    if(!permission){
+      return res.status(404).json({success:false, message:"Something went wrong, Please try again later!"});
+    }
+      return res.status(200).json({success:true, message:"Terms and Conditions accepted."});
+  }catch (err){
+    console.log(err);
+      return res.status(500).json({success:false, message:"Something went wrong, with server!"});
+  }
+}
 module.exports = {
   getAllRecipients,
   envelopesData,
@@ -2723,5 +2766,6 @@ module.exports = {
   assignEnvelopeToSomeoneElsePublic,
   declineEnvelopePublic,
   fetchBulkEnvelopes,
-  downloadCompletionZip
+  downloadCompletionZip,
+  acceptTerms
 };
