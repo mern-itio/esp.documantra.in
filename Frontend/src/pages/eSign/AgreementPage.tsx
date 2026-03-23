@@ -8,7 +8,7 @@ import { useAuth } from '../../components/AuthService/AuthContext';
 interface Agreement {
   id: string;
   name: string;
-  status: 'completed' | 'in-progress' | 'draft' | 'deleted' | 'scheduled';
+  status: 'completed' | 'in-progress' | 'draft' | 'deleted' | 'scheduled' | 'declined';
   lastChange: string;
   createdBy: string;
   recipientCount: number;
@@ -67,6 +67,19 @@ interface EnvelopeData {
   }>;
   completionCertificate?: any;
 }
+
+const deriveAgreementStatus = (envelope: EnvelopeData): Agreement['status'] => {
+  const envelopeStatus = String(envelope?.status || '').toLowerCase();
+  const hasDeclinedRecipient = (envelope?.recipients || []).some((r: any) => {
+    const status = String(r?.status || '').toLowerCase();
+    return status === 'declined' || status === 'rejected';
+  });
+  if (hasDeclinedRecipient) return 'declined';
+  if (envelopeStatus === 'completed') return 'completed';
+  if (envelopeStatus === 'draft') return 'draft';
+  if (envelopeStatus === 'deleted') return 'deleted';
+  return 'in-progress';
+};
 
 interface ColumnConfig {
   id: string;
@@ -554,7 +567,7 @@ const AgreementPage: React.FC = () => {
               <span className="absolute right-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
             </div>
             <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
-            {`Waiting for ${capitalizeWords(agreement.waitingFor)}`}
+            {`Waiting for ${capitalizeWords(agreement.waitingFor || agreement.primaryRecipientName || 'Recipient')}`}
             </div>
             {!agreement.isPowerForm && agreement.direction && (
               <div className="text-xs text-gray-500 mt-0.5">
@@ -592,6 +605,17 @@ const AgreementPage: React.FC = () => {
           {agreement.status === 'deleted' && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
               Deleted
+            </span>
+          )}
+          {agreement.status === 'declined' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">
+              <X className="w-3.5 h-3.5" />
+              Rejected
+            </span>
+          )}
+          {!['completed', 'draft', 'deleted', 'declined'].includes(String(agreement.status || '').toLowerCase()) && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
+              {String(agreement.status || 'Unknown').replace(/[_-]+/g, ' ')}
             </span>
           )}
         </>
@@ -652,7 +676,7 @@ const AgreementPage: React.FC = () => {
         const allEnvelopes = envelopes.map(envelope => ({
           id: envelope.id,
           name: envelope.name || envelope.subject || 'Untitled Agreement',
-          status: envelope.status as 'completed' | 'in-progress' | 'draft' | 'deleted',
+          status: deriveAgreementStatus(envelope),
           lastChange: envelope.sentAt || envelope.createdAt,
           createdBy: envelope.sender?.name || 'Unknown',
           recipientCount: envelope.recipients?.length || 0,
@@ -2020,6 +2044,16 @@ const AgreementPage: React.FC = () => {
                                   </g>
                                 </svg>
                               </div>
+                            </button>
+                          )}
+                          {agreement.status === 'declined' && agreement.direction !== 'Received' && (
+                            <button
+                              type="button"
+                              disabled
+                              className="px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-rose-200 bg-rose-50 text-rose-700 cursor-not-allowed"
+                            >
+                              <X className="w-4 h-4" />
+                              Declined
                             </button>
                           )}
                           {agreement.status === 'deleted' && agreement.direction !== 'Received' && (

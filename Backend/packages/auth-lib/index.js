@@ -70,7 +70,7 @@ const verifyJWT = (type = 'user') => {
             });
           }
         } catch (err) {
-          console.error('[verifyToken] Session validation error:', err.message);
+          // console.error('[verifyToken] Session validation error:', err.message);
           // If the auth-service is down or returns 401/403
           if (err.response && (err.response.status === 401 || err.response.status === 403)) {
             return res.status(401).json({

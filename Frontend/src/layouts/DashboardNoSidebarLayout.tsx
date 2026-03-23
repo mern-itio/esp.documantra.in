@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import GiftWidget from '../components/common/GiftWidget';
+// import GiftWidget from '../components/common/GiftWidget';
 
 const DashboardNoSidebarLayout: React.FC = () => {
   return (
@@ -10,7 +10,7 @@ const DashboardNoSidebarLayout: React.FC = () => {
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-2">
           <Outlet />
         </main>
-        <GiftWidget />
+        {/* <GiftWidget /> */}
       </div>
     </div>
   );
