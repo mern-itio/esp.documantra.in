@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Copy package files for local packages first
 COPY packages/auth-lib/package*.json ./packages/auth-lib/
+COPY packages/email-lib/package*.json ./packages/email-lib/
 COPY packages/validators/package*.json ./packages/validators/
 
 # Copy package files for service
@@ -11,11 +12,15 @@ COPY services/support-service/package*.json ./services/support-service/
 
 # Copy all code after package.json (to leverage docker cache)
 COPY packages/auth-lib ./packages/auth-lib
+COPY packages/email-lib ./packages/email-lib
 COPY packages/validators ./packages/validators
 COPY services/support-service ./services/support-service
 
 # Install dependencies inside local packages
 WORKDIR /app/packages/auth-lib
+RUN npm install
+
+WORKDIR /app/packages/email-lib
 RUN npm install
 
 WORKDIR /app/packages/validators
