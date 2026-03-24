@@ -280,7 +280,15 @@ const EnvelopeDetails: React.FC = () => {
       recipientStatus === "signed" ||
       recipientStatus === "declined";
 
-    if (envStatus === "completed" || recipientAlreadyCompleted) {
+    // Previous signer → CC after reassignment: status "completed" while envelope still open.
+    // Do not send them to the signer status page on first load (avoids wrong "signing completed" copy);
+    // they stay on the public signing URL with the existing viewer UI.
+    const ccCompletedWhileEnvelopeOpen =
+      isViewOnly &&
+      recipientAlreadyCompleted &&
+      envStatus !== "completed";
+
+    if (envStatus === "completed" || (recipientAlreadyCompleted && !ccCompletedWhileEnvelopeOpen)) {
       // On first load (re-opening a completed envelope) auto-redirect to status page.
       // But when the user just finished signing in this session, do NOT auto-redirect;
       // we want them to click the "Complete" button in the viewer header.
@@ -346,7 +354,7 @@ const EnvelopeDetails: React.FC = () => {
       setIsAuthenticated(true);
       setShowAuthModal(false);
     }
-  }, [envelope, currentRecipient, termsStorageKey]);
+  }, [envelope, currentRecipient, termsStorageKey, isViewOnly, showSigningDoneModal, id, recipientId]);
 
   useEffect(() => {
     // Show terms when envelope is active (not completed) and terms not yet accepted (terms first, before auth)
@@ -938,7 +946,7 @@ const EnvelopeDetails: React.FC = () => {
               className={
                 canInteractWithDocument
                   ? ""
-                  : "pointer-events-none select-none blur-[2px] opacity-70"
+                  : "pointer-events-none select-none"
               }
               aria-hidden={!canInteractWithDocument}
             >
@@ -952,7 +960,7 @@ const EnvelopeDetails: React.FC = () => {
                 onSignatureSave={handleSignatureSave}
                 cycleId={cycleId || ""}
                 setSignatureFields={setSignatureFields}
-                isViewOnly={isViewOnly || !canInteractWithDocument}
+                isViewOnly={isViewOnly}
                 onRecipientComplete={() => {
                   if (isInPerson) handleRecipientComplete();
                   handleSigningCompleted();

@@ -78,6 +78,12 @@ export const supportCustomerApi = {
   }
 };
 
+// Public API calls (no auth required)
+export const supportPublicApi = {
+  createTicket: (data: { name: string; email: string; subject: string; category?: string; message: string }) =>
+    supportApi.post('/api/support-service/public/tickets', data),
+};
+
 // Agent API calls
 export const supportAgentApi = {
   // Auth

@@ -12,6 +12,7 @@ const { connectDB } = require('./config/db');
 const customerRoutes = require('./routes/customerRoutes');
 const agentRoutes = require('./routes/agentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 const SocketService = require('./services/socketService');
 
 const app = express();
@@ -78,6 +79,7 @@ app.use('/uploads', express.static(uploadsDir));
 app.use('/api/support-service/customer', customerRoutes);
 app.use('/api/support-service/agent', agentRoutes);
 app.use('/api/support-service/admin', adminRoutes);
+app.use('/api/support-service/public', publicRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

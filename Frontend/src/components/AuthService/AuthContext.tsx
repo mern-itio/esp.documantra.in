@@ -4,6 +4,16 @@ import { API_ENDPOINTS, apiRequest } from '../../services/api';
 import { authApi } from '../../services/apiHelper';
 import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
 
+/** Gateways may wrap payloads as `{ data: { token, ... } }` — normalize for signup verify. */
+function unwrapAuthJson(raw: unknown): Record<string, any> {
+  if (!raw || typeof raw !== 'object') return raw as Record<string, any>;
+  const o = raw as Record<string, any>;
+  if (o.data && typeof o.data === 'object' && (o.data.token || o.data.user_id)) {
+    return { ...o, ...o.data };
+  }
+  return o;
+}
+
 interface User {
   id: string;
   email: string;
@@ -581,13 +591,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const verifySignupEmailOtp = async (signupToken: string, emailOtp: string) => {
-    const data = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_VERIFY_EMAIL_OTP, {
+    const raw = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_VERIFY_EMAIL_OTP, {
       method: 'POST',
       body: JSON.stringify({ signupToken, emailOtp: emailOtp.trim() }),
     });
+    const data = unwrapAuthJson(raw);
     if (data?.token) {
       await applyLoginPayload(data);
-      return { emailVerified: true, phoneVerified: true, canSendPhoneOtp: false, loggedIn: true };
+      return {
+        emailVerified: true,
+        phoneVerified: !!data.phoneVerified,
+        canSendPhoneOtp: !!data.canSendPhoneOtp,
+        loggedIn: true,
+      };
     }
     return {
       emailVerified: !!data.emailVerified,
@@ -610,13 +626,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const verifySignupPhoneOtp = async (signupToken: string, phoneOtp: string) => {
-    const data = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_VERIFY_PHONE_OTP, {
+    const raw = await apiRequest(API_ENDPOINTS.AUTH.SIGNUP_VERIFY_PHONE_OTP, {
       method: 'POST',
       body: JSON.stringify({ signupToken, phoneOtp: phoneOtp.trim() }),
     });
+    const data = unwrapAuthJson(raw);
     if (data?.token) {
       await applyLoginPayload(data);
-      return { emailVerified: true, phoneVerified: true, canSendPhoneOtp: false, loggedIn: true };
+      return {
+        emailVerified: true,
+        phoneVerified: !!data.phoneVerified,
+        canSendPhoneOtp: !!data.canSendPhoneOtp,
+        loggedIn: true,
+      };
     }
     return {
       emailVerified: !!data.emailVerified,
