@@ -413,9 +413,13 @@ exports.getAnalytics = async (req, res) => {
 // Get all tickets (admin view)
 exports.getAllTickets = async (req, res) => {
   try {
-    const { status, priority, category, agentId, page = 1, limit = 50 } = req.query;
+    const { status, priority, category, agentId, page = 1, limit = 50, includeHelpSupport } = req.query;
 
     const query = {};
+    // Ticket center should not include landing Help & Support form queries by default.
+    if (String(includeHelpSupport || '').toLowerCase() !== 'true') {
+      query['metadata.source'] = { $ne: 'landing_help_support' };
+    }
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (category) query.category = category;
@@ -504,6 +508,201 @@ exports.getAllTickets = async (req, res) => {
       status: 500,
       message: 'Server error',
       data: null
+    });
+  }
+};
+
+// Admin dashboard: fetch support queries summary (separate from ticket center view)
+exports.getDashboardQueries = async (req, res) => {
+  try {
+    const { limit = 20, source } = req.query;
+    const parsedLimit = Math.max(1, Math.min(parseInt(limit, 10) || 20, 100));
+
+    const query = {};
+    if (source) {
+      query['metadata.source'] = String(source).trim();
+    }
+
+    const tickets = await Ticket.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit);
+
+    const items = await Promise.all(
+      tickets.map(async (ticket) => {
+        const firstMessage = await Message.findOne({ ticketId: ticket._id }).sort({ createdAt: 1 });
+        const customer = ticket.customerId
+          ? await Customer.findOne({ userId: ticket.customerId })
+          : null;
+        return {
+          id: ticket._id,
+          ticketNumber: ticket.ticketNumber,
+          subject: ticket.subject,
+          category: ticket.category,
+          priority: ticket.priority,
+          status: ticket.status,
+          source: ticket?.metadata?.source || null,
+          createdAt: ticket.createdAt,
+          customer: customer
+            ? {
+                fullname: customer.fullname,
+                email: customer.email,
+                phone: customer.phone || null,
+              }
+            : null,
+          messagePreview: firstMessage?.content ? String(firstMessage.content).slice(0, 240) : '',
+        };
+      })
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Dashboard queries retrieved successfully',
+      data: { queries: items },
+    });
+  } catch (error) {
+    console.error('Get dashboard queries error:', error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error',
+      data: null,
+    });
+  }
+};
+
+// Alias endpoint for admin dashboard consumers
+exports.getQueries = exports.getDashboardQueries;
+
+// Dedicated endpoint: only Help & Support page queries (exclude general ticket center data)
+exports.getHelpSupportQueries = async (req, res) => {
+  try {
+    const { limit = 20, page = 1 } = req.query;
+    const parsedLimit = Math.max(1, Math.min(parseInt(limit, 10) || 20, 100));
+    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+
+    const query = { 'metadata.source': 'landing_help_support' };
+
+    const tickets = await Ticket.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit)
+      .skip((parsedPage - 1) * parsedLimit);
+
+    const total = await Ticket.countDocuments(query);
+
+    const items = await Promise.all(
+      tickets.map(async (ticket) => {
+        const firstMessage = await Message.findOne({ ticketId: ticket._id }).sort({ createdAt: 1 });
+        const customer = ticket.customerId
+          ? await Customer.findOne({ userId: ticket.customerId })
+          : null;
+
+        return {
+          id: ticket._id,
+          ticketNumber: ticket.ticketNumber,
+          subject: ticket.subject,
+          category: ticket.category,
+          priority: ticket.priority,
+          status: ticket.status,
+          createdAt: ticket.createdAt,
+          customer: customer
+            ? {
+                fullname: customer.fullname,
+                email: customer.email,
+                phone: customer.phone || null,
+              }
+            : null,
+          messagePreview: firstMessage?.content ? String(firstMessage.content).slice(0, 240) : '',
+        };
+      })
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Help & Support queries retrieved successfully',
+      data: {
+        queries: items,
+        pagination: {
+          total,
+          page: parsedPage,
+          limit: parsedLimit,
+          pages: Math.ceil(total / parsedLimit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Get Help & Support queries error:', error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error',
+      data: null,
+    });
+  }
+};
+
+// Close only Help & Support query tickets (landing page submissions)
+exports.closeHelpSupportQuery = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const ticket = await Ticket.findById(ticketId);
+
+    if (!ticket) {
+      return res.status(404).json({
+        status: 404,
+        message: 'Query ticket not found',
+        data: null,
+      });
+    }
+
+    if (ticket?.metadata?.source !== 'landing_help_support') {
+      return res.status(400).json({
+        status: 400,
+        message: 'This ticket is not a Help & Support query',
+        data: null,
+      });
+    }
+
+    if (ticket.status === 'closed') {
+      return res.status(400).json({
+        status: 400,
+        message: 'Query ticket is already closed',
+        data: null,
+      });
+    }
+
+    ticket.status = 'closed';
+    ticket.closedAt = new Date();
+    ticket.updatedAt = new Date();
+    await ticket.save();
+
+    const customer = await Customer.findOne({ userId: ticket.customerId });
+    if (customer && customer.activeTickets > 0) {
+      customer.activeTickets -= 1;
+      await customer.save();
+    }
+
+    if (ticket.assignedAgentId) {
+      await removeTicketFromAgent(ticket.assignedAgentId, ticket._id);
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`ticket_${ticketId}`).emit('ticket_updated', {
+        ticketId: ticket._id.toString(),
+        status: ticket.status,
+        closedAt: ticket.closedAt,
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Help & Support query closed successfully',
+      data: { ticket },
+    });
+  } catch (error) {
+    console.error('Close Help & Support query error:', error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Server error',
+      data: null,
     });
   }
 };
