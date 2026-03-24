@@ -38,7 +38,7 @@ const ticketSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['technical', 'billing', 'documentation', 'feature', 'bug', 'other'],
+    enum: ['general', 'technical', 'billing', 'documentation', 'feature', 'bug', 'other'],
     default: 'other'
   },
   createdAt: {
@@ -67,6 +67,7 @@ const ticketSchema = new mongoose.Schema({
     ratedAt: { type: Date, default: null }
   },
   metadata: {
+    source: { type: String, default: null },
     browserInfo: { type: String, default: null },
     ipAddress: { type: String, default: null },
     userAgent: { type: String, default: null }
