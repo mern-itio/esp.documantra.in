@@ -206,7 +206,7 @@ const LoginPage = () => {
       setEmailVerified(st.emailVerified)
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
-      if (st.loggedIn) {
+      if (st.loggedIn || localStorage.getItem('accessToken')) {
         const returnTo = (location.state as any)?.returnTo || '/dashboard'
         navigate(returnTo)
       }

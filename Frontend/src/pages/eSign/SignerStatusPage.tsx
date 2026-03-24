@@ -177,25 +177,34 @@ export default function SignerStatusPage() {
     );
   };
 
+  const normRecipientId = (x: any) => {
+    if (x == null) return "";
+    if (typeof x === "string") return x;
+    if (typeof x === "object" && x.$oid) return String(x.$oid);
+    if (typeof x === "object" && x._id) return String(x._id);
+    return String(x);
+  };
+
   const signers = useMemo(() => {
     const recipients = envelope?.recipients || [];
     return recipients.filter((r: any) => !isCcRole(r));
   }, [envelope]);
 
-  const currentSigner = useMemo(() => {
-    const normId = (x: any) => {
-      if (x == null) return "";
-      if (typeof x === "string") return x;
-      if (typeof x === "object" && x.$oid) return String(x.$oid);
-      if (typeof x === "object" && x._id) return String(x._id);
-      return String(x);
-    };
-    return signers.find((r: any) => normId(r?.id ?? r?._id) === normId(recipientId));
-  }, [signers, recipientId]);
+  const currentRecipient = useMemo(() => {
+    const recipients = envelope?.recipients || [];
+    return recipients.find(
+      (r: any) => normRecipientId(r?.id ?? r?._id) === normRecipientId(recipientId)
+    );
+  }, [envelope, recipientId]);
 
-  const currentSignerDeclined = useMemo(
-    () => !!currentSigner && isDeclinedStatus(currentSigner.status),
-    [currentSigner]
+  const currentUserIsCc = useMemo(
+    () => !!currentRecipient && isCcRole(currentRecipient),
+    [currentRecipient]
+  );
+
+  const viewerDeclined = useMemo(
+    () => !!currentRecipient && isDeclinedStatus(currentRecipient.status),
+    [currentRecipient]
   );
 
   const anySignerDeclined = useMemo(
@@ -250,20 +259,28 @@ export default function SignerStatusPage() {
   //   window.open(url, "_blank");
   // };
 
-  const title = currentSignerDeclined
+  const title = viewerDeclined
     ? "You have declined this document"
-    : allSignersCompleted
-      ? "All signatures completed"
-      : anySignerDeclined
-        ? "Signing closed"
-        : "Signing completed";
-  const subtitle = currentSignerDeclined
+    : currentUserIsCc
+      ? allSignersCompleted
+        ? "All signatures completed"
+        : "You’re copied on this envelope"
+      : allSignersCompleted
+        ? "All signatures completed"
+        : anySignerDeclined
+          ? "Signing closed"
+          : "Signing completed";
+  const subtitle = viewerDeclined
     ? "You have rejected this document for signing. Contact sales to regain access."
-    : allSignersCompleted
-      ? "Download the signed document and audit certificate."
-      : anySignerDeclined
-        ? "A signer has declined this envelope, so signing is no longer active."
-        : "You’ve completed signing. You’ll receive the certificate by email once all signers finish.";
+    : currentUserIsCc
+      ? allSignersCompleted
+        ? "Download the signed document and audit certificate when available."
+        : "You are a carbon copy recipient, not an active signer. Signing continues with other recipients; you’ll receive updates as the envelope progresses."
+      : allSignersCompleted
+        ? "Download the signed document and audit certificate."
+        : anySignerDeclined
+          ? "A signer has declined this envelope, so signing is no longer active."
+          : "You’ve completed signing. You’ll receive the certificate by email once all signers finish.";
 
   const referralUrl = useMemo(() => {
     const rid = String(recipientId ?? "").trim();
@@ -498,7 +515,7 @@ export default function SignerStatusPage() {
     }
   }, [showScratchModal, scratchDone]);
 
-  if (!loading && !error && currentSignerDeclined) {
+  if (!loading && !error && viewerDeclined) {
     return (
       <div className="min-h-screen mt-18 bg-gradient-to-b from-rose-50 via-white to-white px-4 py-12">
         <div className="mx-auto w-full max-w-3xl">
@@ -572,7 +589,7 @@ export default function SignerStatusPage() {
                 <div className="rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-white px-6 py-10 shadow-sm">
                   <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
                     <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-emerald-200">
-                      {currentSignerDeclined ? (
+                      {viewerDeclined ? (
                         <ShieldCheck className="h-8 w-8 text-rose-600" />
                       ) : (
                         <CheckCircle className="h-8 w-8 text-emerald-600" />
@@ -593,7 +610,7 @@ export default function SignerStatusPage() {
                       />
                     </div>
                     <div className="text-sm text-gray-600">
-                      {currentSignerDeclined
+                      {viewerDeclined
                         ? "signing-declined"
                         : allSignersCompleted
                           ? "signers-have-signed"

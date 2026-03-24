@@ -63,8 +63,8 @@ const SignupPage = () => {
       }
       case 'phone': {
         const digits = String(value || '').replace(/\D/g, '')
-        if (!digits) return 'Phone is required'
-        if (digits.length < 10) return 'Enter a valid phone number'
+        if (!digits) return ''
+        if (digits.length < 10) return 'Enter a valid phone number or leave blank'
         return ''
       }
       case 'email': {
@@ -162,7 +162,9 @@ const SignupPage = () => {
       setEmailVerified(st.emailVerified)
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
-      if (st.loggedIn) navigate('/dashboard')
+      if (st.loggedIn || localStorage.getItem('accessToken')) {
+        navigate('/dashboard')
+      }
     } catch (error) {
       setFormError((error as Error)?.message || 'Email verification failed. Please check the code and try again.')
     } finally {
@@ -369,7 +371,8 @@ const SignupPage = () => {
                   <div className="mb-6">
                     <h2 className="text-lg font-semibold text-gray-900">Verify your account</h2>
                     <p className="text-sm text-gray-600 mt-1">
-                      We sent 6-digit codes to your email and phone. Enter both below.
+                      We sent a 6-digit code to your email. After you verify email, you can optionally verify your phone
+                      with SMS.
                     </p>
                   </div>
                   <form className="space-y-5">
@@ -402,7 +405,7 @@ const SignupPage = () => {
                     </button>
                     <div className="form-field-group">
                       <label htmlFor="phoneOtp" className="block text-xs font-semibold text-gray-700 mb-1">
-                        Phone verification code
+                        Phone verification code <span className="font-normal text-gray-500">(optional)</span>
                       </label>
                       <div className="relative group">
                         <Smartphone className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -440,7 +443,7 @@ const SignupPage = () => {
                     </div>
                   </form>
                   <p className="text-xs text-gray-500 text-center">
-                    Codes expire in 10 minutes. Check your email and SMS.
+                    Email code expires in 10 minutes. Phone SMS is optional if you added a number at signup.
                   </p>
                 </div>
               ) : (
@@ -492,7 +495,7 @@ const SignupPage = () => {
 
                   <div className="form-field-group">
                     <label htmlFor="phone" className="block text-xs font-semibold text-gray-700 mb-1">
-                      Phone Number
+                      Phone <span className="font-normal text-gray-500">(optional)</span>
                     </label>
                     <div className="relative group">
                       <PhoneInput
@@ -502,7 +505,7 @@ const SignupPage = () => {
                         inputProps={{
                           name: 'phone',
                           id: 'phone',
-                          required: true
+                          required: false
                         }}
                         containerClass="w-full"
                         inputClass={`w-full !pl-12 !pr-3 !py-2 !text-sm !border-2 !rounded-lg !bg-white focus:!outline-none focus:!ring-2 !transition-all !duration-300 ${

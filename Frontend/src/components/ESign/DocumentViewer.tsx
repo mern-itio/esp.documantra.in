@@ -2053,7 +2053,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     >
       <div className="relative flex flex-col items-stretch min-h-screen bg-gray-50">
         {/* Header (sticky full-width) */}
-        <div className="fixed top-0 left-0 right-0 h-12 bg-[#1b0c3e] text-white px-4 z-50 flex items-center">
+        <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] flex h-12 items-center bg-[#1b0c3e] px-4 text-white">
           <div className="w-full flex items-center justify-between">
             <div className="text-sm font-medium">
               {isViewOnly ? "View only (CC)" : "Review and complete"}
@@ -2116,7 +2116,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
         {shouldHighlightCompleteCta && (
           <div
-            className="fixed inset-0 z-[45] bg-black/45"
+            className="fixed left-0 right-0 top-12 bottom-0 z-[45] bg-black/45"
             onMouseDown={() => setIsCompleteCtaGuidanceDismissed(true)}
             aria-hidden="true"
           />

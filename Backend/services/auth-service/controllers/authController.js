@@ -140,16 +140,23 @@ async function sendPhoneOtp(user) {
   await sendVerificationOtpSms(user.phone, phoneOtp);
 }
 
+function hasEnoughPhoneDigits(user) {
+  const d = String(user?.phone || '').replace(/\D/g, '');
+  return d.length >= 10;
+}
+
 function verificationState(user) {
   return {
     emailVerified: !!user.emailVerified,
     phoneVerified: !!user.phoneVerified,
-    canSendPhoneOtp: !!user.emailVerified && !user.phoneVerified,
+    canSendPhoneOtp:
+      !!user.emailVerified && !user.phoneVerified && hasEnoughPhoneDigits(user),
   };
 }
 
+/** Email verification completes signup; phone SMS is optional when a number is on file. */
 async function maybeIssueAccessTokenIfVerified(user, res, req) {
-  if (!user.emailVerified || !user.phoneVerified) return null;
+  if (!user.emailVerified) return null;
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const accessToken = await generateAccessTokenUser(user, expireIn, req);
   const options = { httpOnly: true, expiresIn: expireIn };
@@ -162,7 +169,8 @@ async function maybeIssueAccessTokenIfVerified(user, res, req) {
     type: 'user',
     phone: user.phone,
     plan: user.plan || 'free',
-    isFirstLogin: user.isFirstLogin
+    isFirstLogin: user.isFirstLogin,
+    ...verificationState(user),
   };
 }
 // Login Controller
@@ -285,31 +293,18 @@ const login = async (req, res) => {
     }
   }
 
-  if (!user.emailVerified || !user.phoneVerified) {
-    // Correct credentials but not verified — sequential verification:
-    // 1) If email not verified => (re)send email OTP
-    // 2) If email verified but phone not => wait for user to request phone OTP
+  if (!user.emailVerified) {
     const signupToken = issueSignupToken(user._id);
-    if (!user.emailVerified) {
-      try {
-        await sendEmailOtp(user);
-      } catch (err) {
-        console.error('Failed to send email OTP during login:', err);
-      }
-      return res.status(403).json({
-        status: 403,
-        code: 'VERIFICATION_REQUIRED',
-        step: 'email',
-        message: 'Please verify your email to continue.',
-        signupToken,
-        ...verificationState(user),
-      });
+    try {
+      await sendEmailOtp(user);
+    } catch (err) {
+      console.error('Failed to send email OTP during login:', err);
     }
     return res.status(403).json({
       status: 403,
       code: 'VERIFICATION_REQUIRED',
-      step: 'phone',
-      message: 'Please verify your phone to continue.',
+      step: 'email',
+      message: 'Please verify your email to continue.',
       signupToken,
       ...verificationState(user),
     });
@@ -434,7 +429,7 @@ const updateTwoFaSettings = async (req, res) => {
   return res.status(200).json({ message: '2FA settings updated', twoFaEnabled: !!user.twoFaEnabled, twoFaMethod: user.twoFaMethod });
 };
 
-// Register Controller — creates user and sends email + phone OTP; user must verify before login
+// Register — email OTP required to activate; phone / SMS verification optional
 const register = async (req, res) => {
   const { fullname, email, phone, password, company, address, recaptchaToken } = req.body;
 
@@ -449,8 +444,8 @@ const register = async (req, res) => {
   const normalizedEmail = String(email || '').trim().toLowerCase();
   const normalizedPhone = String(phone || '').replace(/\D/g, '').slice(0, 15);
 
-  if (!normalizedFullname || !normalizedEmail || !normalizedPhone || !password) {
-    return res.status(400).json({ message: 'All fields are required' });
+  if (!normalizedFullname || !normalizedEmail || !password) {
+    return res.status(400).json({ message: 'Full name, email and password are required' });
   }
 
   if (!isEmailValid(normalizedEmail)) {
@@ -465,7 +460,7 @@ const register = async (req, res) => {
     const user = await User.create({
       fullname: normalizedFullname,
       email: normalizedEmail,
-      phone: normalizedPhone,
+      phone: normalizedPhone || '',
       password,
       company: company || '',
       address: address || '',
@@ -544,9 +539,16 @@ const verifySignupEmailOtp = async (req, res) => {
   user.emailVerified = true;
   user.emailOtpHash = undefined;
   user.emailOtpExpires = undefined;
+  // SMS proof is optional at signup; account is active after email. User can confirm phone later in profile.
+  user.phoneVerified = true;
   await user.save({ validateBeforeSave: false });
   const tokenPayload = await maybeIssueAccessTokenIfVerified(user, res, req);
-  if (tokenPayload) return res.status(200).json(tokenPayload);
+  if (tokenPayload) {
+    return res.status(200).json({
+      ...tokenPayload,
+      user_id: tokenPayload.user_id?.toString?.() ?? tokenPayload.user_id,
+    });
+  }
   return res.status(200).json({ message: 'Email verified', ...verificationState(user) });
 };
 
@@ -564,6 +566,12 @@ const sendSignupPhoneOtp = async (req, res) => {
   if (!user) return res.status(404).json({ message: 'User not found. Please sign up again.' });
   if (!user.emailVerified) return res.status(400).json({ message: 'Please verify email first', ...verificationState(user) });
   if (user.phoneVerified) return res.status(200).json({ message: 'Phone already verified', ...verificationState(user) });
+  if (!hasEnoughPhoneDigits(user)) {
+    return res.status(400).json({
+      message: 'Add a valid phone number on your account to receive an SMS code.',
+      ...verificationState(user),
+    });
+  }
   await sendPhoneOtp(user);
   return res.status(200).json({ message: 'Phone OTP sent', ...verificationState(user) });
 };
@@ -672,7 +680,8 @@ async function generateAccessTokenUser(user, expireIn, req, keepSessionId = null
       { expiresIn: expireIn }
     );
   } catch (error) {
-    console.log("Error while generating Access Token", error);
+    console.error('Error while generating Access Token', error);
+    throw error;
   }
 };
 
@@ -1101,11 +1110,12 @@ const verifyProfilePhoneOtp = async (req, res) => {
     user.phone = user.pendingPhone;
     user.pendingPhone = undefined;
   }
-  
+
+  user.phoneVerified = true;
   user.phoneOtpHash = undefined;
   user.phoneOtpExpires = undefined;
   await user.save({ validateBeforeSave: false });
-  
+
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);

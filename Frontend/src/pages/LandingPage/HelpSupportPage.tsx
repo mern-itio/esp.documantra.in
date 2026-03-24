@@ -19,6 +19,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supportPublicApi } from '../../services/supportService';
 
 const HelpSupportPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +33,8 @@ const HelpSupportPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const quickHelpCards = [
     {
@@ -210,7 +213,7 @@ const HelpSupportPage: React.FC = () => {
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const fields = ['name', 'email', 'subject', 'message'];
     const newErrors: {[key: string]: string} = {};
@@ -221,13 +224,19 @@ const HelpSupportPage: React.FC = () => {
     });
 
     setErrors(newErrors);
+    setSubmitError('');
 
     if (Object.keys(newErrors).length === 0) {
-      // TODO: Send to backend
-      console.log('Form submitted:', formData);
-      setSubmitted(true);
-      setTimeout(() => {
-        setSubmitted(false);
+      try {
+        setIsSubmitting(true);
+        await supportPublicApi.createTicket({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          subject: formData.subject.trim(),
+          category: formData.category,
+          message: formData.message.trim(),
+        });
+        setSubmitted(true);
         setFormData({
           name: '',
           email: '',
@@ -235,7 +244,18 @@ const HelpSupportPage: React.FC = () => {
           category: 'general',
           message: ''
         });
-      }, 3000);
+        setTimeout(() => {
+          setSubmitted(false);
+        }, 3000);
+      } catch (error: any) {
+        const serverMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to submit your request. Please try again.';
+        setSubmitError(serverMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -507,11 +527,16 @@ const HelpSupportPage: React.FC = () => {
                     {errors.message && <p className="text-red-600 text-xs mt-1">{errors.message}</p>}
                   </div>
 
+                  {submitError && (
+                    <p className="text-red-600 text-sm">{submitError}</p>
+                  )}
+
                   <button
                     type="submit"
-                    className="w-full bg-[#260559] text-white py-3 rounded-lg font-semibold hover:bg-[#1d0444] transition-colors shadow-sm"
+                    disabled={isSubmitting}
+                    className="w-full bg-[#260559] text-white py-3 rounded-lg font-semibold hover:bg-[#1d0444] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Send Message
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
                   </button>
                 </form>
               )}
