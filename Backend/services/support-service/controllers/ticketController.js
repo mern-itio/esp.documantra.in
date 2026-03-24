@@ -6,9 +6,14 @@ const { routeTicketToAgent, removeTicketFromAgent } = require('../utils/ticketRo
 const mongoose = require('mongoose');
 let sendEmail = null;
 try {
-  ({ sendEmail } = require('../../../packages/email-lib'));
+  ({ sendEmail } = require('@draftnsign/email-lib'));
 } catch {
-  sendEmail = null;
+  try {
+    // Fallback for some local/dev setups where package linking is not applied.
+    ({ sendEmail } = require('../../../packages/email-lib'));
+  } catch {
+    sendEmail = null;
+  }
 }
 
 const normalizePublicCategory = (category) => {
