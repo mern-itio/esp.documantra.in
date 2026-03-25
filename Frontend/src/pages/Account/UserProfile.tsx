@@ -173,7 +173,7 @@ const UserProfile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       {/* Top header banner */}
       <div className="bg-gradient-to-r from-[#260559] via-[#6b4c9c] to-[#6b39b8] text-white ">
         <div className="max-w-7xl mx-auto px-6 py-10 text-white">

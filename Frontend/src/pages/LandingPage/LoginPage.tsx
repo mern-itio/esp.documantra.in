@@ -619,7 +619,7 @@ const LoginPage = () => {
                       to="/signup"
                       className="font-medium text-[#084bdc] hover:text-[#084bdc]/80"
                     >
-                      Create a free account
+                      Create account for free 
                     </Link>
                   </p>
                 </div>

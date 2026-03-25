@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft, Smartphone } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft, Smartphone, RotateCcw, Check } from 'lucide-react'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { useAuth } from '../../components/AuthService/AuthContext'
@@ -11,18 +11,23 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_C
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY_HERE"
 
 type SignupStep = 'form' | 'verify'
+const OTP_EXPIRY_SECONDS = 10 * 60
 
 const SignupPage = () => {
-  const { signup, googleLogin, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp } = useAuth()
+  const { signup, googleLogin, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState<SignupStep>('form')
   const [signupToken, setSignupToken] = useState<string>('')
   const [emailOtp, setEmailOtp] = useState('')
   const [phoneOtp, setPhoneOtp] = useState('')
   const [emailVerified, setEmailVerified] = useState(false)
+  const [emailOtpSent, setEmailOtpSent] = useState(false)
+  const [emailOtpExpiresAt, setEmailOtpExpiresAt] = useState<number | null>(null)
   const [phoneVerified, setPhoneVerified] = useState(false)
   const [canSendPhoneOtp, setCanSendPhoneOtp] = useState(false)
   const [phoneOtpSent, setPhoneOtpSent] = useState(false)
+  const [phoneOtpExpiresAt, setPhoneOtpExpiresAt] = useState<number | null>(null)
+  const [otpNowTs, setOtpNowTs] = useState<number>(Date.now())
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -33,6 +38,27 @@ const SignupPage = () => {
   const [bookOpen, setBookOpen] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
   const recaptchaRef = useRef<ReCAPTCHA>(null)
+
+  const formatOtpCountdown = (expiresAt: number | null) => {
+    if (!expiresAt) return ''
+    const remainingSec = Math.max(0, Math.ceil((expiresAt - otpNowTs) / 1000))
+    const mm = Math.floor(remainingSec / 60).toString().padStart(2, '0')
+    const ss = (remainingSec % 60).toString().padStart(2, '0')
+    return `${mm}:${ss}`
+  }
+
+  useEffect(() => {
+    const hasActiveTimer =
+      (!!emailOtpSent && !emailVerified && !!emailOtpExpiresAt && emailOtpExpiresAt > Date.now()) ||
+      (!!phoneOtpSent && !phoneVerified && !!phoneOtpExpiresAt && phoneOtpExpiresAt > Date.now())
+    if (!hasActiveTimer) return
+
+    const timer = window.setInterval(() => {
+      setOtpNowTs(Date.now())
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [emailOtpSent, emailVerified, emailOtpExpiresAt, phoneOtpSent, phoneVerified, phoneOtpExpiresAt])
 
   useEffect(() => {
     // Trigger book opening animation on mount
@@ -132,9 +158,12 @@ const SignupPage = () => {
       setSignupToken(token)
       // email OTP is already sent by register; keep phone OTP gated
       setEmailVerified(false)
+      setEmailOtpSent(true)
+      setEmailOtpExpiresAt(Date.now() + OTP_EXPIRY_SECONDS * 1000)
       setPhoneVerified(false)
       setCanSendPhoneOtp(false)
       setPhoneOtpSent(false)
+      setPhoneOtpExpiresAt(null)
       setStep('verify')
     } catch (error) {
       if (recaptchaRef.current) {
@@ -182,8 +211,27 @@ const SignupPage = () => {
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
       setPhoneOtpSent(true)
+      setPhoneOtpExpiresAt(Date.now() + OTP_EXPIRY_SECONDS * 1000)
     } catch (error) {
       setFormError((error as Error)?.message || 'Failed to send phone OTP. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSendEmailOtp = async () => {
+    setFormError('')
+    if (!signupToken || emailVerified) return
+    setIsLoading(true)
+    try {
+      const st = await sendSignupEmailOtp(signupToken)
+      setEmailVerified(st.emailVerified)
+      setPhoneVerified(st.phoneVerified)
+      setCanSendPhoneOtp(st.canSendPhoneOtp)
+      setEmailOtpSent(true)
+      setEmailOtpExpiresAt(Date.now() + OTP_EXPIRY_SECONDS * 1000)
+    } catch (error) {
+      setFormError((error as Error)?.message || 'Failed to resend email OTP. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -389,20 +437,47 @@ const SignupPage = () => {
                           maxLength={6}
                           value={emailOtp}
                           onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full pl-8 pr-3 py-2 text-sm border-2 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
+                          className="w-full pl-8 pr-24 py-2 text-sm border-2 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
                           placeholder="000000"
                           autoComplete="one-time-code"
                         />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={handleSendEmailOtp}
+                            disabled={isLoading || emailVerified}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#3E2B66]/40 text-[#3E2B66] hover:bg-[#3E2B66]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label={emailOtpSent ? 'Resend email OTP' : 'Send email OTP'}
+                            title={emailOtpSent ? 'Resend email OTP' : 'Send email OTP'}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </button>
+                          {emailVerified ? (
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+                              <Check className="h-4 w-4" />
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => handleVerifyEmail(e as any)}
+                              disabled={isLoading}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#260559] text-white hover:bg-[#3E2B66] disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Verify email OTP"
+                              title="Verify email OTP"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      {emailOtpSent && !emailVerified && (
+                        <p className="mt-1 text-[11px] text-gray-500">
+                          {emailOtpExpiresAt && emailOtpExpiresAt > otpNowTs
+                            ? `Email OTP expires in ${formatOtpCountdown(emailOtpExpiresAt)}`
+                            : 'Email OTP expired. Please resend.'}
+                        </p>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => handleVerifyEmail(e as any)}
-                      disabled={isLoading || emailVerified}
-                      className="group w-full bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-base font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-300 shadow-lg hover:shadow-xl"
-                    >
-                      {emailVerified ? 'Email verified' : (isLoading ? 'Verifying email...' : 'Verify email')}
-                    </button>
                     <div className="form-field-group">
                       <label htmlFor="phoneOtp" className="block text-xs font-semibold text-gray-700 mb-1">
                         Phone verification code <span className="font-normal text-gray-500">(optional)</span>
@@ -416,30 +491,47 @@ const SignupPage = () => {
                           maxLength={6}
                           value={phoneOtp}
                           onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full pl-8 pr-3 py-2 text-sm border-2 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
+                          className="w-full pl-8 pr-24 py-2 text-sm border-2 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
                           placeholder="000000"
                           autoComplete="one-time-code"
                           disabled={!emailVerified}
                         />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={handleSendPhoneOtp}
+                            disabled={isLoading || !canSendPhoneOtp}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#3E2B66]/40 text-[#3E2B66] hover:bg-[#3E2B66]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label={phoneOtpSent ? 'Resend phone OTP' : 'Send phone OTP'}
+                            title={phoneOtpSent ? 'Resend phone OTP' : 'Send phone OTP'}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </button>
+                          {phoneVerified ? (
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+                              <Check className="h-4 w-4" />
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => handleVerifyPhone(e as any)}
+                              disabled={isLoading || !emailVerified}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#260559] text-white hover:bg-[#3E2B66] disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Verify phone OTP"
+                              title="Verify phone OTP"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={handleSendPhoneOtp}
-                        disabled={isLoading || !canSendPhoneOtp}
-                        className="w-full border-2 border-[#3E2B66] text-[#3E2B66] font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#3E2B66]/5 transition-all duration-300"
-                      >
-                        {phoneOtpSent ? 'Resend phone OTP' : 'Send phone OTP'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => handleVerifyPhone(e as any)}
-                        disabled={isLoading || !emailVerified || phoneVerified}
-                        className="w-full bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-300 shadow-lg"
-                      >
-                        {phoneVerified ? 'Phone verified' : (isLoading ? 'Verifying phone...' : 'Verify phone')}
-                      </button>
+                      {phoneOtpSent && !phoneVerified && (
+                        <p className="mt-1 text-[11px] text-gray-500">
+                          {phoneOtpExpiresAt && phoneOtpExpiresAt > otpNowTs
+                            ? `Phone OTP expires in ${formatOtpCountdown(phoneOtpExpiresAt)}`
+                            : 'Phone OTP expired. Please resend.'}
+                        </p>
+                      )}
                     </div>
                   </form>
                   <p className="text-xs text-gray-500 text-center">

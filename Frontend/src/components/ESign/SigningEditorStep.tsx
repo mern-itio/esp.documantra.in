@@ -176,8 +176,25 @@ export default function SigningEditorStep({
   const [dropPreview, setDropPreview] = useState<{ x: number; y: number; pageNum?: number } | null>(null);
   const [movingFieldId, setMovingFieldId] = useState<string | null>(null);
   const [moveOffset, setMoveOffset] = useState<{ x: number; y: number } | null>(null);
+  const [resizingFieldId, setResizingFieldId] = useState<string | null>(null);
+  const [resizeHandle, setResizeHandle] = useState<'br' | 'bl' | 'tr' | 'tl' | null>(null);
+  const [resizeStart, setResizeStart] = useState<{
+    startX: number;
+    startY: number;
+    startFieldX: number;
+    startFieldY: number;
+    startWidth: number;
+    startHeight: number;
+    pageLeft: number;
+    pageTop: number;
+    pageWidth: number;
+    pageHeight: number;
+    fieldX: number;
+    fieldY: number;
+  } | null>(null);
   const fieldWasDraggedRef = useRef(false);
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [hoveredFieldId, setHoveredFieldId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
   const [showDocDropdown, setShowDocDropdown] = useState(false);
@@ -205,6 +222,11 @@ export default function SigningEditorStep({
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const [_copiedFields, setCopiedFields] = useState<SignatureField[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const latestFieldsRef = useRef<SignatureField[]>(signatureFields);
+
+  useEffect(() => {
+    latestFieldsRef.current = signatureFields;
+  }, [signatureFields]);
 
   // Guided tour state
   const [isEditorTourOpen, setIsEditorTourOpen] = useState<boolean>(false);
@@ -1092,6 +1114,8 @@ export default function SigningEditorStep({
       setSelectedField(field);
       setFieldLabel(field.label || '');
       setShowPropertiesSidebar(true);
+    } else {
+      setShowPropertiesSidebar(false);
     }
   };
 
@@ -1262,6 +1286,129 @@ export default function SigningEditorStep({
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [movingFieldId, moveOffset, setSignatureFields, signatureFields]);
+
+  // Resize logic (bottom-right handle)
+  useEffect(() => {
+    if (!resizingFieldId || !resizeStart || !resizeHandle) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - resizeStart.startX;
+      const dy = e.clientY - resizeStart.startY;
+
+      const minW = 24;
+      const minH = 18;
+
+      let nextX = resizeStart.startFieldX;
+      let nextY = resizeStart.startFieldY;
+      let nextW = resizeStart.startWidth;
+      let nextH = resizeStart.startHeight;
+
+      // Corner-based resize behavior
+      if (resizeHandle === 'br') {
+        nextW = resizeStart.startWidth + dx;
+        nextH = resizeStart.startHeight + dy;
+      } else if (resizeHandle === 'bl') {
+        nextX = resizeStart.startFieldX + dx;
+        nextW = resizeStart.startWidth - dx;
+        nextH = resizeStart.startHeight + dy;
+      } else if (resizeHandle === 'tr') {
+        nextY = resizeStart.startFieldY + dy;
+        nextH = resizeStart.startHeight - dy;
+        nextW = resizeStart.startWidth + dx;
+      } else if (resizeHandle === 'tl') {
+        nextX = resizeStart.startFieldX + dx;
+        nextY = resizeStart.startFieldY + dy;
+        nextW = resizeStart.startWidth - dx;
+        nextH = resizeStart.startHeight - dy;
+      }
+
+      // Clamp minimums (and adjust x/y accordingly for left/top handles)
+      if (nextW < minW) {
+        if (resizeHandle === 'bl' || resizeHandle === 'tl') {
+          nextX += nextW - minW; // shift back when width is too small
+        }
+        nextW = minW;
+      }
+      if (nextH < minH) {
+        if (resizeHandle === 'tr' || resizeHandle === 'tl') {
+          nextY += nextH - minH; // shift back when height is too small
+        }
+        nextH = minH;
+      }
+
+      // Clamp to page bounds
+      nextX = Math.max(0, Math.min(nextX, resizeStart.pageWidth - nextW));
+      nextY = Math.max(0, Math.min(nextY, resizeStart.pageHeight - nextH));
+
+      // If resizing from left/top, ensure x/y doesn't drift outside after clamp
+      nextW = Math.max(minW, Math.min(nextW, resizeStart.pageWidth - nextX));
+      nextH = Math.max(minH, Math.min(nextH, resizeStart.pageHeight - nextY));
+
+      setSignatureFields((fields) =>
+        fields.map((f) =>
+          (f.id ?? f._id) === resizingFieldId
+            ? { ...f, x: nextX, y: nextY, width: nextW, height: nextH }
+            : f
+        )
+      );
+
+      setSelectedField((prev) => {
+        if (!prev) return prev;
+        if ((prev.id ?? prev._id) !== resizingFieldId) return prev;
+        return { ...prev, x: nextX, y: nextY, width: nextW, height: nextH };
+      });
+    };
+
+    const handleMouseUp = async () => {
+      // Persist resize to backend so signer page reflects the new size.
+      try {
+        if (envelopeId && resizingFieldId) {
+          const field = latestFieldsRef.current.find(
+            (ff) => String(ff.id ?? ff._id ?? "") === String(resizingFieldId)
+          );
+          const dbId = (field as any)?._id;
+          const isDbRecord =
+            typeof dbId === "string" && /^[a-fA-F0-9]{24}$/.test(dbId);
+
+          if (field && isDbRecord) {
+            await eSignApi.post("/api/e-sign/save-signature-fields", {
+              envelopeId,
+              signatureFields: [
+                {
+                  _id: dbId,
+                  documentId: field.docId ?? (field as any).documentId,
+                  recipientId: (field as any).recipientId || null,
+                  slotId: (field as any).slotId || null,
+                  page: field.page,
+                  x: field.x,
+                  y: field.y,
+                  width: field.width,
+                  height: field.height,
+                  type: field.type,
+                  status: "pending",
+                  label: (field as any).label || "",
+                  option: (field as any).options || [],
+                  fieldId: (field as any).fieldId || null,
+                },
+              ],
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to persist resized field:", err);
+      }
+      setResizingFieldId(null);
+      setResizeStart(null);
+      setResizeHandle(null);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [resizingFieldId, resizeStart, resizeHandle, setSignatureFields]);
 
   // Add fixed fields for all recipients/slots (bottom row)
   // const addFieldsForAllRecipients = () => {
@@ -2119,6 +2266,12 @@ export default function SigningEditorStep({
                             recipientColorMap[f.recipientId ?? f.slotId ?? ""] || "#2563eb";
                           const borderStyle =
                             recipientBorderStyleMap[f.recipientId ?? f.slotId ?? ""] || "dashed";
+                          const isSelected =
+                            !!selectedField &&
+                            (selectedField.id ?? selectedField._id) === (f.id ?? f._id);
+                          const isHovered =
+                            hoveredFieldId != null &&
+                            hoveredFieldId === String(f.id ?? f._id ?? '');
                           const isActive =
                             mode === "normal"
                               ? f.recipientId === activeRecipientId
@@ -2135,7 +2288,7 @@ export default function SigningEditorStep({
                                   top: f.y,
                                   width: f.width,
                                   height: f.height,
-                                  border: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id)
+                                  border: isSelected
                                     ? `3px solid ${color}`
                                     : (borderStyle === "double" || borderStyle === "inset" || borderStyle === "outset")
                                       ? `3px ${borderStyle} ${color}`
@@ -2148,9 +2301,9 @@ export default function SigningEditorStep({
                                   cursor: f.locked ? "not-allowed" : "move",
                                   opacity: isActive ? 1 : 0.9,
                                   boxSizing: "border-box",
-                                  zIndex: selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id) ? 50 : (isActive ? 30 : 20),
+                                  zIndex: isSelected ? 50 : (isActive ? 30 : 20),
                                   boxShadow: (() => {
-                                    if (selectedField && (selectedField.id ?? selectedField._id) === (f.id ?? f._id)) {
+                                    if (isSelected) {
                                       return `0 0 0 2px ${color}40`;
                                     }
                                     if (borderStyle === "inset" || borderStyle === "outset") {
@@ -2161,6 +2314,14 @@ export default function SigningEditorStep({
                                     }
                                     return 'none';
                                   })(),
+                                }}
+                                onMouseEnter={() => {
+                                  setHoveredFieldId(String(f.id ?? f._id ?? ''));
+                                }}
+                                onMouseLeave={() => {
+                                  setHoveredFieldId((prev) =>
+                                    prev === String(f.id ?? f._id ?? '') ? null : prev
+                                  );
                                 }}
                                 onMouseDown={(e) => {
                                   // Allow dragging for all fields
@@ -2217,6 +2378,93 @@ export default function SigningEditorStep({
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
+
+                                {/* Resize handles - shown on hover (not click) */}
+                                {isHovered && !f.locked && (() => {
+                                  const startResize = (handle: 'br' | 'bl' | 'tr' | 'tl') => (e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    const pageEl = getPageElement(f.page);
+                                    const pageRect = pageEl?.getBoundingClientRect();
+                                    if (!pageRect) return;
+                                    setResizingFieldId(f.id ?? f._id ?? null);
+                                    setResizeHandle(handle);
+                                    setResizeStart({
+                                      startX: e.clientX,
+                                      startY: e.clientY,
+                                      startFieldX: f.x,
+                                      startFieldY: f.y,
+                                      startWidth: f.width,
+                                      startHeight: f.height,
+                                      pageLeft: pageRect.left ?? 0,
+                                      pageTop: pageRect.top ?? 0,
+                                      pageWidth: pageRect.width ?? Infinity,
+                                      pageHeight: pageRect.height ?? Infinity,
+                                      fieldX: f.x,
+                                      fieldY: f.y,
+                                    });
+                                  };
+
+                                  const handleBase: React.CSSProperties = {
+                                    position: "absolute",
+                                    width: 14,
+                                    height: 14,
+                                    borderRadius: 6,
+                                    background: "#ffffff",
+                                    border: `2px solid ${color}`,
+                                    boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+                                    zIndex: 60,
+                                  };
+
+                                  return (
+                                    <>
+                                      {/* top-left */}
+                                      <div
+                                        onMouseDown={startResize('tl')}
+                                        title="Drag to resize"
+                                        style={{
+                                          ...handleBase,
+                                          left: -6,
+                                          top: -6,
+                                          cursor: "nwse-resize",
+                                        }}
+                                      />
+                                      {/* top-right */}
+                                      <div
+                                        onMouseDown={startResize('tr')}
+                                        title="Drag to resize"
+                                        style={{
+                                          ...handleBase,
+                                          right: -6,
+                                          top: -6,
+                                          cursor: "nesw-resize",
+                                        }}
+                                      />
+                                      {/* bottom-left */}
+                                      <div
+                                        onMouseDown={startResize('bl')}
+                                        title="Drag to resize"
+                                        style={{
+                                          ...handleBase,
+                                          left: -6,
+                                          bottom: -6,
+                                          cursor: "nesw-resize",
+                                        }}
+                                      />
+                                      {/* bottom-right */}
+                                      <div
+                                        onMouseDown={startResize('br')}
+                                        title="Drag to resize"
+                                        style={{
+                                          ...handleBase,
+                                          right: -6,
+                                          bottom: -6,
+                                          cursor: "nwse-resize",
+                                        }}
+                                      />
+                                    </>
+                                  );
+                                })()}
+
                                 {/* Field text stays inside box */}
                                 <div
                                   style={{
