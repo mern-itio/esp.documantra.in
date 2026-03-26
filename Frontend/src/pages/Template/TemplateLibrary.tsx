@@ -1,287 +1,938 @@
-import React, { useState } from 'react';
-import { Search, Grid, List, Plus, Eye, Edit, Trash2, Copy, Star } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, Sparkles, X, FileText, Users, Briefcase, FileCodeCorner } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { aiContentService } from '../../services/aiContentService';
+import { templateServiceApi } from '../../services/apiHelper';
+import { TEMPLATE_LIBRARY_TEMPLATES } from '../../data/templateLibraryTemplates';
 
-export const TemplateLibrary: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+type TemplateCategoryId = 'legal' | 'hr' | 'business' | 'tech';
+type TemplateItem = (typeof TEMPLATE_LIBRARY_TEMPLATES)[number];
+type TemplateField = TemplateItem['fields'][number];
 
-  const categories = [
-    { id: 'all', name: 'All Templates', count: 247 },
-    { id: 'legal', name: 'Legal Documents', count: 56 },
-    { id: 'hr', name: 'HR Documents', count: 42 },
-    { id: 'business', name: 'Business Contracts', count: 89 },
-    { id: 'forms', name: 'Forms', count: 34 },
-    { id: 'invoices', name: 'Invoices', count: 26 } 
-  ];
+type BackendTemplate = {
+  _id: string;
+  title: string;
+  description?: string;
+  content?: string;
+  pdfBase64?: string;
+  isAIGenerated?: boolean;
+  createdByAdmin?: boolean;
+  templateType?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
-  const templates = [
-    {
-      id: '1',
-      name: 'Employment Contract Template',
-      category: 'HR Documents',
-      description: 'Comprehensive employment agreement with standard terms and conditions',
-      lastModified: '2024-01-15',
-      usage: 145,
-      status: 'published',
-      rating: 4.8,
-      isStarred: true
-    },
-    {
-      id: '2',
-      name: 'Non-Disclosure Agreement',
-      category: 'Legal Documents',
-      description: 'Standard NDA template for protecting confidential information',
-      lastModified: '2024-01-12',
-      usage: 203,
-      status: 'published',
-      rating: 4.9,
-      isStarred: false
-    },
-    {
-      id: '3',
-      name: 'Sales Proposal Template',
-      category: 'Business Contracts',
-      description: 'Professional sales proposal with pricing and terms sections',
-      lastModified: '2024-01-10',
-      usage: 87,
-      status: 'draft',
-      rating: 4.6,
-      isStarred: true
-    },
-    {
-      id: '4',
-      name: 'Invoice Template',
-      category: 'Invoices',
-      description: 'Clean and professional invoice template with automatic calculations',
-      lastModified: '2024-01-08',
-      usage: 234,
-      status: 'published',
-      rating: 4.7,
-      isStarred: false
-    },
-    {
-      id: '5',
-      name: 'Customer Feedback Form',
-      category: 'Forms',
-      description: 'Interactive form for collecting customer feedback and ratings',
-      lastModified: '2024-01-05',
-      usage: 76,
-      status: 'published',
-      rating: 4.5,
-      isStarred: false
-    },
-    {
-      id: '6',
-      name: 'Vendor Agreement',
-      category: 'Business Contracts',
-      description: 'Comprehensive vendor partnership agreement template',
-      lastModified: '2024-01-03',
-      usage: 45,
-      status: 'published',
-      rating: 4.4,
-      isStarred: true
+function interpolate(text: string, values: Record<string, string>) {
+  return text.replace(/\{\{(\w+)\}\}/g, (_m, key) => values[key] ?? `{{${key}}}`);
+}
+
+function renderLineWithHighlights(line: string, values: Record<string, string>) {
+  const parts: React.ReactNode[] = [];
+  const re = /\{\{(\w+)\}\}/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(line)) !== null) {
+    const [full, key] = match;
+    const start = match.index;
+    if (start > lastIndex) parts.push(line.slice(lastIndex, start));
+
+    const v = (values[key] ?? '').toString();
+    if (v.trim()) {
+      parts.push(
+        <span key={`${key}-${start}`} className="bg-yellow-200/80 px-1 rounded">
+          {v}
+        </span>
+      );
+    } else {
+      parts.push(full);
     }
+
+    lastIndex = start + full.length;
+  }
+
+  if (lastIndex < line.length) parts.push(line.slice(lastIndex));
+  return <>{parts}</>;
+}
+
+function titleCaseFromId(id: string) {
+  const withSpaces = id.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
+  return withSpaces
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function extractFieldsFromPlaceholders(templateText: string): TemplateField[] {
+  const ids = new Set<string>();
+  const re = /\{\{(\w+)\}\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(templateText)) !== null) {
+    ids.add(m[1]);
+  }
+  return Array.from(ids).map((id) => ({
+    id,
+    label: titleCaseFromId(id),
+    type: id.toLowerCase().includes('date') ? 'date' : 'text',
+    required: true,
+  }));
+}
+
+function inferTemplateCategory(input: { title?: string; description?: string; content?: string }): TemplateCategoryId {
+  const explicitType = (input as any).templateType?.toString().toLowerCase().trim();
+  if (explicitType === 'tech') return 'tech';
+  if (explicitType === 'hr') return 'hr';
+  if (explicitType === 'business') return 'business';
+  if (explicitType === 'legal') return 'legal';
+
+  const text = `${input.title || ''} ${input.description || ''} ${input.content || ''}`.toLowerCase();
+  const legalKeywords = [
+    'nda', 'non-disclosure', 'non disclosure', 'confidential', 'agreement',
+    'whereas', 'in witness whereof', 'governing law', 'jurisdiction', 'legal'
+  ];
+  const hrKeywords = [
+    'employee', 'employment', 'hr', 'onboarding', 'offer letter',
+    'notice period', 'salary', 'compensation', 'work location'
+  ];
+  const businessKeywords = [
+    'mou', 'memorandum', 'project', 'partnership', 'business',
+    'scope of collaboration', 'timeline', 'commercial'
+  ];
+  const techKeywords = [
+    'tech', 'api', 'documentation', 'software', 'developer',
+    'system design', 'architecture', 'endpoint', 'integration'
   ];
 
-  const filteredTemplates = templates.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         template.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || 
-                           template.category.toLowerCase().includes(selectedCategory);
-    return matchesSearch && matchesCategory;
+  const score = (keywords: string[]) =>
+    keywords.reduce((acc, keyword) => (text.includes(keyword) ? acc + 1 : acc), 0);
+
+  const scores: Record<TemplateCategoryId, number> = {
+    legal: score(legalKeywords),
+    hr: score(hrKeywords),
+    business: score(businessKeywords),
+    tech: score(techKeywords),
+  };
+
+  // Strong legal terms should dominate even if "tech company" appears once.
+  if (scores.legal >= 2 && scores.legal >= scores.tech) return 'legal';
+
+  let winner: TemplateCategoryId = 'legal';
+  let max = scores.legal;
+  (['hr', 'business', 'tech'] as TemplateCategoryId[]).forEach((cat) => {
+    if (scores[cat] > max) {
+      max = scores[cat];
+      winner = cat;
+    }
   });
 
+  if (max === 0) return 'legal';
+  return winner;
+}
+
+function categoryLabelFromId(categoryId: TemplateCategoryId) {
+  if (categoryId === 'tech') return 'Tech';
+  if (categoryId === 'hr') return 'HR';
+  if (categoryId === 'business') return 'Business';
+  return 'Legal';
+}
+
+function getCategoryIcon(categoryId: TemplateCategoryId, className = 'h-7 w-7 text-white') {
+  if (categoryId === 'tech') return <FileCodeCorner  className={className} />;
+  if (categoryId === 'hr') return <Users className={className} />;
+  if (categoryId === 'business') return <Briefcase className={className} />;
+  return <FileText className={className} />;
+}
+
+function renderPreviewHtml(text: string, values?: Record<string, string>) {
+  const escapeHtml = (str: string) => {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  };
+
+  const raw = (text || '').trim();
+  if (!raw) return '';
+
+  // Escape first, then do lightweight formatting.
+  let html = escapeHtml(raw);
+
+  // Highlight filled placeholders (only if placeholders exist in the source text)
+  if (values) {
+    html = html.replace(/\{\{(\w+)\}\}/g, (_m, key) => {
+      const v = (values[key] ?? '').toString();
+      if (!v.trim()) return `{{${key}}}`;
+      return `<span class="bg-yellow-200/80 px-1 rounded">${escapeHtml(v)}</span>`;
+    });
+  }
+
+  // Bold: **text**
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  const lines = html.split('\n');
+  const out: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      out.push('<div class="h-4"></div>');
+      continue;
+    }
+
+    // Markdown headings
+    if (trimmed.startsWith('# ')) {
+      out.push(`<h1 class="text-2xl font-extrabold text-slate-900 text-center tracking-wide mt-2 mb-4">${trimmed.slice(2)}</h1>`);
+      continue;
+    }
+    if (trimmed.startsWith('## ')) {
+      out.push(`<h2 class="text-sm font-bold text-[#3E2B66] mt-4 mb-2">${trimmed.slice(3)}</h2>`);
+      continue;
+    }
+
+    // All-caps section headings (common in legal docs)
+    const isAllCaps =
+      trimmed.length <= 48 &&
+      /^[A-Z0-9\s().,'"&-]+$/.test(trimmed) &&
+      /[A-Z]/.test(trimmed);
+
+    if (isAllCaps) {
+      out.push(`<h2 class="text-sm font-bold text-[#3E2B66] mt-4 mb-2">${trimmed}</h2>`);
+      continue;
+    }
+
+    out.push(`<p class="text-sm text-slate-700 leading-relaxed">${trimmed}</p>`);
+  }
+
+  return out.join('');
+}
+
+function formatDateInput(value: string) {
+  // Keep as-is (YYYY-MM-DD) for preview; users can change later
+  return value || '';
+}
+
+const buildInitialValues = (fields: TemplateField[]) =>
+  fields.reduce<Record<string, string>>((acc, f) => {
+    acc[f.id] = '';
+    return acc;
+  }, {});
+
+export const TemplateLibrary: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | TemplateCategoryId>('all');
+  const [activeTemplate, setActiveTemplate] = useState<TemplateItem | null>(null);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [myTemplates, setMyTemplates] = useState<BackendTemplate[]>([]);
+  const [myTemplatesLoading, setMyTemplatesLoading] = useState(false);
+
+  // AI template fill modal state (from backend)
+  const [aiFillOpen, setAiFillOpen] = useState(false);
+  const [aiFillTemplate, setAiFillTemplate] = useState<BackendTemplate | null>(null);
+  const [aiFillTemplateText, setAiFillTemplateText] = useState<string>('');
+  const [aiFillFields, setAiFillFields] = useState<TemplateField[]>([]);
+  const [aiFillValues, setAiFillValues] = useState<Record<string, string>>({});
+  const [aiEditMode, setAiEditMode] = useState(false);
+  const [aiTemplateDraft, setAiTemplateDraft] = useState<string>('');
+
+  const templates: TemplateItem[] = useMemo(() => TEMPLATE_LIBRARY_TEMPLATES, []);
+
+  const categories = useMemo(
+    () => [
+      { id: 'all' as const, label: 'All' },
+      { id: 'legal' as const, label: 'Legal' },
+      { id: 'hr' as const, label: 'HR' },
+      { id: 'business' as const, label: 'Business' },
+      { id: 'tech' as const, label: 'Tech' },
+    ],
+    []
+  );
+
+  const filteredTemplates = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return templates.filter((t) => {
+      const matchesSearch =
+        !q || t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q);
+      const matchesCategory = selectedCategory === 'all' || t.categoryId === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [templates, searchQuery, selectedCategory]);
+
+  const filteredMyTemplates = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return myTemplates
+      .filter((t) => Boolean(t.isAIGenerated))
+      .filter((t) => !t.createdByAdmin) // admin-generated templates belong in "Templates" section
+      .filter((t) => {
+        const title = (t.title || '').toLowerCase();
+        const desc = (t.description || '').toLowerCase();
+        const matchesSearch = !q || title.includes(q) || desc.includes(q);
+        const matchesCategory =
+          selectedCategory === 'all' || inferTemplateCategory(t) === selectedCategory;
+        return matchesSearch && matchesCategory;
+      });
+  }, [myTemplates, searchQuery, selectedCategory]);
+
+  const filteredAdminGeneratedTemplates = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return myTemplates
+      .filter((t) => Boolean(t.isAIGenerated) && Boolean(t.createdByAdmin))
+      // extra safety: only show globally visible ones
+      .filter((t) => t.approvalStatus === 'approved' && t.isActive !== false)
+      .filter((t) => {
+        const title = (t.title || '').toLowerCase();
+        const desc = (t.description || '').toLowerCase();
+        const matchesSearch = !q || title.includes(q) || desc.includes(q);
+        const matchesCategory = selectedCategory === 'all' || inferTemplateCategory(t) === selectedCategory;
+        return matchesSearch && matchesCategory;
+      });
+  }, [myTemplates, searchQuery, selectedCategory]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setMyTemplatesLoading(true);
+        const res = await templateServiceApi.get('/api/template/get-form');
+        const list = Array.isArray((res as any)?.data?.form) ? ((res as any).data.form as BackendTemplate[]) : [];
+        if (!mounted) return;
+        setMyTemplates(list);
+      } catch (e) {
+        // Non-blocking: Template library can still show curated templates
+        if (mounted) setMyTemplates([]);
+      } finally {
+        if (mounted) setMyTemplatesLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // const handleUseBackendTemplate = async (tpl: BackendTemplate) => {
+  //   if (isGenerating) return;
+  //   try {
+  //     setIsGenerating(true);
+  //     if (tpl.pdfBase64) {
+  //       navigate('/e-sign/create', {
+  //         state: {
+  //           documentData: {
+  //             name: `${tpl.title || 'Template'}.pdf`,
+  //             content: tpl.pdfBase64,
+  //             type: 'application/pdf',
+  //           },
+  //         },
+  //       });
+  //       return;
+  //     }
+
+  //     const content = (tpl.content || '').trim();
+  //     if (!content) {
+  //       toast.error('Template has no content to generate PDF.');
+  //       return;
+  //     }
+
+  //     const pdf = await aiContentService.convertToPDF({
+  //       content,
+  //       documentName: tpl.title || 'Template',
+  //     });
+  //     if (!pdf?.success || !pdf?.data?.base64) {
+  //       throw new Error(pdf?.message || 'Unable to generate PDF');
+  //     }
+
+  //     navigate('/e-sign/create', {
+  //       state: {
+  //         documentData: {
+  //           name: pdf.data.fileName || `${tpl.title || 'Template'}.pdf`,
+  //           content: pdf.data.base64,
+  //           type: 'application/pdf',
+  //         },
+  //       },
+  //     });
+  //   } catch (e) {
+  //     const msg = e instanceof Error ? e.message : 'Failed to open template';
+  //     toast.error(msg);
+  //   } finally {
+  //     setIsGenerating(false);
+  //   }
+  // };
+
+  const openAiFillModal = (tpl: BackendTemplate) => {
+    const text = (tpl.content || '').trim();
+    if (!text) {
+      toast.error('This template has no text content to fill.');
+      return;
+    }
+    const fields = extractFieldsFromPlaceholders(text);
+    if (fields.length === 0) {
+      toast.error('No placeholders found (e.g. {{companyName}}). Use template directly instead.');
+      return;
+    }
+    const initialValues = buildInitialValues(fields);
+    setAiFillTemplate(tpl);
+    setAiFillTemplateText(text);
+    setAiTemplateDraft(text);
+    setAiFillFields(fields);
+    setAiFillValues(initialValues);
+    setAiEditMode(false);
+    setAiFillOpen(true);
+  };
+
+  const closeAiFillModal = () => {
+    if (isGenerating) return;
+    setAiFillOpen(false);
+    setAiFillTemplate(null);
+    setAiFillTemplateText('');
+    setAiTemplateDraft('');
+    setAiFillFields([]);
+    setAiFillValues({});
+    setAiEditMode(false);
+  };
+
+  const handleGenerateFromAiTemplate = async () => {
+    if (!aiFillTemplate || isGenerating) return;
+    const base = (aiTemplateDraft || aiFillTemplateText || '').trim();
+    if (!base) return;
+
+    const missing = aiFillFields.find((f) => f.required && !(aiFillValues[f.id] || '').trim());
+    if (missing) {
+      toast.error(`Please fill required field: ${missing.label}`);
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      const filledText = interpolate(base, aiFillValues);
+      const pdf = await aiContentService.convertToPDF({
+        content: filledText,
+        documentName: aiFillTemplate.title || 'Template',
+      });
+      if (!pdf?.success || !pdf?.data?.base64) {
+        throw new Error(pdf?.message || 'Unable to generate PDF');
+      }
+      closeAiFillModal();
+      toast.success('Template generated. Opening e-sign create flow...');
+      navigate('/e-sign/create', {
+        state: {
+          documentData: {
+            name: pdf.data.fileName || `${aiFillTemplate.title || 'Template'}.pdf`,
+            content: pdf.data.base64,
+            type: 'application/pdf',
+          },
+        },
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to generate template PDF';
+      toast.error(msg);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const openGenerator = (template: TemplateItem) => {
+    setActiveTemplate(template);
+    setFieldValues(buildInitialValues(template.fields));
+  };
+
+  const closeGenerator = () => {
+    setActiveTemplate(null);
+    setFieldValues({});
+  };
+
+  const previewValues = useMemo(() => {
+    const t = activeTemplate;
+    if (!t) return {};
+    const out: Record<string, string> = {};
+    for (const f of t.fields) {
+      const v = fieldValues[f.id] ?? '';
+      out[f.id] = f.type === 'date' ? formatDateInput(v) : v;
+    }
+    return out;
+  }, [activeTemplate, fieldValues]);
+
+  const getTemplateTextContent = (template: TemplateItem, values: Record<string, string>) => {
+    const bodyLines = template.preview.body.map((line) => interpolate(line, values));
+    const sectionLines = template.preview.sections.flatMap((section) => [
+      '',
+      section.heading,
+      ...section.lines.map((line) => interpolate(line, values)),
+    ]);
+
+    return [template.preview.title, '', ...bodyLines, ...sectionLines].join('\n');
+  };
+
+  const handleGenerate = async () => {
+    if (!activeTemplate || isGenerating) return;
+
+    const missingRequired = activeTemplate.fields.filter(
+      (field) => field.required && !(fieldValues[field.id] || '').trim()
+    );
+
+    if (missingRequired.length > 0) {
+      toast.error(`Please fill required field: ${missingRequired[0].label}`);
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      const content = getTemplateTextContent(activeTemplate, previewValues);
+      const docName = `${activeTemplate.name}.pdf`;
+
+      const response = await aiContentService.convertToPDF({
+        content,
+        documentName: activeTemplate.name,
+      });
+
+      if (!response?.success || !response?.data?.base64) {
+        throw new Error(response?.message || 'Unable to generate PDF');
+      }
+
+      closeGenerator();
+      toast.success('Template generated. Opening e-sign create flow...');
+
+      navigate('/e-sign/create', {
+        state: {
+          documentData: {
+            content: response.data.base64,
+            type: 'application/pdf',
+            name: response.data.fileName || docName,
+          },
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate template PDF';
+      toast.error(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+    <div className="max-w-7xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8">
+       <div className='flex items-center justify-between'>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Template Library</h1>
-          <p className="text-gray-600">Manage and organize your document templates</p>
+
+       <h1 className="text-4xl thankyou-heading font-semibold text-slate-900">AI-powered templates for every workflow</h1>
+       <p className="text-slate-600 mt-2 text-sm ">
+       Generate, customize, and reuse templates in seconds with AI assistance
+        </p>
         </div>
-        <button className="mt-4 sm:mt-0 flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Template
+        <button
+          onClick={() => navigate('/template/ai-generator')}
+          className="premium-ai-button flex items-center gap-2 px-5 py-2.5 rounded-sm"
+          style={{
+            color: '#2A1A0E',
+            fontWeight: '600',
+            fontSize: '14px'
+          }}
+        >
+          <Sparkles className="w-4 h-4" style={{ color: '#2A1A0E' }} />
+          <span>Generate Template using AI</span>
         </button>
       </div>
+      <hr className="mt-8 border-slate-200" />
+      <div className="text-center mb-4">  
 
-      {/* Filters and Search */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
-        <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="mt-6 max-w-xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search templates..."
+              placeholder="Search by templates name"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
+              className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] outline-none"
             />
           </div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name} ({category.count})
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-md ${
-              viewMode === 'grid' 
-                ? 'bg-gray-100 text-gray-900' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <Grid className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-md ${
-              viewMode === 'list' 
-                ? 'bg-gray-100 text-gray-900' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <List className="w-4 h-4" />
-          </button>
+
         </div>
       </div>
+     
+      <div className="flex items-center justify-end mb-1">
+        {/* <h2 className="text-lg font-semibold text-slate-900">Use Templates</h2> */}
 
-      {/* Templates Grid/List */}
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTemplates.map((template) => (
-            <div key={template.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{template.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {template.category}
-                    </span>
+        <div className="flex items-center gap-2">
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCategory(c.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedCategory === c.id
+                ? 'bg-[#3E2B66] text-white border-[#3E2B66]'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <hr className="mt-8 mb-2 border-slate-200" />
+
+      {filteredMyTemplates.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-4">AI Templates</h2>
+            {myTemplatesLoading && <span className="text-xs text-slate-500">Loading…</span>}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMyTemplates.map((t) => (
+              <div
+                key={t._id}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-         md                   transition-shadow overflow-hidden"
+              >
+                <div className="h-40 bg-gradient-to-br from-purple-50 to-white relative">
+                  {/* <div className="absolute left-5 bottom-5 h-9 w-9 rounded-xl bg-[#3E2B66]" /> */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#5b2ea6]/10 via-[#3E2B66]/8 to-[#260559]/6" />
+                    <div className="absolute inset-0 opacity-10 p-3">
+                      {getCategoryIcon(inferTemplateCategory(t), 'h-full w-full text-[#3E2B66]')}
+                    </div>
+                    {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-white/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
+                      {getCoverLabel(t.title)}
+                    </div> */}
                   </div>
-                  <button className={`p-1 rounded ${template.isStarred ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}>
-                    <Star className={`w-4 h-4 ${template.isStarred ? 'fill-current' : ''}`} />
-                  </button>
+                  <div
+                    className="absolute inset-0 opacity-50"
+                    style={{
+                      backgroundImage:
+                        'radial-gradient(circle at 20% 20%, rgba(62,43,102,0.12), transparent 55%)',
+                    }}
+                  />
                 </div>
-                
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span>{template.usage} uses</span>
-                  <span className="flex items-center">
-                    <Star className="w-3 h-3 text-yellow-400 fill-current mr-1" />
-                    {template.rating}
-                  </span>
-                  <span>{template.lastModified}</span>
+                <div className="p-5">
+                  <div className="text-xs font-semibold text-slate-500 mb-1">AI · {categoryLabelFromId(inferTemplateCategory(t))}</div>
+                  <div className="text-base font-semibold text-slate-900">{t.title}</div>
+                  <div className="text-sm text-slate-600 mt-1 min-h-[40px]">
+                    {t.description || 'AI-generated template'}
+                  </div>
+                  <div className="mt-4 grid grid-cols-1 gap-2">
+                    <button
+                      onClick={() => openAiFillModal(t)}
+                      disabled={isGenerating || !(t.content || '').trim()}
+                      className="w-full py-2.5 rounded-lg font-semibold text-sm bg-[#3E2B66] hover:bg-[#3E2B66]/90 text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      title={(t.content || '').trim() ? 'Fill data & generate PDF' : 'No content available to fill'}
+                    >
+                      CREATE TEMPLATE
+                    </button>
+                    {/* <button
+                      onClick={() => handleUseBackendTemplate(t)}
+                      disabled={isGenerating}
+                      className="w-full py-2.5 rounded-lg font-semibold text-sm bg-[#3E2B66] hover:bg-[#2a0a59] text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isGenerating ? 'OPENING…' : 'USE TEMPLATE'}
+                    </button> */}
+                  </div>
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    template.status === 'published' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {template.status}
-                  </span>
-                  <div className="flex items-center space-x-2">
-                    <button className="p-1 text-gray-400 hover:text-gray-600">
-                      <Eye className="w-4 h-4" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <hr className="mb-8 border-slate-200" />
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-semibold text-slate-900 mb-4">Templates</h2>
+        {myTemplatesLoading && <span className="text-xs text-slate-500">Loading…</span>}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredAdminGeneratedTemplates.map((t) => (
+          <div
+            key={t._id}
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+          >
+            <div className="h-40 bg-gradient-to-br from-purple-50 to-white relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#5b2ea6]/10 via-[#3E2B66]/8 to-[#260559]/6" />
+                <div className="absolute inset-0 opacity-10 p-3">
+                  {getCategoryIcon(inferTemplateCategory(t), 'h-full w-full text-[#3E2B66]')}
+                </div>
+              </div>
+              <div
+                className="absolute inset-0 opacity-50"
+                style={{
+                  backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(62,43,102,0.12), transparent 55%)',
+                }}
+              />
+            </div>
+            <div className="p-5">
+              <div className="text-xs font-semibold text-slate-500 mb-1">
+                Admin · {categoryLabelFromId(inferTemplateCategory(t))}
+              </div>
+              <div className="text-base font-semibold text-slate-900">{t.title}</div>
+              <div className="text-sm text-slate-600 mt-1 min-h-[40px]">
+                {t.description || 'Admin template'}
+              </div>
+              <button
+                onClick={() => openAiFillModal(t)}
+                disabled={isGenerating || !(t.content || '').trim()}
+                className="mt-4 w-full py-2.5 rounded-lg font-semibold text-sm bg-[#3E2B66] hover:bg-[#3E2B66]/90 text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                title={(t.content || '').trim() ? 'Fill data & generate PDF' : 'No content available to fill'}
+              >
+                CREATE TEMPLATE
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {filteredTemplates.map((t) => (
+          <div
+            key={t.id}
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+          >
+            <div className={`h-40 bg-gradient-to-br ${t.coverStyle.bg} relative`}>
+              {/* <div className={`absolute left-5 bottom-5 h-9 w-9 rounded-xl ${t.coverStyle.accent}`} /> */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#5b2ea6]/10 via-[#3E2B66]/8 to-[#260559]/6" />
+                <div className="absolute inset-0 opacity-10 p-3">
+                  {getCategoryIcon(t.categoryId, 'h-full w-full text-[#3E2B66]')}
+                </div>
+                {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-white/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
+                  {getCoverLabel(t.name)}
+                </div> */}
+              </div>
+              <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(62,43,102,0.12), transparent 55%)' }} />
+            </div>
+            <div className="p-5">
+              <div className="text-xs font-semibold text-slate-500 mb-1">{t.categoryLabel}</div>
+              <div className="text-base font-semibold text-slate-900">{t.name}</div>
+              <div className="text-sm text-slate-600 mt-1 min-h-[40px]">{t.description}</div>
+              <button
+                onClick={() => openGenerator(t)}
+                className="mt-4 w-full py-2.5 rounded-lg font-semibold text-sm bg-[#3E2B66] hover:bg-[#3E2B66]/90 text-white transition-colors"
+              >
+                CREATE TEMPLATE
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Generator Modal */}
+      {activeTemplate && (
+        <div className="fixed inset-0 z-[9999]">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={closeGenerator}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <div className="text-sm font-semibold text-slate-900">{activeTemplate.name} Template Generator</div>
+                <button
+                  onClick={closeGenerator}
+                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 min-h-0">
+                {/* Left: required fields */}
+                <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-auto min-h-0">
+                  <div className="text-sm font-semibold text-slate-900 mb-3">Enter {activeTemplate.categoryLabel} Details</div>
+                  <div className="space-y-3">
+                    {activeTemplate.fields.map((f) => {
+                      const value = fieldValues[f.id] ?? '';
+                      const common =
+                        'w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] outline-none text-sm';
+
+                      return (
+                        <label key={f.id} className="block">
+                          <div className="text-xs font-semibold text-slate-700 mb-1">
+                            {f.label} {f.required ? <span className="text-rose-600">*</span> : null}
+                          </div>
+                          {f.type === 'textarea' ? (
+                            <textarea
+                              value={value}
+                              onChange={(e) => setFieldValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                              placeholder={f.placeholder}
+                              className={`${common} min-h-[96px] resize-none`}
+                            />
+                          ) : (
+                            <input
+                              type={f.type}
+                              value={value}
+                              onChange={(e) => setFieldValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                              placeholder={f.placeholder}
+                              className={common}
+                            />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right: preview */}
+                <div className="lg:col-span-2 p-6 flex flex-col min-h-0">
+                  <div className="overflow-auto rounded-2xl border border-slate-200 bg-white flex-1 min-h-0">
+                    <div className="px-8 py-8">
+                      <div className="text-center text-2xl font-extrabold tracking-wide text-slate-900">
+                        {activeTemplate.preview.title}
+                      </div>
+                      <div className="mt-4 text-sm text-slate-700 leading-relaxed space-y-2">
+                        {activeTemplate.preview.body.map((line, idx) => (
+                          <p key={idx}>{renderLineWithHighlights(line, previewValues)}</p>
+                        ))}
+                      </div>
+
+                      <div className="mt-6 space-y-5">
+                        {activeTemplate.preview.sections.map((s) => (
+                          <div key={s.heading}>
+                            <div className="text-sm font-bold text-[#3E2B66]">{s.heading}</div>
+                            <div className="mt-2 text-sm text-slate-700 leading-relaxed space-y-1">
+                              {s.lines.map((line, idx) => (
+                                <p key={idx}>{renderLineWithHighlights(line, previewValues)}</p>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-200">
+                    <button
+                      onClick={closeGenerator}
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                    >
+                      CANCEL
                     </button>
-                    <button className="p-1 text-gray-400 hover:text-gray-600">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-gray-600">
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-red-600">
-                      <Trash2 className="w-4 h-4" />
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-[#3E2B66] hover:bg-[#2a0a59] text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isGenerating ? 'GENERATING...' : 'GENERATE & USE'}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modified</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTemplates.map((template) => (
-                  <tr key={template.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <button className={`mr-3 ${template.isStarred ? 'text-yellow-400' : 'text-gray-300'}`}>
-                          <Star className={`w-4 h-4 ${template.isStarred ? 'fill-current' : ''}`} />
-                        </button>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{template.name}</div>
-                          <div className="text-sm text-gray-500">{template.description}</div>
+      )}
+
+      {/* AI Fill Modal */}
+      {aiFillOpen && aiFillTemplate && (
+        <div className="fixed inset-0 z-[9999]">
+          <div className="absolute inset-0 bg-black/40" onClick={closeAiFillModal} aria-hidden="true" />
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <div className="text-sm font-semibold text-slate-900">{aiFillTemplate.title} — Fill data</div>
+                <button
+                  onClick={closeAiFillModal}
+                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                  aria-label="Close"
+                  disabled={isGenerating}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 min-h-0">
+                <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-auto min-h-0">
+                  <div className="text-sm font-semibold text-slate-900 mb-3">Required fields</div>
+                  <div className="space-y-3">
+                    {aiFillFields.map((f) => {
+                      const value = aiFillValues[f.id] ?? '';
+                      const common =
+                        'w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] outline-none text-sm';
+
+                      return (
+                        <label key={f.id} className="block">
+                          <div className="text-xs font-semibold text-slate-700 mb-1">
+                            {f.label} {f.required ? <span className="text-rose-600">*</span> : null}
+                          </div>
+                          {f.type === 'textarea' ? (
+                            <textarea
+                              value={value}
+                              onChange={(e) => setAiFillValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                              placeholder={f.placeholder}
+                              className={`${common} min-h-[96px] resize-none`}
+                            />
+                          ) : (
+                            <input
+                              type={f.type}
+                              value={value}
+                              onChange={(e) => setAiFillValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                              placeholder={f.placeholder}
+                              className={common}
+                            />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 p-6 flex flex-col min-h-0">
+                  <div className="overflow-auto rounded-2xl border border-slate-200 bg-white flex-1 min-h-0">
+                    <div className="px-8 py-8">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-xl font-extrabold tracking-wide text-slate-900">
+                          {aiEditMode ? 'Edit template' : 'Preview'}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {template.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{template.usage}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Star className="w-3 h-3 text-yellow-400 fill-current mr-1" />
-                        <span className="text-sm text-gray-900">{template.rating}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        template.status === 'published' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {template.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{template.lastModified}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <Copy className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-400 hover:text-red-600">
-                          <Trash2 className="w-4 h-4" />
+                        <button
+                          type="button"
+                          onClick={() => setAiEditMode((v) => !v)}
+                          disabled={isGenerating}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${aiEditMode
+                            ? 'bg-[#3E2B66] text-white border-[#3E2B66]'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            } disabled:opacity-60 disabled:cursor-not-allowed`}
+                          title={aiEditMode ? 'Switch to preview' : 'Edit template text'}
+                        >
+                          {aiEditMode ? 'Done' : 'Edit'}
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+                      {aiEditMode ? (
+                        <textarea
+                          value={aiTemplateDraft}
+                          onChange={(e) => setAiTemplateDraft(e.target.value)}
+                          className="mt-4 w-full min-h-[360px] rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800 leading-relaxed outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
+                          placeholder="Edit template text here..."
+                        />
+                      ) : (
+                        <div
+                          className="mt-4"
+                          dangerouslySetInnerHTML={{
+                            __html: renderPreviewHtml(
+                              (aiTemplateDraft || aiFillTemplateText || '').trim(),
+                              aiFillValues
+                            ),
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-200">
+                    <button
+                      onClick={closeAiFillModal}
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                      disabled={isGenerating}
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      onClick={handleGenerateFromAiTemplate}
+                      disabled={isGenerating}
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-[#3E2B66] hover:bg-[#2a0a59] text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isGenerating ? 'GENERATING…' : 'GENERATE & USE'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

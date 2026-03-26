@@ -50,8 +50,16 @@ const getAllForm = async (req, res) => {
       });
     }
     
-    // Filter forms by ownerId to show only user's own templates
-    const form = await Form.find({ ownerId: userId }).sort({ createdAt: -1 });
+    // Visibility rule:
+    // - If a template is inactive, it should NOT appear for anyone (including owner)
+    // - Active templates appear if: owner OR globally approved
+    const form = await Form.find({
+      isActive: true,
+      $or: [
+        { ownerId: userId },
+        { approvalStatus: 'approved' }
+      ]
+    }).sort({ createdAt: -1 });
     
     return res.status(200).json({
       status:"success",
@@ -74,6 +82,11 @@ const getFormDetail = async(req, res) => {
 
     const form = await Form.findById(id);
     if (!form) return res.status(404).json({ error: "Form not found" });
+
+    // Hide inactive templates from everyone (including owner)
+    if (form.isActive === false) {
+      return res.status(404).json({ error: "Form not found" });
+    }
 
     // Verify user owns the form (only if ownerId exists)
     if (form.ownerId && userId && form.ownerId !== userId) {
