@@ -63,7 +63,10 @@ function createServiceClient(req, serviceName) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     // Allow trusted internal admin calls without relying on end-user token
-    if (config.url && config.url.startsWith('/admin')) {
+    if (
+      config.url &&
+      (config.url.startsWith('/admin') || config.url.startsWith('/api/template/admin'))
+    ) {
       const internalKey = process.env.INTERNAL_ADMIN_API_KEY || process.env.ADMIN_ACCESS_TOKEN_SECRET;
       if (internalKey) {
         config.headers['x-internal-key'] = internalKey;

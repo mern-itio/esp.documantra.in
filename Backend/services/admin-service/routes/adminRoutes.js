@@ -20,6 +20,18 @@ const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, ge
 const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
 const {listOrganizations} = require('../controllers/organizationController');
 const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage} = require('../controllers/creditPackageController');
+const {
+  listTemplates,
+  updateTemplate,
+  setApproval,
+  generateAndActivateTemplate,
+  listTemplateTypes,
+  createTemplateType,
+  updateTemplateType,
+  deleteTemplateType,
+  generateTemplateContent,
+  generateTemplateContentStream
+} = require('../controllers/templateModerationController');
 
 // User management routes
 router.get('/user-list', userList);
@@ -93,5 +105,17 @@ router.delete('/credit-packages/:id', deleteCreditPackage);
 
 // Organization routes
 router.get('/organization-request-list', listOrganizations);
+
+// Template moderation routes
+router.get('/templates', listTemplates);
+router.post('/templates/generate-ai', generateAndActivateTemplate);
+router.put('/templates/:id', updateTemplate);
+router.patch('/templates/:id/approval', setApproval);
+router.post('/templates/ai/generate', generateTemplateContent);
+router.post('/templates/ai/generate-stream', generateTemplateContentStream);
+router.get('/template-types', listTemplateTypes);
+router.post('/template-types', createTemplateType);
+router.put('/template-types/:id', updateTemplateType);
+router.delete('/template-types/:id', deleteTemplateType);
 
 module.exports = router;

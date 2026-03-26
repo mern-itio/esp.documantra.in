@@ -62,6 +62,14 @@ const toNumber = (value: any): number => {
   return Number.isNaN(coerced) ? 0 : coerced;
 };
 
+/** Stable Mongo/ObjectId string for keys (module scope so PDF subtree helpers don't close over stale state). */
+const normalizeMongoId = (id: any) => {
+  if (id == null) return "";
+  if (typeof id === "string") return id;
+  if (typeof id === "object" && (id as any).$oid) return String((id as any).$oid);
+  return String(id);
+};
+
 const DocumentViewerContent: React.FC<Props> = ({
   document,
   documents,
@@ -469,13 +477,6 @@ const areAllNonSignatureFieldsFilledForSlot = (slotId: string) => {
 };
 // Submit non-signature fields 
 // call after you setValue(..., true) (i.e., onBlur / onChange)
-const normalizeMongoId = (id: any) => {
-  if (id == null) return "";
-  if (typeof id === "string") return id;
-  if (typeof id === "object" && (id as any).$oid) return String((id as any).$oid);
-  return String(id);
-};
-
 const submitSingleField = async (recipientId: string, fieldId: string, value: any) => {
   if (!recipientId || value == null) return;
   const fieldIdStr = normalizeMongoId(fieldId);
@@ -1382,9 +1383,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     });
   };
 
-  // Render a single document with all pages stacked vertically and per-page overlays
-  const SingleDoc: React.FC<{
+  // PDF stack for one file: must keep a stable component type (useMemo), not a nested `const X = () =>`,
+  // or react-pdf <Document> remounts on every parent re-render (e.g. signing progress text).
+  type SingleDocRenderProps = {
     doc: any;
+    mode: SigningMode;
     signatureFields: any[];
     currentUserId: string;
     selfValue: string | null;
@@ -1396,22 +1399,69 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     pageWidth: number;
     pageScale: number;
     signingFieldIds: Record<string, boolean>;
+    signingStatusText: string;
     isViewOnly?: boolean;
-  }> = ({
-    doc,
-    signatureFields,
-    currentUserId,
-    selfValue: _selfValue,
-    selfSigner: _selfSigner,
-    localSignedMap,
-    recipientSignature,
-    onFieldClick,
-    normalizePage,
-    pageWidth,
-    pageScale,
-    signingFieldIds,
-    isViewOnly = false,
-  }) => {
+    isFieldForCurrentUser: (field: any) => boolean;
+    isSignatureFieldCompleted: (field: any) => boolean;
+    getMatchedSigner: (field: any) => any;
+    areAllNonSignatureFieldsFilledForSlot: (slotId: string) => boolean;
+    areAllNonSignatureFieldsFilledForRecipient: (recipientId: string) => boolean;
+    doSign: (field: any) => void | Promise<void>;
+    openAuditTrailModal: () => void;
+    getInitialsValue: (field: any) => string;
+    getFieldValueFromNonSignatureFields: (field: any, matchedSigner: any) => any;
+    fieldValuesRef: React.MutableRefObject<Record<string, any>>;
+    localFieldValues: Record<string, any>;
+    setLocalFieldValues: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+    submitSingleField: (recipientId: string, fieldId: string, value: any) => void | Promise<void>;
+    autoFilledDateFieldsRef: React.MutableRefObject<Set<string>>;
+    pdfContainerRef: React.RefObject<HTMLDivElement | null>;
+    scrollPositionRef: React.MutableRefObject<number>;
+    shouldPreserveScrollRef: React.MutableRefObject<boolean>;
+    isUserTypingRef: React.MutableRefObject<boolean>;
+    activeInputRef: React.MutableRefObject<HTMLInputElement | null>;
+    activeInputIdRef: React.MutableRefObject<string | null>;
+  };
+
+  const SingleDoc = useMemo(() => {
+    return function SingleDocInner(props: SingleDocRenderProps) {
+      const {
+        doc,
+        mode,
+        signatureFields,
+        currentUserId,
+        selfValue: _selfValue,
+        selfSigner: _selfSigner,
+        localSignedMap,
+        recipientSignature,
+        onFieldClick,
+        normalizePage,
+        pageWidth,
+        pageScale,
+        signingFieldIds,
+        signingStatusText,
+        isViewOnly = false,
+        isFieldForCurrentUser,
+        isSignatureFieldCompleted,
+        getMatchedSigner,
+        areAllNonSignatureFieldsFilledForSlot,
+        areAllNonSignatureFieldsFilledForRecipient,
+        doSign,
+        openAuditTrailModal,
+        getInitialsValue,
+        getFieldValueFromNonSignatureFields,
+        fieldValuesRef,
+        localFieldValues,
+        setLocalFieldValues,
+        submitSingleField,
+        autoFilledDateFieldsRef,
+        pdfContainerRef,
+        scrollPositionRef,
+        shouldPreserveScrollRef,
+        isUserTypingRef,
+        activeInputRef,
+        activeInputIdRef,
+      } = props;
       const [numPages, setNumPages] = useState<number>(0);
 
       const isFieldForDoc = (field: any) => {
@@ -2152,6 +2202,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         </Document>
       );
     };
+  }, []);
 
   return (
     <form
@@ -2264,6 +2315,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             <div key={doc.id || doc._id || dIdx} className="mb-6">
               <SingleDoc
                 doc={doc}
+                mode={mode}
                 signatureFields={signatureFields}
                 currentUserId={currentUserId}
                 selfValue={selfValue}
@@ -2275,7 +2327,28 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 pageWidth={pageWidth}
                 pageScale={pageScale}
                 signingFieldIds={signingFieldIds}
+                signingStatusText={signingStatusText}
                 isViewOnly={isViewOnly}
+                isFieldForCurrentUser={isFieldForCurrentUser}
+                isSignatureFieldCompleted={isSignatureFieldCompleted}
+                getMatchedSigner={getMatchedSigner}
+                areAllNonSignatureFieldsFilledForSlot={areAllNonSignatureFieldsFilledForSlot}
+                areAllNonSignatureFieldsFilledForRecipient={areAllNonSignatureFieldsFilledForRecipient}
+                doSign={doSign}
+                openAuditTrailModal={openAuditTrailModal}
+                getInitialsValue={getInitialsValue}
+                getFieldValueFromNonSignatureFields={getFieldValueFromNonSignatureFields}
+                fieldValuesRef={fieldValuesRef}
+                localFieldValues={localFieldValues}
+                setLocalFieldValues={setLocalFieldValues}
+                submitSingleField={submitSingleField}
+                autoFilledDateFieldsRef={autoFilledDateFieldsRef}
+                pdfContainerRef={pdfContainerRef}
+                scrollPositionRef={scrollPositionRef}
+                shouldPreserveScrollRef={shouldPreserveScrollRef}
+                isUserTypingRef={isUserTypingRef}
+                activeInputRef={activeInputRef}
+                activeInputIdRef={activeInputIdRef}
               />
 
               {/* separator between documents with next document name */}

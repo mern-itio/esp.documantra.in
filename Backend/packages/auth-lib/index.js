@@ -17,10 +17,9 @@ const verifyJWT = (type = 'user') => {
         });
       }
 
-      const secret =
-        type === 'admin'
-          ? process.env.ADMIN_ACCESS_TOKEN_SECRET
-          : process.env.ACCESS_TOKEN_SECRET;
+      const adminSecret = process.env.ADMIN_ACCESS_TOKEN_SECRET;
+      const userSecret = process.env.ACCESS_TOKEN_SECRET;
+      const secret = type === 'admin' ? adminSecret : userSecret;
       
       if (!secret) {
         return res.status(500).json({ message: 'Server misconfiguration: missing JWT secret' });
@@ -33,13 +32,45 @@ const verifyJWT = (type = 'user') => {
         } catch {}
       }
 
-      const decoded = jwt.verify(token, secret);
+      // Verify with the expected secret. For admin routes, allow a safe fallback:
+      // In mixed environments (local services + remote auth-service), admin tokens may be signed
+      // with a different secret than the local ADMIN_ACCESS_TOKEN_SECRET. We only accept the
+      // fallback if the decoded payload still represents an admin principal.
+      let decoded;
+      try {
+        decoded = jwt.verify(token, secret);
+      } catch (e) {
+        if (type !== 'admin') throw e;
+        // Fallback: try user secret if different and available
+        if (userSecret && userSecret !== adminSecret) {
+          decoded = jwt.verify(token, userSecret);
+        } else {
+          throw e;
+        }
+      }
       if (!decoded) {
         return res.status(401).json({
           status: 401,
           message: 'Invalid or malformed token',
           data: null
         });
+      }
+
+      // Enforce principal type for admin routes
+      if (type === 'admin') {
+        const role = decoded?.role || decoded?.data?.role;
+        const principalType = decoded?.type || decoded?.data?.type;
+        const isAdminPrincipal =
+          String(role || '').toLowerCase() === 'admin' ||
+          String(principalType || '').toLowerCase() === 'admin' ||
+          String(principalType || '').toLowerCase() === 'agent'; // allow support agents to access admin-service (existing behavior)
+        if (!isAdminPrincipal) {
+          return res.status(403).json({
+            status: 403,
+            message: 'Invalid or expired token',
+            data: null
+          });
+        }
       }
 
       // Attach decoded data to request object
