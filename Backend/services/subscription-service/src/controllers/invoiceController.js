@@ -35,7 +35,7 @@ const createInvoiceForCreditPurchase = async (userId, creditPackage) => {
   
 }
 const createInvoiceForFlexiCreditPurchase = async (userId, flexiPackage,metadata) => {
-  if(!userId || !flexiPackage || metadata){
+  if(!userId || !flexiPackage || !metadata){
     throw new Error('Invalid parameters for invoice creation');
   }
     const now = new Date();

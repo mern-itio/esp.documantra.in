@@ -292,9 +292,9 @@ static async getCreditPackages(): Promise<any[]> {
       throw error;
     }
   }
-  static async flexibleCreditPurchaseCheckoutSession(creditPackageId: string,desiredCreditPricing:string,desiredCredits:number){
+  static async flexibleCreditPurchaseCheckoutSession(creditPackageId: string, desiredCreditPricing: number, desiredCredits: number){
     try {
-      const response = await subscriptionApi.post('/user/credit-packages/flexible/stripe/create-checkout-session', { creditPackageId,desiredCreditPricing, desiredCredits});
+      const response = await subscriptionApi.post('/user/credit-packages/flexible/stripe/create-checkout-session', { creditPackageId, desiredCreditPricing, desiredCredits });
       const data = response.data?.data || {};
       return {
         id: data.id,

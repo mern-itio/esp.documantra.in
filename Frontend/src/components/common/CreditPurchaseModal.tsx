@@ -21,6 +21,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
   const [desiredCredits, setDesiredCredits] = useState<string>('');
   const [purchaseMode, setPurchaseMode] = useState<'package' | 'desired'>('package');
   const [desiredCreditPriceTiers, setDesiredCreditPriceTiers] = useState<FlexibleCreditRange[]>([]);
+  const [flexiblePackageId, setFlexiblePackageId] = useState<string>('');
 
   useEffect(() => {
     if (!open) return;
@@ -37,6 +38,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
         setPackages(nextPackages);
         if (flexiblePackage?.ranges?.length) {
           setDesiredCreditPriceTiers(flexiblePackage.ranges);
+          setFlexiblePackageId(flexiblePackage._id || '');
         }
         const preferred = nextPackages.find((p) => p.isPopular) || nextPackages[0];
         setSelectedPackageId((preferred?._id || preferred?.id || '').toString());
@@ -93,6 +95,21 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
       return;
     }
 
+    if (purchaseMode === 'desired') {
+      if (!flexiblePackageId) {
+        toast.error('Flexible credit package not available');
+        return;
+      }
+      if (!normalizedDesiredCredits || normalizedDesiredCredits <= 0) {
+        toast.error('Please select the number of credits to purchase');
+        return;
+      }
+      if (!desiredCreditPricing || desiredCreditPricing.total <= 0) {
+        toast.error('Unable to calculate pricing. Please adjust credit amount.');
+        return;
+      }
+    }
+
     try {
       setPurchasingPackageId(packageId);
       const t = toast.loading('Redirecting to secure payment...');
@@ -100,8 +117,9 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
       if(purchaseMode !='desired'){
        session = await SubscriptionService.createCreditPurchaseCheckoutSession(packageId);
       }else{
-        const totalCost = desiredCreditPricing?.total ||0;
-       session = await SubscriptionService.flexibleCreditPurchaseCheckoutSession(packageId,desiredCredits,totalCost);
+        const totalCost = desiredCreditPricing!.total;
+        const creditsCount = normalizedDesiredCredits!;
+        session = await SubscriptionService.flexibleCreditPurchaseCheckoutSession(flexiblePackageId, totalCost, creditsCount);
       }
       if (session.url) {
         toast.dismiss(t);

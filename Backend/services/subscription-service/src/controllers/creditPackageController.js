@@ -143,12 +143,21 @@ const createFlexCheckoutSession = async (req, res)=>{
     if (!userId) {
       return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
     }
+    if (!creditPackageId) {
+      return res.status(400).json({ status: 400, message: 'creditPackageId is required', data: null });
+    }
+    if (!desiredCredits || Number(desiredCredits) <= 0) {
+      return res.status(400).json({ status: 400, message: 'desiredCredits must be greater than 0', data: null });
+    }
+    if (!desiredCreditPricing || Number(desiredCreditPricing) <= 0) {
+      return res.status(400).json({ status: 400, message: 'desiredCreditPricing must be greater than 0', data: null });
+    }
     const flexiblePackage = await flexibleCreditPackage.findById(creditPackageId);
     if(!flexiblePackage){
       return res.status(404).json({ status: 404, message: 'Flexible Credit package not found', data: null });
     }
-    const amount = desiredCreditPricing;
-    const currency = (  flexiblePackage?.currency || 'USD').toLowerCase();
+    const amount = Math.round(Number(desiredCreditPricing) * 100);
+    const currency = (flexiblePackage?.currency || 'USD').toLowerCase();
     const frontendBase = process.env.FRONTEND_BASE_URL ||
       process.env.BASE_URL ||
       'http://165.22.215.73:8081/';
@@ -172,12 +181,17 @@ const createFlexCheckoutSession = async (req, res)=>{
       ],
       metadata: {
         userId,
-        creditAdded:desiredCredits,
-        creditPricing:desiredCreditPricing,
+        creditAdded: String(desiredCredits),
+        creditPricing: String(desiredCreditPricing),
         creditPackageId
       },
       success_url: `${frontendBase.replace(/\/$/, '')}/subscription-management?flexible_credit_session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendBase.replace(/\/$/, '')}/subscription-management?canceled=true`,
+    });
+    return res.status(200).json({
+      status: 200,
+      message: 'Stripe checkout session created',
+      data: { id: session.id, url: session.url },
     });
 
  }catch (err){
@@ -268,11 +282,11 @@ const applyFlexiCreditsToUser = async (metadata,userId) =>{
   if (!subscription) {
     throw new Error('Subscription not found for user');
   }
-  subscription.creditsBalance += metadata.creditAdded;
+  subscription.creditsBalance += Number(metadata.creditAdded);
   await subscription.save();
   const creditResponse = {
-    creditsAdded: metadata.credits,
-    totalCredits: subscription.credits
+    creditsAdded: Number(metadata.creditAdded),
+    totalCredits: subscription.creditsBalance
   };
   let invoice = null;
   try{
