@@ -19,7 +19,7 @@ const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, ge
 
 const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
 const {listOrganizations} = require('../controllers/organizationController');
-const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage} = require('../controllers/creditPackageController');
+const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage,getFlexibleCreditPackage} = require('../controllers/creditPackageController');
 const {createEmailTemplate,getEmailTemplates,updateEmailTemplates,deleteEmailTemplate} = require('../controllers/emailTemplateController');
 const {
   listTemplates,
@@ -102,6 +102,8 @@ router.get('/credit-packages', listCreditPackages);
 router.post('/credit-packages', createCreditPackage);
 router.put('/credit-packages/:id', updateCreditPackage);
 router.delete('/credit-packages/:id', deleteCreditPackage);
+// Flexible credit package
+router.get('/flexible-credit-package',getFlexibleCreditPackage);
 
 // Email Template routes
 router.post('/create-email-template',createEmailTemplate);
