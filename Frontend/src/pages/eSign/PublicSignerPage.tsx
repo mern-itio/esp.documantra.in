@@ -296,7 +296,6 @@ const EnvelopeDetails: React.FC = () => {
       recipientStatus === "signed" ||
       recipientStatus === "declined";
 
-    if (envStatus === "completed" || recipientAlreadyCompleted) {
     // Previous signer → CC after reassignment: status "completed" while envelope still open.
     // Do not send them to the signer status page on first load (avoids wrong "signing completed" copy);
     // they stay on the public signing URL with the existing viewer UI.
