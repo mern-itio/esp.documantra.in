@@ -292,6 +292,19 @@ static async getCreditPackages(): Promise<any[]> {
       throw error;
     }
   }
+  static async flexibleCreditPurchaseCheckoutSession(creditPackageId: string,desiredCreditPricing:string,desiredCredits:number){
+    try {
+      const response = await subscriptionApi.post('/user/credit-packages/flexible/stripe/create-checkout-session', { creditPackageId,desiredCreditPricing, desiredCredits});
+      const data = response.data?.data || {};
+      return {
+        id: data.id,
+        url: data.url || null,
+      };
+    } catch (error) {
+      console.error('Error creating credit purchase checkout session:', error);
+      throw error;
+    }
+  }
 
   /**
    * Confirm a credit purchase Stripe Checkout session
@@ -299,6 +312,15 @@ static async getCreditPackages(): Promise<any[]> {
   static async confirmCreditPurchaseCheckoutSession(creditSessionId: string): Promise<any> {
     try {
       const response = await subscriptionApi.post('/user/credit-packages/stripe/confirm', { creditSessionId });
+      return response.data?.data || {};
+    } catch (error) {
+      console.error('Error confirming credit purchase checkout session:', error);
+      throw error;
+    }
+  }
+  static async confirmFlexibleCreditPurchaseCheckoutSession(flexiSessionId:String): Promise<any> {
+    try {
+      const response = await subscriptionApi.post('/user/credit-packages/flexible/stripe/confirm', { flexiSessionId });
       return response.data?.data || {};
     } catch (error) {
       console.error('Error confirming credit purchase checkout session:', error);

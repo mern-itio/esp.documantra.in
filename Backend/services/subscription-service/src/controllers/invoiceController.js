@@ -34,6 +34,28 @@ const createInvoiceForCreditPurchase = async (userId, creditPackage) => {
   return invoice;
   
 }
+const createInvoiceForFlexiCreditPurchase = async (userId, flexiPackage,metadata) => {
+  if(!userId || !flexiPackage || metadata){
+    throw new Error('Invalid parameters for invoice creation');
+  }
+    const now = new Date();
+
+  // Simple invoice / receipt numbering scheme
+  const seq = Math.floor(now.getTime() / 1000);
+  const invoiceNumber = `INV-${seq}`;
+  const receiptNumber = `RCT-${seq}`;
+  const invoice = await Invoice.create({
+    userId,
+    creditPackageId: flexiPackage._id,
+    planName: flexiPackage.name,
+    amount:metadata?.creditPricing,
+    currency:flexiPackage?.currency || 'USD',
+    invoiceNumber,
+    receiptNumber
+  });
+  return invoice;
+  
+}
 // Internal helper to create an invoice when a user upgrades a plan
 const createInvoiceForUpgrade = async ({ userId, subscription, planTemplate }) => {
   if (!userId || !subscription || !planTemplate) return null;
@@ -374,7 +396,8 @@ module.exports = {
   getInvoiceById,
   downloadInvoice,
   downloadReceipt,
-  createInvoiceForCreditPurchase
+  createInvoiceForCreditPurchase,
+  createInvoiceForFlexiCreditPurchase
 };
 
 

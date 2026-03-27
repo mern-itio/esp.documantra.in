@@ -56,6 +56,7 @@ const SubscriptionManagementPage: React.FC = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const creditSessionId = searchParams.get('credit_session_id');
+    const flexiSessionId = searchParams.get('flexible_credit_session_id');
     const sessionId = searchParams.get('session_id');
     const canceled = searchParams.get('canceled');
 
@@ -65,7 +66,7 @@ const SubscriptionManagementPage: React.FC = () => {
     }
 
     // Continue only when we have at least one actionable query param
-    if (!sessionId && !creditSessionId && !canceled) {
+    if (!sessionId && !creditSessionId && !canceled && !flexiSessionId) {
       return;
     }
 
@@ -80,6 +81,14 @@ const SubscriptionManagementPage: React.FC = () => {
     // If we've already handled this credit session in this tab, just clean the URL and bail out
     if (creditSessionId && sessionStorage.getItem(`stripe_session_handled_${creditSessionId}`)) {
       searchParams.delete('credit_session_id');
+      const newUrl =
+        location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      navigate(newUrl, { replace: true });
+      return;
+    }
+        // If we've already handled this credit session in this tab, just clean the URL and bail out
+    if (flexiSessionId && sessionStorage.getItem(`stripe_session_handled_${flexiSessionId}`)) {
+      searchParams.delete('flexiSessionId');
       const newUrl =
         location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
       navigate(newUrl, { replace: true });
@@ -152,6 +161,36 @@ const SubscriptionManagementPage: React.FC = () => {
           toast.error(err?.message || 'Failed to confirm payment', { id: t });
         } finally {
           searchParams.delete('credit_session_id');
+          const newUrl =
+            location.pathname +
+            (searchParams.toString() ? `?${searchParams.toString()}` : '');
+          navigate(newUrl, { replace: true });
+          processingStripeSession.current = false;
+        }
+      })();
+    }
+    if(flexiSessionId){
+      processingStripeSession.current = true;
+      (async () => {
+        const t = toast.loading('Confirming payment...');
+        try {
+          const {invoice} = await SubscriptionService.confirmFlexibleCreditPurchaseCheckoutSession(flexiSessionId);
+          await refreshPlan().catch(() => {});
+          let inv = invoice;
+          if (!inv){
+            inv = await SubscriptionService.getLatestInvoice();
+          }
+          if (inv) {
+          setLatestInvoice(inv);
+          setIsInvoiceModalOpen(true);
+          }
+          toast.success('Credit Purchased successfully', { id: t });
+          // Mark this session as handled in this tab
+          sessionStorage.setItem(`stripe_session_handled_${flexiSessionId}`, 'true');
+        } catch (err:any) {
+          toast.error(err?.message || 'Failed to confirm payment', { id: t });
+        } finally {
+          searchParams.delete('flexiSessionId');
           const newUrl =
             location.pathname +
             (searchParams.toString() ? `?${searchParams.toString()}` : '');
