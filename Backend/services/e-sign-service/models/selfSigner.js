@@ -30,6 +30,7 @@ const SelfSignerSchema = new mongoose.Schema({
     ],
     default: []
 },
+accepted_terms:{type:Boolean,default:false}
 }, { timestamps: true });
 
 module.exports = mongoose.model('SelfSigner', SelfSignerSchema);

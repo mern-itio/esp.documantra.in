@@ -1,11 +1,64 @@
 const mongoose = require('mongoose');
 
-const TemplateSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-  html: { type: String, required: true },
-  design: { type: Object },  // for drag & drop content JSON
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-}, { timestamps: true });
 
-module.exports = mongoose.model('Template', TemplateSchema);
+const EmailTemplateSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    template_Slug:{
+      type:String,
+      enum:[
+        'Signup',
+        'login',
+        'newDeviceLogin',
+        'envSignRequest',
+        'envSignReject',
+        'envSignComplete',
+        'authOTP',
+        'envReminder',
+        'test'
+      ],
+      required:true
+    },
+    design: {
+      type: Object,
+      required: true
+    },
+
+    html: {
+      type: String,
+      required: true
+    },
+
+    variables: {
+      type: [String],
+      default: []
+    },
+
+    category: {
+      type: String,
+      default: 'general'
+    },
+
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active'
+    },
+    isApproved:{type:Boolean, default:true},
+    isAdmin:{type:Boolean, default:false},
+    isUser:{type:Boolean, default:false},
+    createdBy: {
+     type: mongoose.Schema.Types.ObjectId
+    }
+
+  },
+  {
+    timestamps: true
+  }
+);
+
+module.exports = mongoose.model('Template', EmailTemplateSchema);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, FileText, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { eSignApi, organizationApi } from '../../services/apiHelper';
+import {  organizationApi } from '../../services/apiHelper';
 
 interface Envelope {
   id: string;
@@ -32,6 +32,7 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
+          console.log(folder);
       fetchOrganizationEnvelopes();
       setSelectedEnvelopes([]);
       setSearchQuery('');
@@ -78,7 +79,7 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
   );
   const fetchOrganizationEnvelopes = async () =>{
     try{
-      const response = await eSignApi.get('/api/e-sign/get-envelopes');
+      const response = await organizationApi.get(`/fetch-non-folder-envelopes/${folder?._id}`);
         setEnvelopes(response.data.data);
     }catch (err){
       console.log(err);

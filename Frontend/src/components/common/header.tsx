@@ -4,7 +4,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { Bell, LogOut, Menu, Search, Crown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
-import { subscriptionApi, eSignApi, organizationApi, apiGateway } from '../../services/apiHelper';
+import { subscriptionApi, organizationApi, apiGateway } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
 import type { Organization } from '../../types/organization';
 
@@ -140,7 +140,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   // Mark all notifications as read
   const handleMarkAllAsRead = async () => {
     try {
-      await eSignApi.post('/api/e-sign/notifications/read-all');
+      await apiGateway.post('api/mark-read');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -377,16 +377,8 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900">{notification.message}
-                                
-                                { notification?.metadata?.redirectUrl &&
-                                <>
-                                <br/>
-                                 <a className="text-xs text-[#3E2B66] hover:text-[#260559] font-medium hover:underline transition-all duration-200 hover:scale-105" href={notification?.metadata?.redirectUrl}> 
-                                  Click Here
-                                 </a>
-                                 </>
-                              }
+                              <p className="text-sm text-gray-900">
+                                {notification.message}
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
                                 {formatNotificationTime(notification.createdAt)}
@@ -547,9 +539,9 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                   {organizationDetail && accountType === 'organization' ? 
                   <div>
                     <a href={
-                        organizationDetail.website.startsWith('http')
-                          ? organizationDetail.website
-                          : `https://${organizationDetail.website}`
+                        organizationDetail?.website?.startsWith('http')
+                          ? organizationDetail?.website
+                          : `https://${organizationDetail?.website}`
                       }
                       target="_blank"
                       rel="noopener noreferrer"
@@ -607,6 +599,20 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                               transition-all duration-300 w-full hover:scale-[1.02]"
                   >
                     Email-Configuration
+                  </button>
+                  {/* Email Templates */}
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate("/account/email-templates/");
+                    }}
+                    className="mt-3 inline-flex items-center justify-center px-4 py-2
+                              border border-gray-300 rounded-lg text-sm font-medium text-gray-900
+                              hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent
+                              hover:border-[#3E2B66] hover:text-[#3E2B66]
+                              transition-all duration-300 w-full hover:scale-[1.02]"
+                  >
+                    Email-Templates
                   </button>
                 </div>
                 <div className="border-t border-gray-100" />

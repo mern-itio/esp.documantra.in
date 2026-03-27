@@ -58,6 +58,7 @@ const EnvelopeDetails: React.FC = () => {
   const [_activeDocument, setActiveDocument] = useState<any>(null);
   const [allDocuments, setAllDocuments] = useState<any[]>([]);
   const [allRecipients, setAllRecipients] = useState<any[]>([]);
+  const [currentRecipient,setCurrentRecipient] = useState<any>([]);
   const [loading, setLoading] = useState(true);
   const [_showDownloadModal, setShowDownloadModal] = useState(false);
 
@@ -148,6 +149,7 @@ const EnvelopeDetails: React.FC = () => {
 
   useEffect(() => {
     fetchEnvelopeDetails();
+    console.log('Fetched Envelope details');
   }, []);
 
   const fetchEnvelopeDetails = async () => {
@@ -159,6 +161,14 @@ const EnvelopeDetails: React.FC = () => {
         setAllDocuments(docs);
         const recipients = response.data.data.recipients || [];
         setAllRecipients(recipients);
+        if(!cycleId){
+          const rowcurrentRecipient = recipients.find(
+            (r: any) => normId(r) === String(recipientId ?? "")
+          );
+          setCurrentRecipient(rowcurrentRecipient);
+        }else{
+          await fetchCurrentRecipient(recipientId);
+        }
         const allFields: any[] = [];
         for (const d of docs) {
           try {
@@ -181,6 +191,15 @@ const EnvelopeDetails: React.FC = () => {
       setLoading(false);
     }
   };
+  const fetchCurrentRecipient = async(recipientId:any) =>{
+    const response = await eSignApi.post('api/e-sign/public/fetch/current-recipient',{
+      cycleId:cycleId,
+      currentRecipientId:recipientId
+    });
+    if(response.status==200){
+      setCurrentRecipient(response.data.currentRecipient);
+    }
+  }
 
   const handleSignatureSave = (fieldId: string, signatureUrl: string) => {
     setSignatureFields((prev) =>
@@ -199,9 +218,6 @@ const EnvelopeDetails: React.FC = () => {
     if (typeof raw === "object" && raw.$oid) return String(raw.$oid);
     return String(raw);
   };
-  const currentRecipient = allRecipients.find(
-    (r: any) => normId(r) === String(recipientId ?? "")
-  );
   const role = (currentRecipient?.role ?? "").toString().toLowerCase().trim();
   const isViewOnly =
     !!currentRecipient &&
@@ -319,6 +335,8 @@ const EnvelopeDetails: React.FC = () => {
 
     // Envelope incomplete
     if (!authCompleted) {
+      // 
+      console.log('In Auth Incomplete block');
       // Condition 1 / 1b: Show terms first; only show auth after terms accepted
       let termsAcceptedStored = false;
       try {
@@ -350,6 +368,7 @@ const EnvelopeDetails: React.FC = () => {
       setOtpCode('');
       setCurrentAction('');
     } else {
+      console.log('In Auth Completed block');
       // Condition 2
       setIsAuthenticated(true);
       setShowAuthModal(false);
@@ -382,6 +401,7 @@ const EnvelopeDetails: React.FC = () => {
         {
           envelopeId: String(id ?? ""),
           recipientId: String(recipientId ?? ""),
+          cycleId:String(cycleId ?? "")
         });
         if(response.status==200){
             window.localStorage.setItem(termsStorageKey, "true");
@@ -395,21 +415,15 @@ const EnvelopeDetails: React.FC = () => {
                 const authCompleted = authList.every((a: AuthList) => a.status === "completed");
                 if (!authCompleted) setShowAuthModal(true);
               } catch {
+                console.log('Catch Block Exicuted');
                 // ignore parse errors
               }
+            }else{
+              console.log('Else Block Exicuted');
             }
         }
     } catch {
       // ignore storage failures; keep in-memory acceptance for this session
-    }
-    setTermsAccepted(true);
-    setShowTermsModal(false);
-    setShowOtherOptions(false);
-    // After accepting terms, show auth modal if auth is still pending
-    if (currentRecipient && envelope && (envelope.status || "").toString().toLowerCase() !== "completed") {
-      const authList: AuthList[] = parseAuthList(currentRecipient.authentication);
-      const authCompleted = authList.every((a: AuthList) => a.status === "completed");
-      if (!authCompleted) setShowAuthModal(true);
     }
   };
 
