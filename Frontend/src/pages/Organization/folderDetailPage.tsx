@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Folder, Users, Shield, Plus, Mail } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Folder, Users, Shield, Plus, Mail, ArrowLeft } from 'lucide-react';
 import { organizationApi } from '../../services/apiHelper';
 import { ShareFolderModal } from '../../components/Organization/ShareFolderModal';
 import { ShareFolderWithRoleModal } from '../../components/Organization/ShareFolderWithRoleModal';
@@ -33,6 +33,7 @@ interface Role {
 
 
 const FolderDetailPage: React.FC = () => {
+  const navigate = useNavigate();
   const { folderId } = useParams<{ folderId: string }>();
   const [folderDetail, setFolderDetail] = useState<FolderDetail | null>(null);
   const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
@@ -326,6 +327,12 @@ const fetchRolesAndUsers = async () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mr-4"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
                 <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
                   <Folder className="h-6 w-6 text-white" />
                 </div>

@@ -8,6 +8,7 @@ interface Invitation {
   _id: string;
   name: string;
   email: string;
+  status: 'PENDING' | 'ACTIVE' | 'DISABLED' | 'REJECTED'
   role: {
     name: string;
   };
@@ -45,10 +46,39 @@ const getInvitationDetails = async (id: string) => {
     }
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     console.log('Rejected invitation:', id);
-    // Implement reject logic here
+    const result = await organizationApi.post(`/api/organization/invitation/reject/${id}`);
+    if (result.status === 200) {
+      Swal.fire({
+        title: 'Rejected!',
+        text: 'Invitation rejected successfully.',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = '/organizations';
+        }
+      });
+    }
   };
+
+  const getStatusDetails = (status: Invitation['status']) => {
+    switch (status) {
+      case 'PENDING':
+        return { text: 'This invitation is pending. You can accept or reject it.', color: 'text-yellow-600', bg: 'bg-yellow-100' };
+      case 'ACTIVE':
+        return { text: 'This invitation has been accepted. You can now access the organization.', color: 'text-green-600', bg: 'bg-green-100' };
+      case 'DISABLED':
+        return { text: 'This invitation has been disabled. Access is revoked.', color: 'text-gray-600', bg: 'bg-gray-100' };
+      case 'REJECTED':
+        return { text: 'This invitation has been rejected.', color: 'text-red-600', bg: 'bg-red-100' };
+      default:
+        return { text: 'Invitation status is unknown.', color: 'text-gray-600', bg: 'bg-gray-100' };
+    }
+  };
+
+  const statusDetails = invitation ? getStatusDetails(invitation.status) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
@@ -64,16 +94,23 @@ const getInvitationDetails = async (id: string) => {
 
             {/* Message */}
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Invitation</h1>
-            <p className="text-lg text-gray-700 mb-8">
+            
+            <p className="text-lg text-gray-700 mb-4">
               Hi, {invitation?.name} you have been invited to access {invitation?.organizationId?.name}
             </p>
 
-            {/* Buttons */}
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => handleAccept(invitation?._id || '')}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
-              >
+            {statusDetails && (
+              <div className={`mb-8 rounded-lg px-4 py-3 ${statusDetails.bg} ${statusDetails.color}`}>
+                {statusDetails.text}
+              </div>
+            )}
+
+            {invitation.status === 'PENDING' ? (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => handleAccept(invitation?._id || '')}
+                  className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
+                >
                 <Handshake className="w-5 h-5" />
               </button>
               <button
@@ -83,6 +120,11 @@ const getInvitationDetails = async (id: string) => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-lg font-medium text-gray-700">No actions are available for this invitation status.</p>
+            </div>
+          )}
           </div>
         </div>
         ):(

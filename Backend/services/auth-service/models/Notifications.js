@@ -13,7 +13,7 @@ const UserNotificationSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['AUTH', 'ORG', 'ESIGN'],
+    enum: ['AUTH', 'ORG', 'ESIGN', 'USER'],
     required: true
   },
 

@@ -12,6 +12,7 @@ interface TeamMember {
   role: string;
   avatar?: string;
   roleId?: { _id: string; name: string; description?: string;},
+  status?:string;
 }
 interface Role {
   _id: string;
@@ -39,6 +40,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
   const [selectedUserRoles, setSelectedUserRoles] = useState<Record<string, string>>({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [showCreateRoleModal, setShowCreateRoleModal] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
   const [newMemberData, setNewMemberData] = useState({
     name: '',
     email: '',
@@ -125,7 +127,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
     try {
       // Placeholder API call - replace with actual endpoint
       const response = await organizationApi.delete(
-        `/api/organization/${organization._id}/members/${memberId}`
+        `/api/organization/remove/${organization._id}/members/${memberId}`
       );
 
       if (response.status === 200 || response.status === 204) {
@@ -138,6 +140,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
   };
 
   const handleAddExistingMember = async () => {
+    setAddingMember(true);
     if (selectedUsers.length === 0 || !organization?._id) return;
     // Prevent adding if organization has no roles defined
     if (roles.length === 0) {
@@ -180,6 +183,8 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
     } catch (error) {
       console.error('Error adding members:', error);
       alert('Failed to add one or more members. Please try again.');
+    } finally{
+      setAddingMember(false);
     }
   };
 
@@ -291,6 +296,21 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                         <div className="flex-1">
                           <p className="font-semibold text-gray-900">{member?.name || member?.fullname}</p>
                           <p className="text-sm text-gray-600">{member.email}</p>
+                        </div>
+                        <div
+                          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            member.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-700'
+                              : member.status === 'PENDING'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : member.status === 'DISABLED'
+                              ? 'bg-gray-100 text-gray-700'
+                              : member.status === 'REJECTED'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}
+                        >
+                          {member.status}
                         </div>
                         <div className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
                           {member.role || member?.roleId?.name}
@@ -452,9 +472,16 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                         {selectedUsers.length > 0 && (
                           <button
                             onClick={handleAddExistingMember}
-                            className="w-full px-4 py-2 bg-[#3E2B66] text-white rounded-lg font-semibold hover:bg-[#260559] transition-colors"
+                            disabled={addingMember}
+                            className={`w-full px-4 py-2 rounded-lg font-semibold transition-colors ${
+                              addingMember
+                                ? 'bg-gray-400 cursor-not-allowed text-white'
+                                : 'bg-[#3E2B66] text-white hover:bg-[#260559]'
+                            }`}
                           >
-                            Add Selected Member{selectedUsers.length > 1 ? ` (${selectedUsers.length})` : ''}
+                            {addingMember
+                              ? 'Adding...'
+                              : `Add Selected Member${selectedUsers.length > 1 ? ` (${selectedUsers.length})` : ''}`}
                           </button>
                         )}
                   </div>

@@ -1,4 +1,5 @@
 const { inviteTemplate } = require('../email/emailTemplates');
+const organizationUser = require('../models/organizationUser');
 const orgService = require('../services/organization.service');
 const axios = require('axios');
 const ALL_PERMISSIONS = {
@@ -421,7 +422,7 @@ const addMemberToOrganization = async (req, res) => {
             LinkButtonText = 'Create Your Account';
         }
         const targetId = payload?.userId || null;
-        const source = 'ORG';
+        const source = 'USER';
         const type = 'ORG_INVITATION';
         const title = subject;
         const invitationLink = `${process.env.FRONTEND_URL}/organization/invitations/${result?._id}`;
@@ -612,8 +613,8 @@ const fetchEnvelopesByFolder = async (req, res) => {
             message:"Invalid account type or missing organization ID"
         });
     }
-    // Fetch allEnvelopeIds in the folder
     try{
+            // Fetch allEnvelopeIds in the folder
         const envelopeIdsData = await orgService.fetchFolderEnvelopeIds(folderId);
         const envelopeIds = envelopeIdsData || [];
         if(envelopeIds.length === 0){
@@ -623,6 +624,7 @@ const fetchEnvelopesByFolder = async (req, res) => {
             });
         }
         try{
+            // Fetch Envelpes by Ids
             const envelopes = await axios.post(
                 `${process.env.ESIGN_SERVICE_URL}/api/e-sign/envelopes/bulk-fetch`,
                 { envelopeIds },
@@ -643,6 +645,47 @@ const fetchEnvelopesByFolder = async (req, res) => {
         return res.status(500).json({
             success:false,
             message:err.message || "Internal server error"
+        });
+    }
+}
+const fetchNoneFolderEnvelopes = async (req, res) =>{
+    const folderId = req.params.folderId;
+    const userId = req?.user?.data?.id;
+    const accountType = req.header('x-account-type');
+    const organizationId = req.header('x-organization-id');
+    if(accountType !== 'organization' || !organizationId){
+        return res.status(400).json({
+            success:false,
+            message:"Invalid account type or missing organization ID"
+        });
+    }
+    try{
+        //Fetch All EnvelopeIds of added in Folder
+        const envelopeIdsData = await orgService.fetchFolderEnvelopeIds(folderId);
+        const envelopeIds = envelopeIdsData || [];
+        try{
+            // Fetch Envelopes and excluded already added in folder
+            const envelopes = await axios.post(
+                `${process.env.ESIGN_SERVICE_URL}/api/e-sign/envelopes/exclude`,
+                { envelopeIds,organizationId },
+                { headers: { Authorization: req.headers.authorization } }
+            );
+            return res.status(200).json({
+                success:true,
+                data:envelopes.data.envelopes || []
+            });
+        }catch(err){
+            console.log(err);
+            return res.status(500).json({
+                success:false,
+                message:err.message || "Internal server error"
+            });
+        }
+    }catch (err){
+        console.log(err);
+        return res.status(500).json({
+            success:false,
+            message:"Internal Server Error"
         });
     }
 }
@@ -699,6 +742,30 @@ const insertEnvelopesToFolder = async (req, res) =>{
         });
     }
 }
+const removeMemberFromOrganization = async( req, res) =>{
+    const {orgId, memberId} = req.params;
+    try{
+        const deleted = await organizationUser.findOneAndDelete({
+                        _id: memberId,
+                        organizationId: orgId
+                        });
+        if (!deleted) {
+            return res.status(404).json({
+                success: false,
+                message: "Member not found"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Member removed successfully"
+        });
+
+    }catch(err){
+        console.log(err);
+        return res.status(500).json({success:false, message:"Internal Server Error"});
+    }
+
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -723,6 +790,8 @@ module.exports = {
     shareFolder,
     fetchFolderById,
     fetchEnvelopesByFolder,
+    fetchNoneFolderEnvelopes,
     fetchRolesandUsers,
-    insertEnvelopesToFolder
+    insertEnvelopesToFolder,
+    removeMemberFromOrganization
 };
