@@ -24,6 +24,7 @@ const {createEmailTemplate,getEmailTemplates,updateEmailTemplates,deleteEmailTem
 const {
   listTemplates,
   updateTemplate,
+  deleteTemplate,
   setApproval,
   generateAndActivateTemplate,
   listTemplateTypes,
@@ -115,6 +116,7 @@ router.get('/organization-request-list', listOrganizations);
 router.get('/templates', listTemplates);
 router.post('/templates/generate-ai', generateAndActivateTemplate);
 router.put('/templates/:id', updateTemplate);
+router.delete('/templates/:id', deleteTemplate);
 router.patch('/templates/:id/approval', setApproval);
 router.post('/templates/ai/generate', generateTemplateContent);
 router.post('/templates/ai/generate-stream', generateTemplateContentStream);
