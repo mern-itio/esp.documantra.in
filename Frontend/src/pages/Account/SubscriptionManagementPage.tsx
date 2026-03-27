@@ -190,7 +190,7 @@ const SubscriptionManagementPage: React.FC = () => {
         } catch (err:any) {
           toast.error(err?.message || 'Failed to confirm payment', { id: t });
         } finally {
-          searchParams.delete('flexiSessionId');
+          searchParams.delete('flexible_credit_session_id');
           const newUrl =
             location.pathname +
             (searchParams.toString() ? `?${searchParams.toString()}` : '');
