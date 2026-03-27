@@ -657,7 +657,7 @@ const AITemplateGenerator: React.FC = () => {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate('/e-sign/form-list')}
+                onClick={() => navigate('/e-sign/templateLibrary')}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-50"
                 style={{ color: '#28004D' }}
               >

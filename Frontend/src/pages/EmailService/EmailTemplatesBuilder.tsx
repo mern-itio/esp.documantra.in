@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import EmailEditor from 'react-email-editor';
-import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleCheckBig, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { emailApi } from '../../services/apiHelper';
 
@@ -277,7 +277,7 @@ const EmailTemplatesBuilder: React.FC = () => {
   }, [currentTemplates, startIndex]);
 
   return (
-    <div>
+    <div >
       <div className="mb-6">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
           <div className="flex-1">
@@ -315,6 +315,7 @@ const EmailTemplatesBuilder: React.FC = () => {
       <div className="relative">
         <div className="flex flex-col min-h-[calc(100vh-210px)] overflow-x-auto relative">
           <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
+            
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-20">S.No.</th>
@@ -334,11 +335,43 @@ const EmailTemplatesBuilder: React.FC = () => {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center">
-                    <h3 className="text-lg font-semibold text-[#3E2B66]">No email templates found</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {searchTerm ? 'Try adjusting your search terms.' : 'Create your first template to get started.'}
-                    </p>
+                  <td colSpan={6} className="px-6 py-20">
+                    <div className="flex flex-col items-center justify-center text-center h-[300px]">
+
+                      {/* Icon */}
+                      <div className="relative flex items-center justify-center">
+                        <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center">
+                          <div className="w-14 h-18 rounded-lg bg-white shadow-md border border-indigo-100 flex flex-col items-center justify-center">
+                            <div className="w-10 h-2 bg-indigo-100 rounded mb-1" />
+                            <div className="w-8 h-2 bg-indigo-100 rounded mb-1" />
+                            <div className="w-6 h-2 bg-indigo-100 rounded" />
+                          </div>
+                        </div>
+                        <span className="absolute -bottom-1 -right-1 text-2xl"><CircleCheckBig className="h-6 w-6 text-green-500" /></span>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-lg font-semibold text-[#3E2B66]">
+                        No email templates found
+                      </h3>
+
+                      {/* Subtitle with clickable Create */}
+                      <p className="text-sm text-gray-500 mt-2 max-w-sm">
+                        {searchTerm ? (
+                          "Try adjusting your search terms."
+                        ) : (
+                          <>
+                            <span
+                              onClick={() => setShowModal(true)} 
+                              className="text-[#3E2B66] font-medium cursor-pointer hover:underline"
+                            >
+                              Create
+                            </span>{" "}
+                            your first template to get started.
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -403,11 +436,10 @@ const EmailTemplatesBuilder: React.FC = () => {
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${
-                      pageNum === currentPage
-                        ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66]'
-                    }`}
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
+                      ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66]'
+                      }`}
                   >
                     {pageNum}
                   </button>

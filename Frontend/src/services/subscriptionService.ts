@@ -11,6 +11,19 @@ export interface StripeCheckoutSessionResponse {
   url: string | null;
 }
 
+export interface FlexibleCreditRange {
+  min: number;
+  max: number;
+  pricePerCredit: number;
+}
+
+export interface FlexibleCreditPackage {
+  _id: string;
+  name: string;
+  description?: string;
+  ranges: FlexibleCreditRange[];
+}
+
 export class SubscriptionService {
   /**
    * Fetch user's current subscription plan
@@ -224,6 +237,44 @@ static async getCreditPackages(): Promise<any[]> {
     return [];
   }
 }
+
+  /**
+   * Fetch flexible credit package with slab ranges
+   */
+  static async getFlexibleCreditPackage(): Promise<FlexibleCreditPackage | null> {
+    try {
+      const response = await subscriptionApi.get('/user/credit-packages/flexible/fetch');
+      const payload =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data;
+
+      if (!payload || !Array.isArray(payload.ranges)) {
+        return null;
+      }
+
+      return {
+        _id: payload._id,
+        name: payload.name || 'Flexible Credit Plan',
+        description: payload.description || '',
+        ranges: payload.ranges
+          .map((range: any) => ({
+            min: Number(range?.min),
+            max: Number(range?.max),
+            pricePerCredit: Number(range?.pricePerCredit),
+          }))
+          .filter(
+            (range: FlexibleCreditRange) =>
+              Number.isFinite(range.min) &&
+              Number.isFinite(range.max) &&
+              Number.isFinite(range.pricePerCredit)
+          ),
+      };
+    } catch (error) {
+      console.error('Error fetching flexible credit package:', error);
+      return null;
+    }
+  }
 
   /**
    * Create a Stripe Checkout session for credit purchase

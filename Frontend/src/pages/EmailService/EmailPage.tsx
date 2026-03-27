@@ -57,7 +57,7 @@ const EmailPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<SmtpConfiguration | null>(null);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState<boolean>(false);
-  
+
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     const saved = localStorage.getItem('email-table-column-widths');
@@ -69,19 +69,19 @@ const EmailPage: React.FC = () => {
   const resizingColumnRef = useRef<string | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  
+
   const itemsPerPage = 10;
-  useEffect(()=>{
+  useEffect(() => {
     getConfigurations();
-  },[]);
-  const getConfigurations= async () => {
-    try{
+  }, []);
+  const getConfigurations = async () => {
+    try {
       const response = await emailApi.get('/api/smtp/');
-      if(response.status == 200){
+      if (response.status == 200) {
         setConfigurations(response?.data?.data);
         console.log(response);
       }
-    }catch (err){
+    } catch (err) {
       console.log(err);
     }
   }
@@ -307,56 +307,56 @@ const EmailPage: React.FC = () => {
       }
     }
   };
-const handleVerify = async (id: string) => {
-  try {
-    await emailApi.post(`/api/smtp/${id}/test`);
+  const handleVerify = async (id: string) => {
+    try {
+      await emailApi.post(`/api/smtp/${id}/test`);
 
-    setConfigurations(prev =>
-      prev.map(c => ({
-        ...c,
-        isVerified: c._id === id
-      }))
-    );
+      setConfigurations(prev =>
+        prev.map(c => ({
+          ...c,
+          isVerified: c._id === id
+        }))
+      );
 
-    Swal.fire({
-      title: 'Success!',
-      text: 'SMTP verified successfully.',
-      icon: 'success',
-      confirmButtonText: 'OK'
-    });
+      Swal.fire({
+        title: 'Success!',
+        text: 'SMTP verified successfully.',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
 
-  } catch (err: any) {
-    console.error('SMTP verify error:', err);
+    } catch (err: any) {
+      console.error('SMTP verify error:', err);
 
-    const backendError =
-      err?.response?.data?.error ||
-      err?.response?.data?.message ||
-      'Failed to verify SMTP details.';
+      const backendError =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        'Failed to verify SMTP details.';
 
-    let userMessage = backendError;
+      let userMessage = backendError;
 
-    if (backendError.includes('wrong version number')) {
-      userMessage =
-        'SSL/TLS configuration is incorrect. Please check whether the selected port matches SSL settings (Port 465 = SSL enabled, Port 587 = SSL disabled).';
-    } else if (backendError.includes('ECONNREFUSED')) {
-      userMessage =
-        'Unable to connect to SMTP server. Please verify host and port.';
-    } else if (backendError.includes('Invalid login')) {
-      userMessage =
-        'Authentication failed. Please check Email and Password.';
-    } else if (backendError.includes('Missing credentials for "PLAIN"')) {
+      if (backendError.includes('wrong version number')) {
+        userMessage =
+          'SSL/TLS configuration is incorrect. Please check whether the selected port matches SSL settings (Port 465 = SSL enabled, Port 587 = SSL disabled).';
+      } else if (backendError.includes('ECONNREFUSED')) {
+        userMessage =
+          'Unable to connect to SMTP server. Please verify host and port.';
+      } else if (backendError.includes('Invalid login')) {
+        userMessage =
+          'Authentication failed. Please check Email and Password.';
+      } else if (backendError.includes('Missing credentials for "PLAIN"')) {
         userMessage =
           'SMTP username or password is missing. Please enter valid authentication credentials.';
       }
 
-    Swal.fire({
-      title: 'SMTP Verification Failed',
-      text: userMessage,
-      icon: 'error',
-      confirmButtonText: 'OK'
-    });
-  }
-};
+      Swal.fire({
+        title: 'SMTP Verification Failed',
+        text: userMessage,
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
+  };
 
   const handleMakeDefault = async (id: string) => {
     try {
@@ -407,8 +407,8 @@ const handleVerify = async (id: string) => {
         // Placeholder API call for update
         await emailApi.patch(`/api/smtp/${editingConfig._id}`, payload);
         // Update local state
-        setConfigurations(prev => prev.map(c => 
-          c._id === editingConfig._id 
+        setConfigurations(prev => prev.map(c =>
+          c._id === editingConfig._id
             ? { ...c, ...payload, _id: c._id, updatedAt: new Date().toISOString() }
             : c
         ));
@@ -461,7 +461,7 @@ const handleVerify = async (id: string) => {
     if (columnId === 'isVerified') {
       return;
     }
-    
+
     setColumnConfig(prev => {
       const updated = prev.map(col => {
         if (col.id === columnId) {
@@ -639,11 +639,10 @@ const handleVerify = async (id: string) => {
                           <span>{column.label}</span>
                         </div>
                         <div
-                          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${
-                            isResizing
+                          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${isResizing
                               ? 'bg-[#3E2B66] opacity-100'
                               : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
-                          }`}
+                            }`}
                           onMouseDown={(e) => handleResizeStart(e, column.id)}
                           style={{
                             cursor: 'col-resize',
@@ -729,7 +728,7 @@ const handleVerify = async (id: string) => {
                             <Star className="w-4 h-4" />
                             Set as Primary
                           </button>
-                        ): (
+                        ) : (
                           <button
                             className="px-4 py-2 border border-green-300 rounded-lg text-sm font-medium text-green-700 hover:bg-green-50 hover:border-green-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                             title="Set as default"
@@ -737,7 +736,7 @@ const handleVerify = async (id: string) => {
                             <Star className="w- 4 h-4" />
                             Active
                           </button>
-                         ) }
+                        )}
                         <button
                           onClick={() => handleEdit(config)}
                           className="px-4 py-2 border border-[#3E2B66] rounded-lg text-sm font-medium text-[#3E2B66] hover:bg-purple-50 hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
@@ -836,11 +835,10 @@ const handleVerify = async (id: string) => {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${
-                          pageNum === currentPage
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
                             ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
                             : 'bg-white border-gray-300 text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66]'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -924,7 +922,7 @@ const handleVerify = async (id: string) => {
             setIsEditModalOpen(false);
             setEditingConfig(null);
           }} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-6">
               <h3 className="text-[22px] font-semibold text-[#3E2B66]">
                 {isEditModalOpen ? 'Edit SMTP Configuration' : 'Create SMTP Configuration'}
@@ -950,7 +948,7 @@ const handleVerify = async (id: string) => {
                   <select
                     value={formData.provider}
                     onChange={(e) => handleProviderChange(e.target.value as SmtpProvider)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                    className="cursor-pointer w-full px-3 py-2 border border-gray-300 rounded-sm"
                     required
                   >
                     <option value="gmail">Gmail</option>
@@ -958,6 +956,18 @@ const handleVerify = async (id: string) => {
                     <option value="webmail">Webmail</option>
                     <option value="other">Other</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    SMTP Host
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.smtpHost}
+                    onChange={(e) => setFormData({ ...formData, smtpHost: e.target.value })}
+                    placeholder="smtp.gmail.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                  />
                 </div>
               </div>
 
@@ -971,7 +981,7 @@ const handleVerify = async (id: string) => {
                     value={formData.fromName}
                     onChange={(e) => setFormData({ ...formData, fromName: e.target.value })}
                     placeholder="John Doe"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                   />
                 </div>
 
@@ -984,26 +994,13 @@ const handleVerify = async (id: string) => {
                     value={formData.fromEmail}
                     onChange={(e) => setFormData({ ...formData, fromEmail: e.target.value })}
                     placeholder="john.doe@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    SMTP Host
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.smtpHost}
-                    onChange={(e) => setFormData({ ...formData, smtpHost: e.target.value })}
-                    placeholder="smtp.gmail.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                  />
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     SMTP Port
@@ -1013,10 +1010,24 @@ const handleVerify = async (id: string) => {
                     value={formData.smtpPort}
                     onChange={(e) => setFormData({ ...formData, smtpPort: e.target.value })}
                     placeholder="587"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password {isEditModalOpen && <span className="text-xs text-gray-500">(leave blank to keep current)</span>}
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                  />
+                </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1030,21 +1041,6 @@ const handleVerify = async (id: string) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Password {isEditModalOpen && <span className="text-xs text-gray-500">(leave blank to keep current)</span>}
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                  />
-                </div>
-              </div>
-
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
@@ -1053,13 +1049,13 @@ const handleVerify = async (id: string) => {
                     setIsEditModalOpen(false);
                     setEditingConfig(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-sm hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-sm font-medium text-white bg-[#3E2B66] rounded-lg hover:bg-[#4d3577] transition-colors"
+                  className="px-5 py-2 text-sm font-medium text-white bg-[#3E2B66] rounded-sm hover:bg-[#4d3577] transition-colors"
                 >
                   {isEditModalOpen ? 'Update' : 'Create'}
                 </button>
@@ -1099,13 +1095,12 @@ const handleVerify = async (id: string) => {
                 return (
                   <div
                     key={column.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      column.visible
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${column.visible
                         ? 'bg-purple-50 border-purple-300'
                         : isDisabled
-                        ? 'bg-gray-50 border-gray-200 opacity-60'
-                        : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`}
+                          ? 'bg-gray-50 border-gray-200 opacity-60'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`}
                   >
                     <label className="flex items-center gap-3 cursor-pointer flex-1">
                       <input
