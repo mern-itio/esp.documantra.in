@@ -1,5 +1,6 @@
 
 const CreditPackage = require('../models/CreditPackage');
+const flexibleCreditPackage = require('../models/flexibleCreditPackage');
 const Stripe = require('stripe');
 const {createInvoiceForCreditPurchase} = require('../controllers/invoiceController');
 const Subscription = require('../models/Subscription');
@@ -189,7 +190,34 @@ const applyCreditsToUser = async (creditPackageId, userId) => {
   }
   return { creditPurchased: creditResponse, invoice };
 }
+const getFlexiblePackage = async (req, res) => {
+  try {
+    const flexiblePackage = await flexibleCreditPackage.findOne();
 
+    if (!flexiblePackage) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "Flexible package not found"
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Flexible package fetched successfully",
+      data: flexiblePackage
+    });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Internal server error."
+    });
+  }
+};
 module.exports = {
   createCheckoutSession,
   confirmCheckoutSession,
@@ -197,5 +225,6 @@ module.exports = {
   createCreditPackage,
   getCreditPackage,
   updateCreditPackage,
-  deleteCreditPackage
+  deleteCreditPackage,
+  getFlexiblePackage
 };

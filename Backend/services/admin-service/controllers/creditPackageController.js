@@ -119,10 +119,38 @@ const deleteCreditPackage = async (req, res) => {
         return res.status(500).json({ message: 'Failed to delete credit package' });
     }
 };
+const getFlexibleCreditPackage = async(req, res) =>{
+    try{
+        const result = await serviceGet(req,'subscription',{
+            url:'/admin/credit-packages/flexible/fetch'
+        });
+        if(result.status==200){
+            return res.status(200).json({
+                status:200,
+                message:'Flexible package retrieved successfully',
+                data:result.data
+            });
+        }else{
+            return res.status(result.status).json({
+                status:result.status,
+                message:result.message || 'Failed to retrieve package',
+                data:result.data ||null
+            })
+        }
+    }catch (err){
+        console.log(err);
+        return res.status(500).json({
+            status:500,
+            success:false,
+            message:"Internal server error."
+        });
+    }
+}
 
 module.exports = {
     listCreditPackages,
     createCreditPackage,
     updateCreditPackage,
-    deleteCreditPackage
+    deleteCreditPackage,
+    getFlexibleCreditPackage
 };
