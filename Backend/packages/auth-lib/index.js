@@ -60,8 +60,11 @@ const verifyJWT = (type = 'user') => {
       if (type === 'admin') {
         const role = decoded?.role || decoded?.data?.role;
         const principalType = decoded?.type || decoded?.data?.type;
+        const normalizedRole = String(role || '').toLowerCase();
         const isAdminPrincipal =
-          String(role || '').toLowerCase() === 'admin' ||
+          normalizedRole === 'admin' ||
+          normalizedRole === 'superadmin' ||
+          normalizedRole === 'super_admin' ||
           String(principalType || '').toLowerCase() === 'admin' ||
           String(principalType || '').toLowerCase() === 'agent'; // allow support agents to access admin-service (existing behavior)
         if (!isAdminPrincipal) {

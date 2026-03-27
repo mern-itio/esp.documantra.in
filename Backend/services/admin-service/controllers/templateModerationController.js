@@ -19,6 +19,14 @@ const updateTemplate = async (req, res) => {
   return res.status(200).json(result.data);
 };
 
+const deleteTemplate = async (req, res) => {
+  const result = await serviceDel(req, 'template', {
+    url: `/api/template/admin/templates/${encodeURIComponent(req.params.id)}`,
+  });
+  if (!result.ok) return res.status(result.status).json({ message: result.message, data: result.data });
+  return res.status(200).json(result.data);
+};
+
 const setApproval = async (req, res) => {
   const result = await servicePatch(req, 'template', {
     url: `/api/template/admin/templates/${encodeURIComponent(req.params.id)}/approval`,
@@ -117,6 +125,7 @@ const generateTemplateContentStream = async (req, res) => {
 module.exports = {
   listTemplates,
   updateTemplate,
+  deleteTemplate,
   setApproval,
   generateAndActivateTemplate,
   listTemplateTypes,

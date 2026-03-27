@@ -535,6 +535,29 @@ const deleteTemplateTypeForAdmin = async (req, res) => {
   }
 };
 
+// Admin: delete template (admin-generated only)
+const deleteTemplateForAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existing = await Form.findById(id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Template not found' });
+    if (!existing.createdByAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin-generated templates can be deleted',
+      });
+    }
+    await Form.findByIdAndDelete(id);
+    return res.status(200).json({ success: true, message: 'Template deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while deleting template',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   saveUpdateTemplate,
   saveAITemplate,
@@ -546,4 +569,5 @@ module.exports = {
   createTemplateTypeForAdmin,
   updateTemplateTypeForAdmin,
   deleteTemplateTypeForAdmin,
+  deleteTemplateForAdmin,
 };

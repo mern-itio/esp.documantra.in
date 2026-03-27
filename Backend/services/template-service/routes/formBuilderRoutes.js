@@ -12,7 +12,8 @@ const {
   listTemplateTypesForAdmin,
   createTemplateTypeForAdmin,
   updateTemplateTypeForAdmin,
-  deleteTemplateTypeForAdmin
+  deleteTemplateTypeForAdmin,
+  deleteTemplateForAdmin
 } = require('../controllers/templateController');
 
 const router = express.Router();
@@ -28,6 +29,7 @@ router.post('/save-ai-template',saveAITemplate);
 router.get('/admin/templates', listTemplatesForAdmin);
 router.post('/admin/templates/generate-ai', createApprovedAITemplateForAdmin);
 router.put('/admin/templates/:id', updateTemplateForAdmin);
+router.delete('/admin/templates/:id', deleteTemplateForAdmin);
 router.patch('/admin/templates/:id/approval', setTemplateApprovalStatus);
 router.get('/admin/template-types', listTemplateTypesForAdmin);
 router.post('/admin/template-types', createTemplateTypeForAdmin);

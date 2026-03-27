@@ -50,7 +50,15 @@ const adminLogin = async (req, res) => {
         message: "Admin logged in successfully",
         admin_id: admin._id,
         token: token,
-        type: 'admin'
+        type: 'admin',
+        admin: {
+          id: admin._id,
+          fullname: admin.fullname || '',
+          email: admin.email,
+          role: admin.role || 'admin',
+          status: admin.status,
+          permissions: Array.isArray(admin.permissions) ? admin.permissions : []
+        }
       });
     }
 let agent = null;
@@ -277,7 +285,13 @@ let agent = null;
 
 function generateAdminAccessToken(admin, expireIn) {
   return jwt.sign(
-    { id: admin._id, role: 'admin', email: admin.email },
+    {
+      id: admin._id,
+      role: admin.role || 'admin',
+      email: admin.email,
+      fullname: admin.fullname || '',
+      permissions: Array.isArray(admin.permissions) ? admin.permissions : []
+    },
     process.env.ADMIN_ACCESS_TOKEN_SECRET,
     { expiresIn: expireIn }
   );
