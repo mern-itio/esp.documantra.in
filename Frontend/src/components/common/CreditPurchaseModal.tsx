@@ -86,7 +86,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
     return () => { mounted = false; };
   }, [open]);
 
-  const handlePurchase = async (creditPackage: CreditPackage) => {
+  const handlePurchase = async (creditPackage: CreditPackage,purchaseMode:string) => {
     const packageId = creditPackage._id || creditPackage.id;
     if (!packageId) {
       toast.error('Invalid package ID');
@@ -96,7 +96,13 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
     try {
       setPurchasingPackageId(packageId);
       const t = toast.loading('Redirecting to secure payment...');
-      const session = await SubscriptionService.createCreditPurchaseCheckoutSession(packageId);
+      let session;
+      if(purchaseMode !='desired'){
+       session = await SubscriptionService.createCreditPurchaseCheckoutSession(packageId);
+      }else{
+        const totalCost = desiredCreditPricing?.total ||0;
+       session = await SubscriptionService.flexibleCreditPurchaseCheckoutSession(packageId,desiredCredits,totalCost);
+      }
       if (session.url) {
         toast.dismiss(t);
         window.location.href = session.url;
@@ -460,7 +466,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                  
                   <button
                     disabled={purchasingPackageId === String(selectedPackage._id || selectedPackage.id || '')}
-                    onClick={() => handlePurchase(selectedPackage)}
+                    onClick={() => handlePurchase(selectedPackage,purchaseMode)}
                     className={`mt-5 w-auto p-2 h-9 rounded-sm font-bold text-sm transition ${purchasingPackageId === String(selectedPackage._id || selectedPackage.id || '')
                         ? 'bg-[#260559]/60 text-white cursor-not-allowed'
                         : 'bg-[#260559] text-white hover:bg-[#34106a]'

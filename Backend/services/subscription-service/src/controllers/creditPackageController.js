@@ -2,7 +2,7 @@
 const CreditPackage = require('../models/CreditPackage');
 const flexibleCreditPackage = require('../models/flexibleCreditPackage');
 const Stripe = require('stripe');
-const {createInvoiceForCreditPurchase} = require('../controllers/invoiceController');
+const {createInvoiceForCreditPurchase,createInvoiceForFlexiCreditPurchase} = require('../controllers/invoiceController');
 const Subscription = require('../models/Subscription');
 
 let stripe = null;
@@ -130,6 +130,61 @@ const createCheckoutSession = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+const createFlexCheckoutSession = async (req, res)=>{
+ const {creditPackageId,desiredCreditPricing,desiredCredits} = req.body;
+ console.log(creditPackageId);
+ console.log(desiredCreditPricing);
+ console.log(desiredCredits);
+ try{
+    if(!stripe){
+      return res.status(500).json({ message: 'Stripe is not configured' });
+    }
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
+    }
+    const flexiblePackage = await flexibleCreditPackage.findById(creditPackageId);
+    if(!flexiblePackage){
+      return res.status(404).json({ status: 404, message: 'Flexible Credit package not found', data: null });
+    }
+    const amount = desiredCreditPricing;
+    const currency = (  flexiblePackage?.currency || 'USD').toLowerCase();
+    const frontendBase = process.env.FRONTEND_BASE_URL ||
+      process.env.BASE_URL ||
+      'http://165.22.215.73:8081/';
+    const userEmail = getUserEmailFromRequest(req);
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      customer_email: userEmail || undefined,
+      line_items: [
+        {
+          price_data: {
+            currency,
+            unit_amount: amount,
+            product_data: {
+              name: `${flexiblePackage.name}`,
+              description: `Purchase ${desiredCredits} credits for your account`
+            }
+          },
+          quantity: 1
+        },
+      ],
+      metadata: {
+        userId,
+        creditAdded:desiredCredits,
+        creditPricing:desiredCreditPricing,
+        creditPackageId
+      },
+      success_url: `${frontendBase.replace(/\/$/, '')}/subscription-management?flexible_credit_session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendBase.replace(/\/$/, '')}/subscription-management?canceled=true`,
+    });
+
+ }catch (err){
+  console.log(err);
+  return res.status(500).json({status:500,success:false,message:"Inernal server error"});
+ }
+};
 
 const confirmCheckoutSession = async (req, res) =>{
   try{
@@ -166,6 +221,66 @@ const confirmCheckoutSession = async (req, res) =>{
   }catch (error){
     return res.status(500).json({ message: error.message });
   }
+}
+const flexiConfirmCheckoutSession = async(req, res)=>{
+  try{
+    console.log("Confirming Session");
+    if (!stripe) {
+      return res.status(500).json({ message: 'Stripe is not configured' });
+    }
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
+    }
+    const creditSessionId = req?.body?.flexiSessionId;
+
+    console.log('Credit Session Id', creditSessionId);
+    if (!creditSessionId) {
+      return res.status(400).json({ status: 400, message: 'Credit Session Id is required', data: null });
+    }
+    const session = await stripe.checkout.sessions.retrieve(creditSessionId);
+    if(!session){
+      return res.status(404).json({ status: 404, message: 'Session not found', data: null });
+    }
+    if(session.payment_status !== 'paid'){
+      return res.status(400).json({ status: 400, message: 'Payment not completed', data: null });
+    }
+    const metadata = session.metadata || {};
+    if(metadata.userId !== userId){
+      return res.status(403).json({ status: 403, message: 'Forbidden', data: null });
+    }
+    const {creditPurchased, invoice } = await applyFlexiCreditsToUser(metadata, userId);
+    return res.status(200).json({ 
+      status: 200, 
+      message: 'Payment confirmed and credits applied', 
+      data: { creditPurchased, invoice } 
+    });
+  }catch (error){
+    return res.status(500).json({ message: error.message });
+  }
+}
+const applyFlexiCreditsToUser = async (metadata,userId) =>{
+  const flexiPackage = await flexibleCreditPackage.findById(metadata?.creditPackageId);
+  if (!flexiPackage) {
+    throw new Error('Credit package not found');
+  }
+  let subscription = await Subscription.findOne({  userId });
+  if (!subscription) {
+    throw new Error('Subscription not found for user');
+  }
+  subscription.creditsBalance += metadata.creditAdded;
+  await subscription.save();
+  const creditResponse = {
+    creditsAdded: metadata.credits,
+    totalCredits: subscription.credits
+  };
+  let invoice = null;
+  try{
+      invoice  = await createInvoiceForFlexiCreditPurchase(userId, flexiPackage,metadata);
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+    }
+    return { creditPurchased: creditResponse, invoice };
 }
 const applyCreditsToUser = async (creditPackageId, userId) => {
   const creditPackage = await CreditPackage.findById(creditPackageId);
@@ -226,5 +341,7 @@ module.exports = {
   getCreditPackage,
   updateCreditPackage,
   deleteCreditPackage,
-  getFlexiblePackage
+  getFlexiblePackage,
+  createFlexCheckoutSession,
+  flexiConfirmCheckoutSession
 };
