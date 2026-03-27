@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import {  useParams } from 'react-router-dom';
-import { Shield, Plus, Edit } from 'lucide-react';
+import {  useNavigate, useParams } from 'react-router-dom';
+import { Shield, Plus, Edit, ArrowLeft } from 'lucide-react';
 import type { Role } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
 import CreateRoleModal from '../../components/Organization/CreateRoleModal';
 
 const RolePage: React.FC = () => {
-   const { orgId } = useParams<{ orgId: string }>();
+  const navigate = useNavigate();
+  const { orgId } = useParams<{ orgId: string }>();
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [showCreateRoleModal, setShowCreateRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -32,6 +33,12 @@ const RolePage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mr-4"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
                 <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
                   <Shield className="h-6 w-6 text-white" />
                 </div>

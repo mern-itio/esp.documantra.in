@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { login, googleLogin, verifyTwoFaLogin, getTwoFaSettings, updateTwoFaSettings, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
 const {adminLogin} = require('../controllers/adminAuthController');
-const { userDetails,findUserByEmail,insertNotifications,getNotifications } = require('../controllers/mainController');
+const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const router = express.Router();
 
@@ -51,5 +51,8 @@ router.post('/api/auth/2fa', verifyJWT(), updateTwoFaSettings);
 router.get('/api/auth/switch-account/:accType', verifyJWT(), switchAccount);
 router.get('/api/users-list', verifyJWT(), getUsersList);
 router.post('/api/notifications/create', verifyJWT(),insertNotifications);
+router.post('/api/notifications/:id/read', verifyJWT(),markNotificationReadById);
+router.post('/api/notifications/mark-all-read', verifyJWT(),markAllNotificationAsRead);
+
 router.get('/api/user/notifications', verifyJWT(), getNotifications);
 module.exports = router;

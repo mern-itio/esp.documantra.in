@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Check, CheckCheck, ArrowLeft, ExternalLink } from 'lucide-react';
-import { eSignApi } from '../../services/apiHelper';
+import { apiGateway } from '../../services/apiHelper';
 import toast from 'react-hot-toast';
 
 interface Notification {
   _id: string;
+  id:string;
   userId: string;
-  envelopeId: {
-    _id: string;
-    subject: string;
-    status: string;
-  };
-  recipientId?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  recipientName: string;
+  source: string;
+  metadata: {
+              envelopeId: {
+                  _id: string,
+                  subject: string,
+                  status: string
+              },
+              recipientId:string
+              redirectUrl:string
+            }
   envelopeSubject: string;
-  type: 'signature_completed' | 'envelope_completed' | 'reminder';
+  type: 'signature_completed' | 'envelope_completed' | 'reminder' | 'ORG_INVITATION';
   message: string;
   isRead: boolean;
   readAt?: string;
@@ -36,8 +36,8 @@ const NotificationsPage: React.FC = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const unreadOnly = filter === 'unread' ? 'true' : 'false';
-      const response = await eSignApi.get(`/api/e-sign/notifications?limit=100&unreadOnly=${unreadOnly}`);
+      // const unreadOnly = filter === 'unread' ? 'true' : 'false';
+      const response = await apiGateway.get('/api/get-notifications');
       if (response.data?.status === 'success') {
         setNotifications(response.data.data.notifications || []);
         setUnreadCount(response.data.data.unreadCount || 0);
@@ -57,9 +57,11 @@ const NotificationsPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  const handleMarkAsRead = async (notificationId: string) => {
+  const handleMarkAsRead = async (notificationId: string, source: string) => {
     try {
-      await eSignApi.post(`/api/e-sign/notifications/${notificationId}/read`);
+      await apiGateway.post(`/api/mark-read/${notificationId}`,{
+        source:source
+      });
       setNotifications(prev =>
         prev.map(n => n._id === notificationId ? { ...n, isRead: true, readAt: new Date().toISOString() } : n)
       );
@@ -73,7 +75,7 @@ const NotificationsPage: React.FC = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await eSignApi.post('/api/e-sign/notifications/read-all');
+      await apiGateway.post('api/mark-read');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() })));
       setUnreadCount(0);
       toast.success('All notifications marked as read');
@@ -83,12 +85,21 @@ const NotificationsPage: React.FC = () => {
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async(notification: Notification) => {
     if (!notification.isRead) {
-      handleMarkAsRead(notification._id);
+      await handleMarkAsRead(notification?._id || notification?.id, notification?.source);
     }
-    if (notification.envelopeId?._id) {
-      navigate(`/e-sign/envelope/${notification.envelopeId._id}`);
+    if (notification?.metadata?.envelopeId?._id) {
+      navigate(`/e-sign/envelope/${notification?.metadata?.envelopeId._id}`);
+    }
+    if(notification?.type=='ORG_INVITATION'){
+      const url = notification?.metadata?.redirectUrl;
+
+      if (url?.startsWith("http") ||url?.startsWith("https")  ) {
+        window.location.href = url;
+      } else {
+        navigate(url);
+      }
     }
   };
 
@@ -121,6 +132,8 @@ const NotificationsPage: React.FC = () => {
         return '✓✓';
       case 'reminder':
         return '⏰';
+      case 'ORG_INVITATION':
+        return '🏢'
       default:
         return '🔔';
     }
@@ -245,10 +258,10 @@ const NotificationsPage: React.FC = () => {
                           </p>
                           <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                             <span>{formatNotificationTime(notification.createdAt)}</span>
-                            {notification.envelopeId && (
+                            {notification?.metadata?.envelopeId && (
                               <span className="flex items-center gap-1">
                                 <ExternalLink className="w-3 h-3" />
-                                {notification.envelopeId.subject}
+                                {notification?.metadata?.envelopeId.subject}
                               </span>
                             )}
                           </div>
@@ -260,7 +273,7 @@ const NotificationsPage: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleMarkAsRead(notification._id);
+                                handleMarkAsRead(notification._id, notification?.source);
                               }}
                               className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
                               title="Mark as read"

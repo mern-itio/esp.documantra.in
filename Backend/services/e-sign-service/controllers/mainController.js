@@ -2662,6 +2662,35 @@ const fetchBulkEnvelopes = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const getEnvelopesExcludingIds = async (req, res) => {
+  try {
+    const { envelopeIds, organizationId } = req.body;
+
+    const query = {
+      isOrganization: true,
+      organizationId
+    };
+
+    if (envelopeIds?.length) {
+      query._id = { $nin: envelopeIds };
+    }
+
+    const envelopes = await Envelope.find(query);
+
+    return res.status(200).json({
+      success: true,
+      data: envelopes
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
 const downloadCompletionZip = async (req, res) =>{
     try {
     const { cycleId } = req.params;
@@ -2701,29 +2730,67 @@ const downloadCompletionZip = async (req, res) =>{
   }
 }
 const acceptTerms = async (req, res) =>{
-  const {recipientId, envelopeId} = req.body;
-  console.log(recipientId,envelopeId);
-
-  try{
-    const permission = await RecipientPermission.findOneAndUpdate(
-      {
-        recipientId,
-        envelopeId
-      },
-      {
-        accepted_terms: true
-      },
-      {
-        new: true
+  const {recipientId, envelopeId,cycleId} = req.body;
+  console.log(recipientId,envelopeId,cycleId);
+    if(!cycleId){
+      // Accept Term for Recipient Flow
+      try{
+        const permission = await RecipientPermission.findOneAndUpdate(
+          {
+            recipientId,
+            envelopeId
+          },
+          {
+            accepted_terms: true
+          },
+          {
+            new: true
+          }
+        );
+        if(!permission){
+          return res.status(404).json({success:false, message:"Something went wrong, Please try again later!"});
+        }
+          return res.status(200).json({success:true, message:"Terms and Conditions accepted."});
+      }catch (err){
+        console.log(err);
+          return res.status(500).json({success:false, message:"Something went wrong, with server!"});
       }
-    );
-    if(!permission){
-      return res.status(404).json({success:false, message:"Something went wrong, Please try again later!"});
+    }else{
+      // Accept Term for PowerForm Flow
+      try{
+        // Find Cycle by Id 
+        const cycle = await Cycle.findById(cycleId);
+        if(!cycle){
+          return res.status(404).json({success:false,message:'Cycle not found'});
+        }
+        const response = await selfSigner.findOneAndUpdate(
+          {
+            _id:recipientId,
+            envelopeId:cycle?.envelopeId
+          },
+          {
+            accepted_terms:true
+          },
+          {new:true}
+        );
+        if(!response){
+          return res.status(404).json({success:false, message:"Something went wrong, Please try again later!"});
+        }
+        return res.status(200).json({success:true, message:"Terms and Conditions accepted."});
+      }catch(err){
+        console.log(err);
+        return res.status(500).json({success:false,message:"Something went wrong, with server!"})
+      }
     }
-      return res.status(200).json({success:true, message:"Terms and Conditions accepted."});
-  }catch (err){
-    console.log(err);
-      return res.status(500).json({success:false, message:"Something went wrong, with server!"});
+}
+const fetchCurrentRecipient = async (req, res) =>{
+  const {cycleId, currentRecipientId} = req.body;
+  if(cycleId){
+    const response = await selfSigner.findById(currentRecipientId);
+    if(!response){
+      return res.status(404).json({success:false,message:'Current recipient not found'});
+    }
+    return res.status(200).json({success:true,currentRecipient:response});
   }
 }
 module.exports = {
@@ -2766,6 +2833,8 @@ module.exports = {
   assignEnvelopeToSomeoneElsePublic,
   declineEnvelopePublic,
   fetchBulkEnvelopes,
+  getEnvelopesExcludingIds,
   downloadCompletionZip,
-  acceptTerms
+  acceptTerms,
+  fetchCurrentRecipient
 };

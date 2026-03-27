@@ -35,6 +35,14 @@ interface ColumnConfig {
   render: (config: SmtpConfiguration) => React.ReactNode;
 }
 
+type SmtpProvider = 'gmail' | 'zoho' | 'webmail' | 'other';
+
+const PROVIDER_SMTP_DEFAULTS: Record<SmtpProvider, { host: string; port: string; secure: boolean }> = {
+  gmail: { host: 'smtp.gmail.com', port: '587', secure: true },
+  zoho: { host: 'smtp.zoho.com', port: '587', secure: true },
+  webmail: { host: 'mail.yourdomain.com', port: '587', secure: false },
+  other: { host: '', port: '', secure: false }
+};
 
 const EmailPage: React.FC = () => {
   const [configurations, setConfigurations] = useState<SmtpConfiguration[]>([]);
@@ -80,26 +88,17 @@ const EmailPage: React.FC = () => {
 
   // Form state
   const [formData, setFormData] = useState({
-    provider: 'gmail' as 'gmail' | 'zoho' | 'webmail' | 'other',
-    displayName: '',
+    provider: 'gmail' as SmtpProvider,
     fromName: '',
     fromEmail: '',
     smtpHost: '',
     smtpPort: '',
-    smtpSecure: true,
-    username: '',
+    smtpSecure: false,
     password: ''
   });
 
   const columnRenderers = {
-    displayName: (config: SmtpConfiguration) => (
-      <div className="flex items-center gap-2">
-        <div>
-          <div className="text-sm font-semibold text-[#3E2B66]">{config.displayName || 'Untitled'}</div>
-          <div className="text-xs text-gray-500 mt-0.5">{config.fromEmail}</div>
-        </div>
-      </div>
-    ),
+
     provider: (config: SmtpConfiguration) => (
       <span className="text-sm text-gray-900 capitalize">{config.provider}</span>
     ),
@@ -151,16 +150,16 @@ const EmailPage: React.FC = () => {
   };
 
   const getInitialColumnConfig = (): ColumnConfig[] => [
-    { id: 'displayName', label: 'Display Name', visible: true, order: 1, render: columnRenderers.displayName },
-    { id: 'provider', label: 'Provider', visible: true, order: 2, render: columnRenderers.provider },
+    { id: 'provider', label: 'Provider', visible: true, order: 1, render: columnRenderers.provider },
+    { id: 'fromEmail', label: 'From Email', visible: true, order: 2, render: columnRenderers.fromEmail },
     { id: 'fromName', label: 'From Name', visible: true, order: 3, render: columnRenderers.fromName },
     { id: 'isVerified', label: 'Status', visible: true, order: 4, render: columnRenderers.isVerified },
-    { id: 'fromEmail', label: 'From Email', visible: false, order: 5, render: columnRenderers.fromEmail },
-    { id: 'smtpHost', label: 'SMTP Host', visible: false, order: 6, render: columnRenderers.smtpHost },
-    { id: 'smtpPort', label: 'SMTP Port', visible: false, order: 7, render: columnRenderers.smtpPort },
-    { id: 'isDefault', label: 'Default', visible: false, order: 8, render: columnRenderers.isDefault },
-    { id: 'lastTestedAt', label: 'Last Tested', visible: false, order: 9, render: columnRenderers.lastTestedAt },
-    { id: 'createdAt', label: 'Created At', visible: false, order: 10, render: columnRenderers.createdAt }
+
+    { id: 'smtpHost', label: 'SMTP Host', visible: false, order: 5, render: columnRenderers.smtpHost },
+    { id: 'smtpPort', label: 'SMTP Port', visible: false, order: 6, render: columnRenderers.smtpPort },
+    { id: 'isDefault', label: 'Default', visible: false, order: 7, render: columnRenderers.isDefault },
+    { id: 'lastTestedAt', label: 'Last Tested', visible: false, order: 8, render: columnRenderers.lastTestedAt },
+    { id: 'createdAt', label: 'Created At', visible: false, order: 9, render: columnRenderers.createdAt }
   ];
 
   const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(getInitialColumnConfig());
@@ -234,31 +233,40 @@ const EmailPage: React.FC = () => {
   };
 
   const handleCreate = () => {
+    const providerDefaults = PROVIDER_SMTP_DEFAULTS.gmail;
     setFormData({
       provider: 'gmail',
-      displayName: '',
       fromName: '',
       fromEmail: '',
-      smtpHost: '',
-      smtpPort: '',
-      smtpSecure: true,
-      username: '',
+      smtpHost: providerDefaults.host,
+      smtpPort: providerDefaults.port,
+      smtpSecure: providerDefaults.secure,
       password: ''
     });
     setIsCreateModalOpen(true);
   };
 
+  const handleProviderChange = (provider: SmtpProvider) => {
+    const providerDefaults = PROVIDER_SMTP_DEFAULTS[provider];
+    setFormData(prev => ({
+      ...prev,
+      provider,
+      smtpHost: providerDefaults.host,
+      smtpPort: providerDefaults.port,
+      smtpSecure: providerDefaults.secure
+    }));
+  };
+
   const handleEdit = (config: SmtpConfiguration) => {
     setEditingConfig(config);
+    const providerDefaults = PROVIDER_SMTP_DEFAULTS[config.provider];
     setFormData({
       provider: config.provider,
-      displayName: config.displayName || '',
       fromName: config.fromName || '',
       fromEmail: config.fromEmail,
-      smtpHost: config.smtp?.host || '',
-      smtpPort: config.smtp?.port?.toString() || '',
-      smtpSecure: config.smtp?.secure ?? true,
-      username: config.credentials?.username || '',
+      smtpHost: config.smtp?.host || providerDefaults.host,
+      smtpPort: config.smtp?.port?.toString() || providerDefaults.port,
+      smtpSecure: config.smtp?.secure ?? providerDefaults.secure,
       password: '' // Don't show password
     });
     setIsEditModalOpen(true);
@@ -299,29 +307,56 @@ const EmailPage: React.FC = () => {
       }
     }
   };
-  const handleVerify = async(id: string) =>{
-    try{
-      await emailApi.post(`/api/smtp/${id}/test`)
-      setConfigurations(prev => prev.map(c => ({
+const handleVerify = async (id: string) => {
+  try {
+    await emailApi.post(`/api/smtp/${id}/test`);
+
+    setConfigurations(prev =>
+      prev.map(c => ({
         ...c,
-        isVerified:c._id ===id
-      })));
-      Swal.fire({
-        title: 'Success!',
-        text: 'SMTP verified successfully.',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      });
-    }catch (err){
-      console.error('Error setting default:', err);
-      Swal.fire({
-        title: 'Error',
-        text: 'Failed to verify SMTP details.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
-    }
+        isVerified: c._id === id
+      }))
+    );
+
+    Swal.fire({
+      title: 'Success!',
+      text: 'SMTP verified successfully.',
+      icon: 'success',
+      confirmButtonText: 'OK'
+    });
+
+  } catch (err: any) {
+    console.error('SMTP verify error:', err);
+
+    const backendError =
+      err?.response?.data?.error ||
+      err?.response?.data?.message ||
+      'Failed to verify SMTP details.';
+
+    let userMessage = backendError;
+
+    if (backendError.includes('wrong version number')) {
+      userMessage =
+        'SSL/TLS configuration is incorrect. Please check whether the selected port matches SSL settings (Port 465 = SSL enabled, Port 587 = SSL disabled).';
+    } else if (backendError.includes('ECONNREFUSED')) {
+      userMessage =
+        'Unable to connect to SMTP server. Please verify host and port.';
+    } else if (backendError.includes('Invalid login')) {
+      userMessage =
+        'Authentication failed. Please check Email and Password.';
+    } else if (backendError.includes('Missing credentials for "PLAIN"')) {
+        userMessage =
+          'SMTP username or password is missing. Please enter valid authentication credentials.';
+      }
+
+    Swal.fire({
+      title: 'SMTP Verification Failed',
+      text: userMessage,
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
   }
+};
 
   const handleMakeDefault = async (id: string) => {
     try {
@@ -352,10 +387,10 @@ const EmailPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log(editingConfig?._id)
+    console.log(formData);
     try {
       const payload = {
         provider: formData.provider,
-        displayName: formData.displayName,
         fromName: formData.fromName,
         fromEmail: formData.fromEmail,
         smtp: {
@@ -364,7 +399,6 @@ const EmailPage: React.FC = () => {
           secure: formData.smtpSecure
         },
         credentials: {
-          username: formData.username,
           password: formData.password
         }
       };
@@ -386,16 +420,11 @@ const EmailPage: React.FC = () => {
         });
       } else {
         // Placeholder API call for create
-        await emailApi.post('/api/smtp/', payload);
+        const response = await emailApi.post('/api/smtp/', payload);
         // Add to local state
+        console.log(response);
         const newConfig: SmtpConfiguration = {
-          _id: Date.now().toString(),
-          userId: 'user1',
-          ...payload,
-          isVerified: false,
-          isDefault: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          ...response.data.data
         };
         setConfigurations(prev => [newConfig, ...prev]);
         Swal.fire({
@@ -920,7 +949,7 @@ const EmailPage: React.FC = () => {
                   </label>
                   <select
                     value={formData.provider}
-                    onChange={(e) => setFormData({ ...formData, provider: e.target.value as any })}
+                    onChange={(e) => handleProviderChange(e.target.value as SmtpProvider)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
                     required
                   >
@@ -929,19 +958,6 @@ const EmailPage: React.FC = () => {
                     <option value="webmail">Webmail</option>
                     <option value="other">Other</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.displayName}
-                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    placeholder="My Gmail Account"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                  />
                 </div>
               </div>
 
@@ -1015,19 +1031,6 @@ const EmailPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="your-email@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                  />
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Password {isEditModalOpen && <span className="text-xs text-gray-500">(leave blank to keep current)</span>}

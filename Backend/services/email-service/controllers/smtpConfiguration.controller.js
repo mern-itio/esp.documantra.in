@@ -27,7 +27,7 @@ const createSmtpConfig = async (req, res) => {
       );
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: smtpConfig
     });
@@ -177,6 +177,7 @@ const testSmtpConfig = async (req, res) => {
         const { testEmail } = req.body; // optional
     
         const smtpConfig = await SmtpConfiguration.findOne({ _id: id, userId });
+        console.log(smtpConfig);
     
         if (!smtpConfig) {
           return res.status(404).json({
@@ -190,7 +191,7 @@ const testSmtpConfig = async (req, res) => {
           port: smtpConfig.smtp.port,
           secure: smtpConfig.smtp.secure,
           auth: {
-            user: smtpConfig.credentials.username,
+            user: smtpConfig.fromEmail,
             pass: smtpConfig.credentials.password
           },
           tls: {
@@ -239,7 +240,6 @@ const sendMail = async (req, res) =>{
   try {
     const userId = req.params.id;
     const response = await email.sendEmailByUserId({ userId, toEmail, subject, html,attachments });
-    console.log(response);
     return res.json({   
       success: true,
       message: 'Email sent successfully',

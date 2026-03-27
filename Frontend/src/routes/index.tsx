@@ -221,6 +221,7 @@ import IndustriesSection from '../components/LandingPage/IndustriesSection';
 import BookDemoPage from '../pages/LandingPage/BookDemoPage';
 
 import EmailPage from '../pages/EmailService/EmailPage';
+import EmailTemplatesBuilder from '../pages/EmailService/EmailTemplatesBuilder';
 import InvitationPage from '../pages/Organization/invitaionPage';
 import FolderDetailPage from '../pages/Organization/folderDetailPage';
 import RolePage from '../pages/Organization/RolePage';
@@ -799,6 +800,7 @@ const authRoutes = [
   { path: '/account/security', element: <AuthMethodsPage /> },
   { path: '/notifications', element: <NotificationsPage /> },
   { path: '/account/email-configuration', element: <EmailPage/>},
+  { path: '/account/email-templates', element: <EmailTemplatesBuilder/>},
   // API-service routes
   { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
   { path: '/api-service/analytics', element: <ApiServiceAnalytics /> },

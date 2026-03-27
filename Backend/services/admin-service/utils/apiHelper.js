@@ -43,6 +43,8 @@ function getServiceBaseURL(serviceName) {
       return process.env.SUBSCRIPTION_SERVICE_URL || 'http://165.22.215.73:2110';
     case 'organization':
       return process.env.ORGANIZATION_SERVICE_URL || 'http://165.22.215.73:2111';
+    case 'email':
+      return process.env.EMAIL_SERVICE_URL || 'http://165.22.215.73:2112';
     default:
       return process.env.DEFAULT_SERVICE_URL || '';
   }

@@ -24,7 +24,7 @@ const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments =
     port = smtpConfig.smtp.port;
     secure = smtpConfig.smtp.secure;
     auth = {
-      user: smtpConfig.credentials.username,
+      user: smtpConfig?.fromEmail,
       pass: smtpConfig.credentials.password
     };
     fromName = smtpConfig.fromName;

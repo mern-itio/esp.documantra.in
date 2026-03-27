@@ -1,4 +1,4 @@
-const { serviceGet } = require("../utils/apiHelper");
+const { serviceGet, servicePost } = require("../utils/apiHelper");
 
 // controllers/MainController.js
 const getNotifications = async (req, res) => {
@@ -27,7 +27,6 @@ const getNotifications = async (req, res) => {
     }
 
     const results = await Promise.allSettled(requests);
-    console.log('Notification fetch results:', results);
 
     const allNotifications = [];
     let unreadCount = 0;
@@ -40,7 +39,7 @@ const getNotifications = async (req, res) => {
       esignData.notifications.forEach(n => {
         allNotifications.push({
           id: n._id,
-          source: 'ESIGN',
+          source: n?.source || 'ESIGN',
           type: n.type,
           title: n.envelopeSubject,
           message: n.message,
@@ -63,7 +62,7 @@ const getNotifications = async (req, res) => {
 
         allNotifications.push({
           id: n._id,
-          source: 'USER',
+          source: n?.source || 'USER',
           type: n.type,
           title: n.title,
           message: n.message,
@@ -81,7 +80,7 @@ const getNotifications = async (req, res) => {
       orgData.notifications.forEach(n => {
         allNotifications.push({
           id: n._id,
-          source: 'ORG',
+          source: n?.source || 'ORG',
           type: n.type,
           title: n.title,
           message: n.message,
@@ -114,5 +113,77 @@ const getNotifications = async (req, res) => {
   }
 };
 
+const markReadById = async(req, res) =>{
+  const {source} = req.body;
+  const { id } = req.params;
+  switch (source) {
+    case 'USER':
+        try{
+          const response = servicePost(req, 'auth',{
+            url:`/api/notifications/${id}/read`
+          });
+          if (!response?.data?.success) {
+              return res.status(400).json({
+                success: false,
+                message: response?.data?.message || 'Failed to mark notification as read'
+              });
+            }
+            return res.status(200).json({success: true, message:'Notification marked as read successfully.'});
+          }catch (err){
+            console.log(err);
+            return res.status('500').json({success:false, message:'Internal Server Error'});
+          }
+
+    case 'ESIGN':
+        try{
+          const response = servicePost(req, 'esign',{
+            url:`/api/e-sign/notifications/${id}/read`
+          });
+            if (!response?.data?.success) {
+              return res.status(400).json({
+                success: false,
+                message: response?.data?.message || 'Failed to mark notification as read'
+              });
+            }
+            return res.status(200).json({success: true, message:'Notification marked as read successfully.'});
+          }catch (err){
+            console.log(err);
+            return res.status('500').json({success:false, message:'Internal Server Error'});
+          }
+
+    default:
+      break;
+  }
+}
+const markReadAll = async (req, res) => {
+  try {
+    const [esignResponse, authResponse] = await Promise.all([
+      servicePost(req, 'esign', {
+        url: '/api/e-sign/notifications/read-all'
+      }),
+      servicePost(req, 'auth', {
+        url: '/api/notifications/mark-all-read'
+      })
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'All notifications marked as read.',
+      data: {
+        esign: esignResponse?.data,
+        auth: authResponse?.data
+      }
+    });
+
+  } catch (err) {
+    console.error('markReadAll error:', err?.response?.data || err.message);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to mark all notifications as read.'
+    });
+  }
+};
+
 // Correct export
-module.exports = { getNotifications };
+module.exports = { getNotifications,markReadById,markReadAll };
