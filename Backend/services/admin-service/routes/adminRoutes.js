@@ -21,6 +21,18 @@ const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvide
 const {listOrganizations} = require('../controllers/organizationController');
 const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage} = require('../controllers/creditPackageController');
 const {createEmailTemplate,getEmailTemplates,updateEmailTemplates,deleteEmailTemplate} = require('../controllers/emailTemplateController');
+const {
+  listTemplates,
+  updateTemplate,
+  setApproval,
+  generateAndActivateTemplate,
+  listTemplateTypes,
+  createTemplateType,
+  updateTemplateType,
+  deleteTemplateType,
+  generateTemplateContent,
+  generateTemplateContentStream
+} = require('../controllers/templateModerationController');
 // User management routes
 router.get('/user-list', userList);
 router.patch('/user-status/toggle/:id',userStatusToggle);
@@ -98,5 +110,17 @@ router.put('/email-templates/:id',updateEmailTemplates);
 router.delete('/email-templates/:id',deleteEmailTemplate);
 // Organization routes
 router.get('/organization-request-list', listOrganizations);
+
+// Template moderation routes
+router.get('/templates', listTemplates);
+router.post('/templates/generate-ai', generateAndActivateTemplate);
+router.put('/templates/:id', updateTemplate);
+router.patch('/templates/:id/approval', setApproval);
+router.post('/templates/ai/generate', generateTemplateContent);
+router.post('/templates/ai/generate-stream', generateTemplateContentStream);
+router.get('/template-types', listTemplateTypes);
+router.post('/template-types', createTemplateType);
+router.put('/template-types/:id', updateTemplateType);
+router.delete('/template-types/:id', deleteTemplateType);
 
 module.exports = router;

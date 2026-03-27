@@ -4,6 +4,305 @@ const Customer = require('../models/Customer');
 const SupportAgent = require('../models/SupportAgent');
 const { routeTicketToAgent, removeTicketFromAgent } = require('../utils/ticketRouter');
 const mongoose = require('mongoose');
+let sendEmail = null;
+try {
+  ({ sendEmail } = require('@draftnsign/email-lib'));
+} catch {
+  try {
+    // Fallback for some local/dev setups where package linking is not applied.
+    ({ sendEmail } = require('../../../packages/email-lib'));
+  } catch {
+    sendEmail = null;
+  }
+}
+
+const normalizePublicCategory = (category) => {
+  const c = String(category || '').toLowerCase().trim();
+  if (['general', 'technical', 'billing', 'documentation', 'feature', 'bug', 'other'].includes(c)) return c;
+  if (c === 'e-signatures' || c === 'esign' || c === 'esignatures') return 'technical';
+  if (c === 'billing & plans') return 'billing';
+  if (c === 'security & privacy') return 'other';
+  if (c === 'getting started' || c === 'powerforms') return 'general';
+  return 'other';
+};
+
+const categoryDisplayName = (category) => {
+  const c = String(category || '').toLowerCase().trim();
+  switch (c) {
+    case 'general':
+      return 'General Inquiry';
+    case 'technical':
+      return 'Technical Support';
+    case 'billing':
+      return 'Billing Question';
+    case 'documentation':
+      return 'Documentation';
+    case 'feature':
+      return 'Feature Request';
+    case 'bug':
+      return 'Bug Report';
+    case 'other':
+      return 'Other';
+    default:
+      return c ? c.charAt(0).toUpperCase() + c.slice(1) : 'Other';
+  }
+};
+
+function getSupportQueryEmailHtml({
+  ticketNumber,
+  subject,
+  customerName,
+  customerEmail,
+  category,
+  priority,
+  source,
+  createdAt,
+  content,
+}) {
+  const appName = process.env.APP_NAME || 'Draft&Sign';
+  const fmt = (v) => String(v ?? '-').replace(/[<>]/g, '');
+  const safeTicket = fmt(ticketNumber);
+  const safeSubject = fmt(subject);
+  const safeCustomerName = fmt(customerName);
+  const safeCustomerEmail = fmt(customerEmail);
+    const safeCategory = fmt(categoryDisplayName(category));
+  const safePriority = fmt(priority);
+  const safeSource = fmt(source);
+  const safeCreatedAt = fmt(createdAt);
+  const safeContent = fmt(content).replace(/\n/g, '<br/>');
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Support Query</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f0f4f8; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f0f4f8;">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:580px; margin:0 auto; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); background:#ffffff;">
+          <tr>
+            <td style="background:linear-gradient(90deg, #4D0080, #8E2DE2); padding:28px 34px; text-align:center;">
+              <h1 style="margin:0; font-size:22px; font-weight:700; color:#ffffff;">${appName}</h1>
+              <p style="margin:8px 0 0; font-size:14px; color:rgba(255,255,255,0.92);">New Help &amp; Support Query Received</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:30px 32px 24px;">
+              <p style="margin:0 0 14px; font-size:15px; color:#334155;">A new support query has been submitted.</p>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+                <tr><td style="padding:10px 14px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#334155;"><strong>Ticket:</strong> ${safeTicket}</td></tr>
+                <tr><td style="padding:10px 14px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#334155;"><strong>Subject:</strong> ${safeSubject}</td></tr>
+                <tr><td style="padding:10px 14px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#334155;"><strong>Customer:</strong> ${safeCustomerName}</td></tr>
+                <tr><td style="padding:10px 14px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#334155;"><strong>Email:</strong> ${safeCustomerEmail}</td></tr>
+                <tr><td style="padding:10px 14px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#334155;"><strong>Category:</strong> ${safeCategory}</td></tr>
+                <tr><td style="padding:10px 14px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#334155;"><strong>Priority:</strong> ${safePriority}</td></tr>
+                <tr><td style="padding:10px 14px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#334155;"><strong>Source:</strong> ${safeSource}</td></tr>
+                <tr><td style="padding:10px 14px; font-size:13px; color:#334155;"><strong>Created At:</strong> ${safeCreatedAt}</td></tr>
+              </table>
+
+              <div style="margin-top:16px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #8E2DE2; border-radius:10px; padding:14px;">
+                <p style="margin:0 0 8px; font-size:13px; font-weight:600; color:#334155;">Message</p>
+                <p style="margin:0; font-size:14px; line-height:1.6; color:#475569;">${safeContent || '-'}</p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 28px; background:#f8fafc; border-top:1px solid #e2e8f0;">
+              <p style="margin:0; font-size:12px; color:#94a3b8; text-align:center;">&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+async function notifyAdminSupportQuery({ ticket, customer, content, source }) {
+  try {
+    if (!sendEmail) {
+      console.warn('Support admin notification skipped: email-lib not available in support-service runtime');
+      return;
+    }
+    const adminTo =
+      process.env.SUPPORT_ADMIN_EMAIL ||
+      process.env.ADMIN_SUPPORT_EMAIL ||
+      process.env.ADMIN_EMAIL ||
+      process.env.SUPPORT_EMAIL ||
+      process.env.HELP_SUPPORT_EMAIL ||
+      process.env.EMAIL_TO ||
+      process.env.EMAIL_USER ||
+      process.env.EMAIL_FROM ||
+      '';
+    if (!adminTo) {
+      console.warn('Support admin notification skipped: no recipient configured (SUPPORT_ADMIN_EMAIL/ADMIN_EMAIL/etc)');
+      return;
+    }
+
+    const ticketNumber = ticket?.ticketNumber || String(ticket?._id || '');
+    const subject = `[Support Query] ${ticketNumber} - ${ticket?.subject || 'New support query'}`;
+    const customerName = customer?.fullname || 'Unknown';
+    const customerEmail = customer?.email || 'Unknown';
+    const category = ticket?.category || 'other';
+    const priority = ticket?.priority || 'medium';
+    const createdAt = ticket?.createdAt ? new Date(ticket.createdAt).toISOString() : new Date().toISOString();
+
+    const text = [
+      'A new support query has been received.',
+      '',
+      `Ticket: ${ticketNumber}`,
+      `Subject: ${ticket?.subject || '-'}`,
+      `Customer: ${customerName}`,
+      `Customer Email: ${customerEmail}`,
+      `Category: ${category}`,
+      `Priority: ${priority}`,
+      `Source: ${source || 'support'}`,
+      `Created At: ${createdAt}`,
+      '',
+      'Message:',
+      content || '-',
+    ].join('\n');
+    const html = getSupportQueryEmailHtml({
+      ticketNumber,
+      subject: ticket?.subject || '-',
+      customerName,
+      customerEmail,
+      category,
+      priority,
+      source: source || 'support',
+      createdAt,
+      content: content || '-',
+    });
+
+    const emailResult = await sendEmail({
+      to: adminTo,
+      subject,
+      text,
+      html,
+      replyTo: customerEmail !== 'Unknown' ? customerEmail : undefined,
+    });
+    if (emailResult?.skipped) {
+      console.warn(
+        `Support admin notification skipped for ticket ${ticketNumber}: ${emailResult.reason || 'provider not configured'}`
+      );
+      return;
+    }
+    console.log(
+      `Support admin notification sent for ticket ${ticketNumber} -> ${adminTo} (messageId: ${emailResult?.id || 'n/a'})`
+    );
+  } catch (err) {
+    console.error('Support admin notification email failed:', err?.message || err);
+  }
+}
+
+// Create a ticket from public help/support form (no auth required)
+exports.createPublicTicket = async (req, res) => {
+  try {
+    const { name, email, subject, category, message } = req.body || {};
+    const safeName = String(name || '').trim();
+    const safeEmail = String(email || '').trim().toLowerCase();
+    const safeSubject = String(subject || '').trim();
+    const safeMessage = String(message || '').trim();
+
+    if (!safeName || !safeEmail || !safeSubject || !safeMessage) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Name, email, subject and message are required',
+        data: null
+      });
+    }
+
+    const emailRegex = /^[\w.!#$%&'*+/=?^_`{|}~-]+@[\w-]+(\.[\w-]+)+$/;
+    if (!emailRegex.test(safeEmail)) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Invalid email address',
+        data: null
+      });
+    }
+
+    let customer = await Customer.findOne({ email: safeEmail });
+    if (!customer) {
+      customer = new Customer({
+        userId: new mongoose.Types.ObjectId(),
+        email: safeEmail,
+        fullname: safeName,
+      });
+      await customer.save();
+    } else if (!customer.fullname && safeName) {
+      customer.fullname = safeName;
+      await customer.save();
+    }
+
+    const ticket = new Ticket({
+      customerId: customer.userId,
+      subject: safeSubject,
+      category: normalizePublicCategory(category),
+      priority: 'medium',
+      status: 'open',
+      metadata: {
+        source: 'landing_help_support',
+        browserInfo: req.headers['user-agent'] || null,
+        ipAddress: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || null,
+        userAgent: req.headers['user-agent'] || null
+      }
+    });
+    await ticket.save();
+
+    const initialMessage = new Message({
+      ticketId: ticket._id,
+      senderId: customer.userId,
+      senderType: 'customer',
+      content: safeMessage,
+      messageType: 'text'
+    });
+    await initialMessage.save();
+
+    ticket.lastMessageAt = new Date();
+    await ticket.save();
+
+    customer.totalTickets += 1;
+    customer.activeTickets += 1;
+    await customer.save();
+
+    routeTicketToAgent(ticket._id).catch((err) => {
+      console.error('Error routing public ticket:', err);
+    });
+
+    notifyAdminSupportQuery({
+      ticket,
+      customer,
+      content: safeMessage,
+      source: 'landing_help_support',
+    });
+
+    return res.status(201).json({
+      status: 201,
+      message: 'Support request submitted successfully',
+      data: {
+        ticketId: ticket._id,
+        ticketNumber: ticket.ticketNumber
+      }
+    });
+  } catch (error) {
+    console.error('Create public ticket error:', error);
+    return res.status(500).json({
+      status: 500,
+      message: error.message || 'Server error',
+      data: null
+    });
+  }
+};
+
+// Alias for semantic API naming: "query" == public support ticket submission
+exports.createPublicQuery = exports.createPublicTicket;
 
 // Create a new ticket
 exports.createTicket = async (req, res) => {
@@ -88,6 +387,13 @@ exports.createTicket = async (req, res) => {
     // Route ticket to available agent (async, won't block response)
     routeTicketToAgent(ticket._id).catch(err => {
       console.error('Error routing ticket:', err);
+    });
+
+    notifyAdminSupportQuery({
+      ticket,
+      customer,
+      content: initialMessage,
+      source: metadata?.source || 'customer_portal',
     });
 
     return res.status(201).json({

@@ -19,6 +19,10 @@ router.delete('/agents/:agentId', adminLimiter, adminController.deleteAgent);
 
 // Ticket management
 router.get('/tickets', adminLimiter, adminController.getAllTickets);
+router.get('/queries', adminLimiter, adminController.getQueries);
+router.get('/help-support/queries', adminLimiter, adminController.getHelpSupportQueries);
+router.post('/help-support/queries/:ticketId/close', adminLimiter, adminController.closeHelpSupportQuery);
+router.get('/dashboard/queries', adminLimiter, adminController.getDashboardQueries);
 router.post('/tickets/:ticketId/reassign', adminLimiter, adminController.reassignTicket);
 router.post('/tickets/:ticketId/close', adminLimiter, adminController.closeTicket);
 router.get('/tickets/:ticketId/messages', adminLimiter, messageController.getMessages);

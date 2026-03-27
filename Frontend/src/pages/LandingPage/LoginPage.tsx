@@ -206,7 +206,7 @@ const LoginPage = () => {
       setEmailVerified(st.emailVerified)
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
-      if (st.loggedIn) {
+      if (st.loggedIn || localStorage.getItem('accessToken')) {
         const returnTo = (location.state as any)?.returnTo || '/dashboard'
         navigate(returnTo)
       }
@@ -619,7 +619,7 @@ const LoginPage = () => {
                       to="/signup"
                       className="font-medium text-[#084bdc] hover:text-[#084bdc]/80"
                     >
-                      Create a free account
+                      Create account for free 
                     </Link>
                   </p>
                 </div>

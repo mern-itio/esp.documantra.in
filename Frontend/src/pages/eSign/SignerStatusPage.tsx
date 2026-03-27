@@ -33,6 +33,7 @@ export default function SignerStatusPage() {
   const scratchDrawingRef = useRef(false);
   const scratchBurstFiredRef = useRef(false);
   const scratchMeasureTickRef = useRef(0);
+  const statusCelebrationFiredRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -177,25 +178,34 @@ export default function SignerStatusPage() {
     );
   };
 
+  const normRecipientId = (x: any) => {
+    if (x == null) return "";
+    if (typeof x === "string") return x;
+    if (typeof x === "object" && x.$oid) return String(x.$oid);
+    if (typeof x === "object" && x._id) return String(x._id);
+    return String(x);
+  };
+
   const signers = useMemo(() => {
     const recipients = envelope?.recipients || [];
     return recipients.filter((r: any) => !isCcRole(r));
   }, [envelope]);
 
-  const currentSigner = useMemo(() => {
-    const normId = (x: any) => {
-      if (x == null) return "";
-      if (typeof x === "string") return x;
-      if (typeof x === "object" && x.$oid) return String(x.$oid);
-      if (typeof x === "object" && x._id) return String(x._id);
-      return String(x);
-    };
-    return signers.find((r: any) => normId(r?.id ?? r?._id) === normId(recipientId));
-  }, [signers, recipientId]);
+  const currentRecipient = useMemo(() => {
+    const recipients = envelope?.recipients || [];
+    return recipients.find(
+      (r: any) => normRecipientId(r?.id ?? r?._id) === normRecipientId(recipientId)
+    );
+  }, [envelope, recipientId]);
 
-  const currentSignerDeclined = useMemo(
-    () => !!currentSigner && isDeclinedStatus(currentSigner.status),
-    [currentSigner]
+  const currentUserIsCc = useMemo(
+    () => !!currentRecipient && isCcRole(currentRecipient),
+    [currentRecipient]
+  );
+
+  const viewerDeclined = useMemo(
+    () => !!currentRecipient && isDeclinedStatus(currentRecipient.status),
+    [currentRecipient]
   );
 
   const anySignerDeclined = useMemo(
@@ -250,20 +260,28 @@ export default function SignerStatusPage() {
   //   window.open(url, "_blank");
   // };
 
-  const title = currentSignerDeclined
+  const title = viewerDeclined
     ? "You have declined this document"
-    : allSignersCompleted
-      ? "All signatures completed"
-      : anySignerDeclined
-        ? "Signing closed"
-        : "Signing completed";
-  const subtitle = currentSignerDeclined
+    : currentUserIsCc
+      ? allSignersCompleted
+        ? "All signatures completed"
+        : "You’re copied on this envelope"
+      : allSignersCompleted
+        ? "All signatures completed"
+        : anySignerDeclined
+          ? "Signing closed"
+          : "Signing completed";
+  const subtitle = viewerDeclined
     ? "You have rejected this document for signing. Contact sales to regain access."
-    : allSignersCompleted
-      ? "Download the signed document and audit certificate."
-      : anySignerDeclined
-        ? "A signer has declined this envelope, so signing is no longer active."
-        : "You’ve completed signing. You’ll receive the certificate by email once all signers finish.";
+    : currentUserIsCc
+      ? allSignersCompleted
+        ? "Download the signed document and audit certificate when available."
+        : "You are a carbon copy recipient, not an active signer. Signing continues with other recipients; you’ll receive updates as the envelope progresses."
+      : allSignersCompleted
+        ? "Download the signed document and audit certificate."
+        : anySignerDeclined
+          ? "A signer has declined this envelope, so signing is no longer active."
+          : "You’ve completed signing. You’ll receive the certificate by email once all signers finish.";
 
   const referralUrl = useMemo(() => {
     const rid = String(recipientId ?? "").trim();
@@ -498,7 +516,38 @@ export default function SignerStatusPage() {
     }
   }, [showScratchModal, scratchDone]);
 
-  if (!loading && !error && currentSignerDeclined) {
+  useEffect(() => {
+    if (loading || error || viewerDeclined) return;
+    if (statusCelebrationFiredRef.current) return;
+    statusCelebrationFiredRef.current = true;
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 80,
+        startVelocity: 35,
+        origin: { y: 0.3 },
+        colors: ["#260559", "#10B981", "#F59E0B", "#ffffff"],
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 60,
+          spread: 65,
+          origin: { x: 0.2, y: 0.25 },
+          colors: ["#260559", "#10B981", "#F59E0B"],
+        });
+        confetti({
+          particleCount: 60,
+          spread: 65,
+          origin: { x: 0.8, y: 0.25 },
+          colors: ["#260559", "#10B981", "#F59E0B"],
+        });
+      }, 220);
+    } catch {
+      // ignore
+    }
+  }, [loading, error, viewerDeclined]);
+
+  if (!loading && !error && viewerDeclined) {
     return (
       <div className="min-h-screen mt-18 bg-gradient-to-b from-rose-50 via-white to-white px-4 py-12">
         <div className="mx-auto w-full max-w-3xl">
@@ -549,7 +598,8 @@ export default function SignerStatusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 mt-14 px-4 py-10">
+    <div className="relative min-h-screen mt-14 px-4 py-10 bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50">
+   
       <div className="mx-auto w-full max-w-7xl">
         {loading && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 text-gray-600">
@@ -569,10 +619,22 @@ export default function SignerStatusPage() {
               {/* LEFT COLUMN */}
               <div className="lg:col-span-8 space-y-6">
                 {/* Top success banner (screenshot-like) */}
-                <div className="rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-white px-6 py-10 shadow-sm">
+                <div className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-white px-6 py-10 shadow-sm">
+                  {!viewerDeclined && (
+                    <div className="pointer-events-none absolute inset-0">
+                      <Gift className="absolute left-5 top-4 h-5 w-5 text-emerald-300 animate-bounce" />
+                      <Gift className="absolute right-8 top-6 h-6 w-6 text-violet-300 animate-pulse" />
+                      <Gift className="absolute left-10 bottom-5 h-4 w-4 text-amber-300 animate-ping" />
+                      <Gift className="absolute right-14 bottom-6 h-5 w-5 text-emerald-300 animate-bounce" />
+                      <span className="absolute left-1/4 top-8 h-2 w-2 rounded-full bg-amber-300/70" />
+                      <span className="absolute right-1/3 top-11 h-2 w-2 rounded-full bg-violet-300/70" />
+                      <span className="absolute left-1/3 bottom-8 h-2 w-2 rounded-full bg-emerald-300/70" />
+                      <span className="absolute right-1/4 bottom-10 h-2 w-2 rounded-full bg-yellow-300/70" />
+                    </div>
+                  )}
                   <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
                     <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-emerald-200">
-                      {currentSignerDeclined ? (
+                      {viewerDeclined ? (
                         <ShieldCheck className="h-8 w-8 text-rose-600" />
                       ) : (
                         <CheckCircle className="h-8 w-8 text-emerald-600" />
@@ -593,7 +655,7 @@ export default function SignerStatusPage() {
                       />
                     </div>
                     <div className="text-sm text-gray-600">
-                      {currentSignerDeclined
+                      {viewerDeclined
                         ? "signing-declined"
                         : allSignersCompleted
                           ? "signers-have-signed"
@@ -1047,6 +1109,11 @@ export default function SignerStatusPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Decorative filler for right-side empty space */}
+                  <div className="pointer-events-none hidden lg:flex justify-center pt-2">
+                    <Gift className="h-44 w-44 text-gray-300/90 rotate-[-18deg] drop-shadow-[0_14px_18px_rgba(15,23,42,0.10)]" />
+                  </div>
                 </div>
               </div>
             </div>

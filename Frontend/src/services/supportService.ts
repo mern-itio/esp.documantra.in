@@ -78,6 +78,12 @@ export const supportCustomerApi = {
   }
 };
 
+// Public API calls (no auth required)
+export const supportPublicApi = {
+  createTicket: (data: { name: string; email: string; subject: string; category?: string; message: string }) =>
+    supportApi.post('/api/support-service/public/queries', data),
+};
+
 // Agent API calls
 export const supportAgentApi = {
   // Auth
@@ -141,6 +147,21 @@ export const supportAdminApi = {
   // Tickets
   getAllTickets: (params?: any) =>
     supportApi.get('/api/support-service/admin/tickets', { params }),
+
+  // Dashboard (separate from ticket center listing)
+  getDashboardQueries: (params?: { limit?: number; source?: string }) =>
+    supportApi.get('/api/support-service/admin/dashboard/queries', { params }),
+
+  // Alias endpoint for dashboard query feed
+  getQueries: (params?: { limit?: number; source?: string }) =>
+    supportApi.get('/api/support-service/admin/queries', { params }),
+
+  // Dedicated feed for Help & Support page submissions only
+  getHelpSupportQueries: (params?: { limit?: number; page?: number }) =>
+    supportApi.get('/api/support-service/admin/help-support/queries', { params }),
+
+  closeHelpSupportQuery: (ticketId: string) =>
+    supportApi.post(`/api/support-service/admin/help-support/queries/${ticketId}/close`),
   
   reassignTicket: (ticketId: string, data: { toAgentId: string }) =>
     supportApi.post(`/api/support-service/admin/tickets/${ticketId}/reassign`, data),

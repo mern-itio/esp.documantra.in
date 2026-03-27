@@ -674,6 +674,7 @@ const authRoutes = [
   { path: '/organization/invitations/:invUserId', element: <InvitationPage/>},
   { path: '/organization/folder/:folderId', element: <FolderDetailPage /> },
   { path: '/organization/roles/:orgId', element: <RolePage/>},
+  { path: '/e-sign/templateLibrary', element: <TemplateLibrary/>},
   // { path: '/test', element: <DocumentUploadSection /> },
 
   //Document Management Module

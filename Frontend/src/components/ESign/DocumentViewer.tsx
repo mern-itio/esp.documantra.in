@@ -7,6 +7,7 @@ import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
 import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp } from "lucide-react";
+import { toTitleCase } from "../../utils/formatName";
 
 interface Props {
   // Backward compatible single document
@@ -59,6 +60,14 @@ const toNumber = (value: any): number => {
   }
   const coerced = Number(value);
   return Number.isNaN(coerced) ? 0 : coerced;
+};
+
+/** Stable Mongo/ObjectId string for keys (module scope so PDF subtree helpers don't close over stale state). */
+const normalizeMongoId = (id: any) => {
+  if (id == null) return "";
+  if (typeof id === "string") return id;
+  if (typeof id === "object" && (id as any).$oid) return String((id as any).$oid);
+  return String(id);
 };
 
 const DocumentViewerContent: React.FC<Props> = ({
@@ -214,6 +223,45 @@ const DocumentViewerContent: React.FC<Props> = ({
       setIsCompleteCtaGuidanceDismissed(false);
     }
   }, [showCompleteButton, completeCtaState]);
+
+  // ==================== CC / View-only Audit Trail ====================
+  const [auditTrailOpen, setAuditTrailOpen] = useState(false);
+  const [auditTrailLoading, setAuditTrailLoading] = useState(false);
+  const [auditTrailError, setAuditTrailError] = useState<string | null>(null);
+  const [auditTrail, setAuditTrail] = useState<any[]>([]);
+  const auditTrailFetchedKeyRef = useRef<string | null>(null);
+
+  const openAuditTrailModal = async () => {
+    if (!isViewOnly) return;
+    if (!envelopeID || !currentUserId) return;
+
+    const key = `${envelopeID}:${currentUserId}`;
+    setAuditTrailOpen(true);
+
+    if (auditTrailFetchedKeyRef.current === key) return;
+
+    setAuditTrailLoading(true);
+    setAuditTrailError(null);
+    try {
+      const response = await eSignApi.get(
+        `/api/e-sign/public/envelope/${envelopeID}/recipient/${currentUserId}/audit-trail`
+      );
+      const data =
+        response?.data?.auditTrail ??
+        response?.data?.data?.auditTrail ??
+        response?.data?.data ??
+        [];
+      setAuditTrail(Array.isArray(data) ? data : []);
+      auditTrailFetchedKeyRef.current = key;
+    } catch (err: any) {
+      setAuditTrail([]);
+      setAuditTrailError(
+        err?.response?.data?.message || err?.message || 'Failed to load audit trail'
+      );
+    } finally {
+      setAuditTrailLoading(false);
+    }
+  };
   
   // Update signature when selfSigner changes (self-signer mode)
   // Skip this update if we're currently refreshing to avoid re-render loops
@@ -284,6 +332,15 @@ const DocumentViewerContent: React.FC<Props> = ({
   // Local values for non-signature inputs (text, date, checkbox, etc.)
   const [localFieldValues, setLocalFieldValues] = useState<Record<string, any>>({});
   const [signingFieldIds, setSigningFieldIds] = useState<Record<string, boolean>>({});
+  const [signingStatusText, setSigningStatusText] = useState<string>("Finalizing document...");
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   // Use refs to store values without causing re-renders
   const fieldValuesRef = useRef<Record<string, any>>({});
   const autoFilledDateFieldsRef = useRef<Set<string>>(new Set());
@@ -422,11 +479,13 @@ const areAllNonSignatureFieldsFilledForSlot = (slotId: string) => {
 // call after you setValue(..., true) (i.e., onBlur / onChange)
 const submitSingleField = async (recipientId: string, fieldId: string, value: any) => {
   if (!recipientId || value == null) return;
+  const fieldIdStr = normalizeMongoId(fieldId);
+  if (!fieldIdStr) return;
 
   const payload = {
     envelopeID,
     recipientId,
-    fields: { fieldId, value },
+    fields: { fieldId: fieldIdStr, value },
     selfValue: mode === MODE.SELF_SIGNER ? "1" : "0",
     cycleId: mode === MODE.SELF_SIGNER ? cycleId : undefined,
   };
@@ -437,7 +496,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
     // Update signatureFields to trigger actionableFields recompute
     setSignatureFields(prev => prev.map(f => 
-      (f._id || f.fieldId) === fieldId ? { ...f, signature: value } : f
+      normalizeMongoId(f._id || f.fieldId) === fieldIdStr ? { ...f, signature: value } : f
     ));
 
     // For self-signer mode, refresh selfSigner data to get updated nonSignatureFields
@@ -599,7 +658,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   // click-to-sign behavior removed dependency on page concept; keep disabled to avoid unintended opens on scroll viewport clicks
 
   const handleFieldClick = (fieldOrId: any, options?: { isEdit?: boolean }) => {
-    if (isViewOnly) return;
+    if (isViewOnly) {
+      // CC recipients are view-only: show recipient reassignment/audit timeline.
+      openAuditTrailModal();
+      return;
+    }
     let field = fieldOrId;
     if (typeof fieldOrId === "string") {
       field =
@@ -950,10 +1013,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       alert("Please save a signature before submitting!");
       return;
     }
-    const fieldKey = field?._id || field?.fieldId;
-    if (fieldKey) {
-      setSigningFieldIds((prev) => ({ ...prev, [fieldKey]: true }));
-    }
+    const fieldKeyRaw = field?._id || field?.fieldId;
+    const fieldKey = normalizeMongoId(fieldKeyRaw);
+    if (fieldKey) setSigningFieldIds((prev) => ({ ...prev, [fieldKey]: true }));
     const clearSigningState = () => {
       if (!fieldKey) return;
       setSigningFieldIds((prev) => {
@@ -961,6 +1023,33 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         delete next[fieldKey];
         return next;
       });
+    };
+
+    // Keep the user engaged for long-running finalize (stamp/image embedding + emails + certificate)
+    setSigningStatusText("Finalizing document...");
+    const startedAt = Date.now();
+    const statusTicker = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 4000) setSigningStatusText("Validating your details...");
+      else if (elapsed < 12000) setSigningStatusText("Applying your signature...");
+      else if (elapsed < 25000) setSigningStatusText("Finalizing document...");
+      else if (elapsed < 60000) setSigningStatusText("Finalizing and sending emails...");
+      else setSigningStatusText("Still working… almost done.");
+    }, 1200);
+
+    const waitForCompletion = async (maxMs = 120000) => {
+      const until = Date.now() + maxMs;
+      while (Date.now() < until) {
+        try {
+          const res = await eSignApi.get(`/api/e-sign/public/envelope/${envelopeID}`);
+          const status = (res?.data?.data?.status || '').toString().toLowerCase();
+          if (status === 'completed') return true;
+        } catch {
+          // ignore - best effort
+        }
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+      return false;
     };
     try{
       console.log(field);
@@ -1002,7 +1091,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         cycleId:cycleId || "",
         initials: initialsValue || undefined
       };
-      const response = await eSignApi.post("/api/e-sign/public/add-signature", payload);
+      // Allow long finalize (stamp embedding + certificate + emails)
+      const response = await eSignApi.post("/api/e-sign/public/add-signature", payload, { timeout: 180000 });
       if (response?.status === 200) {
         const key = fieldKey;
         setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
@@ -1048,12 +1138,22 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         }
       }else{
         console.error("submit response:", response);
-        alert("Failed to submit signature. Please try again.");
+        // If server responded oddly, verify completion before showing error
+        const completed = await waitForCompletion(45000);
+        if (!completed) {
+          if (isMountedRef.current) alert("Failed to submit signature. Please try again.");
+        }
       }
     }catch (err){
       console.error("submit error:", err);
-            alert("An error occurred while submitting the signature.");
+      // If request timed out / disconnected but backend completed, don't show error.
+      const completed = await waitForCompletion(60000);
+      if (!completed) {
+        if (isMountedRef.current) alert("An error occurred while submitting the signature.");
+      }
     } finally {
+      window.clearInterval(statusTicker);
+      if (isMountedRef.current) setSigningStatusText("Finalizing document...");
       clearSigningState();
     }
   };
@@ -1283,9 +1383,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     });
   };
 
-  // Render a single document with all pages stacked vertically and per-page overlays
-  const SingleDoc: React.FC<{
+  // PDF stack for one file: must keep a stable component type (useMemo), not a nested `const X = () =>`,
+  // or react-pdf <Document> remounts on every parent re-render (e.g. signing progress text).
+  type SingleDocRenderProps = {
     doc: any;
+    mode: SigningMode;
     signatureFields: any[];
     currentUserId: string;
     selfValue: string | null;
@@ -1297,22 +1399,69 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     pageWidth: number;
     pageScale: number;
     signingFieldIds: Record<string, boolean>;
+    signingStatusText: string;
     isViewOnly?: boolean;
-  }> = ({
-    doc,
-    signatureFields,
-    currentUserId,
-    selfValue: _selfValue,
-    selfSigner: _selfSigner,
-    localSignedMap,
-    recipientSignature,
-    onFieldClick,
-    normalizePage,
-    pageWidth,
-    pageScale,
-    signingFieldIds,
-    isViewOnly = false,
-  }) => {
+    isFieldForCurrentUser: (field: any) => boolean;
+    isSignatureFieldCompleted: (field: any) => boolean;
+    getMatchedSigner: (field: any) => any;
+    areAllNonSignatureFieldsFilledForSlot: (slotId: string) => boolean;
+    areAllNonSignatureFieldsFilledForRecipient: (recipientId: string) => boolean;
+    doSign: (field: any) => void | Promise<void>;
+    openAuditTrailModal: () => void;
+    getInitialsValue: (field: any) => string;
+    getFieldValueFromNonSignatureFields: (field: any, matchedSigner: any) => any;
+    fieldValuesRef: React.MutableRefObject<Record<string, any>>;
+    localFieldValues: Record<string, any>;
+    setLocalFieldValues: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+    submitSingleField: (recipientId: string, fieldId: string, value: any) => void | Promise<void>;
+    autoFilledDateFieldsRef: React.MutableRefObject<Set<string>>;
+    pdfContainerRef: React.RefObject<HTMLDivElement | null>;
+    scrollPositionRef: React.MutableRefObject<number>;
+    shouldPreserveScrollRef: React.MutableRefObject<boolean>;
+    isUserTypingRef: React.MutableRefObject<boolean>;
+    activeInputRef: React.MutableRefObject<HTMLInputElement | null>;
+    activeInputIdRef: React.MutableRefObject<string | null>;
+  };
+
+  const SingleDoc = useMemo(() => {
+    return function SingleDocInner(props: SingleDocRenderProps) {
+      const {
+        doc,
+        mode,
+        signatureFields,
+        currentUserId,
+        selfValue: _selfValue,
+        selfSigner: _selfSigner,
+        localSignedMap,
+        recipientSignature,
+        onFieldClick,
+        normalizePage,
+        pageWidth,
+        pageScale,
+        signingFieldIds,
+        signingStatusText,
+        isViewOnly = false,
+        isFieldForCurrentUser,
+        isSignatureFieldCompleted,
+        getMatchedSigner,
+        areAllNonSignatureFieldsFilledForSlot,
+        areAllNonSignatureFieldsFilledForRecipient,
+        doSign,
+        openAuditTrailModal,
+        getInitialsValue,
+        getFieldValueFromNonSignatureFields,
+        fieldValuesRef,
+        localFieldValues,
+        setLocalFieldValues,
+        submitSingleField,
+        autoFilledDateFieldsRef,
+        pdfContainerRef,
+        scrollPositionRef,
+        shouldPreserveScrollRef,
+        isUserTypingRef,
+        activeInputRef,
+        activeInputIdRef,
+      } = props;
       const [numPages, setNumPages] = useState<number>(0);
 
       const isFieldForDoc = (field: any) => {
@@ -1360,14 +1509,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               break;
                             }
                             case MODE.RECIPIENT: {
-                              const fieldKey = field._id || field.fieldId;
+                              const fieldKey = normalizeMongoId(field._id || field.fieldId);
                               signedImage = localSignedMap[fieldKey] || field.signature || null;
                               break;
                             }
                           }
                         }
 
-                        const keyId = field._id || field.fieldId;
+                        const keyId = normalizeMongoId(field._id || field.fieldId);
                         const isSigning = !!signingFieldIds[keyId];
                         const rawWidth = toNumber(
                           field.width?.$numberDouble ??
@@ -1500,14 +1649,15 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   left: 0,
                                   width: scaledWidth,
                                   height: scaledHeight,
-                                  pointerEvents: isViewOnly ? "none" : (isSigned ? "auto" : allowSigning ? "auto" : "none"),
+                                  // In CC view-only we still want clicks to open audit trail.
+                                  pointerEvents: isViewOnly ? "auto" : (isSigned ? "auto" : allowSigning ? "auto" : "none"),
                                   fontSize: fieldFontSize,
                                   padding: `0px ${boxPaddingX-15}px`,
                                 }}
-                                className={`flex items-center justify-center font-semibold rounded ${isSigned
+                                className={`flex items-center justify-center cursor-pointer font-semibold rounded ${isSigned
                                   ? "border-0"
                                   : isViewOnly && isCurrentUser
-                                    ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-default"
+                                    ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-pointer"
                                   : isCurrentUser
                                     ? isSigning
                                       ? "bg-blue-100 border-2 border-blue-400 text-blue-600 cursor-progress"
@@ -1515,7 +1665,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
                                   }`}
                                 onClick={() => {
-                                  if (isViewOnly) return;
+                                  if (isViewOnly) {
+                                    openAuditTrailModal();
+                                    return;
+                                  }
                                   if (isSigning) return;
                                   if (isCurrentUser && !recipientSignature) {
                                     onFieldClick(field);
@@ -1528,7 +1681,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 {isSigning ? (
                                   <div className="flex items-center gap-2">
                                     <span className="h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                                    <span>Signing...</span>
+                                    <span>{signingStatusText || "Finalizing document..."}</span>
                                   </div>
                                 ) : isSigned ? (
                                   <div className="relative w-full h-full">
@@ -1917,7 +2070,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            setValue(null);
+                                            // Clear immediately and persist to backend (so completion state is accurate)
+                                            setValue('', true);
+                                            const recipientIdForSubmit =
+                                              mode === MODE.SELF_SIGNER ? currentUserId : field.recipientId;
+                                            submitSingleField(recipientIdForSubmit, field._id, '');
                                           }}
                                           className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                                           title="Remove stamp"
@@ -1943,7 +2100,15 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                               const file = e.target.files?.[0];
                                               if (!file) return;
                                               const reader = new FileReader();
-                                              reader.onload = () => setValue(reader.result as string);
+                                              reader.onload = () => {
+                                                const dataUrl = reader.result as string;
+                                                // Update UI immediately (so preview shows without needing extra clicks)
+                                                setValue(dataUrl, true);
+                                                // Persist to backend so stamp counts toward completion
+                                                const recipientIdForSubmit =
+                                                  mode === MODE.SELF_SIGNER ? currentUserId : field.recipientId;
+                                                submitSingleField(recipientIdForSubmit, field._id, dataUrl);
+                                              };
                                               reader.readAsDataURL(file);
                                             }}
                                           />
@@ -1974,6 +2139,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           <div
                             key={fieldId}
                             data-field-id={keyId}
+                            onClick={() => {
+                              if (isViewOnly) openAuditTrailModal();
+                            }}
                             style={{
                               position: "absolute",
                               top: rawY * pageScale,
@@ -2034,6 +2202,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         </Document>
       );
     };
+  }, []);
 
   return (
     <form
@@ -2053,7 +2222,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     >
       <div className="relative flex flex-col items-stretch min-h-screen bg-gray-50">
         {/* Header (sticky full-width) */}
-        <div className="fixed top-0 left-0 right-0 h-12 bg-[#1b0c3e] text-white px-4 z-50 flex items-center">
+        <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] flex h-12 items-center bg-[#1b0c3e] px-4 text-white">
           <div className="w-full flex items-center justify-between">
             <div className="text-sm font-medium">
               {isViewOnly ? "View only (CC)" : "Review and complete"}
@@ -2116,7 +2285,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
         {shouldHighlightCompleteCta && (
           <div
-            className="fixed inset-0 z-[45] bg-black/45"
+            className="fixed left-0 right-0 top-12 bottom-0 z-[45] bg-black/45"
             onMouseDown={() => setIsCompleteCtaGuidanceDismissed(true)}
             aria-hidden="true"
           />
@@ -2146,6 +2315,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             <div key={doc.id || doc._id || dIdx} className="mb-6">
               <SingleDoc
                 doc={doc}
+                mode={mode}
                 signatureFields={signatureFields}
                 currentUserId={currentUserId}
                 selfValue={selfValue}
@@ -2157,7 +2327,28 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 pageWidth={pageWidth}
                 pageScale={pageScale}
                 signingFieldIds={signingFieldIds}
+                signingStatusText={signingStatusText}
                 isViewOnly={isViewOnly}
+                isFieldForCurrentUser={isFieldForCurrentUser}
+                isSignatureFieldCompleted={isSignatureFieldCompleted}
+                getMatchedSigner={getMatchedSigner}
+                areAllNonSignatureFieldsFilledForSlot={areAllNonSignatureFieldsFilledForSlot}
+                areAllNonSignatureFieldsFilledForRecipient={areAllNonSignatureFieldsFilledForRecipient}
+                doSign={doSign}
+                openAuditTrailModal={openAuditTrailModal}
+                getInitialsValue={getInitialsValue}
+                getFieldValueFromNonSignatureFields={getFieldValueFromNonSignatureFields}
+                fieldValuesRef={fieldValuesRef}
+                localFieldValues={localFieldValues}
+                setLocalFieldValues={setLocalFieldValues}
+                submitSingleField={submitSingleField}
+                autoFilledDateFieldsRef={autoFilledDateFieldsRef}
+                pdfContainerRef={pdfContainerRef}
+                scrollPositionRef={scrollPositionRef}
+                shouldPreserveScrollRef={shouldPreserveScrollRef}
+                isUserTypingRef={isUserTypingRef}
+                activeInputRef={activeInputRef}
+                activeInputIdRef={activeInputIdRef}
               />
 
               {/* separator between documents with next document name */}
@@ -2446,6 +2637,138 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           }}
         />
       )}
+
+      {/* CC view-only recipient audit trail modal */}
+      {auditTrailOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0"
+            onClick={() => setAuditTrailOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="relative w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-gray-200"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Recipient audit trail</h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  Reassignment history for this recipient.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                onClick={() => setAuditTrailOpen(false)}
+                aria-label="Close audit trail"
+              >
+                <span className="text-xl leading-none">&times;</span>
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-auto px-6 py-4">
+              {auditTrailLoading ? (
+                <div className="text-sm text-gray-600">Loading audit trail...</div>
+              ) : auditTrailError ? (
+                <div className="text-sm text-red-600">{auditTrailError}</div>
+              ) : auditTrail.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-600">
+                  No audit trail entries are available for this recipient.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {auditTrail.map((entry: any, idx: number) => {
+                    const action = (entry?.action || '').toString();
+                    const timestamp = entry?.timestamp ? new Date(entry.timestamp).toLocaleString() : '';
+                    const details = entry?.details || {};
+
+                    if (action === 'RECIPIENT_REASSIGNED') {
+                      return (
+                        <div
+                          key={`${action}-${idx}-${String(entry?._id || '')}`}
+                          className="rounded-lg border border-gray-200 bg-white px-4 py-4"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">Recipient reassigned</div>
+                              <div className="mt-1 text-xs text-gray-500">{timestamp}</div>
+                            </div>
+                            {/* <div className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-100">
+                              CC event
+                            </div> */}
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                              <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                Initial Signer
+                              </div>
+                              <div className="mt-1 text-sm font-semibold text-gray-900">
+                              {toTitleCase(details?.previousRecipientName || 'Previous recipient')}
+                              </div>
+                              <div className="mt-1 text-xs text-gray-600">
+                                {details?.previousRecipientEmail || ''}
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                              <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                Re-assigned Signer
+                              </div>
+                              <div className="mt-1 text-sm font-semibold text-gray-900">
+                                {toTitleCase(details?.newRecipientName || 'New recipient')}
+                              </div>
+                              <div className="mt-1 text-xs text-gray-600">
+                                {details?.newRecipientEmail || ''}
+                              </div>
+                            </div>
+                          </div>
+
+                          {details?.reason ? (
+                            <div className="mt-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                              <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                Reason
+                              </div>
+                              <div className="mt-1 text-sm text-gray-700">{details.reason}</div>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={`${action}-${idx}-${String(entry?._id || '')}`}
+                        className="rounded-2xl border border-gray-200 bg-white px-4 py-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">
+                              {action || 'Audit event'}
+                            </div>
+                            <div className="mt-1 text-xs text-gray-500">{timestamp}</div>
+                          </div>
+                        </div>
+                        {details && Object.keys(details).length > 0 ? (
+                          <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
+                            <pre className="overflow-auto whitespace-pre-wrap text-[11px] text-gray-700">
+                              {JSON.stringify(details, null, 2)}
+                            </pre>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer (sticky full-width) */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white text-xs text-gray-600 flex items-center justify-between px-4 py-3 z-50">
         <div>Powered by Draft&Sign</div>

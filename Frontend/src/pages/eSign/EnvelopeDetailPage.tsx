@@ -767,7 +767,13 @@ const EnvelopeDetailPage: React.FC = () => {
                                     {recipients.length === 0 ? (
                                         <div className="p-4 text-gray-600">No recipients</div>
                                     ) : (
-                                        recipients.map((r, idx) => {
+                                        [...recipients].sort((a, b) => {
+                                            const ao = typeof a.order === 'number' ? a.order : (a.order ? Number(a.order) : 0);
+                                            const bo = typeof b.order === 'number' ? b.order : (b.order ? Number(b.order) : 0);
+                                            const aKey = Number.isFinite(ao) ? ao : 0;
+                                            const bKey = Number.isFinite(bo) ? bo : 0;
+                                            return aKey - bKey;
+                                        }).map((r, idx) => {
                                             const status = (r.status || '').toLowerCase();
                                             const isSigned = status === 'signed' || status === 'completed';
                                             const isWaiting =
@@ -776,6 +782,10 @@ const EnvelopeDetailPage: React.FC = () => {
                                                 (r.role || '').toLowerCase() === 'cc' ||
                                                 (r.role || '').toLowerCase() === 'carbon_copy';
                                             const isInPerson = (r.role || '').toLowerCase() === 'in_person_signer';
+                                            const recipientOrder =
+                                                typeof r.order === 'number'
+                                                    ? r.order
+                                                    : (r.order ? Number(r.order) : idx + 1);
                                             const rightTitle = isCopy
                                                 ? 'Copy Received'
                                                 : isInPerson && isWaiting
@@ -799,7 +809,12 @@ const EnvelopeDetailPage: React.FC = () => {
                                                             <span className="w-4 h-4 mt-1 inline-block"></span>
                                                         )}
                                                         <div>
-                                                            <div className="font-semibold text-gray-900">{r.name || r.email}</div>
+                                                            <div className="flex items-center gap-2 font-semibold text-gray-900">
+                                                                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded bg-gray-100 px-1 text-[11px] font-semibold text-gray-700">
+                                                                    {recipientOrder}
+                                                                </span>
+                                                                <span className="truncate">{r.name || r.email}</span>
+                                                            </div>
                                                             <div className="text-sm text-gray-600">{r.email}</div>
                                                         </div>
                                                     </div>

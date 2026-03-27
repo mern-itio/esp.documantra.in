@@ -181,7 +181,7 @@ const generateAIContent = async (req, res) => {
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      max_completion_tokens: 4000,
+      max_completion_tokens: Number(process.env.AI_MAX_COMPLETION_TOKENS || 8000),
       stream: false,
       // presence_penalty: 0.1,
       // frequency_penalty: 0.1
@@ -236,26 +236,31 @@ const generateAIContentStream = async (req, res) => {
   ${JSON.stringify(formData, null, 2)}` : ''}
   Provide a complete, professional ${templateType} with all necessary sections, clauses, and legal language.`;
     const stream = await openai.chat.completions.create({
-      model: process.env.AI_MODEL ,
+      model: process.env.AI_MODEL || 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      max_completion_tokens: 4000,
+      max_completion_tokens: Number(process.env.AI_MAX_COMPLETION_TOKENS || 8000),
       stream: true, 
       // presence_penalty: 0.1,
       // frequency_penalty: 0.1
     });
+    let doneSent = false;
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content || '';
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
-      if (chunk.choices[0]?.finish_reason === 'stop') {
+      if (chunk.choices[0]?.finish_reason) {
         res.write(`data: [DONE]\n\n`);
+        doneSent = true;
         break;
       }
+    }
+    if (!doneSent) {
+      res.write(`data: [DONE]\n\n`);
     }
     res.end();
   } catch (error) {

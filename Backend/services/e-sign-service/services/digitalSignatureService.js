@@ -249,14 +249,22 @@ async function prepareDocumentForFinalSigning(
     const yTop = rawY * scale;
     const y = page.getHeight() - yTop - h + NUDGE_PX_Y;
 
-    if (
-      resolved.type === 'signature' &&
-      typeof resolved.value === 'string' &&
-      resolved.value.startsWith('data:image')
-    ) {
-      const img = await pdfDoc.embedPng(
-        Buffer.from(resolved.value.split(',')[1], 'base64')
-      );
+    const isDataImage =
+      typeof resolved.value === 'string' && resolved.value.startsWith('data:image');
+
+    // Embed image for signature/stamp/initial if value is a data URL.
+    if (isDataImage && ['signature', 'stamp', 'initial'].includes(String(resolved.type))) {
+      const dataUrl = resolved.value;
+      const b64 = dataUrl.split(',')[1] || '';
+      const bytes = Buffer.from(b64, 'base64');
+      const mime = (dataUrl.split(';')[0] || '').toLowerCase(); // e.g. "data:image/png"
+
+      let img;
+      if (mime.includes('image/jpeg') || mime.includes('image/jpg')) {
+        img = await pdfDoc.embedJpg(bytes);
+      } else {
+        img = await pdfDoc.embedPng(bytes);
+      }
 
       page.drawImage(img, { x, y, width: w, height: h });
     } else {

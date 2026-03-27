@@ -4,7 +4,7 @@ const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const axios = require('axios');
 const sendEmail = require('../emails/sendEmail');
-const { signRequestTemplate, signReminderTemplate, envelopeCompletedTemplate } = require('../emails/emailTemplates');
+const { signRequestTemplate, signReminderTemplate, envelopeCompletedTemplate, reassignedSignRequestTemplate, reassignedOwnerCcTemplate } = require('../emails/emailTemplates');
 const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
 const { signAndEmbed, initiateRecipientSignature, finalizeSigning, prepareDocumentForFinalSigning } = require('../services/digitalSignatureService');
@@ -2252,11 +2252,58 @@ const assignEnvelopeToSomeoneElsePublic = async (req, res) => {
       await envelope.save();
     }
 
-    // Transfer unsigned fields assigned to old recipient to new signer.
+    // Transfer unsigned signature fields assigned to old recipient to the new signer.
+    // Deduplicate by geometry (document/page/x/y/width/height/type) to avoid creating two signature boxes
+    // for the same reassigned recipient when the recipient already exists in the envelope.
+    const geometryKey = (f) =>
+      [
+        String(f.documentId ?? ''),
+        String(f.page ?? ''),
+        String(f.x ?? ''),
+        String(f.y ?? ''),
+        String(f.width ?? ''),
+        String(f.height ?? ''),
+        String(f.type ?? ''),
+      ].join('|');
+
+    const fieldsToMove = await SignatureField.find({
+      envelopeId: envelope._id,
+      recipientId: currentRecipient._id,
+      type: 'signature',
+      status: { $ne: 'completed' },
+      signature: { $in: [null, ''] },
+    }).lean();
+
+    const existingReplacementSignatureFields = await SignatureField.find({
+      envelopeId: envelope._id,
+      recipientId: replacementRecipient._id,
+      type: 'signature',
+    }).lean();
+
+    const existingKeys = new Set(
+      existingReplacementSignatureFields.map((f) => geometryKey(f))
+    );
+
+    for (const f of fieldsToMove) {
+      const key = geometryKey(f);
+      if (existingKeys.has(key)) {
+        // Replacement already has a signature box here; avoid duplication.
+        await SignatureField.deleteOne({ _id: f._id });
+      } else {
+        existingKeys.add(key);
+        await SignatureField.updateOne(
+          { _id: f._id },
+          { $set: { recipientId: replacementRecipient._id } }
+        );
+      }
+    }
+
+    // Transfer other (non-signature) fields that are still not completed.
     await SignatureField.updateMany(
       {
         envelopeId: envelope._id,
         recipientId: currentRecipient._id,
+        type: { $ne: 'signature' },
         status: { $ne: 'completed' },
       },
       { $set: { recipientId: replacementRecipient._id } }
@@ -2283,15 +2330,18 @@ const assignEnvelopeToSomeoneElsePublic = async (req, res) => {
     try {
       if (String(originalStatus).toLowerCase() === 'sent') {
         const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelope._id}/${replacementRecipient._id}`;
-        const html = signRequestTemplate(
-          replacementRecipient.name,
-          envelope.subject,
-          `${envelope.message || ''}${assignmentReason ? `\n\nReassignment reason: ${assignmentReason}` : ''}`,
-          signLink
-        );
+        const html = reassignedSignRequestTemplate({
+          recipientName: replacementRecipient.name,
+          envelopeSubject: envelope.subject,
+          envelopeMessage: envelope.message || '',
+          signLink,
+          reassignedByName: currentRecipient.name || currentRecipient.email || 'Signer',
+          reassignedByEmail: currentRecipient.email || '',
+          reassignmentReason: assignmentReason || '',
+        });
         await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${envelope.sender}`, {
           toEmail: replacementRecipient.email,
-          subject: `Action Required: Sign "${envelope.subject}"`,
+          subject: `Reassigned signing request: "${envelope.subject}"`,
           html,
         });
       }
@@ -2302,17 +2352,18 @@ const assignEnvelopeToSomeoneElsePublic = async (req, res) => {
     // Inform old signer they are now CC (best effort).
     try {
       if (currentRecipient.email && currentRecipient.email !== replacementRecipient.email) {
-        const html = `
-          <div style="font-family:Arial,sans-serif;font-size:14px;color:#111827;">
-            <p>Hello ${currentRecipient.name || 'Signer'},</p>
-            <p>You have reassigned your signing request for <strong>${envelope.subject || 'an envelope'}</strong> to <strong>${replacementRecipient.name}</strong> (${replacementRecipient.email}).</p>
-            <p>You will now receive updates as a carbon copy recipient.</p>
-            ${assignmentReason ? `<p><strong>Reason:</strong> ${assignmentReason}</p>` : ''}
-          </div>
-        `;
+        const viewLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelope._id}/${currentRecipient._id}`;
+        const html = reassignedOwnerCcTemplate({
+          ownerName: currentRecipient.name || 'Signer',
+          envelopeSubject: envelope.subject || '',
+          replacementRecipientName: replacementRecipient.name || '',
+          replacementRecipientEmail: replacementRecipient.email || '',
+          reassignmentReason: assignmentReason || '',
+          viewLink,
+        });
         await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${envelope.sender}`, {
           toEmail: currentRecipient.email,
-          subject: `Signing reassigned for "${envelope.subject}"`,
+          subject: `You are now CC for "${envelope.subject}"`,
           html,
         });
       }
@@ -2729,6 +2780,37 @@ const downloadCompletionZip = async (req, res) =>{
     res.status(500).json({ message: "Server error" });
   }
 }
+ 
+// GET /api/e-sign/public/envelope/:envelopeId/recipient/:recipientId/audit-trail
+// Used by CC recipients (view-only) to display recipient-level audit timeline, including reassignment events.
+const getRecipientAuditTrail = async (req, res) => {
+  try {
+    const { envelopeId, recipientId } = req.params || {};
+
+    if (!envelopeId || !recipientId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'envelopeId and recipientId are required'
+      });
+    }
+
+    const auditTrail = await AuditTrail.find({ envelopeId, recipientId })
+      .sort({ timestamp: 1 })
+      .lean();
+
+    return res.status(200).json({
+      status: 'success',
+      auditTrail
+    });
+  } catch (error) {
+    console.error('getRecipientAuditTrail error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch recipient audit trail'
+    });
+  }
+};
+
 const acceptTerms = async (req, res) =>{
   const {recipientId, envelopeId,cycleId} = req.body;
   console.log(recipientId,envelopeId,cycleId);
@@ -2836,5 +2918,6 @@ module.exports = {
   getEnvelopesExcludingIds,
   downloadCompletionZip,
   acceptTerms,
-  fetchCurrentRecipient
+  fetchCurrentRecipient,
+  getRecipientAuditTrail
 };
