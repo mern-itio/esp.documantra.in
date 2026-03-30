@@ -24,8 +24,8 @@ export const DeleteOrganizationModal: React.FC<DeleteOrganizationModalProps> = (
     setIsLoading(true);
     try {
       // Placeholder API call - replace with actual endpoint
-      const response = await organizationApi.delete(`/api/organization/${organization._id}`);
-
+      const response = await organizationApi.delete(`/api/organization/delete/${organization._id}`);
+ 
       if (response.status === 200 || response.status === 204) {
         onSuccess();
         onClose();

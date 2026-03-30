@@ -75,8 +75,8 @@ export const EditOrganizationModal: React.FC<EditOrganizationModalProps> = ({
     setIsLoading(true);
     try {
       // Placeholder API call - replace with actual endpoint
-      const response = await organizationApi.put(
-        `/api/organization/${organization._id}`,
+      const response = await organizationApi.patch(
+        `/api/organization/update/${organization._id}`,
         formData
       );
 
@@ -84,9 +84,9 @@ export const EditOrganizationModal: React.FC<EditOrganizationModalProps> = ({
         onSuccess();
         onClose();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating organization:', error);
-      setErrors({ submit: 'Failed to update organization. Please try again.' });
+      setErrors({ submit: error?.response?.data?.message || 'Failed to update organization. Please try again.' });
     } finally {
       setIsLoading(false);
     }

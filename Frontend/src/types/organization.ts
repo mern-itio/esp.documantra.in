@@ -1,3 +1,9 @@
+export type OrganizationStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'SUSPENDED';
+  
 export interface Organization {
   _id?: string;
   id?: string;
@@ -12,11 +18,12 @@ export interface Organization {
   approvedBy?: string;
   verifiedBy?: string;
   status?: boolean;
-  isverified?: boolean;
+  isVerified?: boolean;
   isverifcationRequested?: boolean;
   remark?: string;
   createdAt?: string;
   updatedAt?: string;
+  verificationStatus?: OrganizationStatus;
 }
 export interface OrganizationWithOwner {
   organization: Organization;

@@ -350,7 +350,7 @@ const fetchRolesAndUsers = async () => {
             >
               <Plus className="w-5 h-5" />
               <span>
-                {activeTab === 'envelopes' ? 'Create Envelope' :
+                {activeTab === 'envelopes' ? 'Add Envelope' :
                  activeTab === 'users' ? 'Add User' : 'Create Role'}
               </span>
             </button>

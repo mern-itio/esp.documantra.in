@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Building, Globe, FileText, CheckCircle2, Clock, MoreVertical, Settings, Users, ExternalLink, Edit, Trash2, Info, ShieldCheck, PersonStanding } from 'lucide-react';
+import { Building, Globe, FileText, CheckCircle2, Clock, MoreVertical, Settings, Users, ExternalLink, Edit, Trash2, Info, ShieldCheck, PersonStanding, X, AlertCircle } from 'lucide-react';
 import type { Organization } from '../../types/organization';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,6 +26,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
   const [showSettingsTooltip, setShowSettingsTooltip] = useState(false);
   const [showTeamTooltip, setShowTeamTooltip] = useState(false);
   const [showVerificationTooltip, setShowVerificationTooltip] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const verificationRef = useRef<HTMLDivElement>(null);
@@ -52,7 +53,8 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
   const isDisabled = !isActive;
   
   // Verification status
-  const isVerified = organization.isverified === true;
+  const isVerified = organization.isVerified === true;
+  const verificationStatus = organization?.verificationStatus;
   const isVerificationRequested = organization.isverifcationRequested === true;
   const hasRemark = !!organization.remark;
 
@@ -167,7 +169,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
           </div>
 
           {/* Verification Status Icons */}
-          {isVerified && (
+          {isVerified && verificationStatus=='APPROVED' && (
             <div className="relative" ref={verificationRef}>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
                 <ShieldCheck className="h-4 w-4" />
@@ -176,7 +178,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
             </div>
           )}
           
-          {!isVerified && isVerificationRequested && !hasRemark && (
+          {!isVerified && isVerificationRequested && verificationStatus=='PENDING' && (
             <div 
               className="relative" 
               ref={verificationRef}
@@ -197,24 +199,20 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
             </div>
           )}
           
-          {hasRemark && (
+          {verificationStatus=='REJECTED' && organization.remark && (
             <div 
               className="relative" 
               ref={verificationRef}
-              onMouseEnter={() => setShowVerificationTooltip(true)}
-              onMouseLeave={() => setShowVerificationTooltip(false)}
             >
-              <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 border border-red-200 cursor-help">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRejectionModal(true);
+                }}
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 border border-red-200 cursor-pointer hover:bg-red-200 transition-colors"
+              >
                 <Info className="h-4 w-4" />
-              </div>
-              {showVerificationTooltip && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none z-50 max-w-xs">
-                  Rejected Verification: {organization.remark}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                    <div className="border-4 border-transparent border-t-gray-900"></div>
-                  </div>
-                </div>
-              )}
+              </button>
             </div>
           )}
         </div>
@@ -407,6 +405,79 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Rejection Modal */}
+      {showRejectionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Verification Rejected</h2>
+              </div>
+              <button
+                onClick={() => setShowRejectionModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-gray-600 mb-3">Request Status</p>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 border border-red-200">
+                  <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                  <span className="text-sm font-semibold text-red-700">Rejected</span>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-gray-600 mb-3">Rejection Reason</p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {organization.remark}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex gap-3">
+                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-700">
+                    Please review the rejection reason and submit again with the required information.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowRejectionModal(false)}
+                  className="px-6 py-2.5 text-gray-700 bg-gray-100 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRejectionModal(false);
+                    onVerify?.();
+                  }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Resubmit Verification
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

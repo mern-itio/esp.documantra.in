@@ -9,9 +9,11 @@ import { TeamsManagementModal } from '../../components/Organization/TeamsManagem
 import { VerifyOrganizationModal } from '../../components/Organization/VerifyOrganizationModal';
 import type { Organization } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
+import { useAuth } from '../../components/AuthService/AuthContext';
 
 const MyOrganizationPage: React.FC = () => {
   const navigate = useNavigate();
+  const {switchAccount,accountType} = useAuth();
   const [myOrganization, setMyOrganization] = React.useState<Organization | null>(null);
   const [sharedOrganizations, setSharedOrganizations] = React.useState<Organization[]>([]);
   const [showEditModal, setShowEditModal] = React.useState(false);
@@ -21,6 +23,12 @@ const MyOrganizationPage: React.FC = () => {
 
   useEffect(() => {
      getUserOrganizations();
+     // Poll for organization updates every 5 seconds
+     const pollInterval = setInterval(() => {
+       getUserOrganizations();
+     }, 5000);
+
+     return () => clearInterval(pollInterval);
   }, []);
   const getUserOrganizations = async () => {
     try {
@@ -55,12 +63,17 @@ const MyOrganizationPage: React.FC = () => {
     getUserOrganizations();
   };
 
-  const handleDeleteSuccess = () => {
+  const handleDeleteSuccess = async () => {
     setMyOrganization(null);
+    // Swtich account to User's default account after organization deletion
+    if(accountType === 'organization'){
+    await switchAccount('user')
+    }
+    
   };
 
-  const handleVerifySuccess = () => {
-    getUserOrganizations();
+  const handleVerifySuccess = async () => {
+    await getUserOrganizations();
   };
 
   // Combine organizations into a single array and build element lists in one loop

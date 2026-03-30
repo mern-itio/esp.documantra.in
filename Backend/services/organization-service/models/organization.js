@@ -31,6 +31,11 @@ const OrganizationSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    verificationStatus: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED'],
+        default: 'PENDING'
+    },
     remark: { type: String }
 }, { timestamps: true });
 

@@ -2719,15 +2719,18 @@ const getEnvelopesExcludingIds = async (req, res) => {
 
     const query = {
       isOrganization: true,
-      organizationId
+      organizationId: new mongoose.Types.ObjectId(organizationId)
     };
 
     if (envelopeIds?.length) {
-      query._id = { $nin: envelopeIds };
+      query._id = {
+        $nin: envelopeIds.map(id => new mongoose.Types.ObjectId(id))
+      };
     }
 
-    const envelopes = await Envelope.find(query);
 
+    const envelopes = await Envelope.find(query);
+    console.log(`Found ${envelopes.length} envelopes excluding provided IDs.`);
     return res.status(200).json({
       success: true,
       data: envelopes

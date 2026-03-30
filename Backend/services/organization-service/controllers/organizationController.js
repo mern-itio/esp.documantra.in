@@ -44,8 +44,11 @@ const verificationOrganization = async (req, res) => {
     };
   }
   payload.isverifcationRequested = true;
+  console.log("Verification payload:", payload);
     try{
         const result = await orgService.updateOrganizationDetails(orgId, payload);
+    console.log("organization Id:", orgId);
+    console.log(result);
         return res.status(200).json({
             success: true,
             message: `Organization ${orgId} updated successfully`,
@@ -662,6 +665,7 @@ const fetchNoneFolderEnvelopes = async (req, res) =>{
     try{
         //Fetch All EnvelopeIds of added in Folder
         const envelopeIdsData = await orgService.fetchFolderEnvelopeIds(folderId);
+        console.log("Envelope IDs in folder:", envelopeIdsData);
         const envelopeIds = envelopeIdsData || [];
         try{
             // Fetch Envelopes and excluded already added in folder
@@ -672,7 +676,7 @@ const fetchNoneFolderEnvelopes = async (req, res) =>{
             );
             return res.status(200).json({
                 success:true,
-                data:envelopes.data.envelopes || []
+                data:envelopes?.data?.data || []
             });
         }catch(err){
             console.log(err);
@@ -766,6 +770,23 @@ const removeMemberFromOrganization = async( req, res) =>{
     }
 
 }
+const updateOrganizationVerificationStatus = async (req, res) => {
+    const orgId = req.params.id;
+    const { status,remark } = req.body;
+    console.log(`Updating organization ${orgId} with status: ${status} and remark: ${remark}`);
+    try{
+        const result = await orgService.updateOrganizationVerficationStatus(orgId, status, remark);
+        return res.status(200).json({
+            success: true,          
+            data: result
+        });
+
+    }catch (err){
+        console.log(err);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+    
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -793,5 +814,6 @@ module.exports = {
     fetchNoneFolderEnvelopes,
     fetchRolesandUsers,
     insertEnvelopesToFolder,
-    removeMemberFromOrganization
+    removeMemberFromOrganization,
+    updateOrganizationVerificationStatus
 };
