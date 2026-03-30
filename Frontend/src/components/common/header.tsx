@@ -101,6 +101,19 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     };
   }, [fetchCredits]);
 
+  // Listen for custom events when organizations are updated
+  React.useEffect(() => {
+    const handleOrganizationsUpdated = () => {
+      fetchOrganizations();
+    };
+
+    window.addEventListener('organizations-updated', handleOrganizationsUpdated);
+
+    return () => {
+      window.removeEventListener('organizations-updated', handleOrganizationsUpdated);
+    };
+  }, []);
+
   // Fetch notifications
   const fetchNotifications = React.useCallback(async () => {
     if (!user) return;
@@ -117,6 +130,15 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       setNotificationsLoading(false);
     }
   }, [user]);
+  const fetchOrganizations = React.useCallback(async () => {
+    try {
+      const response = await organizationApi.get('/api/organization/user-organizations');
+      const data = response.data?.data ?? response.data;
+      setAllOrganizations(Array.isArray(data) ? data : data ? [data] : []);
+    } catch (err) {
+      console.error('Error fetching organizations:', err);
+    }
+  }, []);
 
   // Fetch notifications on mount and when user changes
   React.useEffect(() => {
@@ -127,16 +149,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
-  }, [user, fetchNotifications]);
-  const fetchOrganizations = async () => {
-    try {
-      const response = await organizationApi.get('/api/organization/user-organizations');
-      const data = response.data?.data ?? response.data;
-      setAllOrganizations(Array.isArray(data) ? data : data ? [data] : []);
-    } catch (err) {
-      console.error('Error fetching organizations:', err);
-    }
-  };
+  }, [user, fetchNotifications, fetchOrganizations]);
   // Mark all notifications as read
   const handleMarkAllAsRead = async () => {
     try {

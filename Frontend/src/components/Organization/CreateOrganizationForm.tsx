@@ -103,8 +103,11 @@ const handleSubmit = async (e: FormEvent) => {
     setSuccess(true);
 
     if (onSuccess) {
+      // Dispatch custom event to notify other components (e.g., header) to refresh organizations
+       window.dispatchEvent(new CustomEvent('organizations-updated'));
       onSuccess(response.data.data);
     } else {
+      window.dispatchEvent(new CustomEvent('organizations-updated'));
       setTimeout(() => {
         navigate('/organizations');
       }, 2000);
