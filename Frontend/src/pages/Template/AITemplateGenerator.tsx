@@ -692,7 +692,7 @@ const AITemplateGenerator: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-8 py-6">  
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-8 py-6">
         <div className="flex-1 overflow-y-auto mb-4 space-y-4">
           {messages.map((message) => (
             <div

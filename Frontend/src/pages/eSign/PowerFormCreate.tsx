@@ -41,6 +41,7 @@ import type { AxiosProgressEvent } from 'axios';
 import { Card } from '../../components/DocumentService/ui/card';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../components/AuthService/AuthContext';
+import { APP_NAME } from '../../components/constants/appConfig';
 type Party = {
   id: string;                 // e.g. "slot_1"
   name: string;               // display label, e.g. "Party A"
@@ -2410,14 +2411,14 @@ const PowerFormCreate: React.FC = () => {
                       Basic steps to send an envelope
                     </button>
                     <button
-                      onClick={() => { setHelpMenuOpen(false); window.open('https://support.docusign.com', '_blank'); }}
+                        onClick={() => { setHelpMenuOpen(false); window.open('help-support', '_blank'); }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-t border-gray-100"
                     >
-                      <span className="text-blue-700">Visit the Docusign Support Center</span> for helpful articles, guides, videos, and more.
+                      <span className="text-blue-700">Visit the {APP_NAME} Support Center</span> for helpful articles, guides, videos, and more.
                     </button>
                     <div className="p-4 border-t border-gray-100">
                       <button
-                        onClick={() => window.open('https://support.docusign.com/contactSupport', '_blank')}
+                        onClick={() => window.open('/help-support', '_blank')}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md text-white"
                         style={{ backgroundColor: '#5015FF' }}
                       >
