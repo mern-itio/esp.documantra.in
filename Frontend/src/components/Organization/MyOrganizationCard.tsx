@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Building, Globe, FileText, CheckCircle2, Clock, MoreVertical, Settings, Users, ExternalLink, Edit, Trash2, Info, ShieldCheck, PersonStanding, X, AlertCircle } from 'lucide-react';
+
 import {
   Building2, Globe, ExternalLink, CheckCircle2, Clock,
   Edit, Trash2, ShieldCheck, Info, Users,
-  Settings, PersonStanding, ChevronRight,
+  Settings, PersonStanding, ChevronRight, AlertCircle, X,
 } from 'lucide-react';
 import type { Organization } from '../../types/organization';
 import { useNavigate } from 'react-router-dom';
@@ -26,37 +26,29 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
   onTeams,
   onVerify,
 }) => {
-  const [showMenuDropdown, setShowMenuDropdown] = useState(false);
-  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const [showSettingsTooltip, setShowSettingsTooltip] = useState(false);
-  const [showTeamTooltip, setShowTeamTooltip] = useState(false);
-  const [showVerificationTooltip, setShowVerificationTooltip] = useState(false);
-  const [showRejectionModal, setShowRejectionModal] = useState(false);
-  const [_menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showVerificationTooltip, setShowVerificationTooltip] = useState(false);
   const [verifyTooltip, setVerifyTooltip] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false);
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const statusValue = organization.status;
-  const isActive = typeof statusValue === 'boolean' ? statusValue : statusValue === true ;
-  const isDisabled = !isActive;
-  
-  // Verification status
+  const isActive = typeof organization.status === 'boolean'
+    ? organization.status
+    : organization.status === true;
+
   const isVerified = organization.isVerified === true;
-  const verificationStatus = organization?.verificationStatus;
-  const isActive = typeof statusValue === 'boolean' ? statusValue : statusValue === true;
-  const isVerified = organization.isverified === true;
+  const verificationStatus = organization.verificationStatus;
   const isVerificationRequested = organization.isverifcationRequested === true;
   const hasRemark = !!organization.remark;
 
@@ -114,99 +106,68 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
               )}
             </div>
           </div>
-
         </div>
 
         {/* Badges row */}
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {/* Status */}
+          {/* Active / Inactive */}
           <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
             isActive
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
               : 'bg-gray-100 text-gray-500 border-gray-200'
           }`}>
-            {isActive
-              ? <CheckCircle2 className="w-3 h-3" />
-              : <Clock className="w-3 h-3" />}
+            {isActive ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
             {isActive ? 'Active' : 'Inactive'}
           </span>
 
-          {/* Owner badge */}
+          {/* Owner */}
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#260559]/8 text-[#260559] border border-[#260559]/20">
             <Building2 className="w-3 h-3" />
             Owner
           </span>
 
-          {/* Verification Status Icons */}
-          {isVerified && verificationStatus=='APPROVED' && (
-            <div className="relative" ref={verificationRef}>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                <ShieldCheck className="h-4 w-4" />
-                <span>Verified</span>
-              </div>
-            </div>
-          )}
-          
-          {!isVerified && isVerificationRequested && verificationStatus=='PENDING' && (
-            <div 
-              className="relative" 
-              ref={verificationRef}
-              onMouseEnter={() => setShowVerificationTooltip(true)}
-              onMouseLeave={() => setShowVerificationTooltip(false)}
-            >
-              <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200 cursor-help">
-                <Info className="h-4 w-4" />
-              </div>
-              {showVerificationTooltip && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none z-50">
-                  Request submitted
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                    <div className="border-4 border-transparent border-t-gray-900"></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {verificationStatus=='REJECTED' && organization.remark && (
-            <div 
-              className="relative" 
-              ref={verificationRef}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowRejectionModal(true);
-                }}
-                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 border border-red-200 cursor-pointer hover:bg-red-200 transition-colors"
-              >
-                <Info className="h-4 w-4" />
-              </button>
-          {/* Verification */}
-          {isVerified && (
+          {/* Verified */}
+          {isVerified && verificationStatus === 'APPROVED' && (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
               <ShieldCheck className="w-3 h-3" />
               Verified
             </span>
           )}
 
-          {!isVerified && isVerificationRequested && !hasRemark && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-              <Clock className="w-3 h-3" />
-              Pending
-            </span>
+          {/* Pending verification */}
+          {!isVerified && isVerificationRequested && verificationStatus === 'PENDING' && (
+            <div
+              className="relative"
+              onMouseEnter={() => setShowVerificationTooltip(true)}
+              onMouseLeave={() => setShowVerificationTooltip(false)}
+            >
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 cursor-help">
+                <Clock className="w-3 h-3" />
+                Pending
+              </span>
+              {showVerificationTooltip && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none z-50">
+                  Verification request submitted
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                </div>
+              )}
+            </div>
           )}
 
-          {hasRemark && (
+          {/* Rejected — click to see reason */}
+          {verificationStatus === 'REJECTED' && hasRemark && (
             <div
               className="relative"
               onMouseEnter={() => setVerifyTooltip(true)}
               onMouseLeave={() => setVerifyTooltip(false)}
             >
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200 cursor-help">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowRejectionModal(true); }}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+              >
                 <Info className="w-3 h-3" />
                 Rejected
-              </span>
+              </button>
               {verifyTooltip && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg max-w-xs whitespace-normal z-50 pointer-events-none">
                   {organization.remark}
@@ -262,7 +223,6 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                 e.stopPropagation();
                 if (!isActive) return;
                 setSettingsOpen((v) => !v);
-                setMenuOpen(false);
               }}
               disabled={!isActive}
               title={!isActive ? 'Organization is inactive' : undefined}
@@ -313,11 +273,10 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
         </div>
       </div>
 
-      {/* Rejection Modal */}
+      {/* Rejection reason modal */}
       {showRejectionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
-            {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
@@ -333,12 +292,11 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
               </button>
             </div>
 
-            {/* Content */}
             <div className="p-6">
               <div className="mb-6">
                 <p className="text-sm font-semibold text-gray-600 mb-3">Request Status</p>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 border border-red-200">
-                  <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                  <div className="w-2 h-2 rounded-full bg-red-600" />
                   <span className="text-sm font-semibold text-red-700">Rejected</span>
                 </div>
               </div>
@@ -346,9 +304,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
               <div className="mb-6">
                 <p className="text-sm font-semibold text-gray-600 mb-3">Rejection Reason</p>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {organization.remark}
-                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{organization.remark}</p>
                 </div>
               </div>
 
@@ -361,7 +317,6 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex items-center justify-end gap-3">
                 <button
                   type="button"
@@ -372,10 +327,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowRejectionModal(false);
-                    onVerify?.();
-                  }}
+                  onClick={() => { setShowRejectionModal(false); onVerify?.(); }}
                   className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   Resubmit Verification
