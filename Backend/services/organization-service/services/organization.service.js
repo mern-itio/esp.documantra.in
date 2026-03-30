@@ -206,7 +206,7 @@ const getOrganizationRoleById = async (roleId) => {
     return orgRole;
 }
 const getOrganizationPermissionsByRoleId = async (roleId) => {
-    const orgPermissions = await organizationPermission.findById(roleId).lean();
+    const orgPermissions = await organizationPermission.findOne({ roleId }).lean();
     return orgPermissions;
 }
 const createFolderInOrganization = async (orgId, folderData,userId) => {

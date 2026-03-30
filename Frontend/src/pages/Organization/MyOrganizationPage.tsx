@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Building2, Plus, Users, Share2 } from 'lucide-react';
 import { MyOrganizationCard } from '../../components/Organization/MyOrganizationCard';
 import { SharedOrganizationCard } from '../../components/Organization/SharedOrganizationCard';
+import { SharedOrganizationDetailModal } from '../../components/Organization/SharedOrganizationDetailModal';
+import { OrganizationOwnerDetailModal } from '../../components/Organization/OrganizationOwnerDetailModal';
 import { EditOrganizationModal } from '../../components/Organization/EditOrganizationModal';
 import { DeleteOrganizationModal } from '../../components/Organization/DeleteOrganizationModal';
 import { TeamsManagementModal } from '../../components/Organization/TeamsManagementModal';
@@ -22,6 +24,8 @@ const MyOrganizationPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   const [showTeamsModal, setShowTeamsModal] = React.useState(false);
   const [showVerifyModal, setShowVerifyModal] = React.useState(false);
+  const [selectedSharedOrg, setSelectedSharedOrg] = React.useState<Organization | null>(null);
+  const [showOwnerDetailModal, setShowOwnerDetailModal] = React.useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('mine');
   const [loading, setLoading] = useState(true);
 
@@ -214,6 +218,7 @@ const MyOrganizationPage: React.FC = () => {
                 onDelete={() => setShowDeleteModal(true)}
                 onTeams={() => setShowTeamsModal(true)}
                 onVerify={() => setShowVerifyModal(true)}
+                onViewDetails={() => setShowOwnerDetailModal(true)}
               />
             </div>
           ) : (
@@ -239,6 +244,7 @@ const MyOrganizationPage: React.FC = () => {
                 key={org._id}
                 organization={org}
                 role={(org as any).role || 'Member'}
+                onClick={() => setSelectedSharedOrg(org)}
               />
             ))}
           </div>
@@ -250,6 +256,24 @@ const MyOrganizationPage: React.FC = () => {
           />
         )}
       </div>
+
+      {/* Owner org detail modal */}
+      {myOrganization && (
+        <OrganizationOwnerDetailModal
+          isOpen={showOwnerDetailModal}
+          onClose={() => setShowOwnerDetailModal(false)}
+          organization={myOrganization}
+        />
+      )}
+
+      {/* Shared org detail modal */}
+      {selectedSharedOrg && (
+        <SharedOrganizationDetailModal
+          isOpen={!!selectedSharedOrg}
+          onClose={() => setSelectedSharedOrg(null)}
+          organization={selectedSharedOrg}
+        />
+      )}
 
       {/* Modals */}
       <EditOrganizationModal
