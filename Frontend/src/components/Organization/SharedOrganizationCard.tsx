@@ -17,7 +17,7 @@ export const SharedOrganizationCard: React.FC<SharedOrganizationCardProps> = ({
     ? organization.name.slice(0, 2).toUpperCase()
     : '??';
 
-  const isVerified = organization.isverified === true;
+  const isVerified = organization.isVerified === true;
 
   return (
     <div

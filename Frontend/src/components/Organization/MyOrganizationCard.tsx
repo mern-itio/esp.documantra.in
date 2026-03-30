@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Building2, Globe, ExternalLink, CheckCircle2, Clock,
   Edit, Trash2, ShieldCheck, Info, Users,
-  Settings, PersonStanding, ChevronRight, AlertCircle, X,
+  Settings, PersonStanding, ChevronRight, AlertCircle, X, LayoutDashboard,
 } from 'lucide-react';
 import type { Organization } from '../../types/organization';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ interface MyOrganizationCardProps {
   onSettings?: () => void;
   onTeams?: () => void;
   onVerify?: () => void;
+  onViewDetails?: () => void;
 }
 
 export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
@@ -25,6 +26,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
   onDelete,
   onTeams,
   onVerify,
+  onViewDetails,
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showVerificationTooltip, setShowVerificationTooltip] = useState(false);
@@ -190,6 +192,15 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
 
         {/* Footer action bar */}
         <div className="pt-3.5 border-t border-gray-100 flex items-center gap-1 flex-wrap">
+          {/* View Details */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#260559] text-white hover:bg-[#34106a] transition-colors"
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            View Details
+          </button>
+
           {/* Get Verified */}
           {!isVerified && !isVerificationRequested && (
             <button
@@ -197,7 +208,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              Get Verified
+              Verify
             </button>
           )}
 
