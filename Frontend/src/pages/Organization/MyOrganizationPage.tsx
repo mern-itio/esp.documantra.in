@@ -64,11 +64,15 @@ const MyOrganizationPage: React.FC = () => {
   };
 
   const handleEditSuccess = () => {
+    // Dispatch custom event to notify other components (e.g., header) to refresh organizations
+    window.dispatchEvent(new CustomEvent('organizations-updated'))
     getUserOrganizations();
   };
 
   const handleDeleteSuccess = async () => {
     setMyOrganization(null);
+    // Dispatch custom event to notify other components (e.g., header) to refresh organizations
+    window.dispatchEvent(new CustomEvent('organizations-updated'))
     // Swtich account to User's default account after organization deletion
     if(accountType === 'organization'){
     await switchAccount('user')
@@ -77,6 +81,8 @@ const MyOrganizationPage: React.FC = () => {
   };
 
   const handleVerifySuccess = async () => {
+    // Dispatch custom event to notify other components (e.g., header) to refresh organizations
+    window.dispatchEvent(new CustomEvent('organizations-updated'))
     await getUserOrganizations();
   };
 
