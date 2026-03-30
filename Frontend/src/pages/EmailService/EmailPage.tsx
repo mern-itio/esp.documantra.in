@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, MoreVertical, ChevronLeft, ChevronRight, CheckCircle, Pencil, Plus, Settings, X, CircleCheckBig, Star } from 'lucide-react';
+import { Search, MoreVertical, ChevronLeft, ChevronRight, CheckCircle, Pencil, Plus, Settings, X, CircleCheckBig, Star, Info, Zap, ShieldCheck, Mail, Globe, Server, AlertTriangle, BookOpen, HelpCircle, CheckCheck } from 'lucide-react';
 import { emailApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
 
@@ -57,6 +57,7 @@ const EmailPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<SmtpConfiguration | null>(null);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState<boolean>(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
@@ -609,6 +610,20 @@ const EmailPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Help button */}
+            <div className="relative group/help">
+              <button
+                onClick={() => setIsHelpOpen(true)}
+                className="inline-flex items-center justify-center p-2.5 text-gray-500 hover:text-[#260559] transition-colors rounded-lg hover:bg-[#260559]/6"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </button>
+              <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/help:opacity-100 group-hover/help:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                Setup guide
+                <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+              </div>
+            </div>
+
             <button
               onClick={handleCreate}
               className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
@@ -621,7 +636,7 @@ const EmailPage: React.FC = () => {
 
       {/* Configurations Table */}
       <div className="relative">
-        <div className="flex flex-col min-h-[calc(100vh-150px)] overflow-x-auto relative">
+        <div className="flex flex-col overflow-x-auto relative">
           <table ref={tableRef} className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
             {currentConfigurations.length > 0 && (
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -874,6 +889,140 @@ const EmailPage: React.FC = () => {
           </div>
         )}
       </div>
+      {/* ── "All caught up" — fills remaining space when few rows ── */}
+      {filteredConfigurations.length > 0 && filteredConfigurations.length <= 5 && (
+        <div className="flex flex-col items-center justify-center min-h-[340px] select-none">
+          {/* Animated ring + check */}
+          <div className="relative mb-5">
+            {/* Outer pulse ring */}
+            <span className="absolute inset-0 rounded-full bg-emerald-100 animate-ping opacity-40" />
+            <div className="relative w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
+              <CheckCheck className="w-7 h-7 text-emerald-500" />
+            </div>
+          </div>
+
+          <h3 className="text-lg font-bold text-[#260559] mb-1">You're all caught up</h3>
+          <p className="text-sm text-gray-400 mb-4">
+            {filteredConfigurations.length === 1
+              ? 'Your email configuration is set up and ready.'
+              : `All ${filteredConfigurations.length} email configurations are visible here.`}
+          </p>
+          <button
+            onClick={() => setIsHelpOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#260559] hover:text-[#34106a] transition-colors"
+          >
+            Need Help <HelpCircle className="w-3.5 h-3.5" />
+          
+          </button>
+        </div>
+      )}
+
+      {/* ── Help sidebar ── */}
+      {/* Backdrop */}
+      {isHelpOpen && (
+        <div
+          className="fixed inset-0 z-[9998] bg-black/20"
+          onClick={() => setIsHelpOpen(false)}
+        />
+      )}
+      {/* Drawer */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[380px] bg-white shadow-2xl z-[9999] flex flex-col
+          transform transition-transform duration-300 ease-in-out
+          ${isHelpOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#260559] flex items-center justify-center">
+              <BookOpen className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-sm font-bold text-gray-900">SMTP Setup Guide</span>
+          </div>
+          <button
+            onClick={() => setIsHelpOpen(false)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Drawer body — scrollable */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-7">
+
+          {/* How it works */}
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">How it works</p>
+            <ol className="space-y-4">
+              {[
+                { step: '1', title: 'Create a configuration', desc: 'Add your SMTP provider, host, port, and credentials using the Create Configuration button.' },
+                { step: '2', title: 'Verify the connection',  desc: 'Use the ⋮ menu → Verify to send a test email and confirm the config is live.' },
+                { step: '3', title: 'Set as default',         desc: 'Click the ☆ Active button on a verified config to make it the default sender.' },
+                { step: '4', title: 'Emails go out',          desc: 'All document notifications and outgoing emails will now use your custom SMTP config.' },
+              ].map((s, i, arr) => (
+                <li key={s.step} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-6 h-6 rounded-full bg-[#260559] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                      {s.step}
+                    </div>
+                    {i < arr.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1" />}
+                  </div>
+                  <div className="pb-4">
+                    <p className="text-sm font-semibold text-gray-800">{s.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{s.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          {/* Provider reference */}
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Provider reference</p>
+            <div className="space-y-3">
+              {[
+                { name: 'Gmail',        icon: <Mail   className="w-3.5 h-3.5" />, color: 'bg-red-50 text-red-500',    host: 'smtp.gmail.com',       port: '587', tip: 'Requires 2FA and an App Password from Google Account → Security.' },
+                { name: 'Zoho Mail',    icon: <Globe  className="w-3.5 h-3.5" />, color: 'bg-blue-50 text-blue-500',  host: 'smtp.zoho.com',        port: '587', tip: 'Enable SMTP access in Zoho Mail settings, then use an App-Specific Password.' },
+                { name: 'Webmail',      icon: <Server className="w-3.5 h-3.5" />, color: 'bg-violet-50 text-violet-500', host: 'mail.yourdomain.com', port: '587', tip: 'Get credentials from your hosting control panel (cPanel / DirectAdmin).' },
+                { name: 'Other',        icon: <Zap    className="w-3.5 h-3.5" />, color: 'bg-gray-100 text-gray-600', host: 'custom',               port: 'any', tip: 'Enter your SMTP host and port manually. TLS/SSL supported on any port.' },
+              ].map((p) => (
+                <div key={p.name} className="rounded-xl border border-gray-100 bg-gray-50 p-3.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${p.color}`}>{p.icon}</span>
+                    <span className="text-sm font-semibold text-gray-800">{p.name}</span>
+                  </div>
+                  <div className="flex gap-3 mb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Host</span>
+                    <code className="text-[11px] bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-700">{p.host}</code>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Port</span>
+                    <code className="text-[11px] bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-700">{p.port}</code>
+                  </div>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">{p.tip}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Quick tips */}
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Quick tips</p>
+            <ul className="space-y-2.5">
+              {[
+                { icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />, bg: 'bg-emerald-50', text: 'Always verify a config before relying on it for production emails.' },
+                { icon: <Star        className="w-3.5 h-3.5 text-[#260559]"  />, bg: 'bg-[#260559]/8', text: 'Only one config can be active/default at a time. Switch by clicking Active.' },
+                { icon: <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />, bg: 'bg-amber-50', text: 'Use App Passwords — never your main account password — to prevent lockouts.' },
+                { icon: <Info        className="w-3.5 h-3.5 text-blue-500"   />, bg: 'bg-blue-50',   text: 'If verification fails, check that port 587 isn\'t blocked by your firewall.' },
+              ].map((t, i) => (
+                <li key={i} className="flex items-start gap-2.5">
+                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${t.bg}`}>{t.icon}</span>
+                  <p className="text-xs text-gray-600 leading-relaxed">{t.text}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+        </div>
+      </div>
 
       {/* Dropdown menu */}
       {openMenuId && menuPosition && (() => {
@@ -897,18 +1046,20 @@ const EmailPage: React.FC = () => {
                   Delete
                 </button>
               </li>
-              <li>
-                <button
-                  onClick={() => {
-                    setOpenMenuId(null);
-                    setMenuPosition(null);
-                    if (currentConfig) handleVerify(currentConfig._id);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-green-600"
-                >
-                  Verify
-                </button>
-              </li>
+              {!currentConfig?.isVerified && (
+                <li>
+                  <button
+                    onClick={() => {
+                      setOpenMenuId(null);
+                      setMenuPosition(null);
+                      if (currentConfig) handleVerify(currentConfig._id);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-green-600"
+                  >
+                    Verify
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         );

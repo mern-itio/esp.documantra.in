@@ -212,10 +212,75 @@ async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) 
 }
 
 /**
- * Build HTML body for New Login Alert email.
+ * Resolve IANA timezone string from an IP address using ip-api.com (free, no key needed).
+ * Falls back to 'Asia/Kolkata' for private/loopback IPs, and 'UTC' on any error.
  */
-function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time) {
+async function resolveTimezoneFromIp(ip) {
+  if (!ip || ip === 'Unknown IP') return 'Asia/Kolkata';
+
+  // Unwrap IPv4-mapped IPv6 addresses (e.g. ::ffff:49.36.179.233 → 49.36.179.233)
+  const normalised = ip.replace(/^::ffff:/i, '').trim();
+
+  const privateRanges = [
+    /^127\./,
+    /^10\./,
+    /^192\.168\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^::1$/,
+    /^localhost$/i,
+  ];
+  if (privateRanges.some((re) => re.test(normalised))) {
+    // Private / loopback — default to IST as the app is India-based
+    return 'Asia/Kolkata';
+  }
+
+  try {
+    const axios = require('axios');
+    const { data } = await axios.get(
+      `http://ip-api.com/json/${normalised}?fields=status,timezone`,
+      { timeout: 3000 }
+    );
+    if (data && data.status === 'success' && data.timezone) return data.timezone;
+  } catch (err) {
+    console.warn('IP timezone lookup failed, falling back to UTC:', err.message);
+  }
+  return 'UTC';
+}
+
+/**
+ * Format a Date in the given IANA timezone with a human-readable layout.
+ * Example output: "25 March 2026, 06:24 PM IST"
+ */
+function formatTimeInZone(date, timezone) {
+  try {
+    return new Date(date).toLocaleString('en-IN', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZoneName: 'short',
+    });
+  } catch {
+    // Intl may not recognise unusual timezone strings on some Node versions
+    return new Date(date).toUTCString();
+  }
+}
+
+/**
+ * Build HTML body for New Login Alert email.
+ * @param {string} recipientName
+ * @param {string} deviceInfo
+ * @param {string} ipAddress
+ * @param {Date|string} time
+ * @param {string} [userTimezone='UTC']  IANA timezone resolved from the user's IP
+ */
+function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time, userTimezone = 'UTC') {
   const fromName = getFromDisplayName();
+  const formattedTime = formatTimeInZone(time, userTimezone);
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -243,12 +308,12 @@ function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time) {
               <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #f44336; margin: 0 0 24px;">
                 <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Device/Browser:</strong> <span style="color: #64748b;">${deviceInfo || 'Unknown Device'}</span></p>
                 <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>IP Address:</strong> <span style="color: #64748b;">${ipAddress || 'Unknown IP'}</span></p>
-                <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">${new Date(time).toLocaleString()}</span></p>
+                <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">${formattedTime}</span></p>
               </div>
 
               <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.65; color: #475569;">If this was you, you can safely ignore this email.</p>
               <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #d32f2f; font-weight: bold;">If this wasn't you, your account may be compromised.</p>
-              <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: #475569;">Please log in to your account, review your active sessions in Profile > Session Management, and log out any unrecognized devices immediately. You should also change your password.</p>
+              <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: #475569;">Please log in to your account, review your active sessions in Profile &gt; Session Management, and log out any unrecognized devices immediately. You should also change your password.</p>
             </td>
           </tr>
           <tr>
@@ -276,8 +341,10 @@ async function sendNewLoginAlertEmail(toEmail, fullname, deviceInfo, ipAddress, 
     console.warn('New login alert email skipped: SMTP/email not configured');
     return false;
   }
-  
-  const html = getNewLoginAlertHtml(fullname, deviceInfo, ipAddress, time);
+
+  // Resolve user's timezone from their IP before building the email
+  const userTimezone = await resolveTimezoneFromIp(ipAddress);
+  const html = getNewLoginAlertHtml(fullname, deviceInfo, ipAddress, time, userTimezone);
   
   try {
     await sendEmail({

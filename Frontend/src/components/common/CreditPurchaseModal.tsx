@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Zap, Check, ChevronDown } from 'lucide-react';
+import { X, Zap, Check, ChevronDown, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { CreditPackage, Invoice } from '../../types';
 import {
@@ -11,9 +11,10 @@ interface CreditPurchaseModalProps {
   open: boolean;
   onClose: () => void;
   onPurchased?: (invoice: Invoice | null) => void;
+  lowCredits?: boolean;
 }
 
-export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, onClose }) => {
+export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, onClose, lowCredits = false }) => {
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [loading, setLoading] = useState(false);
   const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
@@ -253,14 +254,28 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative w-full max-w-2xl mx-auto px-4">
         <div className="rounded-xl overflow-hidden shadow-2xl bg-[#f8fafc] text-gray-900 border border-gray-200">
+          {lowCredits && (
+            <div className="flex items-center gap-2.5 px-6 py-3 bg-amber-50 border-b border-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              <p className="text-sm font-medium text-amber-800">
+                You&apos;ve run out of credits — purchase more to continue.
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-between px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-[#260559]/10">
-                <Zap className="w-4 h-4 text-[#260559]" />
+              <div className={`p-2 rounded-xl ${lowCredits ? 'bg-amber-100' : 'bg-[#260559]/10'}`}>
+                <Zap className={`w-4 h-4 ${lowCredits ? 'text-amber-600' : 'text-[#260559]'}`} />
               </div>
               <div>
-                <h3 className="text-[18px] leading-none font-extrabold text-gray-900">Need More Credits?</h3>
-                <p className="text-xs text-gray-600">Choose a plan and continue building seamlessly.</p>
+                <h3 className="text-[18px] leading-none font-extrabold text-gray-900">
+                  {lowCredits ? 'Insufficient Credits' : 'Need More Credits?'}
+                </h3>
+                <p className="text-xs text-gray-600">
+                  {lowCredits
+                    ? 'Top up your credits below to continue without interruption.'
+                    : 'Choose a plan and continue building seamlessly.'}
+                </p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
