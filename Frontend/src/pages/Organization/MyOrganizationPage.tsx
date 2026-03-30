@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Plus } from 'lucide-react';
+import { Building2, Plus, Users, Share2 } from 'lucide-react';
 import { MyOrganizationCard } from '../../components/Organization/MyOrganizationCard';
 import { SharedOrganizationCard } from '../../components/Organization/SharedOrganizationCard';
 import { EditOrganizationModal } from '../../components/Organization/EditOrganizationModal';
@@ -10,6 +10,8 @@ import { VerifyOrganizationModal } from '../../components/Organization/VerifyOrg
 import type { Organization } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
 
+type Tab = 'mine' | 'shared';
+
 const MyOrganizationPage: React.FC = () => {
   const navigate = useNavigate();
   const [myOrganization, setMyOrganization] = React.useState<Organization | null>(null);
@@ -18,16 +20,19 @@ const MyOrganizationPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   const [showTeamsModal, setShowTeamsModal] = React.useState(false);
   const [showVerifyModal, setShowVerifyModal] = React.useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('mine');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-     getUserOrganizations();
+    getUserOrganizations();
   }, []);
+
   const getUserOrganizations = async () => {
     try {
+      setLoading(true);
       const response = await organizationApi.get('/api/organization/user-organizations');
       if (response.status === 200) {
         const payload = response.data?.data ?? response.data;
-        console.log('User Organizations:', payload);
         if (Array.isArray(payload)) {
           const owner = payload.find((o) => (o as any).isOwner) ?? null;
           setMyOrganization(owner);
@@ -45,125 +50,188 @@ const MyOrganizationPage: React.FC = () => {
           setSharedOrganizations([]);
         }
       }
-      // Handle the response data as needed
     } catch (error) {
       console.error('Error fetching user organizations:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEditSuccess = () => {
-    getUserOrganizations();
-  };
+  const handleEditSuccess = () => getUserOrganizations();
+  const handleDeleteSuccess = () => setMyOrganization(null);
+  const handleVerifySuccess = () => getUserOrganizations();
 
-  const handleDeleteSuccess = () => {
-    setMyOrganization(null);
-  };
-
-  const handleVerifySuccess = () => {
-    getUserOrganizations();
-  };
-
-  // Combine organizations into a single array and build element lists in one loop
-  const organizations: (Organization & { isOwner?: boolean })[] = [
-    ...(myOrganization ? [{ ...myOrganization, isOwner: true }] : []),
-    ...sharedOrganizations.map((org) => ({ ...org, isOwner: (org as any).isOwner ?? false }))
+  const tabs: { id: Tab; label: string; count: number; icon: React.ReactNode }[] = [
+    {
+      id: 'mine',
+      label: 'My Organization',
+      count: myOrganization ? 1 : 0,
+      icon: <Building2 className="w-4 h-4" />,
+    },
+    {
+      id: 'shared',
+      label: 'Shared with me',
+      count: sharedOrganizations.length,
+      icon: <Share2 className="w-4 h-4" />,
+    },
   ];
 
-  const orgElements: React.ReactElement[] = [];
-
-  organizations.forEach((org) => {
-    if (org.isOwner) {
-      orgElements.push(
-        <MyOrganizationCard
-          key={org._id}
-          organization={org}
-          onClick={() => {
-            console.log('Navigate to organization details');
-          }}
-          onEdit={() => setShowEditModal(true)}
-          onDelete={() => setShowDeleteModal(true)}
-          onTeams={() => setShowTeamsModal(true)}
-          onVerify={() => setShowVerifyModal(true)}
-        />
-      );
-    } else {
-      orgElements.push(
-        <SharedOrganizationCard
-          key={org._id}
-          organization={org}
-          role="Member"
-          onClick={() => {
-            console.log('Navigate to shared organization details');
-          }}
-        />
-      );
-    }
-  });
-
-  const hasAnyOrganization = orgElements.length > 0;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
+    <div className="min-h-screen bg-[#f6f7fb]">
+      {/* Page Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
-                  <Building className="h-6 w-6 text-white" />
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900">Organizations</h1>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-sm bg-[#260559] flex items-center justify-center shadow-sm">
+                <Building2 className="w-5 h-5 text-white" />
               </div>
-              <p className="text-gray-600 ml-14">
-                Manage your organizations and access shared organizations
-              </p>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Organizations</h1>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Manage your workspace and team collaborations
+                </p>
+              </div>
             </div>
 
-            {/* Create Organization Button */}
-            {!myOrganization && (
+            {!myOrganization && !loading && (
               <button
                 onClick={() => navigate('/organization/create')}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#260559] text-white text-sm font-semibold rounded-lg hover:bg-[#34106a] transition-colors shadow-sm"
               >
-                <Plus className="w-5 h-5" />
-                <span>Create Organization</span>
+                <Plus className="w-4 h-4" />
+                New Organization
               </button>
             )}
           </div>
-        </div>
 
-        {/* Organizations Section */}
-        {hasAnyOrganization ? (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Building className="w-5 h-5 text-[#3E2B66]" />
-              <h2 className="text-xl font-semibold text-gray-900">Organizations</h2>
-              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                {orgElements.length}
-              </span>
+          {/* Stats strip */}
+          {!loading && (
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#260559]/10 flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-[#260559]" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">My Organization</p>
+                  <p className="text-lg font-bold text-gray-900">{myOrganization ? 1 : 0}</p>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Share2 className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Shared Access</p>
+                  <p className="text-lg font-bold text-gray-900">{sharedOrganizations.length}</p>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Total Access</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {(myOrganization ? 1 : 0) + sharedOrganizations.length}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {orgElements}
+          )}
+
+          {/* Tabs */}
+          <div className="mt-6 flex gap-1 border-b border-gray-200 -mb-px">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-[#260559] text-[#260559]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+                <span
+                  className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                    activeTab === tab.id
+                      ? 'bg-[#260559] text-white'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
+                <div className="flex gap-4 mb-5">
+                  <div className="w-14 h-14 rounded-xl bg-gray-200" />
+                  <div className="flex-1 space-y-2 pt-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-full" />
+                  <div className="h-3 bg-gray-100 rounded w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activeTab === 'mine' ? (
+          myOrganization ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <MyOrganizationCard
+                organization={myOrganization}
+                onEdit={() => setShowEditModal(true)}
+                onDelete={() => setShowDeleteModal(true)}
+                onTeams={() => setShowTeamsModal(true)}
+                onVerify={() => setShowVerifyModal(true)}
+              />
             </div>
+          ) : (
+            <EmptyState
+              icon={<Building2 className="w-10 h-10 text-gray-300" />}
+              title="No organization yet"
+              description="Create your organization to start collaborating with your team, managing documents, and building workflows."
+              action={
+                <button
+                  onClick={() => navigate('/organization/create')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#260559] text-white text-sm font-semibold rounded-lg hover:bg-[#34106a] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Organization
+                </button>
+              }
+            />
+          )
+        ) : sharedOrganizations.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {sharedOrganizations.map((org) => (
+              <SharedOrganizationCard
+                key={org._id}
+                organization={org}
+                role={(org as any).role || 'Member'}
+              />
+            ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <Building className="w-10 h-10 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Organization Yet</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Create your organization to get started with team collaboration and document management.
-            </p>
-            <button
-              onClick={() => navigate('/organization/create')}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Create Organization</span>
-            </button>
-          </div>
+          <EmptyState
+            icon={<Share2 className="w-10 h-10 text-gray-300" />}
+            title="No shared organizations"
+            description="You haven't been added to any organization yet. Ask your organization admin to invite you."
+          />
         )}
       </div>
 
@@ -174,20 +242,17 @@ const MyOrganizationPage: React.FC = () => {
         organization={myOrganization}
         onSuccess={handleEditSuccess}
       />
-
       <DeleteOrganizationModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         organization={myOrganization}
         onSuccess={handleDeleteSuccess}
       />
-
       <TeamsManagementModal
         isOpen={showTeamsModal}
         onClose={() => setShowTeamsModal(false)}
         organization={myOrganization}
       />
-
       <VerifyOrganizationModal
         isOpen={showVerifyModal}
         onClose={() => setShowVerifyModal(false)}
@@ -198,5 +263,21 @@ const MyOrganizationPage: React.FC = () => {
   );
 };
 
-export default MyOrganizationPage;
+/* ─── Reusable empty state ─── */
+const EmptyState: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}> = ({ icon, title, description, action }) => (
+  <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
+      {icon}
+    </div>
+    <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+    <p className="text-sm text-gray-500 max-w-md leading-relaxed mb-6">{description}</p>
+    {action}
+  </div>
+);
 
+export default MyOrganizationPage;

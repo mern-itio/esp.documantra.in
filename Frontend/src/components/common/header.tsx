@@ -15,7 +15,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const [allOrganizations, setAllOrganizations] = React.useState<Organization[]>([]);
-  const { user, logout, accountType, organizationId, switchAccount,organizationDetail } = useAuth();
+  const { user, logout, accountType, organizationId, switchAccount, organizationDetail } = useAuth();
   const [showSwitcher, setShowSwitcher] = useState(false);
   const { userPlan, isFreePlan } = useSubscription();
   const navigate = useNavigate();
@@ -129,11 +129,11 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     }
   }, [user, fetchNotifications]);
   const fetchOrganizations = async () => {
-    try{
+    try {
       const response = await organizationApi.get('/api/organization/user-organizations');
       const data = response.data?.data ?? response.data;
-       setAllOrganizations(Array.isArray(data) ? data : data ? [data] : []);
-    }catch (err){
+      setAllOrganizations(Array.isArray(data) ? data : data ? [data] : []);
+    } catch (err) {
       console.error('Error fetching organizations:', err);
     }
   };
@@ -299,11 +299,10 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
           {location.pathname !== "/dashboard" && (
             <button
               onClick={() => navigate('/credits-usage')}
-              className={`group hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 ${
-                lowCredits 
-                  ? 'border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 hover:from-red-100 hover:to-red-200 hover:border-red-400' 
+              className={`group hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 ${lowCredits
+                  ? 'border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 hover:from-red-100 hover:to-red-200 hover:border-red-400'
                   : 'border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 hover:from-purple-100 hover:to-indigo-100 hover:border-purple-400'
-              }`}
+                }`}
               title="View credits usage"
             >
               <span className="font-semibold transition-all duration-300 group-hover:scale-110">
@@ -368,8 +367,10 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       {notifications.slice(0, 3).map((notification) => (
                         <div
                           key={notification._id}
-                          className={`group/notif px-4 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${!notification.isRead ? 'bg-blue-50 border-l-4 border-[#3E2B66]' : ''
-                            }`}
+                          className={`group/notif px-4 py-3 cursor-pointer transition-all duration-200 
+  hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100
+  ${!notification.isRead ? 'bg-blue-50 border-l-4 border-[#3E2B66]' : 'hover:bg-gray-50'}
+  `}
                           onClick={() => {
                             navigate('/notifications');
                             setShowNotif(false);
@@ -486,29 +487,29 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     {showSwitcher && (
                       <div className="absolute left-0 top-full mt-2 w-52 rounded-lg
                                       border border-gray-200 bg-white shadow-lg z-50">
-                          <div className="px-4 py-2 border-b border-gray-100">
-                            <p className="text-xs font-semibold text-gray-900 tracking-wide">
-                              Switch Account
-                            </p>
-                          </div>                    
-                            <button
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                              onClick={async () => { await switchAccount('user'); setShowUserMenu(false); setShowSwitcher(false); }}
-                            >
-                              <div className={`flex items-center gap-2 
+                        <div className="px-4 py-2 border-b border-gray-100">
+                          <p className="text-xs font-semibold text-gray-900 tracking-wide">
+                            Switch Account
+                          </p>
+                        </div>
+                        <button
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          onClick={async () => { await switchAccount('user'); setShowUserMenu(false); setShowSwitcher(false); }}
+                        >
+                          <div className={`flex items-center gap-2 
                                 ${accountType === 'user'
-                                  ? "bg-green-50 px-1 py-2 border border-green-300 rounded-md"
-                                  : "hover:bg-gray-100"
-                                }`}>
-                                <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
-                                  {getInitials((user as any)?.fullname)}
-                                </div>
+                              ? "bg-green-50 px-1 py-2 border border-green-300 rounded-md"
+                              : "hover:bg-gray-100"
+                            }`}>
+                            <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
+                              {getInitials((user as any)?.fullname)}
+                            </div>
 
-                                <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">
-                                  {formatName((user as any)?.fullname)}
-                                </p>
-                              </div>
-                            </button>
+                            <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">
+                              {formatName((user as any)?.fullname)}
+                            </p>
+                          </div>
+                        </button>
                         {allOrganizations.length > 0 && allOrganizations.map((org) => (
                           <button
                             key={org._id}
@@ -536,27 +537,27 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       </div>
                     )}
                   </div>
-                  {organizationDetail && accountType === 'organization' ? 
-                  <div>
-                    <a href={
+                  {organizationDetail && accountType === 'organization' ?
+                    <div>
+                      <a href={
                         organizationDetail?.website?.startsWith('http')
                           ? organizationDetail?.website
                           : `https://${organizationDetail?.website}`
                       }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline text-purple-600"
-                    >
-                      {organizationDetail.website}
-                    </a>
-                    <p className="text-sm text-gray-600 mt-1">Account #{organizationDetail?._id || "_"}</p>
-                  </div>
-                   : (
-                    <div>
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline text-purple-600"
+                      >
+                        {organizationDetail.website}
+                      </a>
+                      <p className="text-sm text-gray-600 mt-1">Account #{organizationDetail?._id || "_"}</p>
+                    </div>
+                    : (
+                      <div>
                         <p className="text-sm text-gray-600 mt-1">{(user as any)?.email || "—"}</p>
                         <p className="text-sm text-gray-600 mt-1">Account #{accountId}</p>
-                    </div>
-                  )}
+                      </div>
+                    )}
 
                   {/* ✅ Manage Profile button (restored) */}
                   <button

@@ -82,6 +82,7 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import "react-datepicker/dist/react-datepicker.css";
 import { toTitleCase } from '../../utils/formatName';
+import { APP_NAME } from '../../components/constants/appConfig';
 
 /** Match saved recipient rows by name, email, company, title, or phone (digits normalized). */
 function recipientListRowMatchesQuery(
@@ -3898,12 +3899,12 @@ const EnvelopeCreator: React.FC = () => {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      navigate('/template/ai-generator');
+                                      navigate('/e-sign/templateLibrary');
                                     }}
                                     className="ai-generate-button flex items-center justify-center gap-2 flex-1 sm:flex-none min-w-[180px]"
                                   >
                                     <Sparkles className="w-4 h-4 relative z-10" />
-                                    <span className="relative z-10 text-sm sm:text-base">Generate with AI</span>
+                                    <span className="relative z-10 text-sm sm:text-base">Choose Template</span>
                                   </button>
                                 </div>
                               </div>
@@ -6337,7 +6338,7 @@ const EnvelopeCreator: React.FC = () => {
                       onClick={() => { setHelpMenuOpen(false); window.open('help-support', '_blank'); }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-t border-gray-100"
                     >
-                      <span className="text-blue-700">Visit the Draft&Sign Support Center</span> for helpful articles, guides, videos, and more.
+                      <span className="text-blue-700">Visit the {APP_NAME} Support Center</span> for helpful articles, guides, videos, and more.
                     </button>
                     <div className="p-4 border-t border-gray-100">
                       <button

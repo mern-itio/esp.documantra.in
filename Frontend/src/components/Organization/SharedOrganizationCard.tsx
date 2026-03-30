@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building, Globe, Users, Shield, ExternalLink, ArrowRight } from 'lucide-react';
+import { Building2, Globe, ExternalLink, Users, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import type { Organization } from '../../types/organization';
 
 interface SharedOrganizationCardProps {
@@ -8,96 +8,112 @@ interface SharedOrganizationCardProps {
   onClick?: () => void;
 }
 
-export const SharedOrganizationCard: React.FC<SharedOrganizationCardProps> = ({ organization, role = 'Member', onClick }) => {
+export const SharedOrganizationCard: React.FC<SharedOrganizationCardProps> = ({
+  organization,
+  role = 'Member',
+  onClick,
+}) => {
+  const initials = organization.name
+    ? organization.name.slice(0, 2).toUpperCase()
+    : '??';
+
+  const isVerified = organization.isverified === true;
+
   return (
     <div
       onClick={onClick}
-      className="group relative bg-white rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+      className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-400/60 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden flex flex-col"
     >
-      {/* Blue Accent Bar for Shared */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+      {/* Top accent — blue for shared */}
+      <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-500" />
 
-      <div className="p-6">
+      <div className="p-5 flex flex-col flex-1">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4 flex-1">
-            {/* Logo */}
-            <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md flex-shrink-0 overflow-hidden">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Logo / Avatar */}
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
               {organization.logo ? (
                 <img
                   src={organization.logo}
                   alt={organization.name}
-                  className="w-full h-full rounded-lg object-fit"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
-              ) : null}
-              {(!organization.logo || organization.logo === '') && (
-                <Building className="w-8 h-8 text-white" />
+              ) : (
+                <span className="text-sm font-bold text-white">{initials}</span>
               )}
             </div>
 
-            {/* Organization Info */}
+            {/* Name + website */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-xl font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                  {organization.name}
-                </h3>
-                <Shield className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              </div>
-              {organization.website && (
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Globe className="w-4 h-4" />
-                  <a
-                    href={organization.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="hover:text-blue-600 truncate flex items-center gap-1"
-                  >
-                    {organization.website.replace(/^https?:\/\//, '')}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
+              <h3 className="text-base font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                {organization.name}
+              </h3>
+              {organization.website ? (
+                <a
+                  href={organization.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors mt-0.5"
+                >
+                  <Globe className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{organization.website.replace(/^https?:\/\//, '')}</span>
+                  <ExternalLink className="w-2.5 h-2.5 flex-shrink-0" />
+                </a>
+              ) : (
+                <span className="text-xs text-gray-400 mt-0.5 block">No website</span>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Role Badge */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <Users className="w-3.5 h-3.5" />
-            <span>{role}</span>
+          {/* Arrow indicator */}
+          <div className="flex-shrink-0 p-1.5 rounded-lg text-gray-300 group-hover:text-blue-500 group-hover:bg-blue-50 transition-colors">
+            <ArrowUpRight className="w-4 h-4" />
           </div>
         </div>
 
-        {/* Details */}
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Users className="w-4 h-4 text-gray-400" />
-            <span>Shared Organization</span>
-          </div>
-          {organization.gst && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Globe className="w-4 h-4 text-gray-400" />
-              <span className="truncate">GST: {organization.gst}</span>
-            </div>
+        {/* Badges */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            <Users className="w-3 h-3" />
+            {role}
+          </span>
+
+          {isVerified && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <ShieldCheck className="w-3 h-3" />
+              Verified
+            </span>
           )}
         </div>
 
-        {/* Footer - View Access */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <span className="text-sm text-gray-500">You have access to this organization</span>
-          <div className="flex items-center gap-1 text-sm font-medium text-blue-600 group-hover:text-blue-700">
-            <span>View</span>
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+        {/* Meta */}
+        <div className="flex-1 space-y-2 mb-4">
+          {organization.gst && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span className="font-medium text-gray-400 uppercase tracking-wide text-[10px]">GST</span>
+              <span className="font-mono text-gray-700">{organization.gst}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Shared organization</span>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="pt-3.5 border-t border-gray-100 flex items-center justify-between">
+          <span className="text-xs text-gray-400">You have member access</span>
+          <span className="text-xs font-semibold text-blue-600 group-hover:text-blue-700 flex items-center gap-1 transition-colors">
+            View
+            <ArrowUpRight className="w-3 h-3" />
+          </span>
         </div>
       </div>
     </div>
   );
 };
-

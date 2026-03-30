@@ -11,8 +11,10 @@ import { SubscriptionProvider } from './context/SubscriptionContext';
 import { SupportChatProvider } from './context/SupportChatContext';
 import { Toaster } from "react-hot-toast"; 
 import SubscriptionPlansModal from './components/common/SubscriptionPlansModal';
+import CreditPurchaseModal from './components/common/CreditPurchaseModal';
 import CustomerChatWidget from './components/SupportChat/CustomerChatWidget';
 import AIAssistantButton from './components/AIAssistant/AIAssistantButton';
+import { useSubscription } from './context/SubscriptionContext';
 
 const ConditionalWidgets: React.FC = () => {
   const [shouldHide, setShouldHide] = useState(false);
@@ -109,13 +111,22 @@ const App: React.FC = () => {
 
 export default App;
 
-// Portal to listen to global event and mount the plans modal
+// Portal to listen to global event and conditionally show plans or credit purchase modal.
+// Must be rendered inside <SubscriptionProvider> so it can read the user's plan.
 const GlobalPlansModalPortal: React.FC = () => {
   const [open, setOpen] = React.useState(false);
+  const { isFreePlan } = useSubscription();
+
   React.useEffect(() => {
     const handler = () => setOpen(true);
     window.addEventListener('app:open-plans-modal', handler as any);
     return () => window.removeEventListener('app:open-plans-modal', handler as any);
   }, []);
-  return <SubscriptionPlansModal open={open} onClose={() => setOpen(false)} />;
+
+  // Free users → show subscription plans to upgrade
+  // Paid users who exhausted credits → show credit top-up modal with low-credit banner
+  if (isFreePlan()) {
+    return <SubscriptionPlansModal open={open} onClose={() => setOpen(false)} />;
+  }
+  return <CreditPurchaseModal open={open} onClose={() => setOpen(false)} lowCredits />;
 };

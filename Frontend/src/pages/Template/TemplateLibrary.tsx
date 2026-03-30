@@ -77,7 +77,7 @@ function extractFieldsFromPlaceholders(templateText: string): TemplateField[] {
   return Array.from(ids).map((id) => ({
     id,
     label: titleCaseFromId(id),
-    type: id.toLowerCase().includes('date') ? 'date' : 'text',
+    type: /\bdate\b/i.test(id.replace(/([A-Z])/g, ' $1')) ? 'date' : 'text',
     required: true,
   }));
 }
@@ -512,7 +512,7 @@ export const TemplateLibrary: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8">
        <div className='flex items-center justify-between'>
         <div>
 
@@ -582,7 +582,7 @@ export const TemplateLibrary: React.FC = () => {
             {filteredMyTemplates.map((t) => (
               <div
                 key={t._id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-         md                   transition-shadow overflow-hidden"
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
               >
                 <div className="h-40 bg-gradient-to-br from-purple-50 to-white relative">
                   {/* <div className="absolute left-5 bottom-5 h-9 w-9 rounded-xl bg-[#3E2B66]" /> */}
@@ -604,7 +604,7 @@ export const TemplateLibrary: React.FC = () => {
                   />
                 </div>
                 <div className="p-5">
-                  <div className="text-xs font-semibold text-slate-500 mb-1">AI · {categoryLabelFromId(inferTemplateCategory(t))}</div>
+                  <div className="text-xs font-semibold text-slate-500 mb-1">{categoryLabelFromId(inferTemplateCategory(t))}</div>
                   <div className="text-base font-semibold text-slate-900">{t.title}</div>
                   <div className="text-sm text-slate-600 mt-1 min-h-[40px]">
                     {t.description || 'AI-generated template'}
@@ -659,7 +659,7 @@ export const TemplateLibrary: React.FC = () => {
             </div>
             <div className="p-5">
               <div className="text-xs font-semibold text-slate-500 mb-1">
-                Admin · {categoryLabelFromId(inferTemplateCategory(t))}
+               {categoryLabelFromId(inferTemplateCategory(t))}
               </div>
               <div className="text-base font-semibold text-slate-900">{t.title}</div>
               <div className="text-sm text-slate-600 mt-1 min-h-[40px]">

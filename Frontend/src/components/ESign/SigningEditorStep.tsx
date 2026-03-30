@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
-  FileText, X, Undo2, Redo2, Save, Printer, RefreshCw,
+  FileText, X, Undo2, Redo2, Save,
   HelpCircle, Search, ChevronDown, Trash2, FileSignature, PenLine,
   Stamp, Calendar, Building2, Briefcase, Hash, Check, User, Type,
   SaveAll,
@@ -12,8 +12,7 @@ import {
 } from "lucide-react";
 import type { Recipient } from "../../types";
 import { eSignApi } from "../../services/apiHelper";
-import toast from "react-hot-toast";
-import { AISuggestionsOverlay, type AISuggestion } from "./AISuggestionsOverlay";
+import toast from "react-hot-toast"
 import { useAuth } from "../AuthService/AuthContext";
 
 // Type declarations for PDF.js
@@ -107,8 +106,7 @@ export default function SigningEditorStep({
   sending,
   onBack,
   onFieldsChange,
-  envelopeId,
-  aiSuggestions
+  envelopeId
 }: {
   documents: Doc[];
   recipients: Recipient[];
@@ -214,8 +212,6 @@ export default function SigningEditorStep({
   const [pageCanvases, setPageCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
   const [thumbnailCanvases, setThumbnailCanvases] = useState<Map<number, HTMLCanvasElement>>(new Map());
   const pdfContainerRef = useRef<HTMLDivElement>(null);
-  const [showAISuggestions, setShowAISuggestions] = useState(true);
-  const [rejectedSuggestions, setRejectedSuggestions] = useState<Set<string>>(new Set());
   
   // History for undo/redo
   const [fieldHistory, setFieldHistory] = useState<SignatureField[][]>([signatureFields]);
@@ -1828,12 +1824,7 @@ export default function SigningEditorStep({
           >
             <Save className="w-4 h-4" />
           </button>
-          <button className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors">
-            <Printer className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors">
-            <RefreshCw className="w-4 h-4" />
-          </button>
+        
 
           <select
             value={zoomLevel}
@@ -2165,96 +2156,6 @@ export default function SigningEditorStep({
                           height: 'auto'
                         }}
                       />
-
-                      {/* AI Suggestions Overlay */}
-                      {(() => {
-                        // Get suggestions for current document and page
-                        const docSuggestions = aiSuggestions?.find(s => s.documentId === activeDocId);
-                        const pageSuggestionsData = docSuggestions?.suggestions?.filter((s: any) => 
-                          s.page === pageNum && !rejectedSuggestions.has(`${s.page}-${s.x}-${s.y}`)
-                        ) || [];
-
-                        if (pageSuggestionsData.length === 0) return null;
-
-                        // Get page dimensions
-                        const canvasWidth = pageCanvas.width;
-                        const canvasHeight = pageCanvas.height;
-                        const imgElement = document.querySelector(`[data-page="${pageNum}"] img`) as HTMLImageElement;
-                        const renderedWidth = imgElement?.offsetWidth || canvasWidth;
-                        const renderedHeight = imgElement?.offsetHeight || canvasHeight;
-
-                        // Convert suggestions to AISuggestion format
-                        const suggestions: AISuggestion[] = pageSuggestionsData.map((s: any) => ({
-                          type: s.type || 'signature',
-                          page: s.page || pageNum,
-                          x: s.x || 0,
-                          y: s.y || 0,
-                          width: s.width || 150,
-                          height: s.height || 50,
-                          confidence: s.confidence,
-                          reason: s.reason,
-                          context: s.context,
-                          documentId: activeDocId || undefined
-                        }));
-
-                        return (
-                          <AISuggestionsOverlay
-                            suggestions={suggestions}
-                            currentPage={pageNum}
-                            pageWidth={renderedWidth}
-                            pageHeight={renderedHeight}
-                            pdfWidth={canvasWidth}
-                            pdfHeight={canvasHeight}
-                            onAcceptSuggestion={(suggestion) => {
-                              // Convert suggestion to SignatureField and add it
-                              const newField: SignatureField = {
-                                id: `${Date.now()}_${Math.random()}`,
-                                docId: activeDocId || '',
-                                page: suggestion.page,
-                                x: suggestion.x,
-                                y: suggestion.y,
-                                width: suggestion.width,
-                                height: suggestion.height,
-                                type: suggestion.type as FieldType,
-                                recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
-                                slotId: mode === 'power' && slots && slots.length > 0 ? slots[0].slotId : undefined
-                              };
-                              setSignatureFields(prev => [...prev, newField]);
-                              if (onFieldsChange) {
-                                onFieldsChange([...signatureFields, newField]);
-                              }
-                              // Remove from suggestions
-                              setRejectedSuggestions(prev => new Set([...prev, `${suggestion.page}-${suggestion.x}-${suggestion.y}`]));
-                              toast.success(`Added ${suggestion.type} field`);
-                            }}
-                            onRejectSuggestion={(suggestion) => {
-                              setRejectedSuggestions(prev => new Set([...prev, `${suggestion.page}-${suggestion.x}-${suggestion.y}`]));
-                              toast.success('Suggestion dismissed');
-                            }}
-                            onAcceptAll={() => {
-                              const newFields: SignatureField[] = suggestions.map(suggestion => ({
-                                id: `${Date.now()}_${Math.random()}`,
-                                docId: activeDocId || '',
-                                page: suggestion.page,
-                                x: suggestion.x,
-                                y: suggestion.y,
-                                width: suggestion.width,
-                                height: suggestion.height,
-                                type: suggestion.type as FieldType,
-                                recipientId: mode === 'normal' && recipients.length > 0 ? recipients[0].id : undefined,
-                                slotId: mode === 'power' && slots && slots.length > 0 ? slots[0].slotId : undefined
-                              }));
-                              setSignatureFields(prev => [...prev, ...newFields]);
-                              if (onFieldsChange) {
-                                onFieldsChange([...signatureFields, ...newFields]);
-                              }
-                            }}
-                            showOverlay={showAISuggestions}
-                            onToggleOverlay={() => setShowAISuggestions(!showAISuggestions)}
-                          />
-                        );
-                      })()}
-
                       {/* Render ALL fields on this page */}
                       {signatureFields
                         .filter(

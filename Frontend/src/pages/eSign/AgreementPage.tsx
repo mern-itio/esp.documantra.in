@@ -1810,10 +1810,10 @@ const AgreementPage: React.FC = () => {
                             <>
                               There are no agreements yet. Start exploring by{' '}
                               <Link
-                                to="/create"
+                                to={isPowerForm ? "/e-sign/powerforms" : "/e-sign/create"}
                                 className="font-medium text-[#3E2B66] hover:underline"
                               >
-                                creating your first envelope
+                                {isPowerForm ? "creating your first powerform" : "creating your first envelope"}
                               </Link><br />
                               and sending it for signing.
                             </>
