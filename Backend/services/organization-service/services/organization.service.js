@@ -72,7 +72,56 @@ const getOrganizationDetails = async (orgId) => {
     return result;
 }
 const updateOrganizationDetails = async (orgId,payload) => {
-    const result = await Organization.findByIdAndUpdate(orgId, payload, { new: true });
+    const { name, logo, website, gst } = payload;
+
+    // Normalize website and GST for duplicate checking
+    const normalizedWebsite = website
+        ? String(website).trim().toLowerCase()
+        : undefined;
+
+    const normalizedGst = gst
+        ? String(gst).trim().toUpperCase()
+        : undefined;
+
+    // Build dynamic duplicate check (excluding current organization)
+    const orConditions = [];
+    if (normalizedWebsite) orConditions.push({ website: normalizedWebsite });
+    if (normalizedGst) orConditions.push({ gst: normalizedGst });
+
+    if (orConditions.length) {
+        const existing = await Organization.findOne({
+            $or: orConditions,
+            _id: { $ne: orgId } // Exclude current organization being updated
+        }).lean();
+
+        if (existing) {
+            if (
+                normalizedWebsite &&
+                existing.website?.toLowerCase() === normalizedWebsite
+            ) {
+                throw new Error('Website already in use');
+            }
+
+            if (
+                normalizedGst &&
+                existing.gst?.toUpperCase() === normalizedGst
+            ) {
+                throw new Error('GST number already in use');
+            }
+
+            throw new Error('Organization details conflict with existing organization');
+        }
+    }
+
+    // If gst or website is being changed, reset verification status and remark
+    const updatePayload = { ...payload };
+    if (website !== undefined || gst !== undefined) {
+        updatePayload.isVerified = false;
+        updatePayload.verificationStatus = 'PENDING';
+        updatePayload.remark = '';
+    }
+
+    const result = await Organization.findByIdAndUpdate(orgId, updatePayload, { new: true });
     if (!result) {
         throw new Error('Organization not found');
     }
@@ -571,6 +620,24 @@ const insertEnvelopesToFolder = async(folderId, envelopeIds, userId) =>{
   }
 
 }
+const updateOrganizationVerficationStatus = async (orgId, status, remark) => {
+  let isVerified = false;
+  if(status === 'APPROVED'){
+    isVerified = true;
+   } else if(status === 'REJECTED'){
+    isVerified = false;
+   }  else{
+    throw new Error('Invalid status value');
+   }
+
+    const payload = {
+        verificationStatus: status,
+        remark: remark,
+        isVerified: isVerified
+    };
+    const result = await Organization.findByIdAndUpdate(orgId, payload, { new: true });
+    return result;
+};
 
 module.exports = {
     createOrganization,
@@ -601,5 +668,6 @@ module.exports = {
     fetchFolderEnvelopeIds,
     getRolesandUsersByFolderId,
     insertEnvelopesToFolder,
-    checkExistingEnvelope
+    checkExistingEnvelope,
+    updateOrganizationVerficationStatus
 };

@@ -24,6 +24,7 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
     documents: []
   });
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [documentPreviews, setDocumentPreviews] = useState<(string | null)[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
@@ -40,6 +41,7 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
         documents: []
       });
       setDocumentFiles([]);
+      setDocumentPreviews([]);
       setErrors({});
       setFormError('');
       setSuccess(false);
@@ -48,6 +50,14 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
       }
     }
   }, [organization, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      documentPreviews.forEach((previewUrl) => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+      });
+    };
+  }, [documentPreviews]);
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -115,8 +125,56 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+
+    let invalidFile = false;
+    const nextPreviews: (string | null)[] = [];
+
+    for (const file of files) {
+      const extension = file.name.split('.').pop()?.toLowerCase() || '';
+      const isAllowedType = allowedMimeTypes.includes(file.type) || ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'].includes(extension);
+
+      if (!isAllowedType) {
+        invalidFile = true;
+        setFormError('Invalid file type. Allowed: PDF, DOC, DOCX, JPG, PNG');
+        setErrors((prev) => ({ ...prev, documents: 'Invalid file type selected' }));
+        break;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        invalidFile = true;
+        setFormError('Each file must be 10MB or smaller');
+        setErrors((prev) => ({ ...prev, documents: 'File exceeds maximum size (10MB)' }));
+        break;
+      }
+
+      if (file.type.startsWith('image/') || file.type === 'application/pdf' || extension === 'pdf') {
+        nextPreviews.push(URL.createObjectURL(file));
+      } else {
+        nextPreviews.push(null);
+      }
+    }
+
+    if (invalidFile) {
+      return;
+    }
+
     if (files.length > 0) {
+      // clean previous preview URLs
+      documentPreviews.forEach((previewUrl) => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+      });
+
       setDocumentFiles(files);
+      setDocumentPreviews(nextPreviews);
+
       if (errors['documents']) {
         setErrors((prev) => {
           const next = { ...prev };
@@ -124,11 +182,26 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
           return next;
         });
       }
+
+      setFormError('');
     }
   };
 
   const removeDocument = (index: number) => {
     setDocumentFiles((prev) => prev.filter((_, i) => i !== index));
+    setDocumentPreviews((prev) => {
+      const removed = prev[index];
+      if (removed) URL.revokeObjectURL(removed);
+      return prev.filter((_, i) => i !== index);
+    });
+
+    if (errors['documents']) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next['documents'];
+        return next;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,10 +240,8 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
       );
       console.log(response);
       setSuccess(true);
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1500);
+      onSuccess();
+      onClose();
     } catch (err: any) {
       console.error('Error verifying organization:', err);
       setFormError(err.response?.data?.message || err.message || 'Failed to submit verification request. Please try again.');
@@ -390,23 +461,45 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
                 {documentFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    className="p-3 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-gray-600" />
-                      <span className="text-sm text-gray-700">{file.name}</span>
-                      <span className="text-xs text-gray-500">
-                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm text-gray-700">{file.name}</span>
+                        <span className="text-xs text-gray-500">
+                          ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(index)}
+                        className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                        disabled={isLoading}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeDocument(index)}
-                      className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
-                      disabled={isLoading}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+
+                    {documentPreviews[index] && (
+                      <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+                        {file.type.startsWith('image/') ? (
+                          <img
+                            src={documentPreviews[index] as string}
+                            alt="Document preview"
+                            className="w-full h-40 object-contain"
+                          />
+                        ) : file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') ? (
+                          <embed
+                            src={documentPreviews[index] as string}
+                            type="application/pdf"
+                            className="w-full h-40"
+                          />
+                        ) : (
+                          <div className="p-3 text-xs text-gray-500">Preview not available for this document type.</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -1,4 +1,4 @@
-const { serviceGet } = require("../utils/apiHelper");
+const { serviceGet, servicePatch } = require("../utils/apiHelper");
 
 const listOrganizations = async (req, res) => {
     try {
@@ -23,4 +23,26 @@ const listOrganizations = async (req, res) => {
     }
 };
 
-module.exports = { listOrganizations };
+const updateOrganizationVerificationStatus = async (req, res) => { 
+    const orgId = req.params.id;
+    const { status, remark } = req.body;
+    console.log(`Updating organization ${orgId} with status: ${status} and remark: ${remark}`);
+    const result = await servicePatch(req, 'organization', {
+        url: `/admin/organization/${orgId}/status`,
+        data: { status, remark }
+    });
+    if (result.status == 200) {
+        return res.status(200).json({
+            status: 200,
+            message: 'Organization verification status updated successfully',
+            data: result.data.data
+        });
+    } else {
+        return res.status(400).json({
+            status: 400,
+            message: 'Failed to update organization verification status.'
+        });
+    }
+};      
+
+module.exports = { listOrganizations, updateOrganizationVerificationStatus };

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { X, FileText, Search } from 'lucide-react';
+import { X, FileText, Search, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {  organizationApi } from '../../services/apiHelper';
+import { useNavigate } from 'react-router-dom';
 
 interface Envelope {
+  _id: string;
   id: string;
   name: string;
   status: string;
@@ -25,13 +27,14 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
   folder,
   onAdded,
 }) => {
+  const navigate = useNavigate();
   const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
   const [selectedEnvelopes, setSelectedEnvelopes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
           console.log(folder);
       fetchOrganizationEnvelopes();
       setSelectedEnvelopes([]);
@@ -39,7 +42,9 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
 
     }
   }, [isOpen]);
-
+  const handleCreateEnvelope = () => {
+    navigate("/e-sign/create");
+  };
   const handleEnvelopeSelect = (envelopeId: string) => {
     console.log(envelopeId);
     setSelectedEnvelopes(prev =>
@@ -79,7 +84,7 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
   );
   const fetchOrganizationEnvelopes = async () =>{
     try{
-      const response = await organizationApi.get(`/fetch-non-folder-envelopes/${folder?._id}`);
+      const response = await organizationApi.get(`/api/organization/fetch-non-folder-envelopes/${folder?._id}`);
         setEnvelopes(response.data.data);
     }catch (err){
       console.log(err);
@@ -126,26 +131,43 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
             </div>
 
             {/* Envelopes List */}
-            <div className="max-h-96 overflow-y-auto space-y-2">
-              {filteredEnvelopes.map((envelope) => (
-                <div key={envelope.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedEnvelopes.includes(envelope.id)}
-                        onChange={() => handleEnvelopeSelect(envelope.id)}
-                        className="w-4 h-4 text-[#3E2B66] border-gray-300 rounded focus:ring-[#3E2B66]"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900">{envelope.name}</p>
-                        <p className="text-sm text-gray-500">Status: {envelope.status}</p>
+            {filteredEnvelopes.length > 0 ? (
+              <div className="max-h-96 overflow-y-auto space-y-2">
+                {filteredEnvelopes.map((envelope) => (
+                  <div key={envelope.id || envelope._id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedEnvelopes.includes(envelope?.id || envelope?._id)}
+                          onChange={() => handleEnvelopeSelect(envelope?.id || envelope?._id)}
+                          className="w-4 h-4 text-[#3E2B66] border-gray-300 rounded focus:ring-[#3E2B66]"
+                        />
+                        <div>
+                          <p className="font-medium text-gray-900">{envelope.name}</p>
+                          <p className="text-sm text-gray-500">Status: {envelope.status}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-gray-500 mb-4">
+                  No Envelope found. Please create envelope for organization.
+                </p>
+            <button
+              onClick={handleCreateEnvelope}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+            >
+              <Plus className="w-5 h-5" />
+              <span>
+                Create Envelope
+              </span>
+            </button>
+              </div>
+            )}
 
             {selectedEnvelopes.length > 0 && (
               <button

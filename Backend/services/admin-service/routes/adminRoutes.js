@@ -18,7 +18,7 @@ const {getUserPdfOperations, getUserServiceStats, getUserOperationHistory} = req
 const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, getPdfOperationById, deletePdfOperation} = require('../controllers/pdfController');
 
 const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
-const {listOrganizations} = require('../controllers/organizationController');
+const {listOrganizations,updateOrganizationVerificationStatus} = require('../controllers/organizationController');
 const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage,getFlexibleCreditPackage} = require('../controllers/creditPackageController');
 const {createEmailTemplate,getEmailTemplates,updateEmailTemplates,deleteEmailTemplate} = require('../controllers/emailTemplateController');
 const {
@@ -111,8 +111,10 @@ router.post('/create-email-template',createEmailTemplate);
 router.get('/email-templates',getEmailTemplates);
 router.put('/email-templates/:id',updateEmailTemplates);
 router.delete('/email-templates/:id',deleteEmailTemplate);
+
 // Organization routes
 router.get('/organization-request-list', listOrganizations);
+router.patch('/organization/:id/status', updateOrganizationVerificationStatus);
 
 // Template moderation routes
 router.get('/templates', listTemplates);

@@ -9,11 +9,13 @@ import { TeamsManagementModal } from '../../components/Organization/TeamsManagem
 import { VerifyOrganizationModal } from '../../components/Organization/VerifyOrganizationModal';
 import type { Organization } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
+import { useAuth } from '../../components/AuthService/AuthContext';
 
 type Tab = 'mine' | 'shared';
 
 const MyOrganizationPage: React.FC = () => {
   const navigate = useNavigate();
+  const {switchAccount,accountType} = useAuth();
   const [myOrganization, setMyOrganization] = React.useState<Organization | null>(null);
   const [sharedOrganizations, setSharedOrganizations] = React.useState<Organization[]>([]);
   const [showEditModal, setShowEditModal] = React.useState(false);
@@ -57,9 +59,23 @@ const MyOrganizationPage: React.FC = () => {
     }
   };
 
-  const handleEditSuccess = () => getUserOrganizations();
-  const handleDeleteSuccess = () => setMyOrganization(null);
-  const handleVerifySuccess = () => getUserOrganizations();
+  const handleEditSuccess = () => {
+    getUserOrganizations();
+  };
+
+  const handleDeleteSuccess = async () => {
+    setMyOrganization(null);
+    // Swtich account to User's default account after organization deletion
+    if(accountType === 'organization'){
+    await switchAccount('user')
+    }
+    
+  };
+
+  const handleVerifySuccess = async () => {
+    await getUserOrganizations();
+  };
+
 
   const tabs: { id: Tab; label: string; count: number; icon: React.ReactNode }[] = [
     {
