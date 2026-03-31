@@ -11,7 +11,7 @@ import {
   Users,
   ShieldCheck, //added
 } from "lucide-react";
-import { authApi, eSignApi } from "../../services/apiHelper";
+import { authApi, eSignApi, subscriptionApi } from "../../services/apiHelper";
 import confetti from "canvas-confetti";
 
 export default function SignerStatusPage() {
@@ -23,7 +23,7 @@ export default function SignerStatusPage() {
   const [loading, setLoading] = useState(true);
   const [envelope, setEnvelope] = useState<any>(null);
   const [error, setError] = useState<string>("");
-  const demoShowBothSignerCards = true;
+  const [authMethodMap, setAuthMethodMap] = useState<Record<string, any>>({});
   const [scratchRevealed, setScratchRevealed] = useState(false);
   const [copyHint, setCopyHint] = useState<"" | "copied" | "failed">("");
   const [userType, setUserType] = useState<"checking" | "existing" | "new">("checking");
@@ -178,6 +178,41 @@ export default function SignerStatusPage() {
     );
   };
 
+  const parseAuthList = (rawAuthentication: any): Array<{ authMethodId: string; status: string }> => {
+    if (!rawAuthentication) return [];
+    try {
+      const parsed = JSON.parse(rawAuthentication);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(
+          (item: any) =>
+            item &&
+            typeof item === "object" &&
+            typeof item.authMethodId === "string" &&
+            typeof item.status === "string"
+        )
+        .map((item: any) => ({
+          authMethodId: String(item.authMethodId),
+          status: String(item.status || "pending").toLowerCase()
+        }));
+    } catch {
+      return [];
+    }
+  };
+
+  const methodLooksLikeVideo = (method: any) => {
+    const blob = [
+      method?.name,
+      method?.description,
+      method?.uiSchema?.icon,
+      method?.uiSchema?.securityLevel,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return blob.includes("didit") || blob.includes("video") || blob.includes("liveness") || blob.includes("kyc");
+  };
+
   const normRecipientId = (x: any) => {
     if (x == null) return "";
     if (typeof x === "string") return x;
@@ -188,8 +223,56 @@ export default function SignerStatusPage() {
 
   const signers = useMemo(() => {
     const recipients = envelope?.recipients || [];
-    return recipients.filter((r: any) => !isCcRole(r));
+    return recipients
+      .filter((r: any) => !isCcRole(r))
+      .map((r: any, idx: number) => ({ ...r, __originalIndex: idx }))
+      .sort((a: any, b: any) => {
+        const aOrder = Number.isFinite(Number(a?.order)) ? Number(a.order) : Number.MAX_SAFE_INTEGER;
+        const bOrder = Number.isFinite(Number(b?.order)) ? Number(b.order) : Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return Number(a.__originalIndex) - Number(b.__originalIndex);
+      })
+      .map((r: any) => {
+        const { __originalIndex, ...rest } = r;
+        return rest;
+      });
   }, [envelope]);
+
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      try {
+        const methodIds = Array.from(
+          new Set(
+            signers
+              .flatMap((r: any) => parseAuthList(r?.authentication))
+              .map((a: any) => a.authMethodId)
+              .filter(Boolean)
+          )
+        );
+
+        if (methodIds.length === 0) {
+          if (mounted) setAuthMethodMap({});
+          return;
+        }
+
+        const res = await subscriptionApi.post(`/api/authproviders/bulk/details`, { methodIds });
+        const methods = Array.isArray(res?.data?.methods) ? res.data.methods : [];
+        const nextMap: Record<string, any> = {};
+        methods.forEach((m: any) => {
+          if (m?.id) nextMap[String(m.id)] = m;
+          else if (m?._id) nextMap[String(m._id)] = m;
+        });
+        if (mounted) setAuthMethodMap(nextMap);
+      } catch {
+        if (mounted) setAuthMethodMap({});
+      }
+    };
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [signers]);
 
   const currentRecipient = useMemo(() => {
     const recipients = envelope?.recipients || [];
@@ -778,14 +861,50 @@ export default function SignerStatusPage() {
                       const displayName = r?.name || r?.email || `Signer ${idx + 1}`;
                       const sub = r?.email && r?.name ? r.email : "";
 
-                      const showVideoAudit = looksLikeVideoAuth(r);
+                      const authSteps = parseAuthList(r?.authentication);
+                      const resolvedAuthSteps = authSteps.map((step) => ({
+                        ...step,
+                        method: authMethodMap[step.authMethodId] || null,
+                      }));
+                      const getVerificationState = (stepStatus: string, signerStatus: any) => {
+                        const normalized = String(stepStatus || "").toLowerCase();
+                        if (normalized === "completed") {
+                          return {
+                            label: "Verified",
+                            className: "bg-emerald-600 text-white",
+                            classNameSoft: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                          };
+                        }
+                        if (normalized === "rejected") {
+                          return {
+                            label: "Skipped",
+                            className: "bg-orange-500 text-white",
+                            classNameSoft: "bg-orange-50 text-orange-700 ring-1 ring-orange-200"
+                          };
+                        }
+                        // If signer finished but method still pending, treat as skipped in status view.
+                        if (isCompletedStatus(signerStatus)) {
+                          return {
+                            label: "Skipped",
+                            className: "bg-orange-500 text-white",
+                            classNameSoft: "bg-orange-50 text-orange-700 ring-1 ring-orange-200"
+                          };
+                        }
+                        return {
+                          label: "Pending",
+                          className: "bg-gray-100 text-gray-700 ring-1 ring-gray-200",
+                          classNameSoft: "bg-amber-50 text-amber-800 ring-1 ring-amber-200"
+                        };
+                      };
+                      const hasVideoMethod = resolvedAuthSteps.some((step) => methodLooksLikeVideo(step.method));
+                      const showVideoAudit = hasVideoMethod || looksLikeVideoAuth(r);
                       const signedAtText =
                         r?.signedAt ||
                         r?.completedAt ||
                         r?.updatedAt ||
                         (isCompletedStatus(r.status) ? "Signed recently" : "");
 
-                      // Dummy audit data for UI development (replace with API later)
+                      // Show dynamic audit details when available; keep safe visual fallback for missing media.
                       const audit = r?.auditTrail || r?.livenessAudit || {};
                       const liveMatch = Number(audit?.liveMatchPercent ?? (showVideoAudit ? 100 - idx * 17 : 0));
                       const spokenText =
@@ -799,6 +918,11 @@ export default function SignerStatusPage() {
                         audit?.idPicUrl ||
                         audit?.idPic ||
                         dummyAvatarDataUri(displayName, "id");
+                      const videoUrl =
+                        audit?.videoUrl ||
+                        audit?.recordingUrl ||
+                        audit?.evidenceUrl ||
+                        "";
 
                       const videoAuditCard = (
                         <div key={`video-${String(r?._id ?? r?.id ?? idx)}`} className="relative">
@@ -845,12 +969,25 @@ export default function SignerStatusPage() {
                             <div className="mt-4 text-center">
                               <div className="text-lg font-semibold text-gray-900">{displayName}</div>
                               <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
-                                  ✓ Liveness
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-400 px-3 py-1 text-xs font-semibold text-gray-900">
-                                  ✓ Video Evidence
-                                </span>
+                                {resolvedAuthSteps
+                                  .filter((s) => !!s.method)
+                                  .map((s) => {
+                                    const methodName = s.method?.name || "Verification";
+                                    const verification = getVerificationState(s.status, r.status);
+                                    return (
+                                      <span
+                                        key={`${String(r?._id ?? r?.id ?? idx)}-${s.authMethodId}`}
+                                        className={`inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold ${verification.className}`}
+                                      >
+                                        {verification.label === "Verified" ? "✓" : verification.label === "Skipped" ? "↷" : "•"} {methodName} ({verification.label})
+                                      </span>
+                                    );
+                                  })}
+                                {resolvedAuthSteps.length === 0 && (
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">
+                                    No extra verification
+                                  </span>
+                                )}
                                 <span className={`inline-flex items-center rounded-md px-3 py-1 text-xs font-semibold ${statusClass}`}>
                                   {statusLabel}
                                 </span>
@@ -868,22 +1005,23 @@ export default function SignerStatusPage() {
                               <span className="italic">{spokenText}</span>
                             </div>
 
-                            <div className="mt-5 flex items-center justify-center">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  // Placeholder (API later)
-                                  window.open("about:blank", "_blank");
-                                }}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-black/90"
-                              >
-                                <Download className="h-4 w-4" />
-                                Download Video
-                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-                                  🎥
-                                </span>
-                              </button>
-                            </div>
+                            {videoUrl && (
+                              <div className="mt-5 flex items-center justify-center">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    window.open(String(videoUrl), "_blank");
+                                  }}
+                                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-black/90"
+                                >
+                                  <Download className="h-4 w-4" />
+                                  Download Video
+                                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+                                    🎥
+                                  </span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -902,25 +1040,24 @@ export default function SignerStatusPage() {
                               {statusLabel}
                             </span>
                           </div>
+                          {resolvedAuthSteps.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {resolvedAuthSteps.map((s) => {
+                                const methodName = s.method?.name || "Verification";
+                                const verification = getVerificationState(s.status, r.status);
+                                return (
+                                  <span
+                                    key={`${String(r?._id ?? r?.id ?? idx)}-std-${s.authMethodId}`}
+                                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${verification.classNameSoft}`}
+                                  >
+                                    {methodName}: {verification.label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       );
-
-                      // Demo: show BOTH card styles so UI can be reviewed.
-                      // Later we can switch back to conditional rendering only.
-                      if (demoShowBothSignerCards && idx === 0) {
-                        return (
-                          <div key={`both-${String(r?._id ?? r?.id ?? idx)}`} className="space-y-3">
-                            <div className="text-xs font-semibold text-gray-500">
-                              Preview: Liveness/Video audit card
-                            </div>
-                            {videoAuditCard}
-                            <div className="pt-2 text-xs font-semibold text-gray-500">
-                              Preview: Standard signer card
-                            </div>
-                            {standardCard}
-                          </div>
-                        );
-                      }
 
                       if (showVideoAudit) return videoAuditCard;
 
