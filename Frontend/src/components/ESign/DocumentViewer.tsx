@@ -1500,6 +1500,37 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         let isSigned = false;
                         let signedImage: string | null = null;
 
+                        const getFieldAssignee = () => {
+                          // Show assignee metadata in preview/read-only mode (like signing editor).
+                          if (!isViewOnly) return null;
+
+                          if (mode === MODE.RECIPIENT) {
+                            const rec = (allRecipients || []).find((r: any) => {
+                              const rid = normalizeMongoId(r?.id ?? r?._id);
+                              return rid && rid === normalizeMongoId(field?.recipientId);
+                            });
+                            if (rec) {
+                              return {
+                                name: rec.name || "Recipient",
+                                email: rec.email || "",
+                              };
+                            }
+                          }
+
+                          if (mode === MODE.SELF_SIGNER) {
+                            const signer = getMatchedSigner(field);
+                            const data = signer?.data || {};
+                            return {
+                              name: data?.name || signer?.name || "Signer",
+                              email: data?.email || signer?.email || "",
+                            };
+                          }
+
+                          return null;
+                        };
+
+                        const assignee = getFieldAssignee();
+
                         if (isSignatureType) {
                           isSigned = isSignatureFieldCompleted(field);
                           switch (mode) {
@@ -1713,6 +1744,17 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   "Click to Save"
                                 ):("Signature")}
                               </div>
+                              {assignee && (
+                                <div
+                                  className="absolute left-0 right-0 text-[10px] leading-tight text-gray-700 px-1.5 py-0.5 bg-white/90 border border-gray-200 rounded mt-0.5"
+                                  style={{ top: scaledHeight + 2 }}
+                                >
+                                  <div className="truncate font-medium">{assignee.name}</div>
+                                  {assignee.email ? (
+                                    <div className="truncate text-gray-500">{assignee.email}</div>
+                                  ) : null}
+                                </div>
+                              )}
                             </div>
                           );
                         }
@@ -2189,6 +2231,17 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               
                             </div>
                           }
+                          {assignee && (
+                            <div
+                              className="absolute left-0 right-0 text-[10px] leading-tight text-gray-700 px-1.5 py-0.5 bg-white/90 border border-gray-200 rounded mt-0.5"
+                              style={{ top: scaledHeight + 2 }}
+                            >
+                              <div className="truncate font-medium">{assignee.name}</div>
+                              {assignee.email ? (
+                                <div className="truncate text-gray-500">{assignee.email}</div>
+                              ) : null}
+                            </div>
+                          )}
                           </div>
                         );
                       })}

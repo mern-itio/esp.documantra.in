@@ -633,9 +633,75 @@ const fetchEnvelopesByFolder = async (req, res) => {
                 { envelopeIds },
                 { headers: { Authorization: req.headers.authorization } }
             );
+            const authUrl = process.env.AUTH_SERVICE_URL;
+            const eSignUrl = process.env.ESIGN_SERVICE_URL;
+
+            const senderIds = Array.from(new Set((envelopes.data.envelopes || [])
+              .map(e => e?.sender)
+              .filter(Boolean)
+              .map(s => s.toString ? s.toString() : String(s))
+            ));
+
+            const senderMap = {};
+            if (authUrl && senderIds.length) {
+              await Promise.all(senderIds.map(async (sid) => {
+                try {
+                  const { data: authRes } = await axios.get(
+                    `${authUrl.replace(/\/$/, '')}/api/user-details/${sid}`,
+                    { timeout: 8000 }
+                  );
+                  const u = authRes?.data;
+                  if (u) {
+                    senderMap[sid] = {
+                      name: u.fullname || u.name || null,
+                      email: u.email || null
+                    };
+                  }
+                } catch (_) {
+                  // ignore; fallback to null
+                }
+              }));
+            }
+
+            const enriched = (envelopes.data.envelopes || []).map((env) => {
+              const senderId = env?.sender
+                ? (env.sender.toString ? env.sender.toString() : String(env.sender))
+                : null;
+
+              const docs = Array.isArray(env?.documentIds) ? env.documentIds : [];
+              const recs = Array.isArray(env?.recipientIds) ? env.recipientIds : [];
+              const firstDoc = docs[0];
+              const previewUrl = (eSignUrl && firstDoc?.filePath)
+                ? `${eSignUrl.replace(/\/$/, '')}/uploads/${String(firstDoc.filePath).replace(/^\/+/, '')}`
+                : null;
+
+              return {
+                _id: env?._id,
+                name: env?.name || env?.subject || 'Untitled Envelope',
+                status: env?._computedStatus || env?.status || 'draft',
+                createdAt: env?.createdAt,
+                updatedAt: env?.updatedAt,
+                previewUrl,
+                sharedBy: senderId ? (senderMap[senderId] || { name: null, email: null }) : null,
+                recipients: recs.map(r => ({
+                  _id: r?._id,
+                  name: r?.name,
+                  email: r?.email,
+                  title: r?.title,
+                  company: r?.company,
+                  status: r?.permissionStatus || null
+                })),
+                documents: docs.map(d => ({
+                  _id: d?._id,
+                  fileName: d?.fileName,
+                  filePath: d?.filePath,
+                  mimeType: d?.mimeType
+                }))
+              };
+            });
             return res.status(200).json({
                 success:true,
-                data:envelopes.data.envelopes || []
+                data: enriched
             });
         }catch(err){
             console.error("Error fetching envelopes from e-sign service:", err);

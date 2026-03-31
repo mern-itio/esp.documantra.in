@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Folder, Users, Shield, Plus, Mail, ArrowLeft } from 'lucide-react';
+import { Folder, Users, Shield, Plus, Mail, ArrowLeft, ExternalLink, User2, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { organizationApi } from '../../services/apiHelper';
 import { ShareFolderModal } from '../../components/Organization/ShareFolderModal';
 import { ShareFolderWithRoleModal } from '../../components/Organization/ShareFolderWithRoleModal';
@@ -15,7 +15,12 @@ interface Envelope {
   _id: string;
   name: string;
   status: string;
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  previewUrl?: string | null;
+  sharedBy?: { name: string | null; email: string | null } | null;
+  recipients?: { _id?: string; name?: string; email?: string; title?: string; company?: string }[];
+  documents?: { _id?: string; fileName?: string; filePath?: string; mimeType?: string }[];
 }
 
 interface User {
@@ -31,6 +36,16 @@ interface Role {
   description: string;
 }
 
+type TabKey = 'envelopes' | 'users' | 'roles';
+
+interface ColumnConfig {
+  id: string;
+  label: string;
+  visible: boolean;
+  order: number;
+  render: (item: any) => React.ReactNode;
+}
+
 
 const FolderDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,6 +57,14 @@ const FolderDetailPage: React.FC = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showShareRoleModal, setShowShareRoleModal] = useState(false);
   const [showAddEnvelopeModal, setShowAddEnvelopeModal] = useState(false);
+
+  const formatDate = (value?: string) => {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleString();
+  };
+
   useEffect(() =>{
     fetchFolder();
     fetchFolderEnvelopes();
@@ -79,18 +102,186 @@ const fetchRolesAndUsers = async () => {
     }
 };
 
-  const [activeTab, setActiveTab] = useState('envelopes');
+  const [activeTab, setActiveTab] = useState<TabKey>('envelopes');
   // Table controls
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Sent' | 'Completed' | 'Draft'>('All');
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [resizingColumn, setResizingColumn] = useState<string | null>(null);
+  const resizingColumnRef = useRef<string | null>(null);
+  const resizeStartXRef = useRef<number>(0);
+  const resizeStartWidthRef = useRef<number>(0);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('folder-table-column-widths');
+    return saved ? JSON.parse(saved) : {};
+  });
 
-  const tabs = [
+  const tabs: { id: TabKey; name: string; icon: any }[] = [
     { id: 'envelopes', name: 'Envelopes', icon: Mail },
     { id: 'users', name: 'Users', icon: Users },
     { id: 'roles', name: 'Roles', icon: Shield }
   ];
+
+  const envelopeRenderers = useMemo(() => ({
+    envelope: (item: Envelope) => (
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>                   
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate(`/e-sign/envelope/${item._id}`)}
+          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-[#260559] hover:bg-[#260559]/6 transition-colors"
+          title="Open envelope"
+        >
+          View
+          <ExternalLink className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    ),
+    status: (item: Envelope) => (
+      <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${
+        String(item.status).toLowerCase() === 'completed'
+          ? 'bg-green-100 text-green-800'
+          : String(item.status).toLowerCase() === 'sent' || String(item.status).toLowerCase() === 'in-progress'
+          ? 'bg-blue-100 text-blue-800'
+          : 'bg-gray-100 text-gray-800'
+      }`}>
+        {item.status}
+      </span>
+    ),
+    sharedBy: (item: Envelope) => (
+      <>
+        {item.sharedBy?.name || item.sharedBy?.email ? (
+          <div className="flex items-start gap-2.5">
+            <span className="w-8 h-8 rounded-lg bg-[#260559]/10 text-[#260559] flex items-center justify-center flex-shrink-0">
+              <User2 className="w-4 h-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">{item.sharedBy?.name || '—'}</p>
+              <p className="text-xs text-gray-500 truncate">{item.sharedBy?.email || ''}</p>
+            </div>
+          </div>
+        ) : (
+          <span className="text-sm text-gray-400">—</span>
+        )}
+      </>
+    ),
+    recipients: (item: Envelope) => (
+      <>
+        {Array.isArray(item.recipients) && item.recipients.length > 0 ? (
+          <RecipientsSummary recipients={item.recipients} />
+        ) : (
+          <span className="text-sm text-gray-400">—</span>
+        )}
+      </>
+    ),
+    created: (item: Envelope) => <span className="text-sm text-gray-500">{formatDate(item.createdAt)}</span>,
+  }), [navigate]);
+
+  const getInitialColumnConfig = useCallback((tab: TabKey): ColumnConfig[] => {
+    if (tab === 'envelopes') {
+      return [
+        { id: 'envelope', label: 'Envelope', visible: true, order: 1, render: envelopeRenderers.envelope },
+        { id: 'status', label: 'Status', visible: true, order: 2, render: envelopeRenderers.status },
+        { id: 'sharedBy', label: 'Shared by', visible: true, order: 3, render: envelopeRenderers.sharedBy },
+        { id: 'recipients', label: 'Recipients', visible: true, order: 4, render: envelopeRenderers.recipients },
+        { id: 'created', label: 'Created', visible: true, order: 5, render: envelopeRenderers.created },
+      ];
+    }
+    if (tab === 'users') {
+      return [
+        { id: 'name', label: 'Name', visible: true, order: 1, render: (item: User) => <span className="text-sm font-medium text-gray-900">{item.name}</span> },
+        { id: 'email', label: 'Email', visible: true, order: 2, render: (item: User) => <span className="text-sm text-gray-500">{item.email}</span> },
+        { id: 'role', label: 'Role', visible: true, order: 3, render: (item: User) => <span className="text-sm text-gray-500">{item.role}</span> },
+      ];
+    }
+    return [
+      { id: 'name', label: 'Name', visible: true, order: 1, render: (item: Role) => <span className="text-sm font-medium text-gray-900">{item.name}</span> },
+      { id: 'description', label: 'Description', visible: true, order: 2, render: (item: Role) => <span className="text-sm text-gray-500">{item.description}</span> },
+    ];
+  }, [envelopeRenderers]);
+
+  const [columnConfigMap, setColumnConfigMap] = useState<Record<TabKey, ColumnConfig[]>>({
+    envelopes: getInitialColumnConfig('envelopes'),
+    users: getInitialColumnConfig('users'),
+    roles: getInitialColumnConfig('roles'),
+  });
+
+  const getVisibleColumns = useCallback((tab: TabKey): ColumnConfig[] => {
+    return (columnConfigMap[tab] || [])
+      .filter(col => col.visible)
+      .sort((a, b) => a.order - b.order)
+      .slice(0, 5);
+  }, [columnConfigMap]);
+
+  const toggleColumn = (columnId: string) => {
+    setColumnConfigMap(prev => {
+      const current = prev[activeTab] || [];
+      const updated = current.map(col => {
+        if (col.id !== columnId) return col;
+        const nextVisible = !col.visible;
+        if (nextVisible) {
+          const visibleCount = current.filter(c => c.visible).length;
+          if (visibleCount >= 5) return col;
+        }
+        return { ...col, visible: nextVisible };
+      });
+      return { ...prev, [activeTab]: updated };
+    });
+  };
+
+  const resetColumns = () => {
+    setColumnConfigMap(prev => ({ ...prev, [activeTab]: getInitialColumnConfig(activeTab) }));
+  };
+
+  const getColumnWidth = (columnId: string): number | undefined => {
+    return columnWidths[`${activeTab}:${columnId}`];
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, columnId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingColumn(columnId);
+    resizingColumnRef.current = columnId;
+    resizeStartXRef.current = e.clientX;
+    const currentWidth = getColumnWidth(columnId) || (e.currentTarget.closest('th') as HTMLTableCellElement)?.offsetWidth || 150;
+    resizeStartWidthRef.current = currentWidth;
+  };
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizingColumnRef.current) return;
+    const diff = e.clientX - resizeStartXRef.current;
+    const newWidth = Math.max(50, resizeStartWidthRef.current + diff);
+    setColumnWidths((prev) => {
+      const next = { ...prev, [`${activeTab}:${resizingColumnRef.current!}`]: newWidth };
+      localStorage.setItem('folder-table-column-widths', JSON.stringify(next));
+      return next;
+    });
+  }, [activeTab]);
+
+  const handleResizeEnd = useCallback(() => {
+    setResizingColumn(null);
+    resizingColumnRef.current = null;
+    resizeStartXRef.current = 0;
+    resizeStartWidthRef.current = 0;
+  }, []);
+
+  useEffect(() => {
+    if (!resizingColumn) return;
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [resizingColumn, handleResizeMove, handleResizeEnd]);
 
   const handleCreateClick = () => {
     if(activeTab == 'envelopes'){
@@ -193,33 +384,47 @@ const fetchRolesAndUsers = async () => {
               <option value={10}>10 / page</option>
               <option value={20}>20 / page</option>
             </select>
+            <div className="relative group/tooltip">
+              <button
+                onClick={() => setIsColumnModalOpen(true)}
+                className="inline-flex items-center justify-center p-2.5"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+              <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                Customize columns
+                <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="bg-gray-50">
               <tr>
-                {activeTab === 'envelopes' && (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                  </>
-                )}
-                {activeTab === 'users' && (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  </>
-                )}
-                {activeTab === 'roles' && (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  </>
-                )}
+                {getVisibleColumns(activeTab).map((column) => {
+                  const columnWidth = getColumnWidth(column.id);
+                  const isResizing = resizingColumn === column.id;
+                  return (
+                    <th
+                      key={column.id}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative group"
+                      style={{ width: columnWidth ? `${columnWidth}px` : undefined }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{column.label}</span>
+                      </div>
+                      <div
+                        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${
+                          isResizing ? 'bg-[#3E2B66] opacity-100' : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
+                        }`}
+                        onMouseDown={(e) => handleResizeStart(e, column.id)}
+                        style={{ cursor: 'col-resize', width: isResizing ? '2px' : '1px' }}
+                      />
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
 
@@ -227,7 +432,7 @@ const fetchRolesAndUsers = async () => {
                 {pageItems.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={3}
+                      colSpan={Math.max(1, getVisibleColumns(activeTab).length)}
                       className="px-6 py-8 text-center text-sm text-gray-500"
                     >
                       No data found
@@ -236,54 +441,18 @@ const fetchRolesAndUsers = async () => {
                 ) : (
                   pageItems.map((item: any) => (
                     <tr key={item._id} className="hover:bg-gray-50">
-
-                      {activeTab === 'envelopes' && (
-                        <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {item.name}
+                      {getVisibleColumns(activeTab).map((column) => {
+                        const columnWidth = getColumnWidth(column.id);
+                        return (
+                          <td
+                            key={column.id}
+                            className="px-6 py-4 whitespace-nowrap"
+                            style={{ width: columnWidth ? `${columnWidth}px` : undefined, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {column.render(item)}
                           </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${
-                              item.status === 'Completed'
-                                ? 'bg-green-100 text-green-800'
-                                : item.status === 'Sent'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.createdAt}
-                          </td>
-                        </>
-                      )}
-
-                      {activeTab === 'users' && (
-                        <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.email}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.role}
-                          </td>
-                        </>
-                      )}
-
-                      {activeTab === 'roles' && (
-                        <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.description}
-                          </td>
-                        </>
-                      )}
-
+                        );
+                      })}
                     </tr>
                   ))
                 )}
@@ -301,17 +470,17 @@ const fetchRolesAndUsers = async () => {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              className="border rounded disabled:opacity-50"
             >
-              Prev
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-sm">{page} / {totalPages}</span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              className="border rounded disabled:opacity-50"
             >
-              Next
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -387,9 +556,101 @@ const fetchRolesAndUsers = async () => {
           </div>
         </div>
 
+        {isColumnModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Customize Columns</h3>
+                <button onClick={() => setIsColumnModalOpen(false)} className="text-gray-500 hover:text-gray-800">✕</button>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                You can select up to 3 columns.
+              </p>
+              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                {(columnConfigMap[activeTab] || []).map((column) => {
+                  const visibleCount = (columnConfigMap[activeTab] || []).filter(c => c.visible).length;
+                  const isDisabled = !column.visible && visibleCount >= 3;
+                  return (
+                    <label
+                      key={column.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        column.visible ? 'border-[#260559]/30 bg-[#260559]/5' : 'border-gray-200'
+                      } ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <span className="text-sm font-medium text-gray-800">{column.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={column.visible}
+                        disabled={isDisabled}
+                        onChange={() => toggleColumn(column.id)}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="mt-5 flex items-center justify-between">
+                <button
+                  onClick={resetColumns}
+                  className="px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setIsColumnModalOpen(false)}
+                  className="px-4 py-2 text-sm rounded-lg bg-[#260559] text-white hover:bg-[#34106a]"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default FolderDetailPage;
+
+function RecipientsSummary({
+  recipients,
+}: {
+  recipients: { name?: string; email?: string }[];
+}) {
+  const safe = useMemo(() => (recipients || []).filter(Boolean), [recipients]);
+  const top = safe.slice(0, 2);
+  const remaining = Math.max(0, safe.length - top.length);
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {top.map((r, idx) => {
+        const label = r.name || r.email || 'Recipient';
+        const email = r.email || '';
+        const title = email ? `${label} — ${email}` : label;
+        return (
+          <span
+            key={`${label}-${idx}`}
+            title={title}
+            className="inline-flex flex-col items-start px-2.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-gray-700 border border-gray-200 max-w-[260px]"
+          >
+            <span className="truncate w-full">{label}</span>
+        
+            {email && (
+              <span className="text-gray-500 text-[10px] truncate w-full">
+                {email}
+              </span>
+            )}
+          </span>
+        );
+      })}
+      {remaining > 0 && (
+        <span
+          title={safe.map(r => r.email || r.name).filter(Boolean).join(', ')}
+          className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#260559]/8 text-[#260559] border border-[#260559]/20"
+        >
+          +{remaining} more
+        </span>
+      )}
+    </div>
+  );
+}

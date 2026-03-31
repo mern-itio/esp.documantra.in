@@ -28,7 +28,7 @@ interface EnvelopeDetailsResponse {
     sender?: { name?: string; email?: string };
     recipients?: Recipient[];
     envelopetype?: string;
-    documents?: Array<{ id: string; name?: string }>;
+    documents?: Array<{ id: string; name?: string; filePath?: string | null; signedFilePath?: string | null }>;
     message?: string;
     direction?: string;
     currRecipient?:string;
@@ -107,7 +107,9 @@ const EnvelopeDetailPage: React.FC = () => {
         load();
     }, [id]);
 
-    // Build a preview using existing signer route (scaled iframe to look like thumbnail)
+    // Build preview:
+    // - iframe uses signer route so fields are visible
+    // - external link opens same app route (avoids browser PDF viewer)
     useEffect(() => {
         let revoked = false;
         const makePreview = async () => {
@@ -115,12 +117,12 @@ const EnvelopeDetailPage: React.FC = () => {
             try {
                 const res = await eSignApi.get(`/api/e-sign/envelope/${id}`);
                 if (res?.status === 200 && res.data?.status === 'success') {
-                    const docs: Array<{ id: string }> = res.data.data.documents || [];
+                    const docs: Array<{ id: string; filePath?: string | null; signedFilePath?: string | null }> =
+                        res.data.data.documents || [];
                     if (docs.length > 0) {
-                        const url = `/e-sign/signer/${id}/${res?.data?.data?.currRecipient}`;
-                        if (!revoked) setPreviewUrl(url);
-                        // If backend later provides page count, set it here
-                        // setPageCount(res.data.data.documents[0].pages || null);
+                        // Use dedicated preview route without recipientId.
+                        const readOnlyPreviewUrl = `/e-sign/preview/${id}`;
+                        if (!revoked) setPreviewUrl(readOnlyPreviewUrl);
                     }
                 }
             } catch (_) { }
@@ -874,13 +876,14 @@ const EnvelopeDetailPage: React.FC = () => {
                         {envelope.documents?.[0]?.name || 'Document'}
                     </div>
                     <div className="text-gray-600 mb-3">Pages: {pageCount ?? 1}</div>
-                    <div ref={previewWrapRef} className="overflow-hidden h-[260px] shrink-0">
+                    <div ref={previewWrapRef} className="overflow-hidden h-[260px] shrink-0 relative">
                         {previewUrl ? (
                             <div className="w-full h-full overflow-hidden">
                                 <iframe
                                     ref={iframeRef}
                                     title="document-preview"
                                     src={previewUrl}
+                                    className="pointer-events-none select-none"
                                     style={{
                                         width: '1034px',
                                         height: '1325px',
@@ -889,6 +892,11 @@ const EnvelopeDetailPage: React.FC = () => {
                                         border: '0',
                                         display: 'block'
                                     }}
+                                />
+                                <div
+                                    className="absolute inset-0 z-10 cursor-not-allowed"
+                                    title="Read-only preview"
+                                    aria-hidden
                                 />
                             </div>
                         ) : (

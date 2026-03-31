@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X, Folder } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Folder, Search } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -14,8 +15,39 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
   const [folderName, setFolderName] = useState('');
   const [folderColor, setFolderColor] = useState('#3b82f6');
   const [folderIcon, setFolderIcon] = useState('Folder');
+  const [iconSearch, setIconSearch] = useState('Folder');
+  const [showIconDropdown, setShowIconDropdown] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const iconNames = useMemo(() => {
+    return Object.keys(LucideIcons)
+      .filter((name) => /^[A-Z]/.test(name))
+      .sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  const filteredIconNames = useMemo(() => {
+    const query = iconSearch.trim().toLowerCase();
+    if (!query) return iconNames.slice(0, 50);
+
+    const exactMatches = iconNames.filter((name) => name.toLowerCase() === query);
+    const prefixMatches = iconNames.filter(
+      (name) => name.toLowerCase().startsWith(query) && name.toLowerCase() !== query
+    );
+    const broadMatches = iconNames.filter(
+      (name) =>
+        name.toLowerCase().includes(query) &&
+        !name.toLowerCase().startsWith(query) &&
+        name.toLowerCase() !== query
+    );
+
+    return [...exactMatches, ...prefixMatches, ...broadMatches].slice(0, 50);
+  }, [iconNames, iconSearch]);
+
+  const SelectedIcon =
+    ((LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[folderIcon] as
+      | React.ComponentType<{ className?: string }>
+      | undefined) || Folder;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +64,8 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
       setFolderName('');
       setFolderColor('#3b82f6');
       setFolderIcon('Folder');
+      setIconSearch('Folder');
+      setShowIconDropdown(false);
       setError(null);
       onClose();
     } catch (error: any) {
@@ -46,6 +80,8 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
     setFolderName('');
     setFolderColor('#3b82f6');
     setFolderIcon('Folder');
+    setIconSearch('Folder');
+    setShowIconDropdown(false);
     setError(null);
     onClose();
   };
@@ -120,13 +156,66 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                 <label htmlFor="folder-icon" className="block text-sm font-medium text-gray-700 mb-2">
                   Icon
                 </label>
-                <Input
-                  id="folder-icon"
-                  type="text"
-                  placeholder="Folder"
-                  value={folderIcon}
-                  onChange={(e) => setFolderIcon(e.target.value)}
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <Input
+                    id="folder-icon"
+                    type="text"
+                    placeholder="Search icon (e.g. Folder, File, Mail)"
+                    value={iconSearch}
+                    onChange={(e) => {
+                      const nextValue = e.target.value;
+                      setIconSearch(nextValue);
+                      const exact = iconNames.find((name) => name.toLowerCase() === nextValue.trim().toLowerCase());
+                      if (exact) setFolderIcon(exact);
+                      setShowIconDropdown(true);
+                    }}
+                    onFocus={() => setShowIconDropdown(true)}
+                    onBlur={() => {
+                      setTimeout(() => setShowIconDropdown(false), 150);
+                    }}
+                    className="pl-9 pr-10"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                    <SelectedIcon className="w-4 h-4" />
+                  </div>
+
+                  {showIconDropdown && (
+                    <div className="absolute z-20 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-56 overflow-y-auto">
+                      {filteredIconNames.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">No icons found</div>
+                      ) : (
+                        filteredIconNames.map((name) => {
+                          const IconComp = (LucideIcons as unknown as Record<
+                            string,
+                            React.ComponentType<{ className?: string }>
+                          >)[name];
+                          const isActive = folderIcon === name;
+                          return (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => {
+                                setFolderIcon(name);
+                                setIconSearch(name);
+                                setShowIconDropdown(false);
+                              }}
+                              className={`w-full px-3 py-2 text-left flex items-center justify-between text-sm hover:bg-gray-50 ${
+                                isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                              }`}
+                            >
+                              <span className="truncate">{name}</span>
+                              {IconComp ? <IconComp className="w-4 h-4 flex-shrink-0" /> : null}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Type to search</p>
               </div>
             </div>
           </div>

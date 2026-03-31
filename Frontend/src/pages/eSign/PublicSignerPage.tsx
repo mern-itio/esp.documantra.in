@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { eSignApi, subscriptionApi } from "../../services/apiHelper";
 import DocumentViewer from "../../components/ESign/DocumentViewer";
 import * as Icons from "lucide-react";
@@ -53,6 +53,7 @@ const EnvelopeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { recipientId } = useParams<{ recipientId: string }>();
   const { cycleId } = useParams<{ cycleId: string }>();
+  const location = useLocation();
   const [envelope, setEnvelope] = useState<any>(null);
   const [signatureFields, setSignatureFields] = useState<any[]>([]);
   const [_activeDocument, setActiveDocument] = useState<any>(null);
@@ -142,6 +143,15 @@ const EnvelopeDetails: React.FC = () => {
   const [verificationId, setVerificationId] = useState<string>(''); // For any code-based verification if needed
   const [verificationMessage, setVerificationMessage] = useState<string>(''); // To display any messages from backend during verification
   const [verificationUrl, setVerificationUrl] = useState<string>(''); // For redirects to external identity verification
+  const isPreviewMode = useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('preview') === '1' || location.pathname.includes('/e-sign/preview/');
+    } catch {
+      return location.pathname.includes('/e-sign/preview/');
+    }
+  }, [location.pathname]);
+
   const [redirectCountdown, setRedirectCountdown] = useState<number>(5);
   const [skipMessage, setSkipMessage] = useState<string>(''); // If current method can't be used, show message then auto-advance
   const [showSkipWarningModal, setShowSkipWarningModal] = useState(false);
@@ -220,8 +230,8 @@ const EnvelopeDetails: React.FC = () => {
   };
   const role = (currentRecipient?.role ?? "").toString().toLowerCase().trim();
   const isViewOnly =
-    !!currentRecipient &&
-    (role === "carbon_copy" || role === "cc");
+    isPreviewMode ||
+    (!!currentRecipient && (role === "carbon_copy" || role === "cc"));
   const isInPerson = !!currentRecipient && role === "in_person_signer";
 
   const isCompletedStatus = (status: any) => {
@@ -282,6 +292,22 @@ const EnvelopeDetails: React.FC = () => {
   useEffect(() => {
     // only run when envelope & recipient available
     if (!envelope || !currentRecipient) return;
+    if (isPreviewMode) {
+      // Preview route must never show terms/auth gates.
+      setShowTermsModal(false);
+      setShowAuthModal(false);
+      setTermsAccepted(true);
+      setIsAuthenticated(true);
+      return;
+    }
+
+    // During post-sign completion flow, never reopen terms/auth modals.
+    if (showSigningDoneModal) {
+      setShowTermsModal(false);
+      setShowAuthModal(false);
+      setIsAuthenticated(true);
+      return;
+    }
 
     const envStatus = (envelope.status || "").toString().toLowerCase();
     const rawAuthentication = currentRecipient.authentication;
@@ -373,11 +399,16 @@ const EnvelopeDetails: React.FC = () => {
       setIsAuthenticated(true);
       setShowAuthModal(false);
     }
-  }, [envelope, currentRecipient, termsStorageKey, isViewOnly, showSigningDoneModal, id, recipientId]);
+  }, [envelope, currentRecipient, termsStorageKey, isViewOnly, showSigningDoneModal, id, recipientId, isPreviewMode]);
 
   useEffect(() => {
     // Show terms when envelope is active (not completed) and terms not yet accepted (terms first, before auth)
     if (!envelope) return;
+    if (isPreviewMode) {
+      setShowTermsModal(false);
+      setTermsAccepted(true);
+      return;
+    }
     const envStatus = (envelope.status || "").toString().toLowerCase();
     if (envStatus === "completed") return;
 
@@ -391,7 +422,7 @@ const EnvelopeDetails: React.FC = () => {
     setTermsAccepted(storedAccepted);
     setShowTermsModal(!storedAccepted);
     setTermsChecked(false);
-  }, [envelope, termsStorageKey]);
+  }, [envelope, termsStorageKey, isPreviewMode]);
 
   const acceptTerms = async() => {
     if (!termsChecked) return;
@@ -687,6 +718,9 @@ const EnvelopeDetails: React.FC = () => {
     // Set this immediately so the viewer stays mounted even if the envelope
     // status flips to "completed" right after the last field is submitted.
     setShowSigningDoneModal(true);
+    setShowTermsModal(false);
+    setShowAuthModal(false);
+    setIsAuthenticated(true);
 
     // Refresh to get latest recipient statuses/envelope status
     try {
@@ -753,10 +787,11 @@ const EnvelopeDetails: React.FC = () => {
 
   const isEnvelopeCompleted =
     (envelope?.status || "").toString().toLowerCase() === "completed";
-  const canInteractWithDocument = isAuthenticated && termsAccepted;
+  // In preview mode allow normal scrolling/navigation, but keep fields non-signable via isViewOnly.
+  const canInteractWithDocument = isPreviewMode || (isAuthenticated && termsAccepted);
   const shouldRenderDocumentInBackground =
-    (!isEnvelopeCompleted || showSigningDoneModal) &&
-    (isAuthenticated || showAuthModal || showTermsModal || showSigningDoneModal);
+    (isPreviewMode || !isEnvelopeCompleted || showSigningDoneModal) &&
+    (isPreviewMode || isAuthenticated || showAuthModal || showTermsModal || showSigningDoneModal);
 
   const emailCandidate = assignEmail.trim();
   const isAssignEmailValid =
@@ -954,7 +989,7 @@ const EnvelopeDetails: React.FC = () => {
     <div className="min-h-screen bg-slate-100 px-3 py-6 sm:px-6 lg:px-10">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
         <div className="flex-1">
-          {/* Render DocumentViewer only when envelope is NOT completed and auth is done */}
+          {/* Render DocumentViewer in preview mode always; otherwise follow signing/auth flow */}
           {shouldRenderDocumentInBackground && (
             <div
               className={
@@ -968,7 +1003,7 @@ const EnvelopeDetails: React.FC = () => {
                 documents={allDocuments}
                 allRecipients={allRecipients}
                 signatureFields={signatureFields}
-                currentUserId={recipientId || ""}
+                currentUserId={isPreviewMode ? "" : (recipientId || "")}
                 envelopeID={id || ""}
                 onClose={() => setActiveDocument(null)}
                 onSignatureSave={handleSignatureSave}
@@ -980,6 +1015,7 @@ const EnvelopeDetails: React.FC = () => {
                   handleSigningCompleted();
                 }}
                 onRequestActions={() => {
+                  if (isPreviewMode) return;
                   // Show the same dropdown options that are normally on the Terms modal
                   setShowOtherOptions((v) => !v);
                   setShowTermsModal(false);
@@ -1028,7 +1064,7 @@ const EnvelopeDetails: React.FC = () => {
       </div>
 
       {/* ---------- TERMS MODAL (shown first, before auth) ---------- */}
-      {showTermsModal && (envelope?.status || "").toString().toLowerCase() !== "completed" && (
+      {!isPreviewMode && showTermsModal && (envelope?.status || "").toString().toLowerCase() !== "completed" && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b164a]/55 backdrop-blur-[2px] px-4 py-10"
           onClick={() => setShowOtherOptions(false)}
@@ -1425,7 +1461,7 @@ const EnvelopeDetails: React.FC = () => {
       {/* Signing completed CTA moved into `DocumentViewer` header */}
 
       {/* ---------- AUTH MODAL (Condition 1 UI) ---------- */}
-      {showAuthModal && !isAuthenticated && currentAuthMethod && (
+      {!isPreviewMode && showAuthModal && !isAuthenticated && currentAuthMethod && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-[1px] z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-[0_24px_60px_rgba(0,0,0,0.22)] w-full max-w-lg overflow-hidden border border-gray-200">
             {/* Header */}

@@ -21,19 +21,25 @@ const otpTemplate = (recipientName, otp_code) => `
         text-align: center;
         padding: 20px 10px;
       ">
-        <h2 style="margin: 0; font-weight: 600;">Document Signing Request</h2>
+        <h2 style="margin: 0; font-weight: 600;">Email Verification for Document Signing</h2>
       </div>
 
       <div style="padding: 30px;">
         <p style="font-size: 16px; color: #333;">Hello <strong>${recipientName}</strong>,</p>
 
         <p style="font-size: 15px; color: #555; line-height: 1.6;">
+          You are receiving this OTP to verify your identity before accessing and signing a document shared with you.
+        </p>
+        <p style="font-size: 15px; color: #555; line-height: 1.6;">
           <span style="display: inline-block; background: #f9f9f9; padding: 10px 14px; border-left: 4px solid #4D0080; border-radius: 4px;">
-            Your One-Time Password (OTP) for verification is: <strong style="color: #4D0080; font-size: 18px;">${otp_code}</strong>
+            Your One-Time Password (OTP): <strong style="color: #4D0080; font-size: 18px;">${otp_code}</strong>
           </span>
         </p>
         <p style="font-size: 15px; color: #555; line-height: 1.6;">
-         If you did not request this verification, please ignore this email.
+          Enter this code on the verification screen to continue your signing process.
+        </p>
+        <p style="font-size: 15px; color: #555; line-height: 1.6;">
+          If you did not initiate this document verification, you can safely ignore this email.
         </p>
       </div>
 
