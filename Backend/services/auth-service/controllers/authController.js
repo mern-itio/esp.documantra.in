@@ -771,26 +771,50 @@ const switchAccount = async (req, res) => {
   }
    
 };
+const escapeRegex = (value) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 const getUsersList = async (req, res) => {
   try {
-    const users = await User.aggregate([
-      {
-        $project: {
-          _id: 1,
-          name: "$fullname",
-          email: 1
-        }
-      }
-    ]);
+    const q = String(req.query.q || '').trim();
+    const limit = Math.min(Number(req.query.limit) || 50, 100);
+
+    let users;
+    if (q.length === 0) {
+      // Keep compatibility but avoid large load by default; clients should provide q for search.
+      users = [];
+    } else {
+      const regex = new RegExp(escapeRegex(q), 'i');
+      users = await User.find(
+        {
+          $or: [
+            { fullname: { $regex: regex } },
+            { email: { $regex: regex } }
+          ]
+        },
+        { _id: 1, fullname: 1, email: 1 }
+      )
+        .limit(limit)
+        .lean();
+    }
+
+    const formattedUsers = users.map((u) => ({
+      _id: u._id,
+      name: u.fullname || '',
+      email: u.email
+    }));
+
     return res.status(200).json({
       status: 200,
-      message: "Users list retrieved successfully",
-      data: users
+      message: 'Users list retrieved successfully',
+      data: formattedUsers
     });
   } catch (error) {
+    console.error('getUsersList error', error);
     return res.status(500).json({
       status: 500,
-      message: "Internal server error",
+      message: 'Internal server error',
       data: null
     });
   }

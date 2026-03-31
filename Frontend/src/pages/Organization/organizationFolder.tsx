@@ -56,21 +56,23 @@ const OrganizationFolder: React.FC = () => {
     } catch (err) {
       console.error('Error fetching folders:', err);
     }
-  }
-  const handleFolderClick = (folderId: string) => () => {
-    // Navigate to folder details page
-    console.log('Folder clicked:', folderId);
-    nevigate(`/organization/folder/${folderId}`);
-  }
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [showShareRoleModal, setShowShareRoleModal] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<FolderRecord | null>(null);
-  const handleCreateFolder = async (folderData: { name: string; color: string; icon: string }) => {
-    const response = await organizationApi.post(`/api/organization/create-folder`, folderData);
-    if (response.status === 201) {
-      toast.success('Folder created successfully!');
-      await fetchFolders();
+
+    const handleFolderClick = (folderId: string) => () => {
+      // Navigate to folder details page
+      console.log('Folder clicked:', folderId);
+      nevigate(`/organization/folder/${folderId}`);
+    }
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [showShareRoleModal, setShowShareRoleModal] = useState(false);
+    const [selectedFolder, setSelectedFolder] = useState<FolderRecord | null>(null);
+    const handleCreateFolder = async (folderData: { name: string; color: string; icon: string }) => {
+        const response = await organizationApi.post(`/api/organization/create-folder`, folderData);
+        if (response.status === 201) {
+            fetchFolders();
+            toast.success('Folder created successfully!');
+        }
+
     }
   }
 
