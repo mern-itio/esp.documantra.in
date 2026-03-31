@@ -34,8 +34,15 @@ interface FolderRecord {
 
 const resolveFolderIcon = (iconName?: string) => {
   const name = iconName?.trim();
+  const normalize = (value: string) => value.toLowerCase().replace(/[\s_-]+/g, '');
   const iconMap = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
-  return (name ? iconMap[name] : null) || FolderOpen;
+  if (!name) return FolderOpen;
+  return (
+    iconMap[name] ||
+    iconMap[Object.keys(iconMap).find((k) => k.toLowerCase() === name.toLowerCase()) || ''] ||
+    iconMap[Object.keys(iconMap).find((k) => normalize(k) === normalize(name)) || ''] ||
+    FolderOpen
+  );
 };
 
 const OrganizationFolder: React.FC = () => {

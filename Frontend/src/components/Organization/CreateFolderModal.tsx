@@ -20,11 +20,35 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const iconMap = useMemo(
+    () => LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>,
+    []
+  );
+
+  const normalize = (value: string) => value.toLowerCase().replace(/[\s_-]+/g, '');
+
+  const isRenderableIcon = (name: string) => {
+    const candidate = (iconMap as Record<string, unknown>)[name];
+    return !!candidate && (typeof candidate === 'function' || typeof candidate === 'object');
+  };
+
   const iconNames = useMemo(() => {
-    return Object.keys(LucideIcons)
-      .filter((name) => /^[A-Z]/.test(name))
+    return Object.keys(iconMap)
+      .filter((name) => /^[A-Z]/.test(name) && isRenderableIcon(name))
       .sort((a, b) => a.localeCompare(b));
-  }, []);
+  }, [iconMap]);
+
+  const resolveIconName = (raw?: string) => {
+    const input = (raw || '').trim();
+    if (!input) return 'Folder';
+    const exact = iconNames.find((name) => name === input);
+    if (exact) return exact;
+    const ci = iconNames.find((name) => name.toLowerCase() === input.toLowerCase());
+    if (ci) return ci;
+    const normalized = normalize(input);
+    const normalizedMatch = iconNames.find((name) => normalize(name) === normalized);
+    return normalizedMatch || 'Folder';
+  };
 
   const filteredIconNames = useMemo(() => {
     const query = iconSearch.trim().toLowerCase();
@@ -44,10 +68,7 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
     return [...exactMatches, ...prefixMatches, ...broadMatches].slice(0, 50);
   }, [iconNames, iconSearch]);
 
-  const SelectedIcon =
-    ((LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[folderIcon] as
-      | React.ComponentType<{ className?: string }>
-      | undefined) || Folder;
+  const SelectedIcon = iconMap[resolveIconName(folderIcon)] || Folder;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +80,7 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
       await onSubmit({
         name: folderName.trim(),
         color: folderColor,
-        icon: folderIcon
+        icon: resolveIconName(folderIcon)
       });
       setFolderName('');
       setFolderColor('#3b82f6');
@@ -168,7 +189,7 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                     onChange={(e) => {
                       const nextValue = e.target.value;
                       setIconSearch(nextValue);
-                      const exact = iconNames.find((name) => name.toLowerCase() === nextValue.trim().toLowerCase());
+                      const exact = iconNames.find((name) => normalize(name) === normalize(nextValue.trim()));
                       if (exact) setFolderIcon(exact);
                       setShowIconDropdown(true);
                     }}
@@ -188,10 +209,7 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                         <div className="px-3 py-2 text-sm text-gray-500">No icons found</div>
                       ) : (
                         filteredIconNames.map((name) => {
-                          const IconComp = (LucideIcons as unknown as Record<
-                            string,
-                            React.ComponentType<{ className?: string }>
-                          >)[name];
+                          const IconComp = iconMap[name];
                           const isActive = folderIcon === name;
                           return (
                             <button
