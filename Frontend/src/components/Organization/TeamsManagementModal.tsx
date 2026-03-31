@@ -37,6 +37,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
   const [availableUsers, setAvailableUsers] = useState<TeamMember[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [availableSearchQuery, setAvailableSearchQuery] = useState('');
+  const [availableLoading, setAvailableLoading] = useState(false);
   const [selectedUserRoles, setSelectedUserRoles] = useState<Record<string, string>>({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [showCreateRoleModal, setShowCreateRoleModal] = useState(false);
@@ -50,26 +51,40 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
   // When roles are loaded, ensure default role values are set for new member
   useEffect(() => {
     if (roles.length) {
-      setNewMemberData((prev) => ({ ...prev, role: prev.roleId || roles[0]._id }));
+      setNewMemberData((prev) => ({ ...prev, roleId: prev.roleId || roles[0]._id }));
     }
   }, [roles]);
 
   useEffect(() => {
     if (isOpen && organization?._id) {
       fetchTeamMembers();
-      fetchAvailableUsers();
       fetchRoles();
     } else if (!isOpen) {
       // Reset add member form when modal closes
       setShowAddMember(false);
       setSearchQuery('');
       setSelectedUsers([]);
+      setAvailableUsers([]);
       setAvailableSearchQuery('');
       setSelectedUserRoles({});
       setNewMemberData({ name: '', email: '', roleId: '' });
       setAddMemberMode('existing');
     }
   }, [isOpen, organization]);
+
+  useEffect(() => {
+    const query = availableSearchQuery.trim();
+    if (query.length < 2 || !organization?._id) {
+      setAvailableUsers([]);
+      return;
+    }
+
+    const handler = window.setTimeout(async () => {
+      await fetchAvailableUsers(query);
+    }, 300);
+
+    return () => window.clearTimeout(handler);
+  }, [availableSearchQuery, organization?._id]);
 
   const fetchTeamMembers = async () => {
     if (!organization?._id) return;
@@ -89,18 +104,28 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
     }
   };
 
-  const fetchAvailableUsers = async () => {
+  const fetchAvailableUsers = async (query: string) => {
+    if (!organization?._id || !query || query.trim().length < 2) {
+      setAvailableUsers([]);
+      return;
+    }
+
+    setAvailableLoading(true);
     try {
-      // Placeholder API call - replace with actual endpoint
-      const response = await organizationApi.get(`/api/organization/fetch-available-users/${organization?._id}`);
-      
+      const response = await organizationApi.get(
+        `/api/organization/fetch-available-users/${organization._id}?q=${encodeURIComponent(query.trim())}`
+      );
+
       if (response.status === 200) {
         const payload = response.data?.data ?? response.data;
-        console.log("Available Users:", payload);
-        setAvailableUsers(Array.isArray(payload) ? payload : []);
+        const users = Array.isArray(payload) ? payload : [];
+        setAvailableUsers(users);
       }
     } catch (error) {
       console.error('Error searching users:', error);
+      setAvailableUsers([]);
+    } finally {
+      setAvailableLoading(false);
     }
   };
   const fetchRoles = async () => {
@@ -141,10 +166,14 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
 
   const handleAddExistingMember = async () => {
     setAddingMember(true);
-    if (selectedUsers.length === 0 || !organization?._id) return;
+    if (selectedUsers.length === 0 || !organization?._id) {
+      setAddingMember(false);
+      return;
+    }
     // Prevent adding if organization has no roles defined
     if (roles.length === 0) {
       alert('No roles exist for this organization — please create a role first.');
+      setAddingMember(false);
       return;
     }
 
@@ -381,109 +410,110 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                   >
                     Choose Existing
                   </button>
-                  <button
-                    onClick={() => {
-                      setAddMemberMode('new');
-                      setSelectedUsers([]);
-                      setNewMemberData({ name: '', email: '', roleId: roles[0]?._id ?? '' });
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      addMemberMode === 'new'
-                        ? 'bg-[#3E2B66] text-white'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    Create New
-                  </button>
                 </div>
 
                 {/* Choose Existing User */}
                 {addMemberMode === 'existing' && (
                   <div className="space-y-3">
                     <div className="relative">
-                          <input
-                            type="text"
-                            value={availableSearchQuery}
-                            onChange={(e) => setAvailableSearchQuery(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                            placeholder="Search by name or email..."
-                          />
-                        </div>
-                        {availableUsers.filter((u) =>
-                          `${u.name} ${u.email}`.toLowerCase().includes(availableSearchQuery.toLowerCase())
-                        ).length > 0 && (
-                          <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg">
-                                {availableUsers
-                                  .filter((u) => `${u?.fullname} ${u.email}`.toLowerCase().includes(availableSearchQuery.toLowerCase()))
-                                  .map((user) => (
-                                    <div
-                                      key={user._id}
-                                      onClick={() => {
-                                        setSelectedUsers((prev) => {
-                                          if (prev.includes(user._id)) {
-                                            // deselect and remove role
-                                            setSelectedUserRoles((r) => {
-                                              const copy = { ...r };
-                                              delete copy[user._id];
-                                              return copy;
-                                            });
-                                            return prev.filter((id) => id !== user._id);
-                                          }
-                                          // select and set default role
-                                          setSelectedUserRoles((r) => ({ ...r, [user._id]: roles[0]?._id || '' }));
-                                          return [...prev, user._id];
-                                        });
-                                      }}
-                                      className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 flex items-center justify-between ${
-                                        selectedUsers.includes(user._id) ? 'bg-blue-50' : ''
-                                      }`}
-                                    >
-                                      <div>
-                                        <p className="font-medium text-gray-900">{user.fullname}</p>
-                                        <p className="text-sm text-gray-600">{user.email}</p>
-                                      </div>
-                                      <div className="ml-2 flex items-center gap-2">
-                                        {selectedUsers.includes(user._id) ? (
-                                          <>
-                                            <select
-                                              value={selectedUserRoles[user._id] || (roles[0]?._id ?? '')}
-                                              onChange={(e) =>
-                                                setSelectedUserRoles((prev) => ({ ...prev, [user._id]: e.target.value }))
-                                              }
-                                              className="px-2 py-1 border border-gray-300 rounded"
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              {roles.length > 0 && (
-                                                roles.map((r) => (
-                                                  <option key={r._id} value={r._id}>
-                                                    {r.name}
-                                                  </option>
-                                                ))
-                                              ) }
-                                            </select>
-                                            <Check className="w-5 h-5 text-green-600" />
-                                          </>
-                                        ) : null}
-                                      </div>
-                                    </div>
-                                  ))}
-                          </div>
-                        )}
-                        {selectedUsers.length > 0 && (
-                          <button
-                            onClick={handleAddExistingMember}
-                            disabled={addingMember}
-                            className={`w-full px-4 py-2 rounded-lg font-semibold transition-colors ${
-                              addingMember
-                                ? 'bg-gray-400 cursor-not-allowed text-white'
-                                : 'bg-[#3E2B66] text-white hover:bg-[#260559]'
+                      <input
+                        type="text"
+                        value={availableSearchQuery}
+                        onChange={(e) => setAvailableSearchQuery(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                        placeholder="Search by name or email (min 2 chars)..."
+                      />
+                    </div>
+
+                    {availableSearchQuery.trim().length < 2 ? (
+                      <p className="text-sm text-gray-500">Type at least 2 characters to search for an existing user.</p>
+                    ) : availableLoading ? (
+                      <p className="text-sm text-gray-500">Searching users...</p>
+                    ) : availableUsers.length > 0 ? (
+                      <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg">
+                        {availableUsers.map((user) => (
+                          <div
+                            key={user._id}
+                            onClick={() => {
+                              setSelectedUsers((prev) => {
+                                if (prev.includes(user._id)) {
+                                  setSelectedUserRoles((r) => {
+                                    const copy = { ...r };
+                                    delete copy[user._id];
+                                    return copy;
+                                  });
+                                  return prev.filter((id) => id !== user._id);
+                                }
+                                setSelectedUserRoles((r) => ({ ...r, [user._id]: roles[0]?._id || '' }));
+                                return [...prev, user._id];
+                              });
+                            }}
+                            className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 flex items-center justify-between ${
+                              selectedUsers.includes(user._id) ? 'bg-blue-50' : ''
                             }`}
                           >
-                            {addingMember
-                              ? 'Adding...'
-                              : `Add Selected Member${selectedUsers.length > 1 ? ` (${selectedUsers.length})` : ''}`}
-                          </button>
-                        )}
+                            <div>
+                              <p className="font-medium text-gray-900">{user.name || user.fullname}</p>
+                              <p className="text-sm text-gray-600">{user.email}</p>
+                            </div>
+                            <div className="ml-2 flex items-center gap-2">
+                              {selectedUsers.includes(user._id) ? (
+                                <>
+                                  <select
+                                    value={selectedUserRoles[user._id] || (roles[0]?._id ?? '')}
+                                    onChange={(e) =>
+                                      setSelectedUserRoles((prev) => ({ ...prev, [user._id]: e.target.value }))
+                                    }
+                                    className="px-2 py-1 border border-gray-300 rounded"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {roles.map((r) => (
+                                      <option key={r._id} value={r._id}>
+                                        {r.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <Check className="w-5 h-5 text-green-600" />
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">No user found matching "{availableSearchQuery.trim()}".</p>
+                        <button
+                          onClick={() => {
+                            setAddMemberMode('new');
+                            setNewMemberData({
+                              name: availableSearchQuery.trim(),
+                              email: availableSearchQuery.includes('@') ? availableSearchQuery.trim() : '',
+                              roleId: roles[0]?._id || ''
+                            });
+                          }}
+                          className="mt-2 px-3 py-2 bg-[#3E2B66] text-white rounded-lg font-semibold hover:bg-[#260559]"
+                        >
+                          Invite user
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedUsers.length > 0 && (
+                      <button
+                        onClick={handleAddExistingMember}
+                        disabled={addingMember}
+                        className={`w-full px-4 py-2 rounded-lg font-semibold transition-colors ${
+                          addingMember
+                            ? 'bg-gray-400 cursor-not-allowed text-white'
+                            : 'bg-[#3E2B66] text-white hover:bg-[#260559]'
+                        }`}
+                      >
+                        {addingMember
+                          ? 'Adding...'
+                          : `Add Selected Member${selectedUsers.length > 1 ? ` (${selectedUsers.length})` : ''}`}
+                      </button>
+                    )}
                   </div>
                 )}
 

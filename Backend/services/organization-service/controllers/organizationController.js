@@ -284,37 +284,45 @@ const fetchOrganizationMembers = async (req, res) => {
         });
     }
 }
-// Fetch all existing user from authService exclude already members
+// Fetch non-organization member users from authService by search query
 const fetchNonMemberUsers = async (req, res) => {
   try {
     const organizationId = req.params.orgId;
+    const q = String(req.query.q || '').trim();
+
+    if (!organizationId) {
+      return res.status(400).json({ success: false, message: 'Organization ID is required' });
+    }
+
+    if (!q || q.length < 2) {
+      return res.status(200).json({ success: true, data: [] });
+    }
 
     const members = await orgService.getOrganizationMembers(organizationId);
-
     const memberUserIds = members
       .map(m => m.userId)
       .filter(Boolean)
       .map(id => id.toString());
 
-    const allUsers = await axios.get(
-      `${process.env.AUTH_SERVICE_URL}/api/users-list`,
+    const authResp = await axios.get(
+      `${process.env.AUTH_SERVICE_URL}/api/users-list?q=${encodeURIComponent(q)}&limit=50`,
       { headers: { Authorization: req.headers.authorization } }
     );
 
-    const nonMembers = allUsers.data.data.filter(
-      user => !memberUserIds.includes(user._id.toString())
+    const users = (authResp.data?.data || []).filter(
+      user => !memberUserIds.includes(String(user._id))
     );
 
     return res.status(200).json({
       success: true,
-      data: nonMembers
+      data: users
     });
 
   } catch (err) {
-    console.error("Error fetching non-member users:", err);
+    console.error('Error fetching non-member users:', err);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch non-member users"
+      message: 'Failed to fetch non-member users'
     });
   }
 };
