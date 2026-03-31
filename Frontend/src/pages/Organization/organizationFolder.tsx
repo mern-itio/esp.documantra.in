@@ -56,7 +56,7 @@ const OrganizationFolder: React.FC = () => {
     } catch (err) {
       console.error('Error fetching folders:', err);
     }
-
+  }
     const handleFolderClick = (folderId: string) => () => {
       // Navigate to folder details page
       console.log('Folder clicked:', folderId);
@@ -74,7 +74,6 @@ const OrganizationFolder: React.FC = () => {
         }
 
     }
-  }
 
   return (
     <div className="bg-white h-full p-6">
