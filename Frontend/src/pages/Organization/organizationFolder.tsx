@@ -61,6 +61,7 @@ const OrganizationFolder: React.FC = () => {
     const handleCreateFolder = async (folderData: { name: string; color: string; icon: string }) => {
         const response = await organizationApi.post(`/api/organization/create-folder`, folderData);
         if (response.status === 201) {
+            fetchFolders();
             toast.success('Folder created successfully!');
         }
     }
