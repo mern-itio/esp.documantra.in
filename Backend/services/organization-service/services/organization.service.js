@@ -9,6 +9,7 @@ const OrgFolderShare = require('../models/orgFolderShare');
 const folderEnvelope = require('../models/folderEnvelope');
 
 const mongoose = require('mongoose');
+const axios = require('axios');
 const createOrganization = async (payload, userId) => {
     const { name, logo, website, gst } = payload;
 
@@ -512,10 +513,63 @@ const getUserInvitationById = async (invitationId,userId) => {
     const invitation = await organizationUser.findOne({_id:invitationId, userId:userId})
     .populate({
       path: 'organizationId',
-      select: 'name logo'
+      select: 'name logo website gst'
+    })
+    .populate({
+      path: 'roleId',
+      select: 'name description'
     })
     .lean();
-    return invitation;
+    if (!invitation) return null;
+
+    let invitedBy = null;
+    if (invitation.addedBy) {
+      const orgRef = invitation.organizationId;
+      const orgId = orgRef && typeof orgRef === 'object' && orgRef._id
+        ? orgRef._id
+        : orgRef;
+
+      // Prefer org roster row (covers admins/members who have an OrganizationUser doc)
+      const inviterMember = await organizationUser.findOne({
+        organizationId: orgId,
+        userId: invitation.addedBy
+      }).select('name email').lean();
+
+      if (inviterMember && (inviterMember.name || inviterMember.email)) {
+        invitedBy = {
+          name: inviterMember.name || null,
+          email: inviterMember.email || null
+        };
+      } else {
+        /*
+         * Owners often have no OrganizationUser row (they are tied via Organization.createdBy only),
+         * so the lookup above misses them. Resolve name/email from auth User.
+         */
+        const authUrl = process.env.AUTH_SERVICE_URL;
+        if (authUrl) {
+          try {
+            const addedByStr = invitation.addedBy.toString
+              ? invitation.addedBy.toString()
+              : String(invitation.addedBy);
+            const { data: authRes } = await axios.get(
+              `${authUrl.replace(/\/$/, '')}/api/user-details/${addedByStr}`,
+              { timeout: 8000 }
+            );
+            const u = authRes?.data;
+            if (u) {
+              invitedBy = {
+                name: u.fullname || u.name || null,
+                email: u.email || null
+              };
+            }
+          } catch (_) {
+            /* ignore — UI will show fallback if still null */
+          }
+        }
+      }
+    }
+
+    return { ...invitation, invitedBy };
 };
 const acceptOrganizationInvitation = async (invitationId,userId) => {
     const invitation = await organizationUser.findOne({_id:invitationId,userId:userId});
