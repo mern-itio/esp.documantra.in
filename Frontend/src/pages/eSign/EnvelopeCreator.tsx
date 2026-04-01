@@ -2671,7 +2671,26 @@ const EnvelopeCreator: React.FC = () => {
       }
 
       // Send the envelope immediately (only if not scheduled)
-      await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
+      const sendResp = await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
+      const milestone = sendResp?.data?.referralMilestone;
+      // Release sending UI + close modal before showing any popup to avoid overlay-lock issues.
+      setShowSendConfirmationModal(false);
+      setSending(false);
+      if (milestone?.achieved) {
+        const credits = Number(milestone?.rewardCredits || 10);
+        await Swal.fire({
+          icon: 'success',
+          title: 'Milestone achieved!',
+          html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+          confirmButtonText: 'Awesome',
+          confirmButtonColor: '#260559',
+        });
+        // Milestone popup already shown; avoid triggering Agreement success popup again.
+        navigate('/e-sign/aggrement');
+      } else {
+        // Keep existing app flow: Agreement page shows the standard success popup via `sent=true`.
+        navigate('/e-sign/aggrement?sent=true');
+      }
 
       // Record credit usage
       const totalCost = calculateTotalCost();
@@ -2723,9 +2742,6 @@ const EnvelopeCreator: React.FC = () => {
         }
       }
 
-      // Close modal before navigation
-      setShowSendConfirmationModal(false);
-
       // For pure in-person flows (no email signers), immediately open the first in-person
       // signer link so the host can hand over the device.
       if (isInPersonOnlyFlow) {
@@ -2740,8 +2756,7 @@ const EnvelopeCreator: React.FC = () => {
         }
       }
 
-      // Navigate to agreement page with success parameter
-      navigate('/e-sign/aggrement?sent=true');
+      // Navigation is already handled above by milestone/normal branch.
     } catch (err) {
       console.error(err);
       // Close modal before showing error alert

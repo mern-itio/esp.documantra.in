@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Subscription = require('../models/Subscription');
 const PlanTemplate = require('../models/PlanTemplate');
 const { createInvoiceForUpgrade } = require('./invoiceController');
@@ -119,7 +120,50 @@ const createFreePlanForUser = async (req, res) => {
   }
 };
 
-module.exports = { getMyPlan, createFreePlanForUser };
+// POST /user-plan/internal/grant-credits
+// Internal endpoint used by auth-service referral unlock.
+const grantCreditsInternal = async (req, res) => {
+  try {
+    const internalKey = req.headers['x-internal-key'] || req.headers['x-service-key'];
+    if (!process.env.INTERNAL_SERVICE_KEY || internalKey !== process.env.INTERNAL_SERVICE_KEY) {
+      return res.status(403).json({ status: 403, message: 'Forbidden', data: null });
+    }
+
+    const { userId, credits, reason, referralId } = req.body || {};
+    const amount = Number(credits);
+    if (!userId || !mongoose.Types.ObjectId.isValid(String(userId)) || !Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ status: 400, message: 'userId and positive credits are required', data: null });
+    }
+    const uid = new mongoose.Types.ObjectId(String(userId));
+
+    const updated = await Subscription.findOneAndUpdate(
+      { userId: uid },
+      {
+        $setOnInsert: {
+          userId: uid,
+          status: 'active',
+        },
+        $inc: { creditsBalance: amount },
+      },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Credits granted',
+      data: {
+        userId: String(uid),
+        creditsAdded: amount,
+        creditsBalance: Number(updated?.creditsBalance || 0),
+        reason: reason || 'internal_grant',
+        referralId: referralId || null,
+      },
+    });
+  } catch (error) {
+    console.error('grantCreditsInternal error:', error);
+    return res.status(500).json({ status: 500, message: error.message || 'Server error', data: null });
+  }
+};
 
 
 // Internal helper to apply a plan upgrade (used by both direct upgrade and Stripe confirmation)
@@ -343,5 +387,5 @@ const confirmCheckoutSession = async (req, res) => {
   }
 };
 
-module.exports = { getMyPlan, createFreePlanForUser, upgradePlan, createCheckoutSession, confirmCheckoutSession };
+module.exports = { getMyPlan, createFreePlanForUser, grantCreditsInternal, upgradePlan, createCheckoutSession, confirmCheckoutSession };
 

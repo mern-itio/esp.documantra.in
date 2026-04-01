@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   CheckCircle,
   Copy,
@@ -29,6 +29,8 @@ export default function SignerStatusPage() {
   const [userType, setUserType] = useState<"checking" | "existing" | "new">("checking");
   const [showScratchModal, setShowScratchModal] = useState(false);
   const [scratchDone, setScratchDone] = useState(false);
+  const [referralShareLink, setReferralShareLink] = useState("");
+  const [referralLinkLoading, setReferralLinkLoading] = useState(false);
   const scratchCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const scratchDrawingRef = useRef(false);
   const scratchBurstFiredRef = useRef(false);
@@ -104,6 +106,61 @@ export default function SignerStatusPage() {
       mounted = false;
     };
   }, [envelope, recipientId]);
+
+  // Referral link must use the *signer's* auth user id (recipient), not whoever is logged in
+  // (e.g. envelope sender). Resolve recipient email from this status URL, then find-user → _id.
+  useEffect(() => {
+    if (userType !== "existing" || !envelope || !recipientId) {
+      setReferralShareLink("");
+      setReferralLinkLoading(false);
+      return;
+    }
+
+    const normId = (x: any) => {
+      if (x == null) return "";
+      if (typeof x === "string") return x;
+      if (typeof x === "object" && x.$oid) return String(x.$oid);
+      if (typeof x === "object" && x._id) return String(x._id);
+      return String(x);
+    };
+
+    let cancelled = false;
+    setReferralLinkLoading(true);
+
+    const recipients = envelope?.recipients || [];
+    const recipient = recipients.find((r: any) => normId(r?.id ?? r?._id) === normId(recipientId));
+    const email = (recipient?.email || recipient?.recipientEmail || "").toString().trim().toLowerCase();
+
+    if (!email) {
+      setReferralShareLink("");
+      setReferralLinkLoading(false);
+      return;
+    }
+
+    authApi
+      .get(`/api/find-user/${encodeURIComponent(email)}`)
+      .then((res) => {
+        const raw = res?.data?.data;
+        const signerAuthId = raw?._id ?? raw?.id;
+        if (!signerAuthId || cancelled) return;
+        const base = (
+          import.meta.env.VITE_PUBLIC_APP_URL ||
+          (typeof window !== "undefined" ? window.location.origin : "")
+        ).replace(/\/$/, "");
+        if (!base) return;
+        setReferralShareLink(`${base}/signup?ref=${encodeURIComponent(String(signerAuthId))}`);
+      })
+      .catch(() => {
+        if (!cancelled) setReferralShareLink("");
+      })
+      .finally(() => {
+        if (!cancelled) setReferralLinkLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userType, envelope, recipientId]);
 
   const isCompletedStatus = (status: any) => {
     const s = (status || "").toString().toLowerCase();
@@ -365,19 +422,6 @@ export default function SignerStatusPage() {
         : anySignerDeclined
           ? "A signer has declined this envelope, so signing is no longer active."
           : "You’ve completed signing. You’ll receive the certificate by email once all signers finish.";
-
-  const referralUrl = useMemo(() => {
-    const rid = String(recipientId ?? "").trim();
-    const base = (() => {
-      try {
-        return window.location.origin;
-      } catch {
-        return "";
-      }
-    })();
-    // Dummy referral link format (update later)
-    return `${base}/signup?ref=${encodeURIComponent(rid || "signer")}`;
-  }, [recipientId]);
 
   const copyText = async (raw: string) => {
     const text = String(raw ?? "").trim();
@@ -1080,7 +1124,9 @@ export default function SignerStatusPage() {
                           <div>
                             <div className="text-lg font-semibold text-gray-900">Invite & earn</div>
                             <div className="mt-1 text-sm text-gray-600">
-                              Share your referral link. When friends join, you both get benefits.
+                              This link is tied to <span className="font-medium">your signer account</span> for this
+                              envelope (not the person who sent it). Share it — when someone joins and sends their first
+                              document, you both earn rewards.
                             </div>
                           </div>
                         </div>
@@ -1091,23 +1137,39 @@ export default function SignerStatusPage() {
 
                       <div className="mt-5 rounded-2xl bg-white p-4 ring-1 ring-gray-200">
                         <div className="text-xs font-semibold text-gray-500">Your referral link</div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <div className="min-w-0 flex-1 truncate rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">
-                            {referralUrl}
+                        {referralLinkLoading ? (
+                          <div className="mt-2 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-500 ring-1 ring-gray-200">
+                            Loading your link…
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => copyText(referralUrl)}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#260559] text-white hover:bg-[#260559]/90"
-                            aria-label="Copy referral link"
-                          >
-                            {copyHint === "copied" ? (
-                              <Check className="h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
+                        ) : referralShareLink ? (
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="min-w-0 flex-1 truncate rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">
+                              {referralShareLink}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => copyText(referralShareLink)}
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#260559] text-white hover:bg-[#260559]/90"
+                              aria-label="Copy referral link"
+                            >
+                              {copyHint === "copied" ? (
+                                <Check className="h-4 w-4" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="mt-2 space-y-2 text-sm text-amber-800">
+                            <p>
+                              Could not build a referral link for this recipient. Open{" "}
+                              <Link to="/account/rewards" className="font-medium underline">
+                                Rewards
+                              </Link>{" "}
+                              while signed in as this signer, or confirm this email is registered in Draft&Sign.
+                            </p>
+                          </div>
+                        )}
                         {copyHint === "failed" && (
                           <div className="mt-2 text-xs text-red-700">Copy failed</div>
                         )}
@@ -1116,7 +1178,7 @@ export default function SignerStatusPage() {
                       <div className="mt-5 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 ring-1 ring-gray-200">
                         <Gift className="h-5 w-5 text-emerald-600" />
                         <div className="text-sm text-gray-700">
-                          Tip: Invite 3 friends to unlock <span className="font-semibold">premium signing</span>.
+                          Referrer rewards unlock each time an invite sends their first document successfully.
                         </div>
                       </div>
                     </div>

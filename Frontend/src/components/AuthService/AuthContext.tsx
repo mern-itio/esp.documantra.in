@@ -31,9 +31,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string, recaptchaToken?: string) => Promise<void>;
-  googleLogin: (credential: string) => Promise<void>;
+  googleLogin: (credential: string, options?: { referrerUserId?: string }) => Promise<void>;
   logout: () => void;
-  signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string }) => Promise<{ signupToken: string }>;
+  signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string; referrerUserId?: string }) => Promise<{ signupToken: string }>;
   sendSignupEmailOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
   verifySignupEmailOtp: (signupToken: string, emailOtp: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean; loggedIn: boolean }>;
   sendSignupPhoneOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
@@ -437,13 +437,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const googleLogin = async (credential: string) => {
+  const googleLogin = async (credential: string, options?: { referrerUserId?: string }) => {
     try {
       const deviceId = getOrCreateDeviceId();
+      const ref = options?.referrerUserId?.trim();
       const resp = await fetch(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: credential, deviceId, deviceLabel: 'browser' }),
+        body: JSON.stringify({
+          token: credential,
+          deviceId,
+          deviceLabel: 'browser',
+          ...(ref ? { ref } : {}),
+        }),
       });
 
       const data = await resp.json().catch(() => ({}));
@@ -569,7 +575,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string }) => {
+  const signup = async (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string; referrerUserId?: string }) => {
     const data = await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
       body: JSON.stringify(userData),

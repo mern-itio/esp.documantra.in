@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import { Download, Printer, ChevronLeft, ExternalLink, CheckCircle2, PenLine, ListOrdered, Info, ArrowLeft, Copy, Check } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 declare global {
     interface Window { pdfjsLib: any }
@@ -285,14 +286,29 @@ const EnvelopeDetailPage: React.FC = () => {
             setResendLoading(true);
             const status = (envelope?.status || '').toLowerCase();
             if (status === 'draft') {
-                await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+                const resp = await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+                const milestone = resp?.data?.referralMilestone;
+                if (milestone?.achieved) {
+                  const credits = Number(milestone?.rewardCredits || 10);
+                  await Swal.fire({
+                    icon: 'success',
+                    title: 'Milestone achieved!',
+                    html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+                    confirmButtonText: 'Awesome',
+                    confirmButtonColor: '#260559',
+                  });
+                } else {
+                  alert('Email queued successfully');
+                }
+                return;
             } else if (status === 'in-progress' || status === 'waiting' || status === 'pending') {
                 await eSignApi.post(`/api/e-sign/envelope/reminder/${id}`);
+                alert('Email queued successfully');
+                return;
             } else {
                 alert(`Envelope is '${envelope?.status}'. Resend not applicable.`);
                 return;
             }
-            alert('Email queued successfully');
         } catch (e) {
             alert('Failed to trigger email');
         } finally {

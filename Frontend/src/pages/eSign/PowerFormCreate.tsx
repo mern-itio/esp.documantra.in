@@ -29,6 +29,7 @@ import {
 import type { Document, Recipient } from '../../types';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
 import { eSignApi } from '../../services/apiHelper';
+import Swal from 'sweetalert2';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 type EditorSignatureFieldExt = EditorSignatureField & {
@@ -750,8 +751,22 @@ const PowerFormCreate: React.FC = () => {
     if (!envelopeId) return;
     setSending(true);
     try {
-      await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
-      alert('Envelope sent successfully!');
+      const resp = await eSignApi.post(`/api/e-sign/send-envelope/${envelopeId}`);
+      const milestone = resp?.data?.referralMilestone;
+      if (milestone?.achieved) {
+        setSending(false);
+        const credits = Number(milestone?.rewardCredits || 10);
+        await Swal.fire({
+          icon: 'success',
+          title: 'Milestone achieved!',
+          html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+          confirmButtonText: 'Awesome',
+          confirmButtonColor: '#260559',
+        });
+      } else {
+        setSending(false);
+        alert('Envelope sent successfully!');
+      }
       navigate('/e-sign/aggrement');
     } catch (err) {
       console.error(err);

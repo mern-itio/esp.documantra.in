@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft, Smartphone, RotateCcw, Check } from 'lucide-react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft, Smartphone, RotateCcw, Check, Gift, X } from 'lucide-react'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { useAuth } from '../../components/AuthService/AuthContext'
@@ -12,10 +12,29 @@ const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECA
 
 type SignupStep = 'form' | 'verify'
 const OTP_EXPIRY_SECONDS = 10 * 60
+const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
 
 const SignupPage = () => {
   const { signup, googleLogin, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const referrerUserIdForSignup = useMemo(() => {
+    const fromUrl = searchParams.get('ref')?.trim()
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem(SIGNUP_REFERRER_STORAGE_KEY, fromUrl)
+      } catch {
+        /* ignore */
+      }
+      return fromUrl
+    }
+    try {
+      return sessionStorage.getItem(SIGNUP_REFERRER_STORAGE_KEY)?.trim() || ''
+    } catch {
+      return ''
+    }
+  }, [searchParams])
   const [step, setStep] = useState<SignupStep>('form')
   const [signupToken, setSignupToken] = useState<string>('')
   const [emailOtp, setEmailOtp] = useState('')
@@ -38,6 +57,7 @@ const SignupPage = () => {
   const [bookOpen, setBookOpen] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
   const recaptchaRef = useRef<ReCAPTCHA>(null)
+  const [referralInviteBannerDismissed, setReferralInviteBannerDismissed] = useState(false)
 
   const formatOtpCountdown = (expiresAt: number | null) => {
     if (!expiresAt) return ''
@@ -153,7 +173,8 @@ const SignupPage = () => {
         company: formData.company,
         address: formData.address,
         password: formData.password,
-        recaptchaToken: recaptchaToken
+        recaptchaToken: recaptchaToken,
+        ...(referrerUserIdForSignup ? { referrerUserId: referrerUserIdForSignup } : {}),
       })
       setSignupToken(token)
       // email OTP is already sent by register; keep phone OTP gated
@@ -192,6 +213,11 @@ const SignupPage = () => {
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
       if (st.loggedIn || localStorage.getItem('accessToken')) {
+        try {
+          sessionStorage.removeItem(SIGNUP_REFERRER_STORAGE_KEY)
+        } catch {
+          /* ignore */
+        }
         navigate('/dashboard')
       }
     } catch (error) {
@@ -251,7 +277,14 @@ const SignupPage = () => {
       setEmailVerified(st.emailVerified)
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
-      if (st.loggedIn) navigate('/dashboard')
+      if (st.loggedIn) {
+        try {
+          sessionStorage.removeItem(SIGNUP_REFERRER_STORAGE_KEY)
+        } catch {
+          /* ignore */
+        }
+        navigate('/dashboard')
+      }
     } catch (error) {
       setFormError((error as Error)?.message || 'Phone verification failed. Please check the code and try again.')
     } finally {
@@ -264,7 +297,14 @@ const SignupPage = () => {
     setIsLoading(true)
     try {
       if (credentialResponse.credential) {
-        await googleLogin(credentialResponse.credential)
+        await googleLogin(credentialResponse.credential, {
+          ...(referrerUserIdForSignup ? { referrerUserId: referrerUserIdForSignup } : {}),
+        })
+        try {
+          sessionStorage.removeItem(SIGNUP_REFERRER_STORAGE_KEY)
+        } catch {
+          /* ignore */
+        }
         navigate('/dashboard')
       } else {
         setFormError('Google Signup failed. No credential received.')
@@ -410,6 +450,32 @@ const SignupPage = () => {
               {formError && (
                 <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-shake">
                   <p className="text-red-600 text-sm font-medium">{formError}</p>
+                </div>
+              )}
+
+              {referrerUserIdForSignup && !referralInviteBannerDismissed && (
+                <div className="mb-6 relative rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-4 pr-10 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setReferralInviteBannerDismissed(true)}
+                    className="absolute right-3 top-3 rounded-lg p-1 text-gray-500 hover:bg-emerald-100/80 hover:text-gray-800"
+                    aria-label="Dismiss"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <div className="flex gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow">
+                      <Gift className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-900">You were invited</p>
+                      <p className="mt-1 text-sm text-emerald-900/90">
+                        Finish signup, then <span className="font-medium">send your first document</span> from this
+                        account to unlock your welcome reward. Your referrer gets credit at the same time. Track progress
+                        in <span className="font-medium">Profile → Rewards</span>.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
