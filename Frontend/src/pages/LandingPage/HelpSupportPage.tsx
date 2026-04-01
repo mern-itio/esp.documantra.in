@@ -330,9 +330,9 @@ const HelpSupportPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Frequently Asked Questions</h2>
-                <div className="text-sm text-gray-500">
+                {/* <div className="text-sm text-gray-500">
                   {filteredFAQs.length} {filteredFAQs.length === 1 ? 'result' : 'results'}
-                </div>
+                </div> */}
               </div>
 
               {searchQuery && filteredFAQs.length === 0 && (

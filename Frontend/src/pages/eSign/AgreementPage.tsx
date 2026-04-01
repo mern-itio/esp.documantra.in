@@ -1039,21 +1039,37 @@ const AgreementPage: React.FC = () => {
     if (ids.length === 0) return;
     try {
       setBulkResending(true);
+      let milestoneShown = false;
       for (const id of ids) {
         const ag = agreements.find(a => a.id === id);
         const status = (ag?.status || '').toLowerCase();
         if (status === 'draft') {
-          await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+          const resp = await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+          const milestoneAchieved = !!resp?.data?.referralMilestone?.achieved;
+          if (milestoneAchieved) {
+            const credits = Number(resp?.data?.referralMilestone?.rewardCredits || 10);
+            await Swal.fire({
+              icon: 'success',
+              title: 'Milestone achieved!',
+              html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+              confirmButtonText: 'Awesome',
+              confirmButtonColor: '#260559',
+            });
+            milestoneShown = true;
+            continue;
+          }
         } else if (status === 'in-progress') {
           await eSignApi.post(`/api/e-sign/envelope/reminder/${id}`);
         }
       }
-      Swal.fire({
-        title: 'Success!',
-        text: 'Email(s) queued successfully',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      });
+      if (!milestoneShown) {
+        Swal.fire({
+          title: 'Success!',
+          text: 'Email(s) queued successfully',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
+      }
     } catch (e) {
       Swal.fire({
         title: 'Error',
@@ -1090,7 +1106,19 @@ const AgreementPage: React.FC = () => {
       setRowResendLoadingId(agreement.id);
       const s = (agreement.status || '').toLowerCase();
       if (s === 'draft') {
-        await eSignApi.post(`/api/e-sign/send-envelope/${agreement.id}`);
+        const resp = await eSignApi.post(`/api/e-sign/send-envelope/${agreement.id}`);
+        const milestoneAchieved = !!resp?.data?.referralMilestone?.achieved;
+        if (milestoneAchieved) {
+          const credits = Number(resp?.data?.referralMilestone?.rewardCredits || 10);
+          await Swal.fire({
+            icon: 'success',
+            title: 'Milestone achieved!',
+            html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+            confirmButtonText: 'Awesome',
+            confirmButtonColor: '#260559',
+          });
+          return;
+        }
       } else if (s === 'in-progress') {
         await eSignApi.post(`/api/e-sign/envelope/reminder/${agreement.id}`);
       }

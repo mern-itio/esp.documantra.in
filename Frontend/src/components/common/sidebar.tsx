@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Plus, HelpCircle, CreditCard, Share, Library } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Plus, HelpCircle, CreditCard, Share, Library, Gift } from 'lucide-react';
 import { useAuth } from '../AuthService/AuthContext';
 
 interface SidebarProps {
@@ -462,8 +462,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
 
           {/* Quick Actions */}
-          <div className="px-2 pb-2 space-y-1">
+          <div className="px-2 pb-2 pt-2 space-y-1">
 
+            <button
+              onClick={() => navigate('/account/rewards')}
+              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
+            >
+              <Gift className="h-3.5 w-3.5 text-slate-400 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
+              <span className="font-medium">Refer & Earn</span>
+            </button>
+            <hr className="border-slate-200" />
             <button
               onClick={() => navigate('/credits-usage')}
               className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
@@ -471,6 +479,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               <CreditCard className="h-3.5 w-3.5 text-slate-400 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
               <span className="font-medium">Billing & Usage</span>
             </button>
+            <hr className="border-slate-200" />
+            
             <button
               onClick={() => navigate('/account/profile')}
               className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"

@@ -688,7 +688,7 @@ const sendEnvelope = async (req, res) => {
   try {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
-    const userId = req?.user?.data?.id;
+    const userId = req?.user?.data?.id || req?.user?.id;
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found" });
     }
@@ -722,10 +722,47 @@ const sendEnvelope = async (req, res) => {
 
     // If we sent to at least one recipient, return success
     if (sentRecipients.length > 0) {
+      let referralMilestone = null;
+      try {
+        const uid = userId && String(userId);
+        // Prefer AUTH_SERVICE_URL; fall back to AUTH_URL (used everywhere else in this service).
+        const authBaseRaw = process.env.AUTH_URL;
+        const authBase = authBaseRaw && String(authBaseRaw).replace(/\/+$/, '');
+        const internalKey = process.env.INTERNAL_SERVICE_KEY;
+        if (uid && authBase && internalKey) {
+          const priorSent = await Envelope.countDocuments({
+            sender: new mongoose.Types.ObjectId(uid),
+            _id: { $ne: envelope._id },
+            status: { $nin: ['draft', 'deleted'] },
+          });
+          if (priorSent === 0) {
+            const referralHookResp = await axios.post(
+              `${authBase}/api/internal/referrals/first-document-sent`,
+              { userId: uid, envelopeId: String(envelope._id) },
+              { headers: { 'x-internal-key': internalKey }, timeout: 8000 }
+            );
+            const action = referralHookResp?.data?.action;
+            if (action === 'completed') {
+              referralMilestone = {
+                achieved: true,
+                rewardCredits: Number(referralHookResp?.data?.rewardCredits || 10),
+                referralId: referralHookResp?.data?.referralId || null,
+              };
+            }
+          }
+        } else if (uid) {
+          console.warn(
+            'Referral first-send hook skipped: set AUTH_SERVICE_URL or AUTH_URL and INTERNAL_SERVICE_KEY on e-sign-service'
+          );
+        }
+      } catch (refHookErr) {
+        console.warn('Referral first-send hook failed:', refHookErr?.message || refHookErr);
+      }
       return res.status(200).json({
         message: "Envelope sent to recipients",
         recipientsSent: sentRecipients.length,
-        recipients: sentRecipients
+        recipients: sentRecipients,
+        referralMilestone,
       });
     } else {
       // Check if there are any recipients at all

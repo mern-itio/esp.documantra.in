@@ -22,6 +22,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
+import Swal from 'sweetalert2';
 import ActionButton from '../../components/ESign/ActionButton';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 
@@ -306,7 +307,7 @@ const handleSendEnvelope = async () => {
     setSending(true);
     try {
         // Send envelope
-        await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
+        const resp = await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
         
         // Record credit usage for the envelope
         console.log(envelope.totalCost)
@@ -339,11 +340,22 @@ const handleSendEnvelope = async () => {
             // Don't block the flow if credit recording fails
           }
         }
-        else{
-          return
-        }
 
-        alert('Envelope sent successfully!');
+        const milestone = resp?.data?.referralMilestone;
+        if (milestone?.achieved) {
+          setSending(false);
+          const credits = Number(milestone?.rewardCredits || 10);
+          await Swal.fire({
+            icon: 'success',
+            title: 'Milestone achieved!',
+            html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+            confirmButtonText: 'Awesome',
+            confirmButtonColor: '#260559',
+          });
+        } else {
+          setSending(false);
+          alert('Envelope sent successfully!');
+        }
         navigate('/e-sign/dashboard');
       } catch (err) {
         console.error(err);
@@ -351,7 +363,6 @@ const handleSendEnvelope = async () => {
       } finally {
         setSending(false);
       }
-    navigate('/e-sign/dashboard');
   };
 const handleDuplicate = async () =>{
   if(!id) return;
