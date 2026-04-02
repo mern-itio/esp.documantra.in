@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, Plus, Users, Share2 } from 'lucide-react';
 import { MyOrganizationCard } from '../../components/Organization/MyOrganizationCard';
 import { SharedOrganizationCard } from '../../components/Organization/SharedOrganizationCard';
@@ -28,9 +28,19 @@ const MyOrganizationPage: React.FC = () => {
   const [showOwnerDetailModal, setShowOwnerDetailModal] = React.useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('mine');
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const shouldOpenTeamsModal = React.useRef(false);
 
   useEffect(() => {
+    const addMember = searchParams.get('add-member');
+    shouldOpenTeamsModal.current = addMember === 'true';
+    if (shouldOpenTeamsModal.current) {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('add-member');
+      navigate({ search: params.toString() }, { replace: true });
+    }
     getUserOrganizations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getUserOrganizations = async () => {
@@ -39,21 +49,31 @@ const MyOrganizationPage: React.FC = () => {
       const response = await organizationApi.get('/api/organization/user-organizations');
       if (response.status === 200) {
         const payload = response.data?.data ?? response.data;
+        let owner: Organization | null = null;
+        let shared: Organization[] = [];
+
         if (Array.isArray(payload)) {
-          const owner = payload.find((o) => (o as any).isOwner) ?? null;
-          setMyOrganization(owner);
-          setSharedOrganizations(payload.filter((o) => !(o as any).isOwner));
+          owner = payload.find((o) => (o as any).isOwner) ?? null;
+          shared = payload.filter((o) => !(o as any).isOwner);
         } else if (payload) {
           if ((payload as any).isOwner) {
-            setMyOrganization(payload);
-            setSharedOrganizations([]);
+            owner = payload;
+            shared = [];
           } else {
-            setMyOrganization(null);
-            setSharedOrganizations([payload]);
+            owner = null;
+            shared = [payload];
           }
         } else {
-          setMyOrganization(null);
-          setSharedOrganizations([]);
+          owner = null;
+          shared = [];
+        }
+
+        setMyOrganization(owner);
+        setSharedOrganizations(shared);
+
+        if (shouldOpenTeamsModal.current && owner) {
+          setShowTeamsModal(true);
+          shouldOpenTeamsModal.current = false;
         }
       }
     } catch (error) {

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { X, User, Search } from 'lucide-react';
+import { X, User, Search, Plus } from 'lucide-react';
 import { organizationApi } from '../../services/apiHelper';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   _id: string;
@@ -28,6 +29,7 @@ export const ShareFolderModal: React.FC<ShareFolderModalProps> = ({
   folder,
   onShared,
 }) => {
+  const navigate = useNavigate();
   const { organizationId } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -44,7 +46,9 @@ export const ShareFolderModal: React.FC<ShareFolderModalProps> = ({
       setSearchQuery('');
     }
   }, [isOpen, organizationId]);
-
+  const handleAddMember = () => {
+    navigate('/organizations?add-member=true');
+  } 
   const fetchUsers = async () => {
     try {
       const response = await organizationApi.get(`/api/organization/members/${organizationId}`);
@@ -156,7 +160,8 @@ export const ShareFolderModal: React.FC<ShareFolderModalProps> = ({
               />
             </div>
 
-            {/* Users List */}
+            {/* Users List */} 
+            {filteredUsers.length !== 0 ?(
             <div className="max-h-96 overflow-y-auto space-y-2">
               {filteredUsers.map((user) => (
                 <div key={user._id} className="border border-gray-200 rounded-lg p-4">
@@ -211,6 +216,20 @@ export const ShareFolderModal: React.FC<ShareFolderModalProps> = ({
                 </div>
               ))}
             </div>
+            ):(
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-gray-500 mb-4">
+                  No members found. Please add members in organization.
+                </p>
+              <button
+                onClick={() => handleAddMember()}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Member</span>
+              </button>
+              </div>
+            )}
 
             {selectedUsers.length > 0 && (
               <button

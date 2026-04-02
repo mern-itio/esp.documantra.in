@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Folder, Users, Shield, Plus, Mail, ArrowLeft } from 'lucide-react';
+import { Folder, Users, Shield, Plus, Mail, ArrowLeft, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { organizationApi } from '../../services/apiHelper';
 import { ShareFolderModal } from '../../components/Organization/ShareFolderModal';
 import { ShareFolderWithRoleModal } from '../../components/Organization/ShareFolderWithRoleModal';
@@ -77,6 +78,72 @@ const fetchRolesAndUsers = async () => {
     }catch (err){
         console.error('Error fetching roles and users:', err);
     }
+};
+
+const handleRemoveEnvelope = async (envelopeId: string) => {
+  const result = await Swal.fire({
+    title: 'Remove envelope',
+    text: 'Are you sure you want to remove this envelope from the folder?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Remove',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await organizationApi.delete(`/api/organization/remove-envelope/${folderId}/${envelopeId}`);
+    } catch (err) {
+      console.warn('Remove envelope API not available, applying local remove', err);
+    }
+    setEnvelopes(prev => prev.filter((env) => env._id !== envelopeId));
+    Swal.fire('Removed', 'Envelope removed successfully.', 'success');
+  }
+};
+
+const handleRemoveUser = async (userId: string) => {
+  const result = await Swal.fire({
+    title: 'Remove user',
+    text: 'Are you sure you want to remove this user from the folder?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Remove',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await organizationApi.delete(`/api/organization/remove-user/${folderId}/${userId}`);
+    } catch (err) {
+      console.warn('Remove user API not available, applying local remove', err);
+    }
+    setUsers(prev => prev.filter((u) => u._id !== userId));
+    Swal.fire('Removed', 'User removed successfully.', 'success');
+  }
+};
+
+const handleRemoveRole = async (roleId: string) => {
+  const result = await Swal.fire({
+    title: 'Remove role',
+    text: 'Are you sure you want to remove this role from the folder?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Remove',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await organizationApi.delete(`/api/organization/remove-role/${folderId}/${roleId}`);
+    } catch (err) {
+      console.warn('Remove role API not available, applying local remove', err);
+    }
+    setRoles(prev => prev.filter((r) => r._id !== roleId));
+    Swal.fire('Removed', 'Role removed successfully.', 'success');
+  }
 };
 
   const [activeTab, setActiveTab] = useState('envelopes');
@@ -205,6 +272,7 @@ const fetchRolesAndUsers = async () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </>
                 )}
                 {activeTab === 'users' && (
@@ -212,12 +280,14 @@ const fetchRolesAndUsers = async () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </>
                 )}
                 {activeTab === 'roles' && (
                   <>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </>
                 )}
               </tr>
@@ -227,7 +297,7 @@ const fetchRolesAndUsers = async () => {
                 {pageItems.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={3}
+                      colSpan={4}
                       className="px-6 py-8 text-center text-sm text-gray-500"
                     >
                       No data found
@@ -256,6 +326,14 @@ const fetchRolesAndUsers = async () => {
                           <td className="px-6 py-4 text-sm text-gray-500">
                             {item.createdAt}
                           </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button
+                              onClick={() => handleRemoveEnvelope(item._id)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
+                          </td>
                         </>
                       )}
 
@@ -270,6 +348,14 @@ const fetchRolesAndUsers = async () => {
                           <td className="px-6 py-4 text-sm text-gray-500">
                             {item.role}
                           </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button
+                              onClick={() => handleRemoveUser(item._id)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
+                          </td>
                         </>
                       )}
 
@@ -280,6 +366,14 @@ const fetchRolesAndUsers = async () => {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500">
                             {item.description}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button
+                              onClick={() => handleRemoveRole(item._id)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
                           </td>
                         </>
                       )}
