@@ -40,7 +40,7 @@ type SmtpProvider = 'gmail' | 'zoho' | 'webmail' | 'other';
 
 const PROVIDER_SMTP_DEFAULTS: Record<SmtpProvider, { host: string; port: string; secure: boolean }> = {
   gmail: { host: 'smtp.gmail.com', port: '587', secure: true },
-  zoho: { host: 'smtp.zoho.com', port: '587', secure: true },
+  zoho: { host: 'smtppro.zoho.in', port: '587', secure: true },
   webmail: { host: 'mail.yourdomain.com', port: '587', secure: false },
   other: { host: '', port: '', secure: false }
 };
@@ -59,6 +59,7 @@ const EmailPage: React.FC = () => {
   const [editingConfig, setEditingConfig] = useState<SmtpConfiguration | null>(null);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState<boolean>(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [verifyingConfigId, setVerifyingConfigId] = useState<string | null>(null);
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
@@ -102,7 +103,19 @@ const EmailPage: React.FC = () => {
   const columnRenderers = {
 
     provider: (config: SmtpConfiguration) => (
-      <span className="text-sm text-gray-900 capitalize">{config.provider}</span>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#260559]/10 text-[#260559]">
+          <Mail className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-gray-900 capitalize leading-tight">
+            {config.provider}
+          </div>
+          <div className="text-xs text-gray-500 leading-tight truncate">
+            {config.smtp?.host ? String(config.smtp.host) : "SMTP"}
+          </div>
+        </div>
+      </div>
     ),
     fromName: (config: SmtpConfiguration) => (
       <span className="text-sm text-gray-900">{config.fromName || '-'}</span>
@@ -117,36 +130,43 @@ const EmailPage: React.FC = () => {
       <span className="text-sm text-gray-900">{config.smtp?.port || '-'}</span>
     ),
     isVerified: (config: SmtpConfiguration) => (
-      <div className="flex flex-col gap-1">
-        {config.isVerified ? (
-          <div className="flex items-center gap-2 text-green-600">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium">Verified</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-red-600">
-            <X className="w-4 h-4 text-red-600" />
-            <span className="text-sm font-medium">Not Verified</span>
-          </div>
-        )}
-        {config.status === 'active' ? (
-          <div className="flex items-center gap-2 text-green-600">
-            <Check className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium">Active</span>
-          </div>
-        ) : (
-        <div className="flex items-center gap-2 text-red-600">
-            <X className="w-4 h-4 text-red-600" />
-            <span className="text-sm font-medium">Deactivated</span>
-          </div>
-        )}
-        {config.isDefault && (
-          <div className="flex items-center gap-2 text-green-600">
-            <Star className="w-5 h-5 text-amber-600 text-green-600" />
-            <span className="text-sm font-medium">Primary</span>
-          </div>
-        )}
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            config.isVerified
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-rose-200 bg-rose-50 text-rose-700"
+          }`}
+        >
+          {config.isVerified ? (
+            <CheckCircle className="h-3.5 w-3.5" />
+          ) : (
+            <X className="h-3.5 w-3.5" />
+          )}
+          {config.isVerified ? "Verified" : "Not verified"}
+        </span>
 
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            config.status === "active"
+              ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+              : "border-gray-200 bg-gray-50 text-gray-700"
+          }`}
+        >
+          {config.status === "active" ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <X className="h-3.5 w-3.5" />
+          )}
+          {config.status === "active" ? "Active" : "Inactive"}
+        </span>
+
+        {config.isDefault && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+            <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-600" />
+            Primary
+          </span>
+        )}
       </div>
     ),
     isDefault: (config: SmtpConfiguration) => (
@@ -330,6 +350,18 @@ const EmailPage: React.FC = () => {
     }
   };
   const handleVerify = async (id: string) => {
+    setVerifyingConfigId(id);
+    Swal.fire({
+      title: 'Verifying SMTP configuration...',
+      text: 'Please wait while we test your SMTP connection.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
     try {
       await emailApi.post(`/api/smtp/${id}/test`);
 
@@ -340,6 +372,7 @@ const EmailPage: React.FC = () => {
         }))
       );
 
+      Swal.close();
       Swal.fire({
         title: 'Success!',
         text: 'SMTP verified successfully.',
@@ -371,12 +404,15 @@ const EmailPage: React.FC = () => {
           'SMTP username or password is missing. Please enter valid authentication credentials.';
       }
 
+      Swal.close();
       Swal.fire({
         title: 'SMTP Verification Failed',
         text: userMessage,
         icon: 'error',
         confirmButtonText: 'OK'
       });
+    } finally {
+      setVerifyingConfigId(null);
     }
   };
 
@@ -683,10 +719,15 @@ const EmailPage: React.FC = () => {
 
       {/* Configurations Table */}
       <div className="relative">
-        <div className="flex flex-col overflow-x-auto relative">
-          <table ref={tableRef} className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
+        <div className="overflow-hidden border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+          <table
+            ref={tableRef}
+            className="min-w-full divide-y divide-gray-200"
+            style={{ tableLayout: 'fixed', width: '100%' }}
+          >
             {currentConfigurations.length > 0 && (
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <thead className="bg-gradient-to-r from-gray-50 to-white sticky top-0 z-10">
                 <tr>
                   {getVisibleColumns().map((column) => {
                     const columnWidth = getColumnWidth(column.id);
@@ -694,7 +735,7 @@ const EmailPage: React.FC = () => {
                     return (
                       <th
                         key={column.id}
-                        className={`py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider relative group px-6`}
+                        className={`py-3.5 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider relative group px-6`}
                         style={{ width: columnWidth ? `${columnWidth}px` : undefined }}
                       >
                         <div className="flex items-center justify-between">
@@ -714,7 +755,7 @@ const EmailPage: React.FC = () => {
                       </th>
                     );
                   })}
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider" style={{ width: '250px' }}>
+                  <th className="px-6 py-3.5 text-right text-[11px] font-bold text-gray-600 uppercase tracking-wider" style={{ width: '220px' }}>
                     Actions
                   </th>
                 </tr>
@@ -766,13 +807,16 @@ const EmailPage: React.FC = () => {
                 </tr>
               ) : (
                 currentConfigurations.map((config) => (
-                  <tr key={config._id} className="group hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#3E2B66]">
+                  <tr
+                    key={config._id}
+                    className="group hover:bg-gradient-to-r hover:from-[#260559]/[0.04] hover:to-transparent transition-colors duration-200"
+                  >
                     {getVisibleColumns().map((column) => {
                       const columnWidth = getColumnWidth(column.id);
                       return (
                         <td
                           key={column.id}
-                          className="py-4 whitespace-nowrap px-6"
+                          className="py-4 whitespace-nowrap px-6 align-middle"
                           style={{ width: columnWidth ? `${columnWidth}px` : undefined, overflow: 'hidden', textOverflow: 'ellipsis' }}
                         >
                           {column.render(config)}
@@ -780,60 +824,63 @@ const EmailPage: React.FC = () => {
                       );
                     })}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex flex-col items-end gap-1 relative">
+                      <div className="flex items-center justify-end gap-2">
                         {!config.isDefault && (
                           <button
                             onClick={() => handleMakeDefault(config._id)}
                             disabled={!config.isVerified}
-                            className={`px-3 py-1.5 border rounded text-xs font-medium transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-1 ${
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition ${
                               config.isVerified
-                                ? 'border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400'
-                                : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                ? 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                             }`}
                             title={config.isVerified ? "Set as Primary" : "Must be verified to set as default"}
                           >
-                            <Star className="w-3 h-3" />
-                            Set as Primary
+                            <Star className="h-3.5 w-3.5" />
+                            Primary
                           </button>
                         )}
+
                         {config.status !== 'active' ? (
                           <button
                             onClick={() => handleSetStatus(config._id, 'active')}
                             disabled={!config.isVerified}
-                            className={`px-3 py-1.5 border rounded text-xs font-medium transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-1 ${
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition ${
                               config.isVerified
-                                ? 'border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400'
-                                : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                             }`}
                             title={config.isVerified ? "Activate this configuration" : "Must be verified to activate"}
                           >
-                            <CheckCircle className="w-3 h-3" />
+                            <CheckCircle className="h-3.5 w-3.5" />
                             Activate
                           </button>
                         ) : (
                           <button
                             onClick={() => handleSetStatus(config._id, 'inactive')}
-                            className="px-3 py-1.5 border border-red-300 rounded text-xs font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-1"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-100"
                             title="Deactivate this configuration"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="h-3.5 w-3.5" />
                             Deactivate
                           </button>
                         )}
+
                         <button
                           onClick={() => handleEdit(config)}
-                          className="px-3 py-1.5 border border-[#3E2B66] rounded text-xs font-medium text-[#3E2B66] hover:bg-purple-50 hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-1"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#260559]/25 bg-white px-2.5 py-2 text-xs font-semibold text-[#260559] transition hover:bg-[#260559]/5"
                         >
-                          <Pencil className="w-3 h-3" />
+                          <Pencil className="h-3.5 w-3.5" />
                           Edit
                         </button>
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             const target = e.currentTarget as HTMLElement;
                             const rect = target.getBoundingClientRect();
                             const menuWidth = 224;
-                            const menuHeight = 100;
+                            const menuHeight = 120;
                             const spaceBelow = window.innerHeight - rect.bottom;
                             const openUpward = spaceBelow < menuHeight + 16;
 
@@ -845,10 +892,10 @@ const EmailPage: React.FC = () => {
                             setMenuPosition({ top, left });
                             setOpenMenuId(openMenuId === config._id ? null : config._id);
                           }}
-                          className="p-2 text-gray-600 hover:text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-all duration-200 group/menu"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-50 hover:text-[#260559]"
                           title="More options"
                         >
-                          <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
+                          <MoreVertical className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
@@ -857,6 +904,7 @@ const EmailPage: React.FC = () => {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Pagination */}
@@ -1123,7 +1171,7 @@ const EmailPage: React.FC = () => {
                       handleSetStatus(currentConfig._id, 'active');
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-green-600"
-                  >
+                  >                   
                     Set Active
                   </button>
                 </li>
@@ -1150,9 +1198,10 @@ const EmailPage: React.FC = () => {
                       setMenuPosition(null);
                       if (currentConfig) handleVerify(currentConfig._id);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-green-600"
+                    disabled={verifyingConfigId === currentConfig?._id}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-green-600 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Verify
+                    {verifyingConfigId === currentConfig?._id ? 'Verifying...' : 'Verify'}
                   </button>
                 </li>
               )}
@@ -1161,7 +1210,6 @@ const EmailPage: React.FC = () => {
         );
       })()}
 
-      {/* Create/Edit Modal */}
       {(isCreateModalOpen || isEditModalOpen) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => {

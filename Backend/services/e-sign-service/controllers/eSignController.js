@@ -206,6 +206,16 @@ const insertRecipient = async (req, res) => {
           senderId: userId,
           recipientId: recipient._id,
         });
+      } else {
+        // Existing global recipient: keep display name in sync with what the sender entered for this envelope
+        const incomingName = (r.name || '').trim();
+        if (incomingName) {
+          recipient.name = incomingName;
+        }
+        if (r.phone !== undefined && r.phone !== null && String(r.phone).trim()) {
+          recipient.phone = String(r.phone).trim();
+        }
+        await recipient.save();
       }
       // Step 2: Check if this   recipient already has permission for this envelope
       let existingPermission = await RecipientPermission.findOne({
