@@ -417,7 +417,7 @@ const addMemberToOrganization = async (req, res) => {
         const result = await orgService.addMemberToOrganization(organizationId, payload,userId);
         let Message = '';
         let subject = '';
-        let link = `${process.env.FRONTEND_URL}/auth/login`;
+        let link = `${process.env.FRONTEND_URL}/    `;
         let LinkButtonText = '';
         const recipientName = result.name || 'User';
         if(payload.userId){
@@ -861,6 +861,63 @@ const updateOrganizationVerificationStatus = async (req, res) => {
     }
     
 }
+const removeEnvelopeFromFolder = async (req, res) => {
+    const { folderId, envelopeId } = req.params;
+    try{
+        const result = await orgService.removeEnvelopeFromFolder(folderId, envelopeId);
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: "Envelope not found in folder"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Envelope removed from folder successfully"
+        });
+    }catch(err){
+        console.log(err);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+}
+const removeUserFromFolder = async (req, res) => {
+    const { folderId, userId } = req.params;
+    try{
+        const result = await orgService.removeUserFromFolder(folderId, userId);
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found in folder"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User removed from folder successfully"
+        });
+    }catch(err){
+        console.log(err);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+}
+const removeRoleFromFolder = async (req, res) => {
+    const { folderId, roleId } = req.params;
+    try{
+        const result = await orgService.removeRoleFromFolder(folderId, roleId);
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: "Role not found in folder"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Role removed from folder successfully"
+        });
+    }catch(err){
+        console.log(err);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+}
 module.exports = {
     createOrganization,
     getOrganizationDetails,
@@ -889,5 +946,8 @@ module.exports = {
     fetchRolesandUsers,
     insertEnvelopesToFolder,
     removeMemberFromOrganization,
-    updateOrganizationVerificationStatus
+    updateOrganizationVerificationStatus,
+    removeEnvelopeFromFolder,
+    removeUserFromFolder,
+    removeRoleFromFolder
 };

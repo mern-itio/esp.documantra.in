@@ -34,7 +34,8 @@ const SmtpConfigurationSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   lastTestedAt: { type: Date },
   lastError: { type: String },
-  isDefault: { type: Boolean, default: false }
+  isDefault: { type: Boolean, default: false },
+  status: {type: String, enum: ['active', 'inactive'], default: 'inactive' }
 
 }, { timestamps: true });
 module.exports = mongoose.model('SmtpConfiguration', SmtpConfigurationSchema);

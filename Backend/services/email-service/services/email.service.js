@@ -6,7 +6,8 @@ const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments =
   const smtpConfig = await SmtpConfiguration.findOne({
     userId,
     isDefault: true,
-    isVerified: true
+    isVerified: true,
+    status: 'active'
   });
 
   let host = 'smtp.gmail.com';

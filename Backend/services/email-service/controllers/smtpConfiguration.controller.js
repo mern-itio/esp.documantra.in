@@ -117,6 +117,14 @@ const setDefaultSmtpConfig  = async (req, res) => {
       });
     }
 
+    // Check if verified before setting as default
+    if (!smtpConfig.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot set unverified SMTP configuration as default'
+      });
+    }
+
     // Remove default from others
     await SmtpConfiguration.updateMany(
       { userId },
@@ -139,14 +147,61 @@ const setDefaultSmtpConfig  = async (req, res) => {
     });
   }
 }
+const setStatusSmtpConfig = async (req, res) => {
+  try {
+    const userId = req?.user?.data?.id;
+    const { id } = req.params;
+    const { status } = req.body; // 'active' or 'inactive'
+
+    if (!['active', 'inactive'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be "active" or "inactive".'
+      });
+    }
+
+    const smtpConfig = await SmtpConfiguration.findOne({
+      _id: id,
+      userId
+    });
+
+    if (!smtpConfig) {
+      return res.status(404).json({
+        success: false,
+        message: 'SMTP configuration not found'
+      });
+    }
+
+    // Prevent setting unverified records to active
+    if (status === 'active' && !smtpConfig.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot activate unverified SMTP configuration'
+      });
+    }
+
+    smtpConfig.status = status;
+    await smtpConfig.save();
+
+    res.json({
+      success: true,
+      message: `SMTP configuration set to ${status}`,
+      data: smtpConfig
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+}
 const deleteSmtpConfig  = async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-
     const smtpConfig = await SmtpConfiguration.findOneAndDelete({
-      _id: id,
-      userId
+      _id: new mongoose.Types.ObjectId(id)
     });
 
     if (!smtpConfig) {
@@ -275,4 +330,4 @@ const {to, subject, html, attachments} = req.body;
     }); 
   }
 }
-module.exports = { createSmtpConfig, getSmtpConfigs, updateSmtpConfig, setDefaultSmtpConfig, deleteSmtpConfig,testSmtpConfig,sendMail,sendMailBySystem };
+module.exports = { createSmtpConfig, getSmtpConfigs, updateSmtpConfig, setDefaultSmtpConfig, setStatusSmtpConfig, deleteSmtpConfig,testSmtpConfig,sendMail,sendMailBySystem };
