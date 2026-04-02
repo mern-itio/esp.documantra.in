@@ -169,18 +169,18 @@ const AIAuditInsights: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+      <div className="p-6 text-black">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+            <h2 className="text-4xl thankyou-heading font-bold mb-2 flex items-center gap-2">
               <Sparkles className="w-6 h-6" />
               AI Audit, Logs & Insights
             </h2>
-            <p className="text-blue-100">Comprehensive analytics for management decision-making</p>
+            <p className="text-gray-500 text-sm">Comprehensive analytics for management decision-making</p>
           </div>
           <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
             <div className="text-3xl font-bold">{insightsData.productivityInsights.timeSaved}%</div>
-            <div className="text-sm text-blue-100">Time Saved</div>
+            <div className="text-sm text-black">Time Saved</div>
           </div>
         </div>
       </div>

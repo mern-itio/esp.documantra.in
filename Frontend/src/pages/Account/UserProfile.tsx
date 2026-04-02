@@ -173,247 +173,226 @@ const UserProfile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Top header banner */}
-      <div className="bg-gradient-to-r from-[#260559] via-[#6b4c9c] to-[#6b39b8] text-white ">
-        <div className="max-w-7xl mx-auto px-6 py-10 text-white">
-          <h1 className="text-3xl font-semibold">My Profile</h1>
-          <p className="opacity-90 mt-1">Manage your personal information and account preferences</p>
+    <div className="min-h-screen bg-slate-50">
+      <div className="bg-gradient-to-r from-[#1f0a4d] via-[#4D0080] to-[#7a2fc7] text-white">
+        <div className="mx-auto max-w-7xl px-6 py-10">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/75">Account Center</p>
+          <h1 className="mt-1 text-3xl font-semibold">Profile</h1>
+          <p className="mt-1 text-sm text-white/80">Manage identity, security, sessions, and plan settings from one place.</p>
         </div>
       </div>
 
-      {/* Profile header card */}
-      <div className="max-w-7xl mx-auto -mt-10 px-6">
-        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex items-center gap-6">
-          <div className="relative">
-            <div className={`h-16 w-16 rounded-full flex items-center justify-center text-xl font-semibold ${
-              isPaidPlan 
-                ? 'bg-yellow-100 text-yellow-700' 
-                : 'bg-purple-100 text-purple-700'
-            }`}>
-              {initials}
+      <div className="mx-auto -mt-8 max-w-7xl px-6 pb-12">
+        <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative">
+              <div
+                className={`flex h-16 w-16 items-center justify-center rounded-full text-xl font-semibold ${
+                  isPaidPlan ? 'bg-yellow-100 text-yellow-700' : 'bg-purple-100 text-purple-700'
+                }`}
+              >
+                {initials}
+              </div>
+              {isPaidPlan && (
+                <div className="absolute -left-1 top-0 -translate-y-1/2 -rotate-45">
+                  <Crown className="h-5 w-5 fill-yellow-500 text-yellow-500 drop-shadow-sm" />
+                </div>
+              )}
             </div>
-            {isPaidPlan && (
-              <div className="absolute top-2 left-0 transform -translate-x-1/2 -translate-y-1/2 -rotate-50 z-10">
-                <Crown className="h-5 w-5 text-yellow-500 fill-yellow-500 drop-shadow-sm" />
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-xl font-semibold text-slate-900">{formatName((user as any)?.fullname)}</h2>
+              <p className="truncate text-sm text-slate-600">{(user as any)?.email || '—'}</p>
+              <p className="text-xs text-slate-500">Account #{accountId}</p>
+            </div>
+            {planName && (
+              <div className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-sm font-medium text-purple-700">
+                {planName}
               </div>
             )}
+            <button
+              onClick={isEditing ? handleCancelEdit : handleEditClick}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              title={isEditing ? 'Cancel Edit' : 'Edit Profile'}
+            >
+              {isEditing ? <X className="h-5 w-5" /> : <Edit2 className="h-5 w-5" />}
+            </button>
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold text-gray-900">{formatName((user as any)?.fullname)}</h2>
-            <p className="text-gray-600 text-sm">{(user as any)?.email || '—'} • Account #{accountId}</p>
-          </div>
-          {planName && (
-            <div className="px-3 py-1.5 rounded-full text-sm font-medium bg-purple-50 text-purple-700 border border-purple-200">
-              {planName}
-            </div>
-          )}
-          <button
-            onClick={isEditing ? handleCancelEdit : handleEditClick}
-            className="ml-4 p-2 text-gray-500 hover:text-gray-900 transition-colors"
-            title={isEditing ? 'Cancel Edit' : 'Edit Profile'}
-          >
-            {isEditing ? <X className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
-          </button>
         </div>
-      </div>
 
-      {saveError && (
-        <div className="max-w-7xl mx-auto px-6 mt-4">
-          <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm flex items-center gap-2">
-            <XCircle className="w-4 h-4" />
-            {saveError}
-          </div>
-        </div>
-      )}
-
-      {/* Details grid */}
-      <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Name</h3>
-          {isEditing ? (
-            <input
-              type="text"
-              value={formData.fullname}
-              onChange={e => setFormData({ ...formData, fullname: e.target.value })}
-              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
-            />
-          ) : (
-            <p className="text-gray-900">{formatName((user as any)?.fullname)}</p>
-          )}
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Email Address</h3>
-          {isEditing ? (
-            <input
-              type="email"
-              value={formData.email}
-              onChange={e => setFormData({ ...formData, email: e.target.value })}
-              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
-            />
-          ) : (
-            <p className="text-gray-900">{(user as any)?.email || '—'}</p>
-          )}
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5 bg-gray-50">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Account ID</h3>
-          <p className="text-gray-500">{accountId}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Company</h3>
-          {isEditing ? (
-            <input
-              type="text"
-              value={formData.company}
-              onChange={e => setFormData({ ...formData, company: e.target.value })}
-              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
-            />
-          ) : (
-            <p className="text-gray-900">{(user as any)?.company || '—'}</p>
-          )}
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Phone Number</h3>
-          {isEditing ? (
-            <div className="relative group">
-              <PhoneInput
-                country="in"
-                value={formData.phone}
-                onChange={val => setFormData({ ...formData, phone: val })}
-                inputProps={{
-                  name: 'phone',
-                  id: 'phone',
-                  required: true
-                }}
-                containerClass="w-full"
-                inputClass="!w-full !pl-12 !pr-3 !py-1.5 !text-sm !border !border-gray-300 !rounded !bg-white focus:!outline-none focus:!ring-1 focus:!ring-[#4D0080] !transition-all !duration-300"
-                buttonClass="!border-y !border-l !border-r-0 !border-gray-300 !bg-white !rounded-l"
-              />
+        {saveError && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4" />
+              {saveError}
             </div>
-          ) : (
-            <>
-              {phoneRaw ? (
-                <div className="pointer-events-none flex items-center -ml-3">
-                  <PhoneInput
-                    value={phoneRaw}
-                    disabled={true}
-                    containerClass="w-full"
-                    inputClass="!w-full !pl-12 !pr-0 !py-0 !text-gray-900 !text-base !border-none !bg-transparent !opacity-100"
-                    buttonClass="!border-none !bg-transparent !opacity-100"
+          </div>
+        )}
+
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
+          <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm xl:col-span-7">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Personal Information</h3>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Full name</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.fullname}
+                    onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
                   />
-                </div>
-              ) : (
-                <p className="text-gray-900">—</p>
-              )}
-            </>
-          )}
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Address</h3>
-          {isEditing ? (
-            <input
-              type="text"
-              value={formData.address}
-              onChange={e => setFormData({ ...formData, address: e.target.value })}
-              className="w-full text-gray-900 p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#4D0080]"
-            />
-          ) : (
-            <p className="text-gray-900">{(user as any)?.address || '—'}</p>
-          )}
-        </div>
-
-
-        {/* Security / 2FA summary */}
-        <div
-          className={`bg-white rounded-xl border p-5 md:col-span-2 lg:col-span-3 transition-colors ${
-            twoFaEnabled ? 'border-emerald-200 shadow-sm' : 'border-gray-200'
-          }`}
-        >
-          <h3 className="text-sm font-semibold text-gray-900">Security</h3>
-          <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-xs text-gray-600 max-w-lg">
-                Manage how you verify new logins to your Draft &amp; Sign account. You can enable email
-                or phone one-time codes from the authentication settings page.
-              </p>
-              <p className="text-xs text-gray-600">
-                Current status:{' '}
-                <span className="font-medium">
-                  {twoFaEnabled ? 'Enabled' : 'Not enabled'}{' '}
-                  {twoFaEnabled && `(method: ${twoFaMethod === 'sms' ? 'Phone OTP' : 'Email code'})`}
-                </span>
-              </p>
-            </div>
-            <div className="flex items-center gap-3 mt-1 sm:mt-0">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    twoFaEnabled ? 'bg-emerald-500' : 'bg-gray-300'
-                  }`}
-                />
-                <span
-                  className={`text-[11px] font-medium uppercase tracking-wide ${
-                    twoFaEnabled ? 'text-emerald-700' : 'text-gray-500'
-                  }`}
-                >
-                  {twoFaEnabled ? 'Verification ENABLED' : 'Verification NOT ENABLED'}
-                </span>
+                ) : (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                    {formatName((user as any)?.fullname)}
+                  </div>
+                )}
               </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Email address</label>
+                {isEditing ? (
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
+                  />
+                ) : (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                    {(user as any)?.email || '—'}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Company</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
+                  />
+                ) : (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                    {(user as any)?.company || '—'}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Phone number</label>
+                {isEditing ? (
+                  <PhoneInput
+                    country="in"
+                    value={formData.phone}
+                    onChange={(val) => setFormData({ ...formData, phone: val })}
+                    inputProps={{ name: 'phone', id: 'phone', required: true }}
+                    containerClass="w-full"
+                    inputClass="!w-full !pl-12 !pr-3 !py-2 !text-sm !border !border-slate-300 !rounded-lg !bg-white focus:!outline-none focus:!ring-2 focus:!ring-[#4D0080]/20"
+                    buttonClass="!border-y !border-l !border-r-0 !border-slate-300 !bg-white !rounded-l-lg"
+                  />
+                ) : phoneRaw ? (
+                  <div className="pointer-events-none -ml-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 px-1 py-1">
+                    <PhoneInput
+                      value={phoneRaw}
+                      disabled={true}
+                      containerClass="w-full"
+                      inputClass="!w-full !pl-12 !pr-0 !py-0 !text-sm !border-none !bg-transparent !opacity-100"
+                      buttonClass="!border-none !bg-transparent !opacity-100"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">—</div>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Address</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
+                  />
+                ) : (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                    {(user as any)?.address || '—'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6 xl:col-span-5">
+            <div className={`rounded-md border bg-white p-6 shadow-sm ${twoFaEnabled ? 'border-emerald-200' : 'border-slate-200'}`}>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Security</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                {twoFaEnabled
+                  ? `Two-factor authentication is enabled via ${twoFaMethod === 'sms' ? 'Phone OTP' : 'Email code'}.`
+                  : 'Two-factor authentication is currently disabled.'}
+              </p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className={`inline-flex items-center gap-2 text-xs font-semibold ${twoFaEnabled ? 'text-emerald-700' : 'text-slate-500'}`}>
+                  <span className={`h-2 w-2 rounded-full ${twoFaEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                  {twoFaEnabled ? 'ENABLED' : 'NOT ENABLED'}
+                </span>
+                <button
+                  onClick={() => navigate('/account/security')}
+                  className="rounded-lg bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a0061]"
+                >
+                  Manage
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Sessions</h3>
+              <p className="mt-2 text-sm text-slate-600">Control logged-in devices and terminate suspicious sessions.</p>
               <button
-                onClick={() => navigate('/account/security')}
-                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white bg-[#4D0080] hover:bg-[#3a0061] transition-colors whitespace-nowrap"
+                onClick={() => navigate('/account/session-management')}
+                className="mt-4 rounded-lg bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a0061]"
               >
-                Manage authentication
+                Manage Sessions
               </button>
             </div>
-          </div>
-        </div>
 
-        {/* Active Sessions */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 md:col-span-2 lg:col-span-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Device & Session Management</h3>
-              <p className="text-xs text-gray-600">Review devices that have logged into your account and manage active sessions.</p>
+            <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Account Plan</h3>
+              <p className="mt-2 text-sm text-slate-700">
+                Current plan: <span className="font-semibold">{planName || 'Free'}</span>
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  onClick={() => navigate('/subscription-management')}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  Manage Subscription
+                </button>
+                <button
+                  onClick={() => navigate('/credits-usage')}
+                  className="rounded-lg bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a0061]"
+                >
+                  View Credit Usage
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => navigate('/account/session-management')}
-              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white bg-[#4D0080] hover:bg-[#3a0061] transition-colors whitespace-nowrap"
-            >
-              Manage Sessions
-            </button>
-          </div>
+          </section>
         </div>
 
-      </div>
-
-      {/* Action footer */}
-      <div className="max-w-7xl mx-auto px-6 mt-8 mb-12 flex flex-col sm:flex-row gap-3">
-        {isEditing ? (
-          <button
-            className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-white"
-            style={{ backgroundColor: '#4D0080' }}
-            onClick={handleSaveProfile}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : 'Save Profile'}
-          </button>
-        ) : (
-          <>
+        {isEditing && (
+          <div className="mt-6 flex flex-wrap gap-3">
             <button
-              className="inline-flex items-center justify-center px-5 py-3 rounded-lg border border-gray-300 text-gray-900 hover:bg-gray-50"
-              onClick={() => navigate('/subscription-management')}
+              className="rounded-lg bg-[#4D0080] px-5 py-3 text-sm font-semibold text-white hover:bg-[#3a0061] disabled:opacity-60"
+              onClick={handleSaveProfile}
+              disabled={isSaving}
             >
-              Manage Subscription
+              {isSaving ? 'Saving...' : 'Save Profile'}
             </button>
             <button
-              className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-white"
-              style={{ backgroundColor: '#4D0080' }}
-              onClick={() => navigate('/credits-usage')}
+              className="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              onClick={handleCancelEdit}
             >
-              View Credit Usage
+              Cancel
             </button>
-          </>
+          </div>
         )}
       </div>
 

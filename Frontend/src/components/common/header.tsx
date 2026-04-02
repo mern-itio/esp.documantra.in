@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { Bell, LogOut, Menu, Search, Crown } from 'lucide-react';
+import { Bell, LogOut, Menu, Search, Crown, X, User, Building2, Mail, FileText, Gift, ArrowLeftRight, ArrowRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import { subscriptionApi, organizationApi, apiGateway } from '../../services/apiHelper';
@@ -252,7 +252,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     }
   };
 
-  const accountId = (user as any)?.accountId || (user as any)?.id || (user as any)?._id || 'N/A';
   const formatName = (name?: string) => {
     if (!name) return 'User';
     return name
@@ -313,8 +312,8 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             <button
               onClick={() => navigate('/credits-usage')}
               className={`group hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 ${lowCredits
-                  ? 'border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 hover:from-red-100 hover:to-red-200 hover:border-red-400'
-                  : 'border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 hover:from-purple-100 hover:to-indigo-100 hover:border-purple-400'
+                ? 'border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 hover:from-red-100 hover:to-red-200 hover:border-red-400'
+                : 'border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 hover:from-purple-100 hover:to-indigo-100 hover:border-purple-400'
                 }`}
               title="View credits usage"
             >
@@ -411,7 +410,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             )}
           </div>
 
-          {/* User menu */}
+          {/* User menu trigger */}
           <div className="relative" ref={userRef}>
             <button
               className="group flex items-center space-x-3 transition-all duration-300 hover:scale-110 active:scale-95"
@@ -446,208 +445,121 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 )}
               </div>
             </button>
-            {showUserMenu && (
-              <div
-                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl z-50  animate-user-menu-slide"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Header section */}
-                <div className="p-4">
-                  {/* Name row */}
-                  <div className="flex items-center gap-2 relative">
-                    {/* User name */}
-                    <p className="text-base font-semibold text-gray-900">
-                      {organizationDetail && accountType === 'organization'
-                        ? formatName(organizationDetail.name)
-                        : formatName((user as any)?.fullname)}
-                    </p>
-                    <div className="relative group">
-                      <button
-                        onClick={() => setShowSwitcher(prev => !prev)}
-                        className="flex items-center justify-center w-8 h-8 rounded-full
-                                  border border-gray-300 text-gray-600
-                                  hover:border-[#3E2B66] hover:text-[#3E2B66]
-                                  transition"
-                        aria-label="Switch account"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M8 7h12m0 0-4-4m4 4-4 4M16 17H4m0 0 4 4m-4-4 4-4"
-                          />
-                        </svg>
-                      </button>
-
-                      {/* Tooltip */}
-                      <div
-                        className="absolute left-1/2 -translate-x-1/2 top-full mt-2
-                                  whitespace-nowrap rounded-md bg-gray-900 px-2 py-1
-                                  text-xs text-white opacity-0 group-hover:opacity-100
-                                  transition pointer-events-none z-50"
-                      >
-                        Switch account
-                      </div>
-                    </div>
-                    {/* Dropdown */}
-                    {showSwitcher && (
-                      <div className="absolute left-0 top-full mt-2 w-52 rounded-lg
-                                      border border-gray-200 bg-white shadow-lg z-50">
-                        <div className="px-4 py-2 border-b border-gray-100">
-                          <p className="text-xs font-semibold text-gray-900 tracking-wide">
-                            Switch Account
-                          </p>
-                        </div>
-                        <button
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                          onClick={async () => { await switchAccount('user'); setShowUserMenu(false); setShowSwitcher(false); }}
-                        >
-                          <div className={`flex items-center gap-2 
-                                ${accountType === 'user'
-                              ? "bg-green-50 px-1 py-2 border border-green-300 rounded-md"
-                              : "hover:bg-gray-100"
-                            }`}>
-                            <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
-                              {getInitials((user as any)?.fullname)}
-                            </div>
-
-                            <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">
-                              {formatName((user as any)?.fullname)}
-                            </p>
-                          </div>
-                        </button>
-                        {allOrganizations.length > 0 && allOrganizations.map((org) => (
-                          <button
-                            key={org._id}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            onClick={async () => { await switchAccount('organization', org._id); setShowUserMenu(false); setShowSwitcher(false); }}
-                          >
-                            <div className={`flex items-center gap-2 
-                              ${accountType === 'organization' && organizationId === org._id
-                                ? "bg-green-50 px-1 py-2 border border-green-300 rounded-md"
-                                : "hover:bg-gray-100"
-                              }`}>
-                              <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
-                                {org.name
-                                  .split(' ')
-                                  .map((word) => word[0].toUpperCase())
-                                  .join('')
-                                  .slice(0, 2)}
-                              </div>
-                              <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">
-                                {org.name}
-                              </p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {organizationDetail && accountType === 'organization' ?
-                    <div>
-                      <a href={
-                        organizationDetail?.website?.startsWith('http')
-                          ? organizationDetail?.website
-                          : `https://${organizationDetail?.website}`
-                      }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline text-purple-600"
-                      >
-                        {organizationDetail.website}
-                      </a>
-                      <p className="text-sm text-gray-600 mt-1">Account #{organizationDetail?._id || "_"}</p>
-                    </div>
-                    : (
-                      <div>
-                        <p className="text-sm text-gray-600 mt-1">{(user as any)?.email || "—"}</p>
-                        <p className="text-sm text-gray-600 mt-1">Account #{accountId}</p>
-                      </div>
-                    )}
-
-                  {/* ✅ Manage Profile button (restored) */}
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      navigate("/account/profile");
-                    }}
-                    className="mt-3 inline-flex items-center justify-center px-4 py-2
-                              border border-gray-300 rounded-lg text-sm font-medium text-gray-900
-                              hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent
-                              hover:border-[#3E2B66] hover:text-[#3E2B66]
-                              transition-all duration-300 w-full hover:scale-[1.02]"
-                  >
-                    Manage Profile
-                  </button>
-                  {/* Organization Button */}
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      navigate("/organizations/");
-                    }}
-                    className="mt-3 inline-flex items-center justify-center px-4 py-2
-                              border border-gray-300 rounded-lg text-sm font-medium text-gray-900
-                              hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent
-                              hover:border-[#3E2B66] hover:text-[#3E2B66]
-                              transition-all duration-300 w-full hover:scale-[1.02]"
-                  >
-                    Organizations
-                  </button>
-                  {/* Email Configuration Button */}
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      navigate("/account/email-configuration/");
-                    }}
-                    className="mt-3 inline-flex items-center justify-center px-4 py-2
-                              border border-gray-300 rounded-lg text-sm font-medium text-gray-900
-                              hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent
-                              hover:border-[#3E2B66] hover:text-[#3E2B66]
-                              transition-all duration-300 w-full hover:scale-[1.02]"
-                  >
-                    Email-Configuration
-                  </button>
-                  {/* Email Templates */}
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      navigate("/account/email-templates/");
-                    }}
-                    className="mt-3 inline-flex items-center justify-center px-4 py-2
-                              border border-gray-300 rounded-lg text-sm font-medium text-gray-900
-                              hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent
-                              hover:border-[#3E2B66] hover:text-[#3E2B66]
-                              transition-all duration-300 w-full hover:scale-[1.02]"
-                  >
-                    Email-Templates
-                  </button>
-                </div>
-                <div className="border-t border-gray-100" />
-                {/* Options */}
-                {/* <button
-                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
-                  onClick={() => { setShowUserMenu(false); navigate('/account/preferences'); }}
-                >
-                  My Preferences
-                </button> */}
-                <button
-                  className="group/logout w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-red-50 hover:to-transparent flex items-center gap-2 text-red-600 transition-all duration-300 hover:scale-[1.02] active:scale-100"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="w-4 h-4 group-hover/logout:rotate-12 group-hover/logout:scale-110 transition-all duration-300" /> Log Out
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Right sidebar user menu */}
+      {showUserMenu && (
+        <div className="fixed inset-0 z-[95]" onClick={() => setShowUserMenu(false)}>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+          <aside
+            className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl ring-1 ring-gray-200 animate-user-menu-slide"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex h-full flex-col">
+              <div className="border-b border-gray-100 bg-gradient-to-r from-[#260559] to-[#3E2B66] px-5 py-4 text-white">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold tracking-wide">Account <span className='text-xs'>#{(user as any)?.id || "—"}</span></h3>
+                  <button
+                    className="rounded-lg p-1.5 text-white/90 hover:bg-white/15"
+                    onClick={() => { setShowUserMenu(false); setShowSwitcher(false); }}
+                    aria-label="Close account panel"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
+                    {organizationDetail && accountType === 'organization'
+                      ? getInitials(organizationDetail.name)
+                      : getInitials((user as any)?.fullname)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">
+                        {organizationDetail && accountType === 'organization'
+                          ? formatName(organizationDetail.name)
+                          : formatName((user as any)?.fullname)}
+                    </p>
+                    <p className="truncate text-xs text-white/85">{(user as any)?.email || "—"}</p>
+                  </div>
+                  <button
+                    onClick={() => setShowSwitcher((prev) => !prev)}
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/35 bg-white/10 text-white hover:bg-white/20"
+                    aria-label="Switch account"
+                    title="Switch account"
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                <div className="space-y-2">
+                  {[
+                    { label: 'Manage Account', icon: User, action: () => navigate('/account/profile') },
+                    { label: 'Organizations', icon: Building2, action: () => navigate('/organizations/') },
+                    { label: 'Email Configuration', icon: Mail, action: () => navigate('/account/email-configuration/') },
+                    { label: 'Email Templates', icon: FileText, action: () => navigate('/account/email-templates/') },
+                    { label: 'Rewards', icon: Gift, action: () => navigate('/account/rewards') },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => { item.action(); setShowUserMenu(false); }}
+                      className="group flex w-full items-center justify-between border-b border-gray-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:border-[#3E2B66]/35 hover:bg-[#3E2B66]/5"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <item.icon className="h-4 w-4 text-[#3E2B66]" />
+                        {item.label}
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-[#3E2B66]" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 p-4">
+                <button
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
+                  onClick={() => { setShowUserMenu(false); setShowSwitcher(false); handleLogout(); }}
+                >
+                  <LogOut className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </aside>
+          {showSwitcher && (
+            <div
+              className="fixed right-4 top-24 z-[130] w-72 rounded-sm border border-gray-200 bg-gray-100 p-2 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">Switch account</div>
+              <button
+                className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-xs flex items-center gap-2 ${
+                  accountType === 'user' ? 'bg-green-50 text-green-800 ring-1 ring-green-200' : 'hover:bg-gray-50'
+                }`}
+                onClick={async () => { await switchAccount('user'); setShowSwitcher(false); }}
+              >
+                <User className="h-4 w-4" /> {formatName((user as any)?.fullname)}
+              </button>
+              {allOrganizations.length > 0 && allOrganizations.map((org) => (
+                <button
+                  key={org._id}
+                  className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-xs flex items-center gap-2 ${
+                    accountType === 'organization' && organizationId === org._id
+                      ? 'bg-green-50 text-green-800 ring-1 ring-green-200'
+                      : 'hover:bg-gray-50'
+                  }`}
+                  onClick={async () => { await switchAccount('organization', org._id); setShowSwitcher(false); }}
+                >
+                  <Building2 className="h-4 w-4" /> {org.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Command Palette */}
       {showPalette && (

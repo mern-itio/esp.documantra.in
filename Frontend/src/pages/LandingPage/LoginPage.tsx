@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Smartphone } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
 import { APP_NAME } from '../../components/constants/appConfig'
@@ -8,6 +8,7 @@ import ReCAPTCHA from 'react-google-recaptcha'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY_HERE"
+const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
 
 type LoginStep = 'login' | 'verify'
 
@@ -15,6 +16,24 @@ const LoginPage = () => {
   const { login, googleLogin, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, verifyTwoFaLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+
+  const referrerUserIdForOAuth = useMemo(() => {
+    const fromUrl = searchParams.get('ref')?.trim()
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem(SIGNUP_REFERRER_STORAGE_KEY, fromUrl)
+      } catch {
+        /* ignore */
+      }
+      return fromUrl
+    }
+    try {
+      return sessionStorage.getItem(SIGNUP_REFERRER_STORAGE_KEY)?.trim() || ''
+    } catch {
+      return ''
+    }
+  }, [searchParams])
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -145,7 +164,14 @@ const LoginPage = () => {
     setIsLoading(true)
     try {
       if (credentialResponse.credential) {
-        await googleLogin(credentialResponse.credential)
+        await googleLogin(credentialResponse.credential, {
+          ...(referrerUserIdForOAuth ? { referrerUserId: referrerUserIdForOAuth } : {}),
+        })
+        try {
+          sessionStorage.removeItem(SIGNUP_REFERRER_STORAGE_KEY)
+        } catch {
+          /* ignore */
+        }
         const returnTo = (location.state as any)?.returnTo || '/dashboard'
         navigate(returnTo)
       } else {

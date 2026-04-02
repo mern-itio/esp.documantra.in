@@ -9,7 +9,7 @@ const userPlanRoutes = require('./src/routes/userPlanRoutes');
 const toolSettingsRoutes = require('./src/routes/toolSettingsRoutes');
 const authProviderRoutes = require('./src/routes/authProviderRoutes');
 const invoiceRoutes = require('./src/routes/invoiceRoutes');
-const { createFreePlanForUser } = require('./src/controllers/userPlanController');
+const { createFreePlanForUser, grantCreditsInternal } = require('./src/controllers/userPlanController');
 const usageRoutes = require('./src/routes/usageRoutes');
 const userAuthProviderRoutes = require('./src/routes/userAuthProviderRoutes');
 const authProviderOpenRoutes = require('./src/routes/authProviderOpenRoutes');
@@ -29,6 +29,7 @@ app.use('/admin', toolSettingsRoutes);
 app.use('/admin/auth-providers', authProviderRoutes);
 // Internal route used by auth-service to create free plan (no auth)
 app.post('/user-plan/create-free', createFreePlanForUser);
+app.post('/user-plan/internal/grant-credits', grantCreditsInternal);
 
 // Public route for listing plans (no auth required) - for landing page pricing
 const { listPlans } = require('./src/controllers/plansController');
