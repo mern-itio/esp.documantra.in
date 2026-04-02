@@ -3,8 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import {
-  TrendingDown,
-  TrendingUp,
   ArrowRight,
   CreditCard,
   Zap,
@@ -18,7 +16,7 @@ import {
   Activity,
   ArrowUpRight
 } from 'lucide-react';
-import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 
 const DashboardPage: React.FC = () => {
@@ -245,13 +243,46 @@ const DashboardPage: React.FC = () => {
   }, [envelopeStats]);
 
   // Prepare data for pie chart (usage by module)
-  const pieChartData = useMemo(() => {
+  // const pieChartData = useMemo(() => {
+  //   return Object.entries(moduleTotals)
+  //     .filter(([_, total]) => total > 0)
+  //     .map(([name, value]) => ({ name, value }));
+  // }, [moduleTotals]);
+
+  const moduleBarData = useMemo(() => {
     return Object.entries(moduleTotals)
-      .filter(([_, total]) => total > 0)
-      .map(([name, value]) => ({ name, value }));
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }, [moduleTotals]);
 
-  const PIE_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6b7280'];
+  const radarData = useMemo(() => {
+    const used = chartData.reduce((sum: number, d: any) => sum + d.used, 0);
+    const added = chartData.reduce((sum: number, d: any) => sum + d.added, 0);
+    const total = Number(envelopeStats?.totalEnvelopes || 0);
+    const completed = Number(envelopeStats?.completedEnvelopes || 0);
+    const pending = Number(envelopeStats?.pendingEnvelopes || 0);
+    const dynamic = {
+      volumeMax: Math.max(10, total, completed + pending),
+      queueMax: Math.max(5, pending, Math.ceil(total * 0.6)),
+      creditMax: Math.max(50, Number(balance || 0), used, added),
+      usageMax: Math.max(20, used, added),
+    };
+    const normalize = (n: number, max: number) => {
+      const scaled = Math.min(100, Math.round((n / Math.max(1, max)) * 100));
+      // Keep non-zero metrics visible in radar so "small but real" values are not invisible.
+      return n > 0 ? Math.max(12, scaled) : 0;
+    };
+    return [
+      { metric: 'Volume', value: normalize(total, dynamic.volumeMax) },
+      { metric: 'Completed', value: normalize(completed, Math.max(1, total)) },
+      { metric: 'Queue', value: normalize(pending, dynamic.queueMax) },
+      { metric: 'Credits', value: normalize(Number(balance || 0), dynamic.creditMax) },
+      { metric: 'Usage', value: normalize(used, dynamic.usageMax) },
+      { metric: 'Topups', value: normalize(added, dynamic.usageMax) },
+    ];
+  }, [chartData, envelopeStats, balance]);
+
+  // const PIE_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6b7280'];
 
   return (
     <div className="space-y-8">
@@ -468,13 +499,13 @@ const DashboardPage: React.FC = () => {
                 <p className="text-sm text-slate-500 mt-0.5">Track your credit transactions and usage patterns</p>
               </div>
             </div>
-            <Link
+            {/* <Link
               to="/credits-usage"
               className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700 font-semibold transition-all hover:bg-indigo-50 rounded-lg group"
             >
               <span>View details</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -495,171 +526,33 @@ const DashboardPage: React.FC = () => {
             </div>
           ) : chartData.length > 0 ? (
             <div className="space-y-6">
-              {/* Charts Grid - Area Chart (Left, Wider) and Pie Chart (Right, Narrower) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Area Chart - Credit Usage Trend (Left, Wider) */}
-                <div className="lg:col-span-2">
-                  <div className="mb-4">
-                    <h3 className="text-sm font-bold text-slate-900 mb-1">Usage Trend (Last 7 Days)</h3>
-                    <p className="text-xs text-slate-500">Credits used and added over time</p>
-                  </div>
-                  <div className="h-80 bg-gradient-to-br from-slate-50/30 to-white rounded-lg p-4 border border-slate-100">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <div className="xl:col-span-6 rounded-xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4">
+                  <h3 className="text-sm font-bold text-slate-900 mb-3">Module Usage</h3>
+                  <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                        <defs>
-                          <linearGradient id="colorUsed" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                          </linearGradient>
-                          <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-                        <XAxis
-                          dataKey="date"
-                          stroke="#64748b"
-                          style={{ fontSize: '11px', fontWeight: 500 }}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          stroke="#64748b"
-                          style={{ fontSize: '11px', fontWeight: 500 }}
-                          tickLine={false}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '10px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                            padding: '10px 14px'
-                          }}
-                          formatter={(value: any, name?: string | number) => {
-                            if (name === 'used') return [`${value} credits`, 'Credits Used'];
-                            if (name === 'added') return [`${value} credits`, 'Credits Added'];
-                            return [`${value}`, name ?? ''];
-                          }}
-                          labelFormatter={(label) => `Date: ${label}`}
-                        />
-                        <Legend
-                          wrapperStyle={{ paddingTop: '10px' }}
-                          iconType="circle"
-                          formatter={(value) => {
-                            if (value === 'used') return 'Credits Used';
-                            if (value === 'added') return 'Credits Added';
-                            return value;
-                          }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="used"
-                          stroke="#ef4444"
-                          fillOpacity={1}
-                          fill="url(#colorUsed)"
-                          strokeWidth={2.5}
-                          name="used"
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="added"
-                          stroke="#10b981"
-                          fillOpacity={1}
-                          fill="url(#colorAdded)"
-                          strokeWidth={2.5}
-                          name="added"
-                        />
-                      </AreaChart>
+                      <BarChart data={moduleBarData} layout="vertical" margin={{ left: 14, right: 10, top: 6, bottom: 6 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.55} />
+                        <XAxis type="number" stroke="#64748b" style={{ fontSize: '11px' }} />
+                        <YAxis dataKey="name" type="category" width={90} stroke="#64748b" style={{ fontSize: '11px' }} />
+                        <Tooltip formatter={(value: any) => [`${value} credits`, 'Usage']} />
+                        <Bar dataKey="value" fill="#4f46e5" radius={[0, 6, 6, 0]} />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-
-                {/* Pie Chart - Usage by Module (Right, Narrower) */}
-                {pieChartData.length > 0 && (
-                  <div>
-                    <div className="mb-4">
-                      <h3 className="text-sm font-bold text-slate-900 mb-1">Usage by Module</h3>
-                      <p className="text-xs text-slate-500">Credit distribution</p>
-                    </div>
-                    <div className="h-80 bg-gradient-to-br from-slate-50/30 to-white rounded-lg p-4 border border-slate-100 flex flex-col items-center justify-center">
-                      <ResponsiveContainer width="100%" height="85%">
-                        <PieChart>
-                          <Pie
-                            data={pieChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ percent }: any) => `${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {pieChartData.map((_, index) => (
-                              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'white',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '10px',
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                              padding: '10px 14px'
-                            }}
-                           formatter={(value: any, name?: string | number) => [`${value} credits`, name ?? '']}
-
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="w-full mt-2 flex flex-wrap items-center justify-center gap-3 px-2">
-                        {pieChartData.map((entry: any, index: number) => (
-                          <div key={entry.name} className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
-                            />
-                            <span className="text-xs font-medium text-slate-700 whitespace-nowrap">
-                              {entry.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Summary Stats */}
-              <div className="space-y-5 pt-5 border-t border-slate-200">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-red-50 to-red-100/30 rounded-lg p-4 border border-red-200/50 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 rounded-lg bg-red-500">
-                        <TrendingDown className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Total Used</p>
-                        <p className="text-2xl font-bold text-red-900 mt-0.5">
-                          {chartData.reduce((sum: number, d: any) => sum + d.used, 0)}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-red-600/80 ml-12">credits consumed</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-50 to-green-100/30 rounded-lg p-4 border border-green-200/50 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 rounded-lg bg-green-500">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Total Added</p>
-                        <p className="text-2xl font-bold text-green-900 mt-0.5">
-                          {chartData.reduce((sum: number, d: any) => sum + d.added, 0)}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-green-600/80 ml-12">credits purchased</p>
+              
+                <div className="xl:col-span-6 rounded-xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4">
+                  <h3 className="text-sm font-bold text-slate-900 mb-3">Credit Usage</h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={radarData}>
+                        <PolarGrid stroke="#e5e7eb" />
+                        <PolarAngleAxis dataKey="metric" tick={{ fill: '#334155', fontSize: 10 }} />
+                        <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar dataKey="value" stroke="#0ea5e9" fill="#38bdf8" fillOpacity={0.35} />
+                      </RadarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>

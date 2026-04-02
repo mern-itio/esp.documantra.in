@@ -377,6 +377,27 @@ const envelopesDetail = async (req, res) => {
     if (!envelope) {
       return res.status(404).json({ message: 'Envelope not found' });
     }
+    // Fallback for legacy/inconsistent rows where recipientIds wasn't persisted
+    // but recipient permissions exist for this envelope.
+    if (!Array.isArray(envelope.recipientIds) || envelope.recipientIds.length === 0) {
+      const fallbackPerms = await RecipientPermission.find({ envelopeId })
+        .populate({
+          path: 'recipientId',
+          select: 'name email phone UserId signature initials'
+        })
+        .select('recipientId role order status authLevel')
+        .lean();
+      envelope.recipientIds = fallbackPerms
+        .map((p) => {
+          const r = p.recipientId;
+          if (!r) return null;
+          return {
+            ...r,
+            permissions: [{ role: p.role, order: p.order, status: p.status, authLevel: p.authLevel }]
+          };
+        })
+        .filter(Boolean);
+    }
     let currentRecipient = envelope.recipientIds.find(r => {
       return String(r.UserId) === String(userId);
     });
@@ -426,6 +447,18 @@ const envelopesDetail = async (req, res) => {
       ''
     ).trim();
 
+    // Convert stored local paths to public /uploads URL so browser preview never tries file:// paths.
+    const toPublicUploadUrl = (rawPath) => {
+      if (!rawPath) return null;
+      const normalized = String(rawPath).replace(/\\/g, '/');
+      const uploadRelative = normalized
+        .replace(/^.*\/uploads\//, '')
+        .replace(/^uploads\//, '')
+        .replace(/^\/+/, '');
+      const base = `${req.protocol}://${req.get('host')}`;
+      return `${base}/uploads/${uploadRelative}`;
+    };
+
     // Step 4: Format the response (single envelope object)
     const formattedEnvelope = {
       id: envelope._id,
@@ -458,7 +491,9 @@ const envelopesDetail = async (req, res) => {
         id: doc._id,
         name: doc.fileName,
         size: doc.fileSize,
-        type: doc.mimeType
+        type: doc.mimeType,
+        filePath: toPublicUploadUrl(doc.filePath),
+        signedFilePath: toPublicUploadUrl(doc.signedFilePath)
       })),
       recipients: envelope.recipientIds.map(recipient => {
         const perm = recipient.permissions?.[0] || {};
@@ -653,7 +688,7 @@ const sendEnvelope = async (req, res) => {
   try {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
-    const userId = req?.user?.data?.id;
+    const userId = req?.user?.data?.id || req?.user?.id;
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found" });
     }
@@ -687,10 +722,47 @@ const sendEnvelope = async (req, res) => {
 
     // If we sent to at least one recipient, return success
     if (sentRecipients.length > 0) {
+      let referralMilestone = null;
+      try {
+        const uid = userId && String(userId);
+        // Prefer AUTH_SERVICE_URL; fall back to AUTH_URL (used everywhere else in this service).
+        const authBaseRaw = process.env.AUTH_URL;
+        const authBase = authBaseRaw && String(authBaseRaw).replace(/\/+$/, '');
+        const internalKey = process.env.INTERNAL_SERVICE_KEY;
+        if (uid && authBase && internalKey) {
+          const priorSent = await Envelope.countDocuments({
+            sender: new mongoose.Types.ObjectId(uid),
+            _id: { $ne: envelope._id },
+            status: { $nin: ['draft', 'deleted'] },
+          });
+          if (priorSent === 0) {
+            const referralHookResp = await axios.post(
+              `${authBase}/api/internal/referrals/first-document-sent`,
+              { userId: uid, envelopeId: String(envelope._id) },
+              { headers: { 'x-internal-key': internalKey }, timeout: 8000 }
+            );
+            const action = referralHookResp?.data?.action;
+            if (action === 'completed') {
+              referralMilestone = {
+                achieved: true,
+                rewardCredits: Number(referralHookResp?.data?.rewardCredits || 10),
+                referralId: referralHookResp?.data?.referralId || null,
+              };
+            }
+          }
+        } else if (uid) {
+          console.warn(
+            'Referral first-send hook skipped: set AUTH_SERVICE_URL or AUTH_URL and INTERNAL_SERVICE_KEY on e-sign-service'
+          );
+        }
+      } catch (refHookErr) {
+        console.warn('Referral first-send hook failed:', refHookErr?.message || refHookErr);
+      }
       return res.status(200).json({
         message: "Envelope sent to recipients",
         recipientsSent: sentRecipients.length,
-        recipients: sentRecipients
+        recipients: sentRecipients,
+        referralMilestone,
       });
     } else {
       // Check if there are any recipients at all
@@ -2706,7 +2778,109 @@ const fetchBulkEnvelopes = async (req, res) => {
     if (!envelopeIds || !Array.isArray(envelopeIds) || envelopeIds.length === 0) {
       return res.status(400).json({ message: "envelopeIds must be a non-empty array." });
     }
-    const envelopes = await Envelope.find({ _id: { $in: envelopeIds } });
+    const envelopes = await Envelope.find({ _id: { $in: envelopeIds } })
+      .populate({
+        path: 'recipientIds',
+        select: 'name email title company createdAt'
+      })
+      .populate({
+        path: 'documentIds',
+        select: 'fileName filePath mimeType createdAt'
+      })
+      .lean();
+
+    const envelopeObjectIds = envelopes.map((e) => e._id);
+    const allPermissions = await RecipientPermission.find({
+      envelopeId: { $in: envelopeObjectIds }
+    })
+      .select('envelopeId recipientId status')
+      .lean();
+
+    const permsByEnvelope = new Map();
+    for (const p of allPermissions) {
+      const eid = p?.envelopeId?.toString();
+      if (!eid) continue;
+      if (!permsByEnvelope.has(eid)) permsByEnvelope.set(eid, []);
+      permsByEnvelope.get(eid).push(p);
+    }
+
+    // Fallback recipients from permissions when recipientIds is empty.
+    const missingRecipientEnvelopeIds = envelopes
+      .filter((e) => !Array.isArray(e.recipientIds) || e.recipientIds.length === 0)
+      .map((e) => e._id);
+
+    if (missingRecipientEnvelopeIds.length) {
+      const perms = await RecipientPermission.find({
+        envelopeId: { $in: missingRecipientEnvelopeIds }
+      })
+        .populate({
+          path: 'recipientId',
+          select: 'name email title company createdAt'
+        })
+        .select('envelopeId recipientId')
+        .lean();
+
+      const recipientsByEnvelope = new Map();
+      perms.forEach((p) => {
+        const eid = p.envelopeId?.toString();
+        const r = p.recipientId;
+        if (!eid || !r) return;
+        if (!recipientsByEnvelope.has(eid)) recipientsByEnvelope.set(eid, []);
+        const list = recipientsByEnvelope.get(eid);
+        if (!list.some((x) => x._id?.toString() === r._id?.toString())) {
+          list.push(r);
+        }
+      });
+
+      envelopes.forEach((e) => {
+        if (!Array.isArray(e.recipientIds) || e.recipientIds.length === 0) {
+          e.recipientIds = recipientsByEnvelope.get(e._id.toString()) || [];
+        }
+      });
+    }
+
+    // Resolve envelope status from recipient completion where possible.
+    envelopes.forEach((e) => {
+      const eid = e._id.toString();
+      const envPerms = permsByEnvelope.get(eid) || [];
+      const permStatusMap = new Map();
+      envPerms.forEach((p) => {
+        const rid = p?.recipientId?.toString();
+        if (!rid) return;
+        permStatusMap.set(rid, String(p.status || '').toLowerCase());
+      });
+
+      // Attach recipient permission status for downstream consumers.
+      if (Array.isArray(e.recipientIds)) {
+        e.recipientIds = e.recipientIds.map((r) => {
+          const rid = r?._id?.toString?.();
+          const st = rid ? permStatusMap.get(rid) : null;
+          if (!st) return r;
+          return { ...r, permissionStatus: st };
+        });
+      }
+
+      const base = String(e.status || '').toLowerCase();
+      const permStatuses = envPerms
+        .map((p) => String(p.status || '').toLowerCase())
+        .filter(Boolean);
+
+      let resolved = base || 'draft';
+      if (permStatuses.some((s) => s === 'declined' || s === 'rejected')) {
+        resolved = 'declined';
+      } else if (
+        permStatuses.length > 0 &&
+        permStatuses.every((s) => s === 'completed' || s === 'signed')
+      ) {
+        resolved = 'completed';
+      } else if (base === 'draft' || base === 'deleted' || base === 'archived') {
+        resolved = base;
+      } else if (permStatuses.length > 0) {
+        resolved = 'in-progress';
+      }
+
+      e._computedStatus = resolved;
+    });
     return res.status(200).json({ envelopes });
   } catch (error) {
     console.error("Error fetching bulk envelopes:", error);

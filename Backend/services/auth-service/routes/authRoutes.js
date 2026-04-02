@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { login, googleLogin, verifyTwoFaLogin, getTwoFaSettings, updateTwoFaSettings, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
+const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
 const {adminLogin} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
@@ -55,4 +56,7 @@ router.post('/api/notifications/:id/read', verifyJWT(),markNotificationReadById)
 router.post('/api/notifications/mark-all-read', verifyJWT(),markAllNotificationAsRead);
 
 router.get('/api/user/notifications', verifyJWT(), getNotifications);
+router.get('/api/referrals/me', verifyJWT(), verifyActiveSession, getMyReferral);
+router.get('/api/rewards', verifyJWT(), verifyActiveSession, listRewards);
+router.post('/api/internal/referrals/first-document-sent', onFirstDocumentSentInternal);
 module.exports = router;

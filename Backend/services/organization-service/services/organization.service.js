@@ -384,6 +384,7 @@ const getFoldersInOrganization = async (orgId, userId) => {
         organizationId: 1,
         folderName: '$name',
         color: 1,
+        icon: 1,
         isOwner: 1,
         permissions: 1,
         sharedPeople: 1,

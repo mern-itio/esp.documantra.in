@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User  = require('../models/User');
+const { attachReferralOnSignup } = require('./referralController');
 const { isEmailValid } = require('@draftnsign/validators');
 const { sendPasswordResetEmail, sendVerificationOtpEmail, sendNewLoginAlertEmail } = require('../utils/email');
 const { sendVerificationOtpSms } = require('../utils/sms');
@@ -431,7 +432,7 @@ const updateTwoFaSettings = async (req, res) => {
 
 // Register — email OTP required to activate; phone / SMS verification optional
 const register = async (req, res) => {
-  const { fullname, email, phone, password, company, address, recaptchaToken } = req.body;
+  const { fullname, email, phone, password, company, address, recaptchaToken, ref, referrerUserId } = req.body;
 
   if (!isChromeExtensionClient(req)) {
     const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
@@ -484,6 +485,12 @@ const register = async (req, res) => {
       }, { timeout: 5000 }); // 5 second timeout to prevent hanging
     } catch (linkErr) {
       console.warn('E-sign link-user-recipient failed:', linkErr?.message);
+    }
+
+    try {
+      await attachReferralOnSignup(user._id, ref || referrerUserId);
+    } catch (refErr) {
+      console.warn('Referral attach failed:', refErr?.message);
     }
 
     res.status(201).json({
@@ -908,7 +915,7 @@ const resetPassword = async (req, res) => {
 
 // Google Login Controller
 const googleLogin = async (req, res) => {
-  const { token, deviceId, deviceLabel } = req.body;
+  const { token, deviceId, deviceLabel, ref, referrerUserId } = req.body;
   if (!token) return res.status(400).json({ message: 'Google token required' });
 
   try {
@@ -945,6 +952,12 @@ const googleLogin = async (req, res) => {
         }, { timeout: 5000 });
       } catch (linkErr) {
         console.warn('E-sign link-user-recipient failed:', linkErr?.message);
+      }
+
+      try {
+        await attachReferralOnSignup(user._id, ref || referrerUserId);
+      } catch (refErr) {
+        console.warn('Referral attach failed:', refErr?.message);
       }
     } else {
       // Update existing user with googleId if not present

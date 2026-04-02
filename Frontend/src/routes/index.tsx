@@ -138,6 +138,7 @@ import { FormEmbed } from '../pages/Template/FormEmbed';
 import { FormSubmissions } from '../pages/Template/FormSubmissions';
 import AITemplateGenerator from '../pages/Template/AITemplateGenerator';
 import UserProfile from '../pages/Account/UserProfile';
+import RewardsPage from '../pages/Account/RewardsPage';
 import SessionManagementPage from '../pages/Account/SessionManagementPage';
 import AuthMethodsPage from '../pages/Account/AuthMethodsPage';
 // Template Pages Ended
@@ -797,6 +798,7 @@ const authRoutes = [
 
   // Account
   { path: '/account/profile', element: <UserProfile /> },
+  { path: '/account/rewards', element: <RewardsPage /> },
   { path: '/account/session-management', element: <SessionManagementPage /> },
   { path: '/account/security', element: <AuthMethodsPage /> },
   { path: '/notifications', element: <NotificationsPage /> },
@@ -935,6 +937,7 @@ const router = createBrowserRouter([
         element: <PublicSignerLayout />,
         children: [
           { path: 'e-sign/signer/:id/:recipientId/:cycleId?', element: <PublicSignerPage /> },
+          { path: 'e-sign/preview/:id', element: <PublicSignerPage /> },
           { path: '/template/form-view/:id', element: <FormView /> },
           { path: '/e-sign/power-form/:envelopeId', element: <PowerForm /> },
           { path: '/e-sign/signer/thank-you', element: <ThankYouPage /> }

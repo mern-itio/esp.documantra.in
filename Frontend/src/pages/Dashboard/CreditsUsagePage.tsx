@@ -11,6 +11,7 @@ import {
   Calendar,
   CheckCircle2
 } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import type { Invoice } from '../../types';
 
 interface UsageRow {
@@ -168,6 +169,49 @@ const CreditsUsagePage: React.FC = () => {
   const includedTotal = useMemo(() => {
     return includedUsage.reduce((sum, item) => sum + item.credits, 0);
   }, [includedUsage]);
+  const includedUsageByModuleData = useMemo(() => {
+    if (!selectedIncludedPeriod) return [];
+    const [startStr, endStr] = selectedIncludedPeriod.split(' - ');
+    const periodStart = new Date(startStr);
+    const periodEnd = new Date(endStr);
+    const moduleTotals = new Map<string, number>();
+    const moduleFromRow = (action?: string, toolId?: string): string => {
+      const a = String(action || '').toLowerCase();
+      const t = String(toolId || '').toLowerCase();
+      if (a.startsWith('esign:') || a.includes('envelope') || a.includes('sign')) return 'E-Sign';
+      if (a.startsWith('pdf:') || t.includes('pdf')) return 'PDF Tools';
+      if (a.startsWith('document:') || a.includes('document') || a.includes('share')) return 'Document';
+      if (a.startsWith('auth:') || a.includes('auth')) return 'Authentication';
+      return 'Other';
+    };
+
+    allRows
+      .filter((row) => {
+        const rowDate = new Date(row.createdAt);
+        return rowDate >= periodStart && rowDate <= periodEnd && row.creditsDelta < 0;
+      })
+      .forEach((row) => {
+        const module = moduleFromRow(row.action, row.toolId);
+        const current = moduleTotals.get(module) || 0;
+        moduleTotals.set(module, current + Math.abs(row.creditsDelta));
+      });
+
+    const palette: Record<string, string> = {
+      'E-Sign': '#4f46e5',
+      'PDF Tools': '#0ea5e9',
+      Document: '#10b981',
+      Authentication: '#f59e0b',
+      Other: '#6b7280',
+    };
+
+    return Array.from(moduleTotals.entries())
+      .map(([module, credits]) => ({
+        module,
+        credits,
+        color: palette[module] || '#6b7280',
+      }))
+      .sort((a, b) => b.credits - a.credits);
+  }, [selectedIncludedPeriod, allRows]);
   const filteredInvoices = useMemo(() => {
     if (!selectedInvoiceMonth) return invoices;
     return invoices.filter(inv => {
@@ -235,30 +279,58 @@ const CreditsUsagePage: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Included in {userPlan?.name || 'Plan'}</div>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Item</th>
-                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Credits</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {includedUsage.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm text-gray-900">{item.item}</td>
-                        <td className="py-3 px-4 text-sm text-gray-900 text-right">
-                          {item.credits.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr className="border-t-2 border-gray-300 font-semibold">
-                      <td className="py-3 px-4 text-sm text-gray-900">Total</td>
-                      <td className="py-3 px-4 text-sm text-gray-900 text-right">
-                        {includedTotal.toLocaleString()}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                      Monthly usage by module
+                    </div>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={includedUsageByModuleData}
+                          margin={{ top: 6, right: 16, left: 8, bottom: 24 }}
+                          barCategoryGap={18}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                          <XAxis dataKey="module" type="category" tick={{ fontSize: 11, fill: '#374151' }} interval={0} angle={-10} textAnchor="end" height={52} />
+                          <YAxis type="number" tick={{ fontSize: 11, fill: '#6b7280' }} />
+                          <Tooltip formatter={(value: any) => [`${Number(value).toLocaleString()} credits`, 'Usage']} />
+                          <Bar dataKey="credits" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                            {includedUsageByModuleData.map((entry, index) => (
+                              <Cell key={`module-cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 bg-white p-1">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Item</th>
+                          <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Credits</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {includedUsage.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="py-3 px-4 text-sm text-gray-900">{item.item}</td>
+                            <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                              {item.credits.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2 border-gray-300 font-semibold">
+                          <td className="py-3 px-4 text-sm text-gray-900">Total</td>
+                          <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                            {includedTotal.toLocaleString()}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
           </div>
