@@ -2432,15 +2432,22 @@ const EnvelopeCreator: React.FC = () => {
       const response = await eSignApi.get(`/api/e-sign/get-recipient/${email}`);
       if (response.status == 200) {
         const { recipient } = response.data;
-        updateRecipient(id, {
-          name: recipient.name,
-          email: recipient.email
-        })
+        setRecipients((prev) =>
+          prev.map((r) => {
+            if (r.id !== id) return r;
+            const typedName = (r.name || '').trim();
+            return {
+              ...r,
+              email: recipient.email || r.email,
+              ...(typedName ? {} : { name: recipient.name || r.name }),
+            };
+          })
+        );
       }
     } catch (err) {
       console.log(`Handle email on Blur`);
     }
-  }
+  };
 
   const handleRecipientDragStart = (e: React.DragEvent, recipientId: string) => {
     if (!setSigningOrder) {

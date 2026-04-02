@@ -25,6 +25,28 @@ interface UsageRow {
   reason?: string;
 }
 
+/** Stable calendar month key for filtering (YYYY-MM). */
+const monthKeyFromDate = (d: Date): string => {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const monthKeysBetween = (start: Date, end: Date): string[] => {
+  const keys: string[] = [];
+  const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  const last = new Date(end.getFullYear(), end.getMonth(), 1);
+  while (cur <= last) {
+    keys.push(monthKeyFromDate(cur));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return keys;
+};
+
+const monthLabelFromKey = (key: string): string => {
+  const [y, m] = key.split('-').map(Number);
+  if (!y || !m) return key;
+  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+};
+
 const CreditsUsagePage: React.FC = () => {
   const { userPlan } = useSubscription();
   const [allRows, setAllRows] = React.useState<UsageRow[]>([]);
@@ -32,7 +54,7 @@ const CreditsUsagePage: React.FC = () => {
   const [invoices, setInvoices] = React.useState<Invoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = React.useState(true);
 
-  const [selectedIncludedPeriod, setSelectedIncludedPeriod] = useState<string>('');
+  const [selectedIncludedMonthKey, setSelectedIncludedMonthKey] = useState<string>('');
   const [selectedOnDemandMonth, setSelectedOnDemandMonth] = useState<string>('');
   const [selectedInvoiceMonth, setSelectedInvoiceMonth] = useState<string>('');
 
@@ -87,26 +109,45 @@ const CreditsUsagePage: React.FC = () => {
     };
   }, [userPlan]);
 
-  const availablePeriods = useMemo(() => {
-    const periods = new Set<string>();
-    if (currentPeriod) {
-      const periodKey = `${formatDate(currentPeriod.start)} - ${formatDate(currentPeriod.end)}`;
-      periods.add(periodKey);
-    }
-    invoices.forEach(inv => {
-      if (inv.periodStart && inv.periodEnd) {
-        const periodKey = `${formatDate(inv.periodStart)} - ${formatDate(inv.periodEnd)}`;
-        periods.add(periodKey);
+  /** Calendar months for the dropdown: continuous range from first→last usage, plus plan/invoice months. */
+  const availableIncludedMonths = useMemo(() => {
+    const set = new Set<string>();
+    let minD: Date | null = null;
+    let maxD: Date | null = null;
+
+    allRows.forEach((row) => {
+      if (row.createdAt) {
+        const d = new Date(row.createdAt);
+        set.add(monthKeyFromDate(d));
+        if (!minD || d < minD) minD = d;
+        if (!maxD || d > maxD) maxD = d;
       }
     });
-    return Array.from(periods).sort().reverse();
-  }, [currentPeriod, invoices]);
+
+    if (minD && maxD) {
+      monthKeysBetween(minD, maxD).forEach((k) => set.add(k));
+    }
+
+    if (currentPeriod) {
+      monthKeysBetween(currentPeriod.start, currentPeriod.end).forEach((k) => set.add(k));
+    }
+    invoices.forEach((inv) => {
+      if (inv.periodStart && inv.periodEnd) {
+        monthKeysBetween(new Date(inv.periodStart), new Date(inv.periodEnd)).forEach((k) => set.add(k));
+      }
+      if (inv.createdAt) {
+        const d = new Date(inv.createdAt);
+        set.add(monthKeyFromDate(d));
+      }
+    });
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [allRows, currentPeriod, invoices]);
 
   useEffect(() => {
-    if (availablePeriods.length > 0 && !selectedIncludedPeriod) {
-      setSelectedIncludedPeriod(availablePeriods[0]);
+    if (availableIncludedMonths.length > 0 && !selectedIncludedMonthKey) {
+      setSelectedIncludedMonthKey(availableIncludedMonths[0]);
     }
-  }, [availablePeriods, selectedIncludedPeriod]);
+  }, [availableIncludedMonths, selectedIncludedMonthKey]);
 
   const availableOnDemandMonths = useMemo(() => {
     const months = new Set<string>();
@@ -145,15 +186,12 @@ const CreditsUsagePage: React.FC = () => {
   }, [availableInvoiceMonths, selectedInvoiceMonth]);
 
   const includedUsage = useMemo(() => {
-    if (!selectedIncludedPeriod || !currentPeriod) return [];
-    const [startStr, endStr] = selectedIncludedPeriod.split(' - ');
-    const periodStart = new Date(startStr);
-    const periodEnd = new Date(endStr);
+    if (!selectedIncludedMonthKey) return [];
     const usageMap = new Map<string, { item: string; credits: number; cost: number }>();
     allRows
       .filter(row => {
         const rowDate = new Date(row.createdAt);
-        return rowDate >= periodStart && rowDate <= periodEnd && row.creditsDelta < 0;
+        return monthKeyFromDate(rowDate) === selectedIncludedMonthKey && row.creditsDelta < 0;
       })
       .forEach(row => {
         const item = row.action || row.toolId || 'Usage';
@@ -165,15 +203,12 @@ const CreditsUsagePage: React.FC = () => {
       });
 
     return Array.from(usageMap.values());
-  }, [selectedIncludedPeriod, allRows, currentPeriod]);
+  }, [selectedIncludedMonthKey, allRows]);
   const includedTotal = useMemo(() => {
     return includedUsage.reduce((sum, item) => sum + item.credits, 0);
   }, [includedUsage]);
   const includedUsageByModuleData = useMemo(() => {
-    if (!selectedIncludedPeriod) return [];
-    const [startStr, endStr] = selectedIncludedPeriod.split(' - ');
-    const periodStart = new Date(startStr);
-    const periodEnd = new Date(endStr);
+    if (!selectedIncludedMonthKey) return [];
     const moduleTotals = new Map<string, number>();
     const moduleFromRow = (action?: string, toolId?: string): string => {
       const a = String(action || '').toLowerCase();
@@ -188,7 +223,7 @@ const CreditsUsagePage: React.FC = () => {
     allRows
       .filter((row) => {
         const rowDate = new Date(row.createdAt);
-        return rowDate >= periodStart && rowDate <= periodEnd && row.creditsDelta < 0;
+        return monthKeyFromDate(rowDate) === selectedIncludedMonthKey && row.creditsDelta < 0;
       })
       .forEach((row) => {
         const module = moduleFromRow(row.action, row.toolId);
@@ -211,7 +246,7 @@ const CreditsUsagePage: React.FC = () => {
         color: palette[module] || '#6b7280',
       }))
       .sort((a, b) => b.credits - a.credits);
-  }, [selectedIncludedPeriod, allRows]);
+  }, [selectedIncludedMonthKey, allRows]);
   const filteredInvoices = useMemo(() => {
     if (!selectedInvoiceMonth) return invoices;
     return invoices.filter(inv => {
@@ -246,19 +281,22 @@ const CreditsUsagePage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Included Usage</h2>
-                {selectedIncludedPeriod && (
-                  <p className="text-sm text-gray-600 mt-1">{selectedIncludedPeriod}</p>
+                {selectedIncludedMonthKey && (
+                  <p className="text-sm text-gray-600 mt-1">{monthLabelFromKey(selectedIncludedMonthKey)}</p>
                 )}
               </div>
-              {availablePeriods.length > 0 && (
+              {availableIncludedMonths.length > 0 && (
                 <div className="relative">
                   <select
-                    value={selectedIncludedPeriod}
-                    onChange={(e) => setSelectedIncludedPeriod(e.target.value)}
+                    value={selectedIncludedMonthKey}
+                    onChange={(e) => setSelectedIncludedMonthKey(e.target.value)}
                     className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
+                    aria-label="Filter included usage by month"
                   >
-                    {availablePeriods.map(period => (
-                      <option key={period} value={period}>{period}</option>
+                    {availableIncludedMonths.map((monthKey) => (
+                      <option key={monthKey} value={monthKey}>
+                        {monthLabelFromKey(monthKey)}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
@@ -272,9 +310,15 @@ const CreditsUsagePage: React.FC = () => {
                 <Calendar className="w-6 h-6 animate-spin mx-auto mb-2" />
                 <p className="text-sm">Loading usage...</p>
               </div>
+            ) : availableIncludedMonths.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm">No usage history yet — months will appear here once you have activity.</p>
+              </div>
             ) : includedUsage.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-sm">No included usage for this period</p>
+                <p className="text-sm">
+                  No included usage for {selectedIncludedMonthKey ? monthLabelFromKey(selectedIncludedMonthKey) : 'this month'}.
+                </p>
               </div>
             ) : (
               <div className="space-y-4">

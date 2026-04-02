@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, Server, Database, Shield, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { COMPANY_NAME } from '../../components/constants/appConfig';
 
 const StatusPage = () => {
   const [activeTab, setActiveTab] = useState('current');
@@ -535,7 +536,7 @@ const StatusPage = () => {
             <div className="border border-gray-200 rounded-lg p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">SLA Compliance</h3>
               <p className="text-gray-600 mb-4">
-                DocuSigner is committed to maintaining a high level of service availability. Our Service Level Agreement (SLA) guarantees 99.9% uptime for all customers, with higher guarantees available for enterprise customers.
+                {COMPANY_NAME} is committed to maintaining a high level of service availability. Our Service Level Agreement (SLA) guarantees 99.9% uptime for all customers, with higher guarantees available for enterprise customers.
               </p>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
@@ -567,7 +568,7 @@ const StatusPage = () => {
             <div>
               <h2 className="text-2xl font-bold mb-4">Stay Informed</h2>
               <p className="text-primary-100 mb-6">
-                Subscribe to receive real-time notifications about DocuSigner service status updates, incidents, and scheduled maintenance.
+                Subscribe to receive real-time notifications about {COMPANY_NAME} service status updates, incidents, and scheduled maintenance.
               </p>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -639,7 +640,7 @@ const StatusPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">System Architecture</h3>
               <p className="text-gray-600 mb-4">
-                Learn about DocuSigner's system architecture, redundancy measures, and disaster recovery capabilities.
+                Learn about {COMPANY_NAME} system architecture, redundancy measures, and disaster recovery capabilities.
               </p>
               <Link to="/system-architecture" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
                 View details

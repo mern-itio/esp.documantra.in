@@ -2278,7 +2278,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] flex h-12 items-center bg-[#1b0c3e] px-4 text-white">
           <div className="w-full flex items-center justify-between">
             <div className="text-sm font-medium">
-              {isViewOnly ? "View only (CC)" : "Review and complete"}
+              {isViewOnly ? "View only" : "Review and complete"}
             </div>
 
             <div className="flex items-center gap-2">
@@ -2708,10 +2708,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           >
             <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Recipient audit trail</h3>
-                <p className="mt-1 text-xs text-gray-500">
-                  Reassignment history for this recipient.
-                </p>
+                <h3 className="thankyou-heading text-xl font-semibold text-gray-900">Reassignment history of this envelope</h3>
+                
               </div>
               <button
                 type="button"

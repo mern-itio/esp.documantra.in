@@ -89,7 +89,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/api-documentation"
+                  to="/help-support"
                   className="text-gray-400 hover:text-white transition-colors text-[14px]"
                 >
                   Help Center

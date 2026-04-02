@@ -25,7 +25,7 @@ const getUserEmailFromRequest = (req) => {
 // GET /user-plan/me
 const getMyPlan = async (req, res) => {
   try {
-    console.log('getMyPlan called');
+    // console.log('getMyPlan called');
     const userId = getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
