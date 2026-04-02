@@ -104,6 +104,7 @@ const RewardsPage: React.FC = () => {
   const completedReferrals = useMemo(() => referrals.filter((r) => r.status === 'completed'), [referrals]);
 
   return (
+    
     <div className="relative min-h-screen bg-gradient-to-br from-[#f6f3ff] via-[#f7fbff] to-white overflow-hidden">
       {/* Background Gift Icons */}
       <div className="absolute inset-0 pointer-events-none">

@@ -1,21 +1,22 @@
 import { Bug, Shield, CheckCircle, AlertTriangle, FileText, DollarSign, Award, ArrowRight, Users, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL, COMPANY_NAME, SUPPORT_EMAIL } from '../../components/constants/appConfig';
 
 const BugBountyPage = () => {
   const bugBountyScopes = [
     {
       name: "Web Application",
-      description: "The DocuSigner web application at app.docusigner.com",
+      description: `The  ${COMPANY_NAME} web application at ${API_BASE_URL}`,
       inScope: true
     },
     {
       name: "Mobile Applications",
-      description: "Official DocuSigner mobile apps for iOS and Android",
+      description: `Official ${COMPANY_NAME} mobile apps for iOS and Android`,
       inScope: true
     },
     {
       name: "API Services",
-      description: "All API endpoints at api.docusigner.com",
+      description: `All API endpoints at ${API_BASE_URL}`,
       inScope: true
     },
     {
@@ -32,11 +33,11 @@ const BugBountyPage = () => {
       name: "Third-party Integrations",
       description: "Integrations with third-party services",
       inScope: false,
-      note: "Only in-scope if the vulnerability is in DocuSigner's implementation"
+      note: `Only in-scope if the vulnerability is in ${COMPANY_NAME}'s implementation`
     },
     {
       name: "Marketing Website",
-      description: "The main marketing website at docusigner.com",
+      description: `The main marketing website at ${API_BASE_URL}`,
       inScope: false,
       note: "Only critical vulnerabilities"
     }
@@ -136,7 +137,7 @@ const BugBountyPage = () => {
             <div className="md:w-2/3">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">Bug Bounty Program</h1>
               <p className="text-xl text-primary-100 mb-6">
-                Help us improve our security by finding and reporting vulnerabilities. We reward security researchers who help us keep DocuSigner safe and secure.
+                Help us improve our security by finding and reporting vulnerabilities. We reward security researchers who help us keep {COMPANY_NAME} safe and secure.
               </p>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
@@ -166,7 +167,7 @@ const BugBountyPage = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Program Overview</h2>
           
           <p className="text-gray-700 mb-6">
-            At DocuSigner, we take security seriously. Our Bug Bounty Program invites security researchers to help identify and report security vulnerabilities in our systems. We believe in the value of collaborative security and are committed to working with the security community to maintain the highest security standards.
+            At {COMPANY_NAME}, we take security seriously. Our Bug Bounty Program invites security researchers to help identify and report security vulnerabilities in our systems. We believe in the value of collaborative security and are committed to working with the security community to maintain the highest security standards.
           </p>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -379,7 +380,7 @@ const BugBountyPage = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Hall of Fame</h2>
           
           <p className="text-gray-700 mb-6">
-            We'd like to thank the following security researchers for their valuable contributions to our security. These individuals have helped us identify and fix security vulnerabilities, making DocuSigner more secure for everyone.
+            We'd like to thank the following security researchers for their valuable contributions to our security. These individuals have helped us identify and fix security vulnerabilities, making {COMPANY_NAME} more secure for everyone.
           </p>
           
           <div className="overflow-x-auto">
@@ -449,7 +450,7 @@ const BugBountyPage = () => {
           </ul>
           
           <p className="text-gray-700 mb-4">
-            Please note that if your security research involves the networks, systems, information, applications, products, or services of a third party, that third party may determine whether to pursue legal action. DocuSigner cannot and does not authorize security research in the name of other entities.
+            Please note that if your security research involves the networks, systems, information, applications, products, or services of a third party, that third party may determine whether to pursue legal action. {COMPANY_NAME} cannot and does not authorize security research in the name of other entities.
           </p>
           
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
@@ -461,7 +462,7 @@ const BugBountyPage = () => {
                   This safe harbor does not apply to:
                 </p>
                 <ul className="list-disc pl-6 mt-2 space-y-1 text-yellow-700">
-                  <li>Any conduct that intentionally harms DocuSigner or our customers</li>
+                  <li>Any conduct that intentionally harms {COMPANY_NAME} or our customers</li>
                   <li>Social engineering attacks, including phishing</li>
                   <li>Denial of service attacks</li>
                   <li>Physical attacks against our offices, data centers, or employees</li>
@@ -488,7 +489,7 @@ const BugBountyPage = () => {
                   <div>
                     <div className="font-medium">Bug Bounty Platform</div>
                     <div className="text-primary-100">Submit through our HackerOne program (preferred method)</div>
-                    <a href="https://hackerone.com/docusigner" className="text-white underline hover:text-primary-200">hackerone.com/docusigner</a>
+                    <a href={`https://hackerone.com/${COMPANY_NAME.toLowerCase().replace(/\s+/g, '')}`} className="text-white underline hover:text-primary-200">{`hackerone.com/${COMPANY_NAME.toLowerCase().replace(/\s+/g, '')}`}</a>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -496,7 +497,9 @@ const BugBountyPage = () => {
                   <div>
                     <div className="font-medium">Encrypted Email</div>
                     <div className="text-primary-100">Send encrypted reports to our security team</div>
-                    <a href="mailto:security@docusigner.com" className="text-white underline hover:text-primary-200">security@docusigner.com</a>
+                    <a href={`mailto:${SUPPORT_EMAIL}`} className="text-white underline hover:text-primary-200">
+                      {SUPPORT_EMAIL}
+                    </a>
                     <div className="text-xs text-primary-200 mt-1">PGP Key: [PGP Key Fingerprint]</div>
                   </div>
                 </div>
@@ -605,11 +608,11 @@ const BugBountyPage = () => {
         <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mt-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Start Hunting?</h2>
           <p className="text-xl text-white max-w-3xl mx-auto mb-8">
-            Join our bug bounty program today and help us make DocuSigner more secure while earning rewards for your findings.
+            Join our bug bounty program today and help us make {COMPANY_NAME} more secure while earning rewards for your findings.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 
-              href="https://hackerone.com/docusigner" 
+              href={`https://hackerone.com/${COMPANY_NAME.toLowerCase().replace(/\s+/g, '')}`} 
               target="_blank" 
               rel="noopener noreferrer" 
               className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg"

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { eSignApi, subscriptionApi } from "../../services/apiHelper";
 import DocumentViewer from "../../components/ESign/DocumentViewer";
+import DocumentSignatureBackground from "../../components/common/DocumentSignatureBackground";
 import * as Icons from "lucide-react";
 import {
   FileText,
@@ -10,7 +11,14 @@ import {
   Shield,
   RefreshCw,
   XCircle,
-  ChevronDown
+  ChevronDown,
+  ArrowRight,
+  User,
+  Mail,
+  Link2,
+  Bell,
+  Copy,
+  Layers
 } from "lucide-react";
 
 interface UISchema {
@@ -31,6 +39,16 @@ interface AuthList {
   authMethodId: string;
   status: "pending" | "completed" | "rejected";
 }
+
+const formatDisplayName = (value: unknown): string => {
+  const s = String(value ?? "").trim();
+  if (!s) return "—";
+  return s
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+};
 
 const parseAuthList = (rawAuthentication: any): AuthList[] => {
   if (!rawAuthentication) return [];
@@ -79,6 +97,7 @@ const EnvelopeDetails: React.FC = () => {
   const [showAssignedAwayPage, setShowAssignedAwayPage] = useState(false);
   const [assignedAwayToName, setAssignedAwayToName] = useState("");
   const [assignedAwayToEmail, setAssignedAwayToEmail] = useState("");
+  const [reassignLinkCopied, setReassignLinkCopied] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [isDeclineSubmitting, setIsDeclineSubmitting] = useState(false);
   const [declineSubmitError, setDeclineSubmitError] = useState<string>("");
@@ -732,51 +751,216 @@ const EnvelopeDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 text-gray-600">
-        Loading...
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-blue-50 px-4 text-gray-600">
+        <DocumentSignatureBackground />
+        <span className="relative z-10">Loading...</span>
       </div>
     );
   }
 
   if (!envelope) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 px-4 text-center text-gray-600">
-        <FileText className="mb-4 h-12 w-12 text-gray-400" />
-        <p>Envelope not found or has been removed.</p>
+      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-blue-50 px-4 text-center text-gray-600">
+        <DocumentSignatureBackground />
+        <div className="relative z-10 flex flex-col items-center">
+          <FileText className="mb-4 h-12 w-12 text-gray-400" />
+          <p>Envelope not found or has been removed.</p>
+        </div>
       </div>
     );
   }
   if (showAssignedAwayPage) {
+    const senderLabel =
+      envelope?.sender?.name ||
+      envelope?.senderName ||
+      envelope?.createdBy?.name ||
+      envelope?.owner?.name ||
+      "";
+    const envelopeTitle =
+      (envelope?.name && String(envelope.name).trim()) ||
+      (envelope?.subject && String(envelope.subject).trim()) ||
+      "Untitled envelope";
+    const initialSignerName = formatDisplayName(
+      (currentRecipient as any)?.name || (currentRecipient as any)?.fullname
+    );
+    const initialSignerEmail = String(
+      (currentRecipient as any)?.email || ""
+    ).trim();
+    const docCount = Array.isArray(allDocuments) ? allDocuments.length : 0;
+    const currentSigningUrl =
+      typeof window !== "undefined" ? window.location.href : "";
+
     return (
-      <div className="min-h-screen bg-slate-100 px-4 py-10">
-        <div className="mx-auto w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-          <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-green-700">
-            <CheckCircle className="h-7 w-7" />
+      <div className="relative min-h-screen overflow-hidden bg-blue-50 px-4 py-8 sm:py-12">
+        <DocumentSignatureBackground />
+        <div className="relative z-10 mx-auto w-full max-w-5xl">
+          <div className="mb-6 text-center sm:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-100">
+              <CheckCircle className="h-3.5 w-3.5" />
+              Reassignment complete
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              Signing request reassigned
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-gray-600">
+              Your signing session is closed. Below is a summary of this envelope and who signs next.
+            </p>
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Signing request reassigned
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            You have assigned this document to another signer. Your signing session is now closed.
-          </p>
 
-          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-            <div><span className="font-medium">New signer:</span> {assignedAwayToName || "—"}</div>
-            <div className="mt-1"><span className="font-medium">Email:</span> {assignedAwayToEmail || "—"}</div>
-          </div>
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+            {/* Left: envelope + signers */}
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-gray-100">
+              <div className="flex items-start gap-3 border-b border-gray-100 pb-5">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#260559]/10 text-[#260559]">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Envelope
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-gray-900 leading-snug">
+                    {envelopeTitle}
+                  </p>
+                  {envelope?.name &&
+                    envelope?.subject &&
+                    String(envelope.name).trim() !== String(envelope.subject).trim() && (
+                    <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                      {String(envelope.subject)}
+                    </p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                    <span>
+                      <span className="font-medium text-gray-700">From: </span>
+                      {senderLabel ? formatDisplayName(senderLabel) : "—"}
+                    </span>
+                    {docCount > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <FileText className="h-3.5 w-3.5 text-gray-400" />
+                        {docCount} document{docCount === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-          <p className="mt-5 text-xs text-gray-500">
-            The sender and new signer are notified. You will receive further updates as a Carbon Copy recipient.
-          </p>
+              <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Signing order
+              </p>
+              <div className="mt-4 space-y-4">
+                <div className="rounded-xl border border-gray-100 bg-slate-50/80 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <User className="h-3.5 w-3.5 text-[#260559]" />
+                    Initial signer (you)
+                  </div>
+                  <p className="mt-2 text-sm font-semibold text-gray-900">
+                    {initialSignerName}
+                  </p>
+                  {initialSignerEmail && (
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-600">
+                      <Mail className="h-3 w-3 shrink-0 text-gray-400" />
+                      {initialSignerEmail}
+                    </p>
+                  )}
+                </div>
 
-          <div className="mt-8 flex justify-end">
-            <button
-              type="button"
-              onClick={() => window.location.assign("/")}
-              className="inline-flex items-center justify-center rounded-lg bg-[#260559] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#260559]/90"
-            >
-              Back to Home
-            </button>
+                <div className="flex justify-center py-0.5">
+                  <ArrowRight className="h-5 w-5 rotate-90 text-gray-300 sm:rotate-0" aria-hidden />
+                </div>
+
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 ring-1 ring-emerald-100/80">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                    <User className="h-3.5 w-3.5" />
+                    Next signer
+                  </div>
+                  <p className="mt-2 text-sm font-semibold text-gray-900">
+                    {assignedAwayToName || "—"}
+                  </p>
+                  {assignedAwayToEmail && (
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-700">
+                      <Mail className="h-3 w-3 shrink-0 text-emerald-700/70" />
+                      {assignedAwayToEmail}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: CC + notifications + same link */}
+            <div className="flex flex-col rounded-2xl border border-[#260559]/15 bg-[#260559] p-6 text-white shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+                <CheckCircle className="h-7 w-7 text-white" />
+              </div>
+              <h2 className="mt-5 text-xl font-semibold leading-snug">
+              You’ve been added as a viewer
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-white/85">
+                You reassigned this document to the next signer. You will not sign this copy; instead you will
+                stay informed as a <strong className="font-semibold text-white">View only recipient</strong>.
+              </p>
+
+              <ul className="mt-6 space-y-4 text-sm text-white/90">
+                <li className="flex gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                    <Bell className="h-4 w-4" />  
+                  </span>
+                  <span>
+                    <span className="font-medium text-white">Email updates</span>
+                    <span className="block text-white/80">
+                    You will receive email notifications as the document moves forward (when it is signed, or completed).
+                    </span>
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                    <Link2 className="h-4 w-4" />
+                  </span>
+                  <span>
+                    <span className="font-medium text-white">Same link to view</span>
+                    <span className="block text-white/80">
+                      Bookmark or save this page. You can return anytime with the same signing link to view the
+                      document status (read-only for Viewer).
+                    </span>
+                  </span>
+                </li>
+              </ul>
+
+              {currentSigningUrl && (
+                <div className="mt-6 rounded-xl bg-black/20 p-3 ring-1 ring-white/10">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/60">
+                    Your signing link
+                  </p>
+                  <p className="mt-1 break-all font-mono text-[11px] leading-relaxed text-white/90">
+                    {currentSigningUrl}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(currentSigningUrl);
+                        setReassignLinkCopied(true);
+                        window.setTimeout(() => setReassignLinkCopied(false), 2000);
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/25"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {reassignLinkCopied ? "Copied" : "Copy link"}
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-auto flex flex-col gap-3 pt-8 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => window.location.assign("/")}
+                  className="inline-flex w-full items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-[#260559] shadow-sm transition hover:bg-white/95 sm:w-auto"
+                >
+                  Back to Home
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -986,8 +1170,9 @@ const EnvelopeDetails: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 px-3 py-6 sm:px-6 lg:px-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
+    <div className="relative min-h-screen overflow-hidden bg-blue-50 px-3 py-6 sm:px-6 lg:px-10">
+      <DocumentSignatureBackground />
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col">
         <div className="flex-1">
           {/* Render DocumentViewer in preview mode always; otherwise follow signing/auth flow */}
           {shouldRenderDocumentInBackground && (

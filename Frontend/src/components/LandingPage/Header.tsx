@@ -196,7 +196,7 @@ const Header = () => {
               {/* Developer - link only */}
               <div className="relative group">
                 <Link
-                  to="/developer"
+                  to="/api-documentation"
                   className="flex items-center font-semibold text-[#1f2779] hover:text-[#260559] transition-colors"
                 >
                   Developer
