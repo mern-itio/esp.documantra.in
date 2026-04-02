@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Folder, Users, Shield, Plus, Mail, ArrowLeft, ExternalLink, User2, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { Folder, Users, Shield, Plus, Mail, ArrowLeft, Trash2, ExternalLink, User2, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { organizationApi } from '../../services/apiHelper';
 import { ShareFolderModal } from '../../components/Organization/ShareFolderModal';
 import { ShareFolderWithRoleModal } from '../../components/Organization/ShareFolderWithRoleModal';
@@ -102,7 +103,73 @@ const fetchRolesAndUsers = async () => {
     }
 };
 
-  const [activeTab, setActiveTab] = useState<TabKey>('envelopes');
+const handleRemoveEnvelope = async (envelopeId: string) => {
+  const result = await Swal.fire({
+    title: 'Remove envelope',
+    text: 'Are you sure you want to remove this envelope from the folder?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Remove',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await organizationApi.delete(`/api/organization/remove-envelope/${folderId}/${envelopeId}`);
+    } catch (err) {
+      console.warn('Remove envelope API not available, applying local remove', err);
+    }
+    setEnvelopes(prev => prev.filter((env) => env._id !== envelopeId));
+    Swal.fire('Removed', 'Envelope removed successfully.', 'success');
+  }
+};
+
+const handleRemoveUser = async (userId: string) => {
+  const result = await Swal.fire({
+    title: 'Remove user',
+    text: 'Are you sure you want to remove this user from the folder?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Remove',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await organizationApi.delete(`/api/organization/remove-user/${folderId}/${userId}`);
+    } catch (err) {
+      console.warn('Remove user API not available, applying local remove', err);
+    }
+    setUsers(prev => prev.filter((u) => u._id !== userId));
+    Swal.fire('Removed', 'User removed successfully.', 'success');
+  }
+};
+
+const handleRemoveRole = async (roleId: string) => {
+  const result = await Swal.fire({
+    title: 'Remove role',
+    text: 'Are you sure you want to remove this role from the folder?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Remove',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await organizationApi.delete(`/api/organization/remove-role/${folderId}/${roleId}`);
+    } catch (err) {
+      console.warn('Remove role API not available, applying local remove', err);
+    }
+    setRoles(prev => prev.filter((r) => r._id !== roleId));
+    Swal.fire('Removed', 'Role removed successfully.', 'success');
+  }
+};
+
+  const [activeTab, setActiveTab] = useState('envelopes');
   // Table controls
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Sent' | 'Completed' | 'Draft'>('All');
@@ -403,6 +470,29 @@ const fetchRolesAndUsers = async () => {
           <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="bg-gray-50">
               <tr>
+                {activeTab === 'envelopes' && (
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </>
+                )}
+                {activeTab === 'users' && (
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </>
+                )}
+                {activeTab === 'roles' && (
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </>
+                )}
                 {getVisibleColumns(activeTab).map((column) => {
                   const columnWidth = getColumnWidth(column.id);
                   const isResizing = resizingColumn === column.id;
@@ -441,6 +531,78 @@ const fetchRolesAndUsers = async () => {
                 ) : (
                   pageItems.map((item: any) => (
                     <tr key={item._id} className="hover:bg-gray-50">
+
+                      {activeTab === 'envelopes' && (
+                        <>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {item.name}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${
+                              item.status === 'Completed'
+                                ? 'bg-green-100 text-green-800'
+                                : item.status === 'Sent'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {item.createdAt}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button
+                              onClick={() => handleRemoveEnvelope(item._id)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
+                          </td>
+                        </>
+                      )}
+
+                      {activeTab === 'users' && (
+                        <>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {item.name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {item.email}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {item.role}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button
+                              onClick={() => handleRemoveUser(item._id)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
+                          </td>
+                        </>
+                      )}
+
+                      {activeTab === 'roles' && (
+                        <>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {item.name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {item.description}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button
+                              onClick={() => handleRemoveRole(item._id)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
+                          </td>
+                        </>
+                      )}
+
                       {getVisibleColumns(activeTab).map((column) => {
                         const columnWidth = getColumnWidth(column.id);
                         return (
