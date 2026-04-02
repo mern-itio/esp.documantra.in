@@ -692,6 +692,24 @@ const updateOrganizationVerficationStatus = async (orgId, status, remark) => {
     const result = await Organization.findByIdAndUpdate(orgId, payload, { new: true });
     return result;
 };
+const removeEnvelopeFromFolder = async (folderId, envelopeId) => {
+    const objFolderId = new mongoose.Types.ObjectId(folderId);
+    const objEnvelopeId = new mongoose.Types.ObjectId(envelopeId);
+    const result = await folderEnvelope.deleteMany({ folderId: objFolderId, envelopeId: objEnvelopeId });
+    return result.deletedCount > 0;
+};
+const removeUserFromFolder = async (folderId, userId) => {
+    const objFolderId = new mongoose.Types.ObjectId(folderId);
+    const objUserId = new mongoose.Types.ObjectId(userId);
+    const result = await OrgFolderShare.deleteMany({ folderId: objFolderId, sharedWithId: objUserId });
+    return result.deletedCount > 0;
+};
+const removeRoleFromFolder = async (folderId, roleId) => {
+    const objFolderId = new mongoose.Types.ObjectId(folderId);
+    const objRoleId = new mongoose.Types.ObjectId(roleId);
+    const result = await OrgFolderShare.deleteMany({ folderId: objFolderId, sharedWithId: objRoleId });
+    return result.deletedCount > 0;
+}
 
 module.exports = {
     createOrganization,
@@ -723,5 +741,8 @@ module.exports = {
     getRolesandUsersByFolderId,
     insertEnvelopesToFolder,
     checkExistingEnvelope,
-    updateOrganizationVerficationStatus
+    updateOrganizationVerficationStatus,
+    removeEnvelopeFromFolder,
+    removeUserFromFolder,
+    removeRoleFromFolder
 };

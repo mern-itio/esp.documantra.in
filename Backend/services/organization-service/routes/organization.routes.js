@@ -27,7 +27,10 @@ const { createOrganization,
         fetchNoneFolderEnvelopes,
         fetchRolesandUsers,
         insertEnvelopesToFolder,
-        removeMemberFromOrganization
+        removeMemberFromOrganization,
+        removeEnvelopeFromFolder,
+        removeUserFromFolder,
+        removeRoleFromFolder
         } = require('../controllers/organizationController');
 //upload.array('documents')
 router.post('/create', createOrganization);
@@ -52,6 +55,9 @@ router.post('/invitation/accept/:invitationId', acceptInvitation);
 router.post('/invitation/reject/:invitationId', rejectInvitation);
 router.post('/share-folder',shareFolder);
 router.get('/fetch-folder-envelopes/:folderId',fetchEnvelopesByFolder);
+router.delete('/remove-envelope/:folderId/:envelopeId', removeEnvelopeFromFolder);
+router.delete('/remove-user/:folderId/:userId', removeUserFromFolder);
+router.delete('/remove-role/:folderId/:roleId', removeRoleFromFolder);
 router.get('/fetch-non-folder-envelopes/:folderId',fetchNoneFolderEnvelopes);
 router.get('/fetch-roles-and-users/:folderId', fetchRolesandUsers );
 router.post('/insert-envelopes/:folderId', insertEnvelopesToFolder);
