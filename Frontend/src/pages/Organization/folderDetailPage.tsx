@@ -169,7 +169,7 @@ const handleRemoveRole = async (roleId: string) => {
   }
 };
 
-  const [activeTab, setActiveTab] = useState('envelopes');
+  const [activeTab, setActiveTab] = useState<TabKey>('envelopes');
   // Table controls
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Sent' | 'Completed' | 'Draft'>('All');
@@ -287,11 +287,11 @@ const handleRemoveRole = async (roleId: string) => {
   const toggleColumn = (columnId: string) => {
     setColumnConfigMap(prev => {
       const current = prev[activeTab] || [];
-      const updated = current.map(col => {
+      const updated = current.map((col: ColumnConfig) => {
         if (col.id !== columnId) return col;
         const nextVisible = !col.visible;
         if (nextVisible) {
-          const visibleCount = current.filter(c => c.visible).length;
+          const visibleCount = current.filter((c: ColumnConfig) => c.visible).length;
           if (visibleCount >= 5) return col;
         }
         return { ...col, visible: nextVisible };
@@ -729,8 +729,8 @@ const handleRemoveRole = async (roleId: string) => {
                 You can select up to 3 columns.
               </p>
               <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                {(columnConfigMap[activeTab] || []).map((column) => {
-                  const visibleCount = (columnConfigMap[activeTab] || []).filter(c => c.visible).length;
+                {(columnConfigMap[activeTab] || []).map((column: ColumnConfig) => {
+                  const visibleCount = (columnConfigMap[activeTab] || []).filter((c: ColumnConfig) => c.visible).length;
                   const isDisabled = !column.visible && visibleCount >= 3;
                   return (
                     <label
