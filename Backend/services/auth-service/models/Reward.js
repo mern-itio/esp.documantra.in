@@ -5,7 +5,7 @@ const RewardSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     kind: {
       type: String,
-      enum: ['referrer_bonus', 'referee_welcome'],
+      enum: ['referrer_bonus', 'referee_welcome', 'referrer_milestone'],
       required: true,
     },
     status: { type: String, enum: ['pending', 'unlocked'], default: 'pending', index: true },

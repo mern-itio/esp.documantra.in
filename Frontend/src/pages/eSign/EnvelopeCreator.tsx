@@ -39,6 +39,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
+import { isAuthMethodFreeViaReferralPerk } from '../../utils/referralAuthPerks';
 import toast from 'react-hot-toast';
 // import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../components/AuthService/AuthContext';
@@ -2684,11 +2686,10 @@ const EnvelopeCreator: React.FC = () => {
       setShowSendConfirmationModal(false);
       setSending(false);
       if (milestone?.achieved) {
-        const credits = Number(milestone?.rewardCredits || 10);
         await Swal.fire({
           icon: 'success',
           title: 'Milestone achieved!',
-          html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+          html: referralMilestoneSwalHtml(milestone),
           confirmButtonText: 'Awesome',
           confirmButtonColor: '#260559',
         });
@@ -2706,12 +2707,13 @@ const EnvelopeCreator: React.FC = () => {
           // Include all recipients with authentication, including email verification
           const recipientsWithAuth = recipients.filter(r => parseAuthentication(r.authentication).length > 0);
           if (recipientsWithAuth.length > 0) {
+            const planForConsume = subscriptionPlan || SubscriptionStorage.getPlan();
             await Promise.all(recipientsWithAuth.flatMap(recipient => {
               const authArray = parseAuthentication(recipient.authentication);
               return authArray.map(authId => {
                 const authMethod = authMethods.find(m => m.id === authId);
                 const cost = authMethod?.cost || 0;
-                if (cost > 0) {
+                if (cost > 0 && !isAuthMethodFreeViaReferralPerk(authMethod, planForConsume)) {
                   return subscriptionApi.post('/usage/consume', {
                     action: 'esign:envelopeSend',
                     credits: cost,
@@ -2781,8 +2783,9 @@ const EnvelopeCreator: React.FC = () => {
     }
   };
 
-  // Calculate total cost based on authentication methods
+  // Calculate total cost based on authentication methods (referral perks can waive a named method)
   const calculateTotalCost = (): number => {
+    const plan = subscriptionPlan || SubscriptionStorage.getPlan();
     let total = 0;
 
     recipients.forEach((recipient) => {
@@ -2795,6 +2798,7 @@ const EnvelopeCreator: React.FC = () => {
         const authMethod = authMethods.find((m) => m.id === methodId);
 
         if (authMethod) {
+          if (isAuthMethodFreeViaReferralPerk(authMethod, plan)) return;
           total += authMethod.cost || 0;
         }
       });
@@ -7218,7 +7222,13 @@ const EnvelopeCreator: React.FC = () => {
                             const authMethodList = authArray.map(authId =>
                               authMethods.find(m => m.id === authId)
                             ).filter(Boolean);
-                            const totalCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
+                            const planRow = subscriptionPlan || SubscriptionStorage.getPlan();
+                            const rawLineCost = authMethodList.reduce((sum, method) => sum + (method?.cost || 0), 0);
+                            const effectiveLineCost = authMethodList.reduce((sum, method) => {
+                              if (!method) return sum;
+                              if (isAuthMethodFreeViaReferralPerk(method, planRow)) return sum;
+                              return sum + (method.cost || 0);
+                            }, 0);
                             const authDisplay = authMethodList.map(m => m?.name).join(', ');
 
                             return (
@@ -7253,8 +7263,18 @@ const EnvelopeCreator: React.FC = () => {
                                     </button>
                                   </div>
                                 </div>
-                                <div className="col-span-2 text-sm font-semibold text-purple-700 text-right flex items-center justify-end">
-                                  {totalCost > 0 ? `${totalCost}` : '0'} <span className="text-xs text-gray-500 ml-1">credits</span>
+                                <div className="col-span-2 text-sm font-semibold text-right flex items-center justify-end flex-wrap gap-1">
+                                  {effectiveLineCost === 0 && rawLineCost > 0 ? (
+                                    <>
+                                      <span className="text-emerald-700">Free</span>
+                                      <span className="text-xs font-normal text-gray-500">(referral)</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-purple-700">{effectiveLineCost > 0 ? `${effectiveLineCost}` : '0'}</span>
+                                      <span className="text-xs text-gray-500 font-normal ml-1">credits</span>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             );

@@ -23,6 +23,7 @@ import { useApp } from '../../context/AppContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
+import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 import ActionButton from '../../components/ESign/ActionButton';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 
@@ -344,11 +345,10 @@ const handleSendEnvelope = async () => {
         const milestone = resp?.data?.referralMilestone;
         if (milestone?.achieved) {
           setSending(false);
-          const credits = Number(milestone?.rewardCredits || 10);
           await Swal.fire({
             icon: 'success',
             title: 'Milestone achieved!',
-            html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+            html: referralMilestoneSwalHtml(milestone),
             confirmButtonText: 'Awesome',
             confirmButtonColor: '#260559',
           });

@@ -529,7 +529,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
         </Card>
 
         {/* PDF Viewer with Comments Sidebar */}
-        <div className="flex gap-6">
+       <div className="flex items-start gap-6">
           {/* PDF Viewer */}
           <Card className="flex-1 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -590,7 +590,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
           {/* Comments Sidebar - Always show if there are comments or if comments are allowed */}
           {(comments.length > 0 || documentData?.share.allowComments || documentData?.share.isOwner) && (
-            <Card className="w-100 p-4">
+      <div className="w-[380px] self-start sticky top-6 bg-white shadow-lg rounded-md p-4 max-h-[calc(100vh-3rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium">Comments</h3>
                 <span className="text-sm text-gray-500">{comments.length} comments</span>
@@ -669,22 +669,24 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                           <p>Commenting as: <strong>{userInfo.fullname}</strong></p>
                         </div>
                       ) : (
-                        <div className="flex space-x-2">
-                          <input
+                        <>
+                           <input
                             type="text"
                             placeholder="Your name"
                             value={commentAuthor}
                             onChange={(e) => setCommentAuthor(e.target.value)}
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                          <input
+                         
+                         <input
                             type="email"
                             placeholder="Email"
                             value={commentEmail}
                             onChange={(e) => setCommentEmail(e.target.value)}
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                        </div>
+                        </>
+                       
                       );
                     })()}
                     <textarea
@@ -717,7 +719,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                   </div>
                 )}
               </div>
-            </Card>
+            </div>
           )}
         </div>
 

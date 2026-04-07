@@ -30,6 +30,7 @@ import type { Document, Recipient } from '../../types';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
+import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 type EditorSignatureFieldExt = EditorSignatureField & {
@@ -755,11 +756,10 @@ const PowerFormCreate: React.FC = () => {
       const milestone = resp?.data?.referralMilestone;
       if (milestone?.achieved) {
         setSending(false);
-        const credits = Number(milestone?.rewardCredits || 10);
         await Swal.fire({
           icon: 'success',
           title: 'Milestone achieved!',
-          html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+          html: referralMilestoneSwalHtml(milestone),
           confirmButtonText: 'Awesome',
           confirmButtonColor: '#260559',
         });

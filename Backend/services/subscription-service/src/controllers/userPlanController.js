@@ -83,6 +83,7 @@ const getMyPlan = async (req, res) => {
       periodEnd: subscription.periodEnd || null,
       nextBillingAt: subscription.nextBillingAt || null,
       isFree: (planTemplate?.type === 'free') || (planTemplate?.pricePerPeriod === 0),
+      referralPerks: Array.isArray(subscription.referralPerks) ? subscription.referralPerks : [],
     };
 
     return res.status(200).json({ status: 200, message: 'User plan fetched', data: response });
@@ -161,6 +162,55 @@ const grantCreditsInternal = async (req, res) => {
     });
   } catch (error) {
     console.error('grantCreditsInternal error:', error);
+    return res.status(500).json({ status: 500, message: error.message || 'Server error', data: null });
+  }
+};
+
+// POST /user-plan/internal/referral-perk — auth-service referral rewards (non-credit benefits).
+const grantReferralPerkInternal = async (req, res) => {
+  try {
+    const internalKey = req.headers['x-internal-key'] || req.headers['x-service-key'];
+    if (!process.env.INTERNAL_SERVICE_KEY || internalKey !== process.env.INTERNAL_SERVICE_KEY) {
+      return res.status(403).json({ status: 403, message: 'Forbidden', data: null });
+    }
+
+    const { userId, referralId, perkType, label, value, reason } = req.body || {};
+    if (!userId || !mongoose.Types.ObjectId.isValid(String(userId))) {
+      return res.status(400).json({ status: 400, message: 'userId required', data: null });
+    }
+    const uid = new mongoose.Types.ObjectId(String(userId));
+    const perk = {
+      type: perkType || 'custom',
+      label: label || 'Referral benefit',
+      value: value && typeof value === 'object' ? value : {},
+      source: 'referral',
+      referralId: referralId && mongoose.Types.ObjectId.isValid(String(referralId))
+        ? new mongoose.Types.ObjectId(String(referralId))
+        : null,
+      reason: reason || '',
+      createdAt: new Date(),
+    };
+
+    const updated = await Subscription.findOneAndUpdate(
+      { userId: uid },
+      {
+        $setOnInsert: { userId: uid, status: 'active' },
+        $push: { referralPerks: perk },
+      },
+      { new: true, upsert: true }
+    );
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Referral perk recorded',
+      data: {
+        userId: String(uid),
+        perk,
+        referralPerks: updated?.referralPerks || [],
+      },
+    });
+  } catch (error) {
+    console.error('grantReferralPerkInternal error:', error);
     return res.status(500).json({ status: 500, message: error.message || 'Server error', data: null });
   }
 };
@@ -387,5 +437,13 @@ const confirmCheckoutSession = async (req, res) => {
   }
 };
 
-module.exports = { getMyPlan, createFreePlanForUser, grantCreditsInternal, upgradePlan, createCheckoutSession, confirmCheckoutSession };
+module.exports = {
+  getMyPlan,
+  createFreePlanForUser,
+  grantCreditsInternal,
+  grantReferralPerkInternal,
+  upgradePlan,
+  createCheckoutSession,
+  confirmCheckoutSession,
+};
 

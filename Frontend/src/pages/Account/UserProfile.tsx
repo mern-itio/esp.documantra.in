@@ -209,13 +209,7 @@ const UserProfile: React.FC = () => {
                 {planName}
               </div>
             )}
-            <button
-              onClick={isEditing ? handleCancelEdit : handleEditClick}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              title={isEditing ? 'Cancel Edit' : 'Edit Profile'}
-            >
-              {isEditing ? <X className="h-5 w-5" /> : <Edit2 className="h-5 w-5" />}
-            </button>
+           
           </div>
         </div>
 
@@ -228,10 +222,22 @@ const UserProfile: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
-          <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm xl:col-span-7">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Personal Information</h3>
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="mt-6 space-y-6">
+          <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Personal Information</h3>
+              </div>
+             <button
+              onClick={isEditing ? handleCancelEdit : handleEditClick}
+              className="inline-flex h-10 w-10 items-center justify-center text-black hover:bg-slate-50 hover:text-slate-900"
+              title={isEditing ? 'Cancel Edit' : 'Edit Profile'}
+            >
+              {isEditing ? <X className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+            </button>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600">Full name</label>
                 {isEditing ? (
@@ -306,8 +312,8 @@ const UserProfile: React.FC = () => {
               <div className="md:col-span-2">
                 <label className="mb-1 block text-xs font-semibold text-slate-600">Address</label>
                 {isEditing ? (
-                  <input
-                    type="text"
+                  <textarea
+                    rows={3}
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
@@ -319,81 +325,71 @@ const UserProfile: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {isEditing && (
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  className="rounded-lg bg-[#4D0080] px-5 py-3 text-sm font-semibold text-white hover:bg-[#3a0061] disabled:opacity-60"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save Profile'}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </section>
 
-          <section className="space-y-6 xl:col-span-5">
-            <div className={`rounded-md border bg-white p-6 shadow-sm ${twoFaEnabled ? 'border-emerald-200' : 'border-slate-200'}`}>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Security</h3>
+          <section className="grid gap-4 lg:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => navigate('/account/security')}
+              className="group rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-[#4D0080] hover:bg-white"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#4D0080]">Security</p>
+              <h4 className="mt-3 text-lg font-semibold text-slate-900">Two-factor authentication</h4>
               <p className="mt-2 text-sm text-slate-600">
-                {twoFaEnabled
-                  ? `Two-factor authentication is enabled via ${twoFaMethod === 'sms' ? 'Phone OTP' : 'Email code'}.`
-                  : 'Two-factor authentication is currently disabled.'}
+                {twoFaEnabled ? `Enabled via ${twoFaMethod === 'sms' ? 'SMS OTP' : 'Email code'}.` : 'Currently disabled.'}
               </p>
-              <div className="mt-4 flex items-center justify-between">
-                <span className={`inline-flex items-center gap-2 text-xs font-semibold ${twoFaEnabled ? 'text-emerald-700' : 'text-slate-500'}`}>
-                  <span className={`h-2 w-2 rounded-full ${twoFaEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                  {twoFaEnabled ? 'ENABLED' : 'NOT ENABLED'}
-                </span>
-                <button
-                  onClick={() => navigate('/account/security')}
-                  className="rounded-lg bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a0061]"
-                >
-                  Manage
-                </button>
-              </div>
-            </div>
+              <span className="mt-5 inline-flex rounded-full bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-[#3a0061]">
+                Manage Security
+              </span>
+            </button>
 
-            <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Sessions</h3>
-              <p className="mt-2 text-sm text-slate-600">Control logged-in devices and terminate suspicious sessions.</p>
-              <button
-                onClick={() => navigate('/account/session-management')}
-                className="mt-4 rounded-lg bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a0061]"
-              >
+            <button
+              type="button"
+              onClick={() => navigate('/account/session-management')}
+              className="group rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-[#4D0080] hover:bg-white"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#4D0080]">Sessions</p>
+              <h4 className="mt-3 text-lg font-semibold text-slate-900">Active devices</h4>
+              <p className="mt-2 text-sm text-slate-600">Review and end active sessions for extra account safety.</p>
+              <span className="mt-5 inline-flex rounded-full bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-[#3a0061]">
                 Manage Sessions
-              </button>
-            </div>
+              </span>
+            </button>
 
-            <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Account Plan</h3>
-              <p className="mt-2 text-sm text-slate-700">
-                Current plan: <span className="font-semibold">{planName || 'Free'}</span>
-              </p>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <button
-                  onClick={() => navigate('/subscription-management')}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                >
-                  Manage Subscription
-                </button>
-                <button
-                  onClick={() => navigate('/credits-usage')}
-                  className="rounded-lg bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3a0061]"
-                >
-                  View Credit Usage
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/subscription-management')}
+              className="group rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-[#4D0080] hover:bg-white"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#4D0080]">Account Plan</p>
+              <h4 className="mt-3 text-lg font-semibold text-slate-900">{planName || 'Free Plan'}</h4>
+              <p className="mt-2 text-sm text-slate-600">Manage billing, plan upgrades, and credit usage from one place.</p>
+              <span className="mt-5 inline-flex rounded-full bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-[#3a0061]">
+                Manage Plan
+              </span>
+            </button>
           </section>
         </div>
-
-        {isEditing && (
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              className="rounded-lg bg-[#4D0080] px-5 py-3 text-sm font-semibold text-white hover:bg-[#3a0061] disabled:opacity-60"
-              onClick={handleSaveProfile}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving...' : 'Save Profile'}
-            </button>
-            <button
-              className="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              onClick={handleCancelEdit}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </div>
 
       {/* OTP Modal */}

@@ -63,9 +63,7 @@ const RolePage: React.FC = () => {
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <div className="w-10 h-10 rounded-xl bg-[#260559] flex items-center justify-center shadow-sm">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
+             
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Roles & Permissions</h1>
                 <p className="text-sm text-gray-500 mt-0.5">
