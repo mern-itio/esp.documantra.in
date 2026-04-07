@@ -470,29 +470,6 @@ const handleRemoveRole = async (roleId: string) => {
           <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="bg-gray-50">
               <tr>
-                {activeTab === 'envelopes' && (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </>
-                )}
-                {activeTab === 'users' && (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </>
-                )}
-                {activeTab === 'roles' && (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </>
-                )}
                 {getVisibleColumns(activeTab).map((column) => {
                   const columnWidth = getColumnWidth(column.id);
                   const isResizing = resizingColumn === column.id;
@@ -515,6 +492,9 @@ const handleRemoveRole = async (roleId: string) => {
                     </th>
                   );
                 })}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                  Action
+                </th>
               </tr>
             </thead>
 
@@ -522,7 +502,7 @@ const handleRemoveRole = async (roleId: string) => {
                 {pageItems.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={Math.max(1, getVisibleColumns(activeTab).length)}
+                      colSpan={Math.max(1, getVisibleColumns(activeTab).length + 1)}
                       className="px-6 py-8 text-center text-sm text-gray-500"
                     >
                       No data found
@@ -531,78 +511,6 @@ const handleRemoveRole = async (roleId: string) => {
                 ) : (
                   pageItems.map((item: any) => (
                     <tr key={item._id} className="hover:bg-gray-50">
-
-                      {activeTab === 'envelopes' && (
-                        <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${
-                              item.status === 'Completed'
-                                ? 'bg-green-100 text-green-800'
-                                : item.status === 'Sent'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.createdAt}
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            <button
-                              onClick={() => handleRemoveEnvelope(item._id)}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> Remove
-                            </button>
-                          </td>
-                        </>
-                      )}
-
-                      {activeTab === 'users' && (
-                        <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.email}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.role}
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            <button
-                              onClick={() => handleRemoveUser(item._id)}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> Remove
-                            </button>
-                          </td>
-                        </>
-                      )}
-
-                      {activeTab === 'roles' && (
-                        <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {item.description}
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            <button
-                              onClick={() => handleRemoveRole(item._id)}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> Remove
-                            </button>
-                          </td>
-                        </>
-                      )}
-
                       {getVisibleColumns(activeTab).map((column) => {
                         const columnWidth = getColumnWidth(column.id);
                         return (
@@ -615,6 +523,35 @@ const handleRemoveRole = async (roleId: string) => {
                           </td>
                         );
                       })}
+                      <td className="px-6 py-4 text-sm">
+                        {activeTab === 'envelopes' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEnvelope(item._id)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Remove
+                          </button>
+                        )}
+                        {activeTab === 'users' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveUser(item._id)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Remove
+                          </button>
+                        )}
+                        {activeTab === 'roles' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRole(item._id)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Remove
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -726,12 +663,12 @@ const handleRemoveRole = async (roleId: string) => {
                 <button onClick={() => setIsColumnModalOpen(false)} className="text-gray-500 hover:text-gray-800">✕</button>
               </div>
               <p className="text-xs text-gray-500 mb-4">
-                You can select up to 3 columns.
+                You can show up to 5 columns (plus Action).
               </p>
               <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                 {(columnConfigMap[activeTab] || []).map((column: ColumnConfig) => {
                   const visibleCount = (columnConfigMap[activeTab] || []).filter((c: ColumnConfig) => c.visible).length;
-                  const isDisabled = !column.visible && visibleCount >= 3;
+                  const isDisabled = !column.visible && visibleCount >= 5;
                   return (
                     <label
                       key={column.id}

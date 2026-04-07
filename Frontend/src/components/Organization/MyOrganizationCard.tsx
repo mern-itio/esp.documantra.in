@@ -198,7 +198,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#260559] text-white hover:bg-[#34106a] transition-colors"
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
-            View Details
+            View
           </button>
 
           {/* Get Verified */}
@@ -248,11 +248,12 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
             </button>
 
             {settingsOpen && isActive && (
-              <div className="absolute left-0 bottom-full mb-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 z-[100] py-1">
+              <div className="absolute left-0 bottom-full mb-2 w-52 bg-white rounded-sm shadow-lg border border-gray-100 z-[100] py-1">
                 <button
                   onClick={(e) => { e.stopPropagation(); setSettingsOpen(false); onEdit?.(); }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex border-b border-gray-100 items-center gap-2.5 px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                 >
+                
                   <Edit className="w-3.5 h-3.5 text-gray-400" />
                   Edit Organization
                 </button>
@@ -262,7 +263,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                     setSettingsOpen(false);
                     navigate(`/organization/roles/${organization._id}`);
                   }}
-                  className="w-full flex items-center justify-between px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <span className="flex items-center gap-2.5">
                     <PersonStanding className="w-3.5 h-3.5 text-gray-400" />
@@ -273,7 +274,7 @@ export const MyOrganizationCard: React.FC<MyOrganizationCardProps> = ({
                 <div className="border-t border-gray-100 my-1" />
                 <button
                   onClick={(e) => { e.stopPropagation(); setSettingsOpen(false); onDelete?.(); }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete Organization

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, X, Trash2, Search, UserPlus, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Plus, X, Trash2, Search, UserPlus, Check, ArrowLeft, Mail, User, ChevronDown } from 'lucide-react';
 import type { Organization } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
 import CreateRoleModal from './CreateRoleModal';
@@ -11,13 +11,130 @@ interface TeamMember {
   email: string;
   role: string;
   avatar?: string;
-  roleId?: { _id: string; name: string; description?: string;},
-  status?:string;
+  roleId?: { _id: string; name: string; description?: string; },
+  status?: string;
 }
 interface Role {
   _id: string;
   name: string;
 }
+
+interface CustomRoleDropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+  onAddRole: () => void;
+  roles: Role[];
+  placeholder?: string;
+  small?: boolean;
+}
+
+const CustomRoleDropdown: React.FC<CustomRoleDropdownProps> = ({ 
+  value, 
+  onChange, 
+  onAddRole, 
+  roles, 
+  placeholder = 'Select a role',
+  small = false 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const selectedRole = roles.find(r => r._id === value);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // Open upward if not enough space below (less than 250px for dropdown)
+      setOpenUp(spaceBelow < 280 && spaceAbove > spaceBelow);
+    }
+  }, [isOpen]);
+
+  const handleSelect = (roleId: string) => {
+    if (roleId === 'add-role') {
+      onAddRole();
+      setIsOpen(false);
+    } else {
+      onChange(roleId);
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative w-full">
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between ${
+          small 
+            ? 'px-2 py-1 text-xs border border-gray-300 rounded' 
+            : 'px-3 py-2.5 border-2 border-gray-200 rounded-md'
+        } bg-white font-medium text-gray-800 hover:border-gray-300 transition-all`}
+      >
+        <span className={selectedRole ? 'text-gray-900 font-semibold' : 'text-gray-500'}>
+          {selectedRole ? selectedRole.name : placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className={`absolute z-50 w-full ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden`}>
+          {/* Roles List */}
+          <div className="max-h-48 overflow-y-auto">
+            {roles.length > 0 ? (
+              roles.map((role) => (
+                <button
+                  key={role._id}
+                  onClick={() => handleSelect(role._id)}
+                  className={`w-full text-left px-4 py-3 text-sm font-medium transition-all border-b border-gray-100 last:border-b-0 ${
+                    value === role._id
+                      ? 'bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white'
+                      : 'text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{role.name}</span>
+                    {value === role._id && <Check className="w-4 h-4" />}
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-3 text-xs text-gray-500">No roles available</div>
+            )}
+          </div>
+
+          {/* Separator */}
+          <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
+
+          {/* Add Role Option */}
+          <button
+            onClick={() => handleSelect('add-role')}
+            className="w-full text-left px-4 py-3 text-sm font-semibold text-[#3E2B66] hover:bg-purple-50 transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create New Role</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface TeamsManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -132,7 +249,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
     try {
       // Placeholder API call - replace with actual endpoint
       const response = await organizationApi.get(`/api/organization/fetch-roles/${organization?._id}`);
-      
+
       if (response.status === 200) {
         const payload = response.data?.data ?? response.data;
         setRoles(Array.isArray(payload) ? payload : []);
@@ -212,7 +329,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
     } catch (error) {
       console.error('Error adding members:', error);
       alert('Failed to add one or more members. Please try again.');
-    } finally{
+    } finally {
       setAddingMember(false);
     }
   };
@@ -255,13 +372,22 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl mx-4  flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center p-6 justify-between border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
-              <Users className="w-5 h-5 text-white" />
-            </div>
+
+            <button
+              onClick={() => {
+                setShowAddMember(false);
+                setSelectedUsers([]);
+                setSearchQuery('');
+                setAddMemberMode('existing');
+              }}
+            >
+              <ArrowLeft className='w-4 h-4 flex' />
+            </button>
+
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Team Management</h2>
               <p className="text-sm text-gray-600">{organization?.name}</p>
@@ -327,17 +453,16 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                           <p className="text-sm text-gray-600">{member.email}</p>
                         </div>
                         <div
-                          className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                            member.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-700'
-                              : member.status === 'PENDING'
+                          className={`px-3 py-1 text-xs font-semibold rounded-full ${member.status === 'ACTIVE'
+                            ? 'bg-green-100 text-green-700'
+                            : member.status === 'PENDING'
                               ? 'bg-yellow-100 text-yellow-700'
                               : member.status === 'DISABLED'
-                              ? 'bg-gray-100 text-gray-700'
-                              : member.status === 'REJECTED'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}
+                                ? 'bg-gray-100 text-gray-700'
+                                : member.status === 'REJECTED'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-blue-100 text-blue-700'
+                            }`}
                         >
                           {member.status}
                         </div>
@@ -374,193 +499,233 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                     </button>
                   </div>
                 </div>
-              ):(
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="w-5 h-5 text-[#3E2B66]" />
-                    <h3 className="font-semibold text-gray-900">Add Team Member</h3>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowAddMember(false);
-                      setSelectedUsers([]);
-                      setSearchQuery('');
-                      setAddMemberMode('existing');
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                  >
-                    <span>← Back</span>
-                  </button>
-                </div>
-
-                {/* Tabs for Existing vs New */}
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => {
-                      setAddMemberMode('existing');
-                      setSelectedUsers([]);
-                      setNewMemberData({ name: '', email: '', roleId: roles[0]?._id ?? '' });
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      addMemberMode === 'existing'
-                        ? 'bg-[#3E2B66] text-white'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    Choose Existing
-                  </button>
-                </div>
-
-                {/* Choose Existing User */}
-                {addMemberMode === 'existing' && (
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={availableSearchQuery}
-                        onChange={(e) => setAvailableSearchQuery(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                        placeholder="Search by name or email (min 2 chars)..."
-                      />
-                    </div>
-
-                    {availableSearchQuery.trim().length < 2 ? (
-                      <p className="text-sm text-gray-500">Type at least 2 characters to search for an existing user.</p>
-                    ) : availableLoading ? (
-                      <p className="text-sm text-gray-500">Searching users...</p>
-                    ) : availableUsers.length > 0 ? (
-                      <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg">
-                        {availableUsers.map((user) => (
-                          <div
-                            key={user._id}
-                            onClick={() => {
-                              setSelectedUsers((prev) => {
-                                if (prev.includes(user._id)) {
-                                  setSelectedUserRoles((r) => {
-                                    const copy = { ...r };
-                                    delete copy[user._id];
-                                    return copy;
-                                  });
-                                  return prev.filter((id) => id !== user._id);
-                                }
-                                setSelectedUserRoles((r) => ({ ...r, [user._id]: roles[0]?._id || '' }));
-                                return [...prev, user._id];
-                              });
-                            }}
-                            className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 flex items-center justify-between ${
-                              selectedUsers.includes(user._id) ? 'bg-blue-50' : ''
-                            }`}
-                          >
-                            <div>
-                              <p className="font-medium text-gray-900">{user.name || user.fullname}</p>
-                              <p className="text-sm text-gray-600">{user.email}</p>
-                            </div>
-                            <div className="ml-2 flex items-center gap-2">
-                              {selectedUsers.includes(user._id) ? (
-                                <>
-                                  <select
-                                    value={selectedUserRoles[user._id] || (roles[0]?._id ?? '')}
-                                    onChange={(e) =>
-                                      setSelectedUserRoles((prev) => ({ ...prev, [user._id]: e.target.value }))
-                                    }
-                                    className="px-2 py-1 border border-gray-300 rounded"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {roles.map((r) => (
-                                      <option key={r._id} value={r._id}>
-                                        {r.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <Check className="w-5 h-5 text-green-600" />
-                                </>
-                              ) : null}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-800">No user found matching "{availableSearchQuery.trim()}".</p>
-                        <button
-                          onClick={() => {
-                            setAddMemberMode('new');
-                            setNewMemberData({
-                              name: availableSearchQuery.trim(),
-                              email: availableSearchQuery.includes('@') ? availableSearchQuery.trim() : '',
-                              roleId: roles[0]?._id || ''
-                            });
-                          }}
-                          className="mt-2 px-3 py-2 bg-[#3E2B66] text-white rounded-lg font-semibold hover:bg-[#260559]"
-                        >
-                          Invite user
-                        </button>
-                      </div>
-                    )}
-
-                    {selectedUsers.length > 0 && (
-                      <button
-                        onClick={handleAddExistingMember}
-                        disabled={addingMember}
-                        className={`w-full px-4 py-2 rounded-lg font-semibold transition-colors ${
-                          addingMember
-                            ? 'bg-gray-400 cursor-not-allowed text-white'
-                            : 'bg-[#3E2B66] text-white hover:bg-[#260559]'
-                        }`}
-                      >
-                        {addingMember
-                          ? 'Adding...'
-                          : `Add Selected Member${selectedUsers.length > 1 ? ` (${selectedUsers.length})` : ''}`}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Create New Member */}
-                {addMemberMode === 'new' && (
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={newMemberData.name}
-                      onChange={(e) => setNewMemberData({ ...newMemberData, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                      placeholder="Name"
-                    />
-                    <input
-                      type="email"
-                      value={newMemberData.email}
-                      onChange={(e) => setNewMemberData({ ...newMemberData, email: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                      placeholder="Email"
-                    />
-                    <select
-                      value={newMemberData.roleId}
-                      onChange={(e) => setNewMemberData({ ...newMemberData, roleId: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                    >
-                      {roles.length > 0 ? (
-                        roles.map((r) => (
-                          <option key={r._id} value={r._id}>
-                            {r.name}
-                          </option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="Member">Member</option>
-                          <option value="Admin">Admin</option>
-                        </>
-                      )}
-                    </select>
+              ) : (
+                <div className="space-y-4">
+                  {/* Tab Switcher */}
+                  <div className="flex gap-2 bg-gray-100 p-1.5 rounded-lg w-fit">
                     <button
-                      onClick={handleCreateNewMember}
-                      className="w-full px-4 py-2 bg-[#3E2B66] text-white rounded-lg font-semibold hover:bg-[#260559] transition-colors"
+                      onClick={() => setAddMemberMode('existing')}
+                      className={`px-4 py-2 rounded-md font-semibold text-sm transition-colors ${
+                        addMemberMode === 'existing'
+                          ? 'bg-white text-[#3E2B66] shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
                     >
-                      Create & Add Member
+                      <span className="flex items-center gap-2">
+                        <UserPlus className="w-4 h-4" />
+                        Add Existing
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setAddMemberMode('new')}
+                      className={`px-4 py-2 rounded-md font-semibold text-sm transition-colors ${
+                        addMemberMode === 'new'
+                          ? 'bg-white text-[#3E2B66] shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Invite New
+                      </span>
                     </button>
                   </div>
-                )}
-              </div>
+
+                  {/* Existing Member Mode */}
+                  {addMemberMode === 'existing' && (
+                    <div className="bg-gradient-to-br from-[#f8f7ff] to-white border border-[#e8e0fb] rounded-xl p-5 space-y-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2">Search User</label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#3E2B66]" />
+                          <input
+                            type="text"
+                            value={availableSearchQuery}
+                            onChange={(e) => setAvailableSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg bg-white text-sm"
+                            placeholder="Type name or email..."
+                          />
+                        </div>
+                        {availableSearchQuery.trim().length < 2 && (
+                          <p className="text-xs text-gray-500 mt-1.5">Enter at least 2 characters</p>
+                        )}
+                      </div>
+
+                      {/* Results */}
+                      {availableSearchQuery.trim().length >= 2 && (
+                        <div>
+                          {availableLoading ? (
+                            <div className="text-center py-8">
+                              <div className="inline-block animate-spin">
+                                <div className="w-4 h-4 border-2 border-[#3E2B66] border-t-transparent rounded-full"></div>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-2">Searching...</p>
+                            </div>
+                          ) : availableUsers.length > 0 ? (
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                              {availableUsers.map((user, index) => (
+                                <div
+                                  key={user._id}
+                                  onClick={() => {
+                                    setSelectedUsers((prev) => {
+                                      if (prev.includes(user._id)) {
+                                        setSelectedUserRoles((r) => {
+                                          const copy = { ...r };
+                                          delete copy[user._id];
+                                          return copy;
+                                        });
+                                        return prev.filter((id) => id !== user._id);
+                                      }
+                                      setSelectedUserRoles((r) => ({ ...r, [user._id]: roles[0]?._id || '' }));
+                                      return [...prev, user._id];
+                                    });
+                                  }}
+                                  className={`p-3 cursor-pointer transition-colors ${
+                                    index !== availableUsers.length - 1 ? 'border-b border-gray-100' : ''
+                                  } ${selectedUsers.includes(user._id) ? 'bg-[#f0edff]' : 'hover:bg-gray-50'}`}
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#260559] to-[#3E2B66] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                        {(user.name || user.fullname)?.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-semibold text-gray-900 text-sm truncate">{user.name || user.fullname}</p>
+                                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                      </div>
+                                    </div>
+                                    {selectedUsers.includes(user._id) && (
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="w-32">
+                                          <CustomRoleDropdown
+                                            value={selectedUserRoles[user._id] || (roles[0]?._id ?? '')}
+                                            onChange={(newValue) =>
+                                              setSelectedUserRoles((prev) => ({ ...prev, [user._id]: newValue }))
+                                            }
+                                            onAddRole={() => setShowCreateRoleModal(true)}
+                                            roles={roles}
+                                            placeholder="Select role"
+                                            small={true}
+                                          />
+                                        </div>
+                                        <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-6 text-center bg-blue-50 border border-blue-200 rounded-lg">
+                              <p className="text-sm text-blue-800 font-medium mb-3">No users found</p>
+                              <button
+                                onClick={() => {
+                                  setAddMemberMode('new');
+                                  setNewMemberData({
+                                    name: availableSearchQuery.trim(),
+                                    email: availableSearchQuery.includes('@') ? availableSearchQuery.trim() : '',
+                                    roleId: roles[0]?._id || ''
+                                  });
+                                }}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-[#3E2B66] text-white rounded-lg font-semibold text-sm hover:bg-[#260559] transition-colors"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Invite as New User
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Add Button */}
+                      {selectedUsers.length > 0 && (
+                        <button
+                          onClick={handleAddExistingMember}
+                          disabled={addingMember}
+                          className={`w-full px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                            addingMember
+                              ? 'bg-gray-400 cursor-not-allowed text-white'
+                              : 'bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white hover:shadow-lg'
+                          }`}
+                        >
+                          {addingMember ? 'Adding...' : `Add ${selectedUsers.length} Member${selectedUsers.length > 1 ? 's' : ''}`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* New Member Mode */}
+                  {addMemberMode === 'new' && (
+                    <div className="bg-gradient-to-br from-[#f8f7ff] to-white border border-[#e8e0fb] rounded-xl p-5 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-800 mb-2">Full Name</label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={newMemberData.name}
+                              onChange={(e) => setNewMemberData({ ...newMemberData, name: e.target.value })}
+                              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm"
+                              placeholder="John Doe"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-800 mb-2">Email Address</label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input
+                              type="email"
+                              value={newMemberData.email}
+                              onChange={(e) => setNewMemberData({ ...newMemberData, email: e.target.value })}
+                              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm"
+                              placeholder="john@example.com"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-800">Assign Role</label>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                          <div className="flex-1 min-w-0">
+                            <CustomRoleDropdown
+                              value={newMemberData.roleId}
+                              onChange={(newValue) => setNewMemberData({ ...newMemberData, roleId: newValue })}
+                              onAddRole={() => setShowCreateRoleModal(true)}
+                              roles={roles}
+                              placeholder="Select a role"
+                              small={false}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-3 pt-2">
+                         
+                        <button
+                          onClick={() => {
+                            setAddMemberMode('existing');
+                            setNewMemberData({ name: '', email: '', roleId: '' });
+                          }}
+                          className=" w-auto px-4 py-2.5 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Back
+                        </button>
+                        <button
+                          onClick={handleCreateNewMember}
+                          className="w-auto px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-md font-semibold text-sm hover:shadow-lg transition-all duration-200"
+                        >
+                          <span className="flex items-center justify-center gap-2">
+                            <Plus className="w-4 h-4" />
+                            Invite Member
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

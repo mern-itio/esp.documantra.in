@@ -132,9 +132,9 @@ const createCheckoutSession = async (req, res) => {
 };
 const createFlexCheckoutSession = async (req, res)=>{
  const {creditPackageId,desiredCreditPricing,desiredCredits} = req.body;
- console.log(creditPackageId);
- console.log(desiredCreditPricing);
- console.log(desiredCredits);
+//  console.log(creditPackageId);
+//  console.log(desiredCreditPricing);
+//  console.log(desiredCredits);
  try{
     if(!stripe){
       return res.status(500).json({ message: 'Stripe is not configured' });
@@ -202,7 +202,7 @@ const createFlexCheckoutSession = async (req, res)=>{
 
 const confirmCheckoutSession = async (req, res) =>{
   try{
-    console.log("Confirming Session");
+    // console.log("Confirming Session");
     if (!stripe) {
       return res.status(500).json({ message: 'Stripe is not configured' });
     }
@@ -211,7 +211,7 @@ const confirmCheckoutSession = async (req, res) =>{
       return res.status(401).json({ status: 401, message: 'Unauthorized', data: null });
     }
     const { creditSessionId } = req.body;
-    console.log('Credit Session Id', creditSessionId);
+    // console.log('Credit Session Id', creditSessionId);
     if (!creditSessionId) {
       return res.status(400).json({ status: 400, message: 'Credit Session Id is required', data: null });
     }
@@ -238,7 +238,7 @@ const confirmCheckoutSession = async (req, res) =>{
 }
 const flexiConfirmCheckoutSession = async(req, res)=>{
   try{
-    console.log("Confirming Session");
+    // console.log("Confirming Session");
     if (!stripe) {
       return res.status(500).json({ message: 'Stripe is not configured' });
     }
@@ -248,7 +248,7 @@ const flexiConfirmCheckoutSession = async(req, res)=>{
     }
     const creditSessionId = req?.body?.flexiSessionId;
 
-    console.log('Credit Session Id', creditSessionId);
+    // console.log('Credit Session Id', creditSessionId);
     if (!creditSessionId) {
       return res.status(400).json({ status: 400, message: 'Credit Session Id is required', data: null });
     }

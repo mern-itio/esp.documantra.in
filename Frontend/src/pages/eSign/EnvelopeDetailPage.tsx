@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import { Download, Printer, ChevronLeft, ExternalLink, CheckCircle2, PenLine, ListOrdered, Info, ArrowLeft, Copy, Check } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 
 declare global {
     interface Window { pdfjsLib: any }
@@ -289,11 +290,10 @@ const EnvelopeDetailPage: React.FC = () => {
                 const resp = await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
                 const milestone = resp?.data?.referralMilestone;
                 if (milestone?.achieved) {
-                  const credits = Number(milestone?.rewardCredits || 10);
                   await Swal.fire({
                     icon: 'success',
                     title: 'Milestone achieved!',
-                    html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+                    html: referralMilestoneSwalHtml(milestone),
                     confirmButtonText: 'Awesome',
                     confirmButtonColor: '#260559',
                   });

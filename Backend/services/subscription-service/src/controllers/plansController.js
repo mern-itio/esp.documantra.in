@@ -20,7 +20,7 @@ const createPlan = async (req, res) => {
       }
     }
 
-    console.log('Creating plan with documentCosts:', payload.documentCosts);
+    // console.log('Creating plan with documentCosts:', payload.documentCosts);
 
     const plan = await PlanTemplate.create({
       name: payload.name,
@@ -36,7 +36,7 @@ const createPlan = async (req, res) => {
       period: payload.period || 'monthly',
     });
     
-    console.log('Plan created:', plan);
+    // console.log('Plan created:', plan);
     
     return res.status(201).json({ status: 201, message: 'Plan created', data: plan });
   } catch (error) {
@@ -120,8 +120,8 @@ const updatePlan = async (req, res) => {
       return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
     }
 
-    console.log('Updating plan with payload:', payload);
-    console.log('documentCosts in payload:', payload.documentCosts);
+    // console.log('Updating plan with payload:', payload);
+    // console.log('documentCosts in payload:', payload.documentCosts);
 
     // Update the plan - ensure documentCosts is properly handled
     const updateData = {
@@ -134,7 +134,7 @@ const updatePlan = async (req, res) => {
       updateData.documentCosts = { credits: 0 };
     }
 
-    console.log('Update data:', updateData);
+    // console.log('Update data:', updateData);
 
     const updatedPlan = await PlanTemplate.findByIdAndUpdate(
       id,
@@ -142,7 +142,7 @@ const updatePlan = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    console.log('Plan updated:', updatedPlan);
+    // console.log('Plan updated:', updatedPlan);
 
     return res.status(200).json({ status: 200, message: 'Plan updated successfully', data: updatedPlan });
   } catch (error) {

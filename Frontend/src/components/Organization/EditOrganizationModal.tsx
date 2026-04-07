@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building, Globe, FileText, X } from 'lucide-react';
+import { Building, X } from 'lucide-react';
 import type { Organization, UpdateOrganizationRequest } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
 
@@ -107,14 +107,14 @@ export const EditOrganizationModal: React.FC<EditOrganizationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-md shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
-              <Building className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Edit Organization</h2>
+
+            <Building className="w-5 h-5 text-[#260559]" />
+
+            <h2 className="text-2xl thankyou-heading font-bold text-gray-900">Edit Organization</h2>
           </div>
           <button
             onClick={onClose}
@@ -128,94 +128,139 @@ export const EditOrganizationModal: React.FC<EditOrganizationModalProps> = ({
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Organization Name <span className="text-red-500">*</span>
-            </label>
+          <div className="relative mb-[10px]">
             <input
+              id="org-name"
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="Enter organization name"
+              className={`peer w-full rounded-lg border px-2 py-2 bg-transparent text-gray-900 text-sm transition-all outline-none ${errors.name ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#3E2B66]'
+                } focus:ring-2 focus:ring-[#3E2B66]/20`}
+              placeholder=" "
               disabled={isLoading}
             />
-            {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
-          </div>
+            <label
+              htmlFor="org-name"
+              className="pointer-events-none absolute left-4 z-10 origin-left bg-white px-1 text-xs text-gray-500 transition-all
+              top-1/2 -translate-y-1/2
+              peer-focus:-top-3 peer-focus:translate-y-0 peer-focus:text-[#260559]
+              peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2
+              peer-not-placeholder-shown:-top-3 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[#260559]"            
+            >
 
-          {/* Logo URL */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Logo URL
+              Organization Name <span className="text-red-500">*</span>
             </label>
-            <input
-              type="url"
-              value={formData.logo}
-              onChange={(e) => handleChange('logo', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent ${
-                errors.logo ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="https://example.com/logo.png"
-              disabled={isLoading}
-            />
-            {errors.logo && <p className="mt-1 text-sm text-red-500">{errors.logo}</p>}
-            {formData.logo && !errors.logo && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-500 mb-2">Preview:</p>
-                <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
-                  <img
-                    src={formData.logo}
-                    alt="Logo preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              </div>
+            {errors.name && (
+              <span className="absolute right-4 top-2 text-xs font-medium text-red-600 bg-white px-1">
+                {errors.name}
+              </span>
             )}
           </div>
 
-          {/* Website */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Website
-            </label>
+          {/* Logo URL */}
+          <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-center">
             <div className="relative">
-              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
+                id="org-logo"
                 type="url"
-                value={formData.website}
-                onChange={(e) => handleChange('website', e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent ${
-                  errors.website ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="https://www.example.com"
+                value={formData.logo}
+                onChange={(e) => handleChange('logo', e.target.value)}
+                className={`peer w-full rounded-lg border px-2 py-2 bg-transparent text-gray-900 transition-all outline-none ${errors.logo ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#3E2B66]'
+                  } focus:ring-2 focus:ring-[#3E2B66]/20`}
+                placeholder=" "
                 disabled={isLoading}
               />
+              <label
+                htmlFor="org-logo"
+                className={`pointer-events-none absolute left-4 z-10 origin-left transition-all bg-white px-1 ${formData.logo ? '-top-3 text-xs text-[#260559]' : 'top-4 text-sm text-gray-500'
+                  } peer-focus:-top-3 peer-focus:text-xs peer-focus:text-[#260559]`}
+              >
+                Logo URL
+              </label>
+              {errors.logo && (
+                <span className="absolute right-4 top-2 text-xs font-medium text-red-600 bg-white px-1">
+                  {errors.logo}
+                </span>
+              )}
             </div>
-            {errors.website && <p className="mt-1 text-sm text-red-500">{errors.website}</p>}
+
+            <div className="w-24 h-24  overflow-hidden bg-white border border-gray-200 shadow-sm">
+              {formData.logo && !errors.logo ? (
+                <img
+                  src={formData.logo}
+                  alt="Logo preview"
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gray-100 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                  no preview
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Website */}
+          <div className="relative mt-[-10px]">
+
+            <input
+              id="org-website"
+              type="url"
+              value={formData.website}
+              onChange={(e) => handleChange('website', e.target.value)}
+              className={`peer w-full text-sm rounded-lg border px-2 py-2 bg-transparent text-gray-900 transition-all outline-none ${errors.website ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#3E2B66]'
+                } focus:ring-2 focus:ring-[#3E2B66]/20`}
+              placeholder=" "
+              disabled={isLoading}
+            />
+            <label
+              htmlFor="org-website"
+              className="pointer-events-none absolute left-4 z-10 origin-left bg-white px-1 text-xs text-gray-500 transition-all
+              top-1/2 -translate-y-1/2
+              peer-focus:-top-3 peer-focus:translate-y-0 peer-focus:text-[#260559]
+              peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2
+              peer-not-placeholder-shown:-top-3 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[#260559]"
+            >
+              Website
+            </label>
+            {errors.website && (
+              <span className="absolute right-4 top-2 text-xs font-medium text-red-600 bg-white px-1">
+                {errors.website}
+              </span>
+            )}
           </div>
 
           {/* GST */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <div className="relative">
+
+            <input
+              id="org-gst"
+              type="text"
+              value={formData.gst}
+              onChange={(e) => handleChange('gst', e.target.value)}
+              className="peer w-full text-xs rounded-lg border px-2 py-2 bg-transparent text-gray-900 transition-all outline-none border-gray-300 focus:border-[#3E2B66] focus:ring-2 focus:ring-[#3E2B66]/20"
+              placeholder=" "
+              disabled={isLoading}
+            />
+            <label
+              htmlFor="org-gst"
+              className="pointer-events-none absolute left-4 z-10 origin-left bg-white px-1 text-xs text-gray-500 transition-all
+              top-1/2 -translate-y-1/2
+              peer-focus:-top-3 peer-focus:translate-y-0 peer-focus:text-[#260559]
+              peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2
+              peer-not-placeholder-shown:-top-3 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[#260559]"
+            >
               GST Number
             </label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={formData.gst}
-                onChange={(e) => handleChange('gst', e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
-                placeholder="GST123456789"
-                disabled={isLoading}
-              />
-            </div>
+            {errors.gst && (
+              <span className="absolute right-4 top-2 text-xs font-medium text-red-600 bg-white px-1">
+                {errors.gst}
+              </span>
+            )}
           </div>
 
           {errors.submit && (

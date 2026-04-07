@@ -3,6 +3,7 @@ import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown,
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
+import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 import { useAuth } from '../../components/AuthService/AuthContext';
 
 interface Agreement {
@@ -1047,11 +1048,10 @@ const AgreementPage: React.FC = () => {
           const resp = await eSignApi.post(`/api/e-sign/send-envelope/${id}`);
           const milestoneAchieved = !!resp?.data?.referralMilestone?.achieved;
           if (milestoneAchieved) {
-            const credits = Number(resp?.data?.referralMilestone?.rewardCredits || 10);
             await Swal.fire({
               icon: 'success',
               title: 'Milestone achieved!',
-              html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+              html: referralMilestoneSwalHtml(resp?.data?.referralMilestone),
               confirmButtonText: 'Awesome',
               confirmButtonColor: '#260559',
             });
@@ -1109,11 +1109,10 @@ const AgreementPage: React.FC = () => {
         const resp = await eSignApi.post(`/api/e-sign/send-envelope/${agreement.id}`);
         const milestoneAchieved = !!resp?.data?.referralMilestone?.achieved;
         if (milestoneAchieved) {
-          const credits = Number(resp?.data?.referralMilestone?.rewardCredits || 10);
           await Swal.fire({
             icon: 'success',
             title: 'Milestone achieved!',
-            html: `You sent your first document successfully.<br/><b>${credits} credits</b> have been added to your account.`,
+            html: referralMilestoneSwalHtml(resp?.data?.referralMilestone),
             confirmButtonText: 'Awesome',
             confirmButtonColor: '#260559',
           });
@@ -1843,7 +1842,7 @@ const AgreementPage: React.FC = () => {
                               >
                                 {isPowerForm ? "creating your first powerform" : "creating your first envelope"}
                               </Link><br />
-                              and sending it for signing.
+                              and send it for signing.
                             </>
                           )}
                         </p>

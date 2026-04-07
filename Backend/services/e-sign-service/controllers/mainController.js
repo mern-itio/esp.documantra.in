@@ -743,10 +743,13 @@ const sendEnvelope = async (req, res) => {
             );
             const action = referralHookResp?.data?.action;
             if (action === 'completed') {
+              const d = referralHookResp?.data || {};
               referralMilestone = {
                 achieved: true,
-                rewardCredits: Number(referralHookResp?.data?.rewardCredits || 10),
-                referralId: referralHookResp?.data?.referralId || null,
+                rewardCredits: Number(d.rewardCredits || 0),
+                referralId: d.referralId || null,
+                rewardSummary: d.rewardSummary || null,
+                referrerMilestoneAchieved: !!d.referrerMilestoneAchieved,
               };
             }
           }

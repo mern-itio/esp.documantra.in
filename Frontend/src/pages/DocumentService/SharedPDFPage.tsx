@@ -27,7 +27,7 @@ const SharedPDFPage: React.FC = () => {
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(1.75);
   const [pdfDocument, setPdfDocument] = useState<any>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [showComments, setShowComments] = useState(false);
@@ -368,33 +368,39 @@ const SharedPDFPage: React.FC = () => {
   };
 
   // Render PDF page
-  const renderPage = useCallback(async (pageNumber: number) => {
-    if (!pdfDocument || !canvasRef.current) return;
+const renderPage = useCallback(async (pageNumber: number) => {
+  if (!pdfDocument || !canvasRef.current) return;
 
-    try {
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
+  try {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (!context) return;
 
-      if (!context) return;
+    const page = await pdfDocument.getPage(pageNumber);
 
-      context.clearRect(0, 0, canvas.width, canvas.height);
+    const devicePixelRatio = window.devicePixelRatio || 1;
 
-      const page = await pdfDocument.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: scale });
+    const viewport = page.getViewport({ scale });
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+    // 🔥 increase actual render resolution
+    canvas.width = viewport.width * devicePixelRatio;
+    canvas.height = viewport.height * devicePixelRatio;
 
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
+    // 👇 keep visual size normal
+    canvas.style.width = `${viewport.width}px`;
+    canvas.style.height = `${viewport.height}px`;
 
-      await page.render(renderContext).promise;
-    } catch (error) {
-      console.error('Error rendering PDF page:', error);
-    }
-  }, [pdfDocument, scale]);
+    // scale context for sharp rendering
+    context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+
+    await page.render({
+      canvasContext: context,
+      viewport,
+    }).promise;
+  } catch (error) {
+    console.error('Error rendering PDF page:', error);
+  }
+}, [pdfDocument, scale]);
 
   // Render current page when page number or scale changes
   useEffect(() => {
@@ -575,7 +581,7 @@ const SharedPDFPage: React.FC = () => {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs " onClick={() => setShowPDFViewer(false)} />
 
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-[1400px] h-full max-h-[92vh] flex flex-col overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
@@ -661,13 +667,13 @@ const SharedPDFPage: React.FC = () => {
                   <canvas
                     ref={canvasRef}
                     className="shadow-lg bg-white"
-                    style={{ maxWidth: '100%', height: 'auto' }}
+                    style={{ maxWidth: 'none', height: 'auto' }}
                   />
                 </div>
 
                 {/* Comments Panel */}
                 {showComments && (selectedDocument?.allowComments || selectedDocument?.isOwner) && (
-                  <div className="w-80 ml-4 bg-white rounded-lg shadow-lg flex flex-col">
+                  <div className="w-[360px] ml-4 bg-white rounded-lg shadow-lg flex flex-col">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="font-semibold text-gray-900">Comments</h3>
                     </div>

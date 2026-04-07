@@ -16,7 +16,7 @@ import {
   Activity,
   ArrowUpRight
 } from 'lucide-react';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 
 const DashboardPage: React.FC = () => {
@@ -196,8 +196,6 @@ const DashboardPage: React.FC = () => {
             'E-Sign': 0,
             'PDF Tools': 0,
             'Document': 0,
-            'Authentication': 0,
-            'Other': 0,
             balance: userPlan.creditsBalance || 0,
             count: 0
           };
@@ -221,9 +219,7 @@ const DashboardPage: React.FC = () => {
     const totals: Record<string, number> = {
       'E-Sign': 0,
       'PDF Tools': 0,
-      'Document': 0,
-      'Authentication': 0,
-      'Other': 0
+      'Document': 0
     };
 
     usage.forEach((record) => {
@@ -536,7 +532,20 @@ const DashboardPage: React.FC = () => {
                         <XAxis type="number" stroke="#64748b" style={{ fontSize: '11px' }} />
                         <YAxis dataKey="name" type="category" width={90} stroke="#64748b" style={{ fontSize: '11px' }} />
                         <Tooltip formatter={(value: any) => [`${value} credits`, 'Usage']} />
-                        <Bar dataKey="value" fill="#4f46e5" radius={[0, 6, 6, 0]} />
+                        <Bar dataKey="value"  barSize={45} radius={[0, 6, 6, 0]}>
+                        {moduleBarData.map((entry, index) => {
+                          const colorByModule: Record<string, string> = {
+                            'E-Sign': '#4f46e5',
+                            'PDF Tools': '#16a34a',
+                            'Document': '#f59e0b',
+                            'Authentication': '#6366f1',
+                            'Other': '#64748b'
+                          };
+                          return (
+                            <Cell key={`cell-${index}`} fill={colorByModule[entry.name] || '#4f46e5'} />
+                          );
+                        })}
+                      </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
