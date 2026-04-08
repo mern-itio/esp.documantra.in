@@ -69,6 +69,7 @@ export default {
         'bounce-slow': 'bounce 2s infinite',
         pulseSoft: 'pulseSoft 1.6s ease-in-out infinite', 
         dot: 'dot 1.4s infinite ease-in-out',
+         "confetti-fall": "confetti-fall 1.5s ease-out forwards",
         'orbit-slow': 'orbit 22s linear infinite',
         'orbit-slower': 'orbit 30s linear infinite',
         'orbit-reverse-slower': 'orbitReverse 32s linear infinite',
@@ -86,6 +87,10 @@ export default {
         slideUp: {
           '0%': { transform: 'translateY(20px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+          "confetti-fall": {
+          "0%": { transform: "translateY(-10px) rotate(0deg)", opacity: "1" },
+          "100%": { transform: "translateY(120px) rotate(720deg)", opacity: "0" },
         },
          dot: {
           '0%': { opacity: '0' },

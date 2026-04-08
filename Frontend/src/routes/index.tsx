@@ -229,6 +229,7 @@ import RolePage from '../pages/Organization/RolePage';
 import AadhaarSignatureJourneySection from '../components/LandingPage/AadhaarSignatureJourneySection';
 import ContractManagementSection from '../components/LandingPage/ContractManagementSection';
 import DigitaCertificate from '../components/LandingPage/DigitaCertificate';
+import CouponPage from '../pages/Account/CouponPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -799,6 +800,7 @@ const authRoutes = [
   // Account
   { path: '/account/profile', element: <UserProfile /> },
   { path: '/account/rewards', element: <RewardsPage /> },
+  { path: '/account/rewards/coupons', element: <CouponPage /> },
   { path: '/account/session-management', element: <SessionManagementPage /> },
   { path: '/account/security', element: <AuthMethodsPage /> },
   { path: '/notifications', element: <NotificationsPage /> },

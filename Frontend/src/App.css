@@ -229,3 +229,49 @@ border-top: #084bdc 3px solid;
   width: 100px;
   height: 100px;
 }
+
+/* Side circular cuts */
+.coupon-btn::before,
+.coupon-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background: white; /* page bg color */
+  border-radius: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.coupon-btn::before {
+  left: -10px;
+}
+
+.coupon-btn::after {
+  right: -10px;
+}
+
+
+
+/* Bottom perforation */
+.coupon-btn::marker {
+  display: none;
+}
+
+.coupon-btn {
+  --r: 8px; /* radius */
+  --d: 12px; /* hole size */
+
+  border-radius: var(--r);
+  background: #06c070;
+  color: white;
+  position: relative;
+
+  -webkit-mask:
+    radial-gradient(circle at left center, transparent var(--d), black var(--d)) left,
+    radial-gradient(circle at right center, transparent var(--d), black var(--d)) right,
+    linear-gradient(black, black);
+  -webkit-mask-size: 50% 100%, 50% 100%, 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+}
