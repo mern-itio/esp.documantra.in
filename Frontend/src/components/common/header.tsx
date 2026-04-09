@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { Bell, LogOut, Menu, Search, Crown, X, User, Building2, Mail, FileText, Gift, ArrowLeftRight, ArrowRight } from 'lucide-react';
+import { Bell, LogOut, Menu, Search, Crown, X, User, Building2, Mail, FileText, Gift, ArrowLeftRight, ArrowRight, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
 import { subscriptionApi, organizationApi, apiGateway } from '../../services/apiHelper';
@@ -14,6 +15,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
+  const { isDark, toggle: toggleTheme } = useTheme();
   const [allOrganizations, setAllOrganizations] = React.useState<Organization[]>([]);
   const { user, logout, accountType, organizationId, switchAccount, organizationDetail } = useAuth();
   const [showSwitcher, setShowSwitcher] = useState(false);
@@ -283,26 +285,26 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-background shadow-sm border-b border-border text-foreground">
       <div className="flex items-center justify-between px-6 py-2">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="group p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all duration-300 lg:hidden hover:scale-110 active:scale-95"
+            className="group p-2 rounded-lg hover:bg-muted transition-all duration-300 lg:hidden hover:scale-110 active:scale-95"
           >
-            <Menu className="h-5 w-5 text-gray-500 group-hover:text-[#3E2B66] group-hover:rotate-90 transition-all duration-300" />
+            <Menu className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:rotate-90 transition-all duration-300" />
           </button>
 
           {/* Command palette trigger */}
           <button
             onClick={() => setShowPalette(true)}
-            className="group hidden md:flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:border-[#3E2B66] hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent text-gray-600 transition-all duration-300 hover:shadow-md hover:scale-[1.02] active:scale-100"
+            className="group hidden md:flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:border-primary hover:bg-muted/80 text-muted-foreground transition-all duration-300 hover:shadow-md hover:scale-[1.02] active:scale-100"
             title="Search or jump (Ctrl/Cmd+K)"
           >
-            <Search className="h-4 w-4 text-gray-500 group-hover:text-[#3E2B66] group-hover:scale-110 transition-all duration-300" />
-            <span className="text-sm group-hover:text-[#3E2B66] transition-colors duration-300">Search or jump...</span>
-            <span className="ml-2 text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 group-hover:border-[#3E2B66] group-hover:text-[#3E2B66] transition-all duration-300">Ctrl</span>
-            <span className="text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 group-hover:border-[#3E2B66] group-hover:text-[#3E2B66] transition-all duration-300">K</span>
+            <Search className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all duration-300" />
+            <span className="text-sm group-hover:text-foreground transition-colors duration-300">Search or jump...</span>
+            <span className="ml-2 text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 group-hover:border-primary group-hover:text-primary transition-all duration-300">Ctrl</span>
+            <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 group-hover:border-primary group-hover:text-primary transition-all duration-300">K</span>
           </button>
         </div>
 
@@ -327,31 +329,49 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
             </button>
           )}
 
+          {/* Theme toggle */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTheme();
+            }}
+            className="group relative p-2 rounded-full hover:bg-muted transition-all duration-300 hover:scale-110 active:scale-95"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Light mode' : 'Dark mode'}
+          >
+            {isDark ? (
+              <Sun className="h-5 w-5 text-foreground group-hover:text-primary transition-all duration-300" />
+            ) : (
+              <Moon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-all duration-300" />
+            )}
+          </button>
+
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
             <button
-              className="group relative p-2 rounded-full hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all duration-300 hover:scale-110 active:scale-95"
+              className="group relative p-2 rounded-full hover:bg-muted transition-all duration-300 hover:scale-110 active:scale-95"
               onClick={(e) => { e.stopPropagation(); setShowNotif((s) => !s); setShowUserMenu(false); }}
               aria-haspopup="true"
               aria-expanded={showNotif}
             >
-              <Bell className={`h-5 w-5 text-gray-500 group-hover:text-[#3E2B66] transition-all duration-300 ${showNotif ? 'animate-bell-ring' : 'group-hover:scale-110 group-hover:rotate-12'}`} />
+              <Bell className={`h-5 w-5 text-muted-foreground group-hover:text-primary transition-all duration-300 ${showNotif ? 'animate-bell-ring' : 'group-hover:scale-110 group-hover:rotate-12'}`} />
               {unreadCount > 0 && (
                 <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse ring-2 ring-red-200 group-hover:ring-red-300 group-hover:scale-125 transition-all duration-300"></span>
               )}
             </button>
             {showNotif && (
               <div
-                className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[500px] flex flex-col animate-notification-slide"
+                className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden max-h-[500px] flex flex-col animate-notification-slide"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-900">Notifications</p>
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                  <p className="text-sm font-medium text-card-foreground">Notifications</p>
                   <div className="flex items-center gap-2">
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllAsRead}
-                        className="text-xs text-[#3E2B66] hover:text-[#260559] font-medium hover:underline transition-all duration-200 hover:scale-105"
+                        className="text-xs text-primary font-medium hover:underline transition-all duration-200 hover:scale-105"
                       >
                         Mark all as read
                       </button>
@@ -362,7 +382,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                           navigate('/notifications');
                           setShowNotif(false);
                         }}
-                        className="text-xs text-[#3E2B66] hover:text-[#260559] font-medium hover:underline transition-all duration-200 hover:scale-105"
+                        className="text-xs text-primary font-medium hover:underline transition-all duration-200 hover:scale-105"
                       >
                         View all
                       </button>
@@ -371,17 +391,17 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 </div>
                 <div className="overflow-y-auto flex-1">
                   {notificationsLoading ? (
-                    <div className="p-4 text-sm text-gray-600 text-center">Loading...</div>
+                    <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>
                   ) : notifications.length === 0 ? (
-                    <div className="p-4 text-sm text-gray-600 text-center">No notifications</div>
+                    <div className="p-4 text-sm text-muted-foreground text-center">No notifications</div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-border">
                       {notifications.slice(0, 3).map((notification) => (
                         <div
                           key={notification._id}
                           className={`group/notif px-4 py-3 cursor-pointer transition-all duration-200 
-  hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100
-  ${!notification.isRead ? 'bg-blue-50 border-l-4 border-[#3E2B66]' : 'hover:bg-gray-50'}
+  hover:bg-accent/80
+  ${!notification.isRead ? 'bg-muted/80 border-l-4 border-primary' : 'hover:bg-muted/50'}
   `}
                           onClick={() => {
                             navigate('/notifications');
@@ -390,15 +410,15 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900">
+                              <p className="text-sm text-card-foreground">
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 {formatNotificationTime(notification.createdAt)}
                               </p>
                             </div>
                             {!notification.isRead && (
-                              <div className="h-2.5 w-2.5 bg-[#3E2B66] rounded-full mt-1 flex-shrink-0 animate-pulse group-hover/notif:scale-125 transition-transform duration-300"></div>
+                              <div className="h-2.5 w-2.5 bg-primary rounded-full mt-1 flex-shrink-0 animate-pulse group-hover/notif:scale-125 transition-transform duration-300"></div>
                             )}
                           </div>
                         </div>
@@ -419,7 +439,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
               aria-expanded={showUserMenu}
             >
               <div className="relative">
-                <div className="h-8 w-8 bg-gradient-to-br from-[#3E2B66] to-[#260559] rounded-full flex items-center justify-center text-xs text-white font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-purple-200">
+                <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-xs text-primary-foreground font-semibold shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:ring-2 group-hover:ring-ring/40">
                   {organizationDetail && accountType === 'organization' ? (
                     organizationDetail.logo ? (
                       <img
@@ -454,15 +474,15 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
         <div className="fixed inset-0 z-[95]" onClick={() => setShowUserMenu(false)}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
           <aside
-            className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl ring-1 ring-gray-200 animate-user-menu-slide"
+            className="absolute right-0 top-0 h-full w-full max-w-md bg-card shadow-2xl ring-1 ring-border animate-user-menu-slide"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex h-full flex-col">
-              <div className="border-b border-gray-100 bg-gradient-to-r from-[#260559] to-[#3E2B66] px-5 py-4 text-white">
+              <div className="border-b border-border bg-gradient-to-r from-primary to-primary/85 px-5 py-4 text-primary-foreground">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-semibold tracking-wide">Account <span className='text-xs'>#{(user as any)?.id || "—"}</span></h3>
                   <button
-                    className="rounded-lg p-1.5 text-white/90 hover:bg-white/15"
+                    className="rounded-lg p-1.5 opacity-90 hover:bg-primary-foreground/15"
                     onClick={() => { setShowUserMenu(false); setShowSwitcher(false); }}
                     aria-label="Close account panel"
                   >
@@ -470,7 +490,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                   </button>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-foreground/20 text-sm font-semibold">
                     {organizationDetail && accountType === 'organization'
                       ? getInitials(organizationDetail.name)
                       : getInitials((user as any)?.fullname)}
@@ -481,11 +501,11 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                           ? formatName(organizationDetail.name)
                           : formatName((user as any)?.fullname)}
                     </p>
-                    <p className="truncate text-xs text-white/85">{(user as any)?.email || "—"}</p>
+                    <p className="truncate text-xs opacity-90">{(user as any)?.email || "—"}</p>
                   </div>
                   <button
                     onClick={() => setShowSwitcher((prev) => !prev)}
-                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/35 bg-white/10 text-white hover:bg-white/20"
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-primary-foreground/35 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
                     aria-label="Switch account"
                     title="Switch account"
                   >
@@ -506,21 +526,21 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     <button
                       key={item.label}
                       onClick={() => { item.action(); setShowUserMenu(false); }}
-                      className="group flex w-full items-center justify-between border-b border-gray-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:border-[#3E2B66]/35 hover:bg-[#3E2B66]/5"
+                      className="group flex w-full items-center justify-between border-b border-border bg-card px-3 py-2.5 text-left text-sm font-medium text-card-foreground hover:border-primary/35 hover:bg-muted/60"
                     >
                       <span className="inline-flex items-center gap-2">
-                        <item.icon className="h-4 w-4 text-[#3E2B66]" />
+                        <item.icon className="h-4 w-4 text-primary" />
                         {item.label}
                       </span>
-                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-[#3E2B66]" />
+                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 p-4">
+              <div className="border-t border-border p-4">
                 <button
-                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/20"
                   onClick={() => { setShowUserMenu(false); setShowSwitcher(false); handleLogout(); }}
                 >
                   <LogOut className="h-4 w-4 transition-transform group-hover:rotate-12" />
@@ -531,13 +551,13 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
           </aside>
           {showSwitcher && (
             <div
-              className="fixed right-4 top-24 z-[130] w-72 rounded-sm border border-gray-200 bg-gray-100 p-2 shadow-2xl"
+              className="fixed right-4 top-24 z-[130] w-72 rounded-sm border border-border bg-muted p-2 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">Switch account</div>
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Switch account</div>
               <button
                 className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-xs flex items-center gap-2 ${
-                  accountType === 'user' ? 'bg-green-50 text-green-800 ring-1 ring-green-200' : 'hover:bg-gray-50'
+                  accountType === 'user' ? 'bg-accent text-accent-foreground ring-1 ring-border' : 'hover:bg-background'
                 }`}
                 onClick={async () => { await switchAccount('user'); setShowSwitcher(false); }}
               >
@@ -548,8 +568,8 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                   key={org._id}
                   className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-xs flex items-center gap-2 ${
                     accountType === 'organization' && organizationId === org._id
-                      ? 'bg-green-50 text-green-800 ring-1 ring-green-200'
-                      : 'hover:bg-gray-50'
+                      ? 'bg-accent text-accent-foreground ring-1 ring-border'
+                      : 'hover:bg-background'
                   }`}
                   onClick={async () => { await switchAccount('organization', org._id); setShowSwitcher(false); }}
                 >
@@ -565,28 +585,28 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       {showPalette && (
         <div className="fixed inset-0 z-[100] animate-palette-fade-in">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowPalette(false)} />
-          <div className="relative mx-auto mt-24 max-w-xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-palette-slide">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-purple-50/30 to-transparent">
-              <Search className="h-4 w-4 text-[#3E2B66] animate-pulse" />
+          <div className="relative mx-auto mt-24 max-w-xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden animate-palette-slide">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/40">
+              <Search className="h-4 w-4 text-primary animate-pulse" />
               <input
                 autoFocus
                 value={paletteQuery}
                 onChange={(e) => setPaletteQuery(e.target.value)}
                 placeholder="Search actions and pages..."
-                className="flex-1 outline-none text-sm text-gray-800 placeholder:text-gray-400 focus:placeholder:text-gray-300 transition-colors"
+                className="flex-1 outline-none text-sm text-card-foreground bg-transparent placeholder:text-muted-foreground focus:placeholder:text-muted-foreground/70 transition-colors"
               />
-              <button className="text-xs text-gray-500 hover:text-[#3E2B66] hover:scale-110 transition-all duration-200 font-medium" onClick={() => setShowPalette(false)}>Esc</button>
+              <button className="text-xs text-muted-foreground hover:text-primary hover:scale-110 transition-all duration-200 font-medium" onClick={() => setShowPalette(false)}>Esc</button>
             </div>
             <div className="max-h-80 overflow-y-auto">
               {paletteItems.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-gray-500">No results</div>
+                <div className="px-4 py-6 text-sm text-muted-foreground">No results</div>
               ) : (
                 <ul className="py-1">
                   {paletteItems.map((item, index) => (
                     <li key={item.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-palette-item-fade">
                       <button
                         onClick={() => { setShowPalette(false); item.action(); }}
-                        className="group w-full text-left px-4 py-2.5 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent text-sm text-gray-800 transition-all duration-300 hover:text-[#3E2B66] hover:scale-[1.02] active:scale-100"
+                        className="group w-full text-left px-4 py-2.5 hover:bg-muted/80 text-sm text-card-foreground transition-all duration-300 hover:text-primary hover:scale-[1.02] active:scale-100"
                       >
                         {item.label}
                       </button>

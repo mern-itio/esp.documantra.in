@@ -75,7 +75,7 @@
   content: '|';
   animation: blink 1s infinite;
   margin-left: 2px;
-  color: #4D0080;
+  color: var(--primary);
 }
 
 @keyframes blink {
@@ -88,27 +88,27 @@
 }
 
 /* Smooth scrolling for chat */
-.overflow-y-auto {
+.ai-template-generator-messages {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
-.overflow-y-auto::-webkit-scrollbar {
+/* Custom scrollbar — theme-aware */
+.ai-template-generator-messages::-webkit-scrollbar {
   width: 8px;
 }
 
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
+.ai-template-generator-messages::-webkit-scrollbar-track {
+  background: var(--muted);
   border-radius: 10px;
 }
 
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #888;
+.ai-template-generator-messages::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
   border-radius: 10px;
 }
 
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.ai-template-generator-messages::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
 }
 
 .ProseMirror-focused {

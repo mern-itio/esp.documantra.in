@@ -28,8 +28,8 @@ export default function CouponPage() {
   }, [activeTab, search]);
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-gray-100 bg-card">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card">
         <div className="container  mx-auto px-4 py-6">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#2CA58D]/10 flex items-center justify-center">
@@ -37,7 +37,7 @@ export default function CouponPage() {
             </div>
             <div>
               <h1 className="text-xl font-semibold leading-tight">Coupons</h1>
-              <p className="text-xs text-gray-500">Your available discount codes & vouchers</p>
+              <p className="text-xs text-muted-foreground">Your available discount codes & vouchers</p>
             </div>
           </div>
         </div>
@@ -45,15 +45,15 @@ export default function CouponPage() {
 
       <div className="container mx-auto px-4 py-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
-          <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 rounded-lg">
+          <div className="flex items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
             {tabs.map((tab) => (
               <button
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                   activeTab === tab.value
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tab.label}
@@ -68,7 +68,7 @@ export default function CouponPage() {
               placeholder="Search coupons..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-8 pl-8 pr-3 rounded-lg bg-white border border-gray-200 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40 transition-all"
+              className="w-full h-8 pl-8 pr-3 rounded-lg bg-background border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40 transition-all"
             />
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function CouponPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
               <Ticket className="w-5 h-5 text-muted-foreground" />
             </div>
             <h3 className="text-sm font-medium text-foreground mb-0.5">No coupons found</h3>

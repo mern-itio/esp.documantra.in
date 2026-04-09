@@ -174,33 +174,35 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
       {/* Quick Feedback Buttons */}
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={() => handleQuickFeedback('like')}
           disabled={isSubmitting}
           className={`p-2 rounded-lg transition-all duration-200 ${
             feedbackType === 'like'
-              ? 'bg-green-100 text-green-600'
-              : 'hover:bg-gray-100 text-gray-600'
-          }`}
+              ? 'bg-accent-green/15 text-accent-green'
+              : 'hover:bg-muted text-muted-foreground'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
           title="This response was helpful"
         >
           <ThumbsUp className="w-4 h-4" />
         </button>
-        
+
         <button
+          type="button"
           onClick={() => handleQuickFeedback('dislike')}
           disabled={isSubmitting}
           className={`p-2 rounded-lg transition-all duration-200 ${
             feedbackType === 'dislike'
-              ? 'bg-red-100 text-red-600'
-              : 'hover:bg-gray-100 text-gray-600'
-          }`}
+              ? 'bg-destructive/15 text-destructive'
+              : 'hover:bg-muted text-muted-foreground'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
           title="This response needs improvement"
         >
           <ThumbsDown className="w-4 h-4" />
         </button>
 
         {hasSubmitted && (
-          <span className="text-xs text-gray-500 ml-2">
+          <span className="text-xs text-muted-foreground ml-2">
             Thanks for your feedback!
           </span>
         )}
@@ -208,45 +210,46 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
 
       {/* Detailed Feedback Modal */}
       {showDetailedFeedback && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto text-foreground">
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-foreground">
                   Provide Additional Feedback
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setShowDetailedFeedback(false)}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Categories */}
               {relevantCategories.length > 0 && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground/90 mb-2">
                     What could be improved? (Optional)
                   </label>
                   <div className="space-y-2">
                     {relevantCategories.map(category => (
                       <label
                         key={category.id}
-                        className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                        className="flex items-start gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={selectedCategories.includes(category.id)}
                           onChange={() => toggleCategory(category.id)}
-                          className="mt-0.5 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30"
                         />
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-foreground">
                             {category.name}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-muted-foreground">
                             {category.description}
                           </div>
                         </div>
@@ -258,7 +261,7 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
 
               {/* Comment */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground/90 mb-2">
                   Additional comments (Optional)
                 </label>
                 <textarea
@@ -266,26 +269,28 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Tell us more about your experience..."
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full px-3 py-2 border border-border bg-background text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary resize-none"
                 />
               </div>
 
               {/* Actions */}
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setShowDetailedFeedback(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted transition-colors"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleDetailedFeedback}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                       <span>Submitting...</span>
                     </>
                   ) : (

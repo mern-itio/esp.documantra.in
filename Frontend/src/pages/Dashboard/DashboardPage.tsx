@@ -278,45 +278,51 @@ const DashboardPage: React.FC = () => {
     ];
   }, [chartData, envelopeStats, balance]);
 
-  // const PIE_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6b7280'];
+  const moduleChartColors: Record<string, string> = {
+    'E-Sign': 'var(--chart-1)',
+    'PDF Tools': 'var(--chart-2)',
+    Document: 'var(--chart-3)',
+    Authentication: 'var(--chart-4)',
+    Other: 'var(--chart-5)',
+  };
 
   return (
-    <div className="space-y-8">
+    <div className=" space-y-8">
       {/* Advanced Tutorial Modal */}
       {showTutorial && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 backdrop-blur-[2px]"></div>
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-xl w-full relative">
-            <h2 className="text-3xl font-bold mb-4 text-center">Welcome to Draft & Sign!</h2>
-            <p className="text-lg text-gray-700 mb-6 text-center">Our system can do the following things:</p>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <div className="bg-card/95 backdrop-blur-sm  shadow-lg border border-border p-8 max-w-xl w-full relative text-card-foreground">
+            <h2 className="text-3xl font-bold mb-4 text-center text-foreground">Welcome to Draft & Sign!</h2>
+            <p className="text-lg text-muted-foreground mb-6 text-center">Our system can do the following things:</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <button onClick={() => handleFeatureClick('esign')} className="flex flex-col items-center p-6 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition">
+              <button onClick={() => handleFeatureClick('esign')} className="flex flex-col items-center p-6 bg-muted/60 rounded-lg border border-border hover:bg-muted transition">
                 <span className="text-4xl mb-2">✍️</span>
-                <span className="font-semibold text-blue-700">E-Signature</span>
-                <span className="text-xs text-gray-500 mt-1 text-center">Send, sign, and manage documents digitally</span>
+                <span className="font-semibold text-primary">E-Signature</span>
+                <span className="text-xs text-muted-foreground mt-1 text-center">Send, sign, and manage documents digitally</span>
               </button>
-              <button onClick={() => handleFeatureClick('pdf')} className="flex flex-col items-center p-6 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition">
+              <button onClick={() => handleFeatureClick('pdf')} className="flex flex-col items-center p-6 bg-muted/60 rounded-lg border border-border hover:bg-muted transition">
                 <span className="text-4xl mb-2">📝</span>
-                <span className="font-semibold text-green-700">PDF Tools</span>
-                <span className="text-xs text-gray-500 mt-1 text-center">Edit, merge, split, and convert PDFs</span>
+                <span className="font-semibold text-chart-3">PDF Tools</span>
+                <span className="text-xs text-muted-foreground mt-1 text-center">Edit, merge, split, and convert PDFs</span>
               </button>
-              <button onClick={() => handleFeatureClick('sharing')} className="flex flex-col items-center p-6 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition">
+              <button onClick={() => handleFeatureClick('sharing')} className="flex flex-col items-center p-6 bg-muted/60 rounded-lg border border-border hover:bg-muted transition">
                 <span className="text-4xl mb-2">🔗</span>
-                <span className="font-semibold text-purple-700">Document Sharing</span>
-                <span className="text-xs text-gray-500 mt-1 text-center">Securely share documents with others</span>
+                <span className="font-semibold text-chart-2">Document Sharing</span>
+                <span className="text-xs text-muted-foreground mt-1 text-center">Securely share documents with others</span>
               </button>
             </div>
             <div className="flex flex-col items-center">
-              <span className="text-gray-600 mb-2">or</span>
+              <span className="text-muted-foreground mb-2">or</span>
               <button
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
                 onClick={handleCloseTutorial}
               >
                 Explore the Dashboard
               </button>
             </div>
             <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl"
+              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-xl leading-none rounded-md p-1 hover:bg-muted"
               onClick={handleCloseTutorial}
               aria-label="Close tutorial"
             >
@@ -325,112 +331,87 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Top banner */}
-      {/* <div className="rounded-sm bg-gradient-to-r from-[#1D2D80] via-[#2759A5] to-[#4AB6E4] text-white p-6 shadow-md">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Dashboard</h1>
-            <p className="text-white/80 text-sm mt-1">Welcome to Draft & Sign - manage envelopes and documents at a glance.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/e-sign/create')}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm transition-colors"
-            >
-              New Envelope
-            </button>
-            <button
-              onClick={() => navigate('/e-sign/aggrement')}
-              className="px-4 py-2 bg-white text-indigo-700 font-medium rounded-lg text-sm hover:bg-slate-100 transition-colors"
-            >
-              Open E‑Sign
-            </button>
-          </div>
-        </div>
-      </div> */}
-
-      {/* KPI cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Total Envelopes Card */}
-        <div className="group relative bg-white rounded-xl border border-slate-200 p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="group relative bg-card rounded-xl border border-border p-6 hover:border-primary/35 hover:shadow-lg transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-chart-5/25 to-chart-4/20 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <div className="relative">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-chart-5 to-chart-4 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
                 <FileText className="w-5 h-5 text-white" />
               </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 uppercase tracking-wide">All time</span>
+              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary uppercase tracking-wide">All time</span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Total Envelopes</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Envelopes</p>
+              <p className="text-3xl font-bold text-foreground mb-1">
                 {envStatesLoading ? '—' : envelopeStats?.totalEnvelopes || 0}
               </p>
-              <p className="text-xs text-slate-400">All documents</p>
+              <p className="text-xs text-muted-foreground">All documents</p>
             </div>
           </div>
         </div>
 
         {/* Completed Envelopes Card */}
-        <div className="group relative bg-white rounded-xl border border-slate-200 p-6 hover:border-green-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-50 to-green-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="group relative bg-card rounded-xl border border-border p-6 hover:border-accent-green/50 hover:shadow-lg transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-accent-green/15 to-accent-green/5 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <div className="relative">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-accent-green to-emerald-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
                 <CheckCircle2 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-green-50 text-green-700 uppercase tracking-wide">Done</span>
+              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-accent-green/15 text-accent-green uppercase tracking-wide">Done</span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Completed Envelopes</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Completed Envelopes</p>
+              <p className="text-3xl font-bold text-foreground mb-1">
                 {envStatesLoading ? '—' : envelopeStats?.completedEnvelopes || 0}
               </p>
               <div className="flex items-center gap-1.5">
-                <Activity className="w-3 h-3 text-green-600" />
-                <p className="text-xs text-green-600 font-medium">{completionRate}% completion rate</p>
+                <Activity className="w-3 h-3 text-accent-green" />
+                <p className="text-xs text-accent-green font-medium">{completionRate}% completion rate</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Pending Envelopes Card */}
-        <div className="group relative bg-white rounded-xl border border-slate-200 p-6 hover:border-amber-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="group relative bg-card rounded-xl border border-border p-6 hover:border-accent-orange/50 hover:shadow-lg transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-accent-orange/15 to-accent-orange/5 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <div className="relative">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-accent-orange to-amber-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
                 <Clock className="w-5 h-5 text-white" />
               </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 uppercase tracking-wide">In queue</span>
+              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-accent-orange/15 text-accent-orange uppercase tracking-wide">In queue</span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pending Envelopes</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pending Envelopes</p>
+              <p className="text-3xl font-bold text-foreground mb-1">
                 {envStatesLoading ? '—' : (envelopeStats?.pendingEnvelopes ?? 0)}
               </p>
-              <p className="text-xs text-slate-400">Awaiting action</p>
+              <p className="text-xs text-muted-foreground">Awaiting action</p>
             </div>
           </div>
         </div>
 
         {/* Credits Balance Card */}
         <Link to="/credits-usage" className="group block">
-          <div className="relative bg-white rounded-xl border border-slate-200 p-6 hover:border-purple-300 hover:shadow-lg transition-all duration-300 cursor-pointer h-full overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="relative bg-card rounded-xl border border-border p-6 hover:border-primary/40 hover:shadow-lg transition-all duration-300 cursor-pointer h-full overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/15 to-secondary/30 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <BarChart3 className="w-5 h-5 text-white" />
+                <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-chart-2 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <BarChart3 className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 uppercase tracking-wide">Billing</span>
+                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground uppercase tracking-wide">Billing</span>
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Credits Balance</p>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{loading ? '—' : (balance ?? 0)}</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Credits Balance</p>
+                <p className="text-3xl font-bold text-foreground mb-1">{loading ? '—' : (balance ?? 0)}</p>
                 <div className="flex items-center gap-1.5">
-                  <ArrowUpRight className="w-3 h-3 text-purple-600" />
-                  <p className="text-xs text-slate-400">Available credits</p>
+                  <ArrowUpRight className="w-3 h-3 text-primary" />
+                  <p className="text-xs text-muted-foreground">Available credits</p>
                 </div>
               </div>
             </div>
@@ -442,66 +423,60 @@ const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <button
           onClick={() => navigate('/e-sign/create')}
-          className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 text-left"
+          className="group bg-card border border-border rounded-xl p-5 flex items-center gap-4 hover:border-primary/40 hover:shadow-lg transition-all duration-300 text-left"
         >
-          <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
-            <Plus className="w-5 h-5 text-white" />
+          <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-chart-2 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
+            <Plus className="w-5 h-5 text-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 mb-0.5">Create Envelope</p>
-            <p className="text-xs text-slate-500">Upload docs and add recipients</p>
+            <p className="text-sm font-bold text-foreground mb-0.5">Create Envelope</p>
+            <p className="text-xs text-muted-foreground">Upload docs and add recipients</p>
           </div>
-          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
         <button
           onClick={() => navigate('/e-sign/aggrement')}
-          className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 text-left"
+          className="group bg-card border border-border rounded-xl p-5 flex items-center gap-4 hover:border-accent-green/50 hover:shadow-lg transition-all duration-300 text-left"
         >
-          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-accent-green to-emerald-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
             <FolderOpen className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 mb-0.5">Manage Envelopes</p>
-            <p className="text-xs text-slate-500">Track progress & resend</p>
+            <p className="text-sm font-bold text-foreground mb-0.5">Manage Envelopes</p>
+            <p className="text-xs text-muted-foreground">Track progress & resend</p>
           </div>
-          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-accent-green group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
         <button
           onClick={() => navigate('/credits-usage')}
-          className="group bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 hover:border-purple-300 hover:shadow-lg transition-all duration-300 text-left"
+          className="group bg-card border border-border rounded-xl p-5 flex items-center gap-4 hover:border-primary/40 hover:shadow-lg transition-all duration-300 text-left"
         >
-          <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-chart-3 to-chart-4 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
             <CreditCard className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 mb-0.5">Credits & Billing</p>
-            <p className="text-xs text-slate-500">See usage and balance</p>
+            <p className="text-sm font-bold text-foreground mb-0.5">Credits & Billing</p>
+            <p className="text-xs text-muted-foreground">See usage and balance</p>
           </div>
-          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
         </button>
       </div>
 
       {/* Recent credit usage */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300">
         {/* Header */}
-        <div className="px-6 pt-6 pb-5 border-b border-slate-200 bg-gradient-to-r from-slate-50/50 to-white">
+        <div className="px-6 pt-6 pb-5 border-b border-border bg-gradient-to-r from-muted/40 to-card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm">
-                <CreditCard className="w-5 h-5 text-white" />
+              <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-chart-3 shadow-sm">
+                <CreditCard className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Credit Usage Analytics</h2>
-                <p className="text-sm text-slate-500 mt-0.5">Track your credit transactions and usage patterns</p>
+                <h2 className="text-xl font-bold text-foreground">Credit Usage Analytics</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">Track your credit transactions and usage patterns</p>
               </div>
             </div>
-            {/* <Link
-              to="/credits-usage"
-              className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700 font-semibold transition-all hover:bg-indigo-50 rounded-lg group"
-            >
-              <span>View details</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link> */}
+         
           </div>
         </div>
 
@@ -509,57 +484,67 @@ const DashboardPage: React.FC = () => {
         <div className="p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
-              <span className="ml-3 text-sm text-slate-600">Loading usage history...</span>
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              <span className="ml-3 text-sm text-muted-foreground">Loading usage history...</span>
             </div>
           ) : usage.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 rounded-full bg-slate-100 mb-3">
-                <Zap className="w-6 h-6 text-slate-400" />
+              <div className="p-4 rounded-full bg-muted mb-3">
+                <Zap className="w-6 h-6 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium text-slate-700 mb-1">No recent usage</p>
-              <p className="text-xs text-slate-500">Your credit transactions will appear here</p>
+              <p className="text-sm font-medium text-foreground mb-1">No recent usage</p>
+              <p className="text-xs text-muted-foreground">Your credit transactions will appear here</p>
             </div>
           ) : chartData.length > 0 ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                <div className="xl:col-span-6 rounded-xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4">
-                  <h3 className="text-sm font-bold text-slate-900 mb-3">Module Usage</h3>
+                <div className="xl:col-span-6 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
+                  <h3 className="text-sm font-bold text-foreground mb-3">Module Usage</h3>
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={moduleBarData} layout="vertical" margin={{ left: 14, right: 10, top: 6, bottom: 6 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.55} />
-                        <XAxis type="number" stroke="#64748b" style={{ fontSize: '11px' }} />
-                        <YAxis dataKey="name" type="category" width={90} stroke="#64748b" style={{ fontSize: '11px' }} />
-                        <Tooltip formatter={(value: any) => [`${value} credits`, 'Usage']} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.55} />
+                        <XAxis type="number" stroke="var(--muted-foreground)" style={{ fontSize: '11px' }} />
+                        <YAxis dataKey="name" type="category" width={90} stroke="var(--muted-foreground)" style={{ fontSize: '11px' }} />
+                        <Tooltip
+                          cursor={{ fill: 'var(--muted)', opacity: 0.2 }}
+                          content={({ active, payload, label }) => {
+                            if (!active || !payload?.length) return null;
+                            const raw = payload[0]?.value;
+                            const n = typeof raw === 'number' ? raw : Number(raw);
+                            const display = Number.isFinite(n) ? n.toLocaleString() : String(raw ?? '—');
+                            return (
+                              <div className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm shadow-lg">
+                                <p className="font-semibold leading-tight text-foreground">{label}</p>
+                                <p className="mt-1.5 text-xs">
+                                  <span className="text-muted-foreground">Usage: </span>
+                                  <span className="font-semibold tabular-nums text-foreground">
+                                    {display} credits
+                                  </span>
+                                </p>
+                              </div>
+                            );
+                          }}
+                        />
                         <Bar dataKey="value"  barSize={45} radius={[0, 6, 6, 0]}>
-                        {moduleBarData.map((entry, index) => {
-                          const colorByModule: Record<string, string> = {
-                            'E-Sign': '#4f46e5',
-                            'PDF Tools': '#16a34a',
-                            'Document': '#f59e0b',
-                            'Authentication': '#6366f1',
-                            'Other': '#64748b'
-                          };
-                          return (
-                            <Cell key={`cell-${index}`} fill={colorByModule[entry.name] || '#4f46e5'} />
-                          );
-                        })}
+                        {moduleBarData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={moduleChartColors[entry.name] || 'var(--chart-1)'} />
+                        ))}
                       </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
               
-                <div className="xl:col-span-6 rounded-xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4">
-                  <h3 className="text-sm font-bold text-slate-900 mb-3">Credit Usage</h3>
+                <div className="xl:col-span-6 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
+                  <h3 className="text-sm font-bold text-foreground mb-3">Credit Usage</h3>
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={radarData}>
-                        <PolarGrid stroke="#e5e7eb" />
-                        <PolarAngleAxis dataKey="metric" tick={{ fill: '#334155', fontSize: 10 }} />
+                        <PolarGrid stroke="var(--border)" />
+                        <PolarAngleAxis dataKey="metric" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} />
                         <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar dataKey="value" stroke="#0ea5e9" fill="#38bdf8" fillOpacity={0.35} />
+                        <Radar dataKey="value" stroke="var(--chart-5)" fill="var(--chart-4)" fillOpacity={0.35} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
@@ -568,21 +553,21 @@ const DashboardPage: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 rounded-full bg-slate-100 mb-3">
-                <Zap className="w-6 h-6 text-slate-400" />
+              <div className="p-4 rounded-full bg-muted mb-3">
+                <Zap className="w-6 h-6 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium text-slate-700 mb-1">No chart data available</p>
-              <p className="text-xs text-slate-500">Your credit transactions will appear here</p>
+              <p className="text-sm font-medium text-foreground mb-1">No chart data available</p>
+              <p className="text-xs text-muted-foreground">Your credit transactions will appear here</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
         {!loading && usage.length > 0 && (
-          <div className="px-6 py-4 bg-gradient-to-r from-slate-50/50 to-white border-t border-slate-200">
+          <div className="px-6 py-4 bg-gradient-to-r from-muted/40 to-card border-t border-border">
             <Link
               to="/credits-usage"
-              className="flex items-center justify-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group"
+              className="flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group"
             >
               <span>View all credit transactions</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -590,7 +575,7 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
       </div>
-      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+      <div className="bg-muted/40 rounded-xl p-6 border border-border">
         <AIAuditInsights />
       </div>
     </div>

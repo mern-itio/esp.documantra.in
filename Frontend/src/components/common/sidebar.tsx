@@ -65,8 +65,8 @@ const MenuItemButton: React.FC<{
         ref={buttonRef}
         onClick={() => handleMainMenuClick(item)}
         className={`group/btn w-full text-[14px] flex items-center justify-between px-2.5 py-2.5 rounded-lg text-left transition-all duration-300 ${isMainMenuActive
-          ? 'bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white shadow-md'
-          : 'text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 hover:shadow-sm'
+          ? 'bg-primary text-primary-foreground shadow-md'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
           }`}
         style={{ cursor: 'pointer' }}
       >
@@ -74,8 +74,8 @@ const MenuItemButton: React.FC<{
           {item.icon && (
             <item.icon
               className={`h-5 w-5 transition-all duration-300 ${isMainMenuActive
-                  ? 'text-white group-hover/btn:scale-110 group-hover/btn:rotate-3'
-                  : 'text-slate-400 group-hover/btn:text-[#3E2B66] group-hover/btn:scale-110 group-hover/btn:rotate-3'
+                  ? 'text-primary-foreground group-hover/btn:scale-110 group-hover/btn:rotate-3'
+                  : 'text-muted-foreground group-hover/btn:text-primary group-hover/btn:scale-110 group-hover/btn:rotate-3'
                 }`}
             />
           )}
@@ -83,9 +83,9 @@ const MenuItemButton: React.FC<{
         </div>
         {item.children && isOpen && (
           expandedMenu === item.id ? (
-            <ChevronDown className={`h-4 w-4 transition-all duration-300 ${isMainMenuActive ? 'text-white' : 'text-slate-400'} group-hover/btn:scale-110`} />
+            <ChevronDown className={`h-4 w-4 transition-all duration-300 ${isMainMenuActive ? 'text-primary-foreground' : 'text-muted-foreground'} group-hover/btn:scale-110`} />
           ) : (
-            <ChevronRight className={`h-4 w-4 transition-all duration-300 ${isMainMenuActive ? 'text-white' : 'text-slate-400'} group-hover/btn:scale-110 group-hover/btn:translate-x-1`} />
+            <ChevronRight className={`h-4 w-4 transition-all duration-300 ${isMainMenuActive ? 'text-primary-foreground' : 'text-muted-foreground'} group-hover/btn:scale-110 group-hover/btn:translate-x-1`} />
           )
         )}
       </button>
@@ -93,7 +93,7 @@ const MenuItemButton: React.FC<{
       {/* Tooltip for collapsed sidebar */}
       {!isOpen && tooltipPosition.left > 0 && (
         <div
-          className="fixed px-3 py-1.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover:scale-100"
+          className="fixed px-3 py-1.5 bg-primary text-primary-foreground text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover:scale-100"
           style={{
             top: `${tooltipPosition.top}px`,
             left: `${tooltipPosition.left}px`,
@@ -101,7 +101,7 @@ const MenuItemButton: React.FC<{
           }}
         >
           {item.label}
-          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#3E2B66]"></div>
+          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-primary"></div>
         </div>
       )}
     </div>
@@ -330,41 +330,23 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className={`bg-white shadow-lg border-r border-slate-200 transition-all duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
-      {/* Header */}
-      {/* <div className="bg-[#260559] flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0">
-        {isOpen && (
-          <div className=" flex items-center space-x-2">
-            <div>
-              <Link to="/dashboard"><img src='../l4.png' alt="Draft&Sign Logo" className="mx-auto" style={{width: '120px', height: 'auto'}}/></Link>
-            </div>
-          </div>
-        )}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-1 rounded-md hover:bg-slate-100 transition-colors duration-200"
-        >
-          <ChevronLeft
-            className={`h-5 w-5 text-slate-500 transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''
-              }`}
-          />
-        </button>
-      </div> */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-white to-slate-50">
+    <div className={`bg-sidebar shadow-lg border-r border-sidebar-border transition-all duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
+  
+      <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border flex-shrink-0 bg-gradient-to-r from-sidebar to-muted/40">
         {isOpen && (
           <div className="flex items-center space-x-2 animate-fade-in">
-            <Building2 className="h-7 w-7 text-[#3E2B66] transition-transform duration-300 hover:scale-110 hover:rotate-6" />
+            <Building2 className="h-7 w-7 text-primary transition-transform duration-300 hover:scale-110 hover:rotate-6" />
             <div>
-              <Link to="/dashboard"><h1 className="text-base font-semibold text-slate-900 transition-colors duration-300 hover:text-[#3E2B66]">Draft&Sign</h1></Link>
+              <Link to="/dashboard"><h1 className="text-base font-semibold text-foreground transition-colors duration-300 hover:text-primary">Draft&Sign</h1></Link>
             </div>
           </div>
         )}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-1 rounded-md hover:bg-slate-100 transition-colors duration-200"
+          className="p-1 rounded-md hover:bg-muted transition-colors duration-200"
         >
           <ChevronLeft
-            className={`h-5 w-5 text-slate-500 transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''
+            className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ${!isOpen ? 'rotate-180' : ''
               }`}
           />
         </button>
@@ -403,10 +385,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                               group/btn text-xs w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm relative
                               transition-all duration-300 transform active:scale-100 overflow-hidden
                               ${isSendEnvelope
-                              ? "text-[#3E2B66] bg-gradient-to-r from-purple-50 to-indigo-50 hover:border-[#3E2B66] hover:bg-gradient-to-r hover:from-[#3E2B66] hover:to-[#4d3577] hover:text-white hover:shadow-lg hover:scale-[1.05]"
+                              ? "border border-border bg-secondary/70 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-lg hover:scale-[1.05] [&_span]:text-inherit [&_svg]:text-inherit"
                               : isActive
-                                ? "bg-gradient-to-r from-indigo-100 to-purple-50 text-[#3E2B66] shadow-sm border-l-4 border-[#3E2B66] hover:scale-[1.02]"
-                                : "text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 hover:shadow-sm hover:scale-[1.02]"
+                                ? "bg-muted/90 text-primary shadow-sm border-l-4 border-primary hover:scale-[1.02]"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm hover:scale-[1.02]"
                                 }
                                   `}
                           style={{
@@ -426,24 +408,24 @@ const Sidebar: React.FC<SidebarProps> = ({
                               <sub.icon
                                 className={`h-4 w-4 transition-all duration-300
                               ${isSendEnvelope
-                                    ? "text-[#3E2B66] group-hover/btn:text-white group-hover/btn:scale-125 group-hover/btn:rotate-12 create-envelope-icon"
+                                    ? "create-envelope-icon group-hover/btn:scale-125 group-hover/btn:rotate-12"
                                     : isActive
-                                      ? "text-[#3E2B66] scale-110"
-                                      : "text-slate-500 group-hover/btn:text-[#3E2B66] group-hover/btn:scale-110 group-hover/btn:rotate-6"
+                                      ? "text-primary scale-110"
+                                      : "text-muted-foreground group-hover/btn:text-primary group-hover/btn:scale-110 group-hover/btn:rotate-6"
                                   }
                                `}
                               />
                             )}
-                            <span className={`transition-all duration-300 relative z-10 ${isSendEnvelope ? 'text-[#3E2B66] group-hover/btn:text-white font-bold create-envelope-text' : isActive ? 'font-medium text-[#3E2B66]' : 'font-normal'}`}>{sub.label}</span>
+                            <span className={`transition-all duration-300 relative z-10 ${isSendEnvelope ? 'font-bold create-envelope-text' : isActive ? 'font-medium text-primary' : 'font-normal'}`}>{sub.label}</span>
                           </div>
 
                         </button>
 
                         {/* Tooltip for collapsed sidebar submenu items (if visible) */}
                         {!isOpen && (
-                          <div className="absolute left-full ml-2 px-3 py-1.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover/sub:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover/sub:scale-100" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                          <div className="absolute left-full ml-2 px-3 py-1.5 bg-primary text-primary-foreground text-xs rounded-lg shadow-xl whitespace-nowrap z-[9999] opacity-0 group-hover/sub:opacity-100 transition-all duration-300 pointer-events-none transform scale-95 group-hover/sub:scale-100" style={{ top: '50%', transform: 'translateY(-50%)' }}>
                             {sub.label}
-                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#3E2B66]"></div>
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-primary"></div>
                           </div>
                         )}
                       </div>
@@ -458,7 +440,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Bottom Section - User Profile & Quick Actions */}
       {isOpen && (
-        <div className="border-t border-slate-200 bg-slate-50 flex-shrink-0">
+        <div className="border-t border-sidebar-border bg-muted/30 flex-shrink-0">
 
 
           {/* Quick Actions */}
@@ -466,38 +448,38 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => navigate('/account/rewards')}
-              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
+              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
             >
-              <Gift className="h-3.5 w-3.5 text-slate-400 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
+              <Gift className="h-3.5 w-3.5 text-muted-foreground group-hover/action:text-primary group-hover/action:scale-110 transition-all duration-300" />
               <span className="font-medium">Refer & Earn</span>
             </button>
-            <hr className="border-slate-200" />
+            <hr className="border-border" />
             <button
               onClick={() => navigate('/credits-usage')}
-              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
+              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
             >
-              <CreditCard className="h-3.5 w-3.5 text-slate-400 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
+              <CreditCard className="h-3.5 w-3.5 text-muted-foreground group-hover/action:text-primary group-hover/action:scale-110 transition-all duration-300" />
               <span className="font-medium">Billing & Usage</span>
             </button>
-            <hr className="border-slate-200" />
+            <hr className="border-border" />
             
             <button
               onClick={() => navigate('/account/profile')}
-              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent hover:text-slate-900 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
+              className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
             >
-              <Settings className="h-3.5 w-3.5 text-slate-400 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 group-hover/action:rotate-90 transition-all duration-300" />
+              <Settings className="h-3.5 w-3.5 text-muted-foreground group-hover/action:text-primary group-hover/action:scale-110 group-hover/action:rotate-90 transition-all duration-300" />
               <span className="font-medium">Settings</span>
             </button>
           </div>
 
           {/* Help Section */}
-          <div className="px-2 pb-3 pt-2 border-t border-slate-200">
+          <div className="px-2 pb-3 pt-2 border-t border-sidebar-border">
 
             <Link to='/help-support'>
               <button
-                className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
+                className="group/action w-full flex items-center space-x-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-100"
               >
-                <HelpCircle className="h-3.5 w-3.5 group-hover/action:text-[#3E2B66] group-hover/action:scale-110 transition-all duration-300" />
+                <HelpCircle className="h-3.5 w-3.5 group-hover/action:text-primary group-hover/action:scale-110 transition-all duration-300" />
                 <span className="font-medium">Help & Support</span>
               </button>
             </Link>

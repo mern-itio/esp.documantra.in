@@ -1,13 +1,10 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   FileText, X, Undo2, Redo2, Save,
-  HelpCircle, Search, ChevronDown, Trash2, FileSignature, PenLine,
+  Search, ChevronDown, Trash2, FileSignature, PenLine,
   Stamp, Calendar, Building2, Briefcase, Hash, Check, User, Type,
   SaveAll,
-  SquareMousePointer,
   RectangleHorizontal,
-  CircleDot,
-  Info,
   Settings
 } from "lucide-react";
 import type { Recipient } from "../../types";
@@ -1406,51 +1403,6 @@ export default function SigningEditorStep({
     };
   }, [resizingFieldId, resizeStart, resizeHandle, setSignatureFields]);
 
-  // Add fixed fields for all recipients/slots (bottom row)
-  // const addFieldsForAllRecipients = () => {
-  //   if (!activeDocId) return;
-  //   const pageWidth = 800, pageHeight = 1000;
-  //   const width = 120, height = 40;
-  //   const bottomMargin = 20;
-  //   const gap = 12, rowGap = 10, sideMargin = 50;
-  //   const targetPage = numPages > 0 ? numPages : 1;
-
-  //   const targetList =
-  //     mode === "normal"
-  //       ? recipients.map(r => ({ id: r.id }))
-  //       : (slotsToUse || []).map(s => ({ id: s.slotId }));
-
-  //   const usableWidth = Math.max(1, pageWidth - sideMargin * 2);
-  //   const perRow = Math.max(1, Math.floor((usableWidth + gap) / (width + gap)));
-
-  //   const newFields: SignatureField[] = targetList.map((r, idx) => {
-  //     const col = idx % perRow;
-  //     const row = Math.floor(idx / perRow);
-  //     const itemsInThisRow = Math.min(perRow, Math.max(0, targetList.length - row * perRow));
-  //     const rowTotalWidth = itemsInThisRow * width + (itemsInThisRow - 1) * gap;
-  //     const startXForRow = sideMargin + Math.max(0, (usableWidth - rowTotalWidth) / 2);
-  //     const x = startXForRow + col * (width + gap);
-  //     const y = pageHeight - height - bottomMargin - row * (height + rowGap);
-
-  //     return {
-  //       id: `auto_${Date.now()}_${idx}`,
-  //       docId: activeDocId,
-  //       recipientId: mode === "normal" ? r.id : undefined,
-  //       slotId: mode === "power" ? r.id : undefined,
-  //       page: targetPage,
-  //       x,
-  //       y,
-  //       width,
-  //       height,
-  //       type: "signature",
-  //       locked: true,
-  //     };
-  //   });
-
-  //   setSignatureFields(prev => [...prev, ...newFields]);
-  // };
-
-  // active assignee id for preview color
   const activeAssigneeId = mode === "normal" ? activeRecipientId : activeSlotId;
   console.log("activeAssigneeId7", activeAssigneeId);
 
@@ -1492,8 +1444,8 @@ export default function SigningEditorStep({
     return (
       <div className="flex items-center justify-center h-[calc(100vh-160px)]">
         <div className="text-center">
-          <div className="text-gray-500 text-lg mb-2">No documents available</div>
-          <div className="text-gray-400 text-sm">Please upload documents first</div>
+          <div className="text-foreground text-lg mb-2">No documents available</div>
+          <div className="text-foreground/60 text-sm">Please upload documents first</div>
         </div>
       </div>
     );
@@ -1511,7 +1463,7 @@ export default function SigningEditorStep({
   }
 
   return (
-    <div className="h-screen min-h-0 flex flex-col overflow-hidden bg-gray-100" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div className="h-screen min-h-0 flex flex-col overflow-hidden bg-muted" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
       <style>{`
         .field-container:hover .field-remove-btn {
           opacity: 1 !important;
@@ -1523,7 +1475,7 @@ export default function SigningEditorStep({
         }
       `}</style>
 
-      <div className="bg-gray-50 border-b border-gray-200 h-12 flex items-center px-4 w-full">
+      <div className="bg-muted border-b border-gray-200 h-12 flex items-center px-4 w-full">
         <div className="flex items-center flex-1 min-w-0">
           <div className="p-3 flex-shrink-0 relative recipient-dropdown">
             {mode === "normal" ? (
@@ -1539,7 +1491,7 @@ export default function SigningEditorStep({
                         <button
                           key={r.id}
                           onClick={() => setActiveRecipientId(r.id)}
-                          className={`flex items-center gap-2 px-3 py-1 rounded transition-colors ${isActive ? '' : 'border-gray-300 hover:bg-gray-100'}`}
+                          className={`flex items-center gap-2 px-3 py-1 text-foreground rounded transition-colors ${isActive ? '' : 'border-muted hover:bg-muted'}`}
                           style={isActive ? {
                             borderWidth: borderWidth,
                             borderStyle: recipientBorderStyle as React.CSSProperties['borderStyle'],
@@ -1562,8 +1514,8 @@ export default function SigningEditorStep({
                             <User className="w-3 h-3" style={{ color: recipientColor || "#2563eb" }} />
                           </div>
                           <span
-                            className={`text-xs font-medium leading-tight truncate max-w-[140px] ${isActive ? 'p-2' : 'p-0'}`}
-                            style={{ fontSize: "12px", color: "#301934" }}
+                            className={`text-xs font-medium text-foreground leading-tight truncate max-w-[140px] ${isActive ? 'p-2' : 'p-0'}`}
+                            style={{ fontSize: "12px" }}
                           >
                             {r.name || r.email}
                           </span>
@@ -1575,7 +1527,7 @@ export default function SigningEditorStep({
                   <>
                     <button
                       onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
-                      className={`w-60 flex items-center justify-between gap-2 px-3 py-1 rounded transition-colors ${activeRecipientId ? '' : 'bg-white-100 hover:bg-gray-200 border-gray-300'}`}
+                      className={`w-60 flex items-center justify-between gap-2 px-3 py-1 rounded transition-colors ${activeRecipientId ? '' : 'bg-card-100 hover:bg-muted border-muted'}`}
                       style={activeRecipientId ? {
                         borderWidth: getBorderWidth(activeBorderStyle),
                         borderStyle: activeBorderStyle as React.CSSProperties['borderStyle'],
@@ -1610,11 +1562,11 @@ export default function SigningEditorStep({
                       </div>
 
                       {/* DROPDOWN ICON */}
-                      <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                      <ChevronDown className="w-4 h-4 text-foreground/60 flex-shrink-0" />
                     </button>
 
                     {showRecipientDropdown && (
-                      <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
+                      <div className="absolute top-full left-3 right-3 mt-1 bg-card border border-muted rounded shadow-lg z-50 max-h-60 overflow-y-auto">
                         {recipients.map((r, idx) => {
                           const recipientColor = recipientColorMap[r.id] || getRecipientColor(idx) || "#2563eb";
                           const recipientBorderStyle = recipientBorderStyleMap[r.id] || getRecipientBorderStyle(idx) || "dashed";
@@ -1627,7 +1579,7 @@ export default function SigningEditorStep({
                                 setActiveRecipientId(r.id);
                                 setShowRecipientDropdown(false);
                               }}
-                              className={`w-full text-left px-4 py-2 flex items-center gap-2 border-l-4 transition-colors ${isActive ? '' : 'hover:bg-gray-50 border-l-transparent'}`}
+                              className={`w-full text-left px-4 py-2 flex items-center gap-2 border-l-4 transition-colors ${isActive ? '' : 'hover:bg-muted border-l-transparent'}`}
                               style={isActive ? {
                                 backgroundColor: hexToRgba(recipientColor, 0.1),
                                 borderLeftWidth: borderWidth,
@@ -1645,8 +1597,8 @@ export default function SigningEditorStep({
                                 <User className="w-3.5 h-3.5" style={{ color: recipientColor || "#2563eb" }} />
                               </div>
                               <div className="flex flex-col min-w-0 flex-1">
-                                <span className="text-xs font-medium text-gray-800 truncate" style={{ fontSize: '12px' }}>{r.name}</span>
-                                {r.email && <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{r.email}</span>}
+                                <span className="text-xs font-medium text-muted truncate" style={{ fontSize: '12px' }}>{r.name}</span>
+                                {r.email && <span className="text-xs text-muted truncate" style={{ fontSize: '11px' }}>{r.email}</span>}
                               </div>
                             </button>
                           );
@@ -1660,7 +1612,7 @@ export default function SigningEditorStep({
               <>
                 <button
                   onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 bg-card hover:bg-muted rounded border border-muted transition-colors"
                 >
                   <div
                     className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
@@ -1671,13 +1623,13 @@ export default function SigningEditorStep({
                   >
                     <User className="w-3.5 h-3.5" style={{ color: activeColor || "#2563eb" }} />
                   </div>
-                  <span className="text-sm text-gray-800 font-medium truncate flex-1 text-left" style={{ fontSize: '14px', color: '#301934' }}>
+                  <span className="text-sm text-foreground font-medium truncate flex-1 text-left" style={{ fontSize: '14px', color: '#301934' }}>
                     {activeSlot?.name || activeSlot?.slotId || 'Select Slot'}
                   </span>
-                  <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                  <ChevronDown className="w-4 h-4 text-foreground/60 flex-shrink-0" />
                 </button>
                 {showRecipientDropdown && (
-                  <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-3 right-3 mt-1 bg-card border border-muted rounded shadow-lg z-50 max-h-60 overflow-y-auto">
                     {slotsToUse.map((s, idx) => {
                       const slotColor = recipientColorMap[s.slotId] || getRecipientColor((recipients?.length || 0) + idx) || "#2563eb";
                       const isActive = s.slotId === activeSlotId;
@@ -1688,7 +1640,7 @@ export default function SigningEditorStep({
                             setActiveSlotId(s.slotId);
                             setShowRecipientDropdown(false);
                           }}
-                          className={`w-full text-left px-4 py-2 flex items-center gap-2 ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                          className={`w-full text-left px-4 py-2 flex items-center gap-2 ${isActive ? 'bg-muted' : 'hover:bg-muted'}`}
                         >
                           <div
                             className="w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0"
@@ -1699,7 +1651,7 @@ export default function SigningEditorStep({
                           >
                             <User className="w-3.5 h-3.5" style={{ color: slotColor || "#2563eb" }} />
                           </div>
-                          <span className="text-sm text-gray-800 truncate flex-1">
+                          <span className="text-sm text-muted-foreground truncate flex-1">
                             {s.name || s.slotId || 'Unnamed Slot'}
                           </span>
                         </button>
@@ -1716,22 +1668,22 @@ export default function SigningEditorStep({
             <div className="p-3 flex-shrink-0 relative document-dropdown">
               <button
                 onClick={() => setShowDocDropdown(!showDocDropdown)}
-                className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-white-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-card hover:bg-muted rounded border border-muted transition-colors"
                 title="Select document"
                 data-tour="editor-document"
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-3 h-3 text-gray-600" />
+                  <div className="w-4 h-4 rounded bg-muted border border-muted flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <span className="text-xs font-medium leading-tight truncate" style={{ fontSize: "12px", color: "#301934" }}>
                     {documents.find(d => d.id === activeDocId)?.name || 'Select Document'}
                   </span>
                 </div>
-                <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
               </button>
               {showDocDropdown && (
-                <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-3 right-3 mt-1 bg-card border border-muted rounded shadow-lg z-50 max-h-60 overflow-y-auto">
                   {documents.map((d) => (
                     <button
                       key={d.id}
@@ -1740,12 +1692,12 @@ export default function SigningEditorStep({
                         setCurrentPage(1);
                         setShowDocDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-muted flex items-center gap-2"
                     >
-                      <div className="w-6 h-6 rounded bg-gray-100 border border-gray-300 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-3.5 h-3.5 text-gray-600" />
+                      <div className="w-6 h-6 rounded bg-muted border border-muted flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
-                      <span className="text-xs font-medium text-gray-800 truncate" style={{ fontSize: '12px' }}>{d.name}</span>
+                      <span className="text-xs font-medium text-muted-foreground truncate" style={{ fontSize: '12px' }}>{d.name}</span>
                     </button>
                   ))}
                 </div>
@@ -1768,7 +1720,7 @@ export default function SigningEditorStep({
               }
             }}
             disabled={historyIndex === 0}
-            className={`p-1.5 rounded transition-colors ${historyIndex === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200'}`}
+            className={`p-1.5 rounded transition-colors ${historyIndex === 0 ? 'text-muted-foreground cursor-not-allowed' : 'text-muted-foreground hover:bg-muted'}`}
             title="Undo (Ctrl+Z)"
           >
             <Undo2 className="w-4 h-4" />
@@ -1786,7 +1738,7 @@ export default function SigningEditorStep({
               }
             }}
             disabled={historyIndex >= fieldHistory.length - 1}
-            className={`p-1.5 rounded transition-colors ${historyIndex >= fieldHistory.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200'}`}
+            className={`p-1.5 rounded transition-colors ${historyIndex >= fieldHistory.length - 1 ? 'text-muted-foreground cursor-not-allowed' : 'text-muted-foreground hover:bg-muted'}`}
             title="Redo (Ctrl+Y)"
           >
             <Redo2 className="w-4 h-4" />
@@ -1819,7 +1771,7 @@ export default function SigningEditorStep({
                 });
               }
             }}
-            className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors"
+            className="p-1.5 text-muted-foreground hover:bg-muted rounded transition-colors"
             title="Save (Ctrl+S)"
           >
             <Save className="w-4 h-4" />
@@ -1829,7 +1781,7 @@ export default function SigningEditorStep({
           <select
             value={zoomLevel}
             onChange={(e) => setZoomLevel(Number(e.target.value))}
-            className="px-2 py-1 text-sm text-gray-800 hover:bg-gray-200 rounded transition-colors border-none bg-transparent cursor-pointer focus:outline-none"
+            className="px-2 py-1 text-sm text-muted-foreground hover:bg-muted rounded transition-colors border-none bg-transparent cursor-pointer focus:outline-none"
             style={{ fontSize: '14px', color: '#301934' }}
           >
             <option value={50}>50%</option>
@@ -1848,15 +1800,15 @@ export default function SigningEditorStep({
               <div>
                 <button
                   onClick={() => setShowShortcutsModal(true)}
-                  className="text-xs font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
-                  style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}
+                  className="text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-muted-foreground transition-colors"
+                  style={{ fontSize: '12px', fontWeight: '600' }}
                 >
                   SHORTCUTS
                 </button>
               </div>
               <button
                 onClick={() => setShowRightSidebar(!showRightSidebar)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-muted rounded transition-colors"
                 title={showRightSidebar ? "Hide preview" : "Show preview"}
                 data-tour="editor-preview-toggle"
               >
@@ -1868,81 +1820,44 @@ export default function SigningEditorStep({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden bg-gray-100 pb-24">
+      <div className="flex-1 flex overflow-hidden bg-muted pb-24">
         {/* Left Side Panel */}
-        <div className="w-[300px] bg-white border-r border-gray-200 flex flex-shrink-0 h-full">
+        <div className="w-[300px] bg-card border-r border-muted flex flex-shrink-0 h-full">
           {/* Vertical Tabs - Extreme Left Edge */}
           {mode === 'power' && (
-            <div className="flex flex-col border-r border-gray-200 flex-shrink-0 h-full">
+            <div className="flex flex-col border-r border-muted flex-shrink-0 h-full">
 
               <button
                 onClick={() => setLeftPanel('standard')}
-                className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'standard' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                className={`w-10 h-12 flex items-center justify-center border-b border-muted transition-colors ${leftPanel === 'standard' ? 'bg-purple-50' : 'hover:bg-muted'}`}
               >
                 <RectangleHorizontal className="w-3.5 h-3.5 text-gray-700" />
               </button>
 
-              {/* <button
-              onClick={() => setLeftPanel(prev => (prev === 'custom' ? 'standard' : 'custom'))}
-              className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'custom' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
-            >
-              <SquareMousePointer className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-            <button
-              onClick={() => setLeftPanel(prev => (prev === 'pen' ? 'standard' : 'pen'))}
-              className={`w-10 h-12 flex items-center justify-center border-b border-gray-200 transition-colors ${leftPanel === 'pen' ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
-            >
-              <Pen className="w-3.5 h-3.5 text-gray-500" />
-            </button> */}
+              
             </div>
           )}
-          {/* Search and Fields */}
           <div className="flex-1 overflow-hidden flex flex-col min-w-0 h-full">
-            {/* {leftPanel === 'powerForm' && (
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="p-3">
-                  <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide" style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>
-                    POWER FORM FIELDS
-                  </h3>
-                  <div className="space-y-1">
-                    {mode === "power" && (powerFormData?.fields ?? []).length > 0 && (
-                      <div className="flex flex-col gap-2">
-                        {powerFormData!.fields!.map(field => (
-                          <div
-                            key={field._id}
-                            draggable
-                            onDragStart={e => handleDragStart(e, { type: field.type, label: field.label, id: field._id })}
-                            onDragEnd={handleDragEnd}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gray-50 cursor-grab"
-                          >
-                            {field.label} ({field.type})
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )} */}
+         
             {leftPanel === 'standard' && (
               <>
                 {/* Search Box - Full Width */}
-                <div className="border-b border-gray-200 flex-shrink-0">
+                <div className="border-b border-muted flex-shrink-0">
                   <div className="relative px-1.5 py-2">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <input
                       ref={searchInputRef}
                       type="text"
                       placeholder="Search Fields"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-8 py-2 text-sm bg-gray-50 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full pl-8 pr-8 py-2 text-sm bg-muted border border-muted rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       style={{ fontSize: '14px', color: '#6b7280' }}
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1953,7 +1868,7 @@ export default function SigningEditorStep({
                 {/* Standard Fields List */}
                 <div className="flex-1 overflow-y-auto min-h-0">
                   <div className="p-3" data-tour="editor-standard-fields">
-                    <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide" style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>
+                    <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide" style={{ fontSize: '12px', fontWeight: '600' }}>
                       STANDARD FIELDS
                     </h3>
                     <div className="space-y-1">
@@ -1992,12 +1907,12 @@ export default function SigningEditorStep({
                               >
                                 <Icon className="w-3.5 h-3.5" style={{ color: activeColor || "#2563eb" }} />
                               </div>
-                              <span className="text-sm text-gray-800" style={{ fontSize: '11px', color: '#301934' }}>
+                              <span className="text-sm text-foreground" style={{ fontSize: '11px' }}>
                                 {field.label}
                               </span>
                             </button>
                             {showSeparatorAfter && (
-                              <div className="my-1 border-t border-gray-200"></div>
+                              <div className="my-1 border-t border-muted"></div>
                             )}
                           </React.Fragment>
                         );
@@ -2007,91 +1922,11 @@ export default function SigningEditorStep({
                 </div>
               </>
             )}
-
-            {leftPanel === 'custom' && (
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold" style={{ color: '#301934' }}>Custom Fields</h3>
-                    <span className="text-lg leading-none" title="Add">+</span>
-                  </div>
-
-                  <details open className="mb-4">
-                    <summary className="cursor-pointer list-none flex items-center justify-between py-1">
-                      <span className="text-sm font-medium" style={{ color: '#301934' }}>My Fields</span>
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </summary>
-                    <div className="mt-2 pl-1">
-                      {/* Example item to mirror screenshot */}
-                      <button className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 w-full text-left">
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded border" style={{ background: '#b9e6f2', borderColor: '#93c5fd' }}>
-                          <SquareMousePointer className="w-3.5 h-3.5 text-gray-700" />
-                        </span>
-                        <span className="text-sm truncate" style={{ color: '#301934' }}>Stamp {String(signatureFields[0]?.id || '').slice(0, 6)}</span>
-                      </button>
-                    </div>
-                  </details>
-
-                  <details>
-                    <summary className="cursor-pointer list-none flex items-center justify-between py-1">
-                      <span className="text-sm font-medium" style={{ color: '#301934' }}>Data Verification</span>
-                      <HelpCircle className="w-4 h-4 text-gray-500" />
-                    </summary>
-                  </details>
-                </div>
-              </div>
-            )}
-
-            {leftPanel === 'pen' && (
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="p-3">
-                  <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide" style={{ fontSize: '10px', color: '#374151', fontWeight: '600' }}>Pre-fill Tools</h3>
-                  <div className="">
-                    {[
-                      { key: 'text', label: 'Text', icon: Type },
-                      { key: 'checkbox', label: 'Checkbox', icon: Check },
-                      { key: 'radio', label: 'Radio', icon: CircleDot },
-                      { key: 'name', label: 'Name', icon: User },
-                      { key: 'company', label: 'Company', icon: Building2 },
-                    ].map((item) => (
-                      <button
-                        key={`prefill-${item.key}`}
-                        onDragStart={(e) =>
-                          handleDragStart(e, {
-                            type: item.key === 'checkbox' ? 'checkbox' : 'text',
-                            label: item.label,
-                          })
-                        }
-                        onDragEnd={handleDragEnd}
-                        draggable
-                        className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded text-left transition-colors cursor-grab active:cursor-grabbing"
-                      >
-                        <span className="w-4 h-4 inline-flex items-center justify-center rounded border border-gray-300 bg-white text-gray-700">
-                          <item.icon className="w-3 h-3" />
-                        </span>
-                        <span className="text-xs" style={{ fontSize: '12px', color: '#301934' }}>{item.label}</span>
-                        {item.key === 'company' && (
-                          <Info
-                            className="w-4 h-4 ml-auto text-gray-500 cursor-pointer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-                              setCompanyInfo({ visible: true, top: rect.top + window.scrollY - 40 });
-                            }}
-                          />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Main Document Area */}
-        <div className="flex-1 overflow-auto bg-gray-100 h-full">
+        <div className="flex-1 overflow-auto bg-muted h-full">
           <div
             className="relative w-full flex items-start justify-center"
             ref={pdfContainerRef}
@@ -2130,7 +1965,7 @@ export default function SigningEditorStep({
                   if (!pageCanvas) {
                     return (
                       <div key={pageNum} className="flex items-center justify-center" style={{ minHeight: '200px' }}>
-                        <p className="text-gray-500">Loading page {pageNum}...</p>
+                        <p className="text-foreground">Loading page {pageNum}...</p>
                       </div>
                     );
                   }
@@ -2141,7 +1976,6 @@ export default function SigningEditorStep({
                       data-page={pageNum}
                       className="relative"
                       style={{
-                        background: 'white',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                         display: 'block',
                         marginBottom: pageNum < numPages ? '16px' : '0'
@@ -2182,7 +2016,7 @@ export default function SigningEditorStep({
                             <React.Fragment key={f.id ?? f._id}>
                               {/* Signature/Field Box */}
                               <div
-                                className="field-container"
+                                className="field-container text-black"
                                 style={{
                                   position: "absolute",
                                   left: f.x,
@@ -2470,7 +2304,7 @@ export default function SigningEditorStep({
                 })}
               </div>
             ) : (
-              <div className="text-center p-8 text-gray-500">Preview not available</div>
+              <div className="text-center p-8 text-foreground">Preview not available</div>
             )}
           </div>
         </div>
@@ -2492,21 +2326,21 @@ export default function SigningEditorStep({
               />
             </div>
 
-            <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-[380px]">
+            <div className="bg-card rounded-lg shadow-xl border border-muted w-[380px]">
               <div className="p-6">
                 <h4 className="text-lg font-semibold mb-3" style={{ color: '#301934' }}>
                   View company name in PREVIEW
                 </h4>
-                <p className="text-sm text-gray-700 mb-4">
+                <p className="text-sm text-foreground mb-4">
                   Use RECIPIENT PREVIEW to see how your company name appears to recipients.
                 </p>
-                <p className="text-sm text-gray-700 mb-6">
+                <p className="text-sm text-foreground mb-6">
                   To correct or change your company name, go to account settings or contact your administrator.
                 </p>
                 <div className="flex justify-end">
                   <button
                     onClick={() => setCompanyInfo({ visible: false, top: companyInfo.top })}
-                    className="px-5 py-2 rounded  text-white transition-colors" style={{ backgroundColor: '#260559' }}
+                    className="px-5 py-2 rounded  textForeground transition-colors" style={{ backgroundColor: '#260559' }}
                   >
                     Got It
                   </button>
@@ -2518,11 +2352,11 @@ export default function SigningEditorStep({
 
         {/* Right Side Panel - Properties Sidebar (overrides preview when field is selected) */}
         {showPropertiesSidebar && selectedField && (
-          <div className="w-[320px] bg-white border-l border-gray-200 flex flex-col flex-shrink-0 h-full min-h-0">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+          <div className="w-[320px] bg-card border-l border-muted flex flex-col flex-shrink-0 h-full min-h-0">
+            <div className="px-4 py-3 border-b border-muted flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-gray-600" />
-                <h3 className="text-sm font-semibold text-gray-900" style={{ fontSize: '14px', color: '#301934' }}>
+                <h3 className="text-sm font-semibold text-foreground" style={{ fontSize: '14px' }}>
                   Field Properties
                 </h3>
               </div>
@@ -2531,7 +2365,7 @@ export default function SigningEditorStep({
                   setShowPropertiesSidebar(false);
                   setSelectedField(null);
                 }}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-muted rounded transition-colors"
                 title="Close properties"
               >
                 <X className="w-4 h-4 text-gray-600" />
@@ -2541,17 +2375,17 @@ export default function SigningEditorStep({
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* Field Type Display */}
               <div>
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">
+                <label className="text-xs font-medium text-foreground uppercase tracking-wide mb-2 block">
                   Field Type
                 </label>
-                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800 capitalize">
+                <div className="px-3 py-2 bg-muted border border-muted rounded-md text-sm text-foreground capitalize">
                   {selectedField.type}
                 </div>
               </div>
 
               {/* Label Input */}
               <div>
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">
+                <label className="text-xs font-medium text-foreground uppercase tracking-wide mb-2 block">
                   Label
                 </label>
                 <input
@@ -2559,20 +2393,20 @@ export default function SigningEditorStep({
                   value={fieldLabel}
                   onChange={(e) => setFieldLabel(e.target.value)}
                   placeholder={`Enter ${selectedField.type} label`}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-muted rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   style={{ fontSize: '14px' }}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-foreground mt-1">
                   This label will be displayed on the document
                 </p>
               </div>
 
               {/* Field Info */}
-              <div className="pt-4 border-t border-gray-200">
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">
+              <div className="pt-4 border-t border-muted">
+                <label className="text-xs font-medium text-foreground uppercase tracking-wide mb-2 block">
                   Field Information
                 </label>
-                <div className="space-y-2 text-xs text-gray-600">
+                <div className="space-y-2 text-xs text-foreground">
                   <div className="flex justify-between">
                     <span>Page:</span>
                     <span className="font-medium">{selectedField.page}</span>
@@ -2589,13 +2423,13 @@ export default function SigningEditorStep({
               </div>
 
               {/* Save Button */}
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-4 border-t border-muted">
                 <button
                   onClick={saveFieldLabel}
                   disabled={isSavingField || !fieldLabel.trim()}
                   className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${isSavingField || !fieldLabel.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-muted text-foreground cursor-not-allowed'
+                    : 'bg-blue-600 text-foreground hover:bg-blue-700'
                     }`}
                 >
                   {isSavingField ? 'Saving...' : 'Save Label'}
@@ -2607,13 +2441,13 @@ export default function SigningEditorStep({
 
         {/* Right Side Panel - Preview Sidebar (shown when properties sidebar is not active) */}
         {showRightSidebar && !showPropertiesSidebar && (
-          <div className="w-[220px] bg-white border-l border-gray-200 flex flex-col flex-shrink-0 h-full min-h-0">
+          <div className="w-[220px] bg-card border-l border-muted flex flex-col flex-shrink-0 h-full min-h-0">
 
-            <div className="px-3 pt-3 pb-2 border-b border-gray-200 flex-shrink-0">
-              <p className="text-sm font-medium text-gray-800 truncate" style={{ fontSize: '13px', color: '#301934', fontWeight: '500' }}>
+            <div className="px-3 pt-3 pb-2 border-b border-muted flex-shrink-0">
+              <p className="text-sm font-medium text-foreground truncate" style={{ fontSize: '13px', fontWeight: '500' }}>
                 {documentName?.slice(0, 22)}
               </p>
-              <p className="text-[11px] text-gray-500" style={{ color: '#6b7280' }}>
+              <p className="text-[11px] text-foreground" >
                 Pages: {activeDoc?.pages || numPages || 1}
               </p>
             </div>
@@ -2642,25 +2476,24 @@ export default function SigningEditorStep({
                           <img
                             src={thumbnailCanvas.toDataURL()}
                             alt={`Page ${pageNum} thumbnail`}
-                            className="block w-full bg-white"
+                            className="block w-full bg-card"
                             style={{ border: '1px solid #e5e7eb' }}
                           />
                         ) : (
-                          <div className="w-full h-24 bg-white border border-gray-200 flex items-center justify-center">
-                            <p className="text-[11px] text-gray-400">Loading...</p>
+                          <div className="w-full h-24 bg-card border border-muted flex items-center justify-center">
+                            <p className="text-[11px] text-foreground">Loading...</p>
                           </div>
                         )}
                       </div>
                       <div className="flex items-center justify-center mt-1 px-1">
-                        <p className="text-[11px] text-gray-600">{pageNum}</p>
-
+                        <p className="text-[11px] text-foreground">{pageNum}</p>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div className="w-full h-24 bg-white border border-gray-200 flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-gray-400" />
+                <div className="w-full h-24 bg-card border border-muted flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-foreground" />
                 </div>
               )}
             </div>
@@ -2670,29 +2503,28 @@ export default function SigningEditorStep({
 
       {/* Sticky footer for Send */}
       {onSend && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex justify-end gap-2 z-40">
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-muted px-4 py-3 flex justify-end gap-2 z-40">
           {onBack && (
             <button
               onClick={onBack}
-              className="flex items-center gap-2 px-5 py-2 rounded-sm border border-[#260559]-300 text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 px-5 py-2 rounded-sm border border-[#260559]-300 text-foreground hover:bg-muted transition-colors"
             >
               Previous
             </button>
           )}
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Send button clicked', { onSend, sending });
               if (onSend && !sending) {
                 onSend();
               }
             }}
             disabled={!!sending}
-            className={`flex items-center gap-2 px-6 py-2 rounded-sm transition-colors 
-    ${sending
-                ? 'bg-[#260559] cursor-not-allowed text-white'
-                : 'bg-[#260559] hover:bg-[#260559]/70 text-white'
+            className={`flex items-center gap-2 rounded-sm px-6 py-2 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${sending
+              ? 'cursor-not-allowed bg-muted text-muted-foreground'
+              : 'bg-primary text-primary-foreground hover:bg-primary/90'
               }`}
           >
             {sending ? 'Sending...' : 'Review'}
@@ -2709,38 +2541,38 @@ export default function SigningEditorStep({
           onClick={() => setShowShortcutsModal(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-4xl mx-4 max-h-[70vh] flex flex-col"
+            className="bg-card rounded-2xl shadow-xl max-w-4xl mx-4 max-h-[70vh] flex flex-col"
             style={{ width: '800px' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-xl text-gray-800" style={{ fontSize: '20px', color: '#301934', fontFamily: "Georgia, serif", }}>
+            <div className="flex items-center justify-between p-6 border-b border-muted flex-shrink-0">
+              <h2 className="text-xl text-foreground" style={{ fontSize: '20px', fontFamily: "Georgia, serif", }}>
                 Keyboard shortcuts
               </h2>
               <button
                 onClick={() => setShowShortcutsModal(false)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-muted rounded transition-colors"
                 aria-label="Close"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-foreground" />
               </button>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
               {/* Introductory Text */}
-              <p className="text-xs text-black-600 mb-6" >
+              <p className="text-xs text-foreground mb-6" >
                 Use shortcut keys as an alternative to mouse control to perform common actions.
               </p>
 
               {/* Navigate Section */}
               <div className="mb-6">
-                <h3 className="text-base text-black-00 mb-3" style={{ fontSize: '16px', color: '#301934' }}>
+                <h3 className="text-base text-foreground mb-3" style={{ fontSize: '16px', color: '#301934' }}>
                   Navigate
                 </h3>
                 <div className="flex items-center gap-4 py-2">
-                  <span className="text-sm text-black-700" style={{ fontSize: '12px', }}>
+                  <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                     Move Between Panels
                   </span>
                   <span className="text-sm text-gray-800 px-2 py-1 rounded" style={{ fontSize: '14px', color: '#301934' }}>
@@ -2750,11 +2582,11 @@ export default function SigningEditorStep({
               </div>
 
               {/* Divider */}
-              <div className="border-t border-gray-300 mb-6"></div>
+              <div className="border-t border-muted mb-6"></div>
 
               {/*Common Actions */}
               <div className="mb-6">
-                <h3 className="text-base text-gray-800 mb-3" style={{ fontSize: '16px', color: '#301934', fontWeight: '500' }}>
+                <h3 className="text-base text-foreground mb-3" style={{ fontSize: '16px', color: '#301934', fontWeight: '500' }}>
                   Fields
                 </h3>
 
@@ -2763,11 +2595,11 @@ export default function SigningEditorStep({
                   <div className="space-y-2">
                     {/* Add Field */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Add Field
                       </span>
                       <div className="flex gap-2">
-                        <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                        <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                           Enter, Space
                         </span>
                       </div>
@@ -2775,57 +2607,58 @@ export default function SigningEditorStep({
 
                     {/* Duplicate Field */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Duplicate Field
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Ctrl+D
                       </span>
                     </div>
 
                     {/* Select Fields on Current Page */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Select Fields on Current Page
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Ctrl+G
                       </span>
                     </div>
                   </div>
 
                   {/* RIGHT COLUMN */}
-                  <div className="space-y-2 border-l border-gray-200 pl-8">
+                  <div className="space-y-2 border-l border-muted pl-8">
                     {/* Delete Field */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
+
                         Delete Field
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Delete
                       </span>
                     </div>
 
                     {/* Search fields */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Search fields
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Ctrl+Shift+S
                       </span>
                     </div>
 
                     {/* Change Recipient for Field */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Change Recipient for Field
                       </span>
                       <div className="flex gap-2">
-                        <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                        <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                           Ctrl+Shift+,
                         </span>
-                        <span className="text-sm font-medium text-gray-800 px-2 py-1 rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                        <span className="text-sm font-medium text-foreground px-2 py-1 rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                           Ctrl+Shift+.
                         </span>
                       </div>
@@ -2833,10 +2666,10 @@ export default function SigningEditorStep({
                   </div>
                 </div>
               </div>
-              <div className="border-t border-gray-300 mb-6"></div>
+              <div className="border-t border-muted mb-6"></div>
 
               <div>
-                <h3 className="text-base text-gray-800 mb-3" style={{ fontSize: '16px', color: '#301934', fontWeight: '500' }}>
+                <h3 className="text-base text-foreground mb-3" style={{ fontSize: '16px', fontWeight: '500' }}>
                   Common Actions
                 </h3>
 
@@ -2845,11 +2678,11 @@ export default function SigningEditorStep({
                   <div className="space-y-2">
                     {/* Common Actions */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Save
                       </span>
                       <div className="flex gap-2">
-                        <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                        <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                           Ctrl+S
                         </span>
                       </div>
@@ -2857,42 +2690,42 @@ export default function SigningEditorStep({
 
                     {/* Duplicate Field */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Undo
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Ctrl+Z
                       </span>
                     </div>
 
                     {/* Select Fields on Current Page */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Select all
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Ctrl+A
                       </span>
                     </div>
                   </div>
 
-                  <div className="space-y-2 border-l border-gray-200 pl-8">
+                  <div className="space-y-2 border-l border-muted pl-8">
                     {/* Delete Field */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Copy
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Ctrl+C
                       </span>
                     </div>
 
                     {/* Search fields */}
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-gray-700" style={{ fontSize: '12px', color: '#374151' }}>
+                      <span className="text-sm text-foreground" style={{ fontSize: '12px', }}>
                         Redo
                       </span>
-                      <span className="text-sm font-medium text-gray-800 px-2 py-1  rounded" style={{ fontSize: '14px', color: '#301934', fontWeight: '500' }}>
+                      <span className="text-sm font-medium text-foreground px-2 py-1  rounded" style={{ fontSize: '14px', fontWeight: '500' }}>
                         Ctrl+Y
                       </span>
                     </div>
@@ -2902,10 +2735,10 @@ export default function SigningEditorStep({
             </div>
 
             {/* Footer with OK Button */}
-            <div className="p-6 border-t border-gray-200 flex justify-end flex-shrink-0">
+            <div className="p-6 border-t border-muted flex justify-end flex-shrink-0">
               <button
                 onClick={() => setShowShortcutsModal(false)}
-                className="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors font-medium"
+                className="px-6 py-2 bg-purple-600 text-foreground rounded hover:bg-purple-700 transition-colors font-medium"
                 style={{ backgroundColor: '#9333ea', fontSize: '14px' }}
               >
                 OK
@@ -2976,7 +2809,7 @@ export default function SigningEditorStep({
                 }}
               >
                 {/* Tooltip box */}
-                <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                <div className="bg-card text-foreground text-sm rounded-md shadow-lg max-w-sm relative">
                   {/* Draggable header */}
                   <div
                     className="px-4 py-3 font-semibold cursor-move select-none"
@@ -2988,15 +2821,15 @@ export default function SigningEditorStep({
                   <div className="px-4 py-2 text-sm leading-relaxed">
                     {editorTourSteps[editorTourIndex]?.content}
                   </div>
-                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
-                    <div className="text-xs text-white-900">Step {editorTourIndex + 1} of {editorTourSteps.length}</div>
+                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-muted">
+                    <div className="text-xs text-foreground">Step {editorTourIndex + 1} of {editorTourSteps.length}</div>
                     <div className="flex items-center gap-2">
-                      <button onClick={closeEditorTour} className="px-3 py-1.5 text-sm text-white-300 hover:text-white">Skip</button>
-                      <button onClick={prevEditorStep} disabled={editorTourIndex === 0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${editorTourIndex === 0 ? ' cursor-not-allowed text-white-500' : 'hover:bg-white-700 text-white'}`}>Back</button>
+                      <button onClick={closeEditorTour} className="px-3 py-1.5 text-sm text-foreground hover:text-foreground">Skip</button>
+                      <button onClick={prevEditorStep} disabled={editorTourIndex === 0} className={`px-3 py-1.5 border border-muted rounded-sm text-sm ${editorTourIndex === 0 ? ' cursor-not-allowed text-foreground' : 'hover:bg-muted text-foreground'}`}>Back</button>
                       {editorTourIndex < editorTourSteps.length - 1 ? (
-                        <button onClick={nextEditorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                        <button onClick={nextEditorStep} className="px-3 py-1.5 bg-card text-foreground rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
                       ) : (
-                        <button onClick={closeEditorTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                        <button onClick={closeEditorTour} className="px-3 py-1.5 bg-card text-foreground rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
                       )}
                     </div>
                   </div>

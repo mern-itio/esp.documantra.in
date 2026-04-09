@@ -262,13 +262,14 @@ const CustomerChatWidget: React.FC = () => {
       {/* Floating Chat Button */}
       {!isOpen && (
         <button
+          type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-6 z-50 bg-[#260559] hover:bg-[#260559]/90 text-white rounded-full p-4 shadow-lg transition-all hover:scale-110"
+          className="fixed bottom-24 right-6 z-50 rounded-full bg-primary p-4 text-primary-foreground shadow-lg transition-all hover:scale-110 hover:bg-primary/90"
           aria-label="Open support chat"
         >
-          <MessageSquare className="w-6 h-6" />
+          <MessageSquare className="h-6 w-6" />
           {!isConnected && (
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+            <span className="absolute -right-1 -top-1 h-3 w-3 animate-pulse rounded-full bg-destructive" />
           )}
         </button>
       )}
@@ -277,33 +278,35 @@ const CustomerChatWidget: React.FC = () => {
       {isOpen && (
         <div
           ref={chatContainerRef}
-          className={`fixed bottom-6 right-6 z-50 bg-white rounded-lg shadow-2xl transition-all ${isMinimized ? 'h-14 w-80' : 'h-[600px] w-96'
-            } flex flex-col`}
+          className={`fixed bottom-6 right-6 z-50 flex flex-col rounded-lg border border-border bg-card text-card-foreground shadow-2xl transition-all ${isMinimized ? 'h-14 w-80' : 'h-[600px] w-96'
+            }`}
         >
           {/* Header */}
-          <div className="bg-[#260559] text-white p-4 rounded-t-lg flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-t-lg bg-primary p-4 text-primary-foreground">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
+              <MessageSquare className="h-5 w-5" />
               <span className="font-semibold">Support Chat</span>
               {!isConnected && (
-                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />
               )}
             </div>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setIsMinimized(!isMinimized)}
-                className="hover:bg-white/20 rounded p-1"
+                className="rounded p-1 hover:bg-primary-foreground/15"
               >
-                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setIsOpen(false);
                   leaveTicket();
                 }}
-                className="hover:bg-white/20 rounded p-1"
+                className="rounded p-1 hover:bg-primary-foreground/15"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -315,18 +318,18 @@ const CustomerChatWidget: React.FC = () => {
                 <div className="flex-1 overflow-y-auto p-4">
                   {showCreateTicket ? (
                     <div className="space-y-4">
-                      <h3 className="font-semibold text-lg">Create New Ticket</h3>
+                      <h3 className="text-lg font-semibold text-foreground">Create New Ticket</h3>
                       <input
                         type="text"
                         placeholder="Subject"
                         value={newTicketSubject}
                         onChange={(e) => setNewTicketSubject(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                       <select
                         value={newTicketCategory}
                         onChange={(e) => setNewTicketCategory(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg bg-white"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         <option value="technical">Technical</option>
                         <option value="billing">Billing</option>
@@ -339,18 +342,20 @@ const CustomerChatWidget: React.FC = () => {
                         placeholder="Describe your issue..."
                         value={newTicketMessage}
                         onChange={(e) => setNewTicketMessage(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg h-32"
+                        className="h-32 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                       <div className="flex gap-2">
                         <button
+                          type="button"
                           onClick={handleCreateTicket}
-                          className="flex-1 bg-[#260559] text-white px-4 py-2 rounded-lg hover:bg-[#260559]/90"
+                          className="flex-1 rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
                         >
                           Create Ticket
                         </button>
                         <button
+                          type="button"
                           onClick={() => setShowCreateTicket(false)}
-                          className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                          className="rounded-lg border border-border px-4 py-2 hover:bg-muted"
                         >
                           Cancel
                         </button>
@@ -358,35 +363,40 @@ const CustomerChatWidget: React.FC = () => {
                     </div>
                   ) : (
                     <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold">Your Tickets</h3>
+                      <div className="mb-4 flex items-center justify-between">
+                        <h3 className="font-semibold text-foreground">Your Tickets</h3>
                         <button
+                          type="button"
                           onClick={() => setShowCreateTicket(true)}
-                          className="text-[#260559] hover:underline text-sm"
+                          className="text-sm font-medium text-primary hover:underline"
                         >
                           New Ticket
                         </button>
                       </div>
                       <div className="space-y-2">
                         {tickets.length === 0 ? (
-                          <p className="text-gray-500 text-center py-8">No tickets yet. Create one to get started!</p>
+                          <p className="py-8 text-center text-sm text-muted-foreground">No tickets yet. Create one to get started!</p>
                         ) : (
                           tickets.map((ticket) => (
                             <button
+                              type="button"
                               key={ticket._id}
                               onClick={() => handleOpenTicket(ticket)}
-                              className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                              className="w-full rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/60"
                             >
-                              <div className="flex justify-between items-start mb-1">
-                                <span className="font-medium text-sm">{ticket.subject}</span>
-                                <span className={`text-xs px-2 py-1 rounded ${ticket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
-                                  ticket.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-gray-100 text-gray-800'
+                              <div className="mb-1 flex items-start justify-between">
+                                <span className="text-sm font-medium text-foreground">{ticket.subject}</span>
+                                <span className={`rounded px-2 py-1 text-xs font-medium ${
+                                  ticket.status === 'open'
+                                    ? 'border border-amber-500/35 bg-amber-500/15 text-amber-900 dark:text-amber-100'
+                                    : ticket.status === 'ongoing'
+                                      ? 'border border-success/30 bg-success/10 text-success'
+                                      : 'border border-border bg-muted text-muted-foreground'
                                   }`}>
                                   {ticket.status}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-500 truncate">{ticket.ticketNumber}</p>
+                              <p className="truncate text-xs text-muted-foreground">{ticket.ticketNumber}</p>
                             </button>
                           ))
                         )}
@@ -397,19 +407,22 @@ const CustomerChatWidget: React.FC = () => {
               ) : (
                 <>
                   {/* Messages Area */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                  <div className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4">
                     {/* Ticket Info */}
-                    <div className="bg-white p-3 rounded-lg border">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-[15px]">{currentTicket.subject}</span>
-                        <span className={`text-[9px] px-2 py-1 rounded ${currentTicket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
-                          currentTicket.status === 'ongoing' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <div className="mb-1 flex items-start justify-between">
+                        <span className="text-[15px] font-semibold text-foreground">{currentTicket.subject}</span>
+                        <span className={`rounded px-2 py-1 text-[9px] font-medium ${
+                          currentTicket.status === 'open'
+                            ? 'border border-amber-500/35 bg-amber-500/15 text-amber-900 dark:text-amber-100'
+                            : currentTicket.status === 'ongoing'
+                              ? 'border border-success/30 bg-success/10 text-success'
+                              : 'border border-border bg-muted text-muted-foreground'
                           }`}>
                           {currentTicket.status}
                         </span>
                       </div>
-                      <p className="text-[9px] text-gray-500">{currentTicket.ticketNumber}</p>
+                      <p className="text-[9px] text-muted-foreground">{currentTicket.ticketNumber}</p>
                     </div>
 
                     {/* Messages */}
@@ -420,22 +433,22 @@ const CustomerChatWidget: React.FC = () => {
                       >
                         <div
                           className={`max-w-[90%] rounded-lg p-2 ${msg.senderType === 'customer'
-                            ? 'bg-[#260559] text-white'
+                            ? 'bg-primary text-primary-foreground'
                             : msg.senderType === 'ai'
-                              ? 'bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200'
-                              : 'bg-white border'
+                              ? 'border border-primary/25 bg-primary/10'
+                              : 'border border-border bg-card text-foreground'
                             }`}
                         >
                           {/* AI Badge */}
                           {msg.senderType === 'ai' && (
-                            <div className="flex items-center gap-2 mb-2">
-                              <Bot className="w-4 h-4 text-purple-600" />
-                              <span className="text-xs font-semibold text-purple-600">AI Assistant</span>
+                            <div className="mb-2 flex items-center gap-2">
+                              <Bot className="h-4 w-4 text-primary" />
+                              <span className="text-xs font-semibold text-primary">AI Assistant</span>
                             </div>
                           )}
                           {/* Only show text content if it's not just a file upload notification */}
                           {msg.content && !(msg.messageType === 'file' && msg.content.startsWith('Uploaded:')) && (
-                            <p className={`text-sm whitespace-pre-wrap break-words ${msg.senderType === 'ai' ? 'text-gray-800' : ''
+                            <p className={`whitespace-pre-wrap break-words text-sm ${msg.senderType === 'ai' ? 'text-foreground' : ''
                               }`}>{msg.content}</p>
                           )}
                           {msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
@@ -479,9 +492,9 @@ const CustomerChatWidget: React.FC = () => {
                                         <img
                                           src={fileUrl}
                                           alt={att.originalName || 'Image attachment'}
-                                          className={`max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${isCustomerMessage
+                                          className={`max-h-[250px] max-w-full cursor-pointer rounded-lg transition-opacity hover:opacity-90 ${isCustomerMessage
                                             ? 'border border-white/30'
-                                            : 'border border-gray-300'
+                                            : 'border border-border'
                                             }`}
                                           style={{ maxHeight: '250px', maxWidth: '100%' }}
                                           onError={(e) => {
@@ -496,8 +509,8 @@ const CustomerChatWidget: React.FC = () => {
                                               fallback.target = '_blank';
                                               fallback.rel = 'noopener noreferrer';
                                               fallback.className = isCustomerMessage
-                                                ? 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors text-sm'
-                                                : 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm';
+                                                ? 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 transition-colors text-sm'
+                                                : 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted text-foreground hover:bg-muted/80 transition-colors text-sm';
                                               fallback.innerHTML = `
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
@@ -514,15 +527,15 @@ const CustomerChatWidget: React.FC = () => {
                                         href={fileUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${isCustomerMessage
-                                          ? 'border-white/30 bg-white/10 text-white hover:bg-white/20'
-                                          : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${isCustomerMessage
+                                          ? 'border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20'
+                                          : 'border-border bg-muted text-foreground hover:bg-muted/80'
                                           }`}
                                       >
                                         <Paperclip className="w-4 h-4" />
                                         <span className="font-medium">{att.originalName || 'Download file'}</span>
                                         {att.size && (
-                                          <span className={`text-xs ${isCustomerMessage ? 'opacity-70' : 'text-gray-500'}`}>
+                                          <span className={`text-xs ${isCustomerMessage ? 'opacity-70' : 'text-muted-foreground'}`}>
                                             ({(att.size / 1024).toFixed(1)} KB)
                                           </span>
                                         )}
@@ -533,7 +546,7 @@ const CustomerChatWidget: React.FC = () => {
                               })}
                             </div>
                           )}
-                          <p className="text-[9px] mt-1 opacity-70 text-right">
+                          <p className={`mt-1 text-[9px] ${msg.senderType === 'customer' ? 'text-right text-primary-foreground/75' : 'text-right text-muted-foreground'}`}>
                             {new Date(msg.createdAt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -547,11 +560,11 @@ const CustomerChatWidget: React.FC = () => {
                     {/* Typing Indicator */}
                     {typingUsers.size > 0 && (
                       <div className="flex justify-start">
-                        <div className="bg-white border rounded-lg p-3">
+                        <div className="rounded-lg border border-border bg-card p-3">
                           <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60" style={{ animationDelay: '0ms' }} />
+                            <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60" style={{ animationDelay: '150ms' }} />
+                            <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60" style={{ animationDelay: '300ms' }} />
                           </div>
                         </div>
                       </div>
@@ -562,22 +575,23 @@ const CustomerChatWidget: React.FC = () => {
 
                   {/* Closed Ticket Message */}
                   {currentTicket?.status === 'closed' && (
-                    <div className="mx-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="mx-4 mb-4 rounded-lg border border-amber-500/35 bg-amber-500/10 p-4">
                       <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-700 dark:text-amber-300" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-yellow-900 mb-2">
+                          <p className="mb-2 text-sm font-medium text-amber-950 dark:text-amber-100">
                             Current ticket is closed
                           </p>
-                          <p className="text-xs text-yellow-700 mb-3">
+                          <p className="mb-3 text-xs text-amber-900/90 dark:text-amber-200/90">
                             This ticket has been closed. Create a new ticket to continue the conversation.
                           </p>
                           <button
+                            type="button"
                             onClick={() => {
                               setCurrentTicket(null);
                               setShowCreateTicket(true);
                             }}
-                            className="px-4 py-2 bg-[#260559] text-white text-sm rounded-lg hover:bg-[#260559]/90 transition-colors font-medium"
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                           >
                             Create New Ticket
                           </button>
@@ -588,18 +602,19 @@ const CustomerChatWidget: React.FC = () => {
 
                   {/* Rating Modal */}
                   {isRating && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="font-semibold text-lg mb-4">Rate Your Experience</h3>
-                        <div className="flex gap-2 mb-4">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                      <div className="mx-4 w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg">
+                        <h3 className="mb-4 text-lg font-semibold">Rate Your Experience</h3>
+                        <div className="mb-4 flex gap-2">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
+                              type="button"
                               key={star}
                               onClick={() => setRating(star)}
-                              className="focus:outline-none"
+                              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                             >
                               <Star
-                                className={`w-8 h-8 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                                className={`h-8 w-8 ${star <= rating ? 'fill-primary text-primary' : 'text-muted-foreground'
                                   }`}
                               />
                             </button>
@@ -609,20 +624,22 @@ const CustomerChatWidget: React.FC = () => {
                           placeholder="Optional feedback..."
                           value={feedback}
                           onChange={(e) => setFeedback(e.target.value)}
-                          className="w-full px-3 py-2 border rounded-lg mb-4"
+                          className="mb-4 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                           rows={3}
                         />
                         <div className="flex gap-2">
                           <button
+                            type="button"
                             onClick={handleSubmitRating}
                             disabled={!rating}
-                            className="flex-1 bg-[#260559] text-white px-4 py-2 rounded-lg hover:bg-[#260559]/90 disabled:opacity-50"
+                            className="flex-1 rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                           >
                             Submit
                           </button>
                           <button
+                            type="button"
                             onClick={() => setIsRating(false)}
-                            className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                            className="rounded-lg border border-border px-4 py-2 hover:bg-muted"
                           >
                             Skip
                           </button>
@@ -633,11 +650,11 @@ const CustomerChatWidget: React.FC = () => {
 
                   {/* Input Area - Only show when ticket is not closed */}
                   {currentTicket?.status !== 'closed' && (
-                    <div className="border-t bg-white">
+                    <div className="border-t border-border bg-card">
                       {/* Pending Attachments Preview */}
                       {pendingAttachments.length > 0 && (
-                        <div className="p-3 border-b bg-gray-50 space-y-2">
-                          <div className="text-xs text-gray-600 mb-2">Attachments ({pendingAttachments.length}):</div>
+                        <div className="space-y-2 border-b border-border bg-muted/30 p-3">
+                          <div className="mb-2 text-xs text-muted-foreground">Attachments ({pendingAttachments.length}):</div>
                           {pendingAttachments.map((att, idx) => {
                             const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://165.22.215.73:2107';
                             const filePath = att.path.startsWith('/') ? att.path.substring(1) : att.path;
@@ -645,33 +662,34 @@ const CustomerChatWidget: React.FC = () => {
                             const isImage = att.mimeType?.startsWith('image/');
 
                             return (
-                              <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                              <div key={idx} className="flex items-center gap-2 rounded border border-border bg-card p-2">
                                 {isImage ? (
                                   <img
                                     src={fileUrl}
                                     alt={att.originalName}
-                                    className="w-12 h-12 object-cover rounded"
+                                    className="h-12 w-12 rounded object-cover"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).style.display = 'none';
                                     }}
                                   />
                                 ) : (
-                                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                    <Paperclip className="w-6 h-6 text-gray-400" />
+                                  <div className="flex h-12 w-12 items-center justify-center rounded bg-muted">
+                                    <Paperclip className="h-6 w-6 text-muted-foreground" />
                                   </div>
                                 )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-gray-900 truncate">{att.originalName}</div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate text-sm font-medium text-foreground">{att.originalName}</div>
                                   {att.size && (
-                                    <div className="text-xs text-gray-500">{(att.size / 1024).toFixed(1)} KB</div>
+                                    <div className="text-xs text-muted-foreground">{(att.size / 1024).toFixed(1)} KB</div>
                                   )}
                                 </div>
                                 <button
+                                  type="button"
                                   onClick={() => handleRemovePendingAttachment(idx)}
-                                  className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                  className="rounded p-1 text-destructive hover:bg-destructive/10"
                                   title="Remove attachment"
                                 >
-                                  <X className="w-4 h-4" />
+                                  <X className="h-4 w-4" />
                                 </button>
                               </div>
                             );
@@ -691,7 +709,7 @@ const CustomerChatWidget: React.FC = () => {
                               }
                             }}
                             placeholder="Type a message..."
-                            className="flex-1 resize-none px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559] max-h-32 overflow-y-auto text-sm"
+                            className="max-h-32 flex-1 resize-none overflow-y-auto rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                             rows={1}
                           />
                           <input
@@ -702,22 +720,24 @@ const CustomerChatWidget: React.FC = () => {
                             accept="image/*,.pdf,.doc,.docx"
                           />
                           <button
+                            type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={uploadingFile}
-                            className="p-2 text-gray-500 hover:text-[#260559] disabled:opacity-50"
+                            className="p-2 text-muted-foreground hover:text-primary disabled:opacity-50"
                             title="Attach file"
                           >
-                            <Paperclip className="w-5 h-5" />
+                            <Paperclip className="h-5 w-5" />
                           </button>
                           <button
+                            type="button"
                             onClick={handleSendMessage}
                             disabled={(!messageInput.trim() && pendingAttachments.length === 0) || uploadingFile}
-                            className="bg-[#260559] text-white p-2 rounded-lg hover:bg-[#260559]/90 disabled:opacity-50"
+                            className="rounded-lg bg-primary p-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                           >
-                            <Send className="w-5 h-5" />
+                            <Send className="h-5 w-5" />
                           </button>
                         </div>
-                        <p className="mt-2 text-[11px] text-gray-500">
+                        <p className="mt-2 text-[11px] text-muted-foreground">
                           Press <span className="font-semibold">Enter</span> to send,&nbsp;
                           <span className="font-semibold">Shift+Enter</span> for a new line.
                         </p>

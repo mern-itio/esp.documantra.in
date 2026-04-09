@@ -28,8 +28,8 @@ export const SubscriptionInfo: React.FC<SubscriptionInfoProps> = ({
       <Card className={className}>
         <CardContent className="p-4">
           <div className="flex items-center space-x-2">
-            <RefreshCw className="h-4 w-4 animate-spin" />
-            <span className="text-sm text-gray-600">Loading subscription...</span>
+            <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Loading subscription...</span>
           </div>
         </CardContent>
       </Card>
@@ -42,8 +42,8 @@ export const SubscriptionInfo: React.FC<SubscriptionInfoProps> = ({
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-red-600">Error loading subscription</p>
-              <p className="text-xs text-gray-500">{error}</p>
+              <p className="text-sm text-destructive">Error loading subscription</p>
+              <p className="text-xs text-muted-foreground">{error}</p>
             </div>
             {showRefreshButton && (
               <Button 
@@ -66,7 +66,7 @@ export const SubscriptionInfo: React.FC<SubscriptionInfoProps> = ({
     return (
       <Card className={className}>
         <CardContent className="p-4">
-          <p className="text-sm text-gray-600">No subscription data available</p>
+          <p className="text-sm text-muted-foreground">No subscription data available</p>
         </CardContent>
       </Card>
     );
@@ -79,13 +79,17 @@ export const SubscriptionInfo: React.FC<SubscriptionInfoProps> = ({
     <Card className={className}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">
+          <CardTitle className="text-lg font-semibold text-card-foreground">
             {userPlan.name}
           </CardTitle>
           <div className="flex items-center space-x-2">
             <Badge 
               variant={isFree ? "secondary" : "default"}
-              className={isFree ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800 border border-yellow-300"}
+              className={
+                isFree
+                  ? 'border border-success/30 bg-success/10 text-success'
+                  : 'border border-primary/30 bg-primary/10 text-primary'
+              }
             >
               {userPlan.type.toUpperCase()}
             </Badge>
@@ -108,15 +112,15 @@ export const SubscriptionInfo: React.FC<SubscriptionInfoProps> = ({
           {/* Credits Information */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Zap className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm font-medium">Credits</span>
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Credits</span>
             </div>
             <div className="text-right">
-              <span className="text-sm font-semibold">
+              <span className="text-sm font-semibold text-foreground">
                 {remainingCredits === Infinity ? '∞' : remainingCredits}
               </span>
               {userPlan.conversionsLimitType === 'number' && (
-                <span className="text-xs text-gray-500 ml-1">
+                <span className="ml-1 text-xs text-muted-foreground">
                   / {userPlan.conversionsLimit}
                 </span>
               )}
@@ -125,9 +129,9 @@ export const SubscriptionInfo: React.FC<SubscriptionInfoProps> = ({
 
           {/* Available Services */}
           <div>
-            <div className="flex items-center space-x-2 mb-2">
-              <CreditCard className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium">Available Services</span>
+            <div className="mb-2 flex items-center space-x-2">
+              <CreditCard className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Available Services</span>
             </div>
             <div className="flex flex-wrap gap-1">
               {userPlan.services.map((service) => (
@@ -145,19 +149,19 @@ export const SubscriptionInfo: React.FC<SubscriptionInfoProps> = ({
           {/* Plan Description */}
           {userPlan.description && (
             <div>
-              <p className="text-xs text-gray-600">{userPlan.description}</p>
+              <p className="text-xs text-muted-foreground">{userPlan.description}</p>
             </div>
           )}
 
           {/* Status */}
-          <div className="flex items-center justify-between pt-2 border-t">
-            <span className="text-xs text-gray-500">Status</span>
+          <div className="flex items-center justify-between border-t border-border pt-2">
+            <span className="text-xs text-muted-foreground">Status</span>
             <Badge 
               variant={userPlan.status === 'active' ? 'default' : 'secondary'}
               className={
-                userPlan.status === 'active' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-gray-100 text-gray-800'
+                userPlan.status === 'active'
+                  ? 'border border-success/30 bg-success/10 text-success'
+                  : 'border border-border bg-muted text-muted-foreground'
               }
             >
               {userPlan.status.toUpperCase()}

@@ -256,33 +256,36 @@ const CreditsUsagePage: React.FC = () => {
       return monthKey === selectedInvoiceMonth;
     });
   }, [invoices, selectedInvoiceMonth]);
+  const chartTickFill = 'var(--muted-foreground)';
+  const chartGridStroke = 'var(--border)';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="mb-2 flex items-center gap-3">
               <Link
                 to="/dashboard"
                 aria-label="Back to Dashboard"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-white hover:shadow-sm transition-all"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Credits & Usage</h1>
-                <p className="text-sm text-gray-500 mt-1">Track your billing and usage history</p>
+                <h1 className="text-3xl font-bold text-foreground">Credits & Usage</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Track your billing and usage history</p>
               </div>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+          <div className="border-b border-border bg-gradient-to-r from-muted/40 to-card px-6 py-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Included Usage</h2>
+                <h2 className="text-xl font-bold text-foreground">Included Usage</h2>
                 {selectedIncludedMonthKey && (
-                  <p className="text-sm text-gray-600 mt-1">{monthLabelFromKey(selectedIncludedMonthKey)}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{monthLabelFromKey(selectedIncludedMonthKey)}</p>
                 )}
               </div>
               {availableIncludedMonths.length > 0 && (
@@ -290,7 +293,7 @@ const CreditsUsagePage: React.FC = () => {
                   <select
                     value={selectedIncludedMonthKey}
                     onChange={(e) => setSelectedIncludedMonthKey(e.target.value)}
-                    className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
+                    className="cursor-pointer appearance-none rounded-lg border border-border bg-background px-4 py-2 pr-8 text-sm font-medium text-foreground hover:border-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                     aria-label="Filter included usage by month"
                   >
                     {availableIncludedMonths.map((monthKey) => (
@@ -299,33 +302,33 @@ const CreditsUsagePage: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                 </div>
               )}
             </div>
           </div>
           <div className="p-6">
             {loading ? (
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="w-6 h-6 animate-spin mx-auto mb-2" />
+              <div className="py-8 text-center text-muted-foreground">
+                <Calendar className="mx-auto mb-2 h-6 w-6 animate-spin" />
                 <p className="text-sm">Loading usage...</p>
               </div>
             ) : availableIncludedMonths.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="py-8 text-center text-muted-foreground">
                 <p className="text-sm">No usage history yet — months will appear here once you have activity.</p>
               </div>
             ) : includedUsage.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="py-8 text-center text-muted-foreground">
                 <p className="text-sm">
                   No included usage for {selectedIncludedMonthKey ? monthLabelFromKey(selectedIncludedMonthKey) : 'this month'}.
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Included in {userPlan?.name || 'Plan'}</div>
+                <div className="mb-2 text-sm font-semibold text-foreground">Included in {userPlan?.name || 'Plan'}</div>
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  <div className="rounded-lg border border-border bg-muted/30 p-4">
+                    <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Monthly usage by module
                     </div>
                     <div className="h-64">
@@ -335,10 +338,18 @@ const CreditsUsagePage: React.FC = () => {
                           margin={{ top: 6, right: 16, left: 8, bottom: 24 }}
                           barCategoryGap={18}
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                          <XAxis dataKey="module" type="category" tick={{ fontSize: 11, fill: '#374151' }} interval={0} angle={-10} textAnchor="end" height={52} />
-                          <YAxis type="number" tick={{ fontSize: 11, fill: '#6b7280' }} />
-                          <Tooltip formatter={(value: any) => [`${Number(value).toLocaleString()} credits`, 'Usage']} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} opacity={0.6} />
+                          <XAxis dataKey="module" type="category" tick={{ fontSize: 11, fill: chartTickFill }} interval={0} angle={-10} textAnchor="end" height={52} />
+                          <YAxis type="number" tick={{ fontSize: 11, fill: chartTickFill }} />
+                          <Tooltip
+                            formatter={(value: any) => [`${Number(value).toLocaleString()} credits`, 'Usage']}
+                            contentStyle={{
+                              background: 'var(--card)',
+                              border: '1px solid var(--border)',
+                              borderRadius: '0.5rem',
+                              color: 'var(--foreground)',
+                            }}
+                          />
                           <Bar dataKey="credits" radius={[6, 6, 0, 0]} maxBarSize={60}>
                             {includedUsageByModuleData.map((entry, index) => (
                               <Cell key={`module-cell-${index}`} fill={entry.color} />
@@ -348,26 +359,26 @@ const CreditsUsagePage: React.FC = () => {
                       </ResponsiveContainer>
                     </div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 bg-white p-1">
+                  <div className="rounded-lg border border-border bg-card p-1">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Item</th>
-                          <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Credits</th>
+                        <tr className="border-b border-border">
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Item</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Credits</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-border">
                         {includedUsage.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50">
-                            <td className="py-3 px-4 text-sm text-gray-900">{item.item}</td>
-                            <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                          <tr key={idx} className="transition-colors hover:bg-muted/40">
+                            <td className="px-4 py-3 text-sm text-foreground">{item.item}</td>
+                            <td className="px-4 py-3 text-right text-sm text-foreground">
                               {item.credits.toLocaleString()}
                             </td>
                           </tr>
                         ))}
-                        <tr className="border-t-2 border-gray-300 font-semibold">
-                          <td className="py-3 px-4 text-sm text-gray-900">Total</td>
-                          <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                        <tr className="border-t-2 border-border font-semibold">
+                          <td className="px-4 py-3 text-sm text-foreground">Total</td>
+                          <td className="px-4 py-3 text-right text-sm text-foreground">
                             {includedTotal.toLocaleString()}
                           </td>
                         </tr>
@@ -379,24 +390,24 @@ const CreditsUsagePage: React.FC = () => {
             )}
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+          <div className="border-b border-border bg-gradient-to-r from-muted/40 to-card px-6 py-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Invoices</h2>
+                <h2 className="text-xl font-bold text-foreground">Invoices</h2>
               </div>
               {availableInvoiceMonths.length > 0 && (
                 <div className="relative">
                   <select
                     value={selectedInvoiceMonth}
                     onChange={(e) => setSelectedInvoiceMonth(e.target.value)}
-                    className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
+                    className="cursor-pointer appearance-none rounded-lg border border-border bg-background px-4 py-2 pr-8 text-sm font-medium text-foreground hover:border-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {availableInvoiceMonths.map(month => (
                       <option key={month} value={month}>{month}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -404,53 +415,53 @@ const CreditsUsagePage: React.FC = () => {
 
           <div className="p-6">
             {loadingInvoices ? (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="w-6 h-6 animate-spin mx-auto mb-2" />
+              <div className="py-8 text-center text-muted-foreground">
+                <FileText className="mx-auto mb-2 h-6 w-6 animate-spin" />
                 <p className="text-sm">Loading invoices...</p>
               </div>
             ) : filteredInvoices.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="py-8 text-center text-muted-foreground">
                 <p className="text-sm">No invoices found for this period</p>
               </div>
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                    <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Invoice</th>
+                  <tr className="border-b border-border">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Invoice</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border">
                   {filteredInvoices.map((invoice) => {
                     const invoiceId = invoice._id || invoice.id;
                     const invoiceUrl = `/invoice/${invoiceId}`;
 
                     return (
-                      <tr key={invoiceId} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm text-gray-900">
+                      <tr key={invoiceId} className="transition-colors hover:bg-muted/40">
+                        <td className="px-4 py-3 text-sm text-foreground">
                           {invoice.createdAt ? formatDate(invoice.createdAt) : '—'}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-900">
+                        <td className="px-4 py-3 text-sm text-foreground">
                           {invoice.planName || 'Subscription'}
                         </td>
-                        <td className="py-3 px-4 text-sm">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
-                            <CheckCircle2 className="w-3 h-3" />
+                        <td className="px-4 py-3 text-sm">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                            <CheckCircle2 className="h-3 w-3" />
                             Paid
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                        <td className="px-4 py-3 text-right text-sm text-foreground">
                           {typeof invoice.amount === 'number' ? invoice.amount.toFixed(2) : invoice.amount} {invoice.currency || 'USD'}
                         </td>
-                        <td className="py-3 px-4 text-sm text-right">
+                        <td className="px-4 py-3 text-right text-sm">
                           <Link to={invoiceUrl}
-                            className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium"
+                            className="inline-flex items-center gap-1 font-medium text-primary hover:text-primary/90"
                           >
                             View
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                         </td>
                       </tr>

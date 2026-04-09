@@ -31,7 +31,7 @@ export default function CouponModal({ coupon, onClose }: CouponModalProps) {
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl animate-scale-in overflow-hidden border border-gray-200">
+      <div className="relative w-full max-w-sm bg-background rounded-2xl shadow-xl animate-scale-in overflow-hidden border border-border">
         <Confetti active={revealed} />
         {/* Voucher header */}
         <div className="p-5 pb-4">
@@ -39,20 +39,20 @@ export default function CouponModal({ coupon, onClose }: CouponModalProps) {
             <div className="flex-1">
               <span className="text-[11px] font-medium text-[#2CA58D] tracking-wide uppercase">{coupon.category}</span>
               <h2 className="text-base font-semibold text-card-foreground mt-0.5">{coupon.title}</h2>
-              <p className="text-xs text-gray-500 mt-1">{coupon.description}</p>
+              <p className="text-xs text-muted-foreground mt-1">{coupon.description}</p>
             </div>
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center transition-colors hover:bg-muted -mt-0.5"
+              className="w-7 h-7 rounded-full bg-muted/40 flex items-center justify-center transition-colors hover:bg-muted -mt-0.5"
             >
-              <X className="w-3.5 h-3.5 text-gray-500" />
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           </div>
 
           {/* Value highlight */}
-          <div className="mt-4 flex items-center justify-between bg-gray-100 rounded-lg px-4 py-2.5">
+          <div className="mt-4 flex items-center justify-between bg-muted/40 rounded-lg px-4 py-2.5">
             <span className="text-xl font-bold text-foreground tracking-tight">{coupon.rewardValue}</span>
-            <span className="text-[11px] text-gray-500 flex items-center gap-1">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Expires {new Date(coupon.expiryDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </span>
@@ -61,9 +61,9 @@ export default function CouponModal({ coupon, onClose }: CouponModalProps) {
 
         {/* Perforation */}
         <div className="relative flex items-center">
-          <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-white border border-gray-200" />
-          <div className="flex-1 border-t border-dashed border-gray-200 mx-4" />
-          <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-white border border-gray-200" />
+          <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-background border border-border" />
+          <div className="flex-1 border-t border-dashed border-border mx-4" />
+          <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-background border border-border" />
         </div>
 
         {/* Scratch / Code area */}
@@ -75,7 +75,7 @@ export default function CouponModal({ coupon, onClose }: CouponModalProps) {
             </div>
           )}
 
-          <div className="rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+          <div className="rounded-lg bg-muted/40 overflow-hidden flex items-center justify-center">
             <ScratchCard width={320} height={80} onReveal={handleReveal}>
               <div className="flex items-center justify-center h-full">
                 <span
@@ -100,7 +100,7 @@ export default function CouponModal({ coupon, onClose }: CouponModalProps) {
 
               {/* Actions */}
               <div className="flex items-center gap-2">
-                <div className="flex-1 px-3 py-2.5 bg-secondary rounded-lg font-mono text-sm tracking-widest text-foreground text-center select-all">
+                <div className="flex-1 px-3 py-2.5 bg-muted rounded-lg font-mono text-sm tracking-widest text-foreground text-center select-all">
                   {coupon.rewardCode}
                 </div>
                 <button
@@ -118,7 +118,7 @@ export default function CouponModal({ coupon, onClose }: CouponModalProps) {
               </button>
 
               {coupon.terms && (
-                <p className="text-[11px] text-gray-500 leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   {coupon.terms}
                 </p>
               )}

@@ -22,7 +22,7 @@ const DashboardLayout: React.FC = () => {
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-2">
+        <main className="bg-card/95 flex-1 overflow-x-hidden overflow-y-auto p-2">
           <ScrollToTop />
           <Outlet />
         </main>

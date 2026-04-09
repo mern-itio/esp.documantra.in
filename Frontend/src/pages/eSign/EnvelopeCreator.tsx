@@ -2627,7 +2627,6 @@ const EnvelopeCreator: React.FC = () => {
           text: err?.response?.data?.message || "Failed to schedule envelope. Please try again.",
           icon: "error",
           confirmButtonText: "OK",
-          confirmButtonColor: "#ffc107",
         });
       }
       return;
@@ -2691,7 +2690,6 @@ const EnvelopeCreator: React.FC = () => {
           title: 'Milestone achieved!',
           html: referralMilestoneSwalHtml(milestone),
           confirmButtonText: 'Awesome',
-          confirmButtonColor: '#260559',
         });
         // Milestone popup already shown; avoid triggering Agreement success popup again.
         navigate('/e-sign/aggrement');
@@ -2776,7 +2774,6 @@ const EnvelopeCreator: React.FC = () => {
         text: "Failed to send envelope. Please try again.",
         icon: "error",
         confirmButtonText: "OK",
-        confirmButtonColor: "#ffc107",
       });
     } finally {
       setSending(false);
@@ -3147,8 +3144,6 @@ const EnvelopeCreator: React.FC = () => {
         showCancelButton: true,
         confirmButtonText: 'Continue and Update',
         cancelButtonText: 'Cancel',
-        confirmButtonColor: '#7c3aed',
-        cancelButtonColor: '#6b7280',
         didOpen: () => {
           const container = Swal.getContainer();
           if (container) container.style.zIndex = '10050';
@@ -3245,8 +3240,6 @@ const EnvelopeCreator: React.FC = () => {
       text: `${recipient.name} (${recipient.email}) will be removed from your saved recipients.`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#7c3aed',
-      cancelButtonColor: '#6b7280',
       confirmButtonText: 'Delete',
       // Recipient picker modal uses z-[10000]; Swal defaults ~1060 and would sit behind it
       didOpen: () => {
@@ -3524,11 +3517,11 @@ const EnvelopeCreator: React.FC = () => {
               onClick={() => setShowDocuments(prev => !prev)}
               className="cursor-pointer flex items-center justify-between"
             >
-              <h3 className="text-lg font-semibold text-gray-900">Add documents</h3>
+              <h3 className="text-lg font-semibold text-foreground">Add documents</h3>
               {showDocuments ? (
-                <ChevronUp className="w-5 h-5 text-gray-500" />
+                <ChevronUp className="w-5 h-5 text-muted-foreground" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-gray-500" />
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
               )}
             </div>
 
@@ -3566,7 +3559,7 @@ const EnvelopeCreator: React.FC = () => {
                           return (
                             <div
                               key={doc.id}
-                              className="absolute top-0 left-0 w-full bg-white rounded-lg flex flex-col transition-all duration-500 ease-in-out overflow-hidden"
+                              className="absolute top-0 left-0 w-full bg-primary rounded-2xl flex flex-col transition-all duration-500 ease-in-out overflow-hidden"
                               style={{
                                 transform: `translate(${horizontalOffset}px, ${absPosition * verticalOffset}px) scale(${scale})`,
                                 transformOrigin: 'top left',
@@ -3610,7 +3603,7 @@ const EnvelopeCreator: React.FC = () => {
                                     }}
                                   />
                                   <div className="w-full h-full flex items-center justify-center bg-transparent relative z-10 p-2">
-                                    <div className="rounded-md shadow-sm border border-gray-200/50 bg-white p-1">
+                                    <div className="rounded-md shadow-sm border border-border/50 bg-white p-1">
                                       <PDFDocument file={doc.url}>
                                         <PDFPage pageNumber={1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
                                       </PDFDocument>
@@ -3627,7 +3620,7 @@ const EnvelopeCreator: React.FC = () => {
                                           setSelectedPdfForPreview(doc);
                                           setPdfPreviewModalOpen(true);
                                         }}
-                                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-900 rounded-lg shadow-xl hover:bg-gray-50 transition-all hover:scale-105 font-medium"
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-foreground rounded-lg shadow-xl hover:bg-gray-50 transition-all hover:scale-105 font-medium"
                                         style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)', pointerEvents: 'auto' }}
                                       >
                                         <Eye className="w-4 h-4" />
@@ -3657,14 +3650,14 @@ const EnvelopeCreator: React.FC = () => {
                                 </div>
                               ) : (
                                 <div className={paddingClass}>
-                                  <p className={`font-medium text-gray-900 ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
+                                  <p className={`font-medium text-foreground ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
                                   <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
                                     <div
                                       className="h-full bg-blue-500 transition-all"
                                       style={{ width: `${doc.uploadProgress ?? 0}%` }}
                                     />
                                   </div>
-                                  <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1">{doc.uploadProgress ?? 0}%</p>
                                 </div>
                               )}
                             </div>
@@ -3700,7 +3693,6 @@ const EnvelopeCreator: React.FC = () => {
                         )}
                       </div>
                     </div>
-
                     <div className="w-2/3 flex-shrink-0" data-tour="ec-upload">
                       <div
                         onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
@@ -3708,9 +3700,9 @@ const EnvelopeCreator: React.FC = () => {
                         onDragEnter={handleDragEnter}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className={`bg-gray-100 transition-colors ${isDragOver
+                        className={`bg-primary transition-colors ${isDragOver
                           ? 'border-2 border-blue-400 bg-blue-50'
-                          : 'border border-gray-200'
+                          : 'border border-border'
                           } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
                           } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[250px] flex items-center justify-center`}
                       >
@@ -3724,10 +3716,10 @@ const EnvelopeCreator: React.FC = () => {
                         />
                         {(!documents || documents.length === 0) ? (
                           <div className="flex flex-col items-center justify-center space-y-4 w-full">
-                            <div className="bg-gray-700 rounded-lg p-3">
+                            <div className="bg-primary rounded-lg p-3">
                               <ArrowUpToLine className="w-6 h-6 text-white" />
                             </div>
-                            <p className="text-sm text-gray-700">Drop your files here or</p>
+                            <p className="text-sm text-muted-foreground">Drop your files here or</p>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -3743,13 +3735,13 @@ const EnvelopeCreator: React.FC = () => {
                         ) : (
                           <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="flex flex-col items-center justify-center w-full cursor-pointer text-gray-500 hover:text-gray-700"
+                            className="flex flex-col items-center justify-center w-full cursor-pointer text-muted-foreground hover:text-muted-foreground"
                           >
                             <div className="flex flex-col items-center justify-center space-y-4">
                               <div className="bg-gray-700 rounded-lg p-3">
                                 <Upload className="w-6 h-6 text-white" />
                               </div>
-                              <p className="text-sm text-gray-700">Drop your files here or</p>
+                              <p className="text-sm text-muted-foreground">Drop your files here or</p>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -3782,7 +3774,7 @@ const EnvelopeCreator: React.FC = () => {
                       const closeIconSize = docCount >= 4 ? 'w-2.5 h-2.5' : 'w-3 h-3';
 
                       return (
-                        <div key={doc.id} className="w-full h-auto relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
+                        <div key={doc.id} className="w-full h-auto relative bg-card rounded-lg border border-border shadow-sm flex flex-col">
                           {/* Close button at top right */}
                           {!doc.isUploading && (
                             <button
@@ -3799,7 +3791,7 @@ const EnvelopeCreator: React.FC = () => {
                           {/* PDF Preview/Thumbnail */}
                           {!doc.isUploading && doc.url && (
                             <div
-                              className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0 relative group"
+                              className="w-full flex-1 border-b border-border overflow-hidden bg-primary rounded-t-lg min-h-0 relative group"
                               style={{ minHeight: previewMinHeight }}
                             >
                               {/* React-PDF thumbnail (first page) */}
@@ -3816,7 +3808,7 @@ const EnvelopeCreator: React.FC = () => {
                                     setSelectedPdfForPreview(doc);
                                     setPdfPreviewModalOpen(true);
                                   }}
-                                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
+                                  className="flex items-center gap-2 px-4 py-2 bg-card text-foreground rounded-lg shadow-lg hover:bg-muted transition-colors"
                                 >
                                   <Eye className="w-4 h-4" />
                                   <span className="text-sm font-medium">View</span>
@@ -3831,11 +3823,11 @@ const EnvelopeCreator: React.FC = () => {
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
                                   {/* File Name */}
-                                  <p className={`font-semibold text-gray-900 ${fontSizeClass} mb-1 truncate`} title={doc.name}>
+                                  <p className={`font-semibold text-foreground ${fontSizeClass} mb-1 truncate`} title={doc.name}>
                                     {doc.name}
                                   </p>
                                   <div className="flex items-center justify-between">
-                                    <p className="text-xs text-gray-600">
+                                    <p className="text-xs text-muted-foreground">
                                       {doc.pages} page{doc.pages !== 1 ? 's' : ''}
                                     </p>
                                   </div>
@@ -3846,14 +3838,14 @@ const EnvelopeCreator: React.FC = () => {
                           ) : (
                             /* Uploading state */
                             <div className={paddingClass}>
-                              <p className={`font-medium text-gray-900 ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
+                              <p className={`font-medium text-foreground ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
                               <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
                                 <div
                                   className="h-full bg-blue-500 transition-all"
                                   style={{ width: `${doc.uploadProgress ?? 0}%` }}
                                 />
                               </div>
-                              <p className="text-[10px] text-gray-500 mt-1">{doc.uploadProgress ?? 0}%</p>
+                              <p className="text-[10px] text-muted-foreground mt-1">{doc.uploadProgress ?? 0}%</p>
                             </div>
                           )}
                         </div>
@@ -3884,9 +3876,9 @@ const EnvelopeCreator: React.FC = () => {
                             onDragEnter={handleDragEnter}
                             onDragLeave={handleDragLeave}
                             onDrop={handleDrop}
-                            className={`bg-gray-100 transition-colors ${isDragOver
-                              ? 'border-2 border-blue-400 bg-blue-50'
-                              : 'border border-gray-200'
+                            className={`bg-card transition-colors ${isDragOver
+                              ? 'border-2 border-border bg-primary'
+                              : 'border border-border'
                               } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
                               } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[200px] flex items-center justify-center`}
                           >
@@ -3904,7 +3896,7 @@ const EnvelopeCreator: React.FC = () => {
                                 <div className="bg-gray-700 rounded-lg p-3 mb-4">
                                   <ArrowUpToLine className="w-6 h-6 text-white" />
                                 </div>
-                                <p className="text-sm text-gray-700 mb-4">Drop your files here or</p>
+                                <p className="text-sm text-muted-foreground mb-4">Drop your files here or</p>
                                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
                                   <button
                                     onClick={(e) => {
@@ -3919,7 +3911,7 @@ const EnvelopeCreator: React.FC = () => {
                                   </button>
                                   <div className="flex items-center gap-2 my-2 sm:my-0">
                                     <div className="h-px bg-gray-300 w-8"></div>
-                                    <span className="text-xs text-gray-500 font-medium">OR</span>
+                                    <span className="text-xs text-muted-foreground font-medium">OR</span>
                                     <div className="h-px bg-gray-300 w-8"></div>
                                   </div>
                                   <button
@@ -3937,13 +3929,13 @@ const EnvelopeCreator: React.FC = () => {
                             ) : (
                               <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex flex-col items-center justify-center w-full cursor-pointer text-gray-500 hover:text-gray-700"
+                                className="flex flex-col items-center justify-center w-full cursor-pointer text-muted-foreground hover:text-muted-foreground"
                               >
                                 <div className="flex flex-col items-center justify-center space-y-4">
                                   <div className="bg-gray-700 rounded-lg p-3">
                                     <Upload className="w-6 h-6 text-white" />
                                   </div>
-                                  <p className="text-sm text-gray-700">Drop your files here or</p>
+                                  <p className="text-sm text-muted-foreground">Drop your files here or</p>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -3966,30 +3958,30 @@ const EnvelopeCreator: React.FC = () => {
                 )}
               </div>
             )}
-            <hr className="border-t-2 border-gray-300 my-4" />
+            <hr className="border-t-2 border-border my-4" />
             <div>
               <h3
                 onClick={() => setShowRecipients(prev => !prev)}
-                className="text-lg text-gray-900 mb-4 cursor-pointer flex items-center justify-between"
+                className="text-lg text-foreground mb-4 cursor-pointer flex items-center justify-between"
                 data-tour="ec-recipients-toggle"
               >
                 <span>Add recipients</span>
                 {showRecipients ? (
-                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                  <ChevronUp className="w-5 h-5 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 )}
               </h3>
               {bulkList && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-900 mb-2">Batch Name <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Batch Name <span className="text-red-500">*</span></label>
                   <input
                     value={bulkBatchName}
                     onChange={(e) => setBulkBatchName(e.target.value)}
-                    className="w-full max-w-xl px-4 py-2 border border-gray-300 rounded-sm"
+                    className="w-full max-w-xl px-4 py-2 border border-border rounded-sm"
                     placeholder="Bulk Send List"
                   />
-                  <div className="text-xs text-gray-500 mt-1">This name appears in your list of bulk sends and is not shown to others</div>
+                  <div className="text-xs text-muted-foreground mt-1">This name appears in your list of bulk sends and is not shown to others</div>
                 </div>
               )}
               {showRecipients && (
@@ -4015,9 +4007,9 @@ const EnvelopeCreator: React.FC = () => {
                             setRecipients([]);
                           }
                         }}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-border rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-800 text-[12px] flex items-center gap-2">
+                      <span className="text-foreground text-[12px] flex items-center gap-2">
                         I'm the only signer
                         <span className="relative group inline-flex">
                           <div>
@@ -4046,10 +4038,10 @@ const EnvelopeCreator: React.FC = () => {
                           checked={setSigningOrder}
                           onChange={(e) => setSetSigningOrder(e.target.checked)}
                           disabled={(((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2)}
-                          className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-4 h-4 text-purple-600 bg-gray-100 border-border rounded focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           title={(((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2) ? 'Add at least two recipients to set signing order' : ''}
                         />
-                        <span className={`text-sm ${((((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2)) ? 'text-gray-300' : 'text-gray-700'}`}>Set signing order</span>
+                        <span className={`text-sm ${((((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2)) ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>Set signing order</span>
                       </label>
 
                       <div className="flex items-center gap-4">
@@ -4090,7 +4082,7 @@ const EnvelopeCreator: React.FC = () => {
                               <span className="font-medium">{csvRecipientList?.fileName || 'Bulk Send List'}</span>
                               <button className="px-1" title="Options"><ChevronDown className="w-4 h-4" /></button>
                             </div>
-                            <button onClick={clearBulkList} className="ml-3 text-gray-600 hover:text-red-600" title="Remove"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={clearBulkList} className="ml-3 text-muted-foreground hover:text-red-600" title="Remove"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}
                       </div>
@@ -4108,7 +4100,7 @@ const EnvelopeCreator: React.FC = () => {
                           <div className="relative bg-white w-full h-full p-6 overflow-y-auto">
                             <button
                               onClick={() => setShowBulkModal(false)}
-                              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800"
+                              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-foreground"
                             >
                               ✕
                             </button>
@@ -4128,24 +4120,24 @@ const EnvelopeCreator: React.FC = () => {
                                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-10">
                                     <button
                                       onClick={() => setBulkMethod('manual')}
-                                      className={`text-left p-6 border ${bulkMethod === 'manual' ? 'border-black-900' : 'border-gray-300 hover:border-gray-400'}`}
+                                      className={`text-left p-6 border ${bulkMethod === 'manual' ? 'border-black-900' : 'border-border hover:border-gray-400'}`}
                                     >
                                       <div className="flex items-center gap-3 mb-2">
                                         <span className={`w-4 h-4 rounded-full border ${bulkMethod === 'manual' ? 'bg-blue-600 border-blue-600' : 'border-gray-400'}`} />
                                         <span className="font-semibold text-[#3E2B66]">Enter manually</span>
                                       </div>
-                                      <div className="text-sm text-gray-600">Best for shorter lists. Type each recipient's name, role, and email address.</div>
+                                      <div className="text-sm text-muted-foreground">Best for shorter lists. Type each recipient's name, role, and email address.</div>
                                     </button>
 
                                     <button
                                       onClick={() => setBulkMethod('csv')}
-                                      className={`text-left p-6 border ${bulkMethod === 'csv' ? 'border-black-900' : 'border-gray-300 hover:border-gray-400'}`}
+                                      className={`text-left p-6 border ${bulkMethod === 'csv' ? 'border-black-900' : 'border-border hover:border-gray-400'}`}
                                     >
                                       <div className="flex items-center gap-3 mb-2">
                                         <span className={`w-4 h-4 rounded-full border ${bulkMethod === 'csv' ? 'bg-blue-600 border-blue-900' : 'border-gray-400'}`} />
                                         <span className="text-[#3E2B66]">Upload a CSV</span>
                                       </div>
-                                      <div className="text-sm text-gray-600">Required for 10+ recipients. We'll provide a sample for formatting help.</div>
+                                      <div className="text-sm text-muted-foreground">Required for 10+ recipients. We'll provide a sample for formatting help.</div>
                                     </button>
                                   </div>
 
@@ -4165,10 +4157,10 @@ const EnvelopeCreator: React.FC = () => {
                               <div>
                                 <div className='container mx-auto px-4 sm:px-8 lg:px-50 '>
                                   <h3 className="text-[32px] leading-tight text-[#3E2B66] mb-1">Recipients</h3>
-                                  <p className="text-gray-600 mb-6">Enter information for up to 10 recipients. If you need to add more recipients, <span className="text-purple-700 underline cursor-pointer" onClick={() => setBulkMethod('csv')}>upload a CSV instead</span></p>
+                                  <p className="text-muted-foreground mb-6">Enter information for up to 10 recipients. If you need to add more recipients, <span className="text-purple-700 underline cursor-pointer" onClick={() => setBulkMethod('csv')}>upload a CSV instead</span></p>
 
                                   <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-900 mb-2">Role *</label>
+                                    <label className="block text-sm font-medium text-foreground mb-2">Role *</label>
                                     <select
                                       className="w-full max-w-md px-3 py-2 border rounded-sm"
                                       value={bulkSharedRole as any}
@@ -4180,14 +4172,14 @@ const EnvelopeCreator: React.FC = () => {
                                       <option value="carbon_copy">Receives a Copy</option>
                                       <option value="needs_to_view">Needs to View</option>
                                     </select>
-                                    <div className="text-xs text-gray-500 mt-1">All recipients share this role.</div>
+                                    <div className="text-xs text-muted-foreground mt-1">All recipients share this role.</div>
                                   </div>
 
                                   <div className="space-y-4">
                                     {bulkRows.map((row) => (
                                       <div key={row.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                                         <div>
-                                          <label className="block text-sm font-medium text-gray-900 mb-2">Name *</label>
+                                          <label className="block text-sm font-medium text-foreground mb-2">Name *</label>
                                           <input
                                             className="w-full px-3 py-2 border rounded-sm"
                                             value={row.name}
@@ -4196,7 +4188,7 @@ const EnvelopeCreator: React.FC = () => {
                                           />
                                         </div>
                                         <div className="relative">
-                                          <label className="block text-sm font-medium text-gray-900 mb-2">Email *</label>
+                                          <label className="block text-sm font-medium text-foreground mb-2">Email *</label>
                                           <input
                                             className="w-full px-3 py-2 border rounded-sm"
                                             value={row.email}
@@ -4204,7 +4196,7 @@ const EnvelopeCreator: React.FC = () => {
 
                                           />
                                           {bulkRows.length > 1 && (
-                                            <button type="button" onClick={() => removeBulkRow(row.id)} className="mt-2 absolute -right-10 top-8 text-gray-500 hover:text-red-600"><Trash2 className='w-4 h-4' /></button>
+                                            <button type="button" onClick={() => removeBulkRow(row.id)} className="mt-2 absolute -right-10 top-8 text-muted-foreground hover:text-red-600"><Trash2 className='w-4 h-4' /></button>
                                           )}
                                         </div>
                                       </div>
@@ -4229,11 +4221,11 @@ const EnvelopeCreator: React.FC = () => {
                                   <>
                                     <div className="max-w-3xl mx-auto flex-1 flex flex-col px-6 pb-6">
 
-                                      <p className="text-sm text-gray-700 mb-6" style={{ fontFamily: 'sans-serif' }}>
+                                      <p className="text-sm text-muted-foreground mb-6" style={{ fontFamily: 'sans-serif' }}>
                                         The following items could not be matched between entries on your envelope and the imported bulk list. You can accept these matching exceptions and continue with the envelope. Or you can discard the imported CSV, edit it to update column headers as required, and then re-import the edited file.
                                       </p>
                                       <div className="mb-6">
-                                        <p className="text-sm text-gray-700 mb-2" style={{ fontFamily: 'sans-serif' }}>
+                                        <p className="text-sm text-muted-foreground mb-2" style={{ fontFamily: 'sans-serif' }}>
                                           You can download a sample bulk list preformatted for your envelope.
                                         </p>
                                         <button
@@ -4269,7 +4261,7 @@ const EnvelopeCreator: React.FC = () => {
                                     <div className="flex items-center justify-end gap-3 mt-auto">
                                       <button
                                         onClick={handleDiscardCsv}
-                                        className="px-4 py-2 bg-white border border-gray-300 rounded-sm text-gray-900 hover:bg-gray-50 transition-colors"
+                                        className="px-4 py-2 bg-white border border-border rounded-sm text-foreground hover:bg-gray-50 transition-colors"
                                       >
                                         Discard CSV
                                       </button>
@@ -4286,7 +4278,7 @@ const EnvelopeCreator: React.FC = () => {
                                   /* Main Content - Upload Page */
                                   <div className="flex-1 w-full flex flex-col items-center">
                                     {/* Upload CSV Title */}
-                                    <h3 className="text-2xl text-gray-900 mb-8" style={{ fontFamily: 'sans-serif' }}>Upload a CSV</h3>
+                                    <h3 className="text-2xl text-foreground mb-8" style={{ fontFamily: 'sans-serif' }}>Upload a CSV</h3>
 
                                     {/* Drag and Drop Area */}
                                     <div
@@ -4295,7 +4287,7 @@ const EnvelopeCreator: React.FC = () => {
                                       onDrop={handleDropCsv}
                                       className={`w-full max-w-2xl border-2 border-dashed rounded-lg p-12 ${isDragOverCsv
                                         ? 'border-purple-500'
-                                        : 'border-gray-200'
+                                        : 'border-border'
                                         }`}
                                       style={{
                                         backgroundColor: isDragOverCsv ? '#f3e8ff' : '#f5f3f7',
@@ -4304,15 +4296,15 @@ const EnvelopeCreator: React.FC = () => {
                                     >
                                       <div className="flex flex-col items-center justify-center">
                                         {/* Upload Icon */}
-                                        <Upload className="w-12 h-12 text-gray-700 mb-4" />
+                                        <Upload className="w-12 h-12 text-muted-foreground mb-4" />
 
                                         {/* Drag and drop text */}
-                                        <p className="text-base font-normal text-gray-900 mb-2" style={{ fontFamily: 'sans-serif' }}>
+                                        <p className="text-base font-normal text-foreground mb-2" style={{ fontFamily: 'sans-serif' }}>
                                           Drag and drop file here
                                         </p>
 
                                         {/* Supported Formats */}
-                                        <p className="text-sm text-gray-500 mb-6" style={{ color: '#9ca3af' }}>
+                                        <p className="text-sm text-muted-foreground mb-6" style={{ color: '#9ca3af' }}>
                                           Supported Formats: CSV
                                         </p>
 
@@ -4336,19 +4328,19 @@ const EnvelopeCreator: React.FC = () => {
 
                                         {/* Show selected file name */}
                                         {csvFile && (
-                                          <p className="mt-4 text-sm text-gray-600">{csvFile.name}</p>
+                                          <p className="mt-4 text-sm text-muted-foreground">{csvFile.name}</p>
                                         )}
                                       </div>
                                     </div>
 
                                     {/* Sample CSV Section */}
                                     <div className="w-full max-w-2xl mt-6">
-                                      <p className="text-sm text-gray-900 mb-3">
+                                      <p className="text-sm text-foreground mb-3">
                                         For help formatting your list, download the sample CSV.
                                       </p>
                                       <button
                                         onClick={downloadSampleCsv}
-                                        className="inline-flex items-center font-semibold gap-2 px-4 py-2 border border-gray-300 rounded-sm bg-white text-gray-900 hover:bg-gray-50 transition-colors"
+                                        className="inline-flex items-center font-semibold gap-2 px-4 py-2 border border-border rounded-sm bg-white text-foreground hover:bg-gray-50 transition-colors"
                                       >
                                         <ArrowDownToLine className="w-4 h-4" />
                                         <span>Sample CSV</span>
@@ -4376,7 +4368,7 @@ const EnvelopeCreator: React.FC = () => {
                                             { id: `row_${Date.now() + 2}`, name: '', email: '' },
                                           ]);
                                         }}
-                                        className="px-4 py-2 bg-gray-100 text-gray-900 rounded-sm hover:bg-gray-200 transition-colors" style={{ fontFamily: 'sans-serif' }}
+                                        className="px-4 py-2 bg-gray-100 text-foreground rounded-sm hover:bg-gray-200 transition-colors" style={{ fontFamily: 'sans-serif' }}
                                       >
                                         Enter Manually Instead
                                       </button>
@@ -4400,8 +4392,8 @@ const EnvelopeCreator: React.FC = () => {
                                   {showErrorBanner && getRecipientsWithErrors().length > 0 && (
                                     <div className="mb-6 bg-gray-100 rounded-lg p-4 flex items-center justify-between">
                                       <div className="flex items-center gap-3">
-                                        <Info className="w-5 h-5 text-gray-600" />
-                                        <span className="text-sm text-gray-700">There are errors in your bulk list.</span>
+                                        <Info className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-sm text-muted-foreground">There are errors in your bulk list.</span>
                                       </div>
                                       <div className="flex items-center gap-3">
                                         <button className="text-sm text-blue-600 hover:text-blue-700 underline">
@@ -4409,7 +4401,7 @@ const EnvelopeCreator: React.FC = () => {
                                         </button>
                                         <button
                                           onClick={() => setShowErrorBanner(false)}
-                                          className="text-gray-600 hover:text-gray-800"
+                                          className="text-muted-foreground hover:text-foreground"
                                         >
                                           <X className="w-4 h-4" />
                                         </button>
@@ -4418,12 +4410,12 @@ const EnvelopeCreator: React.FC = () => {
                                   )}
 
                                   {/* Tabs */}
-                                  <div className="flex gap-6 mb-6 border-b border-gray-200">
+                                  <div className="flex gap-6 mb-6 border-b border-border">
                                     <button
                                       onClick={() => setActiveTab('all')}
                                       className={`pb-2 px-1 text-sm font-medium ${activeTab === 'all'
-                                        ? 'text-gray-900 border-b-2 border-gray-900'
-                                        : 'text-gray-500'
+                                        ? 'text-foreground border-b-2 border-gray-900'
+                                        : 'text-muted-foreground'
                                         }`}
                                     >
                                       All Recipients ({csvRecipientsData.length})
@@ -4431,8 +4423,8 @@ const EnvelopeCreator: React.FC = () => {
                                     <button
                                       onClick={() => setActiveTab('errors')}
                                       className={`pb-2 px-1 text-sm font-medium ${activeTab === 'errors'
-                                        ? 'text-gray-900 border-b-2 border-gray-900'
-                                        : 'text-gray-500'
+                                        ? 'text-foreground border-b-2 border-gray-900'
+                                        : 'text-muted-foreground'
                                         }`}
                                     >
                                       Errors ({getRecipientsWithErrors().length})
@@ -4443,7 +4435,7 @@ const EnvelopeCreator: React.FC = () => {
                                   <div className="max-h-[100px] overflow-x-auto overflow-y-auto">
                                     <div className="inline-block min-w-full">
                                       {/* Header Row */}
-                                      <div className="flex gap-4 pb-2 border-b border-gray-200 mb-2" >
+                                      <div className="flex gap-4 pb-2 border-b border-border mb-2" >
                                         <div className="w-8 flex-shrink-0"></div>
                                         {csvHeaders.map((header, headerIdx) => {
                                           const emailHeader = csvHeaders.find(h => h.toLowerCase().includes('email'));
@@ -4451,7 +4443,7 @@ const EnvelopeCreator: React.FC = () => {
                                           const isRequired = header === emailHeader || header === nameHeader;
                                           return (
                                             <div key={headerIdx} className="flex-shrink-0 w-64">
-                                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                              <label className="block text-xs font-medium text-muted-foreground mb-1">
                                                 {header}
                                                 {isRequired && <span className="text-red-500 ml-1">*</span>}
                                               </label>
@@ -4502,7 +4494,7 @@ const EnvelopeCreator: React.FC = () => {
                                                           }}
                                                           className={`w-full px-3 py-2 text-sm border rounded ${hasError
                                                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                                                            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                            : 'border-border focus:border-blue-500 focus:ring-blue-500'
                                                             } focus:outline-none focus:ring-1`}
                                                           placeholder={header}
                                                         />
@@ -4523,7 +4515,7 @@ const EnvelopeCreator: React.FC = () => {
 
                                 </div>
                                 <div className="absolute bottom-6 right-6 flex items-center justify-end gap-3">
-                                  <button onClick={handleBackToUpload} className="px-4 py-2 bg-white border border-gray-300 rounded-sm text-gray-900 hover:bg-gray-50">
+                                  <button onClick={handleBackToUpload} className="px-4 py-2 bg-white border border-border rounded-sm text-foreground hover:bg-gray-50">
                                     Back to Upload
                                   </button>
                                   <button onClick={handleSaveRecipients} className="px-6 py-2 bg-[#3E2B66] text-white rounded-sm font-medium hover:opacity-90">
@@ -4545,7 +4537,7 @@ const EnvelopeCreator: React.FC = () => {
                           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-4">
                             <button
                               onClick={() => setShowSigningOrder(false)}
-                              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800"
+                              className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-foreground"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -4576,7 +4568,7 @@ const EnvelopeCreator: React.FC = () => {
                                   // Parallel row (all recipients at step 1)
                                   return (
                                     <div className="grid grid-cols-12 gap-6">
-                                      <div className="col-span-4 text-sm text-gray-600">
+                                      <div className="col-span-4 text-sm text-muted-foreground">
                                         <div className="h-20 flex items-center font-semibold">SENDER</div>
                                         <div className="h-24 flex items-center">1</div>
                                         <div className="h-20 flex items-center font-semibold">COMPLETED</div>
@@ -4585,14 +4577,14 @@ const EnvelopeCreator: React.FC = () => {
                                         <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
                                         {/* Sender */}
                                         <div className="relative h-20 flex justify-center items-center z-10">
-                                          <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                          <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
                                           <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                             {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                                           </div>
                                         </div>
                                         {/* Grouped participants */}
                                         <div className="relative h-24 flex justify-center items-center z-10">
-                                          <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                          <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
                                           <div className="px-4 py-2 border rounded-lg bg-white z-20 flex flex-wrap items-center justify-center gap-4">
                                             {items.map((it, idx) => (
                                               <div key={`g-${idx}`} className="flex flex-col items-center gap-1">
@@ -4624,7 +4616,7 @@ const EnvelopeCreator: React.FC = () => {
                                 }));
                                 return (
                                   <div className="grid grid-cols-12 gap-6">
-                                    <div className="col-span-4 text-sm text-gray-600">
+                                    <div className="col-span-4 text-sm text-muted-foreground">
                                       <div className="h-20 flex items-center font-semibold">SENDER</div>
                                       {ordered.map((p) => (
                                         <div key={`lbl-${p.key}`} className="h-24 flex items-center">
@@ -4637,14 +4629,14 @@ const EnvelopeCreator: React.FC = () => {
                                       <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
                                       {/* Sender */}
                                       <div className="relative h-20 flex justify-center items-center z-10">
-                                        <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                        <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
                                         <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                           {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                                         </div>
                                       </div>
                                       {ordered.map((p) => (
                                         <div key={p.key} className="relative h-24 flex justify-center items-center z-10">
-                                          <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                          <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
                                           <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                             {getInitials(p.name, p.email)}
                                           </div>
@@ -4670,7 +4662,7 @@ const EnvelopeCreator: React.FC = () => {
 
                               return (
                                 <div className="grid grid-cols-12 gap-6">
-                                  <div className="col-span-4 text-sm text-gray-600">
+                                  <div className="col-span-4 text-sm text-muted-foreground">
                                     <div className="h-20 flex items-center font-semibold">SENDER</div>
                                     {ordered.map((p) => (
                                       <div key={`lbl-${p.key}`} className="h-24 flex items-center">
@@ -4682,14 +4674,14 @@ const EnvelopeCreator: React.FC = () => {
                                   <div className="col-span-8 relative">
                                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
                                     <div className="relative h-20 flex justify-center items-center z-10">
-                                      <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                      <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
                                       <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                         {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                                       </div>
                                     </div>
                                     {ordered.map((p) => (
                                       <div key={p.key} className="relative h-24 flex justify-center items-center z-10">
-                                        <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
+                                        <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
                                         <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                           {getInitials(p.name, p.email)}
                                         </div>
@@ -4718,29 +4710,31 @@ const EnvelopeCreator: React.FC = () => {
                       {showAuthModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center">
                           <div
-                            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
                             onClick={() => {
                               setShowAuthModal(false);
                               setAuthModalForRecipientId(null);
                               setAuthModalForBulk(false);
                             }}
                           />
-                          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-                            <div className="flex items-center justify-between mb-6">
-                              <h2 className="text-[20px] font-semibold text-[#3E2B66]">
+                          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
+                            <div className="mb-6 flex items-center justify-between">
+                              <h2 className="text-xl font-semibold text-foreground">
                                 Select Authentication Method
                               </h2>
                               <div className="flex items-center gap-3">
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     const methodToSave = tempAuthSelection === undefined ? null : tempAuthSelection;
                                     handleAuthMethodSelect(methodToSave);
                                   }}
-                                  className="px-5 py-2 bg-[#3E2B66] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                                  className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                                 >
                                   Save
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setShowAuthModal(false);
                                     setAuthModalForRecipientId(null);
@@ -4748,9 +4742,10 @@ const EnvelopeCreator: React.FC = () => {
                                     setTempAuthSelection(undefined);
                                     setHasUserChangedSelection(false);
                                   }}
-                                  className="text-[#3E2B66] hover:text-gray-800 z-10"
+                                  className="z-10 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                  aria-label="Close"
                                 >
-                                  <X className="w-5 h-5" />
+                                  <X className="h-5 w-5" />
                                 </button>
                               </div>
                             </div>
@@ -4795,7 +4790,7 @@ const EnvelopeCreator: React.FC = () => {
                       {showMissingRecipientPhoneModal && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
                           <div
-                            className="absolute inset-0 bg-black/50"
+                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
                             onClick={() => {
                               if (savingMissingPhone) return;
                               setShowMissingRecipientPhoneModal(false);
@@ -4806,13 +4801,13 @@ const EnvelopeCreator: React.FC = () => {
                               setAuthModalForBulk(false);
                             }}
                           />
-                          <div className="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-2xl">
-                            <h3 className="text-lg font-semibold text-[#3E2B66]">
+                          <div className="relative w-full max-w-lg rounded-lg border border-border bg-card p-6 text-card-foreground shadow-2xl">
+                            <h3 className="text-lg font-semibold text-foreground">
                               Add phone number to proceed
                             </h3>
-                            <p className="mt-2 text-xs text-gray-600">
+                            <p className="mt-2 text-xs text-muted-foreground">
                               This verification method requires a phone number to send a verification code for{' '}
-                              <b className="text-blue-600">
+                              <b className="text-primary">
                                 {(() => {
                                   const recipient = recipients.find(r => r.id === missingPhoneRecipientId);
 
@@ -4833,8 +4828,8 @@ const EnvelopeCreator: React.FC = () => {
                               . Please add it to continue.
                             </p>
                             <div className="mt-4">
-                              <label className="mb-1 block text-sm font-medium text-gray-700">
-                                Phone Number <span className="text-red-500">*</span>
+                              <label className="mb-1 block text-sm font-medium text-muted-foreground">
+                                Phone Number <span className="text-destructive">*</span>
                               </label>
                               <PhoneInput
                                 country="in"
@@ -4847,14 +4842,14 @@ const EnvelopeCreator: React.FC = () => {
                                 inputProps={{ name: 'missingRecipientPhone', id: 'missingRecipientPhone' }}
                                 containerClass="w-full"
                                 dropdownStyle={{ zIndex: 10080 }}
-                                inputClass={`w-full !pl-12 !pr-3 !py-2 !text-sm !border !rounded-lg !bg-white focus:!outline-none focus:!ring-2 !transition-colors ${missingPhoneError
-                                  ? '!border-red-400 focus:!border-red-500 focus:!ring-red-200'
-                                  : '!border-gray-300 focus:!border-purple-500 focus:!ring-purple-200'
+                                inputClass={`w-full !pl-12 !pr-3 !py-2 !text-sm !border !rounded-lg !bg-background !text-foreground focus:!outline-none focus:!ring-2 !transition-colors ${missingPhoneError
+                                  ? '!border-destructive focus:!border-destructive focus:!ring-destructive/30'
+                                  : '!border-border focus:!border-ring focus:!ring-ring'
                                   }`}
-                                buttonClass="!border !border-gray-300 !bg-white !rounded-l-lg"
+                                buttonClass="!rounded-l-lg !border !border-border !bg-background"
                               />
                               {missingPhoneError ? (
-                                <p className="mt-1 text-xs text-red-600">{missingPhoneError}</p>
+                                <p className="mt-1 text-xs text-destructive">{missingPhoneError}</p>
                               ) : null}
                             </div>
 
@@ -4870,7 +4865,7 @@ const EnvelopeCreator: React.FC = () => {
                                   setAuthModalForRecipientId(null);
                                   setAuthModalForBulk(false);
                                 }}
-                                className="rounded-sm border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                className="rounded-sm border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
                               >
                                 Cancel
                               </button>
@@ -4878,7 +4873,7 @@ const EnvelopeCreator: React.FC = () => {
                                 type="button"
                                 disabled={savingMissingPhone}
                                 onClick={handleSaveMissingRecipientPhone}
-                                className="rounded-sm bg-[#3E2B66] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                                className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
                               >
                                 {savingMissingPhone ? 'Saving...' : 'Save and Continue'}
                               </button>
@@ -4909,23 +4904,23 @@ const EnvelopeCreator: React.FC = () => {
                                   <div className="w-full h-10 border rounded-sm flex items-center justify-center">{idx + 1}</div>
                                 </div>
                               )}
-                              <div className="flex-1 bg-white border border-gray-200 shadow-sm relative" style={{ borderLeft: '7px solid #86e4ef' }}>
+                              <div className="flex-1 bg-white border border-border shadow-sm relative" style={{ borderLeft: '7px solid #86e4ef' }}>
                                 <div className="p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <div className="text-xs uppercase text-gray-500 tracking-wide">ROLE {idx + 1}</div>
-                                      <div className="mt-2 text-base text-gray-900 font-medium">Bulk Recipient</div>
+                                      <div className="text-xs uppercase text-muted-foreground tracking-wide">ROLE {idx + 1}</div>
+                                      <div className="mt-2 text-base text-foreground font-medium">Bulk Recipient</div>
                                     </div>
                                     <div className="flex items-center gap-3">
                                       <div className="relative">
-                                        <button type="button" onClick={() => setCsvRoleDropdownOpen(prev => !prev)} className="px-4 py-2 bg-gray-100 text-black-700 rounded-sm border border-gray-300 flex items-center gap-2">
+                                        <button type="button" onClick={() => setCsvRoleDropdownOpen(prev => !prev)} className="px-4 py-2 bg-gray-100 text-black-700 rounded-sm border border-border flex items-center gap-2">
                                           <PenLine className="w-4 h-4" />
                                           <span className="text-sm">Needs to Sign</span>
                                           <ChevronDown className="w-4 h-4" />
                                         </button>
                                         {csvRoleDropdownOpen && (
-                                          <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
-                                            <div className="py-2 text-sm text-gray-800">
+                                          <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-sm border border-border shadow-lg z-50">
+                                            <div className="py-2 text-sm text-foreground">
                                               <button type="button" onClick={() => { setCsvRoleDropdownOpen(false); }} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
                                                 <PenLine className="w-4 h-4" />
                                                 <span>Needs to Sign</span>
@@ -4943,19 +4938,19 @@ const EnvelopeCreator: React.FC = () => {
                                         )}
                                       </div>
                                       <div className="relative">
-                                        <button type="button" onClick={() => setCsvCustomizeOpen(prev => !prev)} className="px-4 py-2 bg-gray-100 text-black-700 rounded-sm border border-gray-300 flex items-center gap-2">
+                                        <button type="button" onClick={() => setCsvCustomizeOpen(prev => !prev)} className="px-4 py-2 bg-gray-100 text-black-700 rounded-sm border border-border flex items-center gap-2">
                                           <span className="text-sm font-bold">Customize</span>
                                           <ChevronDown className="w-4 h-4" />
                                         </button>
                                         {csvCustomizeOpen && (
-                                          <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
+                                          <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-sm border border-border shadow-lg z-50">
                                             <div className="py-2">
                                               <button type="button" onClick={() => { setCsvCustomizeOpen(false); setAuthModalForBulk(true); setAuthModalForRecipientId(null); setShowAuthModal(true); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100">
                                                 <div className="flex items-start gap-3">
-                                                  <Key className="w-5 h-5 text-gray-600 mt-0.5" />
+                                                  <Key className="w-5 h-5 text-muted-foreground mt-0.5" />
                                                   <div>
-                                                    <div className="font-medium text-gray-900">Add authentication method</div>
-                                                    <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
+                                                    <div className="font-medium text-foreground">Add authentication method</div>
+                                                    <div className="text-xs text-muted-foreground mt-1">Select an authentication method for this recipient.</div>
                                                   </div>
                                                 </div>
                                               </button>
@@ -5090,7 +5085,7 @@ const EnvelopeCreator: React.FC = () => {
                                           setDraggedRecipientId(null);
                                           setDragOverRecipientId(null);
                                         }}
-                                        className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 shadow-sm cursor-grab active:cursor-grabbing ${isDraggingPill
+                                        className={`flex items-center gap-2 px-4 py-2 bg-white border border-border rounded-full hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 shadow-sm cursor-grab active:cursor-grabbing ${isDraggingPill
                                           ? 'opacity-60 scale-110 rotate-2 shadow-xl z-50 border-purple-500 bg-purple-100'
                                           : ''
                                           } ${isDragOverPill
@@ -5106,12 +5101,12 @@ const EnvelopeCreator: React.FC = () => {
                                           zIndex: isDraggingPill ? 50 : isReorderedPill ? 40 : undefined
                                         }}
                                       >
-                                        <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                        <span className="text-sm font-medium text-gray-600">{displayOrder}.</span>
-                                        <span className="text-sm font-medium text-gray-900">
+                                        <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                        <span className="text-sm font-medium text-muted-foreground">{displayOrder}.</span>
+                                        <span className="text-sm font-medium text-foreground">
                                           {recipient.name || 'Recipient'}
                                         </span>
-                                        <span className="text-xs text-gray-500">
+                                        <span className="text-xs text-muted-foreground">
                                           {recipient.email || 'No email'}
                                         </span>
                                       </button>
@@ -5180,7 +5175,7 @@ const EnvelopeCreator: React.FC = () => {
                                         placeholder={displayOrder.toString()}
                                       />
                                       {setSigningOrder && (
-                                        <div className="mt-1 text-gray-400 cursor-grab" title="Drag to reorder">
+                                        <div className="mt-1 text-muted-foreground cursor-grab" title="Drag to reorder">
                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                                           </svg>
@@ -5189,7 +5184,7 @@ const EnvelopeCreator: React.FC = () => {
                                     </div>
                                   )}
                                   <div
-                                    className={`flex-1 bg-white border shadow-sm relative transition-all duration-500 ease-in-out ${isDragOver ? 'border-blue-500 border-2 shadow-lg' : 'border-gray-200'
+                                    className={`flex-1 bg-card border shadow-sm relative transition-all duration-500 ease-in-out ${isDragOver ? 'border-blue-500 border-2 shadow-lg' : 'border-border'
                                       } ${setSigningOrder ? 'cursor-grab active:cursor-grabbing' : ''} ${isThisReordering ? 'shadow-2xl scale-[1.02] z-20 ring-2 ring-blue-400 ring-opacity-50' : ''
                                       }`}
                                     style={{
@@ -5208,7 +5203,7 @@ const EnvelopeCreator: React.FC = () => {
                                       <div className="space-y-4">
                                         <div className="flex items-start gap-4">
                                           <div className="flex-1">
-                                            <label className="block text-sm font-medium text-gray-900 mb-2">
+                                            <label className="block text-sm font-medium text-foreground mb-2">
                                               Name <span className="text-red-500">*</span>
                                             </label>
                                             <div
@@ -5219,7 +5214,7 @@ const EnvelopeCreator: React.FC = () => {
                                                 }
                                               }}
                                             >
-                                              <Contact className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#260559' }} />
+                                              <Contact className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#5b1db8' }} />
                                               <input
                                                 type="text"
                                                 value={recipient.name}
@@ -5248,21 +5243,21 @@ const EnvelopeCreator: React.FC = () => {
                                                 onFocus={() => { setSuggestionsOpenForId(recipient.id); loadRecipientSuggestions(); }}
                                                 onDragStart={(e) => e.stopPropagation()}
                                                 draggable="false"
-                                                className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                                                className="w-full pl-10 pr-12 py-2 border border-border rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-card"
                                                 placeholder="Full name"
                                               />
                                               <button
                                                 type="button"
                                                 onClick={() => openRecipientListModal(recipient.id)}
-                                                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                                                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-muted rounded transition-colors"
                                                 title="Open recipient list"
                                               >
-                                                <BookOpen className="w-5 h-5" style={{ color: '#260559' }} />
+                                                <BookOpen className="w-5 h-5" style={{ color: '#570cc8' }} />
                                               </button>
                                               {suggestionsOpenForId === recipient.id && (
-                                                <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                                                <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-card border border-border rounded-md shadow-lg">
                                                   {loadingRecipientSuggestions ? (
-                                                    <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                                                    <div className="px-3 py-2 text-sm text-muted-foreground">Loading...</div>
                                                   ) : (() => {
                                                     const currentName = recipient.name.trim();
 
@@ -5288,14 +5283,14 @@ const EnvelopeCreator: React.FC = () => {
                                                               updateRecipient(recipient.id, { name: userSuggestion.name, email: userSuggestion.email || recipient.email });
                                                               setSuggestionsOpenForId(null);
                                                             }}
-                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                                                           >
-                                                            <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
-                                                            <div className="text-xs text-gray-600">{userSuggestion.email}</div>
+                                                            <div className="font-medium text-foreground">{userSuggestion.name || userSuggestion.email}</div>
+                                                            <div className="text-xs text-muted-foreground">{userSuggestion.email}</div>
                                                           </button>
                                                         );
                                                       }
-                                                      return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
+                                                      return <div className="px-3 py-2 text-sm text-muted-foreground">No suggestions</div>;
                                                     }
 
                                                     // Use debounced search query for filtering (200-300ms debounce)
@@ -5303,7 +5298,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     const query = (debouncedSearchQuery.trim() || currentName).toLowerCase();
 
                                                     if (!query) {
-                                                      return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
+                                                      return <div className="px-3 py-2 text-sm text-muted-foreground">No suggestions</div>;
                                                     }
 
                                                     // Exact matches: 
@@ -5346,7 +5341,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     const hasBroadMatches = broadMatches.length > 0;
 
                                                     if (!hasExactMatches && !hasBroadMatches) {
-                                                      return <div className="px-3 py-2 text-sm text-gray-500">No results found</div>;
+                                                      return <div className="px-3 py-2 text-sm text-muted-foreground">No results found</div>;
                                                     }
 
                                                     const renderSuggestion = (s: { name: string; email: string }) => (
@@ -5363,10 +5358,10 @@ const EnvelopeCreator: React.FC = () => {
                                                           updateRecipient(recipient.id, { name: s.name, email: s.email || recipient.email });
                                                           setSuggestionsOpenForId(null);
                                                         }}
-                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                                                       >
-                                                        <div className="font-medium text-gray-900">{s.name || s.email}</div>
-                                                        <div className="text-xs text-gray-600">{s.email}</div>
+                                                        <div className="font-medium text-foreground">{s.name || s.email}</div>
+                                                        <div className="text-xs text-muted-foreground">{s.email}</div>
                                                       </button>
                                                     );
 
@@ -5375,7 +5370,7 @@ const EnvelopeCreator: React.FC = () => {
                                                         {/* Exact Matches Section */}
                                                         {hasExactMatches && (
                                                           <>
-                                                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
+                                                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-card border-b border-border sticky top-0">
                                                               Exact Matches
                                                             </div>
                                                             {exactMatches.map(renderSuggestion)}
@@ -5384,7 +5379,7 @@ const EnvelopeCreator: React.FC = () => {
 
                                                         {/* No exact match message */}
                                                         {!hasExactMatches && (
-                                                          <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                                                          <div className="px-3 py-2 text-xs text-muted-foreground bg-card border-b border-border">
                                                             No exact match found
                                                           </div>
                                                         )}
@@ -5392,7 +5387,7 @@ const EnvelopeCreator: React.FC = () => {
                                                         {/* Broad Matches Section */}
                                                         {hasBroadMatches && (
                                                           <>
-                                                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 sticky top-0">
+                                                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-card border-b border-border sticky top-0">
                                                               Broad Matches
                                                             </div>
                                                             {broadMatches.map(renderSuggestion)}
@@ -5408,10 +5403,10 @@ const EnvelopeCreator: React.FC = () => {
 
                                           {/* Needs to Sign Button - fixed width */}
                                           <div className="relative role-dropdown-container" style={{ width: '180px' }}>
-                                            <label className="block text-sm font-bold text-gray-900 mb-2 invisible">Role</label>
+                                            <label className="block text-sm font-bold text-foreground mb-2 invisible">Role</label>
                                             <button
                                               onClick={() => setOpenRoleDropdownId(openRoleDropdownId === recipient.id ? null : recipient.id)}
-                                              className="w-full px-4 py-2 bg-gray-100 text-black-700 font-bold rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300"
+                                              className="w-full px-4 py-2 bg-card text-black-700 font-bold rounded-sm hover:bg-muted transition-colors flex items-center justify-between border border-border"
                                               style={{ height: '42px' }}
                                             >
                                               <div className="flex items-center gap-2">
@@ -5428,7 +5423,7 @@ const EnvelopeCreator: React.FC = () => {
 
                                             {/* Role Dropdown Menu */}
                                             {openRoleDropdownId === recipient.id && (
-                                              <div className="absolute right-0 top-full mt-1 w-50 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
+                                              <div className="absolute right-0 top-full mt-1 w-50 bg-card rounded-sm border border-border shadow-lg z-50">
                                                 <div className="py-2">
 
                                                   {/* Option Template Example */}
@@ -5438,7 +5433,7 @@ const EnvelopeCreator: React.FC = () => {
                                                       updateRecipient(recipient.id, { role: "signer" });
                                                       setOpenRoleDropdownId(null);
                                                     }}
-                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-muted text-foreground gap-3"
                                                   >
                                                     {/* ✔ placeholder box */}
                                                     <span className="w-4 flex justify-center">
@@ -5460,7 +5455,7 @@ const EnvelopeCreator: React.FC = () => {
                                                       updateRecipient(recipient.id, { role: "in_person_signer" });
                                                       setOpenRoleDropdownId(null);
                                                     }}
-                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-muted text-foreground gap-3"
                                                   >
                                                     <span className="w-4 flex justify-center">
                                                       {recipient.role === "in_person_signer" && (
@@ -5478,7 +5473,7 @@ const EnvelopeCreator: React.FC = () => {
                                                       updateRecipient(recipient.id, { role: "carbon_copy" });
                                                       setOpenRoleDropdownId(null);
                                                     }}
-                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-muted text-foreground gap-3"
                                                   >
                                                     <span className="w-4 flex justify-center">
                                                       {recipient.role === "carbon_copy" && (
@@ -5498,7 +5493,7 @@ const EnvelopeCreator: React.FC = () => {
                                                       updateRecipient(recipient.id, { role: "needs_to_view" });
                                                       setOpenRoleDropdownId(null);
                                                     }}
-                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-gray-50 text-gray-800 gap-3"
+                                                    className="w-full px-4 py-2 text-xs flex items-center hover:bg-muted text-foreground gap-3"
                                                   >
                                                     <span className="w-4 flex justify-center">
                                                       {recipient.role === "needs_to_view" && (
@@ -5517,20 +5512,20 @@ const EnvelopeCreator: React.FC = () => {
 
                                           {/* Customize Button - fixed width */}
                                           <div className="relative customize-dropdown-container" style={{ width: '120px' }}>
-                                            <label className="block text-sm font-medium text-gray-900 mb-2 invisible">Customize</label>
+                                            <label className="block text-sm font-medium text-foreground mb-2 invisible">Customize</label>
                                             <button
                                               onClick={() => setOpenCustomizeDropdownId(openCustomizeDropdownId === recipient.id ? null : recipient.id)}
-                                              className="w-full px-2 py-2 font-bold text-white-700 rounded-sm hover:bg-gray-200 transition-colors flex items-center justify-between border border-gray-300 animate-shine relative overflow-hidden"
-                                              style={{ height: '42px', backgroundColor: '#260559' }}
+                                              className="w-full px-2 py-2 font-bold text-foreground rounded-sm hover:bg-card transition-colors flex items-center justify-between border border-border animate-shine relative overflow-hidden bg-muted"
+                                              style={{ height: '42px'}}
                                               data-tour="ec-customize"
                                             >
-                                              <span className="text-sm text-white relative z-10">Customize</span>
-                                              <ChevronDown className="w-4 h-4 mt-1 text-white flex-shrink-0 relative z-10" />
+                                              <span className="text-sm text-foreground relative z-10">Customize</span>
+                                              <ChevronDown className="w-4 h-4 mt-1 text-foreground flex-shrink-0 relative z-10" />
                                             </button>
 
                                             {/* Customize Dropdown Menu */}
                                             {openCustomizeDropdownId === recipient.id && (
-                                              <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-sm border border-gray-200 shadow-lg z-50">
+                                              <div className="absolute right-0 top-full mt-1 w-80 bg-card rounded-sm border border-border shadow-lg z-50">
                                                 <div className="py-2">
                                                   <button
                                                     onClick={() => {
@@ -5539,13 +5534,13 @@ const EnvelopeCreator: React.FC = () => {
                                                       setOpenCustomizeDropdownId(null);
                                                       setShowAuthModal(true);
                                                     }}
-                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-100"
+                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-muted text-foreground transition-colors border-b border-gray-100"
                                                   >
                                                     <div className="flex items-start gap-3">
-                                                      <Key className="w-5 h-5 text-gray-600 mt-0.5" />
+                                                      <Key className="w-5 h-5 text-muted-foreground mt-0.5" />
                                                       <div>
-                                                        <div className="font-medium text-gray-900">Add authentication method</div>
-                                                        <div className="text-xs text-gray-500 mt-1">Select an authentication method for this recipient.</div>
+                                                        <div className="font-medium text-foreground">Add authentication method</div>
+                                                        <div className="text-xs text-muted-foreground mt-1">Select an authentication method for this recipient.</div>
                                                       </div>
                                                     </div>
                                                   </button>
@@ -5557,7 +5552,7 @@ const EnvelopeCreator: React.FC = () => {
 
                                         <div className="flex-1">
                                           <div className='w-165 relative'>
-                                            <label className="block text-sm font-medium text-gray-900 mb-2">
+                                            <label className="block text-sm font-medium text-foreground mb-2">
                                               Email <span className="text-red-500">*</span>
                                             </label>
                                             <div
@@ -5593,13 +5588,13 @@ const EnvelopeCreator: React.FC = () => {
                                                 }}
                                                 onDragStart={(e) => e.stopPropagation()}
                                                 draggable="false"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                                className="w-full px-4 py-2 border border-border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-card"
                                                 placeholder="email@example.com"
                                               />
                                               {emailSuggestionsOpenForId === recipient.id && (
-                                                <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                                                <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-auto bg-card border border-border rounded-md shadow-lg">
                                                   {loadingRecipientSuggestions ? (
-                                                    <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                                                    <div className="px-3 py-2 text-sm text-muted-foreground">Loading...</div>
                                                   ) : (() => {
                                                     // Filter suggestions: initially show only logged-in user's email, then show matching suggestions
                                                     const userEmail = user?.email?.toLowerCase() || '';
@@ -5623,14 +5618,14 @@ const EnvelopeCreator: React.FC = () => {
                                                               updateRecipient(recipient.id, { email: userSuggestion.email, name: userSuggestion.name || recipient.name });
                                                               setEmailSuggestionsOpenForId(null);
                                                             }}
-                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                                                           >
-                                                            <div className="font-medium text-gray-900">{userSuggestion.name || userSuggestion.email}</div>
-                                                            <div className="text-xs text-gray-600">{userSuggestion.email}</div>
+                                                            <div className="font-medium text-foreground">{userSuggestion.name || userSuggestion.email}</div>
+                                                            <div className="text-xs text-muted-foreground">{userSuggestion.email}</div>
                                                           </button>
                                                         );
                                                       }
-                                                      return <div className="px-3 py-2 text-sm text-gray-500">No suggestions</div>;
+                                                      return <div className="px-3 py-2 text-sm text-muted-foreground">No suggestions</div>;
                                                     }
 
                                                     // Filter suggestions that match the typed email
@@ -5640,7 +5635,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     );
 
                                                     if (matchingSuggestions.length === 0) {
-                                                      return <div className="px-3 py-2 text-sm text-gray-500">No matching suggestions</div>;
+                                                      return <div className="px-3 py-2 text-sm text-muted-foreground">No matching suggestions</div>;
                                                     }
 
                                                     return matchingSuggestions.map((s) => (
@@ -5657,10 +5652,10 @@ const EnvelopeCreator: React.FC = () => {
                                                           updateRecipient(recipient.id, { email: s.email, name: s.name || recipient.name });
                                                           setEmailSuggestionsOpenForId(null);
                                                         }}
-                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                                                       >
-                                                        <div className="font-medium text-gray-900">{s.name || s.email}</div>
-                                                        <div className="text-xs text-gray-600">{s.email}</div>
+                                                        <div className="font-medium text-foreground">{s.name || s.email}</div>
+                                                        <div className="text-xs text-muted-foreground">{s.email}</div>
                                                       </button>
                                                     ));
                                                   })()}
@@ -5711,26 +5706,26 @@ const EnvelopeCreator: React.FC = () => {
                         // title={!allRecipientsFilled ? "Fill all detail of the recipient to add new" : ""}
                         >
                           {/* Left section */}
-                          <div className="flex items-center gap-2 px-4 py-2 bg-white">
-                            <UserRoundPlus className="w-4 h-4 text-[#2C2441]" />
-                            <span className="text-sm text-[#2C2441]">Add Recipient</span>
+                          <div className="flex items-center gap-2 px-4 py-2 bg-card">
+                            <UserRoundPlus className="w-4 h-4 text-foreground" />
+                            <span className="text-sm text-foreground">Add Recipient</span>
                           </div>
 
                           {/* Divider */}
-                          <div className="w-px h-8 bg-black" />
+                          <div className="w-px h-8 bg-border" />
 
                           {/* Right section */}
-                          <div className="px-3 py-2 bg-white flex items-center">
-                            <ChevronDown className="w-4 h-4 text-[#2C2441]" />
+                          <div className="px-3 py-2  flex items-center">
+                            <ChevronDown className="w-4 h-4 text-foreground" />
                           </div>
                         </button>
 
                         {/* Tooltip on hover when disabled */}
                         {!allRecipientsFilled && (
-                          <div className="absolute bottom-full left-1/9 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                          <div className="absolute bottom-full left-1/9 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-muted text-muted-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                             Fill all detail of the recipient to add new
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2">
-                              <div className="border-4 border-transparent border-t-gray-900"></div>
+                              <div className="border-4 border-transparent border-t-card"></div>
                             </div>
                           </div>
                         )}
@@ -5740,15 +5735,15 @@ const EnvelopeCreator: React.FC = () => {
                 </div>
               )}
             </div>
-            <hr className="border-t-2 border-gray-300 my-4" />
+            <hr className="border-t-2 border-border my-4" />
             <div>
 
-              <h3 id='ToggleAddMessage' data-tour="ec-message-toggle" onClick={() => setShowAddMessage(prev => !prev)} className="text-lg text-gray-900 cursor-pointer flex items-center justify-between">
+              <h3 id='ToggleAddMessage' data-tour="ec-message-toggle" onClick={() => setShowAddMessage(prev => !prev)} className="text-lg text-foreground cursor-pointer flex items-center justify-between">
                 <span>Add message</span>
                 {showAddMessage ? (
-                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                  <ChevronUp className="w-5 h-5 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 )}
               </h3>
             </div>
@@ -5756,14 +5751,14 @@ const EnvelopeCreator: React.FC = () => {
             {showAddMessage && (
               <div id='AddMessageContent' className="p-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Subject <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={envelopeData.subject}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, subject: e.target.value }))}
-                    className="w-full px-3 py-2 mb-8 border border-black-100 rounded-sm placeholder-gray-900"
+                    className="w-full px-3 py-2 mb-8 border border-black-100 rounded-sm placeholder-foreground"
                     placeholder="Complete with Esign:"
                     data-tour="ec-subject-input"
                   />
@@ -5775,13 +5770,13 @@ const EnvelopeCreator: React.FC = () => {
                     value={envelopeData.message}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, message: e.target.value }))}
                     rows={4}
-                    className="w-full px-3 py-2 border border-black-100 rounded-sm placeholder-gray-900"
+                    className="w-full px-3 py-2 border border-black-100 rounded-sm placeholder-foreground"
                     placeholder="Enter message"
                   />
                 </div>
               </div>
             )}
-            <hr className="border-t-2 border-gray-300 my-4" />
+            <hr className="border-t-2 border-border my-4" />
             {/* Envelope Type Dropdown */}
             <div className="space-y-6">
 
@@ -5797,23 +5792,23 @@ const EnvelopeCreator: React.FC = () => {
                       id="envelopeType"
                       type="button"
                       onClick={() => setTypeDropdownOpen((o) => !o)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-sm text-left"
+                      className="w-full px-4 py-2 border border-border rounded-sm text-left"
                       data-tour="ec-envelope-type"
                     >
                       {selectedEnvelopeType || 'Select Envelope Type'}
                     </button>
 
                     {typeDropdownOpen && (
-                      <div className="absolute left-0 bottom-full mb-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                      <div className="absolute left-0 bottom-full mb-1 w-full bg-card border border-border rounded-md shadow-lg z-50">
                         {!showOtherInputInDropdown ? (
                           <>
-                            <div className="p-2 border-b border-gray-200">
+                            <div className="p-2 border-b border-border">
                               <input
                                 type="text"
                                 value={typeSearch}
                                 onChange={(e) => setTypeSearch(e.target.value)}
                                 placeholder="Search types..."
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                                className="w-full px-3 py-2 text-sm border border-border rounded"
                                 autoFocus
                               />
                             </div>
@@ -5825,14 +5820,14 @@ const EnvelopeCreator: React.FC = () => {
                                     key={type.title}
                                     type="button"
                                     onClick={() => handleEnvelopeTypeSelect(type.title)}
-                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedEnvelopeType === type.title ? 'bg-gray-50' : ''}`}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:border-primary hover:bg-muted ${selectedEnvelopeType === type.title ? 'bg-muted' : ''}`}
                                   >
                                     {type.title}
                                   </button>
                                 ))}
                               {/* Always show "Other" option, especially when no matches */}
                               {envelopeTypes.filter((t) => t.title.toLowerCase().includes(typeSearch.toLowerCase())).length === 0 && typeSearch.trim() !== '' && (
-                                <div className="px-4 py-2 text-sm text-gray-500">
+                                <div className="px-4 py-2 text-sm text-muted-foreground">
                                   No matches found
                                 </div>
                               )}
@@ -5849,7 +5844,7 @@ const EnvelopeCreator: React.FC = () => {
                         ) : (
                           <div className="p-3">
                             <div className="mb-2">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                              <label className="block text-xs font-medium text-muted-foreground mb-1">
                                 Enter New Envelope Type
                               </label>
                               <input
@@ -5865,7 +5860,7 @@ const EnvelopeCreator: React.FC = () => {
                                   }
                                 }}
                                 placeholder="Type new envelope type..."
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-3 py-2 text-sm border border-border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 autoFocus
                               />
                             </div>
@@ -5876,7 +5871,7 @@ const EnvelopeCreator: React.FC = () => {
                                   setShowOtherInputInDropdown(false);
                                   setNewEnvelopeTypeValue('');
                                 }}
-                                className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                                className="px-3 py-1.5 text-sm text-muted-foreground hover:bg-gray-100 rounded"
                               >
                                 Cancel
                               </button>
@@ -5897,7 +5892,7 @@ const EnvelopeCreator: React.FC = () => {
 
                   {/* Info Icon */}
                   <div
-                    className=" cursor-pointer hover:bg-gray-100 relative"
+                    className=" cursor-pointer hover:bg-card relative"
                     onMouseEnter={() => setShowEnvelopeTooltip(true)}
                     onMouseLeave={() => setShowEnvelopeTooltip(false)}
                   >
@@ -5965,8 +5960,8 @@ const EnvelopeCreator: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Security & Authentication</h3>
-              <p className="text-gray-600 mb-6">Configure signature types and advanced authentication methods for enhanced security.</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Security & Authentication</h3>
+              <p className="text-muted-foreground mb-6">Configure signature types and advanced authentication methods for enhanced security.</p>
             </div>
 
             {/* Signature Type Selection */}
@@ -6003,40 +5998,40 @@ const EnvelopeCreator: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Envelope Settings</h3>
-              <p className="text-gray-600 mb-6">Configure how your envelope will be sent and managed.</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Envelope Settings</h3>
+              <p className="text-muted-foreground mb-6">Configure how your envelope will be sent and managed.</p>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Subject *</label>
                 <input
                   type="text"
                   value={envelopeData.subject}
                   onChange={(e) => setEnvelopeData(prev => ({ ...prev, subject: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter envelope subject"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Message</label>
                 <textarea
                   value={envelopeData.message}
                   onChange={(e) => setEnvelopeData(prev => ({ ...prev, message: e.target.value }))}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Add a message for recipients (optional)"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">Priority</label>
                   <select
                     value={envelopeData.priority}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, priority: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="low">Low</option>
                     <option value="normal">Normal</option>
@@ -6046,11 +6041,11 @@ const EnvelopeCreator: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Signing Order</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">Signing Order</label>
                   <select
                     value={envelopeData.signingOrder}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, signingOrder: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="sequential">Sequential (one at a time)</option>
                     <option value="parallel">Parallel (all at once)</option>
@@ -6059,14 +6054,14 @@ const EnvelopeCreator: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Expiration Date</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     readOnly={!isEditable}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg 
+                    className={`w-full px-3 py-2 border border-border rounded-lg 
                       ${isEditable ? "bg-white cursor-text" : "bg-gray-100 cursor-not-allowed"}`}
                   />
                   <button
@@ -6086,23 +6081,23 @@ const EnvelopeCreator: React.FC = () => {
                     id="reminderEnabled"
                     checked={envelopeData.reminderEnabled}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderEnabled: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="reminderEnabled" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="reminderEnabled" className="text-sm font-medium text-muted-foreground">
                     Enable automatic reminders
                   </label>
                 </div>
 
                 {envelopeData.reminderEnabled && (
                   <div className="ml-7">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Reminder interval (days)</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">Reminder interval (days)</label>
                     <input
                       type="number"
                       min="1"
                       max="30"
                       value={envelopeData.reminderInterval}
                       onChange={(e) => setEnvelopeData(prev => ({ ...prev, reminderInterval: parseInt(e.target.value) }))}
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-24 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 )}
@@ -6113,9 +6108,9 @@ const EnvelopeCreator: React.FC = () => {
                     id="requireAllSignatures"
                     checked={envelopeData.requireAllSignatures}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, requireAllSignatures: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="requireAllSignatures" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="requireAllSignatures" className="text-sm font-medium text-muted-foreground">
                     Require all recipients to sign
                   </label>
                 </div>
@@ -6126,9 +6121,9 @@ const EnvelopeCreator: React.FC = () => {
                     id="allowDecline"
                     checked={envelopeData.allowDecline}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, allowDecline: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="allowDecline" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="allowDecline" className="text-sm font-medium text-muted-foreground">
                     Allow recipients to decline signing
                   </label>
                 </div>
@@ -6141,54 +6136,54 @@ const EnvelopeCreator: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Review & Send</h3>
-              <p className="text-gray-600 mb-6">Review your envelope details before sending to recipients.</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Review & Send</h3>
+              <p className="text-muted-foreground mb-6">Review your envelope details before sending to recipients.</p>
             </div>
 
             <div className="space-y-6">
               {/* Envelope Summary */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Envelope Summary</h4>
+              <div className="bg-white border border-border rounded-lg p-6">
+                <h4 className="text-lg font-medium text-foreground mb-4">Envelope Summary</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-700">Subject</p>
-                    <p className="text-gray-900">{envelopeData.subject}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Subject</p>
+                    <p className="text-foreground">{envelopeData.subject}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700">Priority</p>
-                    <p className="text-gray-900 capitalize">{envelopeData.priority}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Priority</p>
+                    <p className="text-foreground capitalize">{envelopeData.priority}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700">Signature Type</p>
+                    <p className="text-sm font-medium text-muted-foreground">Signature Type</p>
                     <div className="flex items-center gap-2">
                       {envelopeData.signatureType === 'qualified' && <Award className="w-4 h-4 text-purple-600" />}
                       {envelopeData.signatureType === 'advanced' && <Shield className="w-4 h-4 text-blue-600" />}
-                      <p className="text-gray-900 capitalize">{envelopeData.signatureType}</p>
+                      <p className="text-foreground capitalize">{envelopeData.signatureType}</p>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700">Documents</p>
-                    <p className="text-gray-900">{documents?.length} document{documents?.length !== 1 ? 's' : ''}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Documents</p>
+                    <p className="text-foreground">{documents?.length} document{documents?.length !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 {envelopeData.message && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700">Message</p>
-                    <p className="text-gray-900">{envelopeData.message}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Message</p>
+                    <p className="text-foreground">{envelopeData.message}</p>
                   </div>
                 )}
               </div>
 
               {/* Documents */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Documents</h4>
+              <div className="bg-white border border-border rounded-lg p-6">
+                <h4 className="text-lg font-medium text-foreground mb-4">Documents</h4>
                 <div className="space-y-3">
                   {documents?.map((doc) => (
                     <div key={doc.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                       <FileText className="w-6 h-6 text-blue-600" />
                       <div>
-                        <p className="font-medium text-gray-900">{doc.name}</p>
-                        <p className="text-sm text-gray-500">{doc.pages} pages • {(doc.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <p className="font-medium text-foreground">{doc.name}</p>
+                        <p className="text-sm text-muted-foreground">{doc.pages} pages • {(doc.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
                   ))}
@@ -6196,8 +6191,8 @@ const EnvelopeCreator: React.FC = () => {
               </div>
 
               {/* Recipients */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Recipients</h4>
+              <div className="bg-white border border-border rounded-lg p-6">
+                <h4 className="text-lg font-medium text-foreground mb-4">Recipients</h4>
                 <div className="space-y-3">
                   {recipients.map((recipient, index) => (
                     <div key={recipient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -6206,13 +6201,13 @@ const EnvelopeCreator: React.FC = () => {
                           {index + 1}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{toTitleCase(recipient.name)}</p>
-                          <p className="text-sm text-gray-500">{recipient.email}</p>
+                          <p className="font-medium text-foreground">{toTitleCase(recipient.name)}</p>
+                          <p className="text-sm text-muted-foreground">{recipient.email}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700 capitalize">{recipient?.role?.replace('_', ' ') ?? ''}</p>
-                        <p className="text-xs text-gray-500 capitalize">
+                        <p className="text-sm font-medium text-muted-foreground capitalize">{recipient?.role?.replace('_', ' ') ?? ''}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
                           {recipient?.authentication?.replace('_', ' ') ?? 'No'} auth
                         </p>
 
@@ -6264,9 +6259,9 @@ const EnvelopeCreator: React.FC = () => {
   }, [setSigningOrder]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screentext-foreground">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-between w-full">
 
@@ -6276,7 +6271,7 @@ const EnvelopeCreator: React.FC = () => {
                 onClick={() =>
                   window.history.length > 1 ? navigate(-1) : navigate('/e-sign/dashboard')
                 }
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 text-muted-foreground hover:text-muted-foreground rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -6304,13 +6299,13 @@ const EnvelopeCreator: React.FC = () => {
                         setIsEditingTitle(false);
                       }
                     }}
-                    className="text-base font-medium text-gray-900 px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[300px]"
+                    className="text-base font-medium text-foreground px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[300px]"
                     autoFocus
                   />
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <h1 className="text-base font-medium text-gray-900">
+                  <h1 className="text-base font-medium text-foreground">
                     {documents?.length > 0
                       ? (documentTitle || `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`)
                       : 'Upload a Document and Add Envelope Recipients'}
@@ -6324,7 +6319,7 @@ const EnvelopeCreator: React.FC = () => {
                         setIsEditingTitle(true);
                         setTimeout(() => titleInputRef.current?.focus(), 0);
                       }}
-                      className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                      className="p-1 text-muted-foreground hover:text-muted-foreground rounded transition-colors"
                       title="Edit title"
                     >
                       <Edit className="w-4 h-4" />
@@ -6342,16 +6337,16 @@ const EnvelopeCreator: React.FC = () => {
                 className="p-2 rounded hover:bg-gray-100"
                 title="Help"
               >
-                <CircleQuestionMark className="w-5 h-5 text-gray-600" />
+                <CircleQuestionMark className="w-5 h-5 text-muted-foreground" />
               </button>
 
               {helpMenuOpen && (
                 <div
                   ref={helpMenuRef}
-                  className="absolute right-24 top-10 w-70 bg-white border border-gray-200 rounded-md shadow-xl z-50"
+                  className="absolute right-24 top-10 w-70 bg-white border border-border rounded-md shadow-xl z-50"
                 >
                   <div className="px-4 py-3 border-b">
-                    <h4 className="text-sm font-semibold text-gray-900">Help for this Page</h4>
+                    <h4 className="text-sm font-semibold text-foreground">Help for this Page</h4>
                   </div>
                   <div className="max-h-80 p-4 overflow-y-auto">
                     <button
@@ -6380,7 +6375,7 @@ const EnvelopeCreator: React.FC = () => {
                 </div>
               )}
 
-              <button onClick={() => setShowAdvanced(true)} className="border px-4 py-2 rounded-xs text-xs font-medium text-gray-800 hover:bg-gray-100">
+              <button onClick={() => setShowAdvanced(true)} className="border px-4 py-2 rounded-xs text-xs font-medium text-foreground hover:bg-muted hover:text-foreground">
                 ADVANCED OPTIONS
               </button>
             </div>
@@ -6394,9 +6389,9 @@ const EnvelopeCreator: React.FC = () => {
       <div className="flex">
         {/* Right Help Sidebar */}
         {(
-          <div className={`fixed inset-y-0 right-0 w-[420px] bg-white border-l border-gray-200 shadow-2xl z-40 transform transition-transform duration-300 ${helpSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className={`fixed inset-y-0 right-0 w-[420px] bg-white border-l border-border shadow-2xl z-40 transform transition-transform duration-300 ${helpSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             {/* Header Bar: back + close icons */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <button onClick={() => setHelpSidebarOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -6407,15 +6402,15 @@ const EnvelopeCreator: React.FC = () => {
             {/* Content */}
             <div className="px-6 py-6 overflow-y-auto h-full">
               <div className="mb-8 h-98">
-                <h3 className="text-[14px] tracking-wide font-semibold text-gray-900 uppercase mb-4">BASIC STEPS TO SEND AN ENVELOPE</h3>
-                <div className="pl-4 border-l-2 border-gray-300 text-[14px] leading-6 text-gray-800">
+                <h3 className="text-[14px] tracking-wide font-semibold text-foreground uppercase mb-4">BASIC STEPS TO SEND AN ENVELOPE</h3>
+                <div className="pl-4 border-l-2 border-border text-[14px] leading-6 text-foreground">
                   <p>
                     To send an envelope, you upload the documents you want signed. Then you add the contact information
                     for the people who need to sign and what kind of information they will add, such as a signature, initials,
                     or their company name.
                   </p>
                 </div>
-                <div className="pl-4 mt-4 border-l-2 border-gray-300">
+                <div className="pl-4 mt-4 border-l-2 border-border">
                   <button
                     onClick={() => window.open('/e-sign/guide', '_blank')}
                     className="text-[#4C2FFF] underline text-[14px]"
@@ -6426,7 +6421,7 @@ const EnvelopeCreator: React.FC = () => {
               </div>
 
               {/* Bottom links */}
-              <div className="pt-6 border-t border-gray-200 space-y-5 text-[14px]">
+              <div className="pt-6 border-t border-border space-y-5 text-[14px]">
                 <button
                   onClick={() => window.open('/help-support', '_blank')}
                   className="flex items-center gap-2 text-[#4C2FFF] hover:underline"
@@ -6454,7 +6449,7 @@ const EnvelopeCreator: React.FC = () => {
         )}
 
         {/* Progress Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 p-6 hidden">
+        <div className="w-80 bg-white border-r border-border p-6 hidden">
           <div className="space-y-4">
             {steps.map((step) => (
               <div
@@ -6471,43 +6466,43 @@ const EnvelopeCreator: React.FC = () => {
                     ? 'bg-blue-600 text-white'
                     : currentStep > step.id
                       ? 'bg-green-600 text-white'
-                      : 'bg-gray-300 text-gray-600'
+                      : 'bg-gray-300 text-muted-foreground'
                     }`}
                 >
                   {currentStep > step.id ? <Check className="w-4 h-4" /> : step.id}
                 </div>
                 <div>
                   <p
-                    className={`font-medium ${currentStep >= step.id ? 'text-gray-900' : 'text-gray-500'
+                    className={`font-medium ${currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                   >
                     {step.name}
                   </p>
-                  <p className="text-sm text-gray-500">{step.description}</p>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Quick Stats */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h4 className="text-sm font-medium text-gray-900 mb-4">Summary</h4>
+          <div className="mt-8 pt-6 border-t border-border">
+            <h4 className="text-sm font-medium text-foreground mb-4">Summary</h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Documents</span>
-                <span className="font-medium text-gray-900">{documents?.length}</span>
+                <span className="text-muted-foreground">Documents</span>
+                <span className="font-medium text-foreground">{documents?.length}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Recipients</span>
-                <span className="font-medium text-gray-900">{recipients?.length}</span>
+                <span className="text-muted-foreground">Recipients</span>
+                <span className="font-medium text-foreground">{recipients?.length}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Fields</span>
+                <span className="text-muted-foreground">Fields</span>
 
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Signature Type</span>
-                <span className="font-medium text-gray-900 capitalize">{envelopeData?.signatureType}</span>
+                <span className="text-muted-foreground">Signature Type</span>
+                <span className="font-medium text-foreground capitalize">{envelopeData?.signatureType}</span>
               </div>
             </div>
           </div>
@@ -6518,7 +6513,7 @@ const EnvelopeCreator: React.FC = () => {
           <div className="max-w-6xlVV mx-auto">
             {renderStepContent()}
             {currentStep !== 2 && (
-              <div className="flex items-center justify-end mt-8 pt-6 border-t border-gray-200" id='clearBoth'>
+              <div className="flex items-center justify-end mt-8 pt-6 border-t border-border" id='clearBoth'>
                 {currentStep < 2 ? (
                   <button
                     onClick={handleNext}
@@ -6541,7 +6536,7 @@ const EnvelopeCreator: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => navigate(`/e-sign/envelope/${envelopeId}`)}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Eye className="w-4 h-4" />
                     Preview
@@ -6593,7 +6588,7 @@ const EnvelopeCreator: React.FC = () => {
                   top: `${finalTop}px`
                 }}
               >
-                <div className="bg-[#000000]/50 text-white text-sm rounded-md shadow-lg max-w-sm relative">
+                <div className="bg-[#000000]/50 text-foreground text-sm rounded-md shadow-lg max-w-sm relative">
                   <div
                     className="px-4 py-3 font-semibold cursor-move select-none"
                     onMouseDown={handleTooltipMouseDown}
@@ -6606,7 +6601,7 @@ const EnvelopeCreator: React.FC = () => {
                   <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
                     <div className="text-xs text-white-900">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
                     <div className="flex items-center gap-2">
-                      <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
+                      <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-muted-foreground/50 hover:text-white">Skip</button>
                       <button onClick={prevCreatorStep} disabled={creatorTourIndex === 0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${creatorTourIndex === 0 ? 'cursor-not-allowed text-white-900' : 'hover:bg-white-700 text-white'}`}>Back</button>
                       {creatorTourIndex < creatorTourSteps.length - 1 ? (
                         <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
@@ -6629,21 +6624,21 @@ const EnvelopeCreator: React.FC = () => {
         })()
       )}
       {showAdvanced && (
-        <div className="fixed inset-0 z-50">
+        <div className=" fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowAdvanced(false)} />
-          <div className="relative bg-white w-full h-full flex flex-col overflow-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="relative bg-card w-full h-full flex flex-col overflow-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 bg-background z-10">
               <h2 className="text-xl font-semibold">Advanced Options</h2>
-              <button onClick={() => setShowAdvanced(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100" title="Close">
+              <button onClick={() => setShowAdvanced(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted" title="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="flex flex-1">
-              <div className="w-72 border-r border-gray-200 p-6 sticky top-16 self-start h-[calc(100vh-4rem)]">
+              <div className="w-72 border-r border-border p-6 sticky top-16 self-start h-[calc(100vh-4rem)]">
                 <nav className="space-y-3 text-sm">
-                  <button onClick={() => sectionRefs.reminders.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Reminders</button>
-                  <button onClick={() => sectionRefs.expiration.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Expiration</button>
-                  {/* <button onClick={() => sectionRefs.mobileFriendly.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100">Mobile-Friendly</button> */}
+                  <button onClick={() => sectionRefs.reminders.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-muted">Reminders</button>
+                  <button onClick={() => sectionRefs.expiration.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-muted">Expiration</button>
+                  {/* <button onClick={() => sectionRefs.mobileFriendly.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="w-full text-left px-3 py-2 rounded hover:bg-muted-100">Mobile-Friendly</button> */}
                 </nav>
               </div>
 
@@ -6651,10 +6646,10 @@ const EnvelopeCreator: React.FC = () => {
                 <div className="p-10 space-y-12">
 
                   <section ref={sectionRefs.reminders}>
-                    <h3 className="text-2xl text-gray-900">Reminders</h3>
-                    <p className="text-gray-600 mt-2">Follow up with automatic reminders. Signers will receive emails until they sign or decline the envelope.</p>
+                    <h3 className="text-2xl text-foreground">Reminders</h3>
+                    <p className="text-muted-foreground mt-2">Follow up with automatic reminders. Signers will receive emails until they sign or decline the envelope.</p>
                     <div className="mt-6 flex items-center gap-3">
-                      <label className="flex items-center gap-3 text-gray-800 cursor-pointer">
+                      <label className="flex items-center gap-3 text-foreground cursor-pointer">
                         <input
                           type="checkbox"
                           className="w-5 h-5"
@@ -6666,7 +6661,7 @@ const EnvelopeCreator: React.FC = () => {
                     </div>
                     {envelopeData.reminderEnabled && (
                       <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Reminder interval (days)</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Reminder interval (days)</label>
                         <input
                           type="number"
                           min="1"
@@ -6681,11 +6676,11 @@ const EnvelopeCreator: React.FC = () => {
                   </section>
 
                   <section ref={sectionRefs.expiration}>
-                    <h3 className="text-2xl text-gray-900">Expiration</h3>
-                    <p className="text-gray-600 mt-2">By default, envelopes expire after 120 days. Recipients can no longer view or sign an envelope after it expires.</p>
+                    <h3 className="text-2xl text-foreground">Expiration</h3>
+                    <p className="text-muted-foreground mt-2">By default, envelopes expire after 120 days. Recipients can no longer view or sign an envelope after it expires.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Days until envelope expires</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Days until envelope expires</label>
                         <select
                           className="w-full border rounded px-3 py-2"
                           value={advancedOptions.expirationType}
@@ -6696,7 +6691,7 @@ const EnvelopeCreator: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Custom number of days *</label>
                         <input
                           type="number"
                           min="1"
@@ -6709,7 +6704,7 @@ const EnvelopeCreator: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Send alert</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Send alert</label>
                         <select
                           className="w-full border rounded px-3 py-2"
                           value={advancedOptions.alertType}
@@ -6720,7 +6715,7 @@ const EnvelopeCreator: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Custom number of days *</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Custom number of days *</label>
                         <input
                           type="number"
                           min="0"
@@ -6736,7 +6731,7 @@ const EnvelopeCreator: React.FC = () => {
                     {/* <hr className="mt-8" /> */}
                   </section>
                 </div>
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end">
+                <div className="sticky bottom-0 bg-card border-t border-border p-4 flex justify-end">
                   <button
                     onClick={saveAdvancedOptions}
                     className="px-6 py-2 rounded text-white hover:opacity-90 transition-opacity"
@@ -6763,7 +6758,7 @@ const EnvelopeCreator: React.FC = () => {
               }
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto p-6 z-[10000]">
+          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto p-6 z-[10000]">
             {!sending && (
               <button
                 onClick={() => {
@@ -6771,27 +6766,30 @@ const EnvelopeCreator: React.FC = () => {
                   setDraggedSignerId(null);
                   setDragOverSignerId(null);
                 }}
-                className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800 z-10"
+                className="absolute right-6 top-6 text-2xl text-foreground hover:text-foreground z-10"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
 
-            <div className="flex items-center gap-3 mt-4 mb-8 pb-6 border-b border-gray-100">
-              <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 1 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
+            <div className="flex items-center gap-3 mt-4 mb-8 pb-6 border-b border-muted-foreground">
+              <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${sendModalStep >= 1
-                  ? 'bg-[#3E2B66] text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-500'
+                  ? 'bg-muted text-foreground shadow-sm'
+                  : 'bg-muted text-muted-foreground'
                   }`}>
                   {sendModalStep > 1 ? <Check className="w-5 h-5" /> : '1'}
                 </div>
                 <span className="font-semibold text-sm">Signing Order</span>
               </div>
-              <div className={`flex-1 h-0.5 transition-colors ${sendModalStep >= 2 ? 'bg-[#3E2B66]' : 'bg-gray-200'}`} />
-              <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 2 ? 'text-[#3E2B66]' : 'text-gray-400'}`}>
+              <div
+                className={`flex-1 h-0.5 transition-colors ${sendModalStep >= 2 ? 'bg-primary' : 'bg-border'}`}
+                aria-hidden
+              />
+              <div className={`flex items-center gap-2.5 transition-colors ${sendModalStep >= 2 ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${sendModalStep >= 2
-                  ? 'bg-[#3E2B66] text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-500'
+                  ? 'bg-muted text-foreground shadow-sm'
+                  : 'bg-muted text-foreground'
                   }`}>
                   2
                 </div>
@@ -6803,10 +6801,10 @@ const EnvelopeCreator: React.FC = () => {
               <div>
                 <div className="mb-2 flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="text-[24px] font-semibold text-[#3E2B66] mb-1">
+                    <h2 className="text-[24px] font-semibold text-foreground mb-1">
                       {recipients.length === 1 ? 'Review Recipient Summary' : 'Review Signing Order'}
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-foreground">
                       {recipients.length === 1
                         ? 'Review recipient details before sending.'
                         : 'Drag & drop to reorder signers'}
@@ -6828,7 +6826,7 @@ const EnvelopeCreator: React.FC = () => {
                         navigate(`/e-sign/create?step=1`);
                       }
                     }}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors text-sm whitespace-nowrap"
+                    className="px-4 py-2.5 border border-border rounded-lg text-muted-foreground hover:bg-card font-medium transition-colors text-sm whitespace-nowrap"
                   >
                     {recipients.length === 1 ? 'Edit recipient' : 'Edit / Add more recipients'}
                   </button>
@@ -6861,7 +6859,7 @@ const EnvelopeCreator: React.FC = () => {
                     return (
                       <div className="relative">
                         {/* Vertical Timeline Line */}
-                        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 z-0" />
+                        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-muted z-0" />
 
                         {/* Sender Row */}
                         <div className="relative flex items-center py-4 mb-2">
@@ -6872,8 +6870,8 @@ const EnvelopeCreator: React.FC = () => {
                               </div>
                             </div>
                             <div className="flex-1">
-                              <div className="text-sm font-semibold text-gray-700">SENDER</div>
-                              <div className="text-xs text-gray-500">{formatSentenceCase(user?.fullname || user?.email || 'You')}</div>
+                              <div className="text-sm font-semibold text-muted-foreground">SENDER</div>
+                              <div className="text-xs text-muted-foreground">{formatSentenceCase(user?.fullname || user?.email || 'You')}</div>
                             </div>
                           </div>
                         </div>
@@ -6888,10 +6886,10 @@ const EnvelopeCreator: React.FC = () => {
                             <div
                               key={`signer-${p.key}`}
                               className={`relative flex items-center py-3 mb-1 rounded-lg transition-all duration-200 ${isDragging
-                                ? 'opacity-50 scale-95 shadow-lg bg-white'
+                                ? 'opacity-50 scale-95 shadow-lg bg-card'
                                 : isDragOver
                                   ? 'bg-blue-50 border-2 border-blue-200'
-                                  : 'hover:bg-gray-50'
+                                  : 'hover:bg-muted'
                                 }`}
                               draggable
                               onDragStart={(e) => {
@@ -6938,7 +6936,7 @@ const EnvelopeCreator: React.FC = () => {
                                 <div className="flex-shrink-0 w-12 flex justify-center">
                                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm border-2 ${isCurrent
                                     ? 'bg-[#3E2B66] border-[#3E2B66] text-white'
-                                    : 'bg-gray-100 border-gray-300 text-gray-600'
+                                    : 'bg-mute border-border text-muted-foreground'
                                     }`}>
                                     {getInitials(p.name, p.email)}
                                   </div>
@@ -6947,7 +6945,7 @@ const EnvelopeCreator: React.FC = () => {
                                 {/* Drag Handle */}
                                 {recipients.length > 1 && (
                                   <div
-                                    className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
+                                    className="flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-muted-foreground transition-colors"
                                     title="Drag to reorder"
                                     onMouseDown={(e) => e.stopPropagation()}
                                   >
@@ -6958,10 +6956,10 @@ const EnvelopeCreator: React.FC = () => {
                                 {/* Signer Info */}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-900">{index + 1}.</span>
-                                    <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                                    <span className="text-sm font-medium text-foreground">{index + 1}.</span>
+                                    <span className="text-sm font-medium text-foreground">{p.name}</span>
                                   </div>
-                                  <div className="text-xs text-gray-500 mt-0.5">{p.email}</div>
+                                  <div className="text-xs text-muted-foreground mt-0.5">{p.email}</div>
                                 </div>
                               </div>
                             </div>
@@ -6977,7 +6975,7 @@ const EnvelopeCreator: React.FC = () => {
                               </div>
                             </div>
                             <div className="flex-1">
-                              <div className="text-sm font-semibold text-gray-700">COMPLETED</div>
+                              <div className="text-sm font-semibold text-muted-foreground">COMPLETED</div>
                             </div>
                           </div>
                         </div>
@@ -6985,20 +6983,21 @@ const EnvelopeCreator: React.FC = () => {
                     );
                   })()}
                 </div>
-                <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+                <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-border">
                   <button
                     onClick={() => {
                       setShowSendConfirmationModal(false);
                       setDraggedSignerId(null);
                       setDragOverSignerId(null);
                     }}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                    className="px-6 py-2.5 border border-border rounded-lg text-muted-foreground hover:bg-muted font-medium transition-colors"
                   >
                     Cancel
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSendModalStep(2)}
-                    className="px-6 py-2.5 bg-[#3E2B66] text-white rounded-lg hover:bg-[#4d3577] font-medium transition-colors"
+                    className="rounded-lg bg-primary px-6 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Next
                   </button>
@@ -7019,9 +7018,9 @@ const EnvelopeCreator: React.FC = () => {
                         <div className="relative z-20 envelope-flying">
                           <div className="relative">
                             {/* Envelope Body */}
-                            <div className="relative w-28 h-20 bg-gradient-to-br from-[#3E2B66] to-[#5a3f8a] rounded-sm shadow-2xl envelope-body overflow-hidden">
+                            <div className="relative w-28 h-20 bg-gradient-to-br from-primary to-primary/75 rounded-sm shadow-2xl shadow-primary/25 envelope-body overflow-hidden">
                               {/* Envelope Flap (Triangle shape) */}
-                              <div className="absolute -top-4 left-0 w-full h-8 bg-gradient-to-br from-[#4d3577] to-[#3E2B66] envelope-flap"
+                              <div className="absolute -top-4 left-0 w-full h-8 bg-gradient-to-br from-primary/95 to-primary envelope-flap"
                                 style={{
                                   clipPath: 'polygon(0 100%, 50% 0, 100% 100%)',
                                   transformOrigin: 'center bottom'
@@ -7029,12 +7028,12 @@ const EnvelopeCreator: React.FC = () => {
                               </div>
                               {/* Envelope Content Area */}
                               <div className="absolute inset-0 flex items-center justify-center pt-2">
-                                <Mail className="w-10 h-10 text-white/90 relative z-10" />
+                                <Mail className="w-10 h-10 text-primary-foreground/90 relative z-10" />
                               </div>
                               {/* Shine Effect */}
                               <div className="absolute inset-0 envelope-shine rounded-sm"></div>
                               {/* Envelope Border/Outline */}
-                              <div className="absolute inset-0 border-2 border-[#2a1a4a] rounded-sm"></div>
+                              <div className="absolute inset-0 border-2 border-primary/40 rounded-sm"></div>
                             </div>
                             {/* Particles/Trail - Left side */}
                             <div className="absolute -left-6 top-1/2 -translate-y-1/2">
@@ -7054,115 +7053,115 @@ const EnvelopeCreator: React.FC = () => {
                         {/* Small Envelopes - Flying around */}
                         {/* Small Envelope 1 - Top Left */}
                         <div className="absolute top-8 left-12 small-envelope-1">
-                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-primary/85 to-primary/65 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-primary/90 to-primary/80"
                               style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
-                              <Mail className="w-4 h-4 text-white/80" />
+                              <Mail className="w-4 h-4 text-primary-foreground/85" />
                             </div>
                           </div>
                         </div>
 
                         {/* Small Envelope 2 - Top Right */}
                         <div className="absolute top-6 right-16 small-envelope-2">
-                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-primary/85 to-primary/65 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-primary/90 to-primary/80"
                               style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
-                              <Mail className="w-4 h-4 text-white/80" />
+                              <Mail className="w-4 h-4 text-primary-foreground/85" />
                             </div>
                           </div>
                         </div>
 
                         {/* Small Envelope 3 - Bottom Left */}
                         <div className="absolute bottom-8 left-16 small-envelope-3">
-                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-primary/85 to-primary/65 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-primary/90 to-primary/80"
                               style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
-                              <Mail className="w-4 h-4 text-white/80" />
+                              <Mail className="w-4 h-4 text-primary-foreground/85" />
                             </div>
                           </div>
                         </div>
 
                         {/* Small Envelope 4 - Bottom Right */}
                         <div className="absolute bottom-6 right-12 small-envelope-4">
-                          <div className="relative w-12 h-8 bg-gradient-to-br from-[#3E2B66]/80 to-[#5a3f8a]/80 rounded-sm shadow-lg overflow-hidden">
-                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-[#4d3577]/80 to-[#3E2B66]/80"
+                          <div className="relative w-12 h-8 bg-gradient-to-br from-primary/85 to-primary/65 rounded-sm shadow-lg overflow-hidden">
+                            <div className="absolute -top-2 left-0 w-full h-4 bg-gradient-to-br from-primary/90 to-primary/80"
                               style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-1">
-                              <Mail className="w-4 h-4 text-white/80" />
+                              <Mail className="w-4 h-4 text-primary-foreground/85" />
                             </div>
                           </div>
                         </div>
 
                         {/* Small Envelope 5 - Top Center */}
                         <div className="absolute top-2 left-1/2 -translate-x-1/2 small-envelope-5">
-                          <div className="relative w-10 h-7 bg-gradient-to-br from-[#3E2B66]/70 to-[#5a3f8a]/70 rounded-sm shadow-md overflow-hidden">
-                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70"
+                          <div className="relative w-10 h-7 bg-gradient-to-br from-primary/75 to-primary/55 rounded-sm shadow-md overflow-hidden">
+                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-primary/85 to-primary/70"
                               style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-0.5">
-                              <Mail className="w-3 h-3 text-white/70" />
+                              <Mail className="w-3 h-3 text-primary-foreground/75" />
                             </div>
                           </div>
                         </div>
 
                         {/* Small Envelope 6 - Bottom Center */}
                         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 small-envelope-6">
-                          <div className="relative w-10 h-7 bg-gradient-to-br from-[#3E2B66]/70 to-[#5a3f8a]/70 rounded-sm shadow-md overflow-hidden">
-                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-[#4d3577]/70 to-[#3E2B66]/70"
+                          <div className="relative w-10 h-7 bg-gradient-to-br from-primary/75 to-primary/55 rounded-sm shadow-md overflow-hidden">
+                            <div className="absolute -top-1.5 left-0 w-full h-3 bg-gradient-to-br from-primary/85 to-primary/70"
                               style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}></div>
                             <div className="absolute inset-0 flex items-center justify-center pt-0.5">
-                              <Mail className="w-3 h-3 text-white/70" />
+                              <Mail className="w-3 h-3 text-primary-foreground/75" />
                             </div>
                           </div>
                         </div>
 
                         {/* Destination Indicators */}
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 opacity-40">
-                          <div className="w-4 h-4 bg-[#3E2B66] rounded-full animate-ping"></div>
-                          <div className="absolute inset-0 w-4 h-4 bg-[#3E2B66] rounded-full"></div>
+                          <div className="w-4 h-4 bg-primary rounded-full animate-ping"></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-primary rounded-full"></div>
                         </div>
                         <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-40">
-                          <div className="w-4 h-4 bg-[#3E2B66] rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
-                          <div className="absolute inset-0 w-4 h-4 bg-[#3E2B66] rounded-full"></div>
+                          <div className="w-4 h-4 bg-primary rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-primary rounded-full"></div>
                         </div>
                       </div>
                     </div>
 
-                    <h3 className="text-2xl font-semibold text-[#3E2B66] mb-3">Sending Envelope...</h3>
-                    <p className="text-gray-600 text-center max-w-md mb-6">
+                    <h3 className="text-2xl font-semibold text-primary mb-3">Sending Envelope...</h3>
+                    <p className="text-muted-foreground text-center max-w-md mb-6">
                       Please wait while we send your envelope to all recipients. This may take a few moments.
                     </p>
-                    <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                    <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#3E2B66] rounded-full animate-pulse"></div>
-                        <span className="font-medium">Processing recipients</span>
+                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                        <span className="font-medium text-foreground">Processing recipients</span>
                       </div>
-                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="w-1 h-1 bg-muted-foreground/40 rounded-full"></div>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#3E2B66] rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
-                        <span className="font-medium">Consuming credits</span>
+                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
+                        <span className="font-medium text-foreground">Consuming credits</span>
                       </div>
-                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="w-1 h-1 bg-muted-foreground/40 rounded-full"></div>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#3E2B66] rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
-                        <span className="font-medium">Sending emails</span>
+                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
+                        <span className="font-medium text-foreground">Sending emails</span>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <>
                     {/* Invoice Header */}
-                    <div className="mb-8 pb-6 border-b-2 border-gray-300">
+                    <div className="mb-8 pb-6 border-b-2 border-border">
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h2 className="text-3xl font-bold text-gray-900 mb-1">Envelope Summary</h2>
-                          {/* <p className="text-sm text-gray-500">Transaction Summary</p> */}
+                          <h2 className="text-3xl font-bold text-foreground mb-1">Envelope Summary</h2>
+                          {/* <p className="text-sm text-muted-foreground">Transaction Summary</p> */}
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-gray-500 mb-1">Date</p>
-                          <p className="text-sm font-semibold text-gray-900">
+                          <p className="text-xs text-muted-foreground mb-1">Date</p>
+                          <p className="text-sm font-semibold text-foreground">
                             {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                           </p>
                         </div>
@@ -7171,18 +7170,18 @@ const EnvelopeCreator: React.FC = () => {
 
                     {/* Insufficient Credits Warning */}
                     {((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) < 0 && (
-                      <div className="bg-red-50 border-2 border-red-200 rounded-lg p-5 mb-6">
+                      <div className="bg-destructive/10 dark:bg-destructive/15 border-2 border-destructive/30 rounded-lg p-5 mb-6">
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center mt-0.5">
-                            <span className="text-white text-xs font-bold">!</span>
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-destructive flex items-center justify-center mt-0.5">
+                            <span className="text-destructive-foreground text-xs font-bold">!</span>
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-red-900 mb-2">Insufficient Credits</h3>
-                            <p className="text-sm text-red-700 mb-3">
+                            <h3 className="text-lg font-semibold text-destructive mb-2">Insufficient Credits</h3>
+                            <p className="text-sm text-destructive/90 mb-3">
                               You need <span className="font-bold">{calculateTotalCost()}</span> credits but only have{' '}
                               <span className="font-bold">{subscriptionPlan?.creditsBalance || 0}</span> credits available.
                             </p>
-                            <p className="text-sm text-red-600">
+                            <p className="text-sm text-destructive/80">
                               Please upgrade your plan or add credits to proceed with sending this envelope.
                             </p>
                           </div>
@@ -7192,22 +7191,22 @@ const EnvelopeCreator: React.FC = () => {
 
                     {/* Invoice Line Items */}
                     <div className="mb-6">
-                      {/* <h3 className="text-lg font-semibold text-gray-900 mb-4">Line Items</h3> */}
+                      {/* <h3 className="text-lg font-semibold text-foreground mb-4">Line Items</h3> */}
 
                       {/* Table Header - Only show when there are recipients with authentication */}
                       {hasRecipientsWithAuth && (
-                        <div className="bg-gradient-to-r from-[#260559]/100 to-[#3E2B66] border border-[#260559] rounded-t-lg overflow-hidden">
+                        <div className="bg-gradient-to-r from-primary to-primary/90 border border-primary/30 rounded-t-lg overflow-hidden">
                           <div className="grid grid-cols-12 gap-4 px-4 py-3">
-                            <div className="col-span-1 text-xs font-semibold text-white">#</div>
-                            <div className="col-span-4 text-xs font-semibold text-white">Recipient</div>
-                            <div className="col-span-5 text-xs font-semibold text-white">Authentication Method</div>
-                            <div className="col-span-2 text-xs font-semibold text-white text-right">Cost</div>
+                            <div className="col-span-1 text-xs font-semibold text-primary-foreground">#</div>
+                            <div className="col-span-4 text-xs font-semibold text-primary-foreground">Recipient</div>
+                            <div className="col-span-5 text-xs font-semibold text-primary-foreground">Authentication Method</div>
+                            <div className="col-span-2 text-xs font-semibold text-primary-foreground text-right">Cost</div>
                           </div>
                         </div>
                       )}
 
                       {/* Table Body - Only show recipients with authentication methods */}
-                      <div className={`border border-gray-200 ${hasRecipientsWithAuth ? 'rounded-b-lg' : 'rounded-lg'} overflow-hidden`}>
+                      <div className={`border border-border ${hasRecipientsWithAuth ? 'rounded-b-lg' : 'rounded-lg'} overflow-hidden`}>
                         {recipients
                           .filter((recipient) => {
                             const authArray = parseAuthentication(recipient.authentication);
@@ -7234,19 +7233,19 @@ const EnvelopeCreator: React.FC = () => {
                             return (
                               <div
                                 key={recipient.id}
-                                className={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-200 last:border-b-0 hover:bg-purple-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-purple-50/30'
+                                className={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-border last:border-b-0 hover:bg-accent/50 transition-colors ${index % 2 === 0 ? 'bg-card' : 'bg-muted/40'
                                   }`}
                               >
-                                <div className="col-span-1 text-sm font-medium text-gray-700 flex items-center">{recipient.order}</div>
+                                <div className="col-span-1 text-sm font-medium text-muted-foreground flex items-center">{recipient.order}</div>
                                 <div className="col-span-4">
-                                  <p className="text-sm font-semibold text-gray-900 truncate">
+                                  <p className="text-sm font-semibold text-foreground truncate">
                                     {toTitleCase(recipient.name) || recipient.email}
                                   </p>
-                                  <p className="text-xs text-gray-500 truncate">{recipient.email}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{recipient.email}</p>
                                 </div>
                                 <div className="col-span-5">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-700 font-medium">{authDisplay}</span>
+                                    <span className="text-sm text-muted-foreground font-medium">{authDisplay}</span>
                                     <button
                                       type="button"
                                       title="Edit authentication method"
@@ -7255,24 +7254,24 @@ const EnvelopeCreator: React.FC = () => {
                                         setAuthModalForBulk(false);
                                         setShowAuthModal(true);
                                       }}
-                                      className="edit-icon-animated group relative inline-flex items-center justify-center w-7 h-7 rounded-md hover:to-purple-50 text-purple-600 transition-all duration-300 flex-shrink-0 shadow-sm hover:shadow-lg hover:shadow-purple-300/60 hover:scale-110 hover:border-purple-500 active:scale-95 hover:-translate-y-0.5"
+                                      className="edit-icon-animated group relative inline-flex items-center justify-center w-7 h-7 rounded-md text-primary border border-transparent hover:border-primary/40 hover:bg-accent/60 transition-all duration-300 flex-shrink-0 shadow-sm hover:shadow-md hover:shadow-primary/20 hover:scale-110 active:scale-95 hover:-translate-y-0.5 ring-offset-background"
                                     >
-                                      <div className="absolute inset-0 rounded-md bg-purple-400 opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 z-0"></div>
+                                      <div className="absolute inset-0 rounded-md bg-primary opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 z-0"></div>
                                       <Edit className='w-3.5 h-3.5 relative z-10 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-0 group-active:scale-100' />
-                                      <div className="absolute inset-0 rounded-md ring-2 ring-purple-300 ring-offset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
+                                      <div className="absolute inset-0 rounded-md ring-2 ring-primary/40 ring-offset-1 ring-offset-background opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
                                     </button>
                                   </div>
                                 </div>
                                 <div className="col-span-2 text-sm font-semibold text-right flex items-center justify-end flex-wrap gap-1">
                                   {effectiveLineCost === 0 && rawLineCost > 0 ? (
                                     <>
-                                      <span className="text-emerald-700">Free</span>
-                                      <span className="text-xs font-normal text-gray-500">(referral)</span>
+                                      <span className="text-success">Free</span>
+                                      <span className="text-xs font-normal text-muted-foreground">(referral)</span>
                                     </>
                                   ) : (
                                     <>
-                                      <span className="text-purple-700">{effectiveLineCost > 0 ? `${effectiveLineCost}` : '0'}</span>
-                                      <span className="text-xs text-gray-500 font-normal ml-1">credits</span>
+                                      <span className="text-primary">{effectiveLineCost > 0 ? `${effectiveLineCost}` : '0'}</span>
+                                      <span className="text-xs text-muted-foreground font-normal ml-1">credits</span>
                                     </>
                                   )}
                                 </div>
@@ -7292,7 +7291,7 @@ const EnvelopeCreator: React.FC = () => {
                           ).filter(Boolean);
                           return authMethodList.length > 0;
                         }).length === 0 && (
-                            <div className="px-4 py-8 text-center text-gray-500">
+                            <div className="px-4 py-8 text-center text-muted-foreground">
                               <p className="text-sm">No recipients with authentication methods</p>
                             </div>
                           )}
@@ -7304,16 +7303,16 @@ const EnvelopeCreator: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowSummary(!showSummary)}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-l-lg"
+                        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-muted transition-colors rounded-l-lg"
                       >
                         <ChevronDown
-                          className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`}
+                          className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`}
                         />
-                        <span className="text-gray-700 font-medium">View Summary</span>
+                        <span className="text-muted-foreground font-medium">View Summary</span>
                       </button>
 
                       {showSummary && (
-                        <div className="mt-4 bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <div className="mt-4 bg-gradient-to-br from-muted/60 to-accent/40 border border-border rounded-lg p-6 shadow-sm">
                           {/* Recipients without authentication */}
                           {recipients.filter((recipient) => {
                             const authArray = parseAuthentication(recipient.authentication);
@@ -7323,8 +7322,8 @@ const EnvelopeCreator: React.FC = () => {
                             return authMethodList.length === 0;
                           }).length > 0 && (
                               <div className="mb-6">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                  <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                                   Recipients Without Authentication
                                 </h4>
                                 <div className="space-y-2">
@@ -7339,13 +7338,13 @@ const EnvelopeCreator: React.FC = () => {
                                     .map((recipient) => (
                                       <div
                                         key={recipient.id}
-                                        className="flex items-center justify-between p-3 bg-white border border-yellow-200 rounded-lg hover:border-yellow-300 transition-colors"
+                                        className="flex items-center justify-between p-3 bg-card border border-amber-500/35 dark:border-amber-400/25 rounded-lg hover:border-amber-500/55 transition-colors"
                                       >
                                         <div className="flex-1">
-                                          <p className="text-sm font-semibold text-gray-900">
+                                          <p className="text-sm font-semibold text-foreground">
                                             {toTitleCase(recipient.name) || recipient.email}
                                           </p>
-                                          <p className="text-xs text-gray-500">{recipient.email}</p>
+                                          <p className="text-xs text-muted-foreground">{recipient.email}</p>
                                         </div>
                                         <button
                                           type="button"
@@ -7354,9 +7353,9 @@ const EnvelopeCreator: React.FC = () => {
                                             setAuthModalForBulk(false);
                                             setShowAuthModal(true);
                                           }}
-                                          className="inline-flex items-center gap-2 px-2 py-1 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-400 rounded-full text-xs font-semibold text-yellow-900 hover:from-yellow-100 hover:via-amber-100 hover:to-yellow-100 hover:border-yellow-500 transition-all duration-200 shadow-md hover:shadow-xl hover:scale-105 animate-golden-shine relative group"
+                                          className="inline-flex items-center gap-2 px-2 py-1 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 dark:from-amber-500/20 dark:via-amber-400/15 dark:to-amber-500/20 border-2 border-amber-500/50 dark:border-amber-400/45 rounded-full text-xs font-semibold text-foreground hover:from-amber-500/25 hover:via-amber-500/15 hover:to-amber-500/25 transition-all duration-200 shadow-md hover:shadow-xl hover:scale-105 animate-golden-shine relative group"
                                         >
-                                          <LockKeyhole className="w-4 h-4 relative z-10 text-yellow-700 group-hover:text-yellow-800 transition-colors" />
+                                          <LockKeyhole className="w-4 h-4 relative z-10 text-amber-700 dark:text-amber-300 group-hover:text-amber-800 dark:group-hover:text-amber-200 transition-colors" />
                                           <span className="relative z-10">Select Authentication</span>
                                         </button>
                                       </div>
@@ -7368,19 +7367,19 @@ const EnvelopeCreator: React.FC = () => {
                           {/* Balance Summary */}
                           <div className="space-y-3">
                             <div className="flex justify-between items-center text-sm">
-                              <span className="text-gray-600">Current Balance:</span>
-                              <span className="font-semibold text-gray-900">{subscriptionPlan?.creditsBalance || 0} credits</span>
+                              <span className="text-muted-foreground">Current Balance:</span>
+                              <span className="font-semibold text-foreground">{subscriptionPlan?.creditsBalance || 0} credits</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
-                              <span className="text-gray-600">Deduction:</span>
-                              <span className="font-semibold text-red-600">- {calculateTotalCost()} credits</span>
+                              <span className="text-muted-foreground">Deduction:</span>
+                              <span className="font-semibold text-destructive">- {calculateTotalCost()} credits</span>
                             </div>
-                            <div className="border-t border-gray-300 pt-3 mt-3">
+                            <div className="border-t border-border pt-3 mt-3">
                               <div className="flex justify-between items-center">
-                                <span className="text-base font-semibold text-gray-900">Remaining Balance:</span>
+                                <span className="text-base font-semibold text-foreground">Remaining Balance:</span>
                                 <span className={`text-xl font-bold ${((subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()) >= 0
-                                  ? 'text-green-600'
-                                  : 'text-red-600'
+                                  ? 'text-success'
+                                  : 'text-destructive'
                                   }`}>
                                   {(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost()} credits
                                 </span>
@@ -7392,7 +7391,7 @@ const EnvelopeCreator: React.FC = () => {
                     </div>
 
                     {/* Schedule Envelope Section */}
-                    <div className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="mt-6 pt-6 border-t border-border">
                       <div className="flex items-center gap-3 mb-4">
                         <input
                           type="checkbox"
@@ -7405,17 +7404,17 @@ const EnvelopeCreator: React.FC = () => {
                               setScheduledTime('');
                             }
                           }}
-                          className="w-4 h-4 text-[#3E2B66] border-gray-300 rounded focus:ring-[#3E2B66]"
+                          className="w-4 h-4 text-primary border-border rounded focus:ring-primary focus:ring-offset-background"
                         />
-                        <label htmlFor="schedule-envelope" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        <label htmlFor="schedule-envelope" className="text-sm font-medium text-muted-foreground cursor-pointer">
                           Schedule envelope to send later
                         </label>
                       </div>
 
                       {isScheduled && (
-                        <div className="ml-7 space-y-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div className="ml-7 space-y-4 bg-muted/50 border border-border rounded-lg p-4">
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                            <label className="block text-xs font-medium text-muted-foreground mb-2">
                               Schedule Date & Time
                             </label>
                             <DatePicker
@@ -7460,21 +7459,21 @@ const EnvelopeCreator: React.FC = () => {
                                   (e as any).preventDefault();
                                 }
                               }}
-                              className=" px-3 py-2 w-full text-sm border border-gray-300  focus:outline-none focus:ring-2 focus:ring-[#3E2B66] bg-white cursor-pointer"
+                              className=" px-3 py-2 w-full text-sm border border-border text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
                               wrapperClassName="w-full"
-                              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
+                              calendarClassName="shadow-lg border border-border rounded-lg"
                               placeholderText="Select date and time"
                               isClearable={false}
                               required={isScheduled}
                             />
-                            <p className="text-[10px] text-gray-500 mt-1">
+                            <p className="text-[10px] text-muted-foreground mt-1">
                               For today, you can only select times after the current time.
                             </p>
                           </div>
                           {scheduledDateTime && (
-                            <div className="text-sm text-gray-700 mt-2 p-2 bg-white rounded border border-purple-200">
-                              <span className="font-medium text-xs text-purple-700">Scheduled for:</span>{' '}
-                              <span className="text-xs text-gray-800">
+                            <div className="text-sm text-muted-foreground mt-2 p-2 bg-card rounded border border-border">
+                              <span className="font-medium text-xs text-primary">Scheduled for:</span>{' '}
+                              <span className="text-xs text-foreground">
                                 {scheduledDateTime.toLocaleString('en-US', {
                                   weekday: 'short',
                                   year: 'numeric',
@@ -7491,11 +7490,11 @@ const EnvelopeCreator: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-gray-200">
+                    <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-border">
                       <button
                         onClick={() => setSendModalStep(1)}
                         disabled={sending}
-                        className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2.5 border border-border rounded-lg text-muted-foreground hover:bg-muted font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Previous
                       </button>
@@ -7524,18 +7523,18 @@ const EnvelopeCreator: React.FC = () => {
                           }
                         }}
                         disabled={sending}
-                        className={`px-6 py-2.5 rounded-lg text-white font-medium transition-all flex items-center gap-2 ${(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
-                          ? 'bg-gray-400 cursor-not-allowed'
+                        className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${(subscriptionPlan?.creditsBalance || 0) - calculateTotalCost() < 0
+                          ? 'bg-muted text-muted-foreground cursor-not-allowed'
                           : sending
-                            ? 'bg-[#3E2B66] cursor-wait opacity-90'
-                            : 'bg-[#3E2B66] hover:bg-[#4d3577] shadow-sm hover:shadow-md'
+                            ? 'bg-primary text-primary-foreground cursor-wait opacity-90'
+                            : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md'
                           }`}
                       >
                         {sending && (
                           <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
                         )}
                         {sending
@@ -7564,13 +7563,13 @@ const EnvelopeCreator: React.FC = () => {
         }}>
           <div className="bg-white rounded-lg shadow-xl w-[90vw] h-[90vh] max-w-6xl flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex-1 mr-4">
-                <h2 className="text-lg font-semibold text-gray-900 truncate">
+                <h2 className="text-lg font-semibold text-foreground truncate">
                   {selectedPdfForPreview.name}
                 </h2>
                 {pdfNumPages && (
-                  <p className="text-sm text-gray-500 mt-0.5">{pdfNumPages} {pdfNumPages === 1 ? 'page' : 'pages'}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{pdfNumPages} {pdfNumPages === 1 ? 'page' : 'pages'}</p>
                 )}
               </div>
               <button
@@ -7580,7 +7579,7 @@ const EnvelopeCreator: React.FC = () => {
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
@@ -7610,7 +7609,7 @@ const EnvelopeCreator: React.FC = () => {
                 </PDFDocument>
                 {!pdfNumPages && (
                   <div className="flex items-center justify-center h-full">
-                    <div className="text-gray-500">Loading PDF...</div>
+                    <div className="text-muted-foreground">Loading PDF...</div>
                   </div>
                 )}
               </div>
@@ -7623,7 +7622,7 @@ const EnvelopeCreator: React.FC = () => {
       {showAuthModal && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => {
               setShowAuthModal(false);
               setAuthModalForRecipientId(null);
@@ -7632,22 +7631,24 @@ const EnvelopeCreator: React.FC = () => {
               setHasUserChangedSelection(false);
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[20px] font-semibold text-[#3E2B66]">
+          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">
                 Select Authentication Method
               </h2>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   onClick={() => {
                     const methodsToSave = tempAuthSelection || [];
                     handleAuthMethodSelect(methodsToSave);
                   }}
-                  className="px-5 py-2 bg-[#3E2B66] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                  className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   Save
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setShowAuthModal(false);
                     setAuthModalForRecipientId(null);
@@ -7655,9 +7656,10 @@ const EnvelopeCreator: React.FC = () => {
                     setTempAuthSelection(undefined);
                     setHasUserChangedSelection(false);
                   }}
-                  className="text-[#3E2B66] hover:text-gray-800 z-10"
+                  className="z-10 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Close"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -7714,7 +7716,7 @@ const EnvelopeCreator: React.FC = () => {
           />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between p-6 border-b border-border">
               <h2 className="text-[25px] thankyou-heading font-semibold text-[#3E2B66]">
                 {editingSavedRecipientId
                   ? "Edit Recipient"
@@ -7760,7 +7762,7 @@ const EnvelopeCreator: React.FC = () => {
                     setEditingSavedRecipientId(null);
                     resetNewRecipientFormState();
                   }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-muted-foreground hover:text-muted-foreground transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -7769,7 +7771,7 @@ const EnvelopeCreator: React.FC = () => {
 
             {/* Add Recipient Form */}
             {showAddRecipientForm && (
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <div className="p-4 border-b border-border bg-gray-50">
                 <SavedRecipientContactFields
                   values={newRecipientForm}
                   errors={recipientFormErrors}
@@ -7786,7 +7788,7 @@ const EnvelopeCreator: React.FC = () => {
                       setEditingSavedRecipientId(null);
                       resetNewRecipientFormState();
                     }}
-                    className="inline-flex items-center px-4 py-2 font-medium rounded-lg transition-colors text-sm bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    className="inline-flex items-center px-4 py-2 font-medium rounded-lg transition-colors text-sm bg-gray-200 text-muted-foreground hover:bg-gray-300"
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
@@ -7814,9 +7816,9 @@ const EnvelopeCreator: React.FC = () => {
             )}
 
             {/* Search Input */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-border">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                 <input
                   type="search"
                   inputMode="search"
@@ -7824,7 +7826,7 @@ const EnvelopeCreator: React.FC = () => {
                   value={recipientListSearch}
                   onChange={(e) => setRecipientListSearch(e.target.value)}
                   placeholder="Search by name, email, company, or phone…"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder:text-xs"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder:text-xs"
                 />
               </div>
             </div>
@@ -7848,11 +7850,11 @@ const EnvelopeCreator: React.FC = () => {
                 if (filteredRecipients.length === 0) {
                   return (
                     <div className="text-center py-12">
-                      <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
                         {recipientListSearch ? 'No recipients found' : 'No recipients saved'}
                       </h3>
-                      <p className="text-gray-500">
+                      <p className="text-muted-foreground">
                         {recipientListSearch ? 'Try adjusting your search terms' : 'Go to Manage Recipients to add recipients'}
                       </p>
                     </div>
@@ -7878,7 +7880,7 @@ const EnvelopeCreator: React.FC = () => {
                       return (
                         <div
                           key={recipient._id}
-                          className="group flex w-full items-stretch overflow-hidden rounded-lg border border-gray-200 bg-white transition-colors hover:border-purple-300"
+                          className="group flex w-full items-stretch overflow-hidden rounded-lg border border-border bg-white transition-colors hover:border-purple-300"
                         >
                           <button
                             type="button"
@@ -7887,10 +7889,10 @@ const EnvelopeCreator: React.FC = () => {
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
-                                <div className="font-medium text-gray-900 mb-1">
+                                <div className="font-medium text-foreground mb-1">
                                   {recipient.name}
                                 </div>
-                                <div className="flex text-xs text-gray-600 mb-1 break-all">
+                                <div className="flex text-xs text-muted-foreground mb-1 break-all">
                                   {recipient.email}
                                   {resolvedPhone ? ` | ${resolvedPhone}` : ''}
                                 </div>
@@ -7935,7 +7937,7 @@ const EnvelopeCreator: React.FC = () => {
                                   <Trash2 className="h-4 w-4" />
                                 )}
                               </button>
-                            </div>
+                            </div>  
                           )}
                         </div>
                       );
