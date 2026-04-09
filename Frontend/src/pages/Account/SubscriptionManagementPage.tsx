@@ -202,46 +202,47 @@ const SubscriptionManagementPage: React.FC = () => {
   }, [location.search, location.pathname, refreshPlan, navigate]);
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb]">
-      <div className="">
-        <div className="">
-          <div className="border-b border-gray-200 px-6 py-5">
+    <div className="min-h-screen bg-background">
+      <div>
+        <div>
+          <div className="border-b border-border bg-card/30 px-6 py-5">
             <div className="flex items-center gap-4">
               <button
+                type="button"
                 onClick={() => navigate('/account/profile')}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:bg-gray-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900">Subscription Management</h1>
-                <p className="mt-1 text-sm text-gray-600">Manage your plan, credits, and invoices from one place.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">Subscription Management</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Manage your plan, credits, and invoices from one place.</p>
               </div>
             </div>
           </div>
 
           <div className="px-6 py-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                    <Wallet className="h-4 w-4 text-gray-700" />
+                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+                    <Wallet className="h-4 w-4 text-foreground" />
                   </div>
-                  <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Credits</span>
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Credits</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-3xl font-bold text-foreground">
                   {remainingCredits === Infinity ? '∞' : remainingCredits.toLocaleString()}
                 </div>
-                <p className="mt-1 text-sm text-gray-500">Available balance</p>
+                <p className="mt-1 text-sm text-muted-foreground">Available balance</p>
                 {creditsLimit > 0 && (
                   <div className="mt-4">
-                    <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+                    <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                       <span>Usage</span>
                       <span>{Math.round(creditsPercentage)}%</span>
                     </div>
-                    <div className="h-2 w-full rounded-full bg-gray-100">
+                    <div className="h-2 w-full rounded-full bg-muted">
                       <div
-                        className="h-2 rounded-full bg-[#260559] transition-all duration-500"
+                        className="h-2 rounded-full bg-primary transition-all duration-500"
                         style={{ width: `${creditsPercentage}%` }}
                       />
                     </div>
@@ -249,39 +250,39 @@ const SubscriptionManagementPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                    <CreditCard className="h-4 w-4 text-gray-700" />
+                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+                    <CreditCard className="h-4 w-4 text-foreground" />
                   </div>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      isFree ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'
+                      isFree ? 'border border-success/30 bg-success/10 text-success' : 'border border-primary/30 bg-primary/10 text-primary'
                     }`}
                   >
                     {isFree ? 'Free' : 'Paid'}
                   </span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{userPlan?.name || 'Free'}</div>
-                <p className="mt-1 text-sm text-gray-500">Current subscription plan</p>
+                <div className="text-3xl font-bold text-foreground">{userPlan?.name || 'Free'}</div>
+                <p className="mt-1 text-sm text-muted-foreground">Current subscription plan</p>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                    <Layers3 className="h-4 w-4 text-gray-700" />
+                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+                    <Layers3 className="h-4 w-4 text-foreground" />
                   </div>
-                  <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Services</span>
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Services</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{userPlan?.services?.length || 0}</div>
+                <div className="text-3xl font-bold text-foreground">{userPlan?.services?.length || 0}</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {userPlan?.services?.slice(0, 3).map((service) => (
-                    <span key={service} className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700">
+                    <span key={service} className="rounded-md border border-border bg-muted/50 px-2 py-1 text-xs text-foreground">
                       {service.toUpperCase()}
                     </span>
                   ))}
                   {userPlan?.services && userPlan.services.length > 3 && (
-                    <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700">
+                    <span className="rounded-md border border-border bg-muted/50 px-2 py-1 text-xs text-foreground">
                       +{userPlan.services.length - 3}
                     </span>
                   )}
@@ -290,44 +291,44 @@ const SubscriptionManagementPage: React.FC = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2 space-y-6">
-                <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div className="border-b border-gray-100 px-5 py-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Current Subscription</h2>
-                    <p className="mt-1 text-xs text-gray-500">Plan details, allowances, and included features.</p>
+              <div className="space-y-6 lg:col-span-2">
+                <section className="rounded-xl border border-border bg-card shadow-sm">
+                  <div className="border-b border-border px-5 py-4">
+                    <h2 className="text-lg font-semibold text-foreground">Current Subscription</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">Plan details, allowances, and included features.</p>
                   </div>
                   <div className="p-5">
                     <SubscriptionInfo showRefreshButton={true} />
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div className="border-b border-gray-100 px-5 py-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Billing & Invoices</h2>
-                    <p className="mt-1 text-xs text-gray-500">Track payments and access invoice documents.</p>
+                <section className="rounded-xl border border-border bg-card shadow-sm">
+                  <div className="border-b border-border px-5 py-4">
+                    <h2 className="text-lg font-semibold text-foreground">Billing & Invoices</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">Track payments and access invoice documents.</p>
                   </div>
                   <div className="p-5">
                     {latestInvoice ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                            <div className="text-xs text-gray-500">Invoice</div>
-                            <div className="mt-1 text-sm font-semibold text-gray-900">
+                          <div className="rounded-lg border border-border bg-muted/40 p-3">
+                            <div className="text-xs text-muted-foreground">Invoice</div>
+                            <div className="mt-1 text-sm font-semibold text-foreground">
                               {latestInvoice.invoiceNumber || 'Invoice'}
                             </div>
                           </div>
-                          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                            <div className="text-xs text-gray-500">Amount</div>
-                            <div className="mt-1 text-sm font-semibold text-gray-900">
+                          <div className="rounded-lg border border-border bg-muted/40 p-3">
+                            <div className="text-xs text-muted-foreground">Amount</div>
+                            <div className="mt-1 text-sm font-semibold text-foreground">
                               {latestInvoice.currency || 'USD'}{' '}
                               {typeof latestInvoice.amount === 'number'
                                 ? latestInvoice.amount.toFixed(2)
                                 : latestInvoice.amount}
                             </div>
                           </div>
-                          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                            <div className="text-xs text-gray-500">Date</div>
-                            <div className="mt-1 text-sm font-semibold text-gray-900">
+                          <div className="rounded-lg border border-border bg-muted/40 p-3">
+                            <div className="text-xs text-muted-foreground">Date</div>
+                            <div className="mt-1 text-sm font-semibold text-foreground">
                               {latestInvoice.createdAt
                                 ? new Date(latestInvoice.createdAt).toLocaleDateString()
                                 : '-'}
@@ -336,15 +337,17 @@ const SubscriptionManagementPage: React.FC = () => {
                         </div>
                         <div className="flex flex-wrap gap-3">
                           <button
+                            type="button"
                             onClick={() => setIsInvoiceModalOpen(true)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
                           >
                             <Receipt className="h-4 w-4" />
                             View invoice
                           </button>
                           <button
+                            type="button"
                             onClick={() => navigate('/credits-usage')}
-                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
                           >
                             <BarChart3 className="h-4 w-4" />
                             Billing & usage history
@@ -352,7 +355,7 @@ const SubscriptionManagementPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         You don&apos;t have any invoices yet. Upgrade to a paid plan to generate your first invoice.
                       </p>
                     )}
@@ -361,15 +364,16 @@ const SubscriptionManagementPage: React.FC = () => {
               </div>
 
               <div className="space-y-6">
-                <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div className="border-b border-gray-100 px-5 py-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-                    <p className="mt-1 text-xs text-gray-500">Manage your plan and credit workflow.</p>
+                <section className="rounded-xl border border-border bg-card shadow-sm">
+                  <div className="border-b border-border px-5 py-4">
+                    <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">Manage your plan and credit workflow.</p>
                   </div>
-                  <div className="p-5 space-y-3">
+                  <div className="space-y-3 p-5">
                     <button
+                      type="button"
                       onClick={() => setIsPlansModalOpen(true)}
-                      className="inline-flex w-full items-center justify-between rounded-lg bg-[#260559] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#34106a]"
+                      className="inline-flex w-full items-center justify-between rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                     >
                       <span className="inline-flex items-center gap-2">
                         <CreditCard className="h-4 w-4" />
@@ -379,8 +383,9 @@ const SubscriptionManagementPage: React.FC = () => {
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => setIsCreditPurchaseModalOpen(true)}
-                      className="inline-flex w-full items-center justify-between rounded-lg border border-[#260559] bg-white px-4 py-2.5 text-sm font-semibold text-[#260559] hover:bg-[#260559]/5"
+                      className="inline-flex w-full items-center justify-between rounded-lg border border-primary bg-card px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/10"
                     >
                       <span className="inline-flex items-center gap-2">
                         <Zap className="h-4 w-4" />
@@ -390,8 +395,9 @@ const SubscriptionManagementPage: React.FC = () => {
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => navigate('/credits-usage')}
-                      className="inline-flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                      className="inline-flex w-full items-center justify-between rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
                     >
                       <span className="inline-flex items-center gap-2">
                         <BarChart3 className="h-4 w-4" />
@@ -402,40 +408,41 @@ const SubscriptionManagementPage: React.FC = () => {
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div className="border-b border-gray-100 px-5 py-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Billing Cycle</h2>
+                <section className="rounded-xl border border-border bg-card shadow-sm">
+                  <div className="border-b border-border px-5 py-4">
+                    <h2 className="text-lg font-semibold text-foreground">Billing Cycle</h2>
                   </div>
                   <div className="p-5">
                     {userPlan?.nextBillingAt ? (
                       <div className="flex items-start gap-3">
-                        <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                          <Clock className="h-4 w-4 text-gray-700" />
+                        <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+                          <Clock className="h-4 w-4 text-foreground" />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">Next billing date</div>
-                          <div className="mt-1 text-sm text-gray-600">
+                          <div className="text-sm font-medium text-foreground">Next billing date</div>
+                          <div className="mt-1 text-sm text-muted-foreground">
                             {new Date(userPlan.nextBillingAt).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-600">No recurring billing is scheduled for your current plan.</p>
+                      <p className="text-sm text-muted-foreground">No recurring billing is scheduled for your current plan.</p>
                     )}
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div className="border-b border-gray-100 px-5 py-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Need Help?</h2>
+                <section className="rounded-xl border border-border bg-card shadow-sm">
+                  <div className="border-b border-border px-5 py-4">
+                    <h2 className="text-lg font-semibold text-foreground">Need Help?</h2>
                   </div>
                   <div className="p-5">
-                    <p className="text-sm leading-relaxed text-gray-600">
+                    <p className="text-sm leading-relaxed text-muted-foreground">
                       Questions about pricing, invoices, or usage? Contact our team and we&apos;ll help you quickly.
                     </p>
                     <button
+                      type="button"
                       onClick={() => window.open('/contact-sales', '_blank')}
-                      className="mt-4 inline-flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                      className="mt-4 inline-flex w-full items-center justify-between rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
                     >
                       <span className="inline-flex items-center gap-2">
                         <HelpCircle className="h-4 w-4" />

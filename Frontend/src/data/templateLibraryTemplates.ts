@@ -32,7 +32,7 @@ export const TEMPLATE_LIBRARY_TEMPLATES: TemplateItem[] = [
     categoryId: 'legal',
     categoryLabel: 'Legal',
     description: 'Mutual NDA template with standard confidentiality, exclusions, term, and remedies.',
-    coverStyle: { bg: 'from-slate-50 to-white', accent: 'bg-[#3E2B66]' },
+    coverStyle: { bg: 'from-muted/70 to-card', accent: 'bg-primary' },
     fields: [
       { id: 'effectiveDate', label: 'Effective Date', type: 'date', required: true },
       { id: 'partyAName', label: 'Disclosing Party Name', type: 'text', required: true, placeholder: 'e.g., Acme Pvt Ltd' },
@@ -140,7 +140,7 @@ export const TEMPLATE_LIBRARY_TEMPLATES: TemplateItem[] = [
     categoryId: 'business',
     categoryLabel: 'Business',
     description: 'MOU template for collaboration, scope, milestones, and commercial terms (non-binding).',
-    coverStyle: { bg: 'from-violet-50 to-white', accent: 'bg-violet-600' },
+    coverStyle: { bg: 'from-primary/15 to-card', accent: 'bg-primary' },
     fields: [
       { id: 'effectiveDate', label: 'Effective Date', type: 'date', required: true },
       { id: 'partyA', label: 'Party A', type: 'text', required: true },
@@ -220,7 +220,7 @@ export const TEMPLATE_LIBRARY_TEMPLATES: TemplateItem[] = [
     categoryId: 'hr',
     categoryLabel: 'HR',
     description: 'Employment agreement template with role, compensation, confidentiality, and termination.',
-    coverStyle: { bg: 'from-emerald-50 to-white', accent: 'bg-emerald-600' },
+    coverStyle: { bg: 'from-emerald-500/15 to-card', accent: 'bg-emerald-600' },
     fields: [
       { id: 'effectiveDate', label: 'Effective Date', type: 'date', required: true },
       { id: 'employer', label: 'Employer', type: 'text', required: true },

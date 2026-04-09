@@ -157,13 +157,13 @@ const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string; scheduledTi
       <>
         <div
           ref={statusRef}
-          className="relative inline-flex items-center gap-2 text-blue-600"
+          className="relative inline-flex items-center gap-2 text-primary"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           style={{ position: 'relative', zIndex: 1 }}
         >
           <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-600 transition-transform duration-200" />
+            <Clock className="w-5 h-5 text-primary transition-transform duration-200" />
             <span className="text-sm font-medium">Scheduled</span>
           </div>
         </div>
@@ -177,8 +177,8 @@ const ScheduledStatusWithTooltip: React.FC<{ scheduledDate?: string; scheduledTi
             }}
           >
             <div className="mb-2 font-semibold text-base">Scheduled Delivery</div>
-            <div className="text-xs text-gray-300 mb-1">Date: {formattedDate}</div>
-            <div className="text-xs text-gray-300">Time: {formattedTime}</div>
+            <div className="text-xs text-white/75 mb-1">Date: {formattedDate}</div>
+            <div className="text-xs text-white/75">Time: {formattedTime}</div>
             <div className="absolute top-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#1A1333] rotate-45" />
           </div>
         )}
@@ -527,29 +527,27 @@ const AgreementPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
-                className="text-left text-sm font-semibold text-[#3E2B66] hover:text-[#260559] hover:underline transition-colors duration-200"
+                className="text-left text-sm font-semibold text-primary hover:underline underline-offset-2 hover:opacity-90 transition-colors duration-200 bg-transparent border-0 p-0 cursor-pointer"
                 title="View envelope details"
               >
                 {agreement.name}
               </button>
 
               {isAISent && (
-                <span
-                  className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
-                  style={{ backgroundColor: '#F3E8FF', color: '#4D0080' }}
-                >
-                  <Sparkles className="w-3 h-3" />
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/15 text-primary border border-primary/25">
+                  <Sparkles className="w-3 h-3 shrink-0" />
                   AI
                 </span>
               )}
             </div>
             {!agreement.isPowerForm && (
               <>
-                <div className="text-xs text-gray-500 mt-0.5">
+                <div className="text-xs text-card-foreground/80 mt-0.5">
                   To: {capitalizeWords(agreement.primaryRecipientName)}
                 </div>
-                <div className="text-xs text-gray-500 mt-0.5">
+                <div className="text-xs text-card-foreground/80 mt-0.5">
                   By: {capitalizeWords(agreement?.sender?.name)}
                 </div>
               </>
@@ -562,49 +560,49 @@ const AgreementPage: React.FC = () => {
       agreement.status === 'in-progress' ? (
         <div className="relative group/status">
           <div>
-            <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#3E2B66]/20 to-[#3E2B66]/40 rounded-full progress-bar-animate"></div>
-              <span className="absolute left-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
-              <span className="absolute right-0 w-2 h-2 bg-[#3E2B66] rounded-full shadow-sm"></span>
+            <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/35 rounded-full progress-bar-animate"></div>
+              <span className="absolute left-0 w-2 h-2 bg-primary rounded-full shadow-sm"></span>
+              <span className="absolute right-0 w-2 h-2 bg-primary rounded-full shadow-sm"></span>
             </div>
-            <div className="mt-2 text-sm font-medium text-[#3E2B66] underline decoration-dotted hover:decoration-solid transition-all cursor-pointer">
+            <div className="mt-2 text-sm font-medium text-primary underline decoration-dotted decoration-primary/50 hover:decoration-solid hover:opacity-90 transition-all cursor-pointer">
             {`Waiting for ${capitalizeWords(agreement.waitingFor || agreement.primaryRecipientName || 'Recipient')}`}
             </div>
             {!agreement.isPowerForm && agreement.direction && (
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="text-xs text-card-foreground/80 mt-0.5">
                 {agreement.direction === "sent_and_received" ? 'Sent and Received' : agreement.direction}
               </div>
             )}
           </div>
           <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/status:opacity-100 transition-opacity duration-200 pointer-events-none">
-            <Clock className="w-5 h-5 text-[#3E2B66] animate-spin" style={{ animationDuration: '2s' }} />
+            <Clock className="w-5 h-5 text-primary animate-spin" style={{ animationDuration: '2s' }} />
           </div>
         </div>
       ) : (
         <>
           {agreement.status === 'completed' && (
-            <div className="flex items-center gap-2 text-green-600 group/status">
-              <CheckCircle className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform duration-200" />
-              <span className="text-sm font-medium">Completed</span>
+            <div className="flex items-center gap-2 text-accent-green group/status">
+              <CheckCircle className="w-5 h-5 shrink-0 text-accent-green group-hover/status:scale-110 transition-transform duration-200" />
+              <span className="text-sm font-medium text-accent-green">Completed</span>
             </div>
           )}
           {agreement.isScheduled && agreement.status === 'draft' && (
             <ScheduledStatusWithTooltip scheduledDate={agreement.scheduledDate} scheduledTime={agreement.scheduledTime} />
           )}
           {agreement.status === 'draft' && !agreement.isPowerForm && !agreement.isScheduled && (
-            <div className="flex items-center gap-2 text-[#3E2B66] group/status">
-              <Pencil className="w-5 h-5 text-[#3E2B66] group-hover/status:rotate-12 transition-transform duration-200" />
-              <span className="text-sm font-medium">Draft</span>
+            <div className="flex items-center gap-2 text-primary group/status">
+              <Pencil className="w-5 h-5 shrink-0 text-primary group-hover/status:rotate-12 transition-transform duration-200" />
+              <span className="text-sm font-medium text-primary">Draft</span>
             </div>
           )}
           {agreement.isPowerForm && (
-            <div className="flex items-center gap-2 text-amber-600">
-              <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm">Power Form</span>
+            <div className="flex items-center gap-2 text-accent-orange">
+              <ShieldCheck className="w-5 h-5 shrink-0" />
+              <span className="text-sm font-medium text-accent-orange">Power Form</span>
             </div>
           )}
           {agreement.status === 'deleted' && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/15 text-destructive">
               Deleted
             </span>
           )}
@@ -615,7 +613,7 @@ const AgreementPage: React.FC = () => {
             </span>
           )}
           {!['completed', 'draft', 'deleted', 'declined'].includes(String(agreement.status || '').toLowerCase()) && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground capitalize">
               {String(agreement.status || 'Unknown').replace(/[_-]+/g, ' ')}
             </span>
           )}
@@ -623,29 +621,29 @@ const AgreementPage: React.FC = () => {
       )
     ),
     lastChange: (agreement: Agreement) => (
-      <span className="text-sm text-gray-900">{formatDate(agreement.lastChange)}</span>
+      <span className="text-sm tabular-nums text-primary">{formatDate(agreement.lastChange)}</span>
     ),
     recipient: (_agreement: Agreement, envelopeData?: EnvelopeData) => {
       const recipient = envelopeData?.recipients?.[0];
-      return <span className="text-sm text-gray-900">{recipient?.name || recipient?.email || '-'}</span>;
+      return <span className="text-sm text-card-foreground">{recipient?.name || recipient?.email || '-'}</span>;
     },
     sender: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
-      <span className="text-sm text-gray-900">{envelopeData?.sender?.name || '-'}</span>
+      <span className="text-sm text-card-foreground">{envelopeData?.sender?.name || '-'}</span>
     ),
     priority: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
-      <span className="text-sm text-gray-900 capitalize">{envelopeData?.priority || 'normal'}</span>
+      <span className="text-sm text-card-foreground capitalize">{envelopeData?.priority || 'normal'}</span>
     ),
     createdAt: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
-      <span className="text-sm text-gray-900">{envelopeData ? formatDate(envelopeData.createdAt) : '-'}</span>
+      <span className="text-sm tabular-nums text-card-foreground">{envelopeData ? formatDate(envelopeData.createdAt) : '-'}</span>
     ),
     sentAt: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
-      <span className="text-sm text-gray-900">{envelopeData?.sentAt ? formatDate(envelopeData.sentAt) : '-'}</span>
+      <span className="text-sm tabular-nums text-card-foreground">{envelopeData?.sentAt ? formatDate(envelopeData.sentAt) : '-'}</span>
     ),
     signatureType: (_agreement: Agreement, envelopeData?: EnvelopeData) => (
-      <span className="text-sm text-gray-900 capitalize">{envelopeData?.signatureType || '-'}</span>
+      <span className="text-sm text-card-foreground capitalize">{envelopeData?.signatureType || '-'}</span>
     ),
     recipientCount: (agreement: Agreement) => (
-      <span className="text-sm text-gray-900">{agreement.recipientCount}</span>
+      <span className="text-sm tabular-nums text-card-foreground">{agreement.recipientCount}</span>
     ),
   };
 
@@ -1053,7 +1051,7 @@ const AgreementPage: React.FC = () => {
               title: 'Milestone achieved!',
               html: referralMilestoneSwalHtml(resp?.data?.referralMilestone),
               confirmButtonText: 'Awesome',
-              confirmButtonColor: '#260559',
+              confirmButtonColor: '#e6067a',
             });
             milestoneShown = true;
             continue;
@@ -1114,7 +1112,7 @@ const AgreementPage: React.FC = () => {
             title: 'Milestone achieved!',
             html: referralMilestoneSwalHtml(resp?.data?.referralMilestone),
             confirmButtonText: 'Awesome',
-            confirmButtonColor: '#260559',
+            confirmButtonColor: '#e6067a',
           });
           return;
         }
@@ -1620,35 +1618,35 @@ const AgreementPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="text-foreground">
       {/* Selection header (replaces default header when any selected) */}
       {selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-900 rounded-sm text-sm">
-            <span className="inline-flex w-4 h-4 items-center justify-center border border-purple-600 rounded">
+          <div className="inline-flex items-center gap-2 px-3 py-2 bg-secondary/80 text-secondary-foreground rounded-sm text-sm border border-border">
+            <span className="inline-flex w-4 h-4 items-center justify-center border border-primary rounded">
               <Check className="w-3 h-3" />
             </span>
             {selectedIds.size} selected
           </div>
-          {/* <button onClick={() => setShowMoveDialog(true)} className="px-3 py-2 border border-gray-300 rounded-sm hover:bg-gray-50 text-sm">Move</button> */}
-          <button onClick={handleBulkResend} disabled={bulkResending} className={`px-3 py-2 border border-gray-300 rounded-sm text-sm ${bulkResending ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}>{bulkResending ? 'Resending…' : 'Resend'}</button>
+          {/* <button onClick={() => setShowMoveDialog(true)} className="px-3 py-2 border border-border rounded-sm hover:bg-muted text-sm">Move</button> */}
+          <button onClick={handleBulkResend} disabled={bulkResending} className={`px-3 py-2 border border-border rounded-sm text-sm ${bulkResending ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted'}`}>{bulkResending ? 'Resending…' : 'Resend'}</button>
           <div className="relative">
-            <button onClick={() => setShowBulkMenu(s => !s)} className="px-3 py-2 border border-gray-300 rounded-sm hover:bg-gray-50 text-sm">▾</button>
+            <button onClick={() => setShowBulkMenu(s => !s)} className="px-3 py-2 border border-border rounded-sm hover:bg-muted text-sm">▾</button>
             {showBulkMenu && (
-              <div className="absolute z-20 mt-2 w-56 bg-white border rounded-sm shadow-lg">
-                <button onClick={() => { setShowBulkMenu(false); handleBulkDelete(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Delete</button>
-                <button onClick={() => { setShowBulkMenu(false); handleExportCSV(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Export as CSV</button>
-                <button disabled className="w-full text-left px-4 py-2 text-gray-400 text-sm cursor-not-allowed">Transfer Ownership</button>
+              <div className="absolute z-20 mt-2 w-56 bg-card border rounded-sm shadow-lg">
+                <button onClick={() => { setShowBulkMenu(false); handleBulkDelete(); }} className="w-full text-left px-4 py-2 hover:bg-muted text-sm">Delete</button>
+                <button onClick={() => { setShowBulkMenu(false); handleExportCSV(); }} className="w-full text-left px-4 py-2 hover:bg-muted text-sm">Export as CSV</button>
+                <button disabled className="w-full text-left px-4 py-2 text-muted-foreground text-sm cursor-not-allowed">Transfer Ownership</button>
               </div>
             )}
           </div>
-          <button onClick={clearSelection} className="ml-auto text-sm text-gray-600 hover:underline">Clear</button>
+          <button onClick={clearSelection} className="ml-auto text-sm text-muted-foreground hover:underline">Clear</button>
         </div>
       )}
 
@@ -1658,20 +1656,20 @@ const AgreementPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center" data-tour="filter-bar">
             <div className="flex-1">
               <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] transition-all duration-200 bg-white hover:border-gray-400 text-sm"
+                  className="w-full pl-10 pr-12 py-2.5 border border-border rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground hover:border-primary/40 text-sm"
                   data-tour="search-input"
                 />
 
                 {(searchTerm || selectedDateIdx !== 2 || selectedStatusIdx !== 0 || customDateFrom || customDateTo) && (
                   <button
                     onClick={handleClearFilters}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 hover:scale-110 transition-all duration-200"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-muted text-foreground text-xs rounded-lg hover:bg-muted hover:scale-110 transition-all duration-200"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1683,7 +1681,7 @@ const AgreementPage: React.FC = () => {
               <button
                 ref={dateButtonRef}
                 onClick={(e) => openHeaderDropdown('date', e)}
-                className="group inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="group inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted hover:border-border transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 {getDateButtonLabel()} <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
               </button>
@@ -1691,7 +1689,7 @@ const AgreementPage: React.FC = () => {
               <button
                 ref={statusButtonRef}
                 onClick={(e) => openHeaderDropdown('status', e)}
-                className="group inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="group inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted hover:border-border transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 {getStatusButtonLabel()} <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
               </button>
@@ -1705,9 +1703,9 @@ const AgreementPage: React.FC = () => {
                     <Settings className="w-5 h-5" />
                   </button>
                   {/* Tooltip */}
-                  <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                  <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-foreground text-background text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
                     Customize columns
-                    <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                    <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-foreground"></div>
                   </div>
 
                 </div>
@@ -1718,7 +1716,7 @@ const AgreementPage: React.FC = () => {
                 /* Dropdown Menu - Only shows on powerform routes */
                 <div className="relative group">
                   <button
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-chart-2 text-primary-foreground rounded-lg text-sm font-medium hover:from-primary/95 hover:to-primary/85 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
                   >
                     <Plus className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" /> Create
                   </button>
@@ -1729,7 +1727,7 @@ const AgreementPage: React.FC = () => {
                       <Link to="/e-sign/create">
                         <button
                           onClick={(e) => e.stopPropagation()}
-                          className="w-full inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                          className="w-full inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-chart-2 text-primary-foreground rounded-lg text-sm font-medium hover:from-primary/95 hover:to-primary/85 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
                         >
                           <Plus className="w-4 h-4" /> Create Envelope
                         </button>
@@ -1740,7 +1738,7 @@ const AgreementPage: React.FC = () => {
                           e.stopPropagation();
                           navigate('/e-sign/powerforms');
                         }}
-                        className="w-full inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#260559] text-[#260559] rounded-lg text-sm font-medium hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                        className="w-full inline-flex items-center gap-2 px-4 py-2 bg-card border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-muted transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
                       >
                         <Plus className="w-4 h-4" />
                         Create PowerForm
@@ -1752,7 +1750,7 @@ const AgreementPage: React.FC = () => {
                 /* Direct Create Envelope Button - Shows on non-powerform routes */
                 <Link to="/e-sign/create">
                   <button
-                    className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
+                    className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-chart-2 text-primary-foreground rounded-lg text-sm font-medium hover:from-primary/95 hover:to-primary/85 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
                   >
                     <Plus className="w-4 h-4 transition-transform duration-200 ease-in-out group-hover:rotate-90" />  Create Envelope
                   </button>
@@ -1765,12 +1763,12 @@ const AgreementPage: React.FC = () => {
       {/* Agreements Table */}
       <div className="relative" data-tour="agreements-table">
         <div className="flex flex-col min-h-[calc(100vh-150px)] overflow-x-auto relative">
-          <table ref={tableRef} className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
+          <table ref={tableRef} className="min-w-full divide-y divide-border" style={{ tableLayout: 'fixed', width: '100%' }}>
             {currentAgreements.length > 0 && (
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <thead className="bg-gradient-to-r from-muted/50 to-muted/80">
                 <tr>
                   {!isPowerForm && (
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style={{ width: '50px' }}>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-card-foreground/80 uppercase tracking-wider" style={{ width: '50px' }}>
                     </th>
                   )}
                   {getVisibleColumns().map((column) => {
@@ -1779,7 +1777,7 @@ const AgreementPage: React.FC = () => {
                     return (
                       <th
                         key={column.id}
-                        className={`py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider relative group ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
+                        className={`py-4 text-left text-xs font-semibold text-card-foreground/80 uppercase tracking-wider relative group ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
                         style={{ width: columnWidth ? `${columnWidth}px` : undefined }}
                       >
                         <div className="flex items-center justify-between">
@@ -1787,8 +1785,8 @@ const AgreementPage: React.FC = () => {
                         </div>
                         <div
                           className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${isResizing
-                            ? 'bg-[#3E2B66] opacity-100'
-                            : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
+                            ? 'bg-primary opacity-100'
+                            : 'bg-muted opacity-0 group-hover:opacity-100 hover:bg-primary'
                             }`}
                           onMouseDown={(e) => handleResizeStart(e, column.id)}
                           style={{
@@ -1799,13 +1797,13 @@ const AgreementPage: React.FC = () => {
                       </th>
                     );
                   })}
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider" style={{ width: '200px' }}>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-card-foreground/80 uppercase tracking-wider" style={{ width: '200px' }}>
                     Actions
                   </th>
                 </tr>
               </thead>
             )}
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card text-card-foreground divide-y divide-border">
               {currentAgreements.length === 0 ? (
                 <tr>
                   <td
@@ -1815,22 +1813,22 @@ const AgreementPage: React.FC = () => {
                     <div className="flex flex-col h-115 items-center justify-center text-center gap-4">
                       {/* Simple illustration / icon */}
                       <div className="relative flex items-center justify-center">
-                        <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center">
-                          <div className="w-14 h-18 rounded-lg bg-white shadow-md border border-indigo-100 flex flex-col items-center justify-center">
-                            <div className="w-10 h-2 bg-indigo-100 rounded mb-1" />
-                            <div className="w-8 h-2 bg-indigo-100 rounded mb-1" />
-                            <div className="w-6 h-2 bg-indigo-100 rounded" />
+                        <div className="w-24 h-24 rounded-full bg-muted/80 flex items-center justify-center">
+                          <div className="w-14 h-18 rounded-lg bg-card shadow-md border border-border flex flex-col items-center justify-center">
+                            <div className="w-10 h-2 bg-muted rounded mb-1" />
+                            <div className="w-8 h-2 bg-muted rounded mb-1" />
+                            <div className="w-6 h-2 bg-muted rounded" />
                           </div>
                         </div>
-                        <span className="absolute -bottom-1 -right-1 text-2xl"><CircleCheckBig className="h-6 w-6 text-green-500" /></span>
+                        <span className="absolute -bottom-1 -right-1 text-2xl"><CircleCheckBig className="h-6 w-6 text-accent-green" /></span>
                       </div>
 
                       <div className="space-y-1">
-                        <h3 className="text-lg font-semibold text-[#3E2B66]">
+                        <h3 className="text-lg font-semibold text-primary">
                           {isTrashPage ? 'Trash is empty' : "You're all set to begin!"}
                         </h3>
 
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {isTrashPage ? (
                             'There are no deleted agreements in the trash.'
                           ) : (
@@ -1838,7 +1836,7 @@ const AgreementPage: React.FC = () => {
                               There are no agreements yet. Start exploring by{' '}
                               <Link
                                 to={isPowerForm ? "/e-sign/powerforms" : "/e-sign/create"}
-                                className="font-medium text-[#3E2B66] hover:underline"
+                                className="font-medium text-primary hover:underline"
                               >
                                 {isPowerForm ? "creating your first powerform" : "creating your first envelope"}
                               </Link><br />
@@ -1848,7 +1846,7 @@ const AgreementPage: React.FC = () => {
                         </p>
 
                         {searchTerm && (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted-foreground">
                             Try adjusting your search or filters.
                           </p>
                         )}
@@ -1861,10 +1859,10 @@ const AgreementPage: React.FC = () => {
                 currentAgreements.map((agreement) => {
                   const envelopeData = getEnvelopeData(agreement.id);
                   return (
-                    <tr key={agreement.id} className="group hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#3E2B66]">
+                    <tr key={agreement.id} className="group text-card-foreground hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-primary">
                       {!isPowerForm && (
-                        <td className="px-6 py-4">
-                          <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-gray-400" />
+                        <td className="px-6 py-4 align-top">
+                          <input type="checkbox" checked={isSelected(agreement.id)} onChange={() => toggleSelect(agreement.id)} className="w-4 h-4 rounded border-border" />
                         </td>
                       )}
                       {getVisibleColumns().map((column) => {
@@ -1872,14 +1870,14 @@ const AgreementPage: React.FC = () => {
                         return (
                           <td
                             key={column.id}
-                            className={`py-4 whitespace-nowrap ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
+                            className={`py-4 align-top whitespace-nowrap text-card-foreground ${column.id === 'status' ? 'pl-12 pr-6' : 'px-6'}`}
                             style={{ width: columnWidth ? `${columnWidth}px` : undefined, overflow: 'hidden', textOverflow: 'ellipsis' }}
                           >
                             {column.render(agreement, envelopeData)}
                           </td>
                         );
                       })}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-tour="row-actions">
+                      <td className="px-6 py-4 align-top whitespace-nowrap text-sm font-medium text-card-foreground" data-tour="row-actions">
                         <div className="flex items-center justify-end gap-2 relative">
                           {agreement.status === 'in-progress' && agreement.direction !== 'Received' && (() => {
                             const env = envelopesData.find(e => e.id === agreement.id);
@@ -1921,7 +1919,7 @@ const AgreementPage: React.FC = () => {
                               return (
                                 <button
                                   onClick={() => openInPersonSigning(agreement.id)}
-                                  className="px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-[#3E2B66] text-[#3E2B66] hover:bg-purple-50"
+                                  className="px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-primary text-primary hover:bg-muted"
                                 >
                                   <Eye className="w-4 h-4" />
                                   Sign now
@@ -1967,8 +1965,8 @@ const AgreementPage: React.FC = () => {
                               onClick={() => handleManageAction('download', agreement.id)}
                               className="download-btn-sparkle px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 relative overflow-visible"
                             >
-                              <Download className="w-4 h-4 relative z-10" style={{ color: '#3E2B66' }} />
-                              <span className="relative z-10" style={{ color: '#3E2B66' }}>Download</span>
+                              <Download className="w-4 h-4 relative z-10 text-primary" />
+                              <span className="relative z-10 text-primary">Download</span>
                               <div className="sparkle-star-1">
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -2087,13 +2085,13 @@ const AgreementPage: React.FC = () => {
                             <>
                               <button
                                 onClick={() => handleRestore(agreement.id)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                                className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent-green/10 hover:border-accent-green/40 hover:text-accent-green transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                               >
                                 Restore
                               </button>
                               <button
                                 onClick={() => handlePermanentDelete(agreement.id)}
-                                className="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                                className="px-4 py-2 border border-destructive/40 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/60 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                               >
                                 <Trash2 className="w-4 h-4" />
                                 Delete Permanently
@@ -2120,7 +2118,7 @@ const AgreementPage: React.FC = () => {
                                 setMenuPosition({ top, left });
                                 setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
                               }}
-                              className="p-2 text-gray-600 hover:text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-all duration-200 group/menu"
+                              className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all duration-200 group/menu"
                               title="More options"
                             >
                               <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
@@ -2129,7 +2127,7 @@ const AgreementPage: React.FC = () => {
                           {agreement.direction === 'Received' && (
                             <button
                               onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
-                              className="px-4 py-2 border border-[#3E2B66] bg-[#3E2B66] text-white rounded-lg text-sm font-medium hover:bg-[#4d3577] hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                              className="px-4 py-2 border border-primary bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 hover:border-primary/90 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                             >
                               View
                             </button>
@@ -2144,20 +2142,20 @@ const AgreementPage: React.FC = () => {
             </tbody>
           </table>
           {currentAgreements.length > 0 && currentAgreements.length < 6 && (
-            <div className="relative flex-1 flex items-center justify-center overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-indigo-100/40">
-              <div className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-indigo-200/20 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-purple-200/20 blur-3xl" />
+            <div className="relative flex-1 flex items-center justify-center overflow-hidden bg-gradient-to-b from-background via-muted/30 to-muted/50">
+              <div className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-chart-3/15 blur-3xl" />
 
               <div className="relative z-10 max-w-md px-12 py-8 text-center backdrop-blur">
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-                  <CircleCheckBig className="h-6 w-6 text-green-500" />
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <CircleCheckBig className="h-6 w-6 text-accent-green" />
                 </div>
 
-                <p className="text-xl font-semibold text-indigo-700">
+                <p className="text-xl font-semibold text-foreground">
                   You&apos;re all caught up
                 </p>
 
-                <p className="mt-1 text-m text-indigo-600/80">
+                <p className="mt-1 text-m text-muted-foreground">
                   All active agreements are visible here
                 </p>
               </div>
@@ -2169,26 +2167,26 @@ const AgreementPage: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" data-tour="pagination">
+          <div className="bg-card px-4 py-3 flex items-center justify-between border-t border-border sm:px-6" data-tour="pagination">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-sm text-foreground bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-sm text-foreground bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
             </div>
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-foreground">
                   Showing{' '}
                   <span className="font-medium">{startIndex + 1}</span>
                   {' '}to{' '}
@@ -2205,7 +2203,7 @@ const AgreementPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
+                    className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-border bg-card text-sm font-medium text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card disabled:hover:text-muted-foreground disabled:hover:border-border"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
@@ -2216,7 +2214,7 @@ const AgreementPage: React.FC = () => {
                       return (
                         <span
                           key={`ellipsis-${index}`}
-                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500"
+                          className="relative inline-flex items-center px-4 py-2 border border-border bg-card text-sm font-medium text-muted-foreground"
                         >
                           ...
                         </span>
@@ -2228,8 +2226,8 @@ const AgreementPage: React.FC = () => {
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
-                          ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66]'
+                          ? 'z-10 bg-primary border-primary text-primary-foreground shadow-md'
+                          : 'bg-card border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary'
                           }`}
                       >
                         {pageNum}
@@ -2240,7 +2238,7 @@ const AgreementPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
+                    className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-border bg-card text-sm font-medium text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card disabled:hover:text-muted-foreground disabled:hover:border-border"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
@@ -2248,7 +2246,7 @@ const AgreementPage: React.FC = () => {
 
                 {/* Page jump input */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">Go to</span>
+                  <span className="text-sm text-foreground">Go to</span>
                   <input
                     type="number"
                     min="1"
@@ -2257,10 +2255,10 @@ const AgreementPage: React.FC = () => {
                     onChange={(e) => setPageInput(e.target.value)}
                     onKeyDown={handlePageInputKeyDown}
                     onBlur={handlePageJump}
-                    className="w-16 px-2 py-1 border border-gray-300 rounded-sm text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-16 px-2 py-1 border border-border rounded-sm text-sm text-center focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     aria-label="Jump to page"
                   />
-                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                  <span className="text-sm text-foreground">of {totalPages}</span>
                 </div>
               </div>
             </div>
@@ -2274,15 +2272,15 @@ const AgreementPage: React.FC = () => {
         return (
           <div
             ref={menuRef}
-            className="fixed z-50 w-56 bg-white border border-gray-200 rounded-sm shadow-lg"
+            className="fixed z-50 w-56 bg-card border border-border rounded-sm shadow-lg"
             style={{ top: menuPosition.top, left: menuPosition.left }}
           >
-            <ul className="py-1 text-sm text-gray-700">
-              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('view', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">View</button></li>
-              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handlePrint(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Print</button></li>
-              {currentAgreement?.status !== 'completed' && <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('edit', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Edit</button></li>}
-              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleExportCSV(); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Export as CSV</button></li>
-              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('delete', openMenuId); }} className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50">Delete</button></li>
+            <ul className="py-1 text-sm text-foreground">
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('view', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-muted">View</button></li>
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handlePrint(); }} className="w-full text-left px-4 py-2 hover:bg-muted">Print</button></li>
+              {currentAgreement?.status !== 'completed' && <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('edit', openMenuId); }} className="w-full text-left px-4 py-2 hover:bg-muted">Edit</button></li>}
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleExportCSV(); }} className="w-full text-left px-4 py-2 hover:bg-muted">Export as CSV</button></li>
+              <li><button onClick={() => { setOpenMenuId(null); setMenuPosition(null); handleManageAction('delete', openMenuId); }} className="w-full text-left px-4 py-2 text-destructive hover:bg-muted">Delete</button></li>
             </ul>
           </div>
         );
@@ -2361,22 +2359,22 @@ const AgreementPage: React.FC = () => {
                   <div className="px-4 py-2 text-sm leading-relaxed">
                     {currentStep?.content}
                   </div>
-                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-600">
-                    <div className="text-xs text-white-900">Step {tourStepIndex + 1} of {tourSteps.length}</div>
+                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-white/15">
+                    <div className="text-xs text-white/80">Step {tourStepIndex + 1} of {tourSteps.length}</div>
                     <div className="flex items-center gap-2">
-                      <button onClick={closeTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
-                      <button onClick={prevStep} disabled={tourStepIndex === 0} className={`px-3 py-1.5 border border-white-900 rounded-sm text-sm ${tourStepIndex === 0 ? 'cursor-not-allowed text-white-500' : 'hover:bg-gray-700 text-white'}`}>Back</button>
+                      <button onClick={closeTour} className="px-3 py-1.5 text-sm text-white/70 hover:text-white">Skip</button>
+                      <button onClick={prevStep} disabled={tourStepIndex === 0} className={`px-3 py-1.5 border border-white/25 rounded-sm text-sm ${tourStepIndex === 0 ? 'cursor-not-allowed text-white/35' : 'hover:bg-white/10 text-white'}`}>Back</button>
                       {tourStepIndex < tourSteps.length - 1 ? (
-                        <button onClick={nextStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                        <button onClick={nextStep} className="px-3 py-1.5 bg-card text-foreground rounded-sm text-sm font-medium hover:bg-muted">Next</button>
                       ) : (
-                        <button onClick={closeTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                        <button onClick={closeTour} className="px-3 py-1.5 bg-card text-foreground rounded-sm text-sm font-medium hover:bg-muted">Done</button>
                       )}
                     </div>
                   </div>
                   {/* Arrow pointing to target - only show if not manually positioned */}
                   {!tooltipPosition && (
                     <div
-                      className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-[#26263d] border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
+                      className={`absolute h-0 w-0 ${showAbove ? 'top-full border-t-8 border-t-card border-l-8 border-l-transparent border-r-8 border-r-transparent' : 'bottom-full border-b-8 border-b-card border-l-8 border-l-transparent border-r-8 border-r-transparent'}`}
                       style={{
                         left: `${constrainedArrowLeft}px`,
                         transform: 'translateX(-50%)'
@@ -2394,13 +2392,13 @@ const AgreementPage: React.FC = () => {
       {openHeaderMenu && headerMenuPosition && (
         <div
           ref={menuRef}
-          className="fixed z-50 bg-white border border-gray-200 rounded-sm shadow-xl"
+          className="fixed z-50 bg-card border border-border rounded-sm shadow-xl"
           style={{ top: headerMenuPosition.top, left: headerMenuPosition.left, width: openHeaderMenu === 'shared' ? 336 : 360, maxHeight: '70vh', overflowY: 'auto' }}
         >
           {openHeaderMenu !== 'shared' ? (
             <div className="p-4">
               <div className="text-lg font-semibold mb-4 capitalize">{openHeaderMenu === 'date' ? 'Date' : openHeaderMenu === 'status' ? 'Status' : openHeaderMenu === 'sender' ? 'Sender' : openHeaderMenu === 'quick' ? 'Quick views' : 'Advanced search'}</div>
-              <div className="space-y-4 text-sm text-gray-800">
+              <div className="space-y-4 text-sm text-foreground">
                 {openHeaderMenu === 'date' && (
                   <div className="space-y-4">
                     <ul className="space-y-3">
@@ -2414,36 +2412,36 @@ const AgreementPage: React.FC = () => {
                                 closeHeaderMenu();
                               }
                             }}
-                            className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left"
+                            className="w-full flex items-center gap-3 px-1 py-1 hover:bg-muted rounded-sm text-left"
                           >
-                            <span className={`inline-block w-4 h-4 rounded-full border ${selectedDateIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
+                            <span className={`inline-block w-4 h-4 rounded-full border ${selectedDateIdx === idx ? 'border-primary ring-4 ring-primary/20' : 'border-border'}`}></span>
                             <span>{label}</span>
                           </button>
                         </li>
                       ))}
                     </ul>
                     {dateOptions[selectedDateIdx] === 'Custom' && (
-                      <div className="pt-2 border-t border-gray-100">
+                      <div className="pt-2 border-t border-border">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs text-gray-600 mb-1">From</label>
+                            <label className="block text-xs text-muted-foreground mb-1">From</label>
                             <input
                               type="date"
                               value={customDateFrom}
                               onChange={(e) => setCustomDateFrom(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-border rounded-sm focus:ring-2 focus:ring-primary/30 focus:border-primary"
                             />
-                            <div className="text-[10px] text-gray-400 mt-1">(MM/DD/YYYY)</div>
+                            <div className="text-[10px] text-muted-foreground mt-1">(MM/DD/YYYY)</div>
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-600 mb-1">To</label>
+                            <label className="block text-xs text-muted-foreground mb-1">To</label>
                             <input
                               type="date"
                               value={customDateTo}
                               onChange={(e) => setCustomDateTo(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-border rounded-sm focus:ring-2 focus:ring-primary/30 focus:border-primary"
                             />
-                            <div className="text-[10px] text-gray-400 mt-1">(MM/DD/YYYY)</div>
+                            <div className="text-[10px] text-muted-foreground mt-1">(MM/DD/YYYY)</div>
                           </div>
                         </div>
                       </div>
@@ -2454,8 +2452,8 @@ const AgreementPage: React.FC = () => {
                   <ul className="space-y-3">
                     {statusOptions.map((label, idx) => (
                       <li key={label}>
-                        <button onClick={() => { setSelectedStatusIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-gray-50 rounded-sm text-left">
-                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedStatusIdx === idx ? 'border-purple-600 ring-4 ring-purple-200' : 'border-gray-400'}`}></span>
+                        <button onClick={() => { setSelectedStatusIdx(idx); closeHeaderMenu(); }} className="w-full flex items-center gap-3 px-1 py-1 hover:bg-muted rounded-sm text-left">
+                          <span className={`inline-block w-4 h-4 rounded-full border ${selectedStatusIdx === idx ? 'border-primary ring-4 ring-primary/20' : 'border-border'}`}></span>
                           <span>{label}</span>
                         </button>
                       </li>
@@ -2466,7 +2464,7 @@ const AgreementPage: React.FC = () => {
             </div>
           ) : (
             <div className="p-2 w-80">
-              <button onClick={() => { setSelectedShared('user'); closeHeaderMenu(); }} className={`w-full px-2 py-2 flex items-center gap-2 rounded-sm ${selectedShared === 'user' ? 'text-purple-700' : 'hover:bg-gray-50'}`}>
+              <button onClick={() => { setSelectedShared('user'); closeHeaderMenu(); }} className={`w-full px-2 py-2 flex items-center gap-2 rounded-sm ${selectedShared === 'user' ? 'text-primary font-medium' : 'hover:bg-muted'}`}>
                 {selectedShared === 'user' && <Check className="w-4 h-4" />}<span>{currentUserName || 'Current User'}</span>
               </button>
             </div>
@@ -2478,19 +2476,19 @@ const AgreementPage: React.FC = () => {
       {isColumnModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setIsColumnModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6">
+          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-2xl p-6">
             <div className="flex items-start justify-between mb-6">
-              <h3 className="text-[22px] font-semibold text-[#3E2B66]">Customize Columns</h3>
+              <h3 className="text-[22px] font-semibold text-primary">Customize Columns</h3>
               <button
                 onClick={() => setIsColumnModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mb-4 p-3 bg-primary/10 border border-primary/25 rounded-lg">
+              <p className="text-sm text-foreground">
                 <strong>Note:</strong> You can select a maximum of 3 columns to display at a time.
               </p>
             </div>
@@ -2504,10 +2502,10 @@ const AgreementPage: React.FC = () => {
                   <div
                     key={column.id}
                     className={`flex items-center justify-between p-3 rounded-lg border transition-all ${column.visible
-                      ? 'bg-purple-50 border-purple-300'
+                      ? 'bg-secondary/80 border-primary/35'
                       : isDisabled
-                        ? 'bg-gray-50 border-gray-200 opacity-60'
-                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                        ? 'bg-muted border-border opacity-60'
+                        : 'bg-card border-border hover:bg-muted'
                       }`}
                   >
                     <label className="flex items-center gap-3 cursor-pointer flex-1">
@@ -2516,37 +2514,37 @@ const AgreementPage: React.FC = () => {
                         checked={column.visible}
                         onChange={() => toggleColumn(column.id)}
                         disabled={isDisabled}
-                        className="w-5 h-5 rounded border-gray-300 text-[#3E2B66] focus:ring-[#3E2B66] disabled:cursor-not-allowed"
+                        className="w-5 h-5 rounded border-border text-primary focus:ring-primary/30 disabled:cursor-not-allowed"
                       />
-                      <span className={`text-sm font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
+                      <span className={`text-sm font-medium ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
                         {column.label}
                       </span>
                     </label>
                     {column.visible && (
-                      <span className="text-xs text-purple-600 font-medium">Visible</span>
+                      <span className="text-xs text-primary font-medium">Visible</span>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-4 border-t border-border">
               <button
                 onClick={resetColumns}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-muted transition-colors"
               >
                 Reset to Default
               </button>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setIsColumnModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-muted transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => setIsColumnModalOpen(false)}
-                  className="px-5 py-2 text-sm font-medium text-white bg-[#3E2B66] rounded-lg hover:bg-[#4d3577] transition-colors"
+                  className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Apply
                 </button>

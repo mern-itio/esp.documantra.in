@@ -173,39 +173,41 @@ const UserProfile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="bg-gradient-to-r from-[#1f0a4d] via-[#4D0080] to-[#7a2fc7] text-white">
+    <div className="min-h-screen bg-background">
+      <div className="bg-gradient-to-r from-primary via-primary/95 to-primary/80 text-primary-foreground">
         <div className="mx-auto max-w-7xl px-6 py-10">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/75">Account Center</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary-foreground/80">Account Center</p>
           <h1 className="mt-1 text-3xl font-semibold">Profile</h1>
-          <p className="mt-1 text-sm text-white/80">Manage identity, security, sessions, and plan settings from one place.</p>
+          <p className="mt-1 text-sm text-primary-foreground/85">Manage identity, security, sessions, and plan settings from one place.</p>
         </div>
       </div>
 
       <div className="mx-auto -mt-8 max-w-7xl px-6 pb-12">
-        <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-md border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative">
               <div
                 className={`flex h-16 w-16 items-center justify-center rounded-full text-xl font-semibold ${
-                  isPaidPlan ? 'bg-yellow-100 text-yellow-700' : 'bg-purple-100 text-purple-700'
+                  isPaidPlan
+                    ? 'bg-amber-500/20 text-amber-800 dark:bg-amber-400/20 dark:text-amber-200'
+                    : 'bg-primary/15 text-primary'
                 }`}
               >
                 {initials}
               </div>
               {isPaidPlan && (
                 <div className="absolute -left-1 top-0 -translate-y-1/2 -rotate-45">
-                  <Crown className="h-5 w-5 fill-yellow-500 text-yellow-500 drop-shadow-sm" />
+                  <Crown className="h-5 w-5 fill-amber-500 text-amber-400 drop-shadow-sm dark:fill-amber-400 dark:text-amber-300" />
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-xl font-semibold text-slate-900">{formatName((user as any)?.fullname)}</h2>
-              <p className="truncate text-sm text-slate-600">{(user as any)?.email || '—'}</p>
-              <p className="text-xs text-slate-500">Account #{accountId}</p>
+              <h2 className="truncate text-xl font-semibold text-foreground">{formatName((user as any)?.fullname)}</h2>
+              <p className="truncate text-sm text-muted-foreground">{(user as any)?.email || '—'}</p>
+              <p className="text-xs text-muted-foreground">Account #{accountId}</p>
             </div>
             {planName && (
-              <div className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-sm font-medium text-purple-700">
+              <div className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
                 {planName}
               </div>
             )}
@@ -214,23 +216,23 @@ const UserProfile: React.FC = () => {
         </div>
 
         {saveError && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <div className="flex items-center gap-2">
-              <XCircle className="h-4 w-4" />
+              <XCircle className="h-4 w-4 shrink-0" />
               {saveError}
             </div>
           </div>
         )}
 
         <div className="mt-6 space-y-6">
-          <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-md border border-border bg-card p-6 shadow-sm">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Personal Information</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Personal Information</h3>
               </div>
              <button
               onClick={isEditing ? handleCancelEdit : handleEditClick}
-              className="inline-flex h-10 w-10 items-center justify-center text-black hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-foreground hover:bg-muted"
               title={isEditing ? 'Cancel Edit' : 'Edit Profile'}
             >
               {isEditing ? <X className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
@@ -239,52 +241,52 @@ const UserProfile: React.FC = () => {
 
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Full name</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Full name</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={formData.fullname}
                     onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 ) : (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
                     {formatName((user as any)?.fullname)}
                   </div>
                 )}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Email address</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Email address</label>
                 {isEditing ? (
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 ) : (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
                     {(user as any)?.email || '—'}
                   </div>
                 )}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Company</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Company</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 ) : (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
                     {(user as any)?.company || '—'}
                   </div>
                 )}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Phone number</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Phone number</label>
                 {isEditing ? (
                   <PhoneInput
                     country="in"
@@ -292,34 +294,34 @@ const UserProfile: React.FC = () => {
                     onChange={(val) => setFormData({ ...formData, phone: val })}
                     inputProps={{ name: 'phone', id: 'phone', required: true }}
                     containerClass="w-full"
-                    inputClass="!w-full !pl-12 !pr-3 !py-2 !text-sm !border !border-slate-300 !rounded-lg !bg-white focus:!outline-none focus:!ring-2 focus:!ring-[#4D0080]/20"
-                    buttonClass="!border-y !border-l !border-r-0 !border-slate-300 !bg-white !rounded-l-lg"
+                    inputClass="!w-full !pl-12 !pr-3 !py-2 !text-sm !border !border-border !rounded-lg !bg-background !text-foreground focus:!outline-none focus:!ring-2 focus:!ring-ring"
+                    buttonClass="!border-y !border-l !border-r-0 !border-border !bg-muted/50 !rounded-l-lg"
                   />
                 ) : phoneRaw ? (
-                  <div className="pointer-events-none -ml-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 px-1 py-1">
+                  <div className="pointer-events-none -ml-3 flex items-center rounded-lg border border-border bg-muted/40 px-1 py-1">
                     <PhoneInput
                       value={phoneRaw}
                       disabled={true}
                       containerClass="w-full"
-                      inputClass="!w-full !pl-12 !pr-0 !py-0 !text-sm !border-none !bg-transparent !opacity-100"
+                      inputClass="!w-full !pl-12 !pr-0 !py-0 !text-sm !border-none !bg-transparent !text-foreground !opacity-100"
                       buttonClass="!border-none !bg-transparent !opacity-100"
                     />
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">—</div>
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">—</div>
                 )}
               </div>
               <div className="md:col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Address</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Address</label>
                 {isEditing ? (
                   <textarea
                     rows={3}
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4D0080]/20"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 ) : (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
                     {(user as any)?.address || '—'}
                   </div>
                 )}
@@ -330,7 +332,7 @@ const UserProfile: React.FC = () => {
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  className="rounded-lg bg-[#4D0080] px-5 py-3 text-sm font-semibold text-white hover:bg-[#3a0061] disabled:opacity-60"
+                  className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                   onClick={handleSaveProfile}
                   disabled={isSaving}
                 >
@@ -338,7 +340,7 @@ const UserProfile: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  className="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg border border-border px-5 py-3 text-sm font-semibold text-foreground hover:bg-muted"
                   onClick={handleCancelEdit}
                 >
                   Cancel
@@ -351,14 +353,14 @@ const UserProfile: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/account/security')}
-              className="group rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-[#4D0080] hover:bg-white"
+              className="group rounded-3xl border border-border bg-muted/30 p-5 text-left transition hover:border-primary/50 hover:bg-accent/40"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#4D0080]">Security</p>
-              <h4 className="mt-3 text-lg font-semibold text-slate-900">Two-factor authentication</h4>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Security</p>
+              <h4 className="mt-3 text-lg font-semibold text-foreground">Two-factor authentication</h4>
+              <p className="mt-2 text-sm text-muted-foreground">
                 {twoFaEnabled ? `Enabled via ${twoFaMethod === 'sms' ? 'SMS OTP' : 'Email code'}.` : 'Currently disabled.'}
               </p>
-              <span className="mt-5 inline-flex rounded-full bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-[#3a0061]">
+              <span className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition group-hover:bg-primary/90">
                 Manage Security
               </span>
             </button>
@@ -366,12 +368,12 @@ const UserProfile: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/account/session-management')}
-              className="group rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-[#4D0080] hover:bg-white"
+              className="group rounded-3xl border border-border bg-muted/30 p-5 text-left transition hover:border-primary/50 hover:bg-accent/40"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#4D0080]">Sessions</p>
-              <h4 className="mt-3 text-lg font-semibold text-slate-900">Active devices</h4>
-              <p className="mt-2 text-sm text-slate-600">Review and end active sessions for extra account safety.</p>
-              <span className="mt-5 inline-flex rounded-full bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-[#3a0061]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Sessions</p>
+              <h4 className="mt-3 text-lg font-semibold text-foreground">Active devices</h4>
+              <p className="mt-2 text-sm text-muted-foreground">Review and end active sessions for extra account safety.</p>
+              <span className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition group-hover:bg-primary/90">
                 Manage Sessions
               </span>
             </button>
@@ -379,12 +381,12 @@ const UserProfile: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/subscription-management')}
-              className="group rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-[#4D0080] hover:bg-white"
+              className="group rounded-3xl border border-border bg-muted/30 p-5 text-left transition hover:border-primary/50 hover:bg-accent/40"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#4D0080]">Account Plan</p>
-              <h4 className="mt-3 text-lg font-semibold text-slate-900">{planName || 'Free Plan'}</h4>
-              <p className="mt-2 text-sm text-slate-600">Manage billing, plan upgrades, and credit usage from one place.</p>
-              <span className="mt-5 inline-flex rounded-full bg-[#4D0080] px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-[#3a0061]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Account Plan</p>
+              <h4 className="mt-3 text-lg font-semibold text-foreground">{planName || 'Free Plan'}</h4>
+              <p className="mt-2 text-sm text-muted-foreground">Manage billing, plan upgrades, and credit usage from one place.</p>
+              <span className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition group-hover:bg-primary/90">
                 Manage Plan
               </span>
             </button>
@@ -394,24 +396,24 @@ const UserProfile: React.FC = () => {
 
       {/* OTP Modal */}
       {otpModal.visible && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <div className="relative w-full max-w-sm rounded-xl border border-border bg-card p-6 text-card-foreground shadow-xl">
             <button 
               onClick={() => setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' })}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
-            <h3 className="text-xl font-semibold mb-2 text-gray-900">
+            <h3 className="mb-2 text-xl font-semibold text-foreground">
               Verify {otpModal.type === 'email' ? 'Email' : 'Phone'}
             </h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="mb-6 text-sm text-muted-foreground">
               Please enter the code sent to your new {otpModal.type}.
             </p>
             
             {otpModal.error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100 flex items-center gap-2">
-                <XCircle className="w-4 h-4" />
+              <div className="mb-4 flex items-center gap-2 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <XCircle className="h-4 w-4 shrink-0" />
                 {otpModal.error}
               </div>
             )}
@@ -421,20 +423,20 @@ const UserProfile: React.FC = () => {
               placeholder="Enter OTP"
               value={otpModal.otp}
               onChange={e => setOtpModal(prev => ({ ...prev, otp: e.target.value }))}
-              className="w-full text-center text-2xl tracking-widest p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4D0080]"
+              className="w-full rounded-lg border border-border bg-background p-3 text-center text-2xl tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' })}
-                className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded"
+                className="rounded-lg px-4 py-2 font-medium text-muted-foreground hover:bg-muted"
               >
                 Cancel
               </button>
               <button
                 onClick={verifyOtp}
                 disabled={otpModal.loading || !otpModal.otp}
-                className="px-6 py-2 bg-[#4D0080] text-white font-medium rounded hover:bg-[#3a0061] disabled:opacity-50"
+                className="rounded-lg bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {otpModal.loading ? 'Verifying...' : 'Verify'}
               </button>

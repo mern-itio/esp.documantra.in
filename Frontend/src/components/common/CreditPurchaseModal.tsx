@@ -251,83 +251,87 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
 
   return (
     <div className="fixed inset-0 z-[10001] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-2xl mx-auto px-4">
-        <div className="rounded-xl overflow-hidden shadow-2xl bg-[#f8fafc] text-gray-900 border border-gray-200">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="relative mx-auto w-full max-w-2xl px-4">
+        <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
           {lowCredits && (
-            <div className="flex items-center gap-2.5 px-6 py-3 bg-amber-50 border-b border-amber-200">
-              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-              <p className="text-sm font-medium text-amber-800">
+            <div className="flex items-center gap-2.5 border-b border-amber-500/30 bg-amber-500/10 px-6 py-3 dark:bg-amber-500/15">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
                 You&apos;ve run out of credits — purchase more to continue.
               </p>
             </div>
           )}
           <div className="flex items-center justify-between px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${lowCredits ? 'bg-amber-100' : 'bg-[#260559]/10'}`}>
-                <Zap className={`w-4 h-4 ${lowCredits ? 'text-amber-600' : 'text-[#260559]'}`} />
+              <div className={`rounded-xl p-2 ${lowCredits ? 'bg-amber-500/15' : 'bg-primary/10'}`}>
+                <Zap className={`h-4 w-4 ${lowCredits ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`} />
               </div>
               <div>
-                <h3 className="text-[18px] leading-none font-extrabold text-gray-900">
+                <h3 className="text-[18px] font-extrabold leading-none text-foreground">
                   {lowCredits ? 'Insufficient Credits' : 'Need More Credits?'}
                 </h3>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   {lowCredits
                     ? 'Top up your credits below to continue without interruption.'
                     : 'Choose a plan and continue building seamlessly.'}
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-              <X className="w-6 h-6 text-gray-500" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-6 w-6" />
             </button>
           </div>
 
           <div className="px-6 pb-6">
             {loading ? (
-              <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+              <div className="rounded-2xl border border-border bg-muted/30 p-8 text-center text-muted-foreground">
                 Loading credit packages...
               </div>
             ) : !selectedPackage ? (
-              <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+              <div className="rounded-2xl border border-border bg-muted/30 p-8 text-center text-muted-foreground">
                 No credit packages available
               </div>
             ) : (
               <>
-                <div className="rounded-lg border border-gray-200 bg-white p-6">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <div className="rounded-lg border border-border bg-card p-6">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {purchaseMode === 'desired'
                       ? 'Buy Credits'
                       : (selectedPackage.name || 'Credit Plan')}
                   </div>
-                  <div className="mt-1 text-3xl font-extrabold text-gray-900">
+                  <div className="mt-1 text-3xl font-extrabold text-foreground">
                     {purchaseMode === 'desired'
                       ? normalizedDesiredCredits
                         ? formatCurrency(selectedPackage.currency, desiredCreditPricing?.total || 0)
                         : 'Enter credits'
                       : formatCurrency(selectedPackage.currency, selectedPackage.price)}
                     {purchaseMode === 'package' && (
-                      <span className="text-base font-semibold text-gray-700"> only</span>
+                      <span className="text-base font-semibold text-muted-foreground"> only</span>
                     )}
                   </div>
                   {purchaseMode === 'desired' && normalizedDesiredCredits && desiredCreditPricing && (
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {desiredCreditPricing.breakdown
-                        ? /* tiered */ <>Effective rate: <span className="font-semibold text-gray-700">{formatCurrency(selectedPackage.currency, desiredCreditPricing.perCredit)}/credit</span> (blended across tiers)</>
+                        ? /* tiered */ <>Effective rate: <span className="font-semibold text-foreground">{formatCurrency(selectedPackage.currency, desiredCreditPricing.perCredit)}/credit</span> (blended across tiers)</>
                         : /* slab   */ <>{normalizedDesiredCredits.toLocaleString()} credits × {formatCurrency(selectedPackage.currency, desiredCreditPricing.perCredit)}/credit</>
                       }
                     </p>
                   )}
              
 
-                  <div className="mt-3 inline-flex rounded-md border border-gray-300 overflow-hidden">
+                  <div className="mt-3 inline-flex overflow-hidden rounded-md border border-border">
                     <button
                       type="button"
                       onClick={() => setPurchaseMode('package')}
                       className={`px-3 py-1.5 text-xs font-semibold transition ${
                         purchaseMode === 'package'
-                          ? 'bg-[#260559] text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background text-foreground hover:bg-muted'
                       }`}
                     >
                       Packages
@@ -335,10 +339,10 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                     <button
                       type="button"
                       onClick={() => setPurchaseMode('desired')}
-                      className={`px-3 py-1.5 text-xs font-semibold transition border-l border-gray-300 ${
+                      className={`border-l border-border px-3 py-1.5 text-xs font-semibold transition ${
                         purchaseMode === 'desired'
-                          ? 'bg-[#260559] text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background text-foreground hover:bg-muted'
                       }`}
                     >
                       Buy credits
@@ -347,27 +351,24 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
 
                   {purchaseMode === 'package' ? (
                     
-                    <div className="mt-2 relative">
-                        <div className="text-xs  mb-2 p-1 font-semibold uppercase tracking-wide text-gray-500">
-                   
-                  </div>
+                    <div className="relative mt-2">
                       <select
                         value={String(selectedPackage._id || selectedPackage.id || '')}
                         onChange={(e) => setSelectedPackageId(e.target.value)}
-                        className="w-full cursor-pointer rounded-sm p-2 appearance-none border border-gray-300 bg-white py-1 pl-4 pr-11 text-[18px] leading-tight font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#260559]/20 focus:border-[#260559]"
+                        className="w-full cursor-pointer appearance-none rounded-sm border border-border bg-background py-1 pl-4 pr-11 text-[18px] font-semibold leading-tight text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         {packages.map((pkg) => (
-                          <option className='rounded-sm' key={String(pkg._id || pkg.id)} value={String(pkg._id || pkg.id)}>
+                          <option className="rounded-sm" key={String(pkg._id || pkg.id)} value={String(pkg._id || pkg.id)}>
                             {pkg.credits.toLocaleString()} credits
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="pointer-events-none absolute mt-2 right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                     </div>
                   ) : (
                     <div className="mt-5 space-y-4">
                       {desiredCreditPriceTiers.length === 0 ? (
-                        <p className="text-xs text-gray-500">Loading pricing tiers…</p>
+                        <p className="text-xs text-muted-foreground">Loading pricing tiers…</p>
                       ) : (
                         <>
                           {/* Credit count row: slider + numeric input */}
@@ -381,11 +382,11 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                                 value={normalizedDesiredCredits ?? sliderMin}
                                 onChange={(e) => setDesiredCredits(e.target.value)}
                                 style={{
-                                  background: `linear-gradient(to right, #260559 ${sliderFillPct}%, #e2e8f0 ${sliderFillPct}%)`,
+                                  background: `linear-gradient(to right, var(--primary) ${sliderFillPct}%, var(--muted) ${sliderFillPct}%)`,
                                 }}
-                                className="w-full h-2 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#260559] [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#260559] [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                                className="h-2 w-full cursor-pointer appearance-none rounded-full [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md"
                               />
-                              <div className="mt-1 flex justify-between text-[10px] text-gray-400">
+                              <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
                                 <span>{sliderMin}</span>
                                 <span>{sliderMax}</span>
                               </div>
@@ -403,7 +404,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                                 setDesiredCredits(raw);
                               }}
                               placeholder={String(sliderMin)}
-                              className="w-15 shrink-0 rounded-md border border-gray-300 bg-white py-1 text-sm font-semibold text-gray-900 text-center focus:outline-none focus:ring-2 focus:ring-[#260559]/20 focus:border-[#260559]"
+                              className="w-15 shrink-0 rounded-md border border-border bg-background py-1 text-center text-sm font-semibold text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                             />
                           </div>
 
@@ -420,14 +421,14 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                                 return (
                                   <span
                                     key={i}
-                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+                                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
                                       isActive
-                                        ? 'bg-[#260559] text-white border-[#260559]'
-                                        : 'bg-white text-gray-600 border-gray-300'
+                                        ? 'border-primary bg-primary text-primary-foreground'
+                                        : 'border-border bg-muted/40 text-muted-foreground'
                                     }`}
                                   >
                                     {label}
-                                    <span className={isActive ? 'text-purple-200' : 'text-gray-400'}>
+                                    <span className={isActive ? 'text-primary-foreground/85' : 'text-muted-foreground'}>
                                       · ${tier.pricePerCredit}/cr
                                     </span>
                                   </span>
@@ -437,13 +438,13 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
 
                           {/* Tiered breakdown table — only shown when tiered pricing is active and credits entered */}
                           {desiredCreditPricing?.breakdown && desiredCreditPricing.breakdown.length > 0 && (
-                            <div className="rounded-lg border border-[#260559]/20 bg-[#260559]/[0.03] overflow-hidden">
-                              <div className="px-3 py-2 border-b border-[#260559]/10 flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#260559]">Progressive pricing breakdown</span>
+                            <div className="overflow-hidden rounded-lg border border-primary/25 bg-primary/5">
+                              <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Progressive pricing breakdown</span>
                               </div>
                               <table className="w-full text-xs">
                                 <thead>
-                                  <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                                  <tr className="border-b border-border text-[10px] uppercase tracking-wide text-muted-foreground">
                                     <th className="px-3 py-1.5 text-left font-semibold">Tier</th>
                                     <th className="px-3 py-1.5 text-right font-semibold">Credits</th>
                                     <th className="px-3 py-1.5 text-right font-semibold">Rate</th>
@@ -457,31 +458,31 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                                     return (
                                       <tr
                                         key={idx}
-                                        className={`border-b border-gray-100 ${isLast ? 'bg-[#260559]/[0.04]' : ''}`}
+                                        className={`border-b border-border ${isLast ? 'bg-primary/5' : ''}`}
                                       >
-                                        <td className="px-3 py-2 text-gray-600">
+                                        <td className="px-3 py-2 text-muted-foreground">
                                           <span className="inline-flex items-center gap-1">
-                                            <span className={`w-1.5 h-1.5 rounded-full ${isLast ? 'bg-[#260559]' : 'bg-gray-300'}`} />
+                                            <span className={`h-1.5 w-1.5 rounded-full ${isLast ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
                                             {row.from}–{row.to}
                                           </span>
                                         </td>
-                                        <td className="px-3 py-2 text-right text-gray-700 font-medium">{creditsInTier.toLocaleString()}</td>
-                                        <td className="px-3 py-2 text-right text-gray-600">{formatCurrency(selectedPackage.currency, row.rate)}</td>
-                                        <td className="px-3 py-2 text-right font-semibold text-gray-800">{formatCurrency(selectedPackage.currency, row.cost)}</td>
+                                        <td className="px-3 py-2 text-right font-medium text-foreground">{creditsInTier.toLocaleString()}</td>
+                                        <td className="px-3 py-2 text-right text-muted-foreground">{formatCurrency(selectedPackage.currency, row.rate)}</td>
+                                        <td className="px-3 py-2 text-right font-semibold text-foreground">{formatCurrency(selectedPackage.currency, row.cost)}</td>
                                       </tr>
                                     );
                                   })}
                                 </tbody>
                                 <tfoot>
-                                  <tr className="border-t-2 border-[#260559]/20 bg-[#260559]/[0.06]">
-                                    <td colSpan={2} className="px-3 py-2.5 text-xs font-bold text-gray-700">
+                                  <tr className="border-t-2 border-primary/25 bg-primary/10">
+                                    <td colSpan={2} className="px-3 py-2.5 text-xs font-bold text-foreground">
                                       Total
-                                      <span className="ml-2 text-[10px] font-normal text-gray-400">
+                                      <span className="ml-2 text-[10px] font-normal text-muted-foreground">
                                         (eff. {formatCurrency(selectedPackage.currency, desiredCreditPricing.perCredit)}/credit)
                                       </span>
                                     </td>
-                                    <td className="px-3 py-2.5 text-right text-[10px] text-gray-400">{normalizedDesiredCredits?.toLocaleString()} credits</td>
-                                    <td className="px-3 py-2.5 text-right text-sm font-extrabold text-[#260559]">
+                                    <td className="px-3 py-2.5 text-right text-[10px] text-muted-foreground">{normalizedDesiredCredits?.toLocaleString()} credits</td>
+                                    <td className="px-3 py-2.5 text-right text-sm font-extrabold text-primary">
                                       {formatCurrency(selectedPackage.currency, desiredCreditPricing.total)}
                                     </td>
                                   </tr>
@@ -498,19 +499,21 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                 <div className="flex items-center justify-end">
                  
                   <button
+                    type="button"
                     disabled={purchasingPackageId === String(selectedPackage._id || selectedPackage.id || '')}
                     onClick={() => handlePurchase(selectedPackage,purchaseMode)}
-                    className={`mt-5 w-auto p-2 h-9 rounded-sm font-bold text-sm transition ${purchasingPackageId === String(selectedPackage._id || selectedPackage.id || '')
-                        ? 'bg-[#260559]/60 text-white cursor-not-allowed'
-                        : 'bg-[#260559] text-white hover:bg-[#34106a]'
-                      }`}
+                    className={`mt-5 h-9 w-auto rounded-sm p-2 text-sm font-bold transition ${
+                      purchasingPackageId === String(selectedPackage._id || selectedPackage.id || '')
+                        ? 'cursor-not-allowed bg-primary/60 text-primary-foreground'
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    }`}
                   >
                     {purchasingPackageId === String(selectedPackage._id || selectedPackage.id || '') ? 'Processing...' : purchaseMode === 'desired' ? 'Continue' : 'Upgrade plan'}
                   </button>
                 </div>
 
-                <div className="mt-3 bg-white px-3 py-2 text-xs text-gray-600">
-                  <span className="font-semibold text-gray-800">
+                <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">
                     {purchaseMode === 'desired'
                       ? normalizedDesiredCredits
                         ? `${normalizedDesiredCredits.toLocaleString()} credits`
@@ -519,17 +522,17 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                   </span>{' '}
                   will be added to your account on successful payment.
                 </div>
-                <div className="mt-4 grid border-t border-gray-200 pt-4 grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                  <div className="flex text-xs font-bold items-center gap-2 text-gray-700">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-4 text-sm sm:grid-cols-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                    <Check className="h-4 w-4 shrink-0 text-success" />
                     <span>Instant delivery</span>
                   </div>
-                  <div className="flex text-xs font-bold items-center gap-2 text-gray-700">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                    <Check className="h-4 w-4 shrink-0 text-success" />
                     <span>Pay only for what you use</span>
                   </div>
-                  <div className="flex text-xs font-bold items-center gap-2 text-gray-700">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                    <Check className="h-4 w-4 shrink-0 text-success" />
                     <span>No hidden charges</span>
                   </div>
                 </div>

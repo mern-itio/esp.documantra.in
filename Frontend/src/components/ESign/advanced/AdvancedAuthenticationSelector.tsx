@@ -128,20 +128,25 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
   const getSecurityLevelColor = (level: string) => {
     switch (level) {
-      case 'low': return 'text-yellow-600 bg-yellow-100';
-      case 'medium': return 'text-blue-600 bg-blue-100';
-      case 'high': return 'text-orange-600 bg-orange-100';
-      case 'maximum': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'low':
+        return 'border border-amber-500/40 bg-amber-500/15 text-amber-900 dark:text-amber-100';
+      case 'medium':
+        return 'border border-primary/30 bg-primary/10 text-primary';
+      case 'high':
+        return 'border border-orange-500/40 bg-orange-500/15 text-orange-900 dark:text-orange-200';
+      case 'maximum':
+        return 'border border-success/35 bg-success/10 text-success';
+      default:
+        return 'border border-border bg-muted text-muted-foreground';
     }
   };
 
   const getCostColor = (cost: number) => {
-    if (cost <= 2) return 'text-green-600';
-    if (cost > 2 && cost < 5) return 'text-blue-600';
-    if (cost >= 5 && cost < 8) return 'text-yellow-600';
-    if (cost >= 8) return 'text-red-600';
-    return 'text-gray-600';
+    if (cost <= 2) return 'text-success';
+    if (cost > 2 && cost < 5) return 'text-primary';
+    if (cost >= 5 && cost < 8) return 'text-amber-700 dark:text-amber-300';
+    if (cost >= 8) return 'text-destructive';
+    return 'text-muted-foreground';
   };
 
   const getRecommendedMethods = () => {
@@ -154,72 +159,82 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   };
 
   const renderMethodCard = (method: AuthMethod, isRecommended = false) => {
-    console.log('Rendering method:', method);
     const isSelected = localSelectedMethods.includes(method.id);
     const IconName = method.icon || 'Shield';
     const Icon = (LucideIcons as any)[IconName];
     return (
       <div
         key={method.id}
-        className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-200 ${isSelected
-            ? 'border-[#260559]/500 bg-[#260559]/10'
-            : 'border-gray-200 hover:border-gray-300 bg-white'
+        className={`relative cursor-pointer rounded-xl border-2 p-6 transition-all duration-200 ${isSelected
+            ? 'border-primary bg-primary/10'
+            : 'border-border bg-card hover:border-primary/40'
           }`}
         onClick={() => toggleMethod(method.id)}
+        role="button"
+        tabIndex={0}
+        aria-pressed={isSelected}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleMethod(method.id);
+          }
+        }}
       >
         {isRecommended && (
-          <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+          <div className="absolute -right-2 -top-2 rounded-full bg-success px-2 py-1 text-xs font-medium text-success-foreground">
             Recommended
           </div>
         )}
 
         <div className="flex items-start space-x-4">
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSelected ? 'bg-[#260559] text-white' : 'bg-gray-100 text-gray-600'
-            }`}>
-            <Icon className="w-6 h-6" />
+          <div
+            className={`flex h-12 w-12 items-center justify-center rounded-lg ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}
+          >
+            <Icon className="h-6 w-6" />
           </div>
 
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-gray-900">{method.name}</h3>
-              {isSelected && <CheckCircle className="w-5 h-5 text-[#260559]" />}
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">{method.name}</h3>
+              {isSelected && <CheckCircle className="h-5 w-5 text-primary" />}
             </div>
 
-            <p className="text-gray-600 mb-4">{method.description}</p>
+            <p className="mb-4 text-muted-foreground">{method.description}</p>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Security Level:</span>
+                <span className="text-muted-foreground">Security Level:</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSecurityLevelColor(method.securityLevel)}`}>
                   {method.securityLevel.charAt(0).toUpperCase() + method.securityLevel.slice(1)}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Estimated Time:</span>
-                <span className="text-gray-900 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                <span className="text-muted-foreground">Estimated Time:</span>
+                <span className="flex items-center gap-1 text-foreground">
+                  <Clock className="h-3 w-3" />
                   {method.estimatedTime}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Cost:</span>
+                <span className="text-muted-foreground">Cost:</span>
                 <span className={`font-medium ${getCostColor(Number(method.cost))}`}>
                   {Number(method.cost)} Credits
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Compliance:</span>
+                <span className="text-muted-foreground">Compliance:</span>
                 <div className="flex gap-1">
                   {method.compliance.slice(0, 2).map(comp => (
-                    <span key={comp} className="px-1 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                    <span key={comp} className="rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">
                       {comp.toUpperCase()}
                     </span>
                   ))}
                   {method.compliance.length > 2 && (
-                    <span className="px-1 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                    <span className="rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">
                       +{method.compliance.length - 2}
                     </span>
                   )}
@@ -237,30 +252,41 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Authentication Methods</h3>
-          <p className="text-gray-600">Select authentication methods for recipients</p>
+          <h3 className="text-lg font-semibold text-foreground">Authentication Methods</h3>
+          <p className="text-muted-foreground">Select authentication methods for recipients</p>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <AlertTriangle className={`w-4 h-4 ${riskLevel === 'high' ? 'text-red-500' :
-              riskLevel === 'medium' ? 'text-yellow-500' : 'text-green-500'
-            }`} />
-          <span className="text-gray-600">Risk Level:</span>
-          <span className={`font-medium ${riskLevel === 'high' ? 'text-red-600' :
-              riskLevel === 'medium' ? 'text-yellow-600' : 'text-green-600'
-            }`}>
+          <AlertTriangle
+            className={`h-4 w-4 ${riskLevel === 'high'
+              ? 'text-destructive'
+              : riskLevel === 'medium'
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-success'
+              }`}
+          />
+          <span className="text-muted-foreground">Risk Level:</span>
+          <span
+            className={`font-medium ${riskLevel === 'high'
+              ? 'text-destructive'
+              : riskLevel === 'medium'
+                ? 'text-amber-700 dark:text-amber-300'
+                : 'text-success'
+              }`}
+          >
             {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
           </span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-border">
         <nav className="flex space-x-8">
           <button
+            type="button"
             onClick={() => setActiveTab('recommended')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'recommended'
-                ? 'border-[#260559]/500 text-[#260559]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+            className={`border-b-2 px-1 py-2 text-sm font-medium transition-colors ${activeTab === 'recommended'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
           >
             Recommended ({getRecommendedMethods().length})
@@ -268,10 +294,11 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('all')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'all'
-                ? 'border-[#260559]/500 text-[#260559]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+            className={`border-b-2 px-1 py-2 text-sm font-medium transition-colors ${activeTab === 'all'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
           >
             All Methods ({authMethods.length})
@@ -281,10 +308,10 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
       {/* Selected Methods Summary (multi-select) */}
       {localSelectedMethods.length > 0 && (
-        <div className="bg-[#260559]/10 border border-[#260559]/20 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-[#260559]" />
-            <span className="font-medium text-[#260559]">
+        <div className="rounded-lg border border-primary/25 bg-primary/10 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-primary" />
+            <span className="font-medium text-primary">
               {localSelectedMethods.length} Method{localSelectedMethods.length !== 1 ? 's' : ''} Selected
             </span>
           </div>
@@ -292,7 +319,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
             {localSelectedMethods.map(methodId => {
               const method = authMethods.find(m => m.id === methodId);
               return method ? (
-                <span key={methodId} className="px-3 py-1 bg-[#260559]/10 text-[#260559] text-sm rounded-full">
+                <span key={methodId} className="rounded-full bg-primary/15 px-3 py-1 text-sm text-primary">
                   {method.name}
                 </span>
               ) : null;
@@ -310,15 +337,15 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
       {/* Compliance Notice */}
       {complianceRequirements.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-700 dark:text-amber-300" />
             <div>
-              <h4 className="font-medium text-yellow-900">Compliance Requirements</h4>
-              <p className="text-yellow-700 text-sm mt-1">
+              <h4 className="font-medium text-amber-950 dark:text-amber-100">Compliance Requirements</h4>
+              <p className="mt-1 text-sm text-amber-900/90 dark:text-amber-200/90">
                 This envelope requires compliance with: {complianceRequirements.join(', ').toUpperCase()}
               </p>
-              <p className="text-yellow-700 text-sm mt-1">
+              <p className="mt-1 text-sm text-amber-900/90 dark:text-amber-200/90">
                 Please ensure selected authentication methods meet these requirements.
               </p>
             </div>
@@ -328,10 +355,11 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
       {/* Save Button */}
       {showSaveButton && (
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <div className="flex justify-end gap-3 border-t border-border pt-4">
           <button
+            type="button"
             onClick={handleSave}
-            className="px-6 py-2 bg-[#3E2B66] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+            className="rounded-lg bg-primary px-6 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Save
           </button>

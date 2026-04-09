@@ -73,10 +73,10 @@ const InvoicePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading invoice...</p>
+          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading invoice...</p>
         </div>
       </div>
     );
@@ -84,16 +84,17 @@ const InvoicePage: React.FC = () => {
 
   if (!invoice) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Invoice not found</p>
+          <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <p className="text-muted-foreground">Invoice not found</p>
           <Button
+            type="button"
             variant="outline"
             onClick={() => navigate('/credits-usage')}
-            className="mt-4"
+            className="mt-4 border-border"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Credits & Usage
           </Button>
         </div>
@@ -102,46 +103,47 @@ const InvoicePage: React.FC = () => {
   }
 
   return (
-    <div className="bg-white p-6">
-      <div className='space-y-6'>
+    <div className="min-h-screen bg-background p-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => navigate('/credits-usage')}
-              className="p-2 hover:bg-gray-100 transition-colors"
+              className="p-2 transition-colors hover:bg-muted"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Invoice Details</h1>
-              <p className="text-sm text-gray-600 mt-1">View and download your invoice or receipt</p>
+              <h1 className="text-3xl font-bold text-foreground">Invoice Details</h1>
+              <p className="mt-1 text-sm text-muted-foreground">View and download your invoice or receipt</p>
             </div>
           </div>
         </div>
 
-        <Card className="hover:shadow-xl transition-shadow duration-300 border-gray-200">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+        <Card className="border-border transition-shadow duration-300 hover:shadow-xl">
+          <CardHeader className="border-b border-border bg-gradient-to-r from-muted/40 to-card">
             <CardTitle className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <FileText className="w-5 h-5 text-indigo-600" />
+              <div className="rounded-lg bg-primary/15 p-2">
+                <FileText className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-xl font-bold text-gray-900">Invoice Information</span>
+              <span className="text-xl font-bold text-card-foreground">Invoice Information</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <CardContent className="space-y-6 p-6">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Plan</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="mb-0.5 text-xs text-muted-foreground">Plan</p>
+                <p className="text-lg font-semibold text-foreground">
                   {invoice.planName || 'Subscription Plan'}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-gray-500 mb-0.5">Amount</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="mb-0.5 text-xs text-muted-foreground">Amount</p>
+                <p className="text-2xl font-bold text-foreground">
                   {invoice.currency || 'USD'}{' '}
                   {typeof invoice.amount === 'number'
                     ? invoice.amount.toFixed(2)
@@ -150,26 +152,26 @@ const InvoicePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
                     Invoice Number
                   </p>
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-indigo-500" />
-                    <p className="font-medium text-gray-900 text-sm">
+                    <CreditCard className="h-4 w-4 shrink-0 text-primary" />
+                    <p className="text-sm font-medium text-foreground">
                       {invoice.invoiceNumber || '—'}
                     </p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
                     Receipt Number
                   </p>
                   <div className="flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-emerald-500" />
-                    <p className="font-medium text-gray-900 text-sm">
+                    <Receipt className="h-4 w-4 shrink-0 text-success" />
+                    <p className="text-sm font-medium text-foreground">
                       {invoice.receiptNumber || '—'}
                     </p>
                   </div>
@@ -178,23 +180,23 @@ const InvoicePage: React.FC = () => {
               {invoice.type !== 'credit' && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
                     Billing Period
                   </p>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <p className="font-medium text-gray-900 text-sm">
+                    <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground">
                       {formatDate(invoice.periodStart)} – {formatDate(invoice.periodEnd)}
                     </p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
                     Created At
                   </p>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <p className="font-medium text-gray-900 text-sm">
+                    <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground">
                       {formatDate(invoice.createdAt)}
                     </p>
                   </div>
@@ -203,30 +205,32 @@ const InvoicePage: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-4 border-t border-gray-200">
-              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+            <div className="border-t border-border pt-4">
+              <div className="flex flex-col justify-end gap-3 sm:flex-row">
                 <Button
+                  type="button"
                   variant="outline"
-                  className="inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-2 border-border bg-primary/10 text-foreground"
                   onClick={() => handleDownload('invoice')}
                   disabled={downloading === 'invoice'}
                 >
                   {downloading === 'invoice' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Download className="w-4 h-4" />
+                    <Download className="h-4 w-4" />
                   )}
                   <span className="font-semibold">Download Invoice PDF</span>
                 </Button>
                 <Button
-                  className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  type="button"
+                  className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => handleDownload('receipt')}
                   disabled={downloading === 'receipt'}
                 >
                   {downloading === 'receipt' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Download className="w-4 h-4" />
+                    <Download className="h-4 w-4" />
                   )}
                   <span className="font-semibold">Download Receipt PDF</span>
                 </Button>

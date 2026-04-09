@@ -38,110 +38,112 @@ const SessionManagementPage: React.FC = () => {
 
   const getDeviceIcon = (deviceInfo: string) => {
     const info = deviceInfo.toLowerCase();
-    if (info.includes('mobile') || info.includes('android') || info.includes('iphone')) return <Smartphone className="w-5 h-5 text-gray-500" />;
-    if (info.includes('mac') || info.includes('windows') || info.includes('linux')) return <Monitor className="w-5 h-5 text-gray-500" />;
-    return <Globe className="w-5 h-5 text-gray-500" />;
+    if (info.includes('mobile') || info.includes('android') || info.includes('iphone')) return <Smartphone className="h-5 w-5 text-muted-foreground" />;
+    if (info.includes('mac') || info.includes('windows') || info.includes('linux')) return <Monitor className="h-5 w-5 text-muted-foreground" />;
+    return <Globe className="h-5 w-5 text-muted-foreground" />;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
+    <div className="min-h-screen bg-background pb-12">
       {/* Top Header */}
-      <div className="bg-gradient-to-r from-[#260559] via-[#6b4c9c] to-[#6b39b8] text-white py-10 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col gap-4">
-          <button 
+      <div className="bg-gradient-to-r from-primary via-primary/95 to-primary/80 px-6 py-10 text-primary-foreground">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4">
+          <button
+            type="button"
             onClick={() => navigate('/account/profile')}
-            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors self-start text-sm"
+            className="flex items-center gap-2 self-start text-sm text-primary-foreground/85 transition-colors hover:text-primary-foreground"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Profile
+            <ArrowLeft className="h-4 w-4" /> Back to Profile
           </button>
           <div>
-            <h1 className="text-3xl font-semibold flex items-center gap-3">
-              <ShieldCheck className="w-8 h-8" />
+            <h1 className="flex items-center gap-3 text-3xl font-semibold">
+              <ShieldCheck className="h-8 w-8 shrink-0" />
               Device & Session Management
             </h1>
-            <p className="opacity-90 mt-2 max-w-2xl">
+            <p className="mt-2 max-w-2xl text-primary-foreground/90">
               Review devices that have logged into your account. Revoke access for any unrecognized devices to ensure your account stays secure.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Active Sessions</h2>
+      <div className="mx-auto mt-8 max-w-7xl px-6">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border p-6">
+            <h2 className="text-lg font-semibold text-foreground">Active Sessions</h2>
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-600 text-sm font-medium border-b border-gray-200">
+                <tr className="border-b border-border bg-muted/40 text-sm font-medium text-muted-foreground">
                   <th className="px-6 py-4">Device & Browser</th>
                   <th className="px-6 py-4">IP Address</th>
                   <th className="px-6 py-4">Last Active</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-3">
-                        <div className="w-6 h-6 border-2 border-[#4D0080] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                         <p>Loading sessions...</p>
                       </div>
                     </td>
                   </tr>
                 ) : sessions.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
                       No active sessions found.
                     </td>
                   </tr>
                 ) : (
                   sessions.map((session) => (
-                    <tr key={session.sessionId} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={session.sessionId} className="transition-colors hover:bg-muted/40">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
+                          <div className="rounded-lg bg-muted p-2">
                             {getDeviceIcon(session.deviceInfo)}
                           </div>
-                          <div className="flex flex-col max-w-[200px] sm:max-w-xs md:max-w-sm">
+                          <div className="flex max-w-[200px] flex-col sm:max-w-xs md:max-w-sm">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900 truncate" title={session.deviceInfo}>
+                              <span className="truncate text-sm font-medium text-foreground" title={session.deviceInfo}>
                                 {session.deviceInfo}
                               </span>
                               {session.isCurrent && (
-                                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                                <span className="shrink-0 rounded-full border border-success/30 bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">
                                   Current Device
                                 </span>
                               )}
                             </div>
-                            <span className="text-xs text-gray-500 mt-0.5">
+                            <span className="mt-0.5 text-xs text-muted-foreground">
                               Started: {new Date(session.createdAt).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-gray-600 font-mono bg-gray-50 px-2 py-1 rounded border border-gray-100">
+                        <span className="rounded border border-border bg-muted/50 px-2 py-1 font-mono text-sm text-foreground">
                           {session.ipAddress}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
                         {new Date(session.lastActive).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         {!session.isCurrent ? (
                           <button
+                            type="button"
                             onClick={() => handleRevokeSession(session.sessionId)}
                             disabled={revoking === session.sessionId}
-                            className="inline-flex items-center justify-center text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 hover:border-red-300 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center justify-center rounded-lg border border-destructive/35 px-4 py-2 text-sm font-medium text-destructive transition-colors hover:border-destructive/60 hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {revoking === session.sessionId ? 'Logging out...' : 'Log out device'}
                           </button>
                         ) : (
-                          <span className="text-sm text-gray-400 italic px-4 py-2">
+                          <span className="px-4 py-2 text-sm italic text-muted-foreground">
                             Active
                           </span>
                         )}

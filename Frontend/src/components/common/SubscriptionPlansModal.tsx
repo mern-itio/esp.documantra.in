@@ -56,23 +56,27 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
 
   return (
     <div className="fixed inset-0 z-[10001] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-6xl mx-auto px-4">
-        <div className="rounded-2xl overflow-hidden shadow-2xl bg-white text-gray-900">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="relative mx-auto w-full max-w-6xl px-4">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 className="text-2xl font-bold text-gray-900">Pricing</h3>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-              <X className="w-5 h-5 text-gray-700" />
+          <div className="flex items-center justify-between border-b border-border px-6 py-4">
+            <h3 className="text-2xl font-bold text-foreground">Pricing</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Body */}
           <div className="p-6">
             {loading ? (
-              <div className="text-center py-16 text-gray-500">Loading plans...</div>
+              <div className="py-16 text-center text-muted-foreground">Loading plans...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 {(() => {
                   const paidPlans = plans.filter(p => p.type === 'paid');
                   const recommendedId = paidPlans.length
@@ -83,20 +87,31 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
                     const isUpgrading = upgradingPlanId === plan._id;
                     const isCurrent = userPlan?.name && userPlan.name.toLowerCase() === String(plan.name || '').toLowerCase();
                     return (
-                      <div key={plan._id} className={`rounded-2xl p-6 border ${idxRecommended ? 'border-indigo-500/50 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
+                      <div
+                        key={plan._id}
+                        className={`rounded-2xl border p-6 ${
+                          idxRecommended
+                            ? 'border-primary/45 bg-primary/5 ring-1 ring-primary/15'
+                            : 'border-border bg-muted/20'
+                        }`}
+                      >
                     {idxRecommended && (
-                      <div className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 mb-3">
-                        <Star className="w-3 h-3" /> Recommended
+                      <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                        <Star className="h-3 w-3" /> Recommended
                       </div>
                     )}
-                    <div className="text-sm text-gray-600 mb-1">{plan.name}</div>
-                    <div className="text-3xl font-extrabold mb-1 text-gray-900">${plan.pricePerPeriod}<span className="text-sm font-normal text-gray-500"> / {plan.period}</span></div>
+                    <div className="mb-1 text-sm text-muted-foreground">{plan.name}</div>
+                    <div className="mb-1 text-3xl font-extrabold text-foreground">
+                      ${plan.pricePerPeriod}
+                      <span className="text-sm font-normal text-muted-foreground"> / {plan.period}</span>
+                    </div>
                     {isCurrent ? (
-                      <div className="w-full mt-4 h-10 rounded-lg font-semibold bg-gray-100 text-gray-700 flex items-center justify-center border border-gray-200">
+                      <div className="mt-4 flex h-10 w-full items-center justify-center rounded-lg border border-border bg-muted font-semibold text-muted-foreground">
                         Your current plan
                       </div>
                     ) : (
                       <button
+                        type="button"
                         disabled={isUpgrading}
                         onClick={async () => {
                           try {
@@ -114,20 +129,20 @@ export const SubscriptionPlansModal: React.FC<SubscriptionPlansModalProps> = ({ 
                             setUpgradingPlanId(null);
                           }
                         }}
-                        className={`w-full mt-4 h-10 rounded-lg font-semibold transition ${
-                          idxRecommended ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-900 text-white hover:bg-gray-800'
-                        } ${isUpgrading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        className={`mt-4 h-10 w-full rounded-lg bg-primary font-semibold text-primary-foreground transition hover:bg-primary/90 ${
+                          isUpgrading ? 'cursor-not-allowed opacity-70' : ''
+                        }`}
                       >
                         {isUpgrading ? 'Upgrading...' : (plan.type === 'free' ? 'Get started for free' : 'Upgrade')}
                       </button>
                     )}
-                    <div className="mt-5 text-medium font-bold text-gray-700">Includes:-</div>
-                    <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                    <div className="mt-5 text-sm font-bold text-foreground">Includes:-</div>
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                       <li>Monthly credits: {plan.monthlyCredits ?? 0}</li>
                       <li>Services: {(plan.services || []).join(', ') || '—'}</li>
                       <li>{plan.type === 'paid' ? 'Everything in Free' : 'Basic features included'}</li>
                     </ul>
-                    <div className="mt-4 text-xs text-gray-500">You pay ${plan.pricePerPeriod} {plan.period} no matter how much you earn</div>
+                    <div className="mt-4 text-xs text-muted-foreground">You pay ${plan.pricePerPeriod} {plan.period} no matter how much you earn</div>
                   </div>
                     );
                   });

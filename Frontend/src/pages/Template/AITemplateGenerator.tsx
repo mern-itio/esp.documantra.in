@@ -54,7 +54,7 @@ const renderMarkdown = (text: string): string => {
     return div.innerHTML;
   };
   let html = escapeHtml(text);
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
   html = html.replace(/\n/g, '<br>');
   return html;
 };
@@ -651,27 +651,27 @@ const AITemplateGenerator: React.FC = () => {
     }
   };
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FFFFFF' }}>
-      <div className="border-b flex-shrink-0" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
-        <div className="max-w-7xl mx-auto px-8 py-4">
+    <div className="min-h-screen flex flex-col text-foreground">
+      <div className="border-b border-border flex-shrink-0 bg-card">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <button
+                type="button"
                 onClick={() => navigate('/e-sign/templateLibrary')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-50"
-                style={{ color: '#28004D' }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-muted text-foreground"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg">
-                  <Sparkles className="w-6 h-6" style={{ color: '#4D0080' }} />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Sparkles className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold" style={{ color: '#28004D' }}>
+                  <h1 className="text-2xl font-bold text-foreground">
                     AI Template Generator
                   </h1>
-                  <p className="text-sm" style={{ color: '#888888' }}>
+                  <p className="text-sm text-muted-foreground">
                     Generate professional legal documents using AI
                   </p>
                 </div>
@@ -680,9 +680,9 @@ const AITemplateGenerator: React.FC = () => {
             <div className="flex items-center gap-3">
               {messages.length > 1 && (
                 <button
+                  type="button"
                   onClick={handleClearConversation}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-50"
-                  style={{ color: '#28004D' }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-muted text-foreground"
                   title="Clear conversation"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -692,30 +692,29 @@ const AITemplateGenerator: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-8 py-6">
-        <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-4 sm:px-8 py-6">
+        <div className="ai-template-generator-messages flex-1 overflow-y-auto mb-4 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#4D0080' }}>
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
+                  <Bot className="w-5 h-5" />
                 </div>
               )}
               <div
                 className={`max-w-[80%] rounded-lg ${message.role === 'user'
-                  ? 'rounded-br-none'
-                  : 'rounded-bl-none'
+                  ? 'rounded-br-none bg-primary text-primary-foreground'
+                  : 'rounded-bl-none bg-muted text-foreground border border-border'
                   }`}
-                style={{
-                  backgroundColor: message.role === 'user' ? '#4D0080' : '#F9FAFB',
-                  color: message.role === 'user' ? '#FFFFFF' : '#28004D',
-                  border: message.role === 'assistant' ? '1px solid #D0D0D0' : 'none'
-                }}
               >
-                <div className={`px-4 py-3 ${message.isDocument ? 'pb-3' : ''}`}>
+                <div
+                  className={`px-4 py-3 ${message.isDocument ? 'pb-3' : ''} ${
+                    message.role === 'user' ? '[&_strong]:text-primary-foreground' : ''
+                  }`}
+                >
                   {message.isDocument ? (
                     <InlineEditor
                       value={message.editableContent || message.content}
@@ -735,8 +734,7 @@ const AITemplateGenerator: React.FC = () => {
                     />
                   )}
                   {message.role === 'assistant' && !message.isGenerating && (
-                    <div className="flex items-center justify-between px-4 pt-2 border-t"
-                      style={{ borderColor: '#D0D0D0' }}>
+                    <div className="flex items-center justify-between px-4 pt-2 border-t border-border">
                       <FeedbackButtons
                         messageId={message.id}
                         sessionId={sessionId}
@@ -751,14 +749,16 @@ const AITemplateGenerator: React.FC = () => {
                       {message.isDocument && (
                         <div className="flex items-center gap-3">
                           <button
+                            type="button"
                             onClick={() => openFillModalForMessage(message)}
                             title="Fill data & preview"
-                            className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                            className="p-2 rounded-md hover:bg-background/60 disabled:opacity-50"
                             disabled={fillGenerating}
                           >
-                            <ClipboardEdit className="w-4 h-4 text-[#4D0080]" />
+                            <ClipboardEdit className="w-4 h-4 text-primary" />
                           </button>
                           <button
+                            type="button"
                             onClick={() =>
                               handleSaveTemplate(
                                 message.editableContent || message.content,
@@ -769,15 +769,16 @@ const AITemplateGenerator: React.FC = () => {
                             }
                             disabled={savingTemplateId === message.id || !isAuthenticated}
                             title={isAuthenticated ? 'Save as Template' : 'Login to Save Template'}
-                            className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                            className="p-2 rounded-md hover:bg-background/60 disabled:opacity-50"
                           >
                             {savingTemplateId === message.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-[#4D0080]" />
+                              <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             ) : (
-                              <Save className="w-4 h-4 text-[#4D0080]" />
+                              <Save className="w-4 h-4 text-primary" />
                             )}
                           </button>
                           <button
+                            type="button"
                             onClick={() =>
                               handleDownloadPDF(
                                 message.editableContent || message.content,
@@ -786,15 +787,16 @@ const AITemplateGenerator: React.FC = () => {
                             }
                             disabled={downloadingMessageId === message.id}
                             title="Download PDF"
-                            className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                            className="p-2 rounded-md hover:bg-background/60 disabled:opacity-50"
                           >
                             {downloadingMessageId === message.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-[#4D0080]" />
+                              <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             ) : (
-                              <Download className="w-4 h-4 text-[#4D0080]" />
+                              <Download className="w-4 h-4 text-primary" />
                             )}
                           </button>
                           <button
+                            type="button"
                             onClick={() =>
                               handleSendAsEnvelope(
                                 message.editableContent || message.content,
@@ -803,12 +805,12 @@ const AITemplateGenerator: React.FC = () => {
                             }
                             disabled={sendingMessageId === message.id}
                             title={isAuthenticated ? 'Send as Envelope' : 'Login to Send'}
-                            className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                            className="p-2 rounded-md hover:bg-background/60 disabled:opacity-50"
                           >
                             {sendingMessageId === message.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-[#4D0080]" />
+                              <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             ) : (
-                              <Send className="w-4 h-4 text-[#4D0080]" />
+                              <Send className="w-4 h-4 text-primary" />
                             )}
                           </button>
                         </div>
@@ -818,7 +820,7 @@ const AITemplateGenerator: React.FC = () => {
                 </div>
               </div>
               {message.role === 'user' && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs" style={{ backgroundColor: '#4D0080', color: '#FFFFFF' }}>
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs bg-primary text-primary-foreground">
                   {user?.fullname ? (
                     user.fullname
                       .split(' ')
@@ -827,7 +829,7 @@ const AITemplateGenerator: React.FC = () => {
                       .toUpperCase()
                       .slice(0, 2)
                   ) : (
-                    <User className="w-5 h-5" style={{ color: '#FFFFFF' }} />
+                    <User className="w-5 h-5" />
                   )}
                 </div>
               )}
@@ -838,14 +840,15 @@ const AITemplateGenerator: React.FC = () => {
         {/* Fill Data Modal */}
         {fillOpen && (
           <div className="fixed inset-0 z-[9999]">
-            <div className="absolute inset-0 bg-black/40" onClick={closeFillModal} aria-hidden="true" />
+            <div className="absolute inset-0 bg-black/50 dark:bg-black/60" onClick={closeFillModal} aria-hidden="true" />
             <div className="absolute inset-0 flex items-center justify-center p-4">
-              <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-                  <div className="text-sm font-semibold text-slate-900">Fill template data</div>
+              <div className="w-full max-w-6xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                  <div className="text-sm font-semibold text-foreground">Fill template data</div>
                   <button
+                    type="button"
                     onClick={closeFillModal}
-                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                    className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
                     aria-label="Close"
                     disabled={fillGenerating}
                   >
@@ -854,18 +857,18 @@ const AITemplateGenerator: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 min-h-0">
-                  <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-auto min-h-0">
-                    <div className="text-sm font-semibold text-slate-900 mb-3">Required fields</div>
+                  <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-border bg-muted/40 overflow-auto min-h-0">
+                    <div className="text-sm font-semibold text-foreground mb-3">Required fields</div>
                     <div className="space-y-3">
                       {fillFields.map((f) => {
                         const value = fillValues[f.id] ?? '';
                         const common =
-                          'w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] outline-none text-sm';
+                          'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm';
 
                         return (
                           <label key={f.id} className="block">
-                            <div className="text-xs font-semibold text-slate-700 mb-1">
-                              {f.label} {f.required ? <span className="text-rose-600">*</span> : null}
+                            <div className="text-xs font-semibold text-foreground/90 mb-1">
+                              {f.label} {f.required ? <span className="text-destructive">*</span> : null}
                             </div>
                             {f.type === 'textarea' ? (
                               <textarea
@@ -890,10 +893,10 @@ const AITemplateGenerator: React.FC = () => {
                   </div>
 
                   <div className="lg:col-span-2 p-6 flex flex-col min-h-0">
-                    <div className="overflow-auto rounded-2xl border border-slate-200 bg-white flex-1 min-h-0">
+                    <div className="overflow-auto rounded-2xl border border-border bg-background flex-1 min-h-0">
                       <div className="px-8 py-8">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="text-xl font-extrabold tracking-wide text-slate-900">
+                          <div className="text-xl font-extrabold tracking-wide text-foreground">
                             {fillEditMode ? 'Edit template' : 'Preview'}
                           </div>
                           <button
@@ -902,8 +905,8 @@ const AITemplateGenerator: React.FC = () => {
                             disabled={fillGenerating}
                             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                               fillEditMode
-                                ? 'bg-[#3E2B66] text-white border-[#3E2B66]'
-                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-card text-muted-foreground border-border hover:bg-muted'
                             } disabled:opacity-60 disabled:cursor-not-allowed`}
                             title={fillEditMode ? 'Switch to preview' : 'Edit template text'}
                           >
@@ -915,11 +918,11 @@ const AITemplateGenerator: React.FC = () => {
                           <textarea
                             value={fillTemplateDraft}
                             onChange={(e) => setFillTemplateDraft(e.target.value)}
-                            className="mt-4 w-full min-h-[360px] rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800 leading-relaxed outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
+                            className="mt-4 w-full min-h-[360px] rounded-xl border border-border bg-card p-4 text-sm text-foreground leading-relaxed outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground"
                             placeholder="Edit template text here..."
                           />
                         ) : (
-                          <pre className="mt-4 whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
+                          <pre className="mt-4 whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
                             {interpolate((fillTemplateDraft || fillTemplateText || '').trim(), fillValues)}
                           </pre>
                         )}
@@ -928,16 +931,18 @@ const AITemplateGenerator: React.FC = () => {
 
                     <div className="flex items-center justify-end gap-3 mt-5">
                       <button
+                        type="button"
                         onClick={closeFillModal}
-                        className="px-5 py-2.5 rounded-xl font-semibold text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                        className="px-5 py-2.5 rounded-xl font-semibold text-sm text-muted-foreground hover:bg-muted transition-colors"
                         disabled={fillGenerating}
                       >
                         CANCEL
                       </button>
                       <button
+                        type="button"
                         onClick={handleFillGeneratePdfAndOpenEsign}
                         disabled={fillGenerating || !fillMessageId}
-                        className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-[#3E2B66] hover:bg-[#2a0a59] text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {fillGenerating ? 'GENERATING...' : 'GENERATE'}
                       </button>
@@ -948,7 +953,7 @@ const AITemplateGenerator: React.FC = () => {
             </div>
           </div>
         )}
-        <div className="flex-shrink-0 border rounded-lg p-4" style={{ borderColor: '#D0D0D0', backgroundColor: '#FFFFFF' }}>
+        <div className="flex-shrink-0 border border-border rounded-lg p-4 bg-card">
           <div className="flex items-end gap-3">
             <div className="flex-1 relative">
               <textarea
@@ -962,20 +967,11 @@ const AITemplateGenerator: React.FC = () => {
                 onKeyPress={handleKeyPress}
                 placeholder={isListening && liveTranscript ? '' : "Describe the document you need... (e.g., 'I need an NDA for my startup with a tech company')"}
                 rows={1}
-                className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none w-full"
-                style={{
-                  borderColor: '#D0D0D0',
-                  borderRadius: '6px',
-                  color: '#28004D',
-                  maxHeight: '120px'
-                }}
+                className="flex-1 px-4 py-3 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none w-full max-h-[120px]"
                 disabled={isGenerating}
               />
               {isListening && liveTranscript && (
-                <div
-                  className="absolute bottom-3 left-4 text-sm italic pointer-events-none"
-                  style={{ color: '#888888' }}
-                >
+                <div className="absolute bottom-3 left-4 text-sm italic pointer-events-none text-muted-foreground">
                   {liveTranscript}
                 </div>
               )}
@@ -984,28 +980,29 @@ const AITemplateGenerator: React.FC = () => {
               <button
                 type="button"
                 onClick={isListening ? stopListening : startListening}
-                className="p-3 rounded-lg transition-all"
+                className="p-3 rounded-lg transition-all hover:bg-muted"
                 title={isListening ? 'Stop listening' : 'Start listening'}
               >
                 <Mic
-                  className={`w-5 h-5 ${isListening ? 'animate-pulse text-red-500' : 'text-black-700'
+                  className={`w-5 h-5 ${isListening ? 'animate-pulse text-red-500' : 'text-muted-foreground'
                     }`}
                 />
               </button>
               <button
+                type="button"
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isGenerating}
-                className=" rounded-lg transition-all disabled:opacity-50"
+                className="p-3 rounded-lg transition-all hover:bg-muted disabled:opacity-50"
               >
                 {isGenerating ? (
-                  <Square className="w-5 h-5 text-purple-700" />
+                  <Square className="w-5 h-5 text-primary" />
                 ) : (
-                  <Send className="w-5 h-5 text-[#4D0080]" />
+                  <Send className="w-5 h-5 text-primary" />
                 )}
               </button>
             </div>
           </div>
-          <p className="text-xs mt-2" style={{ color: '#888888' }}>
+          <p className="text-xs mt-2 text-muted-foreground">
             Press Enter to send, Shift+Enter for new line • Click mic to speak
           </p>
         </div>

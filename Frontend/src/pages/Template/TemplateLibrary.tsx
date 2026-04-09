@@ -43,7 +43,7 @@ function renderLineWithHighlights(line: string, values: Record<string, string>) 
     const v = (values[key] ?? '').toString();
     if (v.trim()) {
       parts.push(
-        <span key={`${key}-${start}`} className="bg-yellow-200/80 px-1 rounded">
+        <span key={`${key}-${start}`} className="bg-primary/15 text-foreground px-1 rounded border border-primary/20">
           {v}
         </span>
       );
@@ -140,7 +140,7 @@ function categoryLabelFromId(categoryId: TemplateCategoryId) {
   return 'Legal';
 }
 
-function getCategoryIcon(categoryId: TemplateCategoryId, className = 'h-7 w-7 text-white') {
+function getCategoryIcon(categoryId: TemplateCategoryId, className = 'h-7 w-7 text-primary') {
   if (categoryId === 'tech') return <FileCodeCorner  className={className} />;
   if (categoryId === 'hr') return <Users className={className} />;
   if (categoryId === 'business') return <Briefcase className={className} />;
@@ -165,12 +165,12 @@ function renderPreviewHtml(text: string, values?: Record<string, string>) {
     html = html.replace(/\{\{(\w+)\}\}/g, (_m, key) => {
       const v = (values[key] ?? '').toString();
       if (!v.trim()) return `{{${key}}}`;
-      return `<span class="bg-yellow-200/80 px-1 rounded">${escapeHtml(v)}</span>`;
+      return `<span class="bg-primary/15 text-foreground px-1 rounded border border-primary/20">${escapeHtml(v)}</span>`;
     });
   }
 
   // Bold: **text**
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
 
   const lines = html.split('\n');
   const out: string[] = [];
@@ -184,11 +184,11 @@ function renderPreviewHtml(text: string, values?: Record<string, string>) {
 
     // Markdown headings
     if (trimmed.startsWith('# ')) {
-      out.push(`<h1 class="text-2xl font-extrabold text-slate-900 text-center tracking-wide mt-2 mb-4">${trimmed.slice(2)}</h1>`);
+      out.push(`<h1 class="text-2xl font-extrabold text-foreground text-center tracking-wide mt-2 mb-4">${trimmed.slice(2)}</h1>`);
       continue;
     }
     if (trimmed.startsWith('## ')) {
-      out.push(`<h2 class="text-sm font-bold text-[#3E2B66] mt-4 mb-2">${trimmed.slice(3)}</h2>`);
+      out.push(`<h2 class="text-sm font-bold text-primary mt-4 mb-2">${trimmed.slice(3)}</h2>`);
       continue;
     }
 
@@ -199,11 +199,11 @@ function renderPreviewHtml(text: string, values?: Record<string, string>) {
       /[A-Z]/.test(trimmed);
 
     if (isAllCaps) {
-      out.push(`<h2 class="text-sm font-bold text-[#3E2B66] mt-4 mb-2">${trimmed}</h2>`);
+      out.push(`<h2 class="text-sm font-bold text-primary mt-4 mb-2">${trimmed}</h2>`);
       continue;
     }
 
-    out.push(`<p class="text-sm text-slate-700 leading-relaxed">${trimmed}</p>`);
+    out.push(`<p class="text-sm text-muted-foreground leading-relaxed">${trimmed}</p>`);
   }
 
   return out.join('');
@@ -512,40 +512,36 @@ export const TemplateLibrary: React.FC = () => {
   };
 
   return (
-    <div className="bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8">
-       <div className='flex items-center justify-between'>
+    <div className=" text-foreground min-h-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+       <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
         <div>
 
-       <h1 className="text-4xl thankyou-heading font-semibold text-slate-900">AI-powered templates for every workflow</h1>
-       <p className="text-slate-600 mt-2 text-sm ">
+       <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight">AI-powered templates for every workflow</h1>
+       <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
        Generate, customize, and reuse templates in seconds with AI assistance
         </p>
         </div>
         <button
+          type="button"
           onClick={() => navigate('/template/ai-generator')}
-          className="premium-ai-button flex items-center gap-2 px-5 py-2.5 rounded-sm"
-          style={{
-            color: '#2A1A0E',
-            fontWeight: '600',
-            fontSize: '14px'
-          }}
+          className="premium-ai-button flex shrink-0 items-center gap-2 px-5 py-2.5 rounded-sm text-amber-950 font-semibold text-sm"
         >
-          <Sparkles className="w-4 h-4" style={{ color: '#2A1A0E' }} />
+          <Sparkles className="w-4 h-4 text-amber-950" />
           <span>Generate Template using AI</span>
         </button>
       </div>
-      <hr className="mt-8 border-slate-200" />
+      <hr className="mt-8 border-border" />
       <div className="text-center mb-4">  
 
         <div className="mt-6 max-w-xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by templates name"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] outline-none"
+              className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
             />
           </div>
 
@@ -558,11 +554,12 @@ export const TemplateLibrary: React.FC = () => {
         <div className="flex items-center gap-2">
           {categories.map((c) => (
             <button
+              type="button"
               key={c.id}
               onClick={() => setSelectedCategory(c.id)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedCategory === c.id
-                ? 'bg-[#3E2B66] text-white border-[#3E2B66]'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
                 }`}
             >
               {c.label}
@@ -570,50 +567,47 @@ export const TemplateLibrary: React.FC = () => {
           ))}
         </div>
       </div>
-      <hr className="mt-8 mb-2 border-slate-200" />
+      <hr className="mt-8 mb-2 border-border" />
 
       {filteredMyTemplates.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold text-slate-900 mb-4">AI Templates</h2>
-            {myTemplatesLoading && <span className="text-xs text-slate-500">Loading…</span>}
+            <h2 className="text-2xl font-semibold text-foreground mb-4">AI Templates</h2>
+            {myTemplatesLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredMyTemplates.map((t) => (
               <div
                 key={t._id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
               >
-                <div className="h-40 bg-gradient-to-br from-purple-50 to-white relative">
+                <div className="h-40 bg-gradient-to-br from-primary/10 to-card relative">
                   {/* <div className="absolute left-5 bottom-5 h-9 w-9 rounded-xl bg-[#3E2B66]" /> */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#5b2ea6]/10 via-[#3E2B66]/8 to-[#260559]/6" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5" />
                     <div className="absolute inset-0 opacity-10 p-3">
-                      {getCategoryIcon(inferTemplateCategory(t), 'h-full w-full text-[#3E2B66]')}
+                      {getCategoryIcon(inferTemplateCategory(t), 'h-full w-full text-primary')}
                     </div>
                     {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-white/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
                       {getCoverLabel(t.title)}
                     </div> */}
                   </div>
                   <div
-                    className="absolute inset-0 opacity-50"
-                    style={{
-                      backgroundImage:
-                        'radial-gradient(circle at 20% 20%, rgba(62,43,102,0.12), transparent 55%)',
-                    }}
+                    className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,color-mix(in_srgb,var(--primary)_14%,transparent)_0%,transparent_55%)]"
                   />
                 </div>
                 <div className="p-5">
-                  <div className="text-xs font-semibold text-slate-500 mb-1">{categoryLabelFromId(inferTemplateCategory(t))}</div>
-                  <div className="text-base font-semibold text-slate-900">{t.title}</div>
-                  <div className="text-sm text-slate-600 mt-1 min-h-[40px]">
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">{categoryLabelFromId(inferTemplateCategory(t))}</div>
+                  <div className="text-base font-semibold text-foreground">{t.title}</div>
+                  <div className="text-sm text-muted-foreground mt-1 min-h-[40px]">
                     {t.description || 'AI-generated template'}
                   </div>
                   <div className="mt-4 grid grid-cols-1 gap-2">
                     <button
+                      type="button"
                       onClick={() => openAiFillModal(t)}
                       disabled={isGenerating || !(t.content || '').trim()}
-                      className="w-full py-2.5 rounded-lg font-semibold text-sm bg-[#3E2B66] hover:bg-[#3E2B66]/90 text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 rounded-lg font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       title={(t.content || '').trim() ? 'Fill data & generate PDF' : 'No content available to fill'}
                     >
                       CREATE TEMPLATE
@@ -632,43 +626,41 @@ export const TemplateLibrary: React.FC = () => {
           </div>
         </div>
       )}
-      <hr className="mb-8 border-slate-200" />
+      <hr className="mb-8 border-border" />
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-semibold text-slate-900 mb-4">Templates</h2>
-        {myTemplatesLoading && <span className="text-xs text-slate-500">Loading…</span>}
+        <h2 className="text-2xl font-semibold text-foreground mb-4">Templates</h2>
+        {myTemplatesLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAdminGeneratedTemplates.map((t) => (
           <div
             key={t._id}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+            className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
           >
-            <div className="h-40 bg-gradient-to-br from-purple-50 to-white relative">
+            <div className="h-40 bg-gradient-to-br from-primary/10 to-card relative">
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#5b2ea6]/10 via-[#3E2B66]/8 to-[#260559]/6" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5" />
                 <div className="absolute inset-0 opacity-10 p-3">
-                  {getCategoryIcon(inferTemplateCategory(t), 'h-full w-full text-[#3E2B66]')}
+                  {getCategoryIcon(inferTemplateCategory(t), 'h-full w-full text-primary')}
                 </div>
               </div>
               <div
-                className="absolute inset-0 opacity-50"
-                style={{
-                  backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(62,43,102,0.12), transparent 55%)',
-                }}
+                className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,color-mix(in_srgb,var(--primary)_14%,transparent)_0%,transparent_55%)]"
               />
             </div>
             <div className="p-5">
-              <div className="text-xs font-semibold text-slate-500 mb-1">
+              <div className="text-xs font-semibold text-muted-foreground mb-1">
                {categoryLabelFromId(inferTemplateCategory(t))}
               </div>
-              <div className="text-base font-semibold text-slate-900">{t.title}</div>
-              <div className="text-sm text-slate-600 mt-1 min-h-[40px]">
+              <div className="text-base font-semibold text-foreground">{t.title}</div>
+              <div className="text-sm text-muted-foreground mt-1 min-h-[40px]">
                 {t.description || 'Admin template'}
               </div>
               <button
+                type="button"
                 onClick={() => openAiFillModal(t)}
                 disabled={isGenerating || !(t.content || '').trim()}
-                className="mt-4 w-full py-2.5 rounded-lg font-semibold text-sm bg-[#3E2B66] hover:bg-[#3E2B66]/90 text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-4 w-full py-2.5 rounded-lg font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 title={(t.content || '').trim() ? 'Fill data & generate PDF' : 'No content available to fill'}
               >
                 CREATE TEMPLATE
@@ -680,28 +672,29 @@ export const TemplateLibrary: React.FC = () => {
         {filteredTemplates.map((t) => (
           <div
             key={t.id}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+            className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
           >
             <div className={`h-40 bg-gradient-to-br ${t.coverStyle.bg} relative`}>
               {/* <div className={`absolute left-5 bottom-5 h-9 w-9 rounded-xl ${t.coverStyle.accent}`} /> */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#5b2ea6]/10 via-[#3E2B66]/8 to-[#260559]/6" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5" />
                 <div className="absolute inset-0 opacity-10 p-3">
-                  {getCategoryIcon(t.categoryId, 'h-full w-full text-[#3E2B66]')}
+                  {getCategoryIcon(t.categoryId, 'h-full w-full text-primary')}
                 </div>
                 {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-white/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
                   {getCoverLabel(t.name)}
                 </div> */}
               </div>
-              <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(62,43,102,0.12), transparent 55%)' }} />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,color-mix(in_srgb,var(--primary)_14%,transparent)_0%,transparent_55%)]" />
             </div>
             <div className="p-5">
-              <div className="text-xs font-semibold text-slate-500 mb-1">{t.categoryLabel}</div>
-              <div className="text-base font-semibold text-slate-900">{t.name}</div>
-              <div className="text-sm text-slate-600 mt-1 min-h-[40px]">{t.description}</div>
+              <div className="text-xs font-semibold text-muted-foreground mb-1">{t.categoryLabel}</div>
+              <div className="text-base font-semibold text-foreground">{t.name}</div>
+              <div className="text-sm text-muted-foreground mt-1 min-h-[40px]">{t.description}</div>
               <button
+                type="button"
                 onClick={() => openGenerator(t)}
-                className="mt-4 w-full py-2.5 rounded-lg font-semibold text-sm bg-[#3E2B66] hover:bg-[#3E2B66]/90 text-white transition-colors"
+                className="mt-4 w-full py-2.5 rounded-lg font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
               >
                 CREATE TEMPLATE
               </button>
@@ -714,17 +707,18 @@ export const TemplateLibrary: React.FC = () => {
       {activeTemplate && (
         <div className="fixed inset-0 z-[9999]">
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/50 dark:bg-black/60"
             onClick={closeGenerator}
             aria-hidden="true"
           />
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-                <div className="text-sm font-semibold text-slate-900">{activeTemplate.name} Template Generator</div>
+            <div className="w-full max-w-6xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <div className="text-sm font-semibold text-foreground">{activeTemplate.name} Template Generator</div>
                 <button
+                  type="button"
                   onClick={closeGenerator}
-                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                  className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
                   aria-label="Close"
                 >
                   <X className="h-4 w-4" />
@@ -733,18 +727,18 @@ export const TemplateLibrary: React.FC = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 min-h-0">
                 {/* Left: required fields */}
-                <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-auto min-h-0">
-                  <div className="text-sm font-semibold text-slate-900 mb-3">Enter {activeTemplate.categoryLabel} Details</div>
+                <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-border bg-muted/40 overflow-auto min-h-0">
+                  <div className="text-sm font-semibold text-foreground mb-3">Enter {activeTemplate.categoryLabel} Details</div>
                   <div className="space-y-3">
                     {activeTemplate.fields.map((f) => {
                       const value = fieldValues[f.id] ?? '';
                       const common =
-                        'w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] outline-none text-sm';
+                        'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm';
 
                       return (
                         <label key={f.id} className="block">
-                          <div className="text-xs font-semibold text-slate-700 mb-1">
-                            {f.label} {f.required ? <span className="text-rose-600">*</span> : null}
+                          <div className="text-xs font-semibold text-foreground/90 mb-1">
+                            {f.label} {f.required ? <span className="text-destructive">*</span> : null}
                           </div>
                           {f.type === 'textarea' ? (
                             <textarea
@@ -770,12 +764,12 @@ export const TemplateLibrary: React.FC = () => {
 
                 {/* Right: preview */}
                 <div className="lg:col-span-2 p-6 flex flex-col min-h-0">
-                  <div className="overflow-auto rounded-2xl border border-slate-200 bg-white flex-1 min-h-0">
+                  <div className="overflow-auto rounded-2xl border border-border bg-background flex-1 min-h-0">
                     <div className="px-8 py-8">
-                      <div className="text-center text-2xl font-extrabold tracking-wide text-slate-900">
+                      <div className="text-center text-2xl font-extrabold tracking-wide text-foreground">
                         {activeTemplate.preview.title}
                       </div>
-                      <div className="mt-4 text-sm text-slate-700 leading-relaxed space-y-2">
+                      <div className="mt-4 text-sm text-muted-foreground leading-relaxed space-y-2">
                         {activeTemplate.preview.body.map((line, idx) => (
                           <p key={idx}>{renderLineWithHighlights(line, previewValues)}</p>
                         ))}
@@ -784,8 +778,8 @@ export const TemplateLibrary: React.FC = () => {
                       <div className="mt-6 space-y-5">
                         {activeTemplate.preview.sections.map((s) => (
                           <div key={s.heading}>
-                            <div className="text-sm font-bold text-[#3E2B66]">{s.heading}</div>
-                            <div className="mt-2 text-sm text-slate-700 leading-relaxed space-y-1">
+                            <div className="text-sm font-bold text-primary">{s.heading}</div>
+                            <div className="mt-2 text-sm text-muted-foreground leading-relaxed space-y-1">
                               {s.lines.map((line, idx) => (
                                 <p key={idx}>{renderLineWithHighlights(line, previewValues)}</p>
                               ))}
@@ -796,17 +790,19 @@ export const TemplateLibrary: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-200">
+                  <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-border">
                     <button
+                      type="button"
                       onClick={closeGenerator}
-                      className="px-5 py-2.5 rounded-xl font-semibold text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm text-muted-foreground hover:bg-muted transition-colors"
                     >
                       CANCEL
                     </button>
                     <button
+                      type="button"
                       onClick={handleGenerate}
                       disabled={isGenerating}
-                      className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-[#3E2B66] hover:bg-[#2a0a59] text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {isGenerating ? 'GENERATING...' : 'GENERATE & USE'}
                     </button>
@@ -821,14 +817,15 @@ export const TemplateLibrary: React.FC = () => {
       {/* AI Fill Modal */}
       {aiFillOpen && aiFillTemplate && (
         <div className="fixed inset-0 z-[9999]">
-          <div className="absolute inset-0 bg-black/40" onClick={closeAiFillModal} aria-hidden="true" />
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/60" onClick={closeAiFillModal} aria-hidden="true" />
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-                <div className="text-sm font-semibold text-slate-900">{aiFillTemplate.title} — Fill data</div>
+            <div className="w-full max-w-6xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <div className="text-sm font-semibold text-foreground">{aiFillTemplate.title} — Fill data</div>
                 <button
+                  type="button"
                   onClick={closeAiFillModal}
-                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                  className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
                   aria-label="Close"
                   disabled={isGenerating}
                 >
@@ -837,18 +834,18 @@ export const TemplateLibrary: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 min-h-0">
-                <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-auto min-h-0">
-                  <div className="text-sm font-semibold text-slate-900 mb-3">Required fields</div>
+                <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-border bg-muted/40 overflow-auto min-h-0">
+                  <div className="text-sm font-semibold text-foreground mb-3">Required fields</div>
                   <div className="space-y-3">
                     {aiFillFields.map((f) => {
                       const value = aiFillValues[f.id] ?? '';
                       const common =
-                        'w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] outline-none text-sm';
+                        'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm';
 
                       return (
                         <label key={f.id} className="block">
-                          <div className="text-xs font-semibold text-slate-700 mb-1">
-                            {f.label} {f.required ? <span className="text-rose-600">*</span> : null}
+                          <div className="text-xs font-semibold text-foreground/90 mb-1">
+                            {f.label} {f.required ? <span className="text-destructive">*</span> : null}
                           </div>
                           {f.type === 'textarea' ? (
                             <textarea
@@ -873,10 +870,10 @@ export const TemplateLibrary: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-2 p-6 flex flex-col min-h-0">
-                  <div className="overflow-auto rounded-2xl border border-slate-200 bg-white flex-1 min-h-0">
+                  <div className="overflow-auto rounded-2xl border border-border bg-background flex-1 min-h-0">
                     <div className="px-8 py-8">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="text-xl font-extrabold tracking-wide text-slate-900">
+                        <div className="text-xl font-extrabold tracking-wide text-foreground">
                           {aiEditMode ? 'Edit template' : 'Preview'}
                         </div>
                         <button
@@ -884,8 +881,8 @@ export const TemplateLibrary: React.FC = () => {
                           onClick={() => setAiEditMode((v) => !v)}
                           disabled={isGenerating}
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${aiEditMode
-                            ? 'bg-[#3E2B66] text-white border-[#3E2B66]'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-card text-muted-foreground border-border hover:bg-muted'
                             } disabled:opacity-60 disabled:cursor-not-allowed`}
                           title={aiEditMode ? 'Switch to preview' : 'Edit template text'}
                         >
@@ -897,7 +894,7 @@ export const TemplateLibrary: React.FC = () => {
                         <textarea
                           value={aiTemplateDraft}
                           onChange={(e) => setAiTemplateDraft(e.target.value)}
-                          className="mt-4 w-full min-h-[360px] rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800 leading-relaxed outline-none focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66]"
+                          className="mt-4 w-full min-h-[360px] rounded-xl border border-border bg-card p-4 text-sm text-foreground leading-relaxed outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground"
                           placeholder="Edit template text here..."
                         />
                       ) : (
@@ -914,18 +911,20 @@ export const TemplateLibrary: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-200">
+                  <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-border">
                     <button
+                      type="button"
                       onClick={closeAiFillModal}
-                      className="px-5 py-2.5 rounded-xl font-semibold text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm text-muted-foreground hover:bg-muted transition-colors"
                       disabled={isGenerating}
                     >
                       CANCEL
                     </button>
                     <button
+                      type="button"
                       onClick={handleGenerateFromAiTemplate}
                       disabled={isGenerating}
-                      className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-[#3E2B66] hover:bg-[#2a0a59] text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {isGenerating ? 'GENERATING…' : 'GENERATE & USE'}
                     </button>

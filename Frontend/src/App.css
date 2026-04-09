@@ -77,9 +77,8 @@
 .bgPrimary{
   background-color: hsl(217, 91%, 45%);
 }
-.text-primary{
-  color: hsl(217, 91%, 45%);
-}
+/* Do not define `.text-primary` here — it overrides Tailwind's semantic `text-primary`
+   (theme token `var(--primary)`) and breaks dark mode / agreement table text. */
 
 .bgCard{
   background-color: hsl(0, 0%, 100%);
