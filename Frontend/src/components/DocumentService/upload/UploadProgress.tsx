@@ -12,10 +12,10 @@ export function UploadProgress({ uploads, onCancel }: UploadProgressProps) {
   if (uploads.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+    <div className="fixed bottom-4 right-4 w-80 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50">
+      <div className="px-4 py-3 border-b border-border bg-card">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-900">
+          <h3 className="text-sm font-medium text-foreground">
             Uploading {uploads.length} file{uploads.length !== 1 ? 's' : ''}
           </h3>
           <Button
@@ -31,15 +31,15 @@ export function UploadProgress({ uploads, onCancel }: UploadProgressProps) {
 
       <div className="max-h-64 overflow-y-auto">
         {uploads.map((upload) => (
-          <div key={upload.id} className="px-4 py-3 border-b border-gray-100 last:border-b-0">
+          <div key={upload.id} className="px-4 py-3 border-b border-border last:border-b-0">
             <div className="flex items-center space-x-3">
-              <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                   {upload.file.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {formatFileSize(upload.file.size)}
                 </p>
               </div>
@@ -47,13 +47,13 @@ export function UploadProgress({ uploads, onCancel }: UploadProgressProps) {
               {/* Status Icon */}
               <div className="flex-shrink-0">
                 {upload.status === 'success' && (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <CheckCircle className="w-5 h-5 text-success" />
                 )}
                 {upload.status === 'error' && (
-                  <XCircle className="w-5 h-5 text-red-500" />
+                  <XCircle className="w-5 h-5 text-destructive" />
                 )}
                 {upload.status === 'uploading' && (
-                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
             </div>
@@ -61,13 +61,13 @@ export function UploadProgress({ uploads, onCancel }: UploadProgressProps) {
             {/* Progress Bar */}
             {upload.status === 'uploading' && (
               <div className="mt-2">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                   <span>Uploading...</span>
                   <span>{upload.progress}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="w-full bg-muted rounded-full h-1.5">
                   <div
-                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                    className="bg-primary h-1.5 rounded-full transition-all duration-300"
                     style={{ width: `${upload.progress}%` }}
                   />
                 </div>
@@ -76,12 +76,12 @@ export function UploadProgress({ uploads, onCancel }: UploadProgressProps) {
 
             {/* Error Message */}
             {upload.status === 'error' && upload.error && (
-              <p className="mt-1 text-xs text-red-600">{upload.error}</p>
+              <p className="mt-1 text-xs text-destructive">{upload.error}</p>
             )}
 
             {/* Success Message */}
             {upload.status === 'success' && (
-              <p className="mt-1 text-xs text-green-600">Upload complete</p>
+              <p className="mt-1 text-xs text-success">Upload complete</p>
             )}
           </div>
         ))}

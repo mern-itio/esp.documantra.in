@@ -127,18 +127,18 @@ export function VersionManager({
   });
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <div className="bg-card rounded-lg border border-border">
       {/* Success Message */}
       {showSuccessMessage && (
-        <div className="p-4 bg-green-50 border-b border-green-200">
+        <div className="p-4 bg-success border-b border-success">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-green-800">
+              <p className="text-sm font-medium text-success-foreground">
                 New version created successfully!
               </p>
             </div>
@@ -148,22 +148,22 @@ export function VersionManager({
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="p-4 bg-red-50 border-b border-red-200">
+        <div className="p-4 bg-destructive border-b border-destructive">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-destructive" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-red-800">
+              <p className="text-sm font-medium text-destructive-foreground">
                 {errorMessage}
               </p>
             </div>
             <div className="ml-auto pl-3">
               <button
                 onClick={() => setErrorMessage(null)}
-                className="text-red-400 hover:text-red-600"
+                className="text-destructive hover:text-destructive/90"
               >
                 <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -175,12 +175,12 @@ export function VersionManager({
       )}
 
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <GitBranch className="w-5 h-5 text-gray-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Version History</h3>
-            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+            <GitBranch className="w-5 h-5 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-foreground">Version History</h3>
+            <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full">
               {versions.length} versions
             </span>
           </div>
@@ -218,7 +218,7 @@ export function VersionManager({
               }}
               disabled={isCreatingVersion}
               size="sm"
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isCreatingVersion ? (
                 <>
@@ -238,9 +238,9 @@ export function VersionManager({
         </div>
 
         {selectedVersions.length > 0 && (
-          <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-2 p-3 bg-muted rounded-lg border border-border">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-blue-800">
+              <div className="text-sm text-foreground">
                 {selectedVersions.length === 1 ? (
                   <span>1 version selected</span>
                 ) : (
@@ -262,7 +262,7 @@ export function VersionManager({
                     handleCompareVersions();
                   }}
                   size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   <GitCompare className="w-4 h-4 mr-2" />
                   Compare Versions
@@ -276,8 +276,8 @@ export function VersionManager({
       {/* Version List */}
       <div className="max-h-96 overflow-y-auto">
                 {versions.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <GitBranch className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className="p-8 text-center text-muted-foreground">
+            <GitBranch className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium">No versions yet</p>
             <p className="text-sm">Create your first version by editing the document</p>
           </div>
@@ -285,9 +285,9 @@ export function VersionManager({
           sortedVersions.map((version) => (
             <div
               key={getVersionId(version)}
-              className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                selectedVersions.includes(getVersionId(version)) ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-300' : ''
-              } ${getVersionId(version) === currentVersion ? 'bg-green-50' : ''}`}
+                className={`p-4 border-b border-border hover:bg-muted transition-colors ${
+                selectedVersions.includes(getVersionId(version)) ? 'bg-muted border-border ring-2 ring-primary' : ''
+              } ${getVersionId(version) === currentVersion ? 'bg-success' : ''}`}
             >
                           <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -301,18 +301,18 @@ export function VersionManager({
                           e.stopPropagation(); // Prevent row click
                           handleVersionSelect(getVersionId(version));
                         }}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                        className="w-4 h-4 text-primary bg-muted border-border rounded focus:ring-primary focus:ring-2"
                       />
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-foreground">
                         v{version.version}
                       </span>
                       {version.id === currentVersion && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-success text-success-foreground text-xs rounded-full">
                           Current
                         </span>
                       )}
                       {version.approved && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full">
                           Approved
                         </span>
                         )}
@@ -323,7 +323,7 @@ export function VersionManager({
                       {version.tags.map((tag, tagIndex) => (
                         <span
                           key={tagIndex}
-                          className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+                          className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full"
                         >
                           <Tag className="w-3 h-3 inline mr-1" />
                           {tag}
@@ -333,9 +333,9 @@ export function VersionManager({
                   )}
                 </div>
 
-                <p className="text-sm text-gray-700 mb-2">{version.description}</p>
+                <p className="text-sm text-foreground mb-2">{version.description}</p>
 
-                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <User className="w-3 h-3" />
                     <span>{version.authorName}</span>
@@ -352,13 +352,13 @@ export function VersionManager({
 
                 {/* Change Summary */}
                 <div className="mt-2 flex items-center space-x-4 text-xs">
-                  <span className="text-green-600">
+                  <span className="text-success">
                     +{version.changes.additions} additions
                   </span>
-                  <span className="text-red-600">
+                  <span className="text-destructive">
                     -{version.changes.deletions} deletions
                   </span>
-                  <span className="text-blue-600">
+                    <span className="text-primary">
                     ~{version.changes.modifications} modifications
                   </span>
                 </div>
@@ -425,11 +425,11 @@ export function VersionManager({
                     title={version.approved ? 'Unapprove version' : 'Approve version'}
                   >
                     {version.approved ? (
-                      <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     )}

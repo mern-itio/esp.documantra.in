@@ -215,20 +215,20 @@ const LinearizePDF: React.FC = () => {
   // Show only result when linearization is successful - hide everything else
   if (result && result.success) {
     return (
-      <div className="mx-auto p-2 space-y-6">
+      <div className="mx-auto min-h-full w-full space-y-6 bg-background p-2 text-foreground">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-background shadow-sm border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                 to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Linearize PDF</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Linearize PDF</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Optimize PDFs for fast web viewing.
                 </p>
               </div>
@@ -240,36 +240,36 @@ const LinearizePDF: React.FC = () => {
         <div className="max-w-7xl mx-auto p-6">
           <Card className="p-6">
             <div className="text-center mb-6">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Linearization Complete!</h3>
-              <p className="text-gray-600">Your PDF has been optimized for web viewing</p>
+              <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-foreground mb-2">Linearization Complete!</h3>
+              <p className="text-muted-foreground">Your PDF has been optimized for web viewing</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {linearizePDFHelpers.formatFileSize(result.originalSize)}
                 </p>
-                <p className="text-sm text-gray-600">Original Size</p>
+                <p className="text-sm text-muted-foreground">Original Size</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {linearizePDFHelpers.formatFileSize(result.linearizedSize)}
                 </p>
-                <p className="text-sm text-gray-600">Optimized Size</p>
+                <p className="text-sm text-muted-foreground">Optimized Size</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {result.sizeChangePercent}%
                 </p>
-                <p className="text-sm text-gray-600">Size Change</p>
+                <p className="text-sm text-muted-foreground">Size Change</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {linearizePDFHelpers.formatProcessingTime(result.processingTime)}
                 </p>
-                <p className="text-sm text-gray-600">Processing Time</p>
+                <p className="text-sm text-muted-foreground">Processing Time</p>
               </div>
             </div>
 
@@ -277,28 +277,28 @@ const LinearizePDF: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <h4 className="font-medium mb-3 flex items-center">
-                  <Globe className="w-4 h-4 mr-2 text-blue-600" />
+                  <Globe className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                   Web Optimization
                 </h4>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Linearized</span>
+                    <span className="text-sm text-muted-foreground">Linearized</span>
                     <Badge variant="success">Yes</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Progressive Loading</span>
+                    <span className="text-sm text-muted-foreground">Progressive Loading</span>
                     <Badge variant={result.webOptimization.progressiveLoading ? 'success' : 'secondary'}>
                       {result.webOptimization.progressiveLoading ? 'Yes' : 'No'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Object Streams</span>
+                    <span className="text-sm text-muted-foreground">Object Streams</span>
                     <Badge variant={result.webOptimization.objectStreams ? 'success' : 'secondary'}>
                       {result.webOptimization.objectStreams ? 'Yes' : 'No'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Estimated Load Time</span>
+                    <span className="text-sm text-muted-foreground">Estimated Load Time</span>
                     <span className="text-sm font-medium">{result.webOptimization.estimatedLoadTime}</span>
                   </div>
                 </div>
@@ -306,28 +306,28 @@ const LinearizePDF: React.FC = () => {
 
               <div>
                 <h4 className="font-medium mb-3 flex items-center">
-                  <Zap className="w-4 h-4 mr-2 text-green-600" />
+                  <Zap className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />
                   Performance Improvements
                 </h4>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Web Optimized</span>
+                    <span className="text-sm text-muted-foreground">Web Optimized</span>
                     <Badge variant="success">Yes</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Streaming Ready</span>
+                    <span className="text-sm text-muted-foreground">Streaming Ready</span>
                     <Badge variant={result.analysis.improvements.streamingReady ? 'success' : 'secondary'}>
                       {result.analysis.improvements.streamingReady ? 'Yes' : 'No'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Fast Loading</span>
+                    <span className="text-sm text-muted-foreground">Fast Loading</span>
                     <Badge variant={result.analysis.improvements.fastLoading ? 'success' : 'secondary'}>
                       {result.analysis.improvements.fastLoading ? 'Yes' : 'No'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Optimization Ratio</span>
+                    <span className="text-sm text-muted-foreground">Optimization Ratio</span>
                     <span className="text-sm font-medium">{result.analysis.improvements.optimizationRatio}%</span>
                   </div>
                 </div>
@@ -338,7 +338,7 @@ const LinearizePDF: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 onClick={handleDownload}
-                className="bg-green-600 hover:bg-green-700 flex items-center"
+                className="bg-success text-success-foreground hover:bg-success/90 flex items-center"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download Linearized PDF
@@ -363,20 +363,20 @@ const LinearizePDF: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto p-2 space-y-6">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background p-2 text-foreground">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Linearize PDF</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Linearize PDF</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Optimize PDFs for fast web viewing.
               </p>
             </div>
@@ -388,13 +388,13 @@ const LinearizePDF: React.FC = () => {
       {!selectedFile && (
         <Card className="p-6">
           <div className="flex items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+            <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-border border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 dark:bg-muted/20 dark:hover:bg-muted/40">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-8 h-8 mb-4 text-gray-500" />
-                <p className="mb-2 text-sm text-gray-500">
+                <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                <p className="mb-2 text-sm text-muted-foreground">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-gray-500">PDF files only (MAX. 2MB)</p>
+                <p className="text-xs text-muted-foreground">PDF files only (MAX. 2MB)</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -411,16 +411,16 @@ const LinearizePDF: React.FC = () => {
       {/* Selected File Info - Show after file upload */}
       {selectedFile && (
         <Card className="p-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-6 dark:bg-primary/15 dark:border-primary/40">
             <div className="flex items-center justify-between">
               {/* File Info */}
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-primary/15 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-lg font-semibold text-foreground">Selected PDF File</h3>
+                  <p className="text-sm text-muted-foreground">
                     {(selectedFile as File).name} • {linearizePDFHelpers.formatFileSize((selectedFile as File).size)}
                   </p>
                 </div>
@@ -433,11 +433,11 @@ const LinearizePDF: React.FC = () => {
                     <Button
                       onClick={handleAnalyze}
                       disabled={isAnalyzing}
-                      className="bg-blue-600 hover:bg-blue-700 flex items-center"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center"
                     >
                       {isAnalyzing ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
                           Analyzing...
                         </>
                       ) : (
@@ -474,7 +474,7 @@ const LinearizePDF: React.FC = () => {
                         fileInputRef.current.value = '';
                       }
                     }}
-                    className="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center"
+                    className="text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -491,26 +491,26 @@ const LinearizePDF: React.FC = () => {
       {analysis && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-blue-600" />
+            <FileText className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
             PDF Analysis
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.totalPages}</p>
-              <p className="text-sm text-gray-600">Pages</p>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <p className="text-2xl font-bold text-foreground">{analysis.totalPages}</p>
+              <p className="text-sm text-muted-foreground">Pages</p>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.totalObjects}</p>
-              <p className="text-sm text-gray-600">Objects</p>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <p className="text-2xl font-bold text-foreground">{analysis.totalObjects}</p>
+              <p className="text-sm text-muted-foreground">Objects</p>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.imageObjects}</p>
-              <p className="text-sm text-gray-600">Images</p>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <p className="text-2xl font-bold text-foreground">{analysis.imageObjects}</p>
+              <p className="text-sm text-muted-foreground">Images</p>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{analysis.fontObjects}</p>
-              <p className="text-sm text-gray-600">Fonts</p>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <p className="text-2xl font-bold text-foreground">{analysis.fontObjects}</p>
+              <p className="text-sm text-muted-foreground">Fonts</p>
             </div>
           </div>
 
@@ -519,19 +519,19 @@ const LinearizePDF: React.FC = () => {
               <h4 className="font-medium mb-3">Structure</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Bookmarks</span>
+                  <span className="text-sm text-muted-foreground">Bookmarks</span>
                   <Badge variant={analysis.structure.hasBookmarks ? 'success' : 'secondary'}>
                     {analysis.structure.hasBookmarks ? 'Yes' : 'No'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Annotations</span>
+                  <span className="text-sm text-muted-foreground">Annotations</span>
                   <Badge variant={analysis.structure.hasAnnotations ? 'success' : 'secondary'}>
                     {analysis.structure.hasAnnotations ? 'Yes' : 'No'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Images</span>
+                  <span className="text-sm text-muted-foreground">Images</span>
                   <Badge variant={analysis.structure.hasImages ? 'success' : 'secondary'}>
                     {analysis.structure.hasImages ? 'Yes' : 'No'}
                   </Badge>
@@ -543,19 +543,19 @@ const LinearizePDF: React.FC = () => {
               <h4 className="font-medium mb-3">Web Optimization</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Linearized</span>
+                  <span className="text-sm text-muted-foreground">Linearized</span>
                   <Badge variant={analysis.webOptimization.isLinearized ? 'success' : 'warning'}>
                     {analysis.webOptimization.isLinearized ? 'Yes' : 'No'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Object Streams</span>
+                  <span className="text-sm text-muted-foreground">Object Streams</span>
                   <Badge variant={analysis.webOptimization.hasObjectStreams ? 'success' : 'warning'}>
                     {analysis.webOptimization.hasObjectStreams ? 'Yes' : 'No'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Estimated Load Time</span>
+                  <span className="text-sm text-muted-foreground">Estimated Load Time</span>
                   <span className="text-sm font-medium">{analysis.streamingPotential.estimatedLoadTime}</span>
                 </div>
               </div>
@@ -568,7 +568,7 @@ const LinearizePDF: React.FC = () => {
       {recommendations.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
+            <AlertCircle className="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" />
             Optimization Recommendations
           </h3>
 
@@ -585,12 +585,12 @@ const LinearizePDF: React.FC = () => {
                       </Badge>
                       <h4 className="font-medium">{rec.title}</h4>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
+                    <p className="text-sm text-muted-foreground mb-2">{rec.description}</p>
                     <div className="flex items-center space-x-4 text-sm">
-                      <span className="text-green-600 font-medium">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                         {rec.estimatedLoadTime}
                       </span>
-                      <span className="text-blue-600">{rec.action}</span>
+                      <span className="text-blue-600 dark:text-blue-400">{rec.action}</span>
                     </div>
                   </div>
                 </div>
@@ -605,7 +605,7 @@ const LinearizePDF: React.FC = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold flex items-center">
-              <Settings className="w-5 h-5 mr-2 text-gray-600" />
+              <Settings className="w-5 h-5 mr-2 text-muted-foreground" />
               Linearization Settings
             </h3>
             <Button
@@ -621,8 +621,8 @@ const LinearizePDF: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Web Optimization</label>
-                  <p className="text-xs text-gray-500">Enable linearization for web viewing</p>
+                  <label className="text-sm font-medium text-foreground">Web Optimization</label>
+                  <p className="text-xs text-muted-foreground">Enable linearization for web viewing</p>
                 </div>
                 <Switch
                   checked={formData.webOptimization}
@@ -632,8 +632,8 @@ const LinearizePDF: React.FC = () => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Fast Loading</label>
-                  <p className="text-xs text-gray-500">Optimize for quick page loading</p>
+                  <label className="text-sm font-medium text-foreground">Fast Loading</label>
+                  <p className="text-xs text-muted-foreground">Optimize for quick page loading</p>
                 </div>
                 <Switch
                   checked={formData.fastLoading}
@@ -643,8 +643,8 @@ const LinearizePDF: React.FC = () => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Streaming Support</label>
-                  <p className="text-xs text-gray-500">Enable progressive loading</p>
+                  <label className="text-sm font-medium text-foreground">Streaming Support</label>
+                  <p className="text-xs text-muted-foreground">Enable progressive loading</p>
                 </div>
                 <Switch
                   checked={formData.streamingSupport}
@@ -655,7 +655,7 @@ const LinearizePDF: React.FC = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Compression Level
                 </label>
                 <Select
@@ -667,13 +667,13 @@ const LinearizePDF: React.FC = () => {
                   <option value="medium">Medium - Balanced</option>
                   <option value="high">High - Maximum compression</option>
                 </Select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {linearizePDFHelpers.getCompressionLevelDescription(formData.compressionLevel ?? 'medium')}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Object Streams
                 </label>
                 <Select
@@ -695,8 +695,8 @@ const LinearizePDF: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Metadata</label>
-                    <p className="text-xs text-gray-500">Preserve document properties</p>
+                    <label className="text-sm font-medium text-foreground">Metadata</label>
+                    <p className="text-xs text-muted-foreground">Preserve document properties</p>
                   </div>
                   <Switch
                     checked={formData.preserveMetadata}
@@ -706,8 +706,8 @@ const LinearizePDF: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Annotations</label>
-                    <p className="text-xs text-gray-500">Keep comments and notes</p>
+                    <label className="text-sm font-medium text-foreground">Annotations</label>
+                    <p className="text-xs text-muted-foreground">Keep comments and notes</p>
                   </div>
                   <Switch
                     checked={formData.preserveAnnotations}
@@ -717,8 +717,8 @@ const LinearizePDF: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Bookmarks</label>
-                    <p className="text-xs text-gray-500">Preserve navigation</p>
+                    <label className="text-sm font-medium text-foreground">Bookmarks</label>
+                    <p className="text-xs text-muted-foreground">Preserve navigation</p>
                   </div>
                   <Switch
                     checked={formData.preserveBookmarks}
@@ -733,11 +733,11 @@ const LinearizePDF: React.FC = () => {
               <Button
                 onClick={handleLinearize}
                 disabled={isProcessing}
-                className="bg-green-600 hover:bg-green-700 flex items-center"
+                className="bg-success text-success-foreground hover:bg-success/90 flex items-center"
               >
                 {isProcessing ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-success-foreground mr-2"></div>
                     Processing...
                   </>
                 ) : (

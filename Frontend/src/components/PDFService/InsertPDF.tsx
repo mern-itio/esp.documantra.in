@@ -412,25 +412,25 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
         <div
           className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
             dragActive 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-primary bg-primary/10' 
+              : 'border-border hover:border-primary'
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
         >
-          <FiUpload className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-          <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+          <FiUpload className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+          <h3 className="text-2xl font-semibold text-foreground mb-4">
             Drop your first PDF here or click to browse
           </h3>
-          <p className="text-gray-600 mb-2 text-lg">
+          <p className="text-muted-foreground mb-2 text-lg">
             Upload a PDF to get started
           </p>
-                 <p className="text-sm text-gray-500 mb-6">Maximum file size: 2MB</p>
+                 <p className="text-sm text-muted-foreground mb-6">Maximum file size: 2MB</p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"
+            className="bg-primary text-foreground px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary/80 transition-colors"
             style={{cursor: 'pointer'}}
           >
             Choose PDF File
@@ -448,13 +448,13 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
       {pdfPages.length > 0 && (
         <>
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-900">
+            <h2 className="text-2xl font-semibold text-foreground">
               PDF Pages ({pdfPages.length})
             </h2>
             <div className="flex gap-3">
               <button
                 onClick={insertBlankPage}
-                className="bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+                className="bg-primary text-foreground px-4 py-3 rounded-lg hover:bg-primary/80 transition-colors flex items-center gap-2"
                 style={{cursor: 'pointer'}}
                 title="Insert blank page at the end"
               >
@@ -463,7 +463,7 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600 transition-colors flex items-center justify-center"
+                className="bg-destructive text-foreground p-3 rounded-full hover:bg-destructive/80 transition-colors flex items-center justify-center"
                 style={{cursor: 'pointer'}}
                 title="Add more PDF files"
               >
@@ -491,23 +491,23 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
                 onDrop={(e) => handlePageDrop(e, page)}
               >
                 {/* Page Card */}
-                <div className={`border-2 rounded-lg p-3 bg-white hover:border-pink-400 transition-colors cursor-move ${
+                <div className={`border-2 rounded-lg p-3 bg-background hover:border-primary transition-colors cursor-move ${
                   page.documentIndex === -1 
-                    ? 'border-dashed border-gray-400 bg-gray-50' 
-                    : 'border-pink-300'
+                      ? 'border-dashed border-border bg-background' 
+                    : 'border-primary'
                 }`}>
                   {/* Page Preview */}
                   <div className="relative mb-2">
                     <img
                       src={page.thumbnail}
                       alt={`Page ${page.pageNumber}`}
-                      className="w-full h-auto rounded border border-gray-200"
+                      className="w-full h-auto rounded border border-border"
                     />
                     
                     {/* Remove Button */}
                     <button
                       onClick={() => removePage(page.id)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      className="absolute top-1 right-1 bg-destructive text-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/80"
                       style={{cursor: 'pointer'}}
                       title="Remove page"
                     >
@@ -518,7 +518,7 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
                   {/* Page Number */}
                   <div className="text-center">
                     <span className={`text-lg font-bold ${
-                      page.documentIndex === -1 ? 'text-gray-500' : 'text-gray-900'
+                      page.documentIndex === -1 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {page.pageNumber}
                     </span>
@@ -526,7 +526,7 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
                   
                   {/* Document Info */}
                   <div className={`text-xs text-center mt-1 truncate ${
-                    page.documentIndex === -1 ? 'text-gray-400' : 'text-gray-500'
+                    page.documentIndex === -1 ? 'text-muted-foreground' : 'text-foreground'
                   }`}>
                     {page.documentName}
                   </div>
@@ -540,12 +540,12 @@ const InsertPDF: React.FC<InsertPDFProps> = ({ onInsertResult }) => {
             <button
               onClick={handleProcess}
               disabled={processing}
-              className="bg-blue-600 text-white py-3 px-8 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="bg-primary text-foreground py-3 px-8 rounded-lg font-medium text-lg hover:bg-primary/80 disabled:bg-muted disabled:cursor-not-allowed transition-colors"
               style={{cursor: 'pointer'}}
             >
               {processing ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3 inline-block"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground mr-3 inline-block"></div>
                   Processing...
                 </>
               ) : (

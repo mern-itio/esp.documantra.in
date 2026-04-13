@@ -16,6 +16,14 @@ const SUPPORTED_TYPES = [
   'pdf', 'doc', 'docx', 'txt'
 ];
 
+/** Narrow shape for errors thrown from upload / API during upload */
+type UploadFlowError = {
+  code?: string;
+  message?: string;
+  data?: { existingDocument?: { id: string; name: string; uploadedAt: string } };
+  response?: { status?: number; data?: { required?: unknown; creditsBalance?: unknown } };
+};
+
 export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const { uploadFiles, userPermissions, currentFolderId } = useDocumentStore();
   const [dragActive, setDragActive] = useState(false);
@@ -25,12 +33,12 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const navigate = useNavigate();
 
   // Get subscription plan from localStorage
-  const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<Record<string, unknown> | null>(null);
   
   React.useEffect(() => {
     const storedPlan = localStorage.getItem('userSubscriptionPlan');
     if (storedPlan) {
-      setSubscriptionPlan(JSON.parse(storedPlan));
+      setSubscriptionPlan(JSON.parse(storedPlan) as Record<string, unknown>);
     }
   }, [isOpen]);
 
@@ -39,7 +47,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     const handleStorageChange = () => {
       const storedPlan = localStorage.getItem('userSubscriptionPlan');
       if (storedPlan) {
-        setSubscriptionPlan(JSON.parse(storedPlan));
+        setSubscriptionPlan(JSON.parse(storedPlan) as Record<string, unknown>);
       }
     };
 
@@ -56,7 +64,11 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   // Duplicate filename handling
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateFile, setDuplicateFile] = useState<File | null>(null);
-  const [existingDocument, setExistingDocument] = useState<any>(null);
+  const [existingDocument, setExistingDocument] = useState<{
+    id: string;
+    name: string;
+    uploadedAt: string;
+  } | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -146,20 +158,19 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       for (const file of selectedFiles) {
         try {
           await uploadFiles([file], currentFolderId || undefined);
-        } catch (error: any) {
-          // Handle duplicate filename error from backend
-          if (error.code === 'DUPLICATE_FILENAME' && error.data?.existingDocument) {
+        } catch (error: unknown) {
+          const err = error as UploadFlowError;
+          if (err.code === 'DUPLICATE_FILENAME' && err.data?.existingDocument) {
             setDuplicateFile(file);
-            setExistingDocument(error.data.existingDocument);
+            setExistingDocument(err.data.existingDocument);
             setShowDuplicateModal(true);
             setIsUploading(false);
             return;
           }
-          // Handle insufficient credits error - throw to outer handler
-          if (error.message === 'Insufficient credits' || error.response?.status === 402) {
+          if (err.message === 'Insufficient credits' || err.response?.status === 402) {
             throw error;
           }
-          throw error; // Re-throw other errors
+          throw error;
         }
       }
 
@@ -167,22 +178,22 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       setSelectedFiles([]);
       onClose();
       navigate(`/all-documents`);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as UploadFlowError;
       console.error('❌ Upload failed:', error);
-      console.error('🔍 Error message:', error.message);
-      console.error('🔍 Error response:', error.response);
+      console.error('🔍 Error message:', err.message);
+      console.error('🔍 Error response:', err.response);
       
-      // Handle insufficient credits error specifically
-      if (error.message === 'Insufficient credits' || error.response?.status === 402) {
+      if (err.message === 'Insufficient credits' || err.response?.status === 402) {
         console.log('💰 Handling insufficient credits error!');
-        const required = error.response?.data?.required || 'N/A';
-        const balance = error.response?.data?.creditsBalance || 'N/A';
+        const required = err.response?.data?.required ?? 'N/A';
+        const balance = err.response?.data?.creditsBalance ?? 'N/A';
         console.log('Setting upload error message');
         setUploadError(`Insufficient credits! Required: ${required}, You have: ${balance}. Please upgrade your plan to continue.`);
-      } else if (error.code === 'DUPLICATE_FILENAME') {
+      } else if (err.code === 'DUPLICATE_FILENAME') {
         // Already handled above
       } else {
-        setUploadError(error.message || 'Upload failed. Please try again.');
+        setUploadError(err.message || 'Upload failed. Please try again.');
       }
     } finally {
       setIsUploading(false);
@@ -223,16 +234,16 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       // Clear selected files and close modal on success
       setSelectedFiles([]);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as UploadFlowError;
       console.error('Upload failed:', error);
       
-      // Handle insufficient credits error specifically
-      if (error.message === 'Insufficient credits' || error.response?.status === 402) {
-        const required = error.response?.data?.required || 'N/A';
-        const balance = error.response?.data?.creditsBalance || 'N/A';
+      if (err.message === 'Insufficient credits' || err.response?.status === 402) {
+        const required = err.response?.data?.required ?? 'N/A';
+        const balance = err.response?.data?.creditsBalance ?? 'N/A';
         setUploadError(`Insufficient credits! Required: ${required}, You have: ${balance}. Please upgrade your plan to continue.`);
       } else {
-        setUploadError(error.message || 'Upload failed. Please try again.');
+        setUploadError(err.message || 'Upload failed. Please try again.');
       }
     } finally {
       setIsUploading(false);
@@ -249,11 +260,11 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-full overflow-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs dark:bg-black/60">
+      <div className="max-h-full w-full max-w-2xl overflow-auto rounded-lg border border-border bg-card text-card-foreground shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Upload Documents</h2>
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-foreground">Upload Documents</h2>
           <Button
             variant="ghost"
             size="sm"
@@ -269,19 +280,22 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
         <div className="p-2">
           {/* Single-line Credits Info */}
           {subscriptionPlan && (() => {
-            const creditsBalance = subscriptionPlan.creditsBalance ?? 0;
-            const costPerUpload = subscriptionPlan.documentCosts?.credits ?? 0;
+            const creditsBalance = Number(subscriptionPlan.creditsBalance ?? 0);
+            const docCosts = subscriptionPlan.documentCosts as Record<string, unknown> | undefined;
+            const costPerUpload = Number(docCosts?.credits ?? 0);
             const fileCount = Math.max(1, selectedFiles.length || 0);
             const totalCost = costPerUpload * fileCount;
             const balanceAfterUpload = creditsBalance - totalCost;
             const isNegative = balanceAfterUpload < 0;
             
             return (
-              <div className={`mb-3 px-3 py-2 rounded-lg text-sm flex items-center justify-between ${
-                isNegative 
-                  ? 'bg-red-50 border border-red-200 text-red-800' 
-                  : 'bg-green-50 border border-green-200 text-green-800'
-              }`}>
+              <div
+                className={`mb-3 flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+                  isNegative
+                    ? 'border-destructive/30 bg-destructive/10 text-destructive dark:text-red-200'
+                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100'
+                }`}
+              >
                 <div className="flex items-center gap-3">
                   <span><span className="font-medium">Credits:</span> {creditsBalance}</span>
                   <span>•</span>
@@ -290,7 +304,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
                   <span>
                     <span className="font-medium">After upload:</span>{' '}
                     {isNegative ? (
-                      <span className="text-red-600 font-semibold">
+                      <span className="font-semibold text-destructive">
                         {balanceAfterUpload} ({Math.abs(balanceAfterUpload)} credits required)
                       </span>
                     ) : (
@@ -302,16 +316,16 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             );
           })()}
           {/* Upload Limits Info */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-4 rounded-lg border border-primary/25 bg-primary/10 p-3 dark:bg-primary/15">
             <div className="flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-blue-600" />
-              <div className="text-sm text-blue-800">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <div className="text-sm text-foreground">
                 <p>
                   Upload limit: {userPermissions.uploadLimit === -1
                     ? 'Unlimited'
                     : formatFileSize(userPermissions.uploadLimit)} per file
                 </p>
-                <p className="text-xs mt-1">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Supported: PDF, Word, Text files
                 </p>
               </div>
@@ -322,10 +336,10 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
           {/* Error Display */}
           {uploadError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 dark:bg-destructive/20">
               <div className="flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <div className="text-sm text-red-800">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <div className="text-sm text-destructive">
                   <p className="font-medium">Upload Error:</p>
                   <p className="text-xs mt-1 whitespace-pre-line">{uploadError}</p>
                 </div>
@@ -335,20 +349,21 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
           {/* Drop Zone */}
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-300 hover:border-gray-400'
-              }`}
+            className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+              dragActive
+                ? 'border-primary bg-primary/10 dark:bg-primary/15'
+                : 'border-border hover:border-muted-foreground/50'
+            }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Upload className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-medium text-foreground">
               Drop files here or click to browse
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="mb-4 text-muted-foreground">
               Select multiple files to upload them all at once
             </p>
             <input
@@ -372,17 +387,20 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           {/* Selected Files */}
           {selectedFiles.length > 0 && (
             <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">
+              <h4 className="mb-2 text-sm font-medium text-foreground">
                 Selected Files ({selectedFiles.length})
               </h4>
-              <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg">
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-border">
                 {selectedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between border-b border-border p-3 last:border-b-0"
+                  >
                     <div className="flex items-center space-x-3">
-                      <FileText className="w-4 h-4 text-gray-400" />
+                      <FileText className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                        <p className="text-sm font-medium text-foreground">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
                     <Button
@@ -402,8 +420,8 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-500">
+        <div className="flex items-center justify-between border-t border-border px-6 py-4">
+          <div className="text-sm text-muted-foreground">
             {selectedFiles.length > 0 && (
               <>Total: {formatFileSize(selectedFiles.reduce((total, file) => total + file.size, 0))}</>
             )}
@@ -419,11 +437,10 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             <Button
               onClick={handleUpload}
               disabled={selectedFiles.length === 0 || isUploading || !!uploadError}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400"
             >
               {isUploading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
                   Uploading...
                 </>
               ) : (

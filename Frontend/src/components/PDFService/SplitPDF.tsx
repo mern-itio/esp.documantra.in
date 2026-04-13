@@ -446,12 +446,12 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
     (splitMode !== 'pages' || (pagesPerSplit && pagesPerSplit > 0));
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Show success box only when split is successful */}
       {splitResult && splitResult.success ? (
         <SuccessBox
           title="Split PDF"
-          subtitle="Split your PDF into multiple files"
+          subtitle="Split your PDF into multiple files"   
           message="PDF Split Successfully!"
           fileInfo={(splitResult as any).zipFile ? {
             filename: (splitResult as any).zipFile.filename,
@@ -476,23 +476,23 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
             isDragging 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-primary bg-primary/10' 
+              : 'border-border hover:border-primary'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <Scissors className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <Scissors className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Drop a PDF file here or click to browse
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             Select a PDF file to split into multiple documents
           </p>
           <button
             onClick={openFileDialog}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-primary text-foreground px-6 py-2 rounded-lg hover:bg-primary/80 transition-colors"
           >
             Choose File
           </button>
@@ -508,12 +508,12 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
       {/* Document Preview */}
       {document && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-background rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Selected Document</h3>
+            <h3 className="text-lg font-semibold text-foreground">Selected Document</h3>
             <button
               onClick={removeDocument}
-              className="text-gray-400 hover:text-red-500 transition-colors"
+              className="text-muted-foreground hover:text-destructive transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -521,18 +521,18 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
           <div className="flex items-center space-x-4">
             {/* Document Preview */}
-            <div className="w-20 h-24 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden">
+            <div className="w-20 h-24 bg-muted rounded-lg border border-border flex items-center justify-center relative overflow-hidden">
               {document.isProcessing ? (
                 <div className="flex flex-col items-center space-y-1">
-                  <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-                  <span className="text-xs text-gray-500">Processing...</span>
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                  <span className="text-xs text-muted-foreground">Processing...</span>
                 </div>
               ) : (
                 <>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-2xl text-gray-200 font-bold">D</div>
+                    <div className="text-2xl text-muted-foreground font-bold">D</div>
                   </div>
-                  <div className="absolute top-1 right-1 bg-orange-500 text-white text-xs px-1 py-0.5 rounded-full font-medium">
+                  <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1 py-0.5 rounded-full font-medium">
                     D&S
                   </div>
                 </>
@@ -541,12 +541,12 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
             {/* Document Info */}
             <div className="flex-1">
-              <h4 className="font-medium text-gray-900">{document.name}</h4>
-              <div className="text-sm text-gray-500 mt-1">
+                <h4 className="font-medium text-foreground">{document.name}</h4>
+              <div className="text-sm text-muted-foreground mt-1">
                 {formatFileSize(document.size)} • {document.pages} page{document.pages !== 1 ? 's' : ''}
               </div>
               {document.error && (
-                <div className="text-sm text-red-600 mt-1">{document.error}</div>
+                <div className="text-sm text-destructive mt-1">{document.error}</div>
               )}
             </div>
           </div>
@@ -557,19 +557,19 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
       {document && !document.error && !document.isProcessing && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Side - Page Previews */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-background rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Select Pages</h3>
+              <h3 className="text-lg font-semibold text-foreground">Select Pages</h3>
               <div className="flex space-x-2">
                 <button
                   onClick={selectAllPages}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  className="text-sm text-primary hover:text-primary/80"
                 >
                   Select All
                 </button>
                 <button
                   onClick={deselectAllPages}
-                  className="text-sm text-gray-600 hover:text-gray-800"
+                  className="text-sm text-muted-foreground hover:text-muted-foreground/80"
                 >
                   Deselect All
                 </button>
@@ -579,8 +579,8 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
             {isGeneratingPreviews ? (
               <div className="flex items-center justify-center py-8">
                 <div className="flex flex-col items-center space-y-2">
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                  <span className="text-sm text-gray-500">Generating page previews...</span>
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <span className="text-sm text-muted-foreground">Generating page previews...</span>
                 </div>
               </div>
             ) : (
@@ -590,12 +590,12 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                     key={page.pageNumber}
                     className={`relative cursor-pointer rounded-lg border-2 transition-all ${
                       selectedPages.includes(page.pageNumber)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary'
                     }`}
                     onClick={() => togglePageSelection(page.pageNumber)}
                   >
-                    <div className="aspect-[3/4] bg-gray-50 rounded-lg overflow-hidden">
+                    <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                       <img
                         src={page.preview}
                         alt={`Page ${page.pageNumber}`}
@@ -605,28 +605,28 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                     
                     {/* Selection indicator */}
                     {selectedPages.includes(page.pageNumber) && (
-                      <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4 text-primary-foreground" />
                       </div>
                     )}
                     
                     {/* Page number */}
-                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                      {page.pageNumber}
+                    <div className="absolute bottom-2 left-2 bg-foreground text-foreground-foreground text-xs px-2 py-1 rounded">
+                        {page.pageNumber}
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="mt-4 text-sm text-gray-600">
+            <div className="mt-4 text-sm text-muted-foreground">
               {selectedPages.length} of {pdfPages.length} pages selected
             </div>
           </div>
 
           {/* Right Side - Split Options and Visualization */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Split Options</h3>
+          <div className="bg-background rounded-xl border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Split Options</h3>
           
           {/* Split Mode Selection */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -634,8 +634,8 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
               onClick={() => setSplitMode('pages')}
               className={`p-3 rounded-lg border-2 transition-all ${
                 splitMode === 'pages'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border hover:border-primary'
               }`}
             >
               <FileText className="w-6 h-6 mx-auto mb-2" />
@@ -646,8 +646,8 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
               onClick={() => setSplitMode('custom')}
               className={`p-3 rounded-lg border-2 transition-all ${
                 splitMode === 'custom'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border hover:border-primary'
               }`}
             >
               <Settings className="w-6 h-6 mx-auto mb-2" />
@@ -658,8 +658,8 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
               onClick={() => setSplitMode('bookmarks')}
               className={`p-3 rounded-lg border-2 transition-all ${
                 splitMode === 'bookmarks'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border hover:border-primary'
               }`}
             >
               <BookOpen className="w-6 h-6 mx-auto mb-2" />
@@ -670,8 +670,8 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
               onClick={() => setSplitMode('size')}
               className={`p-3 rounded-lg border-2 transition-all ${
                 splitMode === 'size'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border hover:border-primary'
               }`}
             >
               <HardDrive className="w-6 h-6 mx-auto mb-2" />
@@ -683,7 +683,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
           {splitMode === 'pages' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Pages per split file
                 </label>
                 <input
@@ -693,9 +693,9 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                   value={pagesPerSplit}
                   placeholder="Enter number of pages per file"
                   onChange={(e) => setPagesPerSplit(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   {pagesPerSplit && pagesPerSplit > 0 
                     ? `Will create ${Math.ceil(document.pages / pagesPerSplit)} files`
                     : 'Enter a number to see how many files will be created'
@@ -708,12 +708,12 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
           {splitMode === 'custom' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-foreground">
                   Custom page ranges
                 </label>
                 <button
                   onClick={addCustomRange}
-                  className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    className="bg-primary text-primary-foreground px-3 py-1 rounded-lg hover:bg-primary/80 transition-colors flex items-center space-x-2"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Range</span>
@@ -721,13 +721,13 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
               </div>
               
               {customRanges.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-muted-foreground text-center py-4">
                   No custom ranges defined. Click "Add Range" to get started.
                 </p>
               )}
               
               {customRanges.map((range) => (
-                <div key={range.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div key={range.id} className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
                   <div className="flex-1 grid grid-cols-3 gap-3">
                     <input
                       type="number"
@@ -735,7 +735,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                       max={document.pages}
                       value={range.start}
                       onChange={(e) => updateCustomRange(range.id, 'start', parseInt(e.target.value) || 1)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       placeholder="Start"
                     />
                     <input
@@ -744,20 +744,20 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                       max={document.pages}
                       value={range.end}
                       onChange={(e) => updateCustomRange(range.id, 'end', parseInt(e.target.value) || 1)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       placeholder="End"
                     />
                     <input
                       type="text"
                       value={range.name}
                       onChange={(e) => updateCustomRange(range.id, 'name', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       placeholder="Name (optional)"
                     />
                   </div>
                   <button
                     onClick={() => removeCustomRange(range.id)}
-                    className="text-red-500 hover:text-red-700 transition-colors"
+                    className="text-destructive hover:text-destructive/80 transition-colors"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -769,7 +769,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
           {splitMode === 'size' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Maximum size per file (MB)
                 </label>
                 <input
@@ -779,9 +779,9 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                   step="0.1"
                   value={maxSizeMB}
                   onChange={(e) => setMaxSizeMB(parseFloat(e.target.value) || 10)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Files will be split to stay under this size limit
                 </p>
               </div>
@@ -790,22 +790,22 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
             {/* Split Visualization */}
             {selectedPages.length > 0 && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <h4 className="text-sm font-medium text-foreground mb-3 flex items-center">
                   <Eye className="w-4 h-4 mr-2" />
                   Split Preview
                 </h4>
                 <div className="space-y-2">
                   {getSplitVisualization().map((split, index) => (
-                    <div key={split.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">{index + 1}</span>
+                    <div key={split.id} className="flex items-center space-x-3 p-2 bg-background rounded border">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary">{index + 1}</span>
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-foreground">
                           PDF {index + 1}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           {splitMode === 'custom' 
                             ? `Pages ${(split as any).start}-${(split as any).end} (${(split as any).end - (split as any).start + 1} page${(split as any).end - (split as any).start !== 0 ? 's' : ''})`
                             : `Pages ${(split as any).startPage}-${(split as any).endPage} (${(split as any).pages.length} page${(split as any).pages.length !== 1 ? 's' : ''})`
@@ -815,7 +815,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 text-sm text-gray-600">
+                <div className="mt-3 text-sm text-muted-foreground">
                   Will create {getSplitVisualization().length} PDF file{getSplitVisualization().length !== 1 ? 's' : ''}
                 </div>
               </div>
@@ -826,7 +826,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
               <button
                 onClick={handleSplit}
                 disabled={!canSplit || isSplitting}
-                className="w-full bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                className="w-full bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/80 disabled:bg-muted disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
               >
                 {isSplitting ? (
                   <>
@@ -844,13 +844,13 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
             {/* Progress Bar */}
             {isSplitting && (
               <div className="mt-4">
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${splitProgress}%` }}
                   />
                 </div>
-                <div className="text-sm text-gray-600 mt-2 text-center">{splitProgress}% complete</div>
+                <div className="text-sm text-muted-foreground mt-2 text-center">{splitProgress}% complete</div>
               </div>
             )}
           </div>
@@ -860,9 +860,9 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
 
           {/* Instructions */}
           {!document && (
-            <div className="text-center text-gray-500">
+            <div className="text-center text-muted-foreground">
               <p>Upload a PDF file to get started</p>
-              <div className="mt-4 text-xs text-gray-400">
+              <div className="mt-4 text-xs text-muted-foreground">
                 <p>• Maximum file size: 1MB</p>
                 <p>• Only PDF files are supported</p>
                 <p>• Choose from multiple split modes</p>

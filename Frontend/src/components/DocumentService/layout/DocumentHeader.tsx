@@ -20,7 +20,7 @@ import { UploadModal } from '../modals/UploadModal';
 import { SearchModal } from '../modals/SearchModal';
 import { CreateFolderModal } from '../modals/CreateFolderModal';
 import { ShareModal } from '../modals/ShareModal';
-import { MoveDocumentsModal } from '../modals/MoveDocumentsModal';
+import { MoveDocumentsModal, type FolderData } from '../modals/MoveDocumentsModal';
 import PDFShareButton from '../sharing/PDFShareButton';
 import { useDocumentStore } from '../../common/store/documentStore';
 import { folderAPI, documentAPI } from '../../../services/api';
@@ -47,7 +47,7 @@ export function DocumentHeader() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [folders, setFolders] = useState<any[]>([]);
+  const [folders, setFolders] = useState<FolderData[]>([]);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const navigate = useNavigate();
@@ -158,7 +158,7 @@ export function DocumentHeader() {
   // Check if any filters are applied
   const hasActiveFilters = searchQuery || Object.keys(searchFilters).length > 0;
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="border-b border-border bg-card px-6 py-4 text-card-foreground">
       {/* Breadcrumb */}
       <BreadcrumbNavigation />
 
@@ -167,7 +167,7 @@ export function DocumentHeader() {
         {/* Left side - Search */}
         <div className="flex items-center space-x-4 flex-1">
           <div className="relative max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
             <Input
               placeholder="Search documents..."
               value={searchQuery}
@@ -198,8 +198,8 @@ export function DocumentHeader() {
 
           {/* Bulk Actions (when documents are selected) */}
           {hasSelection && (
-            <div className="flex items-center space-x-2 mr-4 px-3 py-1 bg-blue-50 rounded-lg">
-              <span className="text-sm text-blue-700 font-medium">
+            <div className="mr-4 flex items-center space-x-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 dark:bg-primary/15">
+              <span className="text-sm font-medium text-primary">
                 {selectedDocuments.length} selected
               </span>
               <div className="flex items-center space-x-1">
@@ -208,14 +208,15 @@ export function DocumentHeader() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 hover:bg-blue-50 hover:text-blue-700"
+                    className="h-7 px-2 hover:bg-accent hover:text-accent-foreground"
                     onClick={() => setShowShareModal(true)}
                     style={{ cursor: "pointer" }}
                   >
                     <Share2 className="w-3 h-3" />
                   </Button>
-                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
-                     rounded bg-gray-800 px-2 py-1 text-xs text-white">
+                  <span
+                    className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1 hidden -translate-x-1/2 rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md group-hover:block"
+                  >
                     Share
                   </span>
                 </div>
@@ -231,8 +232,9 @@ export function DocumentHeader() {
                   >
                     <Move className="w-3 h-3" />
                   </Button>
-                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
-                     rounded bg-gray-800 px-2 py-1 text-xs text-white">
+                  <span
+                    className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1 hidden -translate-x-1/2 rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md group-hover:block"
+                  >
                     Move
                   </span>
                 </div>
@@ -243,12 +245,13 @@ export function DocumentHeader() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 px-2 text-red-600 hover:text-red-700"
+                      className="h-7 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
-                    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
-                       rounded bg-gray-800 px-2 py-1 text-xs text-white">
+                    <span
+                      className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1 hidden -translate-x-1/2 rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md group-hover:block"
+                    >
                       Delete
                     </span>
                   </div>
@@ -277,7 +280,7 @@ export function DocumentHeader() {
 
               {/* Tooltip */}
               {showTooltip && (
-                <span className="absolute top-6 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-md whitespace-nowrap">
+                <span className="absolute left-0 top-6 z-50 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md">
                   {sortOrder === "asc" ? "Sorted Ascending" : "Sorted Descending"}
                 </span>
               )}
@@ -286,7 +289,7 @@ export function DocumentHeader() {
           </Button>
 
           { location.pathname !== "/documents/shared-pdf" && (
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex overflow-hidden rounded-lg border border-border">
             <Button
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
               size="sm"
@@ -310,7 +313,6 @@ export function DocumentHeader() {
             <Button
               onClick={() => setShowUpload(true)}
               disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <Upload className="w-4 h-4 mr-2" />
               Upload
@@ -334,11 +336,11 @@ export function DocumentHeader() {
 
             {/* Dropdown Menu */}
             {showMoreMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg">
                 <div className="py-1">
                   <button
                     onClick={handleCreateFolder}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                    className="flex w-full items-center space-x-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
                   >
                     <Folder className="w-4 h-4" />
                     <span>Create Folder</span>

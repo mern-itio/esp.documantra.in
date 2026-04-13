@@ -93,18 +93,18 @@ const PDFStatistics: React.FC = () => {
   return (
     <div className="mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to="/pdf-tools"
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">PDF Statistics</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">PDF Statistics</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Analyze document content, performance metrics, and usage statistics
               </p>
             </div>
@@ -114,16 +114,16 @@ const PDFStatistics: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="bg-background rounded-lg shadow-sm border">
           {!selectedFile && selectedFiles.length === 0 ? (
             /* Upload Section */
             <div className="p-8">
               <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 mb-4">
+                  <BarChart3 className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Upload PDF Files</h3>
-                <p className="text-sm text-gray-500 mb-6">
+                <h3 className="text-lg font-medium text-foreground mb-2">Upload PDF Files</h3>
+                <p className="text-sm text-muted-foreground mb-6">
                   Select PDF files to analyze their content and performance metrics
                 </p>
 
@@ -132,8 +132,8 @@ const PDFStatistics: React.FC = () => {
                   <button
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors ${
                       analysisType === 'single'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                          ? 'border-primary text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:border-border'
                     }`}
                     onClick={() => setAnalysisType('single')}
                   >
@@ -143,8 +143,8 @@ const PDFStatistics: React.FC = () => {
                   <button
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors ${
                       analysisType === 'compare'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                        ? 'border-primary  text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:border-border'
                     }`}
                     onClick={() => setAnalysisType('compare')}
                   >
@@ -158,22 +158,22 @@ const PDFStatistics: React.FC = () => {
                   {...getRootProps()}
                   className={`border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${
                     isDragActive
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-300 hover:border-gray-400'
+                      ? 'border-primary bg-primary'
+                      : 'border-border hover:border-border'
                   }`}
                 >
                   <input {...getInputProps()} />
                   <div className="flex flex-col items-center gap-4">
-                    <Upload className="w-12 h-12 text-gray-400" />
+                    <Upload className="w-12 h-12 text-muted-foreground" />
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900">
+                      <h4 className="text-lg font-medium text-foreground">
                         {isDragActive
                           ? 'Drop your PDF files here'
                           : analysisType === 'single'
                           ? 'Drag & drop a PDF file here, or click to select'
                           : 'Drag & drop PDF files here, or click to select'}
                       </h4>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {analysisType === 'single'
                           ? 'Select a single PDF file for comprehensive analysis'
                           : 'Select multiple PDF files for comparison analysis'}
@@ -187,13 +187,13 @@ const PDFStatistics: React.FC = () => {
             /* Main Working Area */
             <div className="flex flex-col h-full">
               {/* File Selection Header */}
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <div className="p-4 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-medium text-foreground">
                       {analysisType === 'single' ? 'Single Analysis' : 'Compare PDFs'}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       {analysisType === 'single'
                         ? 'Analyze content, performance, and usage statistics'
                         : 'Compare multiple PDFs side by side'}
@@ -201,7 +201,7 @@ const PDFStatistics: React.FC = () => {
                   </div>
                   <button
                     onClick={clearResults}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-md hover:bg-muted"
                   >
                     Clear All
                   </button>
@@ -209,27 +209,27 @@ const PDFStatistics: React.FC = () => {
               </div>
 
               {/* Selected Files */}
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b border-border">
                 {selectedFile && (
-                  <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <File className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center gap-3 p-3 bg-card border border-primary rounded-lg">
+                    <File className="w-5 h-5 text-foreground" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-900">{selectedFile.name}</p>
-                      <p className="text-xs text-blue-700">{pdfStatisticsService.formatFileSize(selectedFile.size)}</p>
+                      <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">{pdfStatisticsService.formatFileSize(selectedFile.size)}</p>
                     </div>
                   </div>
                 )}
 
                 {selectedFiles.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-900">Selected Files ({selectedFiles.length})</h4>
+                    <h4 className="text-sm font-medium text-foreground">Selected Files ({selectedFiles.length})</h4>
                     <div className="space-y-2">
                       {selectedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                          <File className="w-5 h-5 text-gray-600" />
+                        <div key={index} className="flex items-center gap-3 p-3 bg-primary border border-primary rounded-lg">
+                          <File className="w-5 h-5 text-primary-foreground" />
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                            <p className="text-xs text-gray-600">{pdfStatisticsService.formatFileSize(file.size)}</p>
+                            <p className="text-sm font-medium text-primary">{file.name}</p>
+                            <p className="text-xs text-primary">{pdfStatisticsService.formatFileSize(file.size)}</p>
                           </div>
                         </div>
                       ))}
@@ -239,9 +239,9 @@ const PDFStatistics: React.FC = () => {
 
                 {/* Error Message */}
                 {error && (
-                  <div className="mt-4 flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <AlertCircle className="w-5 h-5 text-red-600" />
-                    <p className="text-sm text-red-800">{error}</p>
+                  <div className="mt-4 flex items-center gap-2 p-3 bg-destructive-50 border border-destructive-200 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-destructive" />
+                    <p className="text-sm text-destructive">{error}</p>
                   </div>
                 )}
 
@@ -251,7 +251,7 @@ const PDFStatistics: React.FC = () => {
                     <button
                       onClick={analyzeSinglePdf}
                       disabled={isLoading}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -266,7 +266,7 @@ const PDFStatistics: React.FC = () => {
                     <button
                       onClick={comparePdfs}
                       disabled={isLoading}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -283,13 +283,13 @@ const PDFStatistics: React.FC = () => {
               {(analysisResult || comparisonResults) && (
                 <div className="flex-1 flex flex-col">
                   {/* Tabs */}
-                  <div className="flex border-b border-gray-200">
+                  <div className="flex border-b border-border">
                     {/* Show Overview tab only for single analysis */}
                     {analysisType === 'single' && analysisResult && (
                       <button
                         className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 ${
                           activeTab === 'overview'
-                            ? 'border-blue-500 text-blue-600'
+                            ? 'border-primary text-primary'
                             : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                         onClick={() => setActiveTab('overview')}
@@ -303,8 +303,8 @@ const PDFStatistics: React.FC = () => {
                       <button
                         className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 ${
                           activeTab === 'comparison'
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-muted-foreground hover:text-muted-foreground'
                         }`}
                         onClick={() => setActiveTab('comparison')}
                       >
@@ -320,63 +320,63 @@ const PDFStatistics: React.FC = () => {
                     {activeTab === 'overview' && analysisType === 'single' && analysisResult && (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* Document Overview */}
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="bg-background border border-border rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <FileText className="w-5 h-5 text-blue-600" />
-                            <h4 className="font-medium text-gray-900">Document Overview</h4>
+                            <FileText className="w-5 h-5 text-primary" />
+                            <h4 className="font-medium text-foreground">Document Overview</h4>
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Total Pages</span>
+                              <span className="text-sm text-muted-foreground">Total Pages</span>
                               <span className="text-sm font-medium">{analysisResult.summary.totalPages}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">File Size</span>
+                              <span className="text-sm text-muted-foreground">File Size</span>
                               <span className="text-sm font-medium">{pdfStatisticsService.formatFileSize(analysisResult.fileSize)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Processing Time</span>
+                              <span className="text-sm text-muted-foreground">Processing Time</span>
                               <span className="text-sm font-medium">{analysisResult.processingTime}ms</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Text Density</span>
+                              <span className="text-sm text-muted-foreground">Text Density</span>
                               <span className="text-sm font-medium">{analysisResult.summary.textDensity} chars/page</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Content Analysis */}
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="bg-background border border-border rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <BarChart3 className="w-5 h-5 text-blue-600" />
-                            <h4 className="font-medium text-gray-900">Content Analysis</h4>
+                            <BarChart3 className="w-5 h-5 text-primary" />
+                            <h4 className="font-medium text-foreground">Content Analysis</h4>
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Total Images</span>
+                              <span className="text-sm text-muted-foreground">Total Images</span>
                               <span className="text-sm font-medium">{analysisResult.contentAnalysis.totalImages}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Total Fonts</span>
+                              <span className="text-sm text-muted-foreground">Total Fonts</span>
                               <span className="text-sm font-medium">{analysisResult.contentAnalysis.totalFonts}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Has Bookmarks</span>
+                                  <span className="text-sm text-muted-foreground">Has Bookmarks</span>
                               <span className="flex items-center">
                                 {analysisResult.summary.hasBookmarks ? (
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                  <CheckCircle className="w-4 h-4 text-success" />
                                 ) : (
-                                  <AlertCircle className="w-4 h-4 text-red-600" />
+                                  <AlertCircle className="w-4 h-4 text-destructive" />
                                 )}
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Has Forms</span>
+                              <span className="text-sm text-muted-foreground">Has Forms</span>
                               <span className="flex items-center">
                                 {analysisResult.summary.hasForms ? (
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                  <CheckCircle className="w-4 h-4 text-success" />
                                 ) : (
-                                  <AlertCircle className="w-4 h-4 text-red-600" />
+                                  <AlertCircle className="w-4 h-4 text-destructive" />
                                 )}
                               </span>
                             </div>
@@ -384,14 +384,14 @@ const PDFStatistics: React.FC = () => {
                         </div>
 
                         {/* Performance Metrics */}
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="bg-background border border-border rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <BarChart3 className="w-5 h-5 text-blue-600" />
-                            <h4 className="font-medium text-gray-900">Performance Metrics</h4>
+                            <BarChart3 className="w-5 h-5 text-primary" />
+                            <h4 className="font-medium text-foreground">Performance Metrics</h4>
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Efficiency Score</span>
+                              <span className="text-sm text-muted-foreground">Efficiency Score</span>
                               <span 
                                 className="text-sm font-medium"
                                 style={{ color: pdfStatisticsService.getScoreColor(analysisResult.performanceMetrics.efficiencyScore) }}
@@ -400,15 +400,15 @@ const PDFStatistics: React.FC = () => {
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Compression Ratio</span>
+                              <span className="text-sm text-muted-foreground">Compression Ratio</span>
                               <span className="text-sm font-medium">{analysisResult.performanceMetrics.compressionRatio}%</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Size per Page</span>
+                              <span className="text-sm text-muted-foreground">Size per Page</span>
                               <span className="text-sm font-medium">{pdfStatisticsService.formatFileSize(analysisResult.performanceMetrics.sizePerPage)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">CPU Intensity</span>
+                              <span className="text-sm text-muted-foreground">CPU Intensity</span>
                               <span 
                                 className="text-sm font-medium"
                                 style={{ color: pdfStatisticsService.getIntensityColor(analysisResult.performanceMetrics.cpuIntensity) }}
@@ -426,44 +426,44 @@ const PDFStatistics: React.FC = () => {
                       <div className="space-y-6">
                         {/* Comparison Summary */}
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900 mb-4">Comparison Summary</h4>
+                            <h4 className="text-lg font-medium text-foreground mb-4">Comparison Summary</h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                              <div className="text-2xl font-bold text-gray-900">{comparisonResults.summary.totalFiles}</div>
-                              <div className="text-sm text-gray-600">Total Files</div>
+                            <div className="bg-background border border-border rounded-lg p-4 text-center">
+                              <div className="text-2xl font-bold text-foreground">{comparisonResults.summary.totalFiles}</div>
+                              <div className="text-sm text-muted-foreground">Total Files</div>
                             </div>
-                            <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                              <div className="text-2xl font-bold text-gray-900">{pdfStatisticsService.formatFileSize(comparisonResults.summary.totalSize)}</div>
-                              <div className="text-sm text-gray-600">Total Size</div>
+                              <div className="bg-background border border-border rounded-lg p-4 text-center">
+                              <div className="text-2xl font-bold text-foreground">{pdfStatisticsService.formatFileSize(comparisonResults.summary.totalSize)}</div>
+                              <div className="text-sm text-muted-foreground">Total Size</div>
                             </div>
-                            <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                              <div className="text-2xl font-bold text-gray-900">{comparisonResults.summary.totalPages}</div>
-                              <div className="text-sm text-gray-600">Total Pages</div>
+                            <div className="bg-background border border-border rounded-lg p-4 text-center">
+                              <div className="text-2xl font-bold text-foreground">{comparisonResults.summary.totalPages}</div>
+                              <div className="text-sm text-muted-foreground">Total Pages</div>
                             </div>
                           </div>
                         </div>
 
                         {/* Individual Results */}
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900 mb-4">Individual Results</h4>
+                          <h4 className="text-lg font-medium text-foreground mb-4">Individual Results</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {comparisonResults.results.map((result, index) => (
-                              <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                              <div key={index} className="bg-background border border-border rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <File className="w-5 h-5 text-blue-600" />
-                                  <h5 className="font-medium text-gray-900 truncate">{result.filename}</h5>
+                                  <File className="w-5 h-5 text-primary" />
+                                  <h5 className="font-medium text-foreground truncate">{result.filename}</h5>
                                 </div>
                                 <div className="space-y-2">
                                   <div className="flex justify-between">
-                                    <span className="text-sm text-gray-600">Size</span>
+                                    <span className="text-sm text-muted-foreground">Size</span>
                                     <span className="text-sm font-medium">{pdfStatisticsService.formatFileSize(result.fileSize)}</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-sm text-gray-600">Pages</span>
+                                    <span className="text-sm text-muted-foreground">Pages</span>
                                     <span className="text-sm font-medium">{result.contentAnalysis.pageCount}</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-sm text-gray-600">Efficiency</span>
+                                      <span className="text-sm text-muted-foreground">Efficiency</span>
                                     <span 
                                       className="text-sm font-medium"
                                       style={{ color: pdfStatisticsService.getScoreColor(result.performanceMetrics.efficiencyScore) }}

@@ -123,18 +123,18 @@ const MyOrganizationPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb]">
+    <div className="min-h-screen bg-background">
       {/* Page Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-sm bg-[#260559] flex items-center justify-center shadow-sm">
-                <Building2 className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-sm bg-primary flex items-center justify-center shadow-sm">
+                <Building2 className="w-5 h-5 text-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Organizations</h1>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">Organizations</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   Manage your workspace and team collaborations
                 </p>
               </div>
@@ -143,7 +143,7 @@ const MyOrganizationPage: React.FC = () => {
             {!myOrganization && !loading && (
               <button
                 onClick={() => navigate('/organization/create')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#260559] text-white text-sm font-semibold rounded-lg hover:bg-[#34106a] transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-foreground text-sm font-semibold rounded-lg hover:bg-primary/80 transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 New Organization
@@ -154,31 +154,31 @@ const MyOrganizationPage: React.FC = () => {
           {/* Stats strip */}
           {!loading && (
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#260559]/10 flex items-center justify-center">
-                  <Building2 className="w-4 h-4 text-[#260559]" />
+              <div className="bg-muted rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 font-medium">My Organization</p>
-                  <p className="text-lg font-bold text-gray-900">{myOrganization ? 1 : 0}</p>
+                  <p className="text-xs text-muted-foreground font-medium">My Organization</p>
+                  <p className="text-lg font-bold text-foreground">{myOrganization ? 1 : 0}</p>
                 </div>
               </div>
-              <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+              <div className="bg-muted rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                   <Share2 className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 font-medium">Shared Access</p>
-                  <p className="text-lg font-bold text-gray-900">{sharedOrganizations.length}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Shared Access</p>
+                  <p className="text-lg font-bold text-foreground">{sharedOrganizations.length}</p>
                 </div>
               </div>
-              <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+              <div className="bg-muted rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
                   <Users className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 font-medium">Total Access</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-xs text-muted-foreground font-medium">Total Access</p>
+                  <p className="text-lg font-bold text-foreground">
                     {(myOrganization ? 1 : 0) + sharedOrganizations.length}
                   </p>
                 </div>
@@ -194,8 +194,8 @@ const MyOrganizationPage: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? 'border-[#260559] text-[#260559]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-[#260559] text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
                 }`}
               >
                 {tab.icon}
@@ -203,8 +203,8 @@ const MyOrganizationPage: React.FC = () => {
                 <span
                   className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
                     activeTab === tab.id
-                      ? 'bg-[#260559] text-white'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   {tab.count}
@@ -220,17 +220,17 @@ const MyOrganizationPage: React.FC = () => {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {[1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
+              <div key={i} className="bg-card rounded-2xl border border-gray-200 p-6 animate-pulse">
                 <div className="flex gap-4 mb-5">
-                  <div className="w-14 h-14 rounded-xl bg-gray-200" />
+                  <div className="w-14 h-14 rounded-xl bg-card" />
                   <div className="flex-1 space-y-2 pt-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                    <div className="h-4 bg-card rounded w-3/4" />
+                    <div className="h-3 bg-card rounded w-1/2" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="h-3 bg-gray-100 rounded w-full" />
-                  <div className="h-3 bg-gray-100 rounded w-2/3" />
+                  <div className="h-3 bg-card rounded w-full" />
+                  <div className="h-3 bg-card rounded w-2/3" />
                 </div>
               </div>
             ))}

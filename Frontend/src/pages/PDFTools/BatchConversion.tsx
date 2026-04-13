@@ -31,6 +31,8 @@ interface ConversionResult {
   message: string;
 }
 
+type ToolComplexity = 'easy' | 'medium' | 'hard';
+
 interface BatchConversionProps {
   onBack?: () => void;
 }
@@ -91,7 +93,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
     description: 'Convert multiple files to different formats simultaneously',
     icon: FileTextIcon,
     premium: false,
-    complexity: 'medium' as const,
+    complexity: 'medium' satisfies ToolComplexity,
     popularity: 98,
     avgProcessingTime: '2-10 minutes',
     inputFormats: supportedInputFormats,
@@ -347,24 +349,24 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
       const hasFile = !!fileData?.file;
       
       inputs.push(
-        <div key={i} className="mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
+        <div key={i} className="mb-4 p-4 border-2 border-dashed border-border rounded-lg hover:border-primary transition-colors">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
                 {hasFile ? (
                   <span className="text-lg">{getFormatIcon(getFileType(fileData!.file!.name))}</span>
                 ) : (
-                  <Upload className="w-5 h-5 text-gray-400" />
+                  <Upload className="w-5 h-5 text-muted-foreground" />
                 )}
               </div>
               <div className="flex-1">
                 {hasFile ? (
                   <>
-                    <p className="font-medium text-gray-900">{fileData!.file!.name}</p>
-                    <p className="text-sm text-gray-500">{formatFileSize(fileData!.file!.size)}</p>
+                    <p className="font-medium text-foreground">{fileData!.file!.name}</p>
+                    <p className="text-sm text-muted-foreground">{formatFileSize(fileData!.file!.size)}</p>
                   </>
                 ) : (
-                  <p className="text-gray-500">No file selected</p>
+                  <p className="text-muted-foreground">No file selected</p>
                 )}
               </div>
             </div>
@@ -374,7 +376,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
               <select
                 value={getDefaultOutputFormat(i)}
                 onChange={(e) => updateOutputFormat(i, e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 {(() => {
                   const fileData = getFileAtIndex(i);
@@ -403,7 +405,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
               {/* Upload/Change Button */}
               <button
                 onClick={() => fileInputRefs.current[i]?.click()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
               >
                 {hasFile ? 'Change' : 'Choose File'}
               </button>
@@ -412,7 +414,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
               {hasFile && (
                 <button
                   onClick={() => removeFile(i)}
-                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-destructive hover:text-destructive/90 hover:bg-destructive/10 rounded-lg transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -426,38 +428,38 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="space-y-6 p-2 bg-white">
+    <div className="min-h-full w-full space-y-6 p-2 bg-background text-foreground">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {onBack ? (
             <button
               onClick={onBack}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
           ) : (
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
           )}
 
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Icon className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+              <Icon className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h1 className="text-2xl font-bold text-gray-900">{toolInfo.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{toolInfo.name}</h1>
                 {toolInfo.premium && (
-                  <Crown className="w-5 h-5 text-yellow-500" />
+                  <Crown className="w-5 h-5 text-warning" />
                 )}
               </div>
-              <p className="text-gray-600">{toolInfo.description}</p>
+              <p className="text-muted-foreground">{toolInfo.description}</p>
             </div>
           </div>
         </div>
@@ -469,26 +471,26 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
         {/* Main Processing Area */}
         <div className="lg:col-span-2 space-y-6">
           {/* File Upload */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Files (Max 5)</h3>
+          <div className="bg-muted rounded-xl border border-border p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Upload Files (Max 5)</h3>
 
             {/* Individual File Inputs */}
             {renderFileInputs()}
 
-            <div className="mt-4 text-center text-gray-600 text-sm">
+            <div className="mt-4 text-center text-muted-foreground text-sm">
               Supports: {toolInfo.inputFormats?.join(', ').toUpperCase()}
             </div>
           </div>
 
           {/* Processing */}
           {files.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="bg-muted rounded-xl border border-border p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Convert Files</h3>
+                <h3 className="text-lg font-semibold text-foreground">Convert Files</h3>
                 <button
                   onClick={processFiles}
                   disabled={isProcessing}
-                  className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                  className="flex items-center space-x-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -502,12 +504,12 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
               {isProcessing && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Processing files...</span>
-                    <span className="text-sm text-gray-600">{processingProgress}%</span>
+                    <span className="text-sm font-medium text-foreground">Processing files...</span>
+                    <span className="text-sm text-muted-foreground">{processingProgress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${processingProgress}%` }}
                     />
                   </div>
@@ -518,11 +520,11 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
               {results.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-gray-900">Conversion Results</h4>
+                    <h4 className="font-medium text-foreground">Conversion Results</h4>
                     {(zipUrl || results.some(r => r.status === 'success')) && (
                       <button
                         onClick={downloadAll}
-                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                       >
                         <Archive className="w-4 h-4" />
                         <span>{zipUrl ? 'Download ZIP' : 'Download All'}</span>
@@ -535,23 +537,23 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
                       key={index}
                       className={`flex items-center justify-between p-4 rounded-lg border ${
                         result.status === 'success' 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-red-50 border-red-200'
+                          ? 'bg-success/10 border-success/40' 
+                          : 'bg-destructive/10 border-destructive/40'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
                         {result.status === 'success' ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <CheckCircle className="w-5 h-5 text-success" />
                         ) : (
-                          <AlertCircle className="w-5 h-5 text-red-600" />
+                          <AlertCircle className="w-5 h-5 text-destructive" />
                         )}
                         <div>
-                          <p className="font-medium text-gray-900">{result.fileName}</p>
-                          <p className="text-sm text-gray-600">
+                            <p className="font-medium text-foreground">{result.fileName}</p>
+                          <p className="text-sm text-muted-foreground">
                             {result.inputFormat.toUpperCase()} → {result.outputFormat.toUpperCase()}
                           </p>
                           {result.message && (
-                            <p className="text-sm text-gray-500">{result.message}</p>
+                            <p className="text-sm text-muted-foreground">{result.message}</p>
                           )}
                         </div>
                       </div>
@@ -559,7 +561,7 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
                       {result.status === 'success' && result.downloadUrl && (
                         <button
                           onClick={() => downloadFile(result.downloadUrl!, result.fileName, result.outputFormat)}
-                          className="flex items-center space-x-2 px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="flex items-center space-x-2 px-3 py-2 text-sm rounded-lg bg-success text-success-foreground hover:bg-success/90 transition-colors"
                         >
                           <Download className="w-4 h-4" />
                           <span>Download</span>
@@ -576,40 +578,43 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Tool Info */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Tool Information</h3>
+          <div className="bg-muted rounded-xl border border-border p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Tool Information</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Complexity</label>
-                <span className="ml-2 px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
+                <label className="text-sm font-medium text-foreground">Complexity</label>
+                <span className={`ml-2 px-2 py-1 text-xs font-medium rounded ${toolInfo.complexity === 'easy' ? 'bg-success text-success-foreground' :
+                    toolInfo.complexity === 'medium' ? 'bg-warning text-warning-foreground' :
+                      'bg-destructive text-destructive-foreground'
+                  }`}>
                   {toolInfo.complexity}
                 </span>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Popularity</label>
+                <label className="text-sm font-medium text-foreground">Popularity</label>
                 <div className="mt-1 flex items-center">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div className="flex-1 bg-muted rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+                      className="bg-primary h-2 rounded-full"
                       style={{ width: `${toolInfo.popularity}%` }}
                     />
                   </div>
-                  <span className="ml-2 text-sm text-gray-600">{toolInfo.popularity}%</span>
+                  <span className="ml-2 text-sm text-muted-foreground">{toolInfo.popularity}%</span>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Avg. Processing Time</label>
-                <p className="text-sm text-gray-600">{toolInfo.avgProcessingTime}</p>
+                    <label className="text-sm font-medium text-foreground">Avg. Processing Time</label>
+                <p className="text-sm text-muted-foreground">{toolInfo.avgProcessingTime}</p>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Input Formats</label>
+                <label className="text-sm font-medium text-foreground">Input Formats</label>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {toolInfo.inputFormats?.map(format => (
-                    <span key={format} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                    <span key={format} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
                       .{format}
                     </span>
                   ))}
@@ -617,10 +622,10 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Output Formats</label>
+                <label className="text-sm font-medium text-foreground">Output Formats</label>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {toolInfo.outputFormats?.map(format => (
-                    <span key={format} className="px-2 py-1 text-xs bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 rounded">
+                    <span key={format} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
                       .{format}
                     </span>
                   ))}
@@ -628,11 +633,11 @@ export const BatchConversion: React.FC<BatchConversionProps> = ({ onBack }) => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Features</label>
+                  <label className="text-sm font-medium text-foreground">Features</label>
                 <div className="mt-1 space-y-1">
                   {toolInfo.features.map(feature => (
-                    <div key={feature} className="text-sm text-gray-600 flex items-center">
-                      <Check className="w-3 h-3 text-green-500 mr-2" />
+                    <div key={feature} className="text-sm text-muted-foreground flex items-center">
+                      <Check className="w-3 h-3 text-success mr-2" />
                       {feature}
                     </div>
                   ))}

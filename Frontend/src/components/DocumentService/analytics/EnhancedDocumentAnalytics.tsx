@@ -30,8 +30,8 @@ export function EnhancedDocumentAnalytics() {
       title: 'Total Documents',
       value: totalDocuments.toString(),
       icon: FileText,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-50 dark:bg-blue-950/40',
       change: '+12%'
     },
     {
@@ -39,24 +39,24 @@ export function EnhancedDocumentAnalytics() {
       value: formatFileSize(used),
       subtitle: total === -1 ? 'Unlimited' : `${percentage}% of ${formatFileSize(total)}`,
       icon: HardDrive,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-950/40',
       change: '+8%'
     },
     {
       title: 'Shared Documents',
       value: sharedDocuments.toString(),
       icon: Share2,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-violet-600 dark:text-violet-400',
+      bgColor: 'bg-violet-50 dark:bg-violet-950/40',
       change: '+15%'
     },
     {
       title: 'Total Views',
       value: totalViews.toString(),
       icon: Eye,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-orange-600 dark:text-orange-400',
+      bgColor: 'bg-orange-50 dark:bg-orange-950/40',
       change: '+23%'
     }
   ];
@@ -66,9 +66,9 @@ export function EnhancedDocumentAnalytics() {
   if (!userPermissions.analytics) {
     return (
       <div className="p-8 text-center">
-        <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Analytics Access Required</h3>
-        <p className="text-gray-500">You need admin permissions to view analytics.</p>
+        <BarChart3 className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-foreground mb-2">Analytics Access Required</h3>
+        <p className="text-muted-foreground">You need admin permissions to view analytics.</p>
       </div>
     );
   }
@@ -77,8 +77,8 @@ export function EnhancedDocumentAnalytics() {
     <div className="p-6 space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Enhanced Document Analytics</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Enhanced Document Analytics</h1>
+        <p className="text-muted-foreground mt-1">
           {currentUser.role === 'super_admin' 
             ? 'Platform-wide document insights with collaboration analytics'
             : 'Team document insights with collaboration analytics'
@@ -98,12 +98,12 @@ export function EnhancedDocumentAnalytics() {
                     <Icon className={`w-6 h-6 ${stat.color}`} />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-sm text-gray-600">{stat.title}</p>
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground">{stat.title}</p>
                     {stat.subtitle && (
-                      <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
+                      <p className="text-xs text-muted-foreground/90 mt-1">{stat.subtitle}</p>
                     )}
-                    <p className="text-xs text-green-600 mt-1">{stat.change} from last week</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{stat.change} from last week</p>
                   </div>
                 </div>
               </CardContent>
@@ -114,30 +114,30 @@ export function EnhancedDocumentAnalytics() {
 
       {/* Collaboration Analytics Section */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Collaboration Analytics</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Collaboration Analytics</h2>
         <CollaborationAnalytics />
       </div>
 
       {/* Storage Usage */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <HardDrive className="w-5 h-5" />
+          <CardTitle className="flex items-center space-x-2 text-foreground">
+            <HardDrive className="w-5 h-5 text-primary" />
             <span>Storage Usage</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Current Usage</span>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm font-medium text-foreground">Current Usage</span>
+              <span className="text-sm text-muted-foreground">
                 {formatFileSize(used)} {total !== -1 && `/ ${formatFileSize(total)}`}
               </span>
             </div>
             {total !== -1 && (
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${Math.min(percentage, 100)}%` }}
                 />
               </div>
@@ -149,23 +149,23 @@ export function EnhancedDocumentAnalytics() {
       {/* File Type Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle>File Type Distribution</CardTitle>
+          <CardTitle className="text-foreground">File Type Distribution</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {MOCK_STATS.storageByType.map((type, index) => (
               <div key={type.type} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 rounded-full bg-blue-600" style={{
+                  <div className="w-4 h-4 shrink-0 rounded-full ring-1 ring-border" style={{
                     backgroundColor: `hsl(${index * 45}, 70%, 50%)`
                   }} />
-                  <span className="text-sm font-medium text-gray-700 uppercase">
+                  <span className="text-sm font-medium text-foreground uppercase">
                     {type.type}
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{type.count} files</p>
-                  <p className="text-xs text-gray-500">{formatFileSize(type.size)}</p>
+                  <p className="text-sm font-medium text-foreground">{type.count} files</p>
+                  <p className="text-xs text-muted-foreground">{formatFileSize(type.size)}</p>
                 </div>
               </div>
             ))}
@@ -176,8 +176,8 @@ export function EnhancedDocumentAnalytics() {
       {/* Recent Activity */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5" />
+          <CardTitle className="flex items-center space-x-2 text-foreground">
+            <Clock className="w-5 h-5 text-primary" />
             <span>Recent Activity</span>
           </CardTitle>
         </CardHeader>
@@ -186,12 +186,12 @@ export function EnhancedDocumentAnalytics() {
             {MOCK_STATS.recentActivity.slice(0, 5).map((activity) => (
               <div key={activity.id} className="flex items-center space-x-3 py-2">
                 <div className="flex-shrink-0">
-                  {activity.type === 'upload' && <TrendingUp className="w-4 h-4 text-green-600" />}
-                  {activity.type === 'download' && <Download className="w-4 h-4 text-blue-600" />}
-                  {activity.type === 'share' && <Share2 className="w-4 h-4 text-purple-600" />}
+                  {activity.type === 'upload' && <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                  {activity.type === 'download' && <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                  {activity.type === 'share' && <Share2 className="w-4 h-4 text-violet-600 dark:text-violet-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-foreground">
                     <span className="font-medium">{activity.userName}</span>
                     {' '}
                     {activity.type === 'upload' && 'uploaded'}
@@ -200,7 +200,7 @@ export function EnhancedDocumentAnalytics() {
                     {' '}
                     <span className="font-medium truncate">{activity.documentName}</span>
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {new Date(activity.timestamp).toLocaleString()}
                   </p>
                 </div>
@@ -213,7 +213,7 @@ export function EnhancedDocumentAnalytics() {
       {/* Top Documents */}
       <Card>
         <CardHeader>
-          <CardTitle>Most Viewed Documents</CardTitle>
+          <CardTitle className="text-foreground">Most Viewed Documents</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -223,19 +223,19 @@ export function EnhancedDocumentAnalytics() {
               .map((doc, index) => (
                 <div key={doc.id} className="flex items-center justify-between py-2">
                   <div className="flex items-center space-x-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium text-gray-600">
+                    <span className="flex-shrink-0 w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
                       {index + 1}
                     </span>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                      <p className="text-sm font-medium text-foreground truncate max-w-xs">
                         {doc.name}
                       </p>
-                      <p className="text-xs text-gray-500">{formatFileSize(doc.size)}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(doc.size)}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{doc.views} views</p>
-                    <p className="text-xs text-gray-500">{doc.downloads} downloads</p>
+                    <p className="text-sm font-medium text-foreground">{doc.views} views</p>
+                    <p className="text-xs text-muted-foreground">{doc.downloads} downloads</p>
                   </div>
                 </div>
               ))}

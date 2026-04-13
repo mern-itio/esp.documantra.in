@@ -223,19 +223,19 @@ const FormRecognitionPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto space-y-6">
-      <div className="bg-white shadow-sm border-b">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                 to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Form Recognition</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Form Recognition</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Convert static forms to fillable forms with AI-powered field detection and optimization
               </p>
             </div>
@@ -247,11 +247,11 @@ const FormRecognitionPage: React.FC = () => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* File Upload */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Static Form</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Upload Static Form</h2>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/30 dark:bg-muted/20">
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
               <div className="mt-4">
                 <label className="cursor-pointer">
                   <span className="text-blue-600 hover:text-blue-500 font-medium">
@@ -265,10 +265,10 @@ const FormRecognitionPage: React.FC = () => {
                     className="hidden"
                   />
                 </label>
-                <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+                <p className="text-sm text-muted-foreground mt-1">or drag and drop</p>
               </div>
               {selectedFile && (
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   Selected: {selectedFile.name}
                 </p>
               )}
@@ -276,79 +276,79 @@ const FormRecognitionPage: React.FC = () => {
           </div>
 
           {/* Processing Mode Selection */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Processing Mode</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Processing Mode</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={() => setProcessingMode('convert')}
                 className={`p-4 rounded-lg border-2 text-left ${processingMode === 'convert'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-muted-foreground/40'
                   }`}
               >
-                <Zap className="w-6 h-6 text-blue-600 mb-2" />
+                <Zap className="w-6 h-6 text-primary mb-2" />
                 <h3 className="font-medium">Convert to Fillable</h3>
-                <p className="text-sm text-gray-600">Full conversion with field detection</p>
+                <p className="text-sm text-muted-foreground">Full conversion with field detection</p>
               </button>
 
               <button
                 onClick={() => setProcessingMode('analyze')}
                 className={`p-4 rounded-lg border-2 text-left ${processingMode === 'analyze'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-muted-foreground/40'
                   }`}
               >
-                <Search className="w-6 h-6 text-blue-600 mb-2" />
+                <Search className="w-6 h-6 text-primary mb-2" />
                 <h3 className="font-medium">Analyze Form</h3>
-                <p className="text-sm text-gray-600">Analyze form structure and content</p>
+                <p className="text-sm text-muted-foreground">Analyze form structure and content</p>
               </button>
 
               <button
                 onClick={() => setProcessingMode('detect')}
                 className={`p-4 rounded-lg border-2 text-left ${processingMode === 'detect'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-muted-foreground/40'
                   }`}
               >
-                <Target className="w-6 h-6 text-blue-600 mb-2" />
+                <Target className="w-6 h-6 text-primary mb-2" />
                 <h3 className="font-medium">Detect Fields</h3>
-                <p className="text-sm text-gray-600">Automatic field detection only</p>
+                <p className="text-sm text-muted-foreground">Automatic field detection only</p>
               </button>
 
               <button
                 onClick={() => setProcessingMode('optimize')}
                 className={`p-4 rounded-lg border-2 text-left ${processingMode === 'optimize'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-muted-foreground/40'
                   }`}
               >
-                <Settings className="w-6 h-6 text-blue-600 mb-2" />
+                <Settings className="w-6 h-6 text-primary mb-2" />
                 <h3 className="font-medium">Optimize Fields</h3>
-                <p className="text-sm text-gray-600">Optimize field properties</p>
+                <p className="text-sm text-muted-foreground">Optimize field properties</p>
               </button>
             </div>
           </div>
 
           {/* Form Analysis Results */}
           {formAnalysis && processingMode === 'analyze' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Form Analysis Results</h2>
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Form Analysis Results</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-3">Form Information</h3>
+                  <h3 className="font-medium text-foreground mb-3">Form Information</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Form Type:</span>
+                      <span className="text-muted-foreground">Form Type:</span>
                       <span className="font-medium capitalize">{formAnalysis.formType}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Total Pages:</span>
+                      <span className="text-muted-foreground">Total Pages:</span>
                       <span className="font-medium">{formAnalysis.totalPages}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Confidence:</span>
+                      <span className="text-muted-foreground">Confidence:</span>
                       <span className={`font-medium ${getConfidenceColor(formAnalysis.confidence)}`}>
                         {Math.round(formAnalysis.confidence * 100)}%
                       </span>
@@ -357,12 +357,12 @@ const FormRecognitionPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-3">Recommendations</h3>
+                  <h3 className="font-medium text-foreground mb-3">Recommendations</h3>
                   <div className="space-y-2">
                     {formAnalysis.recommendations.map((rec, index) => (
                       <div key={index} className="flex items-start text-sm">
                         <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{rec}</span>
+                        <span className="text-foreground">{rec}</span>
                       </div>
                     ))}
                   </div>
@@ -373,23 +373,23 @@ const FormRecognitionPage: React.FC = () => {
 
           {/* Detected Fields */}
           {detectedFields.length > 0 && (processingMode === 'detect' || processingMode === 'optimize') && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Detected Fields</h2>
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Detected Fields</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {detectedFields.map((field, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div key={index} className="border border-border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium text-gray-900">{field.suggestedLabel}</h3>
+                      <h3 className="font-medium text-foreground">{field.suggestedLabel}</h3>
                       <span className={`text-xs px-2 py-1 rounded-full ${getConfidenceColor(field.confidence)} bg-opacity-10`}>
                         {getConfidenceText(field.confidence)} ({Math.round(field.confidence * 100)}%)
                       </span>
                     </div>
-                    <div className="space-y-1 text-sm text-gray-600">
+                    <div className="space-y-1 text-sm text-muted-foreground">
                       <div>Type: <span className="font-medium">{field.type}</span></div>
                       <div>Name: <span className="font-mono text-xs">{field.name}</span></div>
                       {field.validation && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           Validation: {Object.keys(field.validation).join(', ')}
                         </div>
                       )}
@@ -402,23 +402,23 @@ const FormRecognitionPage: React.FC = () => {
 
           {/* Optimized Fields */}
           {optimizedFields.length > 0 && processingMode === 'optimize' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Optimized Fields</h2>
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Optimized Fields</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {optimizedFields.map((field, index) => (
-                  <div key={index} className="border border-green-200 rounded-lg p-4 bg-green-50">
+                  <div key={index} className="border border-success rounded-lg p-4 bg-success/10">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium text-gray-900">{field.suggestedLabel}</h3>
-                      <span className="text-xs px-2 py-1 rounded-full text-green-600 bg-green-100">
+                      <h3 className="font-medium text-foreground">{field.suggestedLabel}</h3>
+                      <span className="text-xs px-2 py-1 rounded-full text-success bg-success/10">
                         Optimized
                       </span>
                     </div>
-                    <div className="space-y-1 text-sm text-gray-600">
+                      <div className="space-y-1 text-sm text-muted-foreground">
                       <div>Type: <span className="font-medium">{field.type}</span></div>
                       <div>Name: <span className="font-mono text-xs">{field.name}</span></div>
                       {field.improvements && (
-                        <div className="text-xs text-green-600">
+                        <div className="text-xs text-success">
                           Improvements: {Object.keys(field.improvements).join(', ')}
                         </div>
                       )}
@@ -430,13 +430,13 @@ const FormRecognitionPage: React.FC = () => {
           )}
 
           {/* Action Buttons */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
             <div className="flex flex-wrap gap-4">
               {processingMode === 'convert' && (
                 <button
                   onClick={handleConvertToFillable}
                   disabled={isProcessing || !selectedFile}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -451,7 +451,7 @@ const FormRecognitionPage: React.FC = () => {
                 <button
                   onClick={handleAnalyzeForm}
                   disabled={isAnalyzing || !selectedFile}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                 >
                   {isAnalyzing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -466,7 +466,7 @@ const FormRecognitionPage: React.FC = () => {
                 <button
                   onClick={handleDetectFields}
                   disabled={isDetecting || !selectedFile}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                 >
                   {isDetecting ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -481,7 +481,7 @@ const FormRecognitionPage: React.FC = () => {
                 <button
                   onClick={handleOptimizeFields}
                   disabled={isOptimizing || detectedFields.length === 0}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                 >
                   {isOptimizing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -495,7 +495,7 @@ const FormRecognitionPage: React.FC = () => {
               {resultFile && (
                 <button
                   onClick={downloadResult}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-success hover:bg-success/80"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Fillable Form
@@ -509,8 +509,8 @@ const FormRecognitionPage: React.FC = () => {
         <div className="space-y-6">
           {/* Optimization Options */}
           {processingMode === 'optimize' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Optimization Options</h2>
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Optimization Options</h2>
 
               <div className="space-y-4">
                 <label className="flex items-center">
@@ -518,9 +518,9 @@ const FormRecognitionPage: React.FC = () => {
                     type="checkbox"
                     checked={optimizationOptions.enhanceValidation}
                     onChange={(e) => setOptimizationOptions(prev => ({ ...prev, enhanceValidation: e.target.checked }))}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-primary border-border bg-background text-foreground rounded"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Enhance validation rules</span>
+                  <span className="ml-2 text-sm text-muted-foreground">Enhance validation rules</span>
                 </label>
 
                 <label className="flex items-center">
@@ -528,9 +528,9 @@ const FormRecognitionPage: React.FC = () => {
                     type="checkbox"
                     checked={optimizationOptions.optimizeNames}
                     onChange={(e) => setOptimizationOptions(prev => ({ ...prev, optimizeNames: e.target.checked }))}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-primary focus:ring-primary border-border bg-background text-foreground rounded"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Optimize field names</span>
+                  <span className="ml-2 text-sm text-muted-foreground">Optimize field names</span>
                 </label>
 
                 <label className="flex items-center">
@@ -538,9 +538,9 @@ const FormRecognitionPage: React.FC = () => {
                     type="checkbox"
                     checked={optimizationOptions.optimizePosition}
                     onChange={(e) => setOptimizationOptions(prev => ({ ...prev, optimizePosition: e.target.checked }))}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-primary border-border bg-background text-foreground rounded"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Optimize field positioning</span>
+                  <span className="ml-2 text-sm text-muted-foreground">Optimize field positioning</span>
                 </label>
 
                 <label className="flex items-center">
@@ -548,75 +548,75 @@ const FormRecognitionPage: React.FC = () => {
                     type="checkbox"
                     checked={optimizationOptions.improveLabels}
                     onChange={(e) => setOptimizationOptions(prev => ({ ...prev, improveLabels: e.target.checked }))}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-primary border-border bg-background text-foreground rounded"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Improve field labels</span>
+                    <span className="ml-2 text-sm text-muted-foreground">Improve field labels</span>
                 </label>
               </div>
             </div>
           )}
 
           {/* Features */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Features</h2>
 
             <div className="space-y-3">
-              <div className="flex items-center text-sm text-gray-600">
-                <Target className="w-4 h-4 mr-2 text-blue-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Target className="w-4 h-4 mr-2 text-primary" />
                 Automatic field detection
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Search className="w-4 h-4 mr-2 text-green-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Search className="w-4 h-4 mr-2 text-success" />
                 Form analysis
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Settings className="w-4 h-4 mr-2 text-purple-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Settings className="w-4 h-4 mr-2 text-primary" />
                 Field optimization
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Zap className="w-4 h-4 mr-2 text-orange-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Zap className="w-4 h-4 mr-2 text-primary" />
                 AI-powered conversion
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Shield className="w-4 h-4 mr-2 text-indigo-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Shield className="w-4 h-4 mr-2 text-primary" />
                 Smart validation
               </div>
             </div>
           </div>
 
           {/* Supported Form Types */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Supported Form Types</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Supported Form Types</h2>
 
             <div className="space-y-2">
-              <div className="flex items-center text-sm text-gray-600">
-                <FileText className="w-4 h-4 mr-2 text-blue-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <FileText className="w-4 h-4 mr-2 text-primary" />
                 Application forms
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Layout className="w-4 h-4 mr-2 text-green-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Layout className="w-4 h-4 mr-2 text-success" />
                 Surveys & questionnaires
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <PenTool className="w-4 h-4 mr-2 text-purple-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <PenTool className="w-4 h-4 mr-2 text-primary" />
                 Contracts & agreements
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <FileSpreadsheet className="w-4 h-4 mr-2 text-orange-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-primary" />
                 Invoices & receipts
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Smartphone className="w-4 h-4 mr-2 text-indigo-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                  <Smartphone className="w-4 h-4 mr-2 text-primary" />
                 General forms
               </div>
             </div>
           </div>
 
           {/* Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-muted border border-border bg-background text-foreground rounded-lg p-4">
             <div className="flex items-start">
-              <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
+              <Info className="w-5 h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-foreground">
                 <p className="font-medium mb-1">How it works:</p>
                 <p>Upload a static PDF form and our AI will automatically detect form fields, analyze the structure, and convert it into a fillable form with proper validation and optimization.</p>
               </div>

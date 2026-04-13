@@ -232,26 +232,26 @@ const RemoveUnusedObjects: React.FC = () => {
   // };
 
   const getOptimizationColor = (potential: number) => {
-    if (potential > 0.3) return 'text-green-600 bg-green-100';
-    if (potential > 0.1) return 'text-yellow-600 bg-yellow-100';
-    return 'text-gray-600 bg-gray-100';
+    if (potential > 0.3) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300';
+    if (potential > 0.1) return 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300';
+    return 'bg-muted text-muted-foreground';
   };
 
   return (
-    <div className="mx-auto p-2 space-y-6">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background p-2 text-foreground">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="border-b border-border bg-background shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Remove Unused Object</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Remove Unused Object</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Clean up unused PDF objects and resources for better performance and smaller file sizes
               </p>
             </div>
@@ -326,14 +326,14 @@ const RemoveUnusedObjects: React.FC = () => {
 
                     {batchFiles.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700">
+                        <p className="text-sm font-medium text-foreground">
                           Selected Files ({batchFiles.length}):
                         </p>
                         <div className="max-h-32 overflow-y-auto space-y-1">
                           {batchFiles.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <span className="text-sm text-gray-600">{file.name}</span>
-                              <span className="text-xs text-gray-500">
+                            <div key={index} className="flex items-center justify-between rounded bg-muted p-2">
+                              <span className="text-sm text-muted-foreground">{file.name}</span>
+                              <span className="text-xs text-muted-foreground">
                                 {removeUnusedObjectsService.formatFileSize(file.size)}
                               </span>
                             </div>
@@ -345,13 +345,13 @@ const RemoveUnusedObjects: React.FC = () => {
                 )}
 
                 {selectedFile && (
-                  <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="rounded-lg border border-primary/25 bg-primary/10 p-4 dark:border-primary/35 dark:bg-primary/15">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <FileText className="w-5 h-5 text-blue-600 mr-2" />
-                        <span className="font-medium text-blue-900">{selectedFile.name}</span>
+                        <FileText className="w-5 h-5 text-primary mr-2" />
+                        <span className="font-medium text-foreground">{selectedFile.name}</span>
                       </div>
-                      <div className="text-sm text-blue-700">
+                      <div className="text-sm text-muted-foreground">
                         {removeUnusedObjectsService.formatFileSize(selectedFile.size)}
                       </div>
                     </div>
@@ -375,65 +375,65 @@ const RemoveUnusedObjects: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{analysis.totalObjects}</div>
-                    <div className="text-sm text-gray-600">Total Objects</div>
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground">{analysis.totalObjects}</div>
+                    <div className="text-sm text-muted-foreground">Total Objects</div>
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{analysis.totalPages}</div>
-                    <div className="text-sm text-gray-600">Pages</div>
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground">{analysis.totalPages}</div>
+                    <div className="text-sm text-muted-foreground">Pages</div>
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{analysis.unusedObjects}</div>
-                    <div className="text-sm text-gray-600">Unused Objects</div>
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground">{analysis.unusedObjects}</div>
+                    <div className="text-sm text-muted-foreground">Unused Objects</div>
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{analysis.compressedObjects}</div>
-                    <div className="text-sm text-gray-600">Compressed</div>
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground">{analysis.compressedObjects}</div>
+                    <div className="text-sm text-muted-foreground">Compressed</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900">Structure Elements</h4>
+                    <h4 className="font-medium text-foreground">Structure Elements</h4>
                     <div className="space-y-1">
                       <div className="flex items-center text-sm">
-                        <BookOpen className="w-4 h-4 mr-2 text-blue-600" />
+                        <BookOpen className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                         Bookmarks: {analysis.structure.hasBookmarks ? 'Yes' : 'No'}
                       </div>
                       <div className="flex items-center text-sm">
-                        <FileImage className="w-4 h-4 mr-2 text-green-600" />
+                        <FileImage className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />
                         Images: {analysis.structure.hasImages ? 'Yes' : 'No'}
                       </div>
                       <div className="flex items-center text-sm">
-                        <Type className="w-4 h-4 mr-2 text-purple-600" />
+                        <Type className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />
                         Fonts: {analysis.structure.hasFonts ? 'Yes' : 'No'}
                       </div>
                       <div className="flex items-center text-sm">
-                        <Database className="w-4 h-4 mr-2 text-orange-600" />
+                        <Database className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />
                         Metadata: {analysis.structure.hasMetadata ? 'Yes' : 'No'}
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900">Optimization Potential</h4>
+                    <h4 className="font-medium text-foreground">Optimization Potential</h4>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Size Reduction:</span>
+                        <span className="text-sm text-muted-foreground">Size Reduction:</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOptimizationColor(analysis.optimizationPotential.estimatedSizeReduction)}`}>
                           {(analysis.optimizationPotential.estimatedSizeReduction * 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Unused Objects:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${analysis.unusedObjects > 0 ? 'text-green-600 bg-green-100' : 'text-gray-600 bg-gray-100'}`}>
+                        <span className="text-sm text-muted-foreground">Unused Objects:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${analysis.unusedObjects > 0 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-muted text-muted-foreground'}`}>
                           {analysis.unusedObjects > 0 ? 'Can Remove' : 'None Found'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Structure:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${analysis.optimizationPotential.canOptimizeStructure ? 'text-yellow-600 bg-yellow-100' : 'text-gray-600 bg-gray-100'}`}>
+                        <span className="text-sm text-muted-foreground">Structure:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${analysis.optimizationPotential.canOptimizeStructure ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' : 'bg-muted text-muted-foreground'}`}>
                           {analysis.optimizationPotential.canOptimizeStructure ? 'Can Optimize' : 'Already Optimal'}
                         </span>
                       </div>
@@ -444,21 +444,21 @@ const RemoveUnusedObjects: React.FC = () => {
                 {/* Recommendations */}
                 {recommendations.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="font-medium text-gray-900">Recommendations</h4>
+                    <h4 className="font-medium text-foreground">Recommendations</h4>
                     {recommendations.map((rec, index) => (
-                      <div key={index} className={`p-3 rounded-lg border-l-4 ${rec.priority === 'high' ? 'border-red-500 bg-red-50' :
-                        rec.priority === 'medium' ? 'border-yellow-500 bg-yellow-50' :
-                          'border-green-500 bg-green-50'
+                      <div key={index} className={`p-3 rounded-lg border-l-4 ${rec.priority === 'high' ? 'border-red-500 bg-red-50 dark:bg-red-950/35' :
+                        rec.priority === 'medium' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/35' :
+                          'border-green-500 bg-green-50 dark:bg-green-950/35'
                         }`}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h5 className="font-medium text-gray-900">{rec.title}</h5>
-                            <p className="text-sm text-gray-600 mt-1">{rec.description}</p>
+                            <h5 className="font-medium text-foreground">{rec.title}</h5>
+                            <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                             <div className="flex items-center mt-2 space-x-4">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${removeUnusedObjectsService.getPriorityColor(rec.priority)}`}>
                                 {rec.priority} Priority
                               </span>
-                              <span className="text-sm text-gray-600">
+                              <span className="text-sm text-muted-foreground">
                                 Est. Reduction: {rec.estimatedReduction}
                               </span>
                             </div>
@@ -476,7 +476,7 @@ const RemoveUnusedObjects: React.FC = () => {
           {result && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-green-600">
+                <CardTitle className="flex items-center text-emerald-600 dark:text-emerald-400">
                   <CheckCircle className="w-5 h-5 mr-2" />
                   Cleanup Complete
                 </CardTitle>
@@ -487,29 +487,29 @@ const RemoveUnusedObjects: React.FC = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-900">
+                    <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-950/35 rounded-lg">
+                      <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-200">
                         {removeUnusedObjectsService.formatFileSize(result.originalSize)}
                       </div>
-                      <div className="text-sm text-green-600">Original Size</div>
+                      <div className="text-sm text-emerald-700 dark:text-emerald-300">Original Size</div>
                     </div>
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-900">
+                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/35 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
                         {removeUnusedObjectsService.formatFileSize(result.cleanedSize)}
                       </div>
-                      <div className="text-sm text-blue-600">New Size</div>
+                      <div className="text-sm text-blue-700 dark:text-blue-300">New Size</div>
                     </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-900">
+                    <div className="text-center p-3 bg-purple-50 dark:bg-purple-950/35 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-900 dark:text-purple-200">
                         {result.sizeReductionPercent}
                       </div>
-                      <div className="text-sm text-purple-600">Reduction</div>
+                      <div className="text-sm text-purple-700 dark:text-purple-300">Reduction</div>
                     </div>
-                    <div className="text-center p-3 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-900">
+                    <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/35 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-900 dark:text-orange-200">
                         {result.processingTime}ms
                       </div>
-                      <div className="text-sm text-orange-600">Processing</div>
+                      <div className="text-sm text-orange-700 dark:text-orange-300">Processing</div>
                     </div>
                   </div>
 
@@ -543,10 +543,10 @@ const RemoveUnusedObjects: React.FC = () => {
               <CardContent>
                 <div className="space-y-3">
                   {batchResults.map((result, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">{result.filename}</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="font-medium text-foreground">{result.filename}</div>
+                        <div className="text-sm text-muted-foreground">
                           {removeUnusedObjectsService.formatFileSize(result.originalSize)} → {removeUnusedObjectsService.formatFileSize(result.cleanedSize)} ({result.sizeReductionPercent} reduction)
                         </div>
                       </div>
@@ -567,9 +567,9 @@ const RemoveUnusedObjects: React.FC = () => {
 
           {/* Error Display */}
           {error && (
-            <Card className="border-red-200">
+            <Card className="border-red-200 dark:border-red-900">
               <CardContent className="pt-6">
-                <div className="flex items-center text-red-600">
+                <div className="flex items-center text-red-600 dark:text-red-400">
                   <AlertCircle className="w-5 h-5 mr-2" />
                   <span className="font-medium">Error: {error}</span>
                 </div>
@@ -597,19 +597,19 @@ const RemoveUnusedObjects: React.FC = () => {
                   <div
                     key={preset.id}
                     className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${selectedPreset === preset.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/35'
+                      : 'border-border hover:border-muted-foreground/40'
                       }`}
                     onClick={() => applyPreset(preset.id)}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{preset.name}</h4>
+                      <h4 className="font-medium text-foreground">{preset.name}</h4>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${removeUnusedObjectsService.getRiskLevelColor(preset.riskLevel)}`}>
                         {preset.riskLevel}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{preset.description}</p>
-                    <div className="text-sm font-medium text-blue-600">
+                    <p className="text-sm text-muted-foreground mb-2">{preset.description}</p>
+                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
                       Est. Reduction: {preset.estimatedReduction}
                     </div>
                   </div>
@@ -632,72 +632,72 @@ const RemoveUnusedObjects: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Object Analysis</span>
+                  <span className="text-sm font-medium text-foreground">Object Analysis</span>
                   <input
                     type="checkbox"
                     checked={cleanupSettings.objectAnalysis}
                     onChange={(e) => handleSettingChange('objectAnalysis', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Resource Cleanup</span>
+                  <span className="text-sm font-medium text-foreground">Resource Cleanup</span>
                   <input
                     type="checkbox"
                     checked={cleanupSettings.resourceCleanup}
                     onChange={(e) => handleSettingChange('resourceCleanup', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Structure Optimization</span>
+                  <span className="text-sm font-medium text-foreground">Structure Optimization</span>
                   <input
                     type="checkbox"
                     checked={cleanupSettings.structureOptimization}
                     onChange={(e) => handleSettingChange('structureOptimization', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Aggressive Cleanup</span>
+                  <span className="text-sm font-medium text-foreground">Aggressive Cleanup</span>
                   <input
                     type="checkbox"
                     checked={cleanupSettings.aggressiveCleanup}
                     onChange={(e) => handleSettingChange('aggressiveCleanup', e.target.checked)}
-                    className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    className="h-4 w-4 rounded border-border bg-background text-destructive focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Preserve Metadata</span>
+                  <span className="text-sm font-medium text-foreground">Preserve Metadata</span>
                   <input
                     type="checkbox"
                     checked={cleanupSettings.preserveMetadata}
                     onChange={(e) => handleSettingChange('preserveMetadata', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Preserve Annotations</span>
+                  <span className="text-sm font-medium text-foreground">Preserve Annotations</span>
                   <input
                     type="checkbox"
                     checked={cleanupSettings.preserveAnnotations}
                     onChange={(e) => handleSettingChange('preserveAnnotations', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Preserve Bookmarks</span>
+                  <span className="text-sm font-medium text-foreground">Preserve Bookmarks</span>
                   <input
                     type="checkbox"
                     checked={cleanupSettings.preserveBookmarks}
                     onChange={(e) => handleSettingChange('preserveBookmarks', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
                 </div>
               </div>
@@ -770,12 +770,12 @@ const RemoveUnusedObjects: React.FC = () => {
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">Progress</span>
-                    <span className="text-gray-600">{batchProgress}%</span>
+                    <span className="text-foreground">Progress</span>
+                    <span className="text-muted-foreground">{batchProgress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${batchProgress}%` }}
                     ></div>
                   </div>

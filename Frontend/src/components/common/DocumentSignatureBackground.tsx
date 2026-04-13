@@ -72,7 +72,7 @@ const DocumentSignatureBackground: React.FC = () => {
         {bgItems.map((item) => (
           <div
             key={item.id}
-            className="absolute animate-float text-gray-400/20"
+            className="absolute animate-float text-muted-foreground/20"
             style={{
               top: item.top,
               left: item.left,

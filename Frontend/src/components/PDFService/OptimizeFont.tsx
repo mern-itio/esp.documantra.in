@@ -246,18 +246,18 @@ const OptimizeFont: React.FC = () => {
   return (
     <div className="mx-auto p-2 space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Optimize Fonts</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Optimize Fonts</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Optimize font usage and embedding in your PDF documents. Reduce file size while maintaining quality and ensuring compatibility.
               </p>
             </div>
@@ -267,35 +267,35 @@ const OptimizeFont: React.FC = () => {
 
       {/* File Upload */}
       {!file && (
-        <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
+          <div className="bg-card rounded-lg border-2 border-dashed border-border p-8 text-center">
           <div {...getRootProps()} className="cursor-pointer">
             <input {...getInputProps()} />
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
             <div className="mt-4">
               {isDragActive ? (
-                <p className="text-blue-600">Drop the PDF file here...</p>
+                <p className="text-primary">Drop the PDF file here...</p>
               ) : (
-                <p className="text-gray-600">
-                  Drag and drop a PDF file here, or <span className="text-blue-600">click to select</span>
+                <p className="text-muted-foreground">
+                  Drag and drop a PDF file here, or <span className="text-primary">click to select</span>
                 </p>
               )}
             </div>
-            <p className="text-sm text-gray-500 mt-2">Supports PDF files up to 2MB</p>
+            <p className="text-sm text-muted-foreground mt-2">Supports PDF files up to 2MB</p>
           </div>
         </div>
       )}
 
 
       {file && (
-        <div className="bg-white rounded-lg border p-4 flex items-center gap-3 justify-between">
+        <div className="bg-card rounded-lg border p-4 flex items-center gap-3 justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+            <FileText className="w-5 h-5 text-primary flex-shrink-0" />
             <div className="min-w-0">
               <span className="font-medium truncate block max-w-[60vw]">{file.name}</span>
-              <span className="text-sm text-gray-500">{formatFileSize(file.size)}</span>
+              <span className="text-sm text-muted-foreground">{formatFileSize(file.size)}</span>
             </div>
             {isAnalyzing && (
-              <span className="flex items-center gap-2 ml-4 text-blue-600">
+              <span className="flex items-center gap-2 ml-4 text-primary">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Analyzing fonts...</span>
               </span>
@@ -310,7 +310,7 @@ const OptimizeFont: React.FC = () => {
               setShowPreview(false);
               setPreviewData(null);
             }}
-            className="p-2 rounded hover:bg-gray-100 text-gray-500"
+            className="p-2 rounded hover:bg-muted text-muted-foreground"
             title="Remove file"
           >
             <X className="w-5 h-5" />
@@ -320,47 +320,47 @@ const OptimizeFont: React.FC = () => {
 
       {/* Font Analysis Results - show only after a file is selected and analysis available */}
       {file && fontAnalysis && (
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-card rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-blue-600" />
+            <BarChart3 className="w-5 h-5 text-primary" />
             Font Analysis Results
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">
                 {result ? result.fontOptimizationResults.fontsProcessed : fontAnalysis.totalFonts}
               </div>
-              <div className="text-sm text-gray-600">Total Fonts</div>
+                <div className="text-sm text-muted-foreground">Total Fonts</div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">
                 {result ? result.fontOptimizationResults.fontsEmbedded : fontAnalysis.embeddedFonts}
               </div>
-              <div className="text-sm text-gray-600">Embedded</div>
+              <div className="text-sm text-muted-foreground">Embedded</div>
             </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">
                 {result ? result.fontOptimizationResults.fontsSubsetted : fontAnalysis.subsettedFonts}
               </div>
-              <div className="text-sm text-gray-600">Subsetted</div>
+              <div className="text-sm text-muted-foreground">Subsetted</div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{getOptimizationScore()}%</div>
-              <div className="text-sm text-gray-600">Optimization Score</div>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">{getOptimizationScore()}%</div>
+              <div className="text-sm text-muted-foreground">Optimization Score</div>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total Font Size:</span>
+              <span className="text-sm text-muted-foreground">Total Font Size:</span>
               <span className="font-medium">
                 {result ? formatFileSize(result.fontOptimizationResults.totalFontSizeBefore) : formatFileSize(fontAnalysis.totalFontSize)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Estimated Size Reduction:</span>
-              <span className="font-medium text-green-600">
+              <span className="text-sm text-muted-foreground">Estimated Size Reduction:</span>
+              <span className="font-medium text-primary">
                 {formatFileSize(fontAnalysis.optimizationPotential.estimatedSizeReduction)}
               </span>
             </div>
@@ -370,15 +370,15 @@ const OptimizeFont: React.FC = () => {
 
       {/* Optimization Options - only after file upload */}
       {file && (
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-card rounded-lg border p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Settings className="w-5 h-5 text-blue-600" />
+              <Settings className="w-5 h-5 text-primary" />
               Optimization Options
             </h3>
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              className="text-primary hover:text-primary-foreground text-sm font-medium"
             >
               {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
             </button>
@@ -387,13 +387,13 @@ const OptimizeFont: React.FC = () => {
           {/* Presets */}
           {presets.length > 0 && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                 Optimization Presets
               </label>
               <select
                 value={selectedPreset}
                 onChange={(e) => applyPreset(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="bg-card w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 <option value="">Select a preset...</option>
                 {presets.map((preset) => (
@@ -413,7 +413,7 @@ const OptimizeFont: React.FC = () => {
                   type="checkbox"
                   checked={formData.fontSubsetting}
                   onChange={(e) => setFormData({ ...formData, fontSubsetting: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-border text-primary focus:ring-primary"
                 />
                 <span className="text-sm font-medium">Font Subsetting</span>
               </label>
@@ -426,7 +426,7 @@ const OptimizeFont: React.FC = () => {
                   type="checkbox"
                   checked={formData.fontOptimization}
                   onChange={(e) => setFormData({ ...formData, fontOptimization: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-border text-primary focus:ring-primary"
                 />
                 <span className="text-sm font-medium">Font Optimization</span>
               </label>
@@ -434,13 +434,13 @@ const OptimizeFont: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Embedding Control
               </label>
               <select
                 value={formData.embeddingControl}
                 onChange={(e) => setFormData({ ...formData, embeddingControl: e.target.value as any })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="bg-card w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 <option value="full">Full Embedding</option>
                 <option value="subset">Subset Embedding</option>
@@ -455,7 +455,7 @@ const OptimizeFont: React.FC = () => {
               {/* Font Subsetting Options */}
               <div>
                 <h4 className="text-md font-medium mb-3 flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-blue-600" />
+                  <Palette className="w-4 h-4 text-primary" />
                   Font Subsetting Options
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -471,7 +471,7 @@ const OptimizeFont: React.FC = () => {
                             [key]: e.target.checked
                           }
                         })}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-border text-primary focus:ring-primary"
                       />
                       <span className="text-sm">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
                     </label>
@@ -482,7 +482,7 @@ const OptimizeFont: React.FC = () => {
               {/* Font Optimization Options */}
               <div>
                 <h4 className="text-md font-medium mb-3 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-blue-600" />
+                  <Zap className="w-4 h-4 text-primary" />
                   Font Optimization Options
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -498,7 +498,7 @@ const OptimizeFont: React.FC = () => {
                             [key]: e.target.checked
                           }
                         })}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-border text-primary focus:ring-primary"
                       />
                       <span className="text-sm">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
                     </label>
@@ -509,7 +509,7 @@ const OptimizeFont: React.FC = () => {
               {/* Embedding Control Options */}
               <div>
                 <h4 className="text-md font-medium mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-blue-600" />
+                  <Shield className="w-4 h-4 text-primary" />
                   Embedding Control Options
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -525,7 +525,7 @@ const OptimizeFont: React.FC = () => {
                             [key]: e.target.checked
                           }
                         })}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-border text-primary focus:ring-primary"
                       />
                       <span className="text-sm">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
                     </label>
@@ -536,13 +536,13 @@ const OptimizeFont: React.FC = () => {
               {/* Output Format and Quality */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                     Output Format
                   </label>
                   <select
                     value={formData.outputFormat}
                     onChange={(e) => setFormData({ ...formData, outputFormat: e.target.value as any })}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="pdf">PDF</option>
                     <option value="pdfa">PDF/A</option>
@@ -551,13 +551,13 @@ const OptimizeFont: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                     Quality
                   </label>
                   <select
                     value={formData.quality}
                     onChange={(e) => setFormData({ ...formData, quality: e.target.value as any })}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -577,7 +577,7 @@ const OptimizeFont: React.FC = () => {
           <button
             onClick={previewOptimization}
             disabled={!file || isProcessing}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-3 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Info className="w-4 h-4" />
             Preview Results
@@ -586,7 +586,7 @@ const OptimizeFont: React.FC = () => {
           <button
             onClick={handleOptimize}
             disabled={!file || isProcessing}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isProcessing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -601,7 +601,7 @@ const OptimizeFont: React.FC = () => {
       {/* Preview Modal */}
       {showPreview && previewData && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="bg-card rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-semibold mb-4">Optimization Preview</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -610,7 +610,7 @@ const OptimizeFont: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span>Size Reduction:</span>
-                <span className="font-medium text-green-600">{formatFileSize(previewData.estimatedSizeReduction)}</span>
+                <span className="font-medium text-primary">{formatFileSize(previewData.estimatedSizeReduction)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Processing Time:</span>
@@ -618,9 +618,9 @@ const OptimizeFont: React.FC = () => {
               </div>
             </div>
             {previewData.warnings.length > 0 && (
-              <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                <h4 className="font-medium text-yellow-800 mb-2">Warnings:</h4>
-                <ul className="text-sm text-yellow-700 space-y-1">
+                <div className="mt-4 p-3 bg-highlight rounded-lg">
+                <h4 className="font-medium text-highlight-foreground mb-2">Warnings:</h4>
+                <ul className="text-sm text-highlight-foreground space-y-1">
                   {previewData.warnings.map((warning: string, index: number) => (
                     <li key={index}>• {warning}</li>
                   ))}
@@ -630,7 +630,7 @@ const OptimizeFont: React.FC = () => {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setShowPreview(false)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="flex-1 px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80"
               >
                 Close
               </button>
@@ -639,7 +639,7 @@ const OptimizeFont: React.FC = () => {
                   setShowPreview(false);
                   handleOptimize();
                 }}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80"
               >
                 Proceed
               </button>
@@ -650,38 +650,38 @@ const OptimizeFont: React.FC = () => {
 
       {/* Results */}
       {result && (
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-card rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+            <CheckCircle className="w-5 h-5 text-primary" />
             Optimization Results
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{formatFileSize(result.fileSize)}</div>
-              <div className="text-sm text-gray-600">Final Size</div>
+              <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">{formatFileSize(result.fileSize)}</div>
+              <div className="text-sm text-muted-foreground">Final Size</div>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{formatFileSize(result.sizeReduction)}</div>
-              <div className="text-sm text-gray-600">Size Reduced</div>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">{formatFileSize(result.sizeReduction)}</div>
+              <div className="text-sm text-muted-foreground">Size Reduced</div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{result.compressionRatio}</div>
-              <div className="text-sm text-gray-600">Compression Ratio</div>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">{result.compressionRatio}</div>
+              <div className="text-sm text-muted-foreground">Compression Ratio</div>
             </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{result.totalPages}</div>
-              <div className="text-sm text-gray-600">Total Pages</div>
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">{result.totalPages}</div>
+              <div className="text-sm text-muted-foreground">Total Pages</div>
             </div>
           </div>
 
           {/* Warning if file size increased */}
           {result && result.sizeReduction < 0 && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-2 text-yellow-800">
+            <div className="mb-4 p-3 bg-highlight border border-highlight-foreground rounded-lg">
+              <div className="flex items-center gap-2 text-highlight-foreground">
                 <span className="text-sm font-medium">⚠️ File Size Increased</span>
               </div>
-              <p className="text-sm text-yellow-700 mt-1">
+              <p className="text-sm text-highlight-foreground mt-1">
                 The optimization process increased the file size by {formatFileSize(Math.abs(result.sizeReduction))}.
                 This can happen when fonts are embedded or when additional optimization metadata is added.
               </p>
@@ -694,29 +694,29 @@ const OptimizeFont: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Fonts Processed:</span>
+                  <span className="text-sm text-muted-foreground">Fonts Processed:</span>
                   <span className="font-medium">{result.fontOptimizationResults.fontsProcessed}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Fonts Subsetted:</span>
+                  <span className="text-sm text-muted-foreground">Fonts Subsetted:</span>
                   <span className="font-medium">{result.fontOptimizationResults.fontsSubsetted}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Fonts Optimized:</span>
+                    <span className="text-sm text-muted-foreground">Fonts Optimized:</span>
                   <span className="font-medium">{result.fontOptimizationResults.fontsOptimized}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Fonts Embedded:</span>
+                  <span className="text-sm text-muted-foreground">Fonts Embedded:</span>
                   <span className="font-medium">{result.fontOptimizationResults.fontsEmbedded}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Font Size Reduction:</span>
-                  <span className="font-medium text-green-600">{formatFileSize(result.fontOptimizationResults.fontSizeReduction)}</span>
+                  <span className="text-sm text-muted-foreground">Font Size Reduction:</span>
+                  <span className="font-medium text-primary">{formatFileSize(result.fontOptimizationResults.fontSizeReduction)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Font Compression:</span>
+                  <span className="text-sm text-muted-foreground">Font Compression:</span>
                   <span className="font-medium">{result.fontOptimizationResults.fontCompressionRatio}</span>
                 </div>
               </div>
@@ -726,7 +726,7 @@ const OptimizeFont: React.FC = () => {
           <div className="flex justify-center">
             <button
               onClick={handleDownload}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               Download Optimized PDF
@@ -736,12 +736,12 @@ const OptimizeFont: React.FC = () => {
       )}
 
       {!file && (
-        <div className="bg-blue-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
+        <div className="bg-muted rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             <Info className="w-5 h-5" />
             About Font Optimization
           </h3>
-          <div className="text-blue-800 space-y-2 text-sm">
+          <div className="text-foreground space-y-2 text-sm">
             <p>
               <strong>Font Subsetting:</strong> Reduces file size by including only the characters that are actually used in your document.
             </p>

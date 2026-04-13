@@ -15,11 +15,11 @@ import {
   Loader2,
   ChevronRight,
 } from 'lucide-react';
-import type { CreateOrganizationRequest } from '../../types/organization';
+import type { CreateOrganizationRequest, Organization } from '../../types/organization';
 import { organizationApi } from '../../services/apiHelper';
 
 interface CreateOrganizationFormProps {
-  onSuccess?: (organization: any) => void;
+  onSuccess?: (organization: Organization) => void;
 }
 
 const FEATURES = [
@@ -80,8 +80,8 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
 
   const validateAll = (): boolean => {
     const nextErrors: { [key: string]: string } = {};
-    ['name', 'logo', 'website', 'gst'].forEach((field) => {
-      const error = validateField(field, (formData as any)[field] || '');
+    (['name', 'logo', 'website', 'gst'] as const).forEach((field) => {
+      const error = validateField(field, formData[field] || '');
       if (error) nextErrors[field] = error;
     });
     setErrors(nextErrors);
@@ -123,9 +123,10 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
       } else {
         setTimeout(() => navigate('/organizations'), 2000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
       setFormError(
-        err.response?.data?.message || err.message || 'Failed to create organization. Please try again.'
+        e.response?.data?.message || e.message || 'Failed to create organization. Please try again.'
       );
     } finally {
       setIsLoading(false);
@@ -138,7 +139,7 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
 
   return (
     <div className="w-full mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col lg:flex-row min-h-[580px]">
+      <div className="bg-card text-card-foreground rounded-2xl shadow-xl border border-border overflow-hidden flex flex-col lg:flex-row min-h-[580px]">
 
         {/* ── Left Panel ── */}
         <div
@@ -201,25 +202,25 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
 
           {/* Header */}
           <div className="mb-8">
-            <p className="text-xs font-semibold text-purple-600 uppercase tracking-widest mb-1">New Organization</p>
-            <h1 className="text-2xl font-bold text-gray-900">Organization Details</h1>
-            <p className="text-gray-500 text-sm mt-1">Fill in the information below to create your organization profile.</p>
+            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-1">New Organization</p>
+            <h1 className="text-2xl font-bold text-foreground">Organization Details</h1>
+            <p className="text-muted-foreground text-sm mt-1">Fill in the information below to create your organization profile.</p>
           </div>
 
           {/* Alerts */}
           {success && (
-            <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-emerald-800">Organization created!</p>
-                <p className="text-xs text-emerald-700 mt-0.5">Redirecting you to your organizations…</p>
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Organization created!</p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">Redirecting you to your organizations…</p>
               </div>
             </div>
           )}
           {formError && (
-            <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{formError}</p>
+            <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 dark:bg-red-950/40 dark:border-red-900">
+              <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700 dark:text-red-300">{formError}</p>
             </div>
           )}
 
@@ -290,7 +291,7 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
                 </div>
 
                 {/* Logo preview / placeholder */}
-                <div className="w-12 h-12 rounded-xl border-2 border-dashed border-gray-200 flex-shrink-0 overflow-hidden flex items-center justify-center bg-gray-50">
+                <div className="w-12 h-12 rounded-xl border-2 border-dashed border-border flex-shrink-0 overflow-hidden flex items-center justify-center bg-muted">
                   {logoPreview ? (
                     <img
                       src={logoPreview}
@@ -299,9 +300,9 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
                       onError={() => setLogoPreview(null)}
                     />
                   ) : initials ? (
-                    <span className="text-sm font-bold text-purple-700 select-none">{initials}</span>
+                    <span className="text-sm font-bold text-primary select-none">{initials}</span>
                   ) : (
-                    <Building2 className="w-5 h-5 text-gray-300" />
+                    <Building2 className="w-5 h-5 text-muted-foreground/50" />
                   )}
                 </div>
               </div>
@@ -315,7 +316,7 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="px-5 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                className="px-5 py-2.5 text-sm font-semibold text-foreground bg-muted rounded-xl hover:bg-muted/80 transition-colors"
               >
                 Cancel
               </button>
@@ -325,14 +326,9 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
                 disabled={isLoading || success}
                 className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                   isLoading || success
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'text-white shadow-lg hover:shadow-xl hover:opacity-95 active:scale-[0.98]'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                    : 'bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:bg-primary/90 active:scale-[0.98]'
                 }`}
-                style={
-                  isLoading || success
-                    ? {}
-                    : { background: 'linear-gradient(135deg, #260559 0%, #4c1d95 100%)' }
-                }
               >
                 {isLoading ? (
                   <>
@@ -356,7 +352,7 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
           </form>
 
           {/* Footer note */}
-          <p className="text-xs text-gray-400 mt-6 flex items-center gap-1.5">
+          <p className="text-xs text-muted-foreground mt-6 flex items-center gap-1.5">
             <ChevronRight className="w-3 h-3" />
             You can verify your organization after creation to unlock additional features.
           </p>
@@ -379,11 +375,11 @@ interface FieldWrapperProps {
 const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, required, hint, error, children }) => (
   <div>
     <div className="flex items-center justify-between mb-1.5">
-      <label className="text-sm font-semibold text-gray-700">
+      <label className="text-sm font-semibold text-foreground">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
-      {hint && <span className="text-xs text-gray-400">{hint}</span>}
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
     {children}
     {error && (
@@ -404,17 +400,17 @@ const InputBase: React.FC<InputBaseProps> = ({ icon, hasError, className, ...pro
   <div className="relative group">
     <span
       className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-        hasError ? 'text-red-400' : 'text-gray-400 group-focus-within:text-purple-700'
+        hasError ? 'text-red-400' : 'text-muted-foreground group-focus-within:text-primary'
       }`}
     >
       {icon}
     </span>
     <input
       {...props}
-      className={`w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border rounded-xl transition-all duration-200 outline-none focus:bg-white ${
+      className={`w-full pl-10 pr-4 py-2.5 text-sm bg-muted/50 border rounded-xl transition-all duration-200 outline-none text-foreground placeholder:text-muted-foreground focus:bg-background ${
         hasError
-          ? 'border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100'
-          : 'border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-100'
+          ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+          : 'border-border hover:border-border/80 focus:border-primary focus:ring-2 focus:ring-primary/20'
       } ${className ?? ''}`}
     />
   </div>

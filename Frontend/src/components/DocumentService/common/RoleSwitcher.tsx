@@ -13,21 +13,21 @@ const roleConfig: Record<UserRole, {
   regular: {
     label: 'Regular User',
     icon: User,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100'
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
   },
   team_admin: {
     label: 'Team Admin',
     icon: Shield,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100'
+    color: 'text-primary',
+    bgColor: 'bg-primary/10 dark:bg-primary/20',
   },
   super_admin: {
     label: 'Super Admin',
     icon: Crown,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-100'
-  }
+    color: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-amber-500/10 dark:bg-amber-500/20',
+  },
 };
 
 export function RoleSwitcher() {
@@ -50,7 +50,7 @@ export function RoleSwitcher() {
           className="w-8 h-8 rounded-full"
         />
         <div className="hidden sm:block">
-          <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
+          <p className="text-sm font-medium text-foreground">{currentUser.name}</p>
           <div className="flex items-center space-x-1">
             <CurrentIcon className={cn("w-3 h-3", currentRole.color)} />
             <p className={cn("text-xs font-medium", currentRole.color)}>
@@ -61,7 +61,7 @@ export function RoleSwitcher() {
       </div>
 
       {/* Role Switcher - For Testing */}
-      <div className="flex items-center space-x-1 p-1 bg-gray-100 rounded-lg">
+      <div className="flex items-center space-x-1 p-1 bg-muted rounded-lg border border-border/60">
         {Object.entries(roleConfig).map(([role, config]) => {
           const Icon = config.icon;
           const isActive = currentUser.role === role;
@@ -74,7 +74,7 @@ export function RoleSwitcher() {
               className={cn(
                 "h-8 px-2",
                 isActive && "shadow-sm",
-                !isActive && "hover:bg-white"
+                !isActive && "hover:bg-background"
               )}
               onClick={() => setCurrentUser({ ...currentUser, role: role as UserRole })}
               title={config.label}

@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { X, Users, MessageCircle, GitBranch, Workflow, Brain } from 'lucide-react';
-import type { Document } from '../../common/types';
+import type { Document, SharePermission } from '../../common/types';
 import { documentAPI, commentAPI, versionAPI, workflowAPI, documentAnalysisAPI } from '../../../services/api';
-import type { DocumentComment, CollaborativeUser } from '../../common/types/collaboration';
+import type {
+  DocumentComment,
+  CollaborativeUser,
+  DocumentVersion,
+  DocumentWorkflow,
+  DocumentAnalysis,
+} from '../../common/types/collaboration';
 import { useAuth } from '../../AuthService/AuthContext';
 
 import { Button } from '../ui/button';
@@ -32,8 +38,8 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(true);
-  const [versions, setVersions] = useState<any[]>([]);
-  const [workflows, setWorkflows] = useState<any[]>([]);
+  const [versions, setVersions] = useState<DocumentVersion[]>([]);
+  const [workflows, setWorkflows] = useState<DocumentWorkflow[]>([]);
   // const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(true);
   // const [isLoadingVersions, setIsLoadingVersions] = useState(true);
   
@@ -82,8 +88,8 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
     }
 
     // Find the user's share entry
-    const userShare = document.sharedWith.find((share: any) => 
-      share.userId === user.email || share.email === user.email
+    const userShare = document.sharedWith.find(
+      (share: SharePermission) => share.userId === user.email || share.email === user.email
     );
 
     // console.log('🔍 User share entry found:', userShare);
@@ -138,7 +144,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   // console.log('🔍 Active users (shared collaborators):', activeUsers);
   // console.log('🔍 Document owner:', document.ownerId || document.uploadedBy);
   
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<DocumentAnalysis | null>(null);
   const [isLoadingAnalysis] = useState(true);
 
   // Load document analysis when analysis tab is active
@@ -149,6 +155,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
     } else if (!document?.id) {
       // console.log('🔍 CollaborationHub: Document not ready yet, skipping analysis load');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load when document id / tab changes only
   }, [document?.id, activeTab]);
 
   const loadDocumentAnalysis = async () => {
@@ -190,6 +197,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
     } else {
       console.log('🔍 CollaborationHub: Document not ready yet, skipping initial data load');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load when document id is set
   }, [document?.id]);
 
   const loadDocumentContent = async () => {
@@ -207,8 +215,8 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
         // Update the document in store with the latest data from backend (including updated view count)
         // The backend API already increments the view count, so we just sync the data
         const updatedDocument = response.data;
-        useDocumentStore.setState((state: any) => ({
-          documents: state.documents.map((doc: any) =>
+        useDocumentStore.setState((state) => ({
+          documents: state.documents.map((doc) =>
             doc.id === document.id
               ? { ...doc, views: updatedDocument.views || doc.views }
               : doc
@@ -260,7 +268,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
       // console.log('🔍 Loading versions for document:', document.id);
       const response = await versionAPI.getDocumentVersions(document.id);
       if (response.success) {
-        setVersions(response.data);
+        setVersions(response.data as DocumentVersion[]);
         // setIsLoadingVersions(false);
       } else {
         console.log('❌ Failed to load versions:', response);
@@ -284,16 +292,19 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
       const response = await workflowAPI.getDocumentWorkflows(document.id);
       if (response.success) {
         /// ✅ Transform _id to id for frontend use
-      const transformedWorkflows = response.data.map((workflow: any) => ({
-        ...workflow,
-        id: workflow._id, // Add id property from _id
-        steps: workflow.steps.map((step: any) => ({
-          ...step,
-          id: step._id // Add id property from _id for each step
-        }))
-      }));
-      
-      setWorkflows(transformedWorkflows);
+        const raw = response.data as Array<
+          DocumentWorkflow & { _id?: string; steps?: Array<{ _id?: string } & DocumentWorkflow['steps'][number]> }
+        >;
+        const transformedWorkflows: DocumentWorkflow[] = raw.map((workflow) => ({
+          ...workflow,
+          id: workflow.id || (workflow._id as string),
+          steps: (workflow.steps || []).map((step) => ({
+            ...step,
+            id: step.id || (step._id as string),
+          })),
+        }));
+
+        setWorkflows(transformedWorkflows);
 
       } else {
         console.log('❌ Failed to load workflows:', response);
@@ -306,7 +317,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   // Workflow management functions
-  const handleUpdateWorkflow = async (workflowId: string, updates: any) => {
+  const handleUpdateWorkflow = async (workflowId: string, updates: Partial<DocumentWorkflow>) => {
     try {
       const response = await workflowAPI.updateWorkflow(workflowId, updates);
       if (response.success) {
@@ -555,17 +566,17 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl w-full max-w-7xl h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">{document.name}</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-xl font-semibold text-foreground">{document.name}</h2>
+              <p className="text-sm text-muted-foreground">
                 Collaborative editing • {activeUsers.length} shared collaborator{activeUsers.length !== 1 ? 's' : ''}
                 {activeUsers.length > 0 && (
-                  <span className="ml-2 text-gray-400">
+                  <span className="ml-2 text-muted-foreground/80">
                    ( {/* (Owner: {document.ownerId || document.uploadedBy || 'Unknown'} */}
                     {document.sharedWith && document.sharedWith.length > 0 && 
                       ` • Shared: ${document.sharedWith.length} user${document.sharedWith.length !== 1 ? 's' : ''}`}
@@ -580,14 +591,14 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
               {/* Permission Badge */}
               <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
                 userPermissions.permission === 'full'
-                  ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-900'
                   : userPermissions.permission === 'edit' 
-                  ? 'text-green-600 bg-green-50 border-green-200'
+                  ? 'text-green-800 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/40 dark:border-green-900'
                   : userPermissions.permission === 'comment'
-                  ? 'text-purple-600 bg-purple-50 border-purple-200'
+                  ? 'text-violet-700 bg-violet-50 border-violet-200 dark:text-violet-300 dark:bg-violet-950/40 dark:border-violet-900'
                   : userPermissions.permission === 'view'
-                  ? 'text-blue-600 bg-blue-50 border-blue-200'
-                  : 'text-gray-600 bg-gray-50 border-gray-200'
+                  ? 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-900'
+                  : 'text-muted-foreground bg-muted border-border'
               }`}>
                 {userPermissions.permission === 'full' ? 'OWNER' : userPermissions.permission?.toUpperCase() || 'NO ACCESS'}
               </div>
@@ -607,7 +618,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
         </div>
 
         {/* Tabs */}
-        <div className="px-6 border-b border-gray-200">
+        <div className="px-6 border-b border-border">
           <div className="flex space-x-8">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -617,8 +628,8 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 py-3 border-b-2 transition-colors ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -626,8 +637,8 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                   {tab.count > 0 && (
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       activeTab === tab.id
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-600'
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-muted text-muted-foreground'
                     }`}>
                       {tab.count}
                     </span>
@@ -639,8 +650,8 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
           
           {/* Collaborator Info */}
           {activeUsers.length > 0 && (
-            <div className="py-2 text-xs text-gray-500 border-t border-gray-100">
-              <span className="font-medium">Shared Collaborators:</span>
+            <div className="py-2 text-xs text-muted-foreground border-t border-border/60">
+              <span className="font-medium text-foreground">Shared Collaborators:</span>
               {activeUsers.map((user, index) => (
                 <span key={user.id} className="ml-2">
                   {user.name}
@@ -657,15 +668,15 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
             <>
               {/* Permission Info Banner */}
               {!userPermissions.canEdit && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border-l-4 border-amber-500 dark:border-amber-600 p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="h-5 w-5 text-amber-600 dark:text-amber-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <p className="text-sm text-yellow-700">
+                      <p className="text-sm text-amber-900 dark:text-amber-200">
                         <strong>Read-only mode:</strong> You have {userPermissions.permission} access to this document. 
                         {userPermissions.permission === 'view' && ' You can view and add comments.'}
                         {userPermissions.permission === 'comment' && ' You can view and add comments, but cannot edit the document.'}
@@ -697,15 +708,15 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
             <div className="h-full">
               {/* Permission Info Banner for Comments */}
               {!userPermissions.canComment && (
-                <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+                <div className="bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500 dark:border-blue-600 p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M18 10a8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <p className="text-sm text-blue-700">
+                      <p className="text-sm text-blue-900 dark:text-blue-200">
                         <strong>View-only mode:</strong> You have {userPermissions.permission} access to this document. 
                         {userPermissions.permission === 'view' && ' You can view comments but cannot add new ones or reply to existing comments.'}
                         {userPermissions.permission === 'none' && ' You have no access to this document.'}
@@ -723,11 +734,11 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                 onReplyAdd={handleAddCommentReply}
                 isLoading={isLoadingComments}
                 canAddComments={userPermissions.canComment}
-                currentVersion={versions[0]?._id || versions[0]?.id}
-                versions={versions.map(v => ({
-                  id: v._id || v.id,
+                currentVersion={versions[0]?._id || versions[0]?.id || ''}
+                versions={versions.map((v) => ({
+                  id: v._id || v.id || '',
                   version: v.version || 'Unknown',
-                  description: v.description || ''
+                  description: v.description || '',
                 }))}
                 onVersionChange={async (versionId) => {
                   try {
@@ -776,7 +787,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
             <div className="h-full overflow-auto p-6">
               <DocumentProcessor
                 documentId={document.id}
-                analysis={analysis}
+                analysis={analysis ?? undefined}
                 onProcessDocument={loadDocumentAnalysis}
                 onReprocessDocument={loadDocumentAnalysis}
               />

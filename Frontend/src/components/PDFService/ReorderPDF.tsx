@@ -271,7 +271,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     
     if (thumbnail) {
       return (
-        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-white">
+        <div className="w-full h-40 rounded-lg overflow-hidden border border-border bg-background">
           <img 
             src={thumbnail} 
             alt={`Page ${pageNumber} preview`}
@@ -284,7 +284,7 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
     // Fallback to loading state if thumbnail not available
     return (
       <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
-        <div className="text-center text-gray-600">
+        <div className="text-center text-muted-foreground">
           <div className="text-lg font-semibold mb-1">Page {pageNumber}</div>
           <div className="text-xs">Loading preview...</div>
         </div>
@@ -353,25 +353,25 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
         <div
           className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
             dragActive 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-primary bg-primary/10' 
+              : 'border-border hover:border-primary'
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
         >
-          <FiUpload className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-          <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+          <FiUpload className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+          <h3 className="text-2xl font-semibold text-foreground mb-4">
             Drop your PDF here or click to browse
           </h3>
-          <p className="text-gray-600 mb-2 text-lg">
+          <p className="text-muted-foreground mb-2 text-lg">
             Select a PDF file to reorder its pages
           </p>
-           <p className="text-sm text-gray-500 mb-6">Maximum file size: 2MB</p>
+           <p className="text-sm text-muted-foreground mb-6">Maximum file size: 2MB</p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors" style={{cursor: 'pointer'}}
+            className="bg-primary text-foreground px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary/80 transition-colors" style={{cursor: 'pointer'}}
           >
             Choose PDF File
           </button>
@@ -389,20 +389,20 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
 
       {/* Document Info */}
       {document && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="bg-background rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <FiFile className="w-12 h-12 text-blue-500" />
+              <FiFile className="w-12 h-12 text-primary" />
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">{document.name}</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-semibold text-foreground">{document.name}</h3>
+                <p className="text-muted-foreground">
                   {formatFileSize(document.size)} • {pdfInfo?.pages || 0} pages
                 </p>
               </div>
             </div>
             <button
               onClick={removeDocument}
-              className="text-gray-400 hover:text-gray-600 transition-colors" style={{cursor: 'pointer'}}
+                className="text-muted-foreground hover:text-foreground transition-colors" style={{cursor: 'pointer'}}
             >
               <FiTrash2 className="h-6 w-6" />
             </button>
@@ -412,19 +412,19 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
 
       {/* Page Preview & Reordering Section */}
       {document && pdfInfo && (
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-background rounded-xl shadow-lg p-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Page Reordering</h2>
+            <h2 className="text-2xl font-semibold text-foreground">Page Reordering</h2>
             <div className="flex items-center space-x-4">
               <button
                 onClick={resetOrder}
-                className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors" style={{cursor: 'pointer'}}
+                className="px-4 py-2 text-sm bg-muted text-foreground rounded-md hover:bg-muted/80 transition-colors" style={{cursor: 'pointer'}}
               >
                 Reset Order
               </button>
               <button
                 onClick={() => setShowPagePreview(!showPagePreview)}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors" style={{cursor: 'pointer'}}
+                className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors" style={{cursor: 'pointer'}}
               >
                 {showPagePreview ? <FiX className="w-4 h-4" /> : <FiPlus className="w-4 h-4" />}
                 <span>{showPagePreview ? 'Hide' : 'Show'} Preview</span>
@@ -448,24 +448,24 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
                     onDrop={(e) => handleDropPage(e, index)}
                   >
                     {/* Page Preview Card */}
-                    <div className="border-2 rounded-lg p-2 transition-all cursor-move hover:border-blue-300 border-gray-200 bg-white">
+                    <div className="border-2 rounded-lg p-2 transition-all cursor-move hover:border-primary border-border bg-background">
                       {/* Page Preview */}
                       {generatePagePreview(page.pageNumber)}
                       
                       {/* Page Number Label */}
                       <div className="text-center mt-1">
-                        <span className="text-xs font-medium text-gray-700">
+                        <span className="text-xs font-medium text-foreground">
                           Page {page.pageNumber}
                         </span>
                       </div>
                       
                       {/* Position Indicator */}
-                      <div className="absolute -top-1 -left-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="absolute -top-1 -left-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                         <span className="text-xs font-bold text-white">{index + 1}</span>
                       </div>
                       
                       {/* Drag Handle */}
-                      <div className="absolute top-1 left-1 text-gray-400">
+                      <div className="absolute top-1 left-1 text-muted-foreground">
                         <FiMove className="w-3 h-3" />
                       </div>
                     </div>
@@ -474,17 +474,17 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
               </div>
               
               {/* Order Summary */}
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <div className="mt-6 p-4 bg-background rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-800">
+                    <p className="text-sm text-foreground">
                       New page order: <span className="font-semibold">{pageItems.map(p => p.pageNumber).join(' → ')}</span>
                     </p>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-foreground">
                       Total pages: {pageItems.length}
                     </p>
                   </div>
-                  <div className="text-sm text-blue-600">
+                      <div className="text-sm text-foreground">
                     Drag pages to reorder • Click and drag to move
                   </div>
                 </div>
@@ -500,11 +500,11 @@ const ReorderPDF: React.FC<ReorderPDFProps> = ({ onReorderResult }) => {
           <button
             onClick={handleReorder}
             disabled={reordering}
-            className="bg-blue-600 text-white py-4 px-8 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center mx-auto"
+            className="bg-primary text-foreground py-4 px-8 rounded-lg font-medium text-lg hover:bg-primary/80 disabled:bg-muted disabled:cursor-not-allowed transition-colors flex items-center justify-center mx-auto"
           >
             {reordering ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground mr-3"></div>
                 Reordering Pages...
               </>
             ) : (

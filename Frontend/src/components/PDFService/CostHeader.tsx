@@ -35,17 +35,17 @@ export const CostHeader: React.FC = () => {
   }, []);
 
   return (
-    <header className="bg-white border-b border-gray-200 py-3">
+    <header className="bg-background border-b border-border py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-            <span className="text-xs font-medium text-amber-800 flex items-center">
+          <div className="bg-muted px-3 py-1 rounded-full border border-border">
+            <span className="text-xs font-medium text-foreground flex items-center">
               <Coins className="w-3.5 h-3.5 mr-1" />
               Operation cost: {required} credits
             </span>
           </div>
-          <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-            <span className="text-xs font-medium text-blue-700">
+          <div className="bg-muted px-3 py-1 rounded-full border border-border">
+            <span className="text-xs font-medium text-foreground">
               Current balance: {credits} credits
             </span>
           </div>

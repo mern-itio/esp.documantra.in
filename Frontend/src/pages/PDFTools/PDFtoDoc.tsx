@@ -214,34 +214,34 @@ export const PdftoDoc: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 p-2 bg-white">
+    <div className="space-y-6 p-2 bg-background">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
               to={`/pdf-tools${location.search}`}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
 
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-              <Icon className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+              <Icon className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h1 className="text-2xl font-bold text-gray-900">{toolInfo.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{toolInfo.name}</h1>
                 {toolInfo.premium && (
-                  <Crown className="w-5 h-5 text-yellow-500" />
+                  <Crown className="w-5 h-5 text-warning" />
                 )}
                 {toolInfo.badge && (
-                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                  <span className="px-2 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-full">
                     {toolInfo.badge}
                   </span>
                 )}
               </div>
-              <p className="text-gray-600">{toolInfo.description}</p>
+              <p className="text-muted-foreground">{toolInfo.description}</p>
             </div>
           </div>
         </div>
@@ -253,26 +253,26 @@ export const PdftoDoc: React.FC = () => {
         {/* Main Processing Area */}
         <div className="lg:col-span-2 space-y-6">
           {/* File Upload */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Files</h3>
+          <div className="bg-muted rounded-xl border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Upload Files</h3>
 
             {/* Show upload area only when no files are uploaded */}
             {uploadedFiles.length === 0 && (
               <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors"
               >
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-900 mb-2">
+                <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-lg font-medium text-foreground mb-2">
                   Drop PDF files here or click to upload
                 </p>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Supports: {toolInfo.inputFormats?.join(', ') || 'PDF files'}
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Choose Files
                 </button>
@@ -304,13 +304,13 @@ export const PdftoDoc: React.FC = () => {
 
           {/* Processing */}
           {uploadedFiles.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="bg-muted rounded-xl border border-border p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Convert PDFs to Word</h3>
+                <h3 className="text-lg font-semibold text-foreground">Convert PDFs to Word</h3>
                 <button
                   onClick={processFiles}
                   disabled={isProcessing}
-                  className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center space-x-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -324,12 +324,12 @@ export const PdftoDoc: React.FC = () => {
               {isProcessing && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Converting PDFs...</span>
-                    <span className="text-sm text-gray-600">{processingProgress}%</span>
+                    <span className="text-sm font-medium text-foreground">Converting PDFs...</span>
+                    <span className="text-sm text-muted-foreground">{processingProgress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${processingProgress}%` }}
                     />
                   </div>
@@ -339,33 +339,33 @@ export const PdftoDoc: React.FC = () => {
               {/* Results */}
               {results.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Conversion Results</h4>
+                  <h4 className="font-medium text-foreground">Conversion Results</h4>
                   {results.map((result, index) => (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-3 rounded-lg ${result.status === 'success' ? 'bg-green-50' : 'bg-red-50'
+                      className={`flex items-center justify-between p-3 border border-border rounded-lg ${result.status === 'success' ? 'bg-success/10 border border-success' : 'bg-destructive/10 border border-destructive'
                         }`}
                     >
                       <div className="flex items-center space-x-3">
                         {result.status === 'success' ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <CheckCircle className="w-5 h-5 text-success" />
                         ) : (
-                          <AlertCircle className="w-5 h-5 text-red-600" />
+                          <AlertCircle className="w-5 h-5 text-destructive" />
                         )}
                         <div>
-                          <p className="font-medium text-gray-900">{result.name}</p>
+                          <p className="font-medium text-foreground">{result.name}</p>
                           {result.message && (
-                            <p className="text-sm text-gray-600">{result.message}</p>
+                            <p className="text-sm text-muted-foreground">{result.message}</p>
                           )}
                           {result.status === 'success' && result.fileSize && (
-                            <p className="text-sm text-gray-500">Size: {formatFileSize(result.fileSize)}</p>
+                            <p className="text-sm text-muted-foreground">Size: {formatFileSize(result.fileSize)}</p>
                           )}
                         </div>
                       </div>
                       {result.status === 'success' && (
                         <button
                           onClick={() => downloadResult(result)}
-                          className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          className="flex items-center space-x-1 px-3 py-1 text-sm text-success text-success-foreground hover:text-success/90 font-medium"
                         >
                           <Download className="w-4 h-4" />
                           <span>Download</span>
@@ -382,49 +382,49 @@ export const PdftoDoc: React.FC = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Tool Info */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Tool Information</h3>
+          <div className="bg-muted rounded-xl border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Tool Information</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Complexity</label>
-                <span className={`ml-2 px-2 py-1 text-xs font-medium rounded ${toolInfo.complexity === 'easy' ? 'bg-green-100 text-green-800' :
-                    toolInfo.complexity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                <label className="text-sm font-medium text-foreground">Complexity</label>
+                <span className={`ml-2 px-2 py-1 text-xs font-medium rounded ${toolInfo.complexity === 'easy' ? 'bg-success text-success-foreground' :
+                    toolInfo.complexity === 'medium' ? 'bg-warning text-warning-foreground' :
+                      'bg-destructive text-destructive-foreground'
                   }`}>
                   {toolInfo.complexity}
                 </span>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Popularity</label>
+                <label className="text-sm font-medium text-foreground">Popularity</label>
                 <div className="mt-1 flex items-center">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div className="flex-1 bg-muted rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full"
+                      className="bg-primary h-2 rounded-full"
                       style={{ width: `${toolInfo.popularity}%` }}
                     />
                   </div>
-                  <span className="ml-2 text-sm text-gray-600">{toolInfo.popularity}%</span>
+                  <span className="ml-2 text-sm text-muted-foreground">{toolInfo.popularity}%</span>
                 </div>
               </div>
 
               {toolInfo.avgProcessingTime && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Avg. Processing Time</label>
-                  <p className="text-sm text-gray-600">{toolInfo.avgProcessingTime}</p>
+                  <label className="text-sm font-medium text-foreground">Avg. Processing Time</label>
+                  <p className="text-sm text-muted-foreground">{toolInfo.avgProcessingTime}</p>
                 </div>
               )}
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Input Formats</label>
+                <label className="text-sm font-medium text-foreground">Input Formats</label>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {toolInfo.inputFormats?.map(format => (
-                    <span key={format} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                    <span key={format} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
                       .{format}
                     </span>
                   )) || (
-                      <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                      <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
                         .pdf
                       </span>
                     )}
@@ -432,14 +432,14 @@ export const PdftoDoc: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Output Formats</label>
+                <label className="text-sm font-medium text-foreground">Output Formats</label>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {toolInfo.outputFormats?.map(format => (
-                    <span key={format} className="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">
+                    <span key={format} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
                       .{format}
                     </span>
                   )) || (
-                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">
+                      <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
                         .pdf
                       </span>
                     )}
@@ -447,10 +447,10 @@ export const PdftoDoc: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Features</label>
+                <label className="text-sm font-medium text-foreground">Features</label>
                 <div className="mt-1 space-y-1">
                   {toolInfo.features.map(feature => (
-                    <div key={feature} className="text-sm text-gray-600">
+                    <div key={feature} className="text-sm text-muted-foreground">
                       • {feature.replace(/_/g, ' ')}
                     </div>
                   ))}

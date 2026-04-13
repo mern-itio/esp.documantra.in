@@ -264,17 +264,17 @@ const PdfComparePage: React.FC = () => {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-destructive-50 border-destructive-200 text-destructive-800';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-warning-50 border-warning-200 text-warning-800';
       case 'minor':
-        return 'bg-orange-50 border-orange-200 text-orange-800';
+        return 'bg-warning-50 border-warning-200 text-warning-800';
       case 'major':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-destructive-50 border-destructive-200 text-destructive-800';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-info-50 border-info-200 text-info-800';
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return 'bg-muted-50 border-muted-200 text-muted-800';
     }
   };
 
@@ -287,18 +287,18 @@ const PdfComparePage: React.FC = () => {
   return (
     <div className="mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                 to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">PDF Compare</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">PDF Compare</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Compare two PDF documents side-by-side with detailed difference analysis and highlighting
               </p>
             </div>
@@ -311,18 +311,18 @@ const PdfComparePage: React.FC = () => {
         {/* Main Content */}
         <div className={selectedFile1 && selectedFile2 ? "space-y-6" : "lg:col-span-2 space-y-6"}>
           {/* File Upload Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload PDFs for Comparison</h2>
+          <div className="bg-background rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Upload PDFs for Comparison</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* PDF 1 */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">First PDF</h3>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  <File className="mx-auto h-8 w-8 text-gray-400" />
+                  <h3 className="text-sm font-medium text-foreground mb-2">First PDF</h3>
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                  <File className="mx-auto h-8 w-8 text-muted-foreground" />
                   <div className="mt-2">
                     <label className="cursor-pointer">
-                      <span className="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                      <span className="text-primary hover:text-primary/80 text-sm font-medium">
                         Upload PDF 1
                       </span>
                       <input
@@ -335,7 +335,7 @@ const PdfComparePage: React.FC = () => {
                     </label>
                   </div>
                   {selectedFile1 && (
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {selectedFile1.name}
                     </p>
                   )}
@@ -344,12 +344,12 @@ const PdfComparePage: React.FC = () => {
 
               {/* PDF 2 */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Second PDF</h3>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  <File className="mx-auto h-8 w-8 text-gray-400" />
+                <h3 className="text-sm font-medium text-foreground mb-2">Second PDF</h3>
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                  <File className="mx-auto h-8 w-8 text-muted-foreground" />
                   <div className="mt-2">
                     <label className="cursor-pointer">
-                      <span className="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                      <span className="text-primary hover:text-primary/80 text-sm font-medium">
                         Upload PDF 2
                       </span>
                       <input
@@ -362,7 +362,7 @@ const PdfComparePage: React.FC = () => {
                     </label>
                   </div>
                   {selectedFile2 && (
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {selectedFile2.name}
                     </p>
                   )}
@@ -375,7 +375,7 @@ const PdfComparePage: React.FC = () => {
                 <button
                   onClick={handleComparePdfs}
                   disabled={isProcessing}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-foreground bg-primary hover:bg-primary/80 disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -390,17 +390,17 @@ const PdfComparePage: React.FC = () => {
 
           {/* PDF Preview Section */}
           {(pdfPreview1 || pdfPreview2) && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-background rounded-lg shadow">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">PDF Preview</h3>
+                  <h3 className="text-lg font-semibold text-foreground">PDF Preview</h3>
                   {comparisonResult && (
                     <button
                       onClick={() => setShowDifferences(!showDifferences)}
                       className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         showDifferences
                           ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-muted text-foreground hover:bg-muted/80'
                       }`}
                     >
                       <Eye className="w-4 h-4 mr-2" />
@@ -411,9 +411,9 @@ const PdfComparePage: React.FC = () => {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* PDF 1 Preview */}
-                  <div className="border rounded-lg p-4">
+                  <div className="border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h6 className="font-medium text-gray-900">
+                      <h6 className="font-medium text-foreground">
                         {pdfPreview1?.file.name || 'PDF 1'}
                       </h6>
                       {pdfPreview1 && (
@@ -425,11 +425,11 @@ const PdfComparePage: React.FC = () => {
                               }
                             }}
                             disabled={pdfPreview1.currentPage <= 1}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                            className="p-1 rounded hover:bg-muted disabled:opacity-50"
                           >
                             ←
                           </button>
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-muted-foreground">
                             {pdfPreview1.currentPage} / {pdfPreview1.pages.length}
                           </span>
                           <button
@@ -439,7 +439,7 @@ const PdfComparePage: React.FC = () => {
                               }
                             }}
                             disabled={pdfPreview1.currentPage >= pdfPreview1.pages.length}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                            className="p-1 rounded hover:bg-muted disabled:opacity-50"
                           >
                             →
                           </button>
@@ -470,7 +470,7 @@ const PdfComparePage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="rounded bg-gray-50 p-2 min-h-[400px] flex items-center justify-center">
+                    <div className="rounded bg-background p-2 min-h-[400px] flex items-center justify-center">
                       {isLoadingPreview ? (
                         <div className="flex items-center space-x-2">
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -485,15 +485,15 @@ const PdfComparePage: React.FC = () => {
                           }}
                         />
                       ) : (
-                        <div className="text-gray-500">No PDF loaded</div>
+                        <div className="text-muted-foreground">No PDF loaded</div>
                       )}
                     </div>
                   </div>
 
                   {/* PDF 2 Preview */}
-                  <div className="border rounded-lg p-4">
+                  <div className="border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="font-medium text-foreground">
                         {pdfPreview2?.file.name || 'PDF 2'}
                       </h4>
                       {pdfPreview2 && (
@@ -505,11 +505,11 @@ const PdfComparePage: React.FC = () => {
                               }
                             }}
                             disabled={pdfPreview2.currentPage <= 1}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                            className="p-1 rounded hover:bg-muted disabled:opacity-50"
                           >
                             ←
                           </button>
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-muted-foreground">
                             {pdfPreview2.currentPage} / {pdfPreview2.pages.length}
                           </span>
                           <button
@@ -519,7 +519,7 @@ const PdfComparePage: React.FC = () => {
                               }
                             }}
                             disabled={pdfPreview2.currentPage >= pdfPreview2.pages.length}
-                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                            className="p-1 rounded hover:bg-muted disabled:opacity-50"
                           >
                             →
                           </button>
@@ -550,7 +550,7 @@ const PdfComparePage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="rounded bg-gray-50 p-2 min-h-[400px] flex items-center justify-center">
+                      <div className="rounded bg-background p-2 min-h-[400px] flex items-center justify-center">
                       {isLoadingPreview ? (
                         <div className="flex items-center space-x-2">
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -565,7 +565,7 @@ const PdfComparePage: React.FC = () => {
                           }}
                         />
                       ) : (
-                        <div className="text-gray-500">No PDF loaded</div>
+                        <div className="text-muted-foreground">No PDF loaded</div>
                       )}
                     </div>
                   </div>
@@ -576,20 +576,20 @@ const PdfComparePage: React.FC = () => {
 
           {/* Comparison Results */}
           {comparisonResult && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-background rounded-lg shadow">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Comparison Results</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Comparison Results</h3>
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                       <span className={`text-2xl font-bold ${getScoreColor(comparisonResult.statistics.similarity)}`}>
                         {comparisonResult.statistics.similarity}%
                       </span>
-                      <span className="text-sm text-gray-500">Similarity</span>
+                      <span className="text-sm text-muted-foreground">Similarity</span>
                     </div>
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                       comparisonResult.identical 
-                        ? 'bg-green-100 text-green-800' 
+                        ? 'bg-success text-success-foreground' 
                         : 'bg-orange-100 text-orange-800'
                     }`}>
                       {comparisonResult.identical ? 'Identical' : 'Different'}
@@ -598,29 +598,29 @@ const PdfComparePage: React.FC = () => {
                 </div>
 
                 {/* Summary */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h4 className="font-medium text-gray-900 mb-2">Comparison Summary</h4>
+                    <div className="bg-background rounded-lg p-4 mb-6">
+                  <h4 className="font-medium text-foreground mb-2">Comparison Summary</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">Structure:</span>
+                      <span className="text-muted-foreground">Structure:</span>
                       <span className="ml-2 font-medium">
                         {comparisonResult.differences.structure.length} differences
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Content:</span>
+                      <span className="text-muted-foreground">Content:</span>
                       <span className="ml-2 font-medium">
                         {comparisonResult.differences.content.length} differences
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Metadata:</span>
+                      <span className="text-muted-foreground">Metadata:</span>
                       <span className="ml-2 font-medium">
                         {comparisonResult.differences.metadata.length} differences
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Visual:</span>
+                      <span className="text-muted-foreground">Visual:</span>
                       <span className="ml-2 font-medium">
                         {comparisonResult.differences.visual.length} differences
                       </span>
@@ -631,27 +631,27 @@ const PdfComparePage: React.FC = () => {
                 {/* Side-by-side comparison */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">PDF 1</h4>
+                    <h4 className="font-medium text-foreground mb-3">PDF 1</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">File Size:</span>
+                        <span className="text-muted-foreground">File Size:</span>
                         <span className="font-medium">{comparisonResult.statistics.pdf1.fileSizeFormatted}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Pages:</span>
+                        <span className="text-muted-foreground">Pages:</span>
                         <span className="font-medium">{comparisonResult.statistics.pdf1.pageCount}</span>
                       </div>
                     </div>
                   </div>
                   <div className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">PDF 2</h4>
+                    <h4 className="font-medium text-foreground mb-3">PDF 2</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">File Size:</span>
+                        <span className="text-muted-foreground">File Size:</span>
                         <span className="font-medium">{comparisonResult.statistics.pdf2.fileSizeFormatted}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Pages:</span>
+                        <span className="text-muted-foreground">Pages:</span>
                         <span className="font-medium">{comparisonResult.statistics.pdf2.pageCount}</span>
                       </div>
                     </div>
@@ -662,19 +662,19 @@ const PdfComparePage: React.FC = () => {
                 {Object.entries(comparisonResult.differences).map(([type, differences]) => (
                   differences.length > 0 && (
                     <div key={type} className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2 capitalize">
+                          <h4 className="font-medium text-foreground mb-2 capitalize">
                         {type} Differences ({differences.length})
                       </h4>
                       <div className="space-y-2">
                         {differences.map((diff, index) => (
-                          <div key={index} className={`border rounded-lg p-3 ${getSeverityColor(diff.severity || 'info')}`}>
+                          <div key={index} className={`border border-border rounded-lg p-3 ${getSeverityColor(diff.severity || 'info')}`}>
                             <div className="flex items-start">
                               {getSeverityIcon(diff.severity || 'info')}
                               <div className="ml-2">
                                 <p className="text-sm font-medium">
                                   {type === 'metadata' && diff.field ? 
                                     `${diff.field.charAt(0).toUpperCase() + diff.field.slice(1)}: "${diff.pdf1}" → "${diff.pdf2}"` :
-                                    diff.message || `${type} difference detected`
+                                    diff?.message || `${type} difference detected`
                                   }
                                 </p>
                                 {diff.location && (
@@ -682,10 +682,10 @@ const PdfComparePage: React.FC = () => {
                                 )}
                                 {type === 'metadata' && diff.field && (
                                   <div className="mt-2 text-xs">
-                                    <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">
+                                    <span className="inline-block bg-primary text-primary-foreground px-2 py-1 rounded mr-2">
                                       PDF 1: {diff.pdf1}
                                     </span>
-                                    <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded">
+                                    <span className="inline-block bg-success text-success-foreground px-2 py-1 rounded">
                                       PDF 2: {diff.pdf2}
                                     </span>
                                   </div>
@@ -702,8 +702,8 @@ const PdfComparePage: React.FC = () => {
                 {/* Highlights */}
                 {comparisonResult.highlights && comparisonResult.highlights.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Key Highlights</h4>
-                    <div className="space-y-2">
+                    <h4 className="font-medium text-foreground mb-2">Key Highlights</h4>
+                    <div className="bg-card space-y-2">
                       {comparisonResult.highlights.map((highlight, index) => (
                         <div key={index} className={`border rounded-lg p-3 ${getSeverityColor(highlight.severity || 'info')}`}>
                           <div className="flex items-start">
@@ -712,7 +712,7 @@ const PdfComparePage: React.FC = () => {
                               <p className="text-sm font-medium">{highlight.message}</p>
                               <p className="text-xs mt-1 opacity-75">{highlight.location}</p>
                               {highlight.type && (
-                                <span className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs mt-1">
+                                <span className="inline-block bg-muted text-foreground px-2 py-1 rounded text-xs mt-1">
                                   {highlight.type}
                                 </span>
                               )}
@@ -732,56 +732,56 @@ const PdfComparePage: React.FC = () => {
         {!selectedFile1 && !selectedFile2 && (
           <div className="space-y-6">
           {/* Features */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
+          <div className="bg-background rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Features</h2>
             <div className="space-y-3">
-              <div className="flex items-center text-sm text-gray-600">
-                <GitCompare className="w-4 h-4 mr-2 text-blue-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <GitCompare className="w-4 h-4 mr-2 text-primary" />
                 Side-by-side comparison
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Eye className="w-4 h-4 mr-2 text-green-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Eye className="w-4 h-4 mr-2 text-success" />
                 Difference highlighting
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Target className="w-4 h-4 mr-2 text-purple-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                  <Target className="w-4 h-4 mr-2 text-primary" />
                 Detailed analysis
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <AlertTriangle className="w-4 h-4 mr-2 text-orange-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <AlertTriangle className="w-4 h-4 mr-2 text-warning" />
                 Structure detection
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <File className="w-4 h-4 mr-2 text-indigo-600" />
+                <div className="flex items-center text-sm text-muted-foreground">
+                <File className="w-4 h-4 mr-2 text-primary" />
                 Content comparison
               </div>
             </div>
           </div>
 
           {/* Comparison Types */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Comparison Types</h2>
+          <div className="bg-card rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Comparison Types</h2>
             <div className="space-y-2">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>Structure:</strong> Page count, dimensions, form fields
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>Content:</strong> File size, complexity differences
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>Metadata:</strong> Title, author, creator, producer
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>Visual:</strong> Content density, layout differences
               </div>
             </div>
           </div>
 
           {/* Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-start">
-              <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
+              <Info className="w-5 h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-muted-foreground">
                 <p className="font-medium mb-1">How it works:</p>
                 <p>Upload two PDF files to compare them side-by-side. The system will analyze structural, content, metadata, and visual differences, then highlight them with yellow overlays when you toggle the "Show Differences" button.</p>
               </div>

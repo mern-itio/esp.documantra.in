@@ -329,20 +329,20 @@ const AddStamps: React.FC = () => {
   };
 
   return (
-  <div className="mx-auto p-2 bg-white space-y-6">
+  <div className="mx-auto p-2 bg-background space-y-6">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-background shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                    to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Add Stamp</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Add Stamp</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                  Insert stamps and custom annotations
                 </p>
               </div>
@@ -352,7 +352,7 @@ const AddStamps: React.FC = () => {
 
       {/* File Upload */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Select PDF File
         </label>
         <div className="flex items-center gap-4">
@@ -371,10 +371,10 @@ const AddStamps: React.FC = () => {
             Choose File
           </button>
           {file && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <FileText className="h-4 w-4" />
               <span>{file.name}</span>
-              <span className="text-gray-400">
+              <span className="text-muted-foreground">
                 ({stampService.formatFileSize(file.size)})
               </span>
             </div>
@@ -383,13 +383,13 @@ const AddStamps: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 mb-6">
+      <div className="flex border-b border-border mb-6">
         <button
           onClick={() => setActiveTab('options')}
           className={`px-4 py-2 font-medium text-sm ${
             activeTab === 'options'
               ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Settings className="h-4 w-4 inline mr-2" />
@@ -400,7 +400,7 @@ const AddStamps: React.FC = () => {
           className={`px-4 py-2 font-medium text-sm ${
             activeTab === 'preview'
               ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Eye className="h-4 w-4 inline mr-2" />
@@ -412,7 +412,7 @@ const AddStamps: React.FC = () => {
             className={`px-4 py-2 font-medium text-sm ${
               activeTab === 'results'
                 ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <CheckCircle className="h-4 w-4 inline mr-2" />
@@ -428,7 +428,7 @@ const AddStamps: React.FC = () => {
           <div className="space-y-6">
             {/* Stamp Mode Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-foreground mb-3">
                 Stamp Type
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -436,8 +436,8 @@ const AddStamps: React.FC = () => {
                   onClick={() => setStampMode('library')}
                   className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                     stampMode === 'library'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border hover:border-foreground'
                   }`}
                 >
                   <Stamp className="h-4 w-4 inline mr-1" />
@@ -447,8 +447,8 @@ const AddStamps: React.FC = () => {
                   onClick={() => setStampMode('custom-text')}
                   className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                     stampMode === 'custom-text'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border hover:border-foreground'
                   }`}
                 >
                   <Type className="h-4 w-4 inline mr-1" />
@@ -458,8 +458,8 @@ const AddStamps: React.FC = () => {
                   onClick={() => setStampMode('custom-image')}
                   className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                     stampMode === 'custom-image'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border hover:border-foreground'
                   }`}
                 >
                   <ImageIcon className="h-4 w-4 inline mr-1" />
@@ -470,14 +470,14 @@ const AddStamps: React.FC = () => {
 
             {/* Stamp Library */}
             {stampMode === 'library' && stampLibrary && (
-              <div className='border-b border-gray-200 p-2'>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+              <div className='border-b border-border p-2'>
+                <label className="block text-sm font-medium text-foreground mb-3">
                   Choose from Library
                 </label>
                 <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
                   {stampLibrary.categories.map(category => (
                     <div key={category.id} className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-600">{category.name}</h4>
+                      <h4 className="text-sm font-medium text-muted-foreground">{category.name}</h4>
                       <div className="space-y-1">
                         {category.stamps.map(stamp => (
                           <button
@@ -489,12 +489,12 @@ const AddStamps: React.FC = () => {
                             })}
                             className={`w-full text-left px-3 py-2 text-sm rounded-lg border transition-colors ${
                               options.stampType.value === stamp.type
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border hover:border-foreground'
                             }`}
                           >
                             <div className="font-medium">{stamp.name}</div>
-                            <div className="text-xs text-gray-500">{stamp.description}</div>
+                            <div className="text-xs text-muted-foreground">{stamp.description}</div>
                           </button>
                         ))}
                       </div>
@@ -507,18 +507,18 @@ const AddStamps: React.FC = () => {
             {/* Custom Text Input */}
             {stampMode === 'custom-text' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Custom Stamp Text
                 </label>
                 <textarea
                   value={customStampText}
                   onChange={(e) => setCustomStampText(e.target.value)}
                   placeholder="Enter your custom stamp text..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   rows={3}
                   maxLength={200}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                   {customStampText.length}/200 characters
                 </p>
               </div>
@@ -527,10 +527,10 @@ const AddStamps: React.FC = () => {
             {/* Custom Image Upload */}
             {stampMode === 'custom-image' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Custom Stamp Image
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <div className="border-2 border-dashed border-border rounded-lg p-4">
                   {customStampImage ? (
                     <div className="text-center">
                       <img
@@ -538,7 +538,7 @@ const AddStamps: React.FC = () => {
                         alt="Custom stamp"
                         className="max-h-32 mx-auto mb-2 rounded"
                       />
-                      <p className="text-sm text-gray-600 mb-2">{customStampImage.name}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{customStampImage.name}</p>
                       <button
                         onClick={handleRemoveImage}
                         className="text-red-600 hover:text-red-700 text-sm"
@@ -549,11 +549,11 @@ const AddStamps: React.FC = () => {
                     </div>
                   ) : (
                     <div className="text-center">
-                      <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-gray-600 mb-2">Upload a custom stamp image</p>
                       <button
                         onClick={() => imageInputRef.current?.click()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
                       >
                         Choose Image
                       </button>
@@ -567,7 +567,7 @@ const AddStamps: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Supported formats: JPG, PNG, GIF. Max size: 5MB
                 </p>
               </div>
@@ -575,7 +575,7 @@ const AddStamps: React.FC = () => {
 
             {/* Position */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 <MapPin className="h-4 w-4 inline mr-1" />
                 Position
               </label>
@@ -590,8 +590,8 @@ const AddStamps: React.FC = () => {
                     onClick={() => handlePositionChange(position)}
                     className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
                       options.position === position
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border hover:border-foreground'
                     }`}
                   >
                     {position.replace('-', ' ')}
@@ -602,7 +602,7 @@ const AddStamps: React.FC = () => {
 
             {/* Page Number */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Page Number
               </label>
               <input
@@ -610,9 +610,9 @@ const AddStamps: React.FC = () => {
                 value={options.pageNumber}
                 onChange={(e) => handlePageNumberChange(e.target.value)}
                 placeholder="all, 1, 2, 3..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Use "all" for all pages, or specify page numbers (e.g., "1,3,5")
               </p>
             </div>
@@ -620,7 +620,7 @@ const AddStamps: React.FC = () => {
             {/* Color and Size */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   <Palette className="h-4 w-4 inline mr-1" />
                   Stamp Color
                 </label>
@@ -630,7 +630,7 @@ const AddStamps: React.FC = () => {
                       key={color}
                       onClick={() => handleStampColorChange(color)}
                       className={`w-8 h-8 rounded-full border-2 ${
-                        options.stampColor === color ? 'border-gray-800' : 'border-gray-300'
+                        options.stampColor === color ? 'border-foreground' : 'border-border'
                       } ${getColorClass(color)}`}
                       title={color}
                     />
@@ -639,7 +639,7 @@ const AddStamps: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   <Type className="h-4 w-4 inline mr-1" />
                   Stamp Size
                 </label>
@@ -650,8 +650,8 @@ const AddStamps: React.FC = () => {
                       onClick={() => handleStampSizeChange(size)}
                       className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
                         options.stampSize === size
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border hover:border-foreground'
                       }`}
                     >
                       {size}
@@ -669,9 +669,9 @@ const AddStamps: React.FC = () => {
                   id="includeDate"
                   checked={options.includeDate}
                   onChange={(e) => handleIncludeDateChange(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
                 />
-                <label htmlFor="includeDate" className="ml-2 text-sm font-medium text-gray-700">
+                  <label htmlFor="includeDate" className="ml-2 text-sm font-medium text-foreground">
                   <Calendar className="h-4 w-4 inline mr-1" />
                   Include Date
                 </label>
@@ -679,13 +679,13 @@ const AddStamps: React.FC = () => {
 
               {options.includeDate && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Date Format
                   </label>
                   <select
                     value={options.dateFormat}
                     onChange={(e) => handleDateFormatChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     {dateFormats.map(format => (
                       <option key={format.value} value={format.value}>
@@ -699,7 +699,7 @@ const AddStamps: React.FC = () => {
 
             {/* Opacity */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Opacity: {Math.round(options.opacity * 100)}%
               </label>
               <input
@@ -709,7 +709,7 @@ const AddStamps: React.FC = () => {
                 step="0.1"
                 value={options.opacity}
                 onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
               />
             </div>
           </div>
@@ -719,21 +719,21 @@ const AddStamps: React.FC = () => {
 
       {activeTab === 'preview' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Stamp Preview</h3>
+          <h3 className="text-lg font-medium text-foreground">Stamp Preview</h3>
           
           {stampedPreviewUrl ? (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-green-700">
+              <div className="bg-success border border-success rounded-lg p-4">
+                <div className="flex items-center gap-2 text-success-foreground">
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-medium">Preview Generated Successfully!</span>
                 </div>
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-success-foreground mt-1">
                   This shows how your PDF will look with the stamp applied.
                 </p>
               </div>
               
-              <div className="border border-gray-300 rounded-lg overflow-hidden">
+              <div className="border border-border rounded-lg overflow-hidden">
                 <iframe
                   src={stampedPreviewUrl}
                   className="w-full h-96"
@@ -743,18 +743,18 @@ const AddStamps: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-blue-700">
+              <div className="bg-primary/10 border border-primary rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                   <Eye className="h-5 w-5" />
                   <span className="font-medium">Generate Preview</span>
                 </div>
-                <p className="text-sm text-blue-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Click the "Preview" button to see how your PDF will look with the stamp applied.
                 </p>
               </div>
               
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 bg-gray-50">
-                <div className="relative w-full h-96 bg-white border border-gray-200 rounded-lg">
+              <div className="border-2 border-dashed border-border rounded-lg p-8 bg-background">
+                <div className="relative w-full h-96 bg-background border border-border rounded-lg">
                   {/* Position indicator */}
                   <div className={`absolute ${options.position === 'top-left' ? 'top-4 left-4' : 
                     options.position === 'top-center' ? 'top-4 left-1/2 transform -translate-x-1/2' :
@@ -788,15 +788,15 @@ const AddStamps: React.FC = () => {
 
       {activeTab === 'results' && result && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-green-600">
+          <div className="flex items-center gap-2 text-success-foreground">
             <CheckCircle className="h-5 w-5" />
             <span className="font-medium">Stamps added successfully!</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">Stamp Details</h4>
-              <div className="space-y-1 text-sm text-gray-600">
+            <div className="bg-background p-4 rounded-lg">
+              <h4 className="font-medium text-foreground mb-2">Stamp Details</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
                 <div>Total Stamps: {result.stampDetails.totalStamps}</div>
                 <div>Pages Stamped: {result.stampDetails.pagesStamped}</div>
                 <div>Stamp Type: {options.stampType.label}</div>
@@ -804,9 +804,9 @@ const AddStamps: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">File Information</h4>
-              <div className="space-y-1 text-sm text-gray-600">
+            <div className="bg-background p-4 rounded-lg">
+              <h4 className="font-medium text-foreground mb-2">File Information</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
                 <div>Original Size: {stampService.formatFileSize(result.originalFileSize)}</div>
                 <div>New Size: {stampService.formatFileSize(result.fileSize)}</div>
                 <div>Size Change: {result.fileSize > result.originalFileSize ? '+' : ''}{stampService.formatFileSize(result.fileSize - result.originalFileSize)}</div>
@@ -817,14 +817,14 @@ const AddStamps: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors"
             >
               <Download className="h-4 w-4" />
               Download Stamped PDF
             </button>
             <button
               onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-background text-white rounded-lg hover:bg-background/90 transition-colors"
             >
               <RotateCcw className="h-4 w-4" />
               Process Another File
@@ -835,12 +835,12 @@ const AddStamps: React.FC = () => {
 
       {/* Error Display */}
       {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center gap-2 text-red-600">
+        <div className="mt-4 p-4 bg-destructive border border-destructive rounded-lg">
+              <div className="flex items-center gap-2 text-destructive-foreground">
             <AlertCircle className="h-5 w-5" />
             <span className="font-medium">Error</span>
           </div>
-          <p className="text-red-600 mt-1">{error}</p>
+          <p className="text-destructive-foreground mt-1">{error}</p>
         </div>
       )}
 
@@ -850,7 +850,7 @@ const AddStamps: React.FC = () => {
           <button
             onClick={handleAddStamps}
             disabled={!file || loading}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -863,7 +863,7 @@ const AddStamps: React.FC = () => {
           <button
             onClick={generateStampedPreview}
             disabled={!file || loading}
-            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-success text-white rounded-lg hover:bg-success/90 disabled:bg-muted disabled:cursor-not-allowed transition-colors"
           >
             <Eye className="h-4 w-4" />
             Preview
@@ -871,7 +871,7 @@ const AddStamps: React.FC = () => {
 
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-background text-foreground rounded-lg hover:bg-background/90 transition-colors"
           >
             <RotateCcw className="h-4 w-4" />
             Reset

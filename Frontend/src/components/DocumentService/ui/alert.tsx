@@ -14,8 +14,8 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         className={cn(
           "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
           {
-            'border-red-200 bg-red-50 text-red-800 [&>svg]:text-red-600': variant === 'destructive',
-            'border-slate-200 bg-slate-50 text-slate-800 [&>svg]:text-slate-600': variant === 'default',
+              'border-destructive/25 bg-destructive/10 text-destructive [&>svg]:text-destructive': variant === 'destructive',
+              'border-primary/25 bg-primary/10 text-primary [&>svg]:text-primary': variant === 'default',
           },
           className
         )}

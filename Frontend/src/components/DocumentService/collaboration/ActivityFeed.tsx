@@ -22,7 +22,7 @@ interface ActivityItem {
   action: string;
   target: string;
   timestamp: string;
-  details?: any;
+  details?: unknown;
 }
 
 interface ActivityFeedProps {
@@ -104,43 +104,43 @@ export function ActivityFeed({
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'comment':
-        return <MessageCircle className="w-4 h-4 text-blue-600" />;
+        return <MessageCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />;
       case 'version':
-        return <GitBranch className="w-4 h-4 text-green-600" />;
+        return <GitBranch className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
       case 'upload':
-        return <Upload className="w-4 h-4 text-purple-600" />;
+        return <Upload className="w-4 h-4 text-violet-600 dark:text-violet-400" />;
       case 'download':
-        return <Download className="w-4 h-4 text-orange-600" />;
+        return <Download className="w-4 h-4 text-orange-600 dark:text-orange-400" />;
       case 'share':
-        return <Share2 className="w-4 h-4 text-blue-500" />;
+        return <Share2 className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
       case 'edit':
-        return <Edit3 className="w-4 h-4 text-gray-600" />;
+        return <Edit3 className="w-4 h-4 text-muted-foreground" />;
       case 'approval':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
       case 'workflow':
-        return <Clock className="w-4 h-4 text-yellow-600" />;
+        return <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
       default:
-        return <User className="w-4 h-4 text-gray-500" />;
+        return <User className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
   const displayedActivities = activities.slice(0, maxItems);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+    <div className="bg-card text-card-foreground rounded-lg border border-border">
+      <div className="p-4 border-b border-border">
+        <h3 className="text-lg font-semibold text-foreground">Recent Activity</h3>
       </div>
       
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-border">
         {displayedActivities.length === 0 ? (
           <div className="p-6 text-center">
-            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500">No recent activity</p>
+            <Clock className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-muted-foreground">No recent activity</p>
           </div>
         ) : (
           displayedActivities.map((activity) => (
-            <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
+            <div key={activity.id} className="p-4 hover:bg-muted/50 transition-colors">
               <div className="flex items-start space-x-3">
                 {showUserAvatars && (
                   <img
@@ -151,20 +151,20 @@ export function ActivityFeed({
                 )}
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex items-center space-x-2 mb-1 flex-wrap">
                     {getActivityIcon(activity.type)}
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-foreground">
                       {activity.user.name}
                     </span>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-muted-foreground">
                       {activity.action}
                     </span>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-foreground">
                       {activity.target}
                     </span>
                   </div>
                   
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {formatDate(activity.timestamp)}
                   </p>
                 </div>
@@ -175,8 +175,8 @@ export function ActivityFeed({
       </div>
       
       {activities.length > maxItems && (
-        <div className="p-4 border-t border-gray-200 text-center">
-          <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        <div className="p-4 border-t border-border text-center">
+          <button type="button" className="text-sm text-primary hover:text-primary/80 font-medium">
             View all activity ({activities.length} total)
           </button>
         </div>

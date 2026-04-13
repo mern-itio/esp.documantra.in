@@ -42,12 +42,12 @@ export const FileUploadStatus: React.FC<FileUploadStatusProps> = ({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-lg font-semibold text-gray-900">
+        <h4 className="text-lg font-semibold text-foreground">
           Uploaded Files ({files.length}{maxFiles ? `/${maxFiles}` : ''})
         </h4>
         <button
           onClick={onAddMoreFiles}
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          className="text-sm text-primary hover:text-primary/90 font-medium"
         >
           + Add More Files
         </button>
@@ -57,25 +57,25 @@ export const FileUploadStatus: React.FC<FileUploadStatusProps> = ({
         {files.map((file, index) => (
           <div
             key={index}
-            className="bg-green-50 border border-green-200 rounded-lg p-4 transition-all duration-200 hover:shadow-sm"
+            className="bg-success/10 border border-success rounded-lg p-4 transition-all duration-200 hover:shadow-sm"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-3 flex-1">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-success" />
                   </div>
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
                     <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                    <h5 className="text-sm font-medium text-gray-900 truncate">
+                    <h5 className="text-sm font-medium text-foreground truncate">
                       {file.name}
                     </h5>
                   </div>
                   
-                  <div className="flex items-center space-x-4 text-xs text-gray-600">
+                  <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                     <div className="flex items-center space-x-1">
                       <HardDrive className="w-3 h-3" />
                       <span>{formatFileSize(file.size)}</span>
@@ -87,7 +87,7 @@ export const FileUploadStatus: React.FC<FileUploadStatusProps> = ({
                   </div>
                   
                   <div className="mt-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
                       ✓ Successfully uploaded
                     </span>
                   </div>
@@ -96,7 +96,7 @@ export const FileUploadStatus: React.FC<FileUploadStatusProps> = ({
               
               <button
                 onClick={() => onRemoveFile(index)}
-                className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                className="flex-shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors"
                 title="Remove file"
               >
                 <X className="w-4 h-4" />
@@ -107,7 +107,7 @@ export const FileUploadStatus: React.FC<FileUploadStatusProps> = ({
       </div>
       
       {acceptedFormats.length > 0 && (
-        <div className="mt-3 text-xs text-gray-500">
+        <div className="mt-3 text-xs text-muted-foreground">
           <span>Accepted formats: {acceptedFormats.join(', ')}</span>
         </div>
       )}

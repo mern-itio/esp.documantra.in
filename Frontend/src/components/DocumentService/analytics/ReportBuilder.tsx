@@ -17,7 +17,7 @@ interface ReportWidget {
   type: 'chart' | 'metric' | 'table' | 'text';
   title: string;
   dataSource: string;
-  config: any;
+  config: Record<string, unknown>;
   position: { x: number; y: number; w: number; h: number };
 }
 
@@ -26,7 +26,7 @@ interface ReportTemplate {
   name: string;
   description: string;
   widgets: ReportWidget[];
-  filters: any[];
+  filters: unknown[];
   schedule?: {
     frequency: 'daily' | 'weekly' | 'monthly';
     recipients: string[];
@@ -99,7 +99,7 @@ export function ReportBuilder({
   const addWidget = (type: string) => {
     const newWidget: ReportWidget = {
       id: `widget-${Date.now()}`,
-      type: type as any,
+      type: type as ReportWidget['type'],
       title: `New ${type}`,
       dataSource: 'documents',
       config: {},
@@ -144,13 +144,13 @@ export function ReportBuilder({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <BarChart3 className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">
               {existingReport ? 'Edit Report' : 'Create Custom Report'}
             </h2>
           </div>
@@ -167,13 +167,13 @@ export function ReportBuilder({
 
         <div className="flex h-[80vh]">
           {/* Sidebar */}
-          <div className="w-80 border-r border-gray-200 overflow-y-auto">
+          <div className="w-80 border-r border-border overflow-y-auto bg-muted/20">
             {/* Report Settings */}
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Report Settings</h3>
+            <div className="p-4 border-b border-border">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Report Settings</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Report Name
                   </label>
                   <Input
@@ -185,14 +185,14 @@ export function ReportBuilder({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Description
                   </label>
                   <textarea
                     value={report.description}
                     onChange={(e) => setReport(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Describe this report..."
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                    className="w-full p-2 border border-input rounded-md text-sm bg-background text-foreground placeholder:text-muted-foreground"
                     rows={2}
                   />
                 </div>
@@ -200,8 +200,8 @@ export function ReportBuilder({
             </div>
 
             {/* Widget Library */}
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Add Widgets</h3>
+            <div className="p-4 border-b border-border">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Add Widgets</h3>
               <div className="space-y-2">
                 {WIDGET_TYPES.map((widget) => {
                   const Icon = widget.icon;
@@ -209,15 +209,15 @@ export function ReportBuilder({
                     <button
                       key={widget.type}
                       onClick={() => addWidget(widget.type)}
-                      className="w-full p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors text-left"
+                      className="w-full p-3 border border-border rounded-lg hover:bg-accent hover:border-primary/30 transition-colors text-left"
                     >
                       <div className="flex items-center space-x-2 mb-1">
-                        <Icon className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm font-medium text-gray-900">
+                        <Icon className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">
                           {widget.label}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500">{widget.description}</p>
+                      <p className="text-xs text-muted-foreground">{widget.description}</p>
                     </button>
                   );
                 })}
@@ -227,13 +227,13 @@ export function ReportBuilder({
             {/* Filters */}
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
+                <h3 className="text-sm font-semibold text-foreground">Filters</h3>
                 <Button size="sm" variant="ghost">
                   <Plus className="w-3 h-3" />
                 </Button>
               </div>
               <div className="space-y-2">
-                <div className="p-2 border border-gray-200 rounded text-sm">
+                <div className="p-2 border border-border rounded-md text-sm bg-background text-foreground">
                   <div className="flex items-center justify-between">
                     <span>Date Range</span>
                     <Button size="sm" variant="ghost" className="h-4 w-4 p-0">
@@ -241,7 +241,7 @@ export function ReportBuilder({
                     </Button>
                   </div>
                 </div>
-                <div className="p-2 border border-gray-200 rounded text-sm">
+                <div className="p-2 border border-border rounded-md text-sm bg-background text-foreground">
                   <div className="flex items-center justify-between">
                     <span>Document Type</span>
                     <Button size="sm" variant="ghost" className="h-4 w-4 p-0">
@@ -254,16 +254,16 @@ export function ReportBuilder({
           </div>
 
           {/* Main Canvas */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto bg-background">
             <div className="p-6">
               {report.widgets.length === 0 ? (
-                <div className="h-96 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                <div className="h-96 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted/20">
                   <div className="text-center">
-                    <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <BarChart3 className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
                       Start Building Your Report
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-muted-foreground mb-4">
                       Add widgets from the sidebar to create your custom report
                     </p>
                     <Button onClick={() => addWidget('chart')}>
@@ -277,11 +277,11 @@ export function ReportBuilder({
                   {report.widgets.map((widget) => (
                     <div
                       key={widget.id}
-                      className={`col-span-${widget.position.w} border border-gray-200 rounded-lg p-4 relative group`}
+                      className={`col-span-${widget.position.w} border border-border rounded-lg p-4 relative group bg-card`}
                     >
                       {/* Widget Header */}
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-medium text-gray-900">
+                        <h4 className="text-sm font-medium text-foreground">
                           {widget.title}
                         </h4>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
@@ -300,7 +300,7 @@ export function ReportBuilder({
                             size="sm"
                             variant="ghost"
                             onClick={() => removeWidget(widget.id)}
-                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive/90"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -308,13 +308,13 @@ export function ReportBuilder({
                       </div>
 
                       {/* Widget Content */}
-                      <div className="h-32 bg-gray-50 rounded flex items-center justify-center">
+                      <div className="h-32 bg-muted/40 rounded-md flex items-center justify-center">
                         <div className="text-center">
-                          <BarChart3 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                          <p className="text-sm text-gray-500">
+                          <BarChart3 className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">
                             {widget.type.charAt(0).toUpperCase() + widget.type.slice(1)} Widget
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted-foreground/80">
                             Data: {DATA_SOURCES.find(ds => ds.id === widget.dataSource)?.label}
                           </p>
                         </div>
@@ -328,7 +328,7 @@ export function ReportBuilder({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/10">
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm">
               <Calendar className="w-4 h-4 mr-2" />
@@ -343,7 +343,7 @@ export function ReportBuilder({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleSave}>
               <Save className="w-4 h-4 mr-2" />
               Save Report
             </Button>
@@ -352,15 +352,15 @@ export function ReportBuilder({
 
         {/* Widget Configuration Modal */}
         {showWidgetConfig && selectedWidget && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center z-10">
+            <div className="bg-card text-card-foreground border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+              <h3 className="text-lg font-semibold text-foreground mb-4">
                 Configure Widget
               </h3>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Widget Title
                   </label>
                   <Input
@@ -370,13 +370,13 @@ export function ReportBuilder({
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Data Source
                   </label>
                   <select
                     value={report.widgets.find(w => w.id === selectedWidget)?.dataSource || ''}
                     onChange={(e) => updateWidget(selectedWidget, { dataSource: e.target.value })}
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-input rounded-md bg-background text-foreground"
                   >
                     {DATA_SOURCES.map((source) => (
                       <option key={source.id} value={source.id}>

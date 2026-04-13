@@ -188,19 +188,19 @@ const BatchOptimization: React.FC = () => {
   // Show only result when batch optimization is successful - hide everything else
   if (result && result.success) {
     return (
-      <div className="mx-auto space-y-6">
-        <div className="bg-white shadow-sm border-b">
+      <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+        <div className="bg-background shadow-sm border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                 to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Batch Optimization</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Batch Optimization</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Optimize multiple PDFs simultaneously with custom profiles
                 </p>
               </div>
@@ -212,60 +212,60 @@ const BatchOptimization: React.FC = () => {
         <div className="max-w-7xl mx-auto p-6">
           <Card className="p-6">
             <div className="text-center mb-6">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Batch Optimization Complete!</h3>
-              <p className="text-gray-600">Your PDFs have been optimized successfully</p>
+              <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-foreground mb-2">Batch Optimization Complete!</h3>
+              <p className="text-muted-foreground">Your PDFs have been optimized successfully</p>
             </div>
 
             {/* Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{result.summary.totalFiles}</p>
-                <p className="text-sm text-gray-600">Total Files</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">{result.summary.totalFiles}</p>
+                <p className="text-sm text-muted-foreground">Total Files</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-green-600">{result.summary.successfulFiles}</p>
-                <p className="text-sm text-gray-600">Successful</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{result.summary.successfulFiles}</p>
+                <p className="text-sm text-muted-foreground">Successful</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-red-600">{result.summary.failedFiles}</p>
-                <p className="text-sm text-gray-600">Failed</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{result.summary.failedFiles}</p>
+                <p className="text-sm text-muted-foreground">Failed</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-blue-600">{result.summary.averageCompressionRatio}</p>
-                <p className="text-sm text-gray-600">Avg. Reduction</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{result.summary.averageCompressionRatio}</p>
+                <p className="text-sm text-muted-foreground">Avg. Reduction</p>
               </div>
             </div>
 
             {/* Individual Results */}
             <div className="space-y-4 mb-6">
-              <h4 className="font-medium text-gray-900">File Results:</h4>
+              <h4 className="font-medium text-foreground">File Results:</h4>
               {result.results.map((fileResult, index) => (
-                <div key={index} className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div key={index} className="p-4 bg-emerald-50 dark:bg-emerald-950/35 border border-emerald-200 dark:border-emerald-900 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-green-900">{fileResult.filename}</span>
+                    <span className="font-medium text-emerald-900 dark:text-emerald-200">{fileResult.filename}</span>
                     <Button
                       onClick={() => handleDownload(fileResult.outputFilename)}
                       size="sm"
                       variant="outline"
-                      className="text-green-700 border-green-300 hover:bg-green-100"
+                      className="text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/45"
                     >
                       <FileDown className="h-4 w-4 mr-1" />
                       Download
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
+                  <div className="grid grid-cols-2 gap-2 text-sm text-emerald-700 dark:text-emerald-300">
                     <div>
-                      <span className="text-green-600">Original:</span> {formatFileSize(fileResult.originalSize)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Original:</span> {formatFileSize(fileResult.originalSize)}
                     </div>
                     <div>
-                      <span className="text-green-600">Optimized:</span> {formatFileSize(fileResult.optimizedSize)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Optimized:</span> {formatFileSize(fileResult.optimizedSize)}
                     </div>
                     <div>
-                      <span className="text-green-600">Reduction:</span> {fileResult.compressionRatio}
+                      <span className="text-emerald-600 dark:text-emerald-400">Reduction:</span> {fileResult.compressionRatio}
                     </div>
                     <div>
-                      <span className="text-green-600">Size Saved:</span> {formatFileSize(fileResult.sizeReduction)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Size Saved:</span> {formatFileSize(fileResult.sizeReduction)}
                     </div>
                   </div>
                 </div>
@@ -275,11 +275,11 @@ const BatchOptimization: React.FC = () => {
             {/* Errors */}
             {result.errors.length > 0 && (
               <div className="space-y-2 mb-6">
-                <h4 className="font-medium text-gray-900 text-red-600">Failed Files:</h4>
+                <h4 className="font-medium text-red-600 dark:text-red-400">Failed Files:</h4>
                 {result.errors.map((error, index) => (
-                  <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="font-medium text-red-900">{error.filename}</p>
-                    <p className="text-sm text-red-700">{error.error}</p>
+                  <div key={index} className="p-3 bg-red-50 dark:bg-red-950/35 border border-red-200 dark:border-red-900 rounded-lg">
+                    <p className="font-medium text-red-900 dark:text-red-200">{error.filename}</p>
+                    <p className="text-sm text-red-700 dark:text-red-300">{error.error}</p>
                   </div>
                 ))}
               </div>
@@ -290,7 +290,7 @@ const BatchOptimization: React.FC = () => {
               {result.batchDownloadUrl && (
                 <Button
                   onClick={handleBatchDownload}
-                  className="bg-green-600 hover:bg-green-700 flex items-center"
+                  className="bg-success text-success-foreground hover:bg-success/90 flex items-center"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download All Files
@@ -323,19 +323,19 @@ const BatchOptimization: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto space-y-6">
-      <div className="bg-white shadow-sm border-b">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Batch Optimization</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Batch Optimization</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Optimize multiple PDFs simultaneously with custom profiles
               </p>
             </div>
@@ -350,18 +350,18 @@ const BatchOptimization: React.FC = () => {
             {selectedFiles.length === 0 && (
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">Upload PDF Files</h2>
-                  <span className="text-sm text-gray-500">0/10 files</span>
+                  <h2 className="text-xl font-semibold text-foreground">Upload PDF Files</h2>
+                  <span className="text-sm text-muted-foreground">0/10 files</span>
                 </div>
 
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-muted-foreground/40 transition-colors bg-muted/30 dark:bg-muted/20">
+                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <div className="space-y-2">
-                    <p className="text-lg font-medium text-gray-900">Select PDF files</p>
-                    <p className="text-gray-500">
+                    <p className="text-lg font-medium text-foreground">Select PDF files</p>
+                    <p className="text-muted-foreground">
                       Drag and drop PDF files here, or click to browse
                     </p>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       Maximum 10 files, 2MB each
                     </p>
                   </div>
@@ -389,15 +389,15 @@ const BatchOptimization: React.FC = () => {
             {/* Selected Files Info - Show after file selection */}
             {selectedFiles.length > 0 && (
               <Card className="p-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="bg-primary/10 border border-primary/30 dark:bg-primary/15 dark:border-primary/40 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-blue-600" />
+                      <div className="w-12 h-12 bg-primary/15 rounded-lg flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Selected PDF Files</h3>
-                        <p className="text-sm text-gray-600">
+                        <h3 className="text-lg font-semibold text-foreground">Selected PDF Files</h3>
+                        <p className="text-sm text-muted-foreground">
                           {selectedFiles.length} file(s) selected
                         </p>
                       </div>
@@ -411,7 +411,7 @@ const BatchOptimization: React.FC = () => {
                           fileInputRef.current.value = '';
                         }
                       }}
-                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -420,19 +420,19 @@ const BatchOptimization: React.FC = () => {
                   {/* Selected Files List */}
                   <div className="space-y-2">
                     {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                         <div className="flex items-center space-x-3">
-                          <FileText className="h-5 w-5 text-blue-600" />
+                          <FileText className="h-5 w-5 text-primary" />
                           <div>
-                            <p className="font-medium text-gray-900">{file.name}</p>
-                            <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+                            <p className="font-medium text-foreground">{file.name}</p>
+                            <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => removeFile(index)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-destructive hover:text-destructive/90"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -446,7 +446,7 @@ const BatchOptimization: React.FC = () => {
             {/* Optimization Settings */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Optimization Settings</h2>
+                <h2 className="text-xl font-semibold text-foreground">Optimization Settings</h2>
                 <div className="flex space-x-2">
                   <Button
                     variant={activeTab === 'presets' ? 'default' : 'outline'}
@@ -472,22 +472,22 @@ const BatchOptimization: React.FC = () => {
                       key={preset.id}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                         selectedPreset?.id === preset.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary bg-primary/10 dark:bg-primary/15'
+                          : 'border-border hover:border-muted-foreground/40'
                       }`}
                       onClick={() => handlePresetSelect(preset)}
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-medium text-gray-900">{preset.name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">{preset.description}</p>
-                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                          <h3 className="font-medium text-foreground">{preset.name}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{preset.description}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <span>Reduction: {preset.estimatedReduction}</span>
                             <span>Use: {preset.useCase}</span>
                           </div>
                         </div>
                         {selectedPreset?.id === preset.id && (
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                          <CheckCircle className="h-5 w-5 text-primary" />
                         )}
                       </div>
                     </div>
@@ -499,13 +499,13 @@ const BatchOptimization: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Compression Level
                       </label>
                       <select
                         value={customOptions.compressionLevel}
                         onChange={(e) => handleCustomOptionChange('compressionLevel', e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-md"
+                        className="w-full p-2 border border-border rounded-md bg-background text-foreground"
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -514,7 +514,7 @@ const BatchOptimization: React.FC = () => {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Image Quality
                       </label>
                       <input
@@ -525,7 +525,7 @@ const BatchOptimization: React.FC = () => {
                         onChange={(e) => handleCustomOptionChange('imageQuality', parseInt(e.target.value))}
                         className="w-full"
                       />
-                      <span className="text-sm text-gray-500">{customOptions.imageQuality}%</span>
+                      <span className="text-sm text-muted-foreground">{customOptions.imageQuality}%</span>
                     </div>
                   </div>
 
@@ -538,7 +538,7 @@ const BatchOptimization: React.FC = () => {
                         onChange={(e) => handleCustomOptionChange('downscaleImages', e.target.checked)}
                         className="rounded"
                       />
-                      <label htmlFor="downscaleImages" className="text-sm font-medium text-gray-700">
+                      <label htmlFor="downscaleImages" className="text-sm font-medium text-foreground">
                         Downscale Images
                       </label>
                     </div>
@@ -551,7 +551,7 @@ const BatchOptimization: React.FC = () => {
                         onChange={(e) => handleCustomOptionChange('removeMetadata', e.target.checked)}
                         className="rounded"
                       />
-                      <label htmlFor="removeMetadata" className="text-sm font-medium text-gray-700">
+                      <label htmlFor="removeMetadata" className="text-sm font-medium text-foreground">
                         Remove Metadata
                       </label>
                     </div>
@@ -561,7 +561,7 @@ const BatchOptimization: React.FC = () => {
 
               {/* Optimization Profile */}
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Optimization Profile
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -578,8 +578,8 @@ const BatchOptimization: React.FC = () => {
                         onClick={() => setOptimizationProfile(profile.value as any)}
                         className={`p-3 border rounded-lg text-center transition-colors ${
                           optimizationProfile === profile.value
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-primary bg-primary/10 text-primary dark:bg-primary/15'
+                            : 'border-border hover:border-muted-foreground/40'
                         }`}
                       >
                         <Icon className="h-5 w-5 mx-auto mb-1" />
@@ -617,17 +617,17 @@ const BatchOptimization: React.FC = () => {
             {isProcessing && (
               <Card className="p-6">
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Processing files...</span>
                     <span>{progress.current}/{progress.total}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${progress.percentage}%` }}
                     />
                   </div>
-                  <p className="text-sm text-gray-500 text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     {progress.current > 0 && progress.current <= progress.total
                       ? `Processing: ${selectedFiles[progress.current - 1]?.name}`
                       : 'Preparing files...'}
@@ -638,12 +638,12 @@ const BatchOptimization: React.FC = () => {
 
             {/* Error Display */}
             {error && (
-              <Card className="p-6 border-red-200 bg-red-50">
+              <Card className="p-6 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/35">
                 <div className="flex items-center space-x-3">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
+                  <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
                   <div>
-                    <h3 className="font-medium text-red-900">Error</h3>
-                    <p className="text-sm text-red-700">{error}</p>
+                    <h3 className="font-medium text-red-900 dark:text-red-200">Error</h3>
+                    <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                   </div>
                 </div>
               </Card>

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { authenticator } = require('otplib');
 const User  = require('../models/User');
 const { attachReferralOnSignup } = require('./referralController');
 const { isEmailValid } = require('@draftnsign/validators');
@@ -15,6 +16,11 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const OTP_EXPIRY_MINUTES = 10;
 const SIGNUP_TOKEN_EXPIRY = '15m';
 const TWO_FA_TOKEN_EXPIRY = '10m';
+
+authenticator.options = {
+  window: [1, 1],
+  step: 30,
+};
 
 async function verifyRecaptcha(token) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
@@ -58,6 +64,10 @@ function hashOtp(otp) {
   return crypto.createHash('sha256').update(String(otp)).digest('hex');
 }
 
+function normalizeOtpCode(otp) {
+  return String(otp || '').replace(/\s|-/g, '').trim();
+}
+
 function hashDeviceId(deviceId) {
   // Use server secret as salt so hashes can't be reversed easily
   const salt = process.env.ACCESS_TOKEN_SECRET || 'draftnsign';
@@ -95,6 +105,10 @@ function decodeTwoFaToken(twoFaToken) {
 }
 
 async function sendTwoFaOtp(user) {
+  if (user.twoFaMethod === 'authenticator') {
+    return { method: 'authenticator', destination: 'your authenticator app' };
+  }
+
   const otp = generateOtp();
   user.twoFaOtpHash = hashOtp(otp);
   user.twoFaOtpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -267,7 +281,12 @@ const login = async (req, res) => {
 
     if (!trusted) {
       const twoFaToken = issueTwoFaToken(user._id, didHash || 'unknown');
-      let destInfo = { method: user.twoFaMethod || 'email', destination: user.twoFaMethod === 'sms' ? maskPhone(user.phone) : maskEmail(user.email) };
+      let destInfo = {
+        method: user.twoFaMethod || 'email',
+        destination: user.twoFaMethod === 'sms'
+          ? maskPhone(user.phone)
+          : (user.twoFaMethod === 'authenticator' ? 'your authenticator app' : maskEmail(user.email))
+      };
       try {
         destInfo = await sendTwoFaOtp(user);
       } catch (err) {
@@ -354,12 +373,21 @@ const verifyTwoFaLogin = async (req, res) => {
   if (!user) return res.status(404).json({ message: 'User not found' });
   if (!user.twoFaEnabled) return res.status(400).json({ message: '2FA is not enabled for this user' });
 
-  const now = new Date();
-  if (!user.twoFaOtpExpires || user.twoFaOtpExpires < now) {
-    return res.status(400).json({ message: 'OTP expired. Please login again to resend.' });
+  const code = normalizeOtpCode(otp);
+  if (user.twoFaMethod === 'authenticator') {
+    if (!user.twoFaAuthenticatorSecret) {
+      return res.status(400).json({ message: 'Authenticator app is not configured. Please update your 2FA settings.' });
+    }
+    const validTotp = authenticator.check(code, user.twoFaAuthenticatorSecret);
+    if (!validTotp) return res.status(400).json({ message: 'Invalid authenticator code' });
+  } else {
+    const now = new Date();
+    if (!user.twoFaOtpExpires || user.twoFaOtpExpires < now) {
+      return res.status(400).json({ message: 'OTP expired. Please login again to resend.' });
+    }
+    const match = user.twoFaOtpHash === hashOtp(code);
+    if (!match) return res.status(400).json({ message: 'Invalid OTP' });
   }
-  const match = user.twoFaOtpHash === hashOtp(String(otp).trim());
-  if (!match) return res.status(400).json({ message: 'Invalid OTP' });
 
   // Clear OTP
   user.twoFaOtpHash = undefined;
@@ -408,9 +436,13 @@ const verifyTwoFaLogin = async (req, res) => {
 const getTwoFaSettings = async (req, res) => {
   const userId = req.user?.data?.id || req.user?.id || req.user?._id;
   if (!userId) return res.status(401).json({ message: 'Not authenticated' });
-  const user = await User.findById(userId).select('twoFaEnabled twoFaMethod');
+  const user = await User.findById(userId).select('twoFaEnabled twoFaMethod twoFaAuthenticatorSecret');
   if (!user) return res.status(404).json({ message: 'User not found' });
-  return res.status(200).json({ twoFaEnabled: !!user.twoFaEnabled, twoFaMethod: user.twoFaMethod || 'email' });
+  return res.status(200).json({
+    twoFaEnabled: !!user.twoFaEnabled,
+    twoFaMethod: user.twoFaMethod || 'email',
+    authenticatorConfigured: !!user.twoFaAuthenticatorSecret,
+  });
 };
 
 const updateTwoFaSettings = async (req, res) => {
@@ -421,13 +453,75 @@ const updateTwoFaSettings = async (req, res) => {
   if (!user) return res.status(404).json({ message: 'User not found' });
 
   const nextEnabled = typeof enabled === 'boolean' ? enabled : !!user.twoFaEnabled;
-  const nextMethod = (method === 'sms' || method === 'email') ? method : (user.twoFaMethod || 'email');
+  const nextMethod = (method === 'sms' || method === 'email' || method === 'authenticator')
+    ? method
+    : (user.twoFaMethod || 'email');
+  if (nextMethod === 'authenticator' && nextEnabled && !user.twoFaAuthenticatorSecret) {
+    return res.status(400).json({ message: 'Set up your authenticator app first before enabling it.' });
+  }
 
   user.twoFaEnabled = nextEnabled;
   user.twoFaMethod = nextMethod;
   await user.save({ validateBeforeSave: false });
 
   return res.status(200).json({ message: '2FA settings updated', twoFaEnabled: !!user.twoFaEnabled, twoFaMethod: user.twoFaMethod });
+};
+
+const setupAuthenticatorTwoFa = async (req, res) => {
+  const userId = req.user?.data?.id || req.user?.id || req.user?._id;
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+  const user = await User.findById(userId).select('email fullname twoFaAuthenticatorTempSecret');
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const tempSecret = authenticator.generateSecret();
+  user.twoFaAuthenticatorTempSecret = tempSecret;
+  await user.save({ validateBeforeSave: false });
+
+  const accountLabel = user.email || user.fullname || `user-${user._id}`;
+  const issuer = process.env.APP_NAME || 'DraftAndSign';
+  const otpauthUrl = authenticator.keyuri(accountLabel, issuer, tempSecret);
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(otpauthUrl)}`;
+
+  return res.status(200).json({
+    message: 'Authenticator setup generated.',
+    secret: tempSecret,
+    manualEntryKey: tempSecret,
+    otpauthUrl,
+    qrCodeUrl,
+  });
+};
+
+const verifyAuthenticatorTwoFaSetup = async (req, res) => {
+  const userId = req.user?.data?.id || req.user?.id || req.user?._id;
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+  const code = normalizeOtpCode(req.body?.code);
+  if (!code) return res.status(400).json({ message: 'Verification code is required.' });
+
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user.twoFaAuthenticatorTempSecret) {
+    return res.status(400).json({ message: 'Start authenticator setup before verification.' });
+  }
+
+  const isValid = authenticator.check(code, user.twoFaAuthenticatorTempSecret);
+  if (!isValid) return res.status(400).json({ message: 'Invalid verification code. Please try again.' });
+
+  user.twoFaAuthenticatorSecret = user.twoFaAuthenticatorTempSecret;
+  user.twoFaAuthenticatorTempSecret = null;
+  user.twoFaMethod = 'authenticator';
+  user.twoFaEnabled = true;
+  user.twoFaOtpHash = null;
+  user.twoFaOtpExpires = null;
+  user.twoFaAuthenticatorVerifiedAt = new Date();
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json({
+    message: 'Authenticator app enabled successfully.',
+    twoFaEnabled: !!user.twoFaEnabled,
+    twoFaMethod: user.twoFaMethod,
+    authenticatorConfigured: true,
+  });
 };
 
 // Register — email OTP required to activate; phone / SMS verification optional
@@ -1274,6 +1368,8 @@ module.exports = {
   verifyTwoFaLogin,
   getTwoFaSettings,
   updateTwoFaSettings,
+  setupAuthenticatorTwoFa,
+  verifyAuthenticatorTwoFaSetup,
   register,
   // Sequential signup verification
   sendSignupEmailOtp,

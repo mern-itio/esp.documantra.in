@@ -31,17 +31,24 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
 
   const { refreshData } = useDocumentStore();
   const { userPlan } = useSubscription();
-  const [plan, setPlan] = useState<any>(() => SubscriptionStorage.getPlan());
+  const [plan, setPlan] = useState<Record<string, unknown> | null>(() =>
+    SubscriptionStorage.getPlan() as Record<string, unknown> | null
+  );
   useEffect(() => {
-    const load = () => setPlan(SubscriptionStorage.getPlan());
+    const load = () =>
+      setPlan(SubscriptionStorage.getPlan() as Record<string, unknown> | null);
     load();
     const handler = () => load();
     window.addEventListener('subscription-plan-updated', handler);
     return () => window.removeEventListener('subscription-plan-updated', handler);
   }, [isOpen]);
-  const effectivePlan: any = plan || userPlan;
-  const creditsBalance = effectivePlan?.creditsBalance ?? 0;
-  const shareCost = effectivePlan?.shareCosts?.credits ?? effectivePlan?.pdfShareCosts?.credits ?? effectivePlan?.documentCosts?.credits ?? 0;
+  const effectivePlan = (plan || userPlan) as Record<string, unknown> | null | undefined;
+  const creditsBalance = Number(effectivePlan?.creditsBalance ?? 0);
+  const shareCosts = effectivePlan?.shareCosts as Record<string, unknown> | undefined;
+  const pdfShareCosts = effectivePlan?.pdfShareCosts as Record<string, unknown> | undefined;
+  const documentCosts = effectivePlan?.documentCosts as Record<string, unknown> | undefined;
+  const shareCost =
+    Number(shareCosts?.credits ?? pdfShareCosts?.credits ?? documentCosts?.credits ?? 0);
   const remainingAfter = creditsBalance - shareCost;
 
   const addShareRequest = () => {
@@ -105,10 +112,12 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
             storedPlan.creditsBalance = creditsBalance;
             localStorage.setItem('userSubscriptionPlan', JSON.stringify(storedPlan));
             window.dispatchEvent(new Event('subscription-plan-updated'));
-            setPlan(storedPlan);
+            setPlan(storedPlan as Record<string, unknown>);
           }
         }
-      } catch {}
+      } catch {
+        /* noop */
+      }
 
       setSuccess(`Successfully shared ${selectedDocuments.length} document(s) with ${shareRequests.length} user(s)`);
       
@@ -122,10 +131,14 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
         setShareMessage('');
       }, 2000);
 
-    } catch (error: any) {
-      const status = error?.response?.status;
-      const data = error?.response?.data;
-      const msg = error?.message || '';
+    } catch (error: unknown) {
+      const ax = error as {
+        response?: { status?: number; data?: Record<string, unknown> };
+        message?: string;
+      };
+      const status = ax.response?.status;
+      const data = ax.response?.data;
+      const msg = ax.message || '';
       if (status === 402 && data && typeof data === 'object') {
         const required = Number(data.required || data?.requiredCredits || 0);
         const balance = Number(data.creditsBalance || data?.balance || 0);
@@ -158,51 +171,57 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
   const getPermissionColor = (permission: string) => {
     switch (permission) {
       case 'view':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+        return 'border-primary/30 bg-primary/10 text-primary';
       case 'edit':
-        return 'text-green-600 bg-green-50 border-green-200';
+        return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
       case 'comment':
-        return 'text-purple-600 bg-purple-50 border-purple-200';
+        return 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300';
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'border-border bg-muted text-muted-foreground';
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"   onClick={(e) => e.stopPropagation()} >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm dark:bg-black/60">
+      <div
+        className="mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-border bg-card text-card-foreground shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between border-b border-border p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Mail className="w-6 h-6 text-blue-600" />
+            <div className="rounded-lg bg-primary/10 p-2 dark:bg-primary/20">
+              <Mail className="h-6 w-6 text-primary" />
             </div>
             <div>
 
-              <h2 className="text-xl font-semibold text-gray-900">Share Documents</h2>
+              <h2 className="text-xl font-semibold text-foreground">Share Documents</h2>
               
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Share {selectedDocuments.length} document(s) with collaborators
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="rounded-lg p-2 transition-colors hover:bg-accent"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          <div className={`mb-2 px-3 py-2 rounded-lg text-sm flex items-center justify-between ${
-            remainingAfter < 0 
-              ? 'bg-red-50 border border-red-200 text-red-800' 
-              : 'bg-green-50 border border-green-200 text-green-800'
-          }`}>
+          <div
+            className={`mb-2 flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+              remainingAfter < 0
+                ? 'border-destructive/30 bg-destructive/10 text-destructive dark:text-red-200'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100'
+            }`}
+          >
             <div className="flex items-center gap-3">
               <span><span className="font-medium">Credits:</span> {creditsBalance}</span>
               <span>•</span>
@@ -211,7 +230,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
               <span>
                 <span className="font-medium">After share:</span>{' '}
                 {remainingAfter < 0 ? (
-                  <span className="text-red-600 font-semibold">
+                  <span className="font-semibold text-destructive">
                     {remainingAfter} ({Math.abs(remainingAfter)} credits required)
                   </span>
                 ) : (
@@ -222,14 +241,14 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
           </div>
           {/* Share Message */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-foreground">
               Share Message (Optional)
             </label>
             <textarea
               value={shareMessage}
               onChange={(e) => setShareMessage(e.target.value)}
               placeholder="Add a personal message to your invitation..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-transparent focus:outline-none focus:ring-2 focus:ring-ring"
               rows={3}
             />
           </div>
@@ -237,7 +256,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
           {/* Share Requests */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-foreground">
                 Invite Collaborators
               </label>
               <Button
@@ -268,7 +287,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
                   <select
                     value={request.permission}
                     onChange={(e) => updateShareRequest(index, 'permission', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-foreground focus:border-transparent focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="view">View Only</option>
                     <option value="comment">Comment</option>
@@ -279,7 +298,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
                     <button
                       type="button"
                       onClick={() => removeShareRequest(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      className="rounded-md p-2 text-destructive transition-colors hover:bg-destructive/10"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -290,8 +309,8 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
           </div>
 
           {/* Permission Legend */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Permission Levels</h4>
+          <div className="rounded-lg bg-muted/50 p-4">
+            <h4 className="mb-3 text-sm font-medium text-foreground">Permission Levels</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex items-center space-x-2">
                 <div className={`p-2 rounded-lg border ${getPermissionColor('view')}`}>
@@ -299,7 +318,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
                 </div>
                 <div>
                   <div className="text-sm font-medium">View Only</div>
-                  <div className="text-xs text-gray-500">Can view and download</div>
+                  <div className="text-xs text-muted-foreground">Can view and download</div>
                 </div>
               </div>
               
@@ -309,7 +328,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
                 </div>
                 <div>
                   <div className="text-sm font-medium">Comment</div>
-                  <div className="text-xs text-gray-500">Can view and add comments</div>
+                  <div className="text-xs text-muted-foreground">Can view and add comments</div>
                 </div>
               </div>
               
@@ -319,7 +338,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
                 </div>
                 <div>
                   <div className="text-sm font-medium">Edit</div>
-                  <div className="text-xs text-gray-500">Can view, edit, and comment</div>
+                  <div className="text-xs text-muted-foreground">Can view, edit, and comment</div>
                 </div>
               </div>
             </div>
@@ -327,20 +346,20 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
 
           {/* Error/Success Messages */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="text-sm text-red-700">{error}</div>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 dark:bg-destructive/20">
+              <div className="text-sm text-destructive">{error}</div>
             </div>
           )}
 
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="text-sm text-green-700">{success}</div>
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 dark:bg-emerald-950/40">
+              <div className="text-sm text-emerald-800 dark:text-emerald-200">{success}</div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+        <div className="flex items-center justify-end space-x-3 border-t border-border p-6">
           <Button
             variant="outline"
             onClick={onClose}
@@ -351,11 +370,10 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
           <Button
             onClick={handleShare}
             disabled={isSharing || shareRequests.some(req => !req.email)}
-            className="bg-blue-600 hover:bg-blue-700"
           >
             {isSharing ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
                 Sharing...
               </>
             ) : (

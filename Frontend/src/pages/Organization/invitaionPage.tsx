@@ -50,25 +50,25 @@ const STATUS_CONFIG: Record<
   PENDING: {
     label: 'Pending your response',
     description: 'Accept to join the organization or decline if you prefer not to.',
-    className: 'bg-amber-50 text-amber-900 border-amber-200',
+    className: 'bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800',
     dotClass: 'bg-amber-500',
   },
   ACTIVE: {
     label: 'Accepted',
     description: 'You are a member of this organization. Open Organizations to continue.',
-    className: 'bg-emerald-50 text-emerald-900 border-emerald-200',
+    className: 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800',
     dotClass: 'bg-emerald-500',
   },
   DISABLED: {
     label: 'Invitation disabled',
     description: 'This link is no longer valid. Contact the organization admin if you need access.',
-    className: 'bg-gray-100 text-gray-800 border-gray-200',
-    dotClass: 'bg-gray-400',
+    className: 'bg-muted text-foreground border-border',
+    dotClass: 'bg-muted-foreground',
   },
   REJECTED: {
     label: 'Declined',
     description: 'You chose not to join. You can close this page.',
-    className: 'bg-red-50 text-red-900 border-red-200',
+    className: 'bg-red-50 text-red-900 border-red-200 dark:bg-red-950/40 dark:text-red-200 dark:border-red-900',
     dotClass: 'bg-red-500',
   },
 };
@@ -186,30 +186,29 @@ const InvitationPage: React.FC = () => {
   // const roleDescription = invitation?.roleId?.description;
 
   return (
-    <div className=" bg-gradient-to-br from-slate-50 via-purple-50/40 to-gray-100 flex items-center justify-center">
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-background via-muted/30 to-muted/50 dark:from-background dark:via-background dark:to-muted/20 flex items-center justify-center py-8 px-4">
       <div className="w-full max-w-6xl">
         {loading ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-purple-900/5 p-8 flex flex-col items-center justify-center gap-4">
-            <Loader2 className="w-10 h-10 text-[#260559] animate-spin" aria-hidden />
-            <p className="text-sm font-medium text-gray-600">Loading invitation…</p>
+          <div className="bg-card text-card-foreground rounded-2xl border border-border shadow-xl p-8 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" aria-hidden />
+            <p className="text-sm font-medium text-muted-foreground">Loading invitation…</p>
           </div>
         ) : !invitation ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[#260559] to-[#6d3fc0]" />
+          <div className="bg-card text-card-foreground rounded-2xl border border-border shadow-xl overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-primary to-primary/70" />
             <div className="p-10 text-center">
-              <div className="mx-auto mb-5 w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
-                <AlertCircle className="w-7 h-7 text-gray-500" />
+              <div className="mx-auto mb-5 w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+                <AlertCircle className="w-7 h-7 text-muted-foreground" />
               </div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-700 mb-2">Invitation</p>
-              <h1 className="text-xl font-bold text-gray-900 mb-2">Unable to load invitation</h1>
-              <p className="text-sm text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Invitation</p>
+              <h1 className="text-xl font-bold text-foreground mb-2">Unable to load invitation</h1>
+              <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
                 This link may be invalid, expired, or you may not have permission to view it.
               </p>
               <button
                 type="button"
                 onClick={redirectToOrganizations}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl shadow-lg hover:opacity-95 transition-opacity"
-                style={{ background: 'linear-gradient(135deg, #260559 0%, #4c1d95 100%)' }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-primary-foreground bg-primary rounded-xl shadow-lg hover:bg-primary/90 transition-opacity"
               >
                 Back to organizations
                 <ArrowRight className="w-4 h-4" />
@@ -217,17 +216,14 @@ const InvitationPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-purple-900/5 overflow-hidden">
-            <div className="h-1.5 w-full bg-gradient-to-r from-[#260559] via-[#4c1d95] to-[#6d3fc0]" />
+          <div className="bg-card text-card-foreground rounded-2xl border border-border shadow-xl overflow-hidden">
+            <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/80 to-primary/60" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-0">
               {/* Organization hero — large logo & org details */}
-              <div
-                className="lg:col-span-5 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100"
-                style={{ background: 'linear-gradient(180deg, #faf8ff 0%, #f4f0ff 55%, #ffffff 100%)' }}
-              >
+              <div className="lg:col-span-5 flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-gradient-to-b from-muted/40 via-muted/20 to-card dark:from-muted/30 dark:via-background dark:to-card">
                 <div className="flex flex-1 flex-col items-center justify-center p-8 sm:p-10 min-h-[280px] lg:min-h-[420px]">
-                  <div className="w-full max-w-[280px] aspect-square max-h-[min(52vw,280px)] lg:max-h-[320px] rounded-2xl border-2 border-white shadow-lg bg-white flex items-center justify-center p-6 sm:p-8">
+                  <div className="w-full max-w-[280px] aspect-square max-h-[min(52vw,280px)] lg:max-h-[320px] rounded-2xl border-2 border-border shadow-lg bg-card flex items-center justify-center p-6 sm:p-8">
                     {org?.logo && !logoFailed ? (
                       <img
                         src={org.logo}
@@ -236,27 +232,24 @@ const InvitationPage: React.FC = () => {
                         onError={() => setLogoFailed(true)}
                       />
                     ) : (
-                      <div
-                        className="w-full h-full min-h-[160px] rounded-xl flex items-center justify-center text-4xl sm:text-5xl font-bold text-white shadow-inner"
-                        style={{ background: 'linear-gradient(145deg, #260559 0%, #6d3fc0 100%)' }}
-                      >
+                      <div className="w-full h-full min-h-[160px] rounded-xl flex items-center justify-center text-4xl sm:text-5xl font-bold text-primary-foreground shadow-inner bg-gradient-to-br from-primary to-primary/80">
                         {orgInitials(orgName)}
                       </div>
                     )}
                   </div>
 
                   <div className="mt-8 text-center w-full max-w-md px-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-purple-800/70 mb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80 mb-2">
                       Organization
                     </p>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{orgName}</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground break-words">{orgName}</h2>
 
                     {org?.website ? (
                       <a
                         href={org.website.startsWith('http') ? org.website : `https://${org.website}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-1.5 mt-3 text-sm font-semibold text-[#260559] hover:text-[#34106a] break-all"
+                        className="inline-flex items-center justify-center gap-1.5 mt-3 text-sm font-semibold text-primary hover:text-primary/90 break-all"
                       >
                         <span className="break-all">{org.website.replace(/^https?:\/\//, '')}</span>
                         <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
@@ -264,10 +257,10 @@ const InvitationPage: React.FC = () => {
                     ) : null}
 
                     {org?.gst ? (
-                      <p className="mt-4 text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/80 border border-gray-200">
-                          <FileText className="w-3.5 h-3.5 text-gray-500" />
-                          <span className="font-mono text-gray-800 tracking-wide break-all">{org.gst}</span>
+                      <p className="mt-4 text-sm text-muted-foreground flex flex-wrap items-center justify-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-card/80 border border-border">
+                          <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="font-mono text-foreground tracking-wide break-all">{org.gst}</span>
                         </span>
                       </p>
                     ) : null}
@@ -278,25 +271,22 @@ const InvitationPage: React.FC = () => {
               {/* Invitation details & actions */}
               <div className="lg:col-span-7 p-8 sm:p-10 flex flex-col">
                 <div className="flex items-start gap-4 mb-8">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm border border-white/20"
-                    style={{ background: 'linear-gradient(145deg, #260559 0%, #5b21b6 100%)' }}
-                  >
-                    <Handshake className="w-6 h-6 text-white" aria-hidden />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm border border-primary/20 bg-gradient-to-br from-primary to-primary/80">
+                    <Handshake className="w-6 h-6 text-primary-foreground" aria-hidden />
                   </div>
                   <div className="min-w-0 pt-0.5">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-purple-700 mb-1">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-primary mb-1">
                       Collaboration invitation
                     </p>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
-                      Join <span className="text-[#260559]">{orgName}</span>
+                    <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                      Join <span className="text-primary">{orgName}</span>
                     </h1>
                   </div>
                 </div>
 
                 {/* Invited by */}
-                <div className="rounded-2xl border border-gray-200 bg-gray-50/90 p-5 mb-5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                <div className="rounded-2xl border border-border bg-muted/50 p-5 mb-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                     Invited by
                   </p>
                   {invitation.invitedBy?.name || invitation.invitedBy?.email ? (
@@ -311,20 +301,20 @@ const InvitationPage: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         {invitation.invitedBy.name ? (
-                          <p className="text-base font-bold text-gray-900 break-words">
+                          <p className="text-base font-bold text-foreground break-words">
                             {invitation.invitedBy.name}
                           </p>
                         ) : null}
                         {invitation.invitedBy.email ? (
-                          <p className="text-sm text-gray-600 mt-1 break-all flex items-start gap-2">
-                            <Mail className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <p className="text-sm text-muted-foreground mt-1 break-all flex items-start gap-2">
+                            <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                             {invitation.invitedBy.email}
                           </p>
                         ) : null}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
                       <UserCircle className="w-4 h-4" />
                       Organization administrator (details not available)
                     </p>
@@ -332,8 +322,8 @@ const InvitationPage: React.FC = () => {
                 </div>
 
                 {/* Your invitation */}
-                <div className="rounded-2xl border border-gray-200 bg-white p-5 mb-6 shadow-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                <div className="rounded-2xl border border-border bg-card p-5 mb-6 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                     Your invitation
                   </p>
 
@@ -341,12 +331,12 @@ const InvitationPage: React.FC = () => {
 
                     {/* Name */}
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <User className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <User className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Name
                         </p>
-                        <p className="text-sm font-semibold text-gray-900 truncate">
+                        <p className="text-sm font-semibold text-foreground truncate">
                           {invitation.name}
                         </p>
                       </div>
@@ -354,12 +344,12 @@ const InvitationPage: React.FC = () => {
 
                     {/* Email */}
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <Mail className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <Mail className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Email
                         </p>
-                        <p className="text-sm font-medium text-gray-800 truncate">
+                        <p className="text-sm font-medium text-foreground truncate">
                           {invitation.email}
                         </p>
                       </div>
@@ -368,12 +358,12 @@ const InvitationPage: React.FC = () => {
                     {/* Role */}
                     {roleName && (
                       <div className="flex items-start gap-2.5 min-w-0">
-                        <Shield className="w-4 h-4 text-[#260559] mt-0.5 flex-shrink-0" />
+                        <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Role
                           </p>
-                          <span className="inline-flex mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#260559]/10 text-[#260559] border border-[#260559]/20">
+                          <span className="inline-flex mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                             {roleName}
                           </span>
                         </div>
@@ -402,8 +392,7 @@ const InvitationPage: React.FC = () => {
                       type="button"
                       disabled={!!actionLoading}
                       onClick={() => handleAccept(invitation._id)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-                      style={{ background: 'linear-gradient(135deg, #260559 0%, #4c1d95 100%)' }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary shadow-lg hover:shadow-xl hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
                     >
                       {actionLoading === 'accept' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -416,7 +405,7 @@ const InvitationPage: React.FC = () => {
                       type="button"
                       disabled={!!actionLoading}
                       onClick={() => handleReject(invitation._id)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-gray-700 bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-foreground bg-background border-2 border-border hover:bg-accent hover:border-border disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                     >
                       {actionLoading === 'reject' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -428,13 +417,13 @@ const InvitationPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-2 mt-auto">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       No further action is required for this invitation.
                     </p>
                     <button
                       type="button"
                       onClick={redirectToOrganizations}
-                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#260559] hover:text-[#34106a]"
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/90"
                     >
                       Go to my organizations
                       <ArrowRight className="w-4 h-4" />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../components/AuthService/AuthContext';
 
 // Layouts
@@ -234,7 +235,7 @@ import CouponPage from '../pages/Account/CouponPage';
 // Lightweight wrapper to show PDF header on individual tool pages
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className='bg-white p-2'>
+    <div className='bg-background p-2'>
       <CostHeader />
       <div>
         {children}
@@ -257,9 +258,10 @@ const PDFToolsLayout = () => {
   const isPro = (user?.plan || '').toLowerCase() === 'pro';
 
   // Load active tools from admin and filter mock list
-  const [filteredMock, setFilteredMock] = useState<any>(mockPDFTools);
+  const [filteredMock, setFilteredMock] = useState<any>({});
   const [catalogTools, setCatalogTools] = useState<Array<{ _id?: string; id: string; name: string; description?: string; category?: string; priority?: number; icon?: string; complexity?: 'easy' | 'medium' | 'advanced'; avgProcessingTime?: string; popularity?: number }>>([]);
   const [activeToolIds, setActiveToolIds] = useState<Set<string>>(new Set());
+  const [isToolsLoading, setIsToolsLoading] = useState(true);
   const mockDescMap = React.useMemo(() => {
     const map = new Map<string, string>();
     // @ts-ignore iterate categories
@@ -289,6 +291,9 @@ const PDFToolsLayout = () => {
         if (!mounted) return;
         setCatalogTools(Array.isArray(tools) ? tools : []);
       } catch { }
+      finally {
+        if (mounted) setIsToolsLoading(false);
+      }
     })();
     return () => { mounted = false; };
   }, []);
@@ -436,10 +441,20 @@ const PDFToolsLayout = () => {
         return <HelpSystem onBack={() => setCurrentView('tools')} />;
 
       default:
+        if (isToolsLoading) {
+          return (
+            <div className="flex items-center justify-center">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Loading PDF tools...</span>
+              </div>
+            </div>
+          );
+        }
+
         const filteredTools = getFilteredTools();
 
         return (
-          <div>
             <ToolsGrid
               key={`${selectedCategory}-${searchQuery}`}
               tools={filteredTools}
@@ -450,13 +465,12 @@ const PDFToolsLayout = () => {
               searchQuery={searchQuery}
               selectedCategory={selectedCategory}
             />
-          </div>
         );
     }
   };
 
   return (
-    <div className='bg-white p-2'>
+    <div className='bg-background p-2'>
       {isPro && (
         <Header
           searchQuery={searchQuery}

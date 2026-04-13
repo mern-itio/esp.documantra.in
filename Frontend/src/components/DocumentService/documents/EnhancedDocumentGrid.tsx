@@ -5,6 +5,7 @@ import type { Document, ViewMode } from '../../common/types';
 import { EmptyState } from '../common/EmptyState';
 import Loader from '../../common/loader';
 import { Upload, FolderOpen } from 'lucide-react';
+import { Button } from '../ui/button';
 
 interface EnhancedDocumentGridProps {
   viewMode?: ViewMode;
@@ -78,16 +79,15 @@ export function EnhancedDocumentGrid({
             : "You haven't uploaded any documents yet. Upload your first document to get started."
         }
         action={
-          <button
+          <Button
             onClick={() => {
               if (onDocumentAction) {
                 onDocumentAction('upload', {} as Document);
               }
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             Upload Document
-          </button>
+          </Button>
         }
       />
     );
@@ -102,16 +102,16 @@ export function EnhancedDocumentGrid({
       const newSelection = [...selectedDocuments, documentId];
       setSelectedDocuments(newSelection);
     } else {
-      const newSelection = selectedDocuments.filter(id => id !== documentId);
-     setSelectedDocuments(newSelection);
-   }
+      const newSelection = selectedDocuments.filter((id) => id !== documentId);
+      setSelectedDocuments(newSelection);
+    }
   };
 
   return (
     <div className={gridClasses}>
       {filteredDocuments.map((document) => {
         const isSelected = selectedDocuments.includes(document.id);
-       return (
+        return (
           <DocumentCard
             key={document.id}
             document={document}

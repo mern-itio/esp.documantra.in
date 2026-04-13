@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { X, Folder, Search } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { Button } from './ui/button';
@@ -27,16 +27,16 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
 
   const normalize = (value: string) => value.toLowerCase().replace(/[\s_-]+/g, '');
 
-  const isRenderableIcon = (name: string) => {
+  const isRenderableIcon = useCallback((name: string) => {
     const candidate = (iconMap as Record<string, unknown>)[name];
     return !!candidate && (typeof candidate === 'function' || typeof candidate === 'object');
-  };
+  }, [iconMap]);
 
   const iconNames = useMemo(() => {
     return Object.keys(iconMap)
       .filter((name) => /^[A-Z]/.test(name) && isRenderableIcon(name))
       .sort((a, b) => a.localeCompare(b));
-  }, [iconMap]);
+  }, [iconMap, isRenderableIcon]);
 
   const resolveIconName = (raw?: string) => {
     const input = (raw || '').trim();
@@ -89,9 +89,10 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
       setShowIconDropdown(false);
       setError(null);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating folder:', error);
-      setError(error.message || 'Failed to create folder. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Failed to create folder. Please try again.';
+      setError(msg);
     } finally {
       setIsCreating(false);
     }
@@ -110,13 +111,13 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl max-w-md w-full">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Folder className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Create New Folder</h2>
+            <Folder className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Create New Folder</h2>
           </div>
           <Button
             variant="ghost"
@@ -133,13 +134,13 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
           <div className="space-y-4">
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 dark:bg-destructive/20">
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
             
             <div>
-              <label htmlFor="folder-name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="folder-name" className="block text-sm font-medium text-foreground mb-2">
                 Folder Name
               </label>
               <Input
@@ -153,12 +154,13 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                 }}
                 autoFocus
                 required
+                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="folder-color" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="folder-color" className="block text-sm font-medium text-foreground mb-2">
                   Color
                 </label>
                 <div className="flex items-center space-x-2">
@@ -167,18 +169,18 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                     type="color"
                     value={folderColor}
                     onChange={(e) => setFolderColor(e.target.value)}
-                    className="w-10 h-10 rounded border border-gray-300"
+                    className="w-10 h-10 rounded border border-border bg-background"
                   />
-                  <span className="text-sm text-gray-500">{folderColor}</span>
+                  <span className="text-sm text-muted-foreground">{folderColor}</span>
                 </div>
               </div>
               
               <div>
-                <label htmlFor="folder-icon" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="folder-icon" className="block text-sm font-medium text-foreground mb-2">
                   Icon
                 </label>
                 <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
                     <Search className="w-4 h-4" />
                   </div>
                   <Input
@@ -197,16 +199,16 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                     onBlur={() => {
                       setTimeout(() => setShowIconDropdown(false), 150);
                     }}
-                    className="pl-9 pr-10"
+                    className="pl-9 pr-10 border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     <SelectedIcon className="w-4 h-4" />
                   </div>
 
                   {showIconDropdown && (
-                    <div className="absolute z-20 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-56 overflow-y-auto">
+                    <div className="absolute z-20 mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground shadow-lg max-h-56 overflow-y-auto">
                       {filteredIconNames.length === 0 ? (
-                        <div className="px-3 py-2 text-sm text-gray-500">No icons found</div>
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No icons found</div>
                       ) : (
                         filteredIconNames.map((name) => {
                           const IconComp = iconMap[name];
@@ -220,8 +222,8 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                                 setIconSearch(name);
                                 setShowIconDropdown(false);
                               }}
-                              className={`w-full px-3 py-2 text-left flex items-center justify-between text-sm hover:bg-gray-50 ${
-                                isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                              className={`w-full px-3 py-2 text-left flex items-center justify-between text-sm hover:bg-accent ${
+                                isActive ? 'bg-primary/10 text-primary' : 'text-popover-foreground'
                               }`}
                             >
                               <span className="truncate">{name}</span>
@@ -233,7 +235,7 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
                     </div>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Type to search</p>
+                <p className="mt-1 text-xs text-muted-foreground">Type to search</p>
               </div>
             </div>
           </div>
@@ -245,13 +247,14 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit }: CreateFolderMod
               variant="outline" 
               onClick={handleClose}
               disabled={isCreating}
+              className="border-border bg-background hover:bg-accent hover:text-accent-foreground"
             >
               Cancel
             </Button>
             <Button 
               type="submit"
               disabled={!folderName.trim() || isCreating}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isCreating ? 'Creating...' : 'Create Folder'}
             </Button>

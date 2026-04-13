@@ -281,16 +281,16 @@ export function WorkflowStepModal({
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-foreground">
                 {step.name}
               </h3>
-              <p className="text-sm text-gray-500">{workflowName}</p>
+              <p className="text-sm text-muted-foreground">{workflowName}</p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -299,20 +299,20 @@ export function WorkflowStepModal({
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Step Details */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="bg-muted rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">
+                <h4 className="text-sm font-medium text-foreground">
                   Step Details
                 </h4>
                 <div
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
                     step.status === "completed"
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-success text-success-foreground"
                       : step.status === "in_progress"
-                      ? "bg-blue-100 text-blue-800"
+                      ? "bg-primary text-primary-foreground"
                       : step.status === "rejected"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-destructive text-destructive-foreground"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {step.status.replace("_", " ").toUpperCase()}
@@ -321,7 +321,7 @@ export function WorkflowStepModal({
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {/* Show assignee name prominently */}
-                <div className="flex items-center space-x-2 text-gray-600">
+                <div className="flex items-center space-x-2 text-muted-foreground">
                   <User className="w-4 h-4" />
                   <span>
                     Assignee: <strong>{step.assigneeName}</strong>
@@ -329,7 +329,7 @@ export function WorkflowStepModal({
                 </div>
 
                 {/* Workflow Creator */}
-                <div className="flex items-center space-x-2 text-gray-600">
+                <div className="flex items-center space-x-2 text-muted-foreground">
                   <User className="w-4 h-4 text-purple-600" />
                   <span>
                     Created by: <strong>{workflowCreatedBy}</strong>
@@ -338,11 +338,11 @@ export function WorkflowStepModal({
 
                 {/* Workflow Deadline (not step deadline) */}
                 {workflowDeadline && (
-                  <div className="flex items-center space-x-2 text-gray-600">
-                    <Calendar className="w-4 h-4 text-red-600" />
+                  <div className="flex items-center space-x-2 text-muted-foreground">
+                    <Calendar className="w-4 h-4 text-destructive" />
                     <span>
                       Workflow Deadline:{" "}
-                      <strong className="text-red-600">
+                      <strong className="text-destructive">
                         {formatDate(workflowDeadline)}
                       </strong>
                     </span>
@@ -350,7 +350,7 @@ export function WorkflowStepModal({
                 )}
 
                 {/* Timer display with play/pause button */}
-                <div className="flex items-center space-x-2 text-gray-600">
+                  <div className="flex items-center space-x-2 text-muted-foreground">
                   <Clock className="w-4 h-4" />
                   <span>
                     Time Spent: <strong>{formatTime(currentTime)}</strong>
@@ -364,7 +364,7 @@ export function WorkflowStepModal({
                         title="Start Timer"
                       >
                         <svg
-                          className="w-5 h-5 text-green-600"
+                          className="w-5 h-5 text-success"
                           fill="currentColor"
                           viewBox="0 0 24 24"
                         >
@@ -379,7 +379,7 @@ export function WorkflowStepModal({
                         title="Pause Timer"
                       >
                         <svg
-                          className="w-5 h-5 text-orange-600"
+                          className="w-5 h-5 text-warning"
                           fill="currentColor"
                           viewBox="0 0 24 24"
                         >
@@ -391,8 +391,8 @@ export function WorkflowStepModal({
 
                 {/* Completion date if completed */}
                 {step.completedAt && (
-                  <div className="flex items-center space-x-2 text-gray-600">
-                    <Calendar className="w-4 h-4 text-green-600" />
+                  <div className="flex items-center space-x-2 text-muted-foreground">
+                    <Calendar className="w-4 h-4 text-success" />
                     <span>
                       Completed: <strong>{formatDate(step.completedAt)}</strong>
                     </span>
@@ -400,15 +400,15 @@ export function WorkflowStepModal({
                 )}
               </div>
 
-              <div className="pt-2 border-t border-gray-200">
-                <p className="text-sm text-gray-600">{step.description}</p>
+              <div className="pt-2 border-t border-border">
+                <p className="text-sm text-muted-foreground">{step.description}</p>
               </div>
             </div>
             {/* Progress Update Section - Only for assigned user */}
             {canModify && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Update Progress Percentage
                   </label>
                   <div className="flex items-center space-x-2">
@@ -444,10 +444,10 @@ export function WorkflowStepModal({
                       placeholder={
                         step.progressPercentage ? undefined : "Enter progress %"
                       }
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-24 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       disabled={isAnyActionInProgress || isUpdatingProgress}
                     />
-                    <span className="text-sm text-gray-600">%</span>
+                    <span className="text-sm text-muted-foreground">%</span>
                     <Button
                       onClick={handleProgressUpdate}
                       disabled={isUpdatingProgress}
@@ -457,7 +457,7 @@ export function WorkflowStepModal({
                       {isUpdatingProgress ? "Updating..." : "Update Progress"}
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Enter a value between 0-100 to track your progress. This
                     won't complete the step.
                   </p>
@@ -468,7 +468,7 @@ export function WorkflowStepModal({
             {/* Add Comment Section - Only for assigned user */}
             {canModify && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-foreground">
                   Add Comment
                 </label>
                 <div className="flex flex-col space-y-2">
@@ -477,11 +477,11 @@ export function WorkflowStepModal({
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Add a comment to track your progress..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                     disabled={isAnyActionInProgress}
                   />
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       <AlertCircle className="w-3 h-3 inline mr-1" />
                       Track your progress and communicate updates
                     </p>
@@ -489,7 +489,7 @@ export function WorkflowStepModal({
                       onClick={handleAddComment}
                       disabled={isAnyActionInProgress}
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-primary hover:bg-primary/90"
                     >
                       {isAddingComment ? (
                         "Adding..."
@@ -509,33 +509,33 @@ export function WorkflowStepModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-4 h-4 text-gray-500" />
-                  <label className="block text-sm font-medium text-gray-700">
+                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                  <label className="block text-sm font-medium text-foreground">
                     Comments History
                   </label>
                 </div>
                 {step.comments && step.comments.length > 0 && (
-                  <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                  <span className="px-2.5 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded-full">
                     {step.comments.length}
                   </span>
                 )}
               </div>
 
               {step.comments && step.comments.length > 0 ? (
-                <div className="max-h-64 overflow-y-auto space-y-3 bg-gradient-to-b from-gray-50 to-white rounded-lg p-4 border border-gray-200">
+                <div className="max-h-64 overflow-y-auto space-y-3 bg-gradient-to-b from-muted to-white rounded-lg p-4 border border-border">
                   {step.comments.map((comment, idx) => (
                     <div
                       key={idx}
-                      className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                      className="bg-white p-4 rounded-lg shadow-sm border border-border hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-primary to-primary-foreground rounded-full flex items-center justify-center shadow-sm">
                           <span className="text-xs font-semibold text-white">
                             {idx + 1}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-800 leading-relaxed">
+                          <p className="text-sm text-muted-foreground leading-relaxed">
                             {comment}
                           </p>
                         </div>
@@ -544,14 +544,14 @@ export function WorkflowStepModal({
                   ))}
                 </div>
               ) : (
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 text-center border border-gray-200">
+                <div className="bg-gradient-to-br from-muted to-muted-foreground rounded-lg p-6 text-center border border-border">
                   <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
-                    <MessageSquare className="w-6 h-6 text-gray-400" />
+                    <MessageSquare className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-muted-foreground">
                     No comments yet
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Comments will appear here as progress updates
                   </p>
                 </div>
@@ -560,11 +560,11 @@ export function WorkflowStepModal({
 
             {/* Read-only message for non-assigned users or completed/rejected steps */}
             {!canModify && (
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+              <div className="bg-muted border-l-4 border-primary p-4 rounded-r-lg">
                 <div className="flex">
-                  <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                  <AlertCircle className="h-5 w-5 text-primary flex-shrink-0" />
                   <div className="ml-3">
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-primary-foreground">
                       {step.status === "completed" || step.status === "rejected"
                         ? `This step has been ${step.status}.`
                         : "You can only modify steps assigned to you."}
@@ -577,13 +577,13 @@ export function WorkflowStepModal({
 
           {/* Footer with Action Buttons - Only for assigned user */}
           {canModify && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="px-6 py-4 border-t border-border bg-muted">
               <div className="flex items-center justify-end space-x-2">
                 <Button
                   onClick={handleComplete}
                   disabled={isAnyActionInProgress}
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-success hover:bg-success/90"
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
                   {isCompleting ? "Completing..." : "Complete Step"}
@@ -593,7 +593,7 @@ export function WorkflowStepModal({
                   disabled={isAnyActionInProgress}
                   size="sm"
                   variant="outline"
-                  className="bg-white text-red-600 border-red-300 hover:bg-red-50"
+                  className="bg-white text-destructive border-destructive hover:bg-destructive/10"
                 >
                   <XCircle className="w-4 h-4 mr-2" />
                   Reject Step
@@ -608,11 +608,11 @@ export function WorkflowStepModal({
       {showRejectionModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">
                 Reason for Rejection
               </h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Please select or specify why you're rejecting this step
               </p>
             </div>
@@ -623,8 +623,8 @@ export function WorkflowStepModal({
                   key={index}
                   className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedRejectionReason === reason
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      ? "border-destructive bg-destructive/10"
+                      : "border-border hover:border-primary hover:bg-muted"
                   }`}
                 >
                   <input
@@ -633,9 +633,9 @@ export function WorkflowStepModal({
                     value={reason}
                     checked={selectedRejectionReason === reason}
                     onChange={(e) => setSelectedRejectionReason(e.target.value)}
-                    className="mt-0.5 mr-3 text-red-600 focus:ring-red-500"
+                      className="mt-0.5 mr-3 text-destructive focus:ring-destructive"
                   />
-                  <span className="text-sm text-gray-700 font-medium">
+                  <span className="text-sm text-foreground font-medium">
                     {reason}
                   </span>
                 </label>
@@ -647,13 +647,13 @@ export function WorkflowStepModal({
                     onChange={(e) => setCustomRejectionReason(e.target.value)}
                     placeholder="Please specify the reason for rejection..."
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                    className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-destructive resize-none"
                   />
                 </div>
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-2">
+            <div className="px-6 py-4 border-t border-border bg-muted flex justify-end space-x-2">
               <Button
                 onClick={() => setShowRejectionModal(false)}
                 variant="outline"
@@ -671,7 +671,7 @@ export function WorkflowStepModal({
                     !customRejectionReason.trim())
                 }
                 size="sm"
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-destructive hover:bg-destructive/90"
               >
                 <XCircle className="w-4 h-4 mr-2" />
                 {isRejecting ? "Rejecting..." : "Confirm Rejection"}

@@ -5,7 +5,7 @@ import DocumentSignatureBackground from './DocumentSignatureBackground';
 
 const Loader: React.FC = () => {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-blue-50 flex items-center justify-center">
+    <div className="relative min-h-screen overflow-hidden bg-background flex items-center justify-center">
       <DocumentSignatureBackground />
 
       {/* Main loader */}

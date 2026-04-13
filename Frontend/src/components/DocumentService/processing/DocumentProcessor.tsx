@@ -191,14 +191,14 @@ export function DocumentProcessor({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <div className="w-16 h-16 border-4 border-primary border-t-primary rounded-full animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-muted-900 mb-2">
               Processing Document
             </h3>
-            <p className="text-gray-500 mb-6">
+            <p className="text-muted-foreground mb-6">
               Analyzing document content, extracting insights, and performing AI-powered analysis...
             </p>
-            <div className="text-sm text-blue-600">
+            <div className="text-sm text-muted-foreground">
               This may take a few minutes for large documents
             </div>
           </div>
@@ -213,20 +213,20 @@ export function DocumentProcessor({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
+            <AlertCircle className="w-5 h-5 text-muted-foreground" />
             <span>Analysis Error</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-red-900 mb-2">
+            <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               Analysis Failed
             </h3>
-            <p className="text-red-500 mb-4">
+            <p className="text-muted-foreground mb-4">
               {error}
             </p>
-            <div className="text-sm text-gray-600 mb-6">
+            <div className="text-sm text-muted-foreground mb-6">
               This could be due to network issues, server problems, or document format issues.
             </div>
             <div className="flex space-x-3 justify-center">
@@ -234,7 +234,7 @@ export function DocumentProcessor({
                 onClick={handleReprocess}
                 disabled={isProcessing}
                 variant="outline"
-                className="border-red-200 text-red-700 hover:bg-red-50"
+                className="border-border text-muted-foreground hover:bg-muted/10"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Retry Analysis
@@ -266,21 +266,21 @@ export function DocumentProcessor({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Brain className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Brain className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               Document Not Processed
             </h3>
-            <p className="text-gray-500 mb-6">
+            <p className="text-muted-foreground mb-6">
               Process this document to extract insights, analyze content, and enable advanced features.
             </p>
             <Button
               onClick={handleProcess}
               disabled={isProcessing}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary hover:bg-primary/90"
             >
               {isProcessing ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin mr-2" />
                   Processing...
                 </>
               ) : (
@@ -302,8 +302,8 @@ export function DocumentProcessor({
       <div className="space-y-6">
         <Card>
           <CardContent className="text-center py-8">
-            <div className="text-gray-500">Loading analysis data...</div>
-            <div className="text-xs text-gray-400 mt-2">
+            <div className="text-muted-foreground">Loading analysis data...</div>
+            <div className="text-xs text-muted-foreground mt-2">
               Analysis data: {analysis ? 'Present but incomplete' : 'Not loaded'}
             </div>
           </CardContent>
@@ -330,7 +330,7 @@ export function DocumentProcessor({
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               Last processed: {formatDate(analysis.processedAt)}
             </div>
             <div className="flex space-x-2">
@@ -367,40 +367,40 @@ export function DocumentProcessor({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="text-center p-3 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-foreground">
                 {analysis.analysis.wordCount.toLocaleString()}
               </div>
-              <div className="text-sm text-gray-600">Words</div>
+              <div className="text-sm text-muted-foreground">Words</div>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="text-center p-3 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-foreground">
                 {analysis.analysis.pageCount}
               </div>
-              <div className="text-sm text-gray-600">Pages</div>
+              <div className="text-sm text-muted-foreground">Pages</div>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="text-center p-3 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-foreground">
                 {analysis.analysis.readabilityScore}
               </div>
-              <div className="text-sm text-gray-600">Readability</div>
+              <div className="text-sm text-muted-foreground">Readability</div>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <div className="text-center p-3 bg-muted rounded-lg">
               <div className={`text-2xl font-bold ${
-                analysis.analysis.sentiment === 'positive' ? 'text-green-600' :
-                analysis.analysis.sentiment === 'negative' ? 'text-red-600' :
-                'text-gray-600'
+                analysis.analysis.sentiment === 'positive' ? 'text-success' :
+                analysis.analysis.sentiment === 'negative' ? 'text-destructive' :
+                'text-muted-foreground'
               }`}>
                 {analysis.analysis.sentiment}
               </div>
-              <div className="text-sm text-gray-600">Sentiment</div>
+              <div className="text-sm text-muted-foreground">Sentiment</div>
             </div>
           </div>
 
           {/* Document Summary */}
           <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">AI Summary</h4>
-            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+            <h4 className="text-sm font-medium text-foreground mb-2">AI Summary</h4>
+            <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
               {analysis.analysis.summary}
             </p>
           </div>
@@ -408,37 +408,37 @@ export function DocumentProcessor({
           {/* Topics and Key Phrases */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Topics</h4>
+              <h4 className="text-sm font-medium text-foreground mb-3">Topics</h4>
               <div className="flex flex-wrap gap-2">
                 {analysis.analysis.topics && analysis.analysis.topics.length > 0 ? (
                   analysis.analysis.topics.map((topic, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                      className="px-3 py-1 bg-primary text-primary-foreground text-sm rounded-full"
                     >
                       {topic}
                     </span>
                   ))
                 ) : (
-                  <span className="text-gray-500 text-sm">No topics identified</span>
+                  <span className="text-muted-foreground text-sm">No topics identified</span>
                 )}
               </div>
             </div>
             
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Key Phrases</h4>
+              <h4 className="text-sm font-medium text-foreground mb-3">Key Phrases</h4>
               <div className="flex flex-wrap gap-2">
                 {analysis.analysis.keyPhrases && analysis.analysis.keyPhrases.length > 0 ? (
                   analysis.analysis.keyPhrases.map((phrase, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"
+                      className="px-3 py-1 bg-primary text-primary-foreground text-sm rounded-full"
                     >
                       {phrase}
                     </span>
                   ))
                 ) : (
-                  <span className="text-gray-500 text-sm">No key phrases identified</span>
+                  <span className="text-muted-foreground text-sm">No key phrases identified</span>
                 )}
               </div>
             </div>
@@ -458,27 +458,27 @@ export function DocumentProcessor({
           <div className="space-y-3">
             {analysis.analysis.entities && analysis.analysis.entities.length > 0 ? (
               analysis.analysis.entities.map((entity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center space-x-3">
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      entity.type === 'person' ? 'bg-purple-100 text-purple-800' :
-                      entity.type === 'organization' ? 'bg-blue-100 text-blue-800' :
-                      entity.type === 'location' ? 'bg-green-100 text-green-800' :
-                      entity.type === 'date' ? 'bg-orange-100 text-orange-800' :
-                      entity.type === 'money' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
+                      entity.type === 'person' ? 'bg-primary text-primary-foreground' :
+                      entity.type === 'organization' ? 'bg-primary text-primary-foreground' :
+                      entity.type === 'location' ? 'bg-primary text-primary-foreground' :
+                      entity.type === 'date' ? 'bg-primary text-primary-foreground' :
+                      entity.type === 'money' ? 'bg-primary text-primary-foreground' :
+                      'bg-primary text-primary-foreground'
                     }`}>
                       {entity.type}
                     </span>
-                    <span className="text-sm font-medium text-gray-900">{entity.text}</span>
+                      <span className="text-sm font-medium text-foreground">{entity.text}</span>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {Math.round(entity.confidence * 100)}% confidence
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-4 text-gray-500">
+              <div className="text-center py-4 text-muted-foreground">
                 No entities extracted from document
               </div>
             )}
@@ -499,30 +499,30 @@ export function DocumentProcessor({
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Category</span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm font-medium text-foreground">Category</span>
+                  <span className="text-sm text-muted-foreground">
                     {Math.round(analysis.classification.confidence * 100)}% confidence
                   </span>
                 </div>
-                <div className="text-lg font-medium text-blue-600">
+                <div className="text-lg font-medium text-primary">
                   {analysis.classification.category}
                 </div>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Suggested Tags</h4>
+                <h4 className="text-sm font-medium text-foreground mb-2">Suggested Tags</h4>
                 <div className="flex flex-wrap gap-2">
                   {analysis.classification.suggestedTags && analysis.classification.suggestedTags.length > 0 ? (
                     analysis.classification.suggestedTags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                        className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full"
                       >
                         {tag}
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-500 text-sm">No tags suggested</span>
+                    <span className="text-muted-foreground text-sm">No tags suggested</span>
                   )}
                 </div>
               </div>
@@ -541,21 +541,21 @@ export function DocumentProcessor({
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Compliance Score</span>
+                  <span className="text-sm font-medium text-foreground">Compliance Score</span>
                   <span className={`text-sm font-medium ${
-                    analysis.compliance.score >= 80 ? 'text-green-600' :
-                    analysis.compliance.score >= 60 ? 'text-yellow-600' :
-                    'text-red-600'
+                    analysis.compliance.score >= 80 ? 'text-success' :
+                    analysis.compliance.score >= 60 ? 'text-warning' :
+                    'text-destructive'
                   }`}>
                     {analysis.compliance.score}/100
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-primary text-primary-foreground rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${
-                      analysis.compliance.score >= 80 ? 'bg-green-600' :
-                      analysis.compliance.score >= 60 ? 'bg-yellow-600' :
-                      'bg-red-600'
+                      analysis.compliance.score >= 80 ? 'bg-success' :
+                      analysis.compliance.score >= 60 ? 'bg-warning' :
+                      'bg-destructive'
                     }`}
                     style={{ width: `${analysis.compliance.score}%` }}
                   />
@@ -564,28 +564,28 @@ export function DocumentProcessor({
 
               {analysis.compliance.issues && analysis.compliance.issues.length > 0 ? (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Issues Found</h4>
+                    <h4 className="text-sm font-medium text-foreground mb-2">Issues Found</h4>
                   <div className="space-y-2">
                     {analysis.compliance.issues.map((issue, index) => (
-                      <div key={index} className="p-2 bg-yellow-50 border border-yellow-200 rounded">
+                        <div key={index} className="p-2 bg-muted text-muted-foreground border border-border rounded">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-yellow-800">{issue.type}</span>
+                          <span className="text-sm font-medium text-foreground">{issue.type}</span>
                           <span className={`text-xs px-2 py-1 rounded-full ${
-                            issue.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                            issue.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                            issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
+                            issue.severity === 'critical' ? 'bg-destructive text-destructive-foreground' :
+                            issue.severity === 'high' ? 'bg-warning text-warning-foreground' :
+                            issue.severity === 'medium' ? 'bg-warning text-warning-foreground' :
+                            'bg-primary text-primary-foreground'
                           }`}>
                             {issue.severity}
                           </span>
                         </div>
-                        <p className="text-xs text-yellow-700 mt-1">{issue.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{issue.description}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-2 text-green-600 text-sm">
+                <div className="text-center py-2 text-muted-foreground text-sm">
                   No compliance issues found
                 </div>
               )}
@@ -606,16 +606,16 @@ export function DocumentProcessor({
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">OCR Confidence</span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm font-medium text-foreground">OCR Confidence</span>
+                <span className="text-sm text-muted-foreground">
                   {Math.round(analysis.ocrResults.confidence * 100)}%
                 </span>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Extracted Text Preview</h4>
-                <div className="p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
-                  <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                <h4 className="text-sm font-medium text-foreground mb-2">Extracted Text Preview</h4>
+                    <div className="p-3 bg-primary text-primary-foreground rounded-lg max-h-32 overflow-y-auto">
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
                     {analysis.ocrResults.extractedText ? 
                       `${analysis.ocrResults.extractedText.substring(0, 500)}${analysis.ocrResults.extractedText.length > 500 ? '...' : ''}`
                       : 'No OCR text available'

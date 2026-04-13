@@ -505,19 +505,19 @@ const FillPdfFormPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto space-y-6">
-      <div className="bg-white shadow-sm border-b">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Fill PDF Forms</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Fill PDF Forms</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Fill out PDF forms digitally with auto-fill, validation, and signature support
 
               </p>
@@ -530,11 +530,11 @@ const FillPdfFormPage: React.FC = () => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* File Upload */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload PDF Form</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Upload PDF Form</h2>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/30 dark:bg-muted/20">
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
               <div className="mt-4">
                 <label className="cursor-pointer">
                   <span className="text-blue-600 hover:text-blue-500 font-medium">
@@ -548,10 +548,10 @@ const FillPdfFormPage: React.FC = () => {
                     className="hidden"
                   />
                 </label>
-                <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+                <p className="text-sm text-muted-foreground mt-1">or drag and drop</p>
               </div>
               {selectedFile && (
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   Selected: {selectedFile.name}
                 </p>
               )}
@@ -559,53 +559,53 @@ const FillPdfFormPage: React.FC = () => {
           </div>
 
           {/* Processing Mode Selection */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Processing Mode</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Processing Mode</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => setProcessingMode('manual')}
                 className={`p-4 rounded-lg border-2 text-left ${processingMode === 'manual'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-muted-foreground/40'
                   }`}
               >
                 <PenTool className="w-6 h-6 text-blue-600 mb-2" />
                 <h3 className="font-medium">Manual Fill</h3>
-                <p className="text-sm text-gray-600">Fill form fields manually</p>
+                <p className="text-sm text-muted-foreground">Fill form fields manually</p>
               </button>
 
               <button
                 onClick={() => setProcessingMode('auto')}
                 className={`p-4 rounded-lg border-2 text-left ${processingMode === 'auto'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-muted-foreground/40'
                   }`}
               >
                 <Wand2 className="w-6 h-6 text-blue-600 mb-2" />
                 <h3 className="font-medium">Auto Fill</h3>
-                <p className="text-sm text-gray-600">AI-powered automatic filling</p>
+                <p className="text-sm text-muted-foreground">AI-powered automatic filling</p>
               </button>
 
               <button
                 onClick={() => setProcessingMode('bulk')}
                 className={`p-4 rounded-lg border-2 text-left ${processingMode === 'bulk'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-muted-foreground/40'
                   }`}
               >
                 <Database className="w-6 h-6 text-blue-600 mb-2" />
                 <h3 className="font-medium">Bulk Process</h3>
-                <p className="text-sm text-gray-600">Process multiple forms</p>
+                <p className="text-sm text-muted-foreground">Process multiple forms</p>
               </button>
             </div>
           </div>
 
           {/* Form Fields */}
           {formFields.length > 0 && processingMode === 'manual' && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Form Fields</h2>
+                <h2 className="text-lg font-semibold text-foreground">Form Fields</h2>
                 <button
                   onClick={validateFormData}
                   disabled={isValidating}
@@ -623,7 +623,7 @@ const FillPdfFormPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {formFields.map((field) => (
                   <div key={field.name} className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-foreground">
                       {field.name}
                       {field.required && <span className="text-red-500 ml-1">*</span>}
                     </label>
@@ -632,7 +632,7 @@ const FillPdfFormPage: React.FC = () => {
                         type="text"
                         value={formData[field.name] || ''}
                         onChange={(e) => handleFormDataChange(field.name, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder={`Enter ${field.name}`}
                       />
                     )}
@@ -687,10 +687,10 @@ const FillPdfFormPage: React.FC = () => {
 
           {/* Template Data Display */}
           {Object.keys(formData).length > 0 && formFields.length === 0 && processingMode === 'manual' && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Template Data Loaded</h2>
-                <div className="text-sm text-gray-500">
+                <h2 className="text-lg font-semibold text-foreground">Template Data Loaded</h2>
+                <div className="text-sm text-muted-foreground">
                   Upload a PDF to see and edit these fields
                 </div>
               </div>
@@ -698,18 +698,18 @@ const FillPdfFormPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(formData).map(([fieldName, fieldValue]) => (
                   <div key={fieldName} className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-foreground">
                       {fieldName}
                     </label>
-                    <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700">
+                    <div className="px-3 py-2 bg-muted border border-border bg-background text-foreground rounded-md">
                       {typeof fieldValue === 'boolean' ? (fieldValue ? 'Yes' : 'No') : fieldValue}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <div className="flex items-center text-blue-800">
+              <div className="mt-4 p-3 bg-muted border border-border bg-background text-foreground rounded-md">
+                <div className="flex items-center text-foreground">
                   <Info className="w-4 h-4 mr-2" />
                   <span className="text-sm">
                     Template data is loaded. Upload a PDF form to start filling it out with this data.
@@ -721,20 +721,20 @@ const FillPdfFormPage: React.FC = () => {
 
           {/* Auto Fill Data */}
           {processingMode === 'auto' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Auto Fill Data</h2>
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Auto Fill Data</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(autoFillData).map(([field, value]) => (
                   <div key={field} className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700 capitalize">
+                    <label className="block text-sm font-medium text-foreground capitalize">
                       {field}
                     </label>
                     <input
                       type="text"
                       value={value}
                       onChange={(e) => handleAutoFillDataChange(field, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder={`Enter ${field}`}
                     />
                   </div>
@@ -745,14 +745,14 @@ const FillPdfFormPage: React.FC = () => {
 
           {/* Bulk Processing */}
           {processingMode === 'bulk' && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Bulk Processing</h2>
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Upload Multiple PDFs</h3>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                    <FileSpreadsheet className="mx-auto h-8 w-8 text-gray-400" />
+                  <h3 className="font-medium text-foreground mb-2">Upload Multiple PDFs</h3>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center bg-muted/30 dark:bg-muted/20">
+                    <FileSpreadsheet className="mx-auto h-8 w-8 text-muted-foreground" />
                     <div className="mt-2">
                       <label className="cursor-pointer">
                         <span className="text-blue-600 hover:text-blue-500 font-medium">
@@ -769,7 +769,7 @@ const FillPdfFormPage: React.FC = () => {
                       </label>
                     </div>
                     {bulkFiles.length > 0 && (
-                      <p className="text-sm text-gray-600 mt-2">
+                      <p className="text-sm text-muted-foreground mt-2">
                         {bulkFiles.length} files selected
                       </p>
                     )}
@@ -777,7 +777,7 @@ const FillPdfFormPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Form Data</h3>
+                  <h3 className="font-medium text-foreground mb-2">Form Data</h3>
                   <div className="space-y-4">
                     <div className="flex items-center space-x-4">
                       <input
@@ -786,20 +786,20 @@ const FillPdfFormPage: React.FC = () => {
                         onChange={importFromCSV}
                         className="text-sm"
                       />
-                      <span className="text-sm text-gray-500">or enter manually:</span>
+                      <span className="text-sm text-muted-foreground">or enter manually:</span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries(bulkData).map(([field, value]) => (
                         <div key={field} className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
+                          <label className="block text-sm font-medium text-foreground">
                             {field}
                           </label>
                           <input
                             type="text"
                             value={value}
                             onChange={(e) => handleBulkDataChange(field, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-muted-foreground bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                       ))}
@@ -812,20 +812,20 @@ const FillPdfFormPage: React.FC = () => {
 
           {/* Signature Section */}
           {outputOptions.addSignature && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Digital Signature</h2>
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Digital Signature</h2>
 
               <div className="space-y-4">
                 {/* Signature Field Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Signature Field
                   </label>
                   {formFields.length > 0 ? (
                     <select
                       value={signatureData.fieldName}
                       onChange={(e) => setSignatureData(prev => ({ ...prev, fieldName: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-muted-foreground bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select a field for signature</option>
                       {formFields.map((field) => (
@@ -835,16 +835,16 @@ const FillPdfFormPage: React.FC = () => {
                       ))}
                     </select>
                   ) : (
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                      <p className="text-sm text-yellow-800">
+                    <div className="p-3 bg-muted border border-border bg-background text-foreground rounded-md">
+                      <p className="text-sm text-muted-foreground">
                         Upload a PDF first to see available signature fields
                       </p>
                     </div>
                   )}
 
                   {formFields.length > 0 && (
-                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                      <p className="text-xs text-blue-800">
+                    <div className="mt-2 p-2 bg-muted border border-border bg-background text-foreground rounded-md">
+                      <p className="text-xs text-muted-foreground">
                         <span className="font-medium">✓</span> Text fields can be used for signatures<br />
                         <span className="font-medium">🔒</span> True signature fields (if available)
                       </p>
@@ -853,13 +853,13 @@ const FillPdfFormPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Signature Type
                   </label>
                   <select
                     value={signatureData.type}
                     onChange={(e) => setSignatureData(prev => ({ ...prev, type: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-muted-foreground bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="text">Text Signature</option>
                     <option value="image">Image Signature</option>
@@ -868,14 +868,14 @@ const FillPdfFormPage: React.FC = () => {
 
                 {signatureData.type === 'text' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                       Signature Text
                     </label>
                     <input
                       type="text"
                       value={signatureData.text}
                       onChange={(e) => setSignatureData(prev => ({ ...prev, text: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-muted-foreground bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter your signature"
                     />
                   </div>
@@ -883,7 +883,7 @@ const FillPdfFormPage: React.FC = () => {
 
                 {signatureData.type === 'image' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Signature Image
                     </label>
                     <input
@@ -902,7 +902,7 @@ const FillPdfFormPage: React.FC = () => {
                           reader.readAsDataURL(file);
                         }
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-muted-foreground bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 )}
@@ -911,7 +911,7 @@ const FillPdfFormPage: React.FC = () => {
           )}
 
           {/* Action Buttons */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
             <div className="flex flex-wrap gap-4">
               {processingMode === 'manual' && (
                 <button
@@ -988,7 +988,7 @@ const FillPdfFormPage: React.FC = () => {
               <button
                 onClick={saveAsTemplate}
                 disabled={Object.keys(formData).length === 0}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className="inline-flex items-center px-4 py-2 border border-border bg-background text-foreground rounded-md hover:bg-muted disabled:opacity-50"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Save as Template
@@ -1000,8 +1000,8 @@ const FillPdfFormPage: React.FC = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Output Options */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Output Options</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Output Options</h2>
 
             <div className="space-y-4">
               <label className="flex items-center">
@@ -1009,9 +1009,9 @@ const FillPdfFormPage: React.FC = () => {
                   type="checkbox"
                   checked={outputOptions.flatten}
                   onChange={(e) => setOutputOptions(prev => ({ ...prev, flatten: e.target.checked }))}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-primary focus:ring-primary border-border bg-background text-foreground rounded"
                 />
-                <span className="ml-2 text-sm text-gray-700">Flatten form after filling</span>
+                <span className="ml-2 text-sm text-foreground">Flatten form after filling</span>
               </label>
 
               <label className="flex items-center">
@@ -1019,9 +1019,9 @@ const FillPdfFormPage: React.FC = () => {
                   type="checkbox"
                   checked={outputOptions.keepEditable}
                   onChange={(e) => setOutputOptions(prev => ({ ...prev, keepEditable: e.target.checked }))}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-primary focus:ring-primary border-border bg-background text-foreground rounded"
                 />
-                <span className="ml-2 text-sm text-gray-700">Keep form fields editable</span>
+                <span className="ml-2 text-sm text-foreground">Keep form fields editable</span>
               </label>
 
               <label className="flex items-center">
@@ -1029,30 +1029,30 @@ const FillPdfFormPage: React.FC = () => {
                   type="checkbox"
                   checked={outputOptions.addSignature}
                   onChange={(e) => setOutputOptions(prev => ({ ...prev, addSignature: e.target.checked }))}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-primary border-border bg-background text-foreground rounded"
                 />
-                <span className="ml-2 text-sm text-gray-700">Add digital signature</span>
+                <span className="ml-2 text-sm text-foreground">Add digital signature</span>
               </label>
             </div>
           </div>
 
           {/* Templates */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Saved Templates</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Saved Templates</h2>
 
             {templates.length === 0 ? (
-              <p className="text-sm text-gray-500">No templates saved yet</p>
+              <p className="text-sm text-muted-foreground">No templates saved yet</p>
             ) : (
               <div className="space-y-3">
                 {templates.map((template) => (
                   <div
                     key={template.id}
-                    className="p-3 border border-gray-200 rounded-lg hover:border-gray-300 cursor-pointer"
+                    className="p-3 border border-border bg-background text-foreground rounded-lg hover:border-muted-foreground/40 cursor-pointer"
                     onClick={() => loadTemplate(template.id)}
                   >
-                    <h3 className="font-medium text-gray-900">{template.name}</h3>
-                    <p className="text-sm text-gray-600">{template.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <h3 className="font-medium text-foreground">{template.name}</h3>
+                    <p className="text-sm text-muted-foreground">{template.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       {template.fieldsCount} fields • {new Date(template.updated).toLocaleDateString()}
                     </p>
                   </div>
@@ -1062,27 +1062,27 @@ const FillPdfFormPage: React.FC = () => {
           </div>
 
           {/* Features */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
+          <div className="bg-card rounded-lg shadow p-6 border border-border">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Features</h2>
 
             <div className="space-y-3">
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Wand2 className="w-4 h-4 mr-2 text-blue-600" />
                 Auto-fill with AI
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Shield className="w-4 h-4 mr-2 text-green-600" />
                 Data validation
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <PenTool className="w-4 h-4 mr-2 text-purple-600" />
                 Signature fields
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Database className="w-4 h-4 mr-2 text-orange-600" />
                 Bulk processing
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Save className="w-4 h-4 mr-2 text-indigo-600" />
                 Template management
               </div>

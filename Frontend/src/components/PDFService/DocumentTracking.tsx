@@ -216,18 +216,18 @@ const DocumentTracking: React.FC = () => {
 
   return (
     <div className=" p-2 space-y-6">
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Document Tracking</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Document Tracking</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Keep track of your PDF documents and their status with ease
               </p>
             </div>
@@ -237,7 +237,7 @@ const DocumentTracking: React.FC = () => {
 
       {/* Tab Navigation */}
       <div className="mb-6">
-        <nav className="flex space-x-8 border-b border-gray-200">
+        <nav className="flex space-x-8 border-b border-border">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
             { id: 'documents', label: 'Tracked Documents', icon: FileText },
@@ -251,7 +251,7 @@ const DocumentTracking: React.FC = () => {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                     ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
               >
                 <Icon className="w-4 h-4" />
@@ -653,7 +653,7 @@ const DocumentTracking: React.FC = () => {
         <div className="space-y-6">
           <div>
             <h2 className="text-xl font-semibold mb-2">Upload Document for Tracking</h2>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Upload a PDF document to start tracking its access and usage. You'll get a shareable link that you can send to others.
             </p>
           </div>
@@ -662,31 +662,31 @@ const DocumentTracking: React.FC = () => {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Document Name</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Document Name</label>
                   <input
                     type="text"
                     placeholder="Enter a descriptive name for the document"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     value={documentName}
                     onChange={(e) => setDocumentName(e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">PDF File</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">PDF File</label>
                   <input
                     type="file"
                     accept=".pdf"
                     onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 mt-1">Maximum file size: 50MB</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Link Expiration</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Link Expiration</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     value={expiresInDays}
                     onChange={(e) => setExpiresInDays(parseInt(e.target.value))}
                   >
@@ -700,7 +700,7 @@ const DocumentTracking: React.FC = () => {
                 <Button
                   onClick={handleUpload}
                   disabled={!uploadFile || !documentName.trim() || uploading}
-                  className="w-full"
+                  className="w-full "
                 >
                   {uploading ? (
                     <RefreshCw className="w-4 h-4 animate-spin mr-2" />
@@ -712,12 +712,12 @@ const DocumentTracking: React.FC = () => {
               </div>
 
               {uploadSuccess && (
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="mt-6 p-4 bg-success border border-success-foreground rounded-lg">
                   <div className="flex items-center space-x-2 mb-3">
-                    <Share2 className="w-5 h-5 text-green-600" />
-                    <h3 className="font-medium text-green-800">Document uploaded successfully!</h3>
+                    <Share2 className="w-5 h-5 text-success" />
+                    <h3 className="font-medium text-success-foreground">Document uploaded successfully!</h3>
                   </div>
-                  <p className="text-sm text-green-700 mb-3">
+                  <p className="text-sm text-success-foreground mb-3">
                     Your document is now being tracked. Share this link with others to monitor their access:
                   </p>
                   <div className="flex items-center space-x-2">
@@ -725,7 +725,7 @@ const DocumentTracking: React.FC = () => {
                       type="text"
                       value={uploadSuccess}
                       readOnly
-                      className="flex-1 px-3 py-2 bg-white border border-green-300 rounded-md text-sm"
+                        className="flex-1 px-3 py-2 bg-background border border-success-foreground rounded-md text-sm"
                     />
                     <Button
                       size="sm"
